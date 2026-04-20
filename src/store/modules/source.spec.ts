@@ -8,31 +8,28 @@ describe('Source Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets source item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useSourceStore()
 
-		store.setSourceItem(mockSource()[0])
+		store.setItem(mockSource()[0])
 
-		expect(store.sourceItem).toBeInstanceOf(Source)
-		expect(store.sourceItem).toEqual(mockSource()[0])
+		expect(store.item).toBeInstanceOf(Source)
+		expect(store.item).toEqual(mockSource()[0])
 
-		expect(store.sourceItem.validate().success).toBe(true)
+		expect(store.item.validate().success).toBe(true)
 	})
 
-	it('sets source list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useSourceStore()
 
-		store.setSourceList(mockSource())
+		store.setList(mockSource())
 
-		expect(store.sourceList).toHaveLength(mockSource().length)
+		expect(store.list).toHaveLength(mockSource().length)
 
-		// Test each item in the list
-		store.sourceList.forEach((item, index) => {
+		store.list.forEach((item: Source, index: number) => {
 			expect(item).toBeInstanceOf(Source)
 			expect(item).toEqual(mockSource()[index])
 			expect(item.validate().success).toBe(true)
 		})
 	})
-
-	// Add more tests for other actions (refreshSourceList, deleteSource, saveSource)
 })

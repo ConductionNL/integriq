@@ -529,8 +529,9 @@ export default {
 		getSources() {
 			this.sourcesLoading = true
 
-			sourceStore.refreshSourceList()
-				.then(({ entities }) => {
+			sourceStore.refreshList()
+				.then(() => {
+					const entities = sourceStore.list
 					const activeSourceSource = entities.find(source => source.id.toString() === this.synchronizationItem.sourceId.toString())
 
 					let activeSourceTarget = null

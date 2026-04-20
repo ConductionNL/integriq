@@ -69,9 +69,9 @@ export const useImportExportStore = defineStore(
 							switch (response.data.object['@type']) {
 							case 'source':
 								return (
-									sourceStore.refreshSourceList().then(() => {
-										const source = sourceStore.sourceList.find(source => source.id === response.data.object.id)
-										sourceStore.setSourceItem(source)
+									sourceStore.refreshList().then(() => {
+										const source = sourceStore.list.find(source => source.id === response.data.object.id)
+										sourceStore.setItem(source)
 									})
 								)
 							case 'endpoint':

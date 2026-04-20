@@ -8,7 +8,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Do you want to delete <b>{{ sourceStore.sourceItem.name }}</b>? This action cannot be undone.
+			Do you want to delete <b>{{ sourceStore.item.name }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -80,12 +80,12 @@ export default {
 		async deleteSource() {
 			this.loading = true
 			try {
-				await sourceStore.deleteSource(sourceStore.sourceItem.id)
+				await sourceStore.deleteOne(sourceStore.item)
 				// Close modal or show success message
 				this.success = true
 				this.loading = false
 				this.error = false
-				sourceStore.setSourceItem(null)
+				sourceStore.setItem(null)
 				this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)
 			} catch (error) {
 				this.loading = false

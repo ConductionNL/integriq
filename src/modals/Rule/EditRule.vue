@@ -1103,10 +1103,10 @@ export default {
 		getSources() {
 			this.sourcesLoading = true
 
-			sourceStore.refreshSourceList()
+			sourceStore.refreshList()
 				.then(() => {
 
-					const sources = sourceStore.sourceList
+					const sources = sourceStore.list
 
 					const activeSourceSource = sources.find(source => source.id.toString() === (this.ruleItem.configuration.fetch_file.source.toString() ?? ''))
 

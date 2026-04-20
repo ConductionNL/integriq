@@ -6,11 +6,11 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewSource'"
 		ref="modalRef"
-		:name="sourceStore.sourceItem?.name || t('openconnector', 'Source Details')"
+		:name="sourceStore.item?.name || t('openconnector', 'Source Details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
-			<p v-if="sourceStore.sourceItem?.description" class="source-description">
-				{{ sourceStore.sourceItem.description }}
+			<p v-if="sourceStore.item?.description" class="source-description">
+				{{ sourceStore.item.description }}
 			</p>
 
 			<!-- Source Properties -->
@@ -25,42 +25,42 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 					<tbody>
 						<tr>
 							<td>{{ t('openconnector', 'Status') }}</td>
-							<td>{{ sourceStore.sourceItem?.status || 'Unknown' }}</td>
+							<td>{{ sourceStore.item?.status || 'Unknown' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Enabled') }}</td>
-							<td>{{ sourceStore.sourceItem?.isEnabled ? 'Enabled' : 'Disabled' }}</td>
+							<td>{{ sourceStore.item?.isEnabled ? 'Enabled' : 'Disabled' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Type') }}</td>
-							<td>{{ sourceStore.sourceItem?.type || 'Unknown' }}</td>
+							<td>{{ sourceStore.item?.type || 'Unknown' }}</td>
 						</tr>
-						<tr v-if="sourceStore.sourceItem?.location">
+						<tr v-if="sourceStore.item?.location">
 							<td>{{ t('openconnector', 'Location') }}</td>
 							<td class="truncatedUrl">
-								{{ sourceStore.sourceItem.location }}
+								{{ sourceStore.item.location }}
 							</td>
 						</tr>
-						<tr v-if="sourceStore.sourceItem?.version">
+						<tr v-if="sourceStore.item?.version">
 							<td>{{ t('openconnector', 'Version') }}</td>
-							<td>{{ sourceStore.sourceItem.version }}</td>
+							<td>{{ sourceStore.item.version }}</td>
 						</tr>
 
-						<tr v-if="sourceStore.sourceItem?.lastCall">
+						<tr v-if="sourceStore.item?.lastCall">
 							<td>{{ t('openconnector', 'Last Call') }}</td>
-							<td>{{ new Date(sourceStore.sourceItem.lastCall).toLocaleDateString() + ', ' + new Date(sourceStore.sourceItem.lastCall).toLocaleTimeString() }}</td>
+							<td>{{ new Date(sourceStore.item.lastCall).toLocaleDateString() + ', ' + new Date(sourceStore.item.lastCall).toLocaleTimeString() }}</td>
 						</tr>
-						<tr v-if="sourceStore.sourceItem?.lastSync">
+						<tr v-if="sourceStore.item?.lastSync">
 							<td>{{ t('openconnector', 'Last Sync') }}</td>
-							<td>{{ new Date(sourceStore.sourceItem.lastSync).toLocaleDateString() + ', ' + new Date(sourceStore.sourceItem.lastSync).toLocaleTimeString() }}</td>
+							<td>{{ new Date(sourceStore.item.lastSync).toLocaleDateString() + ', ' + new Date(sourceStore.item.lastSync).toLocaleTimeString() }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Created') }}</td>
-							<td>{{ sourceStore.sourceItem?.dateCreated ? new Date(sourceStore.sourceItem.dateCreated).toLocaleDateString() : '-' }}</td>
+							<td>{{ sourceStore.item?.dateCreated ? new Date(sourceStore.item.dateCreated).toLocaleDateString() : '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Updated') }}</td>
-							<td>{{ sourceStore.sourceItem?.dateModified ? new Date(sourceStore.sourceItem.dateModified).toLocaleDateString() : '-' }}</td>
+							<td>{{ sourceStore.item?.dateModified ? new Date(sourceStore.item.dateModified).toLocaleDateString() : '-' }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -275,12 +275,12 @@ export default {
 	},
 	computed: {
 		configuration() {
-			const config = sourceStore.sourceItem?.configuration || {}
+			const config = sourceStore.item?.configuration || {}
 			const { authentication, ...configWithoutAuth } = config
 			return configWithoutAuth
 		},
 		configurationAuthentication() {
-			const source = sourceStore.sourceItem
+			const source = sourceStore.item
 			if (!source) return {}
 
 			const authData = {}
@@ -300,7 +300,7 @@ export default {
 		},
 		linkedSynchronizations() {
 			return synchronizationStore.synchronizationList?.filter((item) =>
-				item.sourceId.toString() === sourceStore.sourceItem?.id?.toString(),
+				item.sourceId.toString() === sourceStore.item?.id?.toString(),
 			) || []
 		},
 	},
@@ -356,7 +356,7 @@ export default {
 		 * View source logs
 		 */
 		viewSourceLogs() {
-			sourceStore.setSourceItem(sourceStore.sourceItem)
+			sourceStore.setItem(sourceStore.item)
 			this.$router.push('/sources/logs')
 		},
 	},

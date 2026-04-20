@@ -79,12 +79,12 @@ export default {
 		deleteSourceConfiguration() {
 			this.loading = true
 
-			const sourceItemClone = sourceStore.sourceItem.cloneRaw()
+			const sourceItemClone = sourceStore.item.cloneRaw()
 			delete sourceItemClone?.configuration[sourceStore.sourceConfigurationKey]
 
 			const sourceItem = new Source(sourceItemClone)
 
-			sourceStore.saveSource(sourceItem)
+			sourceStore.save(sourceItem)
 				.then(() => {
 					this.loading = false
 					this.success = true

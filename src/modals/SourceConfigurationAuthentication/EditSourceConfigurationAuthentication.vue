@@ -103,7 +103,7 @@ export default {
 				return
 			}
 			// Get authentication object or initialize empty object if it doesn't exist
-			const authentication = sourceStore.sourceItem.configuration?.authentication || {}
+			const authentication = sourceStore.item.configuration?.authentication || {}
 			const key = sourceStore.sourceConfigurationKey
 
 			if (key in authentication) {
@@ -116,9 +116,9 @@ export default {
 			}
 		},
 		checkIfKeyIsUnique(key) {
-			if (!sourceStore.sourceItem.configuration?.authentication) return false
+			if (!sourceStore.item.configuration?.authentication) return false
 			if (this.oldKey === key) return false
-			return key in sourceStore.sourceItem.configuration.authentication
+			return key in sourceStore.item.configuration.authentication
 		},
 		closeModal() {
 			navigationStore.setModal(false)
@@ -129,7 +129,7 @@ export default {
 			this.loading = true
 
 			// Get current configuration and authentication or initialize empty objects
-			const currentConfig = sourceStore.sourceItem.configuration || {}
+			const currentConfig = sourceStore.item.configuration || {}
 			const currentAuth = currentConfig.authentication || {}
 
 			// Create new authentication object with updated values
@@ -144,7 +144,7 @@ export default {
 			}
 
 			const newSourceItem = new Source({
-				...sourceStore.sourceItem,
+				...sourceStore.item,
 				configuration: {
 					...currentConfig,
 					authentication: newAuth,
@@ -152,7 +152,7 @@ export default {
 			})
 
 			try {
-				await sourceStore.saveSource(newSourceItem)
+				await sourceStore.save(newSourceItem)
 				// Close modal or show success message
 				this.success = true
 				this.loading = false

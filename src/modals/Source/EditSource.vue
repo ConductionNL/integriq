@@ -127,15 +127,15 @@ export default {
 	},
 	methods: {
 		initializeSourceItem() {
-			if (sourceStore.sourceItem?.id) {
+			if (sourceStore.item?.id) {
 				this.sourceItem = {
-					...sourceStore.sourceItem.cloneRaw(),
-					name: sourceStore.sourceItem.name || '',
-					description: sourceStore.sourceItem.description || '',
-					location: sourceStore.sourceItem.location || '',
+					...sourceStore.item.cloneRaw(),
+					name: sourceStore.item.name || '',
+					description: sourceStore.item.description || '',
+					location: sourceStore.item.location || '',
 				}
 
-				const selectedType = this.typeOptions.options.find((option) => option.id === sourceStore.sourceItem.type)
+				const selectedType = this.typeOptions.options.find((option) => option.id === sourceStore.item.type)
 
 				this.typeOptions = {
 					inputLabel: 'Type*',
@@ -183,7 +183,7 @@ export default {
 			try {
 				const sourceItem = new Source({ ...this.sourceItem, type: this.typeOptions.value.id })
 
-				await sourceStore.saveSource(sourceItem)
+				await sourceStore.save(sourceItem)
 				// Close modal or show success message
 				this.success = true
 				this.loading = false

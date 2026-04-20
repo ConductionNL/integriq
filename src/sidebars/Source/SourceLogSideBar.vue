@@ -17,88 +17,69 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 			</template>
 
 			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Call Logs') }}</h3>
-				<div class="filterGroup">
-					<label for="sourceSelect">{{ t('openconnector', 'Source') }}</label>
+			<div class="sidebarSection">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Filter Call Logs') }}
+				</h3>
+				<div class="sidebarSection__body">
 					<NcSelect
-						id="sourceSelect"
 						v-model="selectedSource"
 						:options="sourceOptions"
 						:placeholder="t('openconnector', 'All sources')"
 						:input-label="t('openconnector', 'Source')"
 						:clearable="true"
 						@input="handleSourceChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="statusSelect">{{ t('openconnector', 'Status Codes') }}</label>
 					<NcSelect
-						id="statusSelect"
 						v-model="selectedStatusCodes"
 						:options="statusCodeOptions"
 						:placeholder="t('openconnector', 'All status codes')"
-						:input-label="t('openconnector', 'Status Codes')"
+						:input-label="t('openconnector', 'Status codes')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-				<div class="filterGroup">
-					<label for="methodSelect">{{ t('openconnector', 'HTTP Methods') }}</label>
 					<NcSelect
-						id="methodSelect"
 						v-model="selectedMethods"
 						:options="methodOptions"
 						:placeholder="t('openconnector', 'All methods')"
-						:input-label="t('openconnector', 'HTTP Methods')"
+						:input-label="t('openconnector', 'HTTP methods')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
-					<DateRangeInput
-						:start="dateFrom"
-						:end="dateTo"
-						:max-start="new Date()"
-						@update:start="(val) => { dateFrom = val }"
-						@update:end="(val) => { dateTo = val }"
-						@change="applyFilters" />
-				</div>
-				<div class="filterGroup">
-					<label for="endpointFilter">{{ t('openconnector', 'Endpoint') }}</label>
+					<div class="sidebarSection__field">
+						<span class="sidebarSection__fieldLabel">{{ t('openconnector', 'Date range') }}</span>
+						<DateRangeInput
+							:start="dateFrom"
+							:end="dateTo"
+							:max-start="new Date()"
+							@update:start="(val) => { dateFrom = val }"
+							@update:end="(val) => { dateTo = val }"
+							@change="applyFilters" />
+					</div>
 					<NcTextField
-						id="endpointFilter"
 						:value="endpointFilter"
-						:label="t('openconnector', 'Filter by endpoint')"
+						:label="t('openconnector', 'Endpoint')"
 						:placeholder="t('openconnector', 'Enter endpoint URL')"
 						@input="handleEndpointFilterChange" />
-				</div>
-				<div class="filterGroup">
 					<NcCheckboxRadioSwitch
 						:checked="showOnlyErrors"
 						@update:checked="(v) => { showOnlyErrors = v; applyFilters() }">
 						{{ t('openconnector', 'Show only errors (4xx, 5xx)') }}
 					</NcCheckboxRadioSwitch>
-				</div>
-				<div class="filterGroup">
 					<NcCheckboxRadioSwitch
 						:checked="showSlowRequests"
 						@update:checked="(v) => { showSlowRequests = v; applyFilters() }">
 						{{ t('openconnector', 'Show slow requests (>5s)') }}
 					</NcCheckboxRadioSwitch>
+					<NcButton @click="clearFilters">
+						<template #icon>
+							<FilterOffOutline :size="20" />
+						</template>
+						{{ t('openconnector', 'Clear filters') }}
+					</NcButton>
 				</div>
 			</div>
 
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openconnector', 'Clear Filters') }}
-				</NcButton>
-			</div>
-
-			<NcNoteCard type="info" class="filter-hint">
+			<NcNoteCard type="info" class="sidebarSection__hint">
 				{{ t('openconnector', 'Use filters to narrow down call logs by source, status code, HTTP method, date range, or endpoint.') }}
 			</NcNoteCard>
 		</NcAppSidebarTab>
@@ -109,39 +90,33 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 			</template>
 
 			<!-- Statistics Section -->
-			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Call Log Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalLogs }}
-					</div>
-					<div class="statLabel">
-						{{ t('openconnector', 'Total Call Logs') }}
-					</div>
-				</div>
-				<div class="statCard success">
-					<div class="statNumber">
-						{{ successCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openconnector', 'Successful Calls (2xx)') }}
-					</div>
-				</div>
-				<div class="statCard error">
-					<div class="statNumber">
-						{{ errorCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openconnector', 'Failed Calls (4xx, 5xx)') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ averageResponseTime }}s
-					</div>
-					<div class="statLabel">
-						{{ t('openconnector', 'Average Response Time') }}
-					</div>
+			<div class="sidebarSection sidebarSection--stats">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Call Log Statistics') }}
+				</h3>
+				<div class="sidebarSection__body">
+					<CnStatsBlock
+						:title="t('openconnector', 'Total call logs')"
+						:count="totalLogs"
+						:count-label="t('openconnector', 'calls')"
+						:icon="TimelineQuestionOutline" />
+					<CnStatsBlock
+						:title="t('openconnector', 'Successful calls (2xx)')"
+						:count="successCount"
+						:count-label="t('openconnector', 'calls')"
+						:icon="CheckCircle"
+						variant="success" />
+					<CnStatsBlock
+						:title="t('openconnector', 'Failed calls (4xx, 5xx)')"
+						:count="errorCount"
+						:count-label="t('openconnector', 'calls')"
+						:icon="AlertCircle"
+						variant="error" />
+					<CnStatsBlock
+						:title="t('openconnector', 'Average response time')"
+						:count="averageResponseTime"
+						:count-label="t('openconnector', 'seconds')"
+						:icon="ChartLine" />
 				</div>
 			</div>
 
@@ -194,6 +169,7 @@ import {
 	NcTextField,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
@@ -202,6 +178,7 @@ import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
 import { translate as t } from '@nextcloud/l10n'
 import DateRangeInput from '../../components/DateRangeInput.vue'
 
@@ -216,6 +193,7 @@ export default {
 		NcListItem,
 		NcTextField,
 		NcCheckboxRadioSwitch,
+		CnStatsBlock,
 		FilterOutline,
 		ChartLine,
 		DatabaseArrowLeftOutline,
@@ -269,27 +247,27 @@ export default {
 	},
 	computed: {
 		sourceOptions() {
-			return sourceStore.sourceList?.map(source => ({
+			return sourceStore.list?.map(source => ({
 				value: source,
 				label: source.name,
 				title: source.name,
 			})) || []
 		},
 		selectedSourceValue() {
-			if (!sourceStore.sourceItem) return null
-			return sourceStore.sourceList?.find(s => s.id === sourceStore.sourceItem.id) || null
+			if (!sourceStore.item) return null
+			return sourceStore.list?.find(s => s.id === sourceStore.item.id) || null
 		},
 	},
 	watch: {
-		'sourceStore.sourceItem'() {
+		'sourceStore.item'() {
 			this.selectedSource = this.selectedSourceValue
 			this.applyFilters()
 		},
 	},
 	async mounted() {
 		// Load required data
-		if (!sourceStore.sourceList?.length) {
-			await sourceStore.refreshSourceList()
+		if (!sourceStore.list?.length) {
+			await sourceStore.refreshList()
 		}
 
 		// Load initial log data
@@ -339,7 +317,7 @@ export default {
 			this.showSlowRequests = false
 
 			// Clear global stores
-			sourceStore.setSourceItem(null)
+			sourceStore.setItem(null)
 
 			// Clear store filters
 			logStore.setLogFilters({})
@@ -487,7 +465,7 @@ export default {
 			// Source
 			if (q.source_id) {
 				const id = Number(q.source_id)
-				const found = sourceStore.sourceList?.find(s => s.id === id)
+				const found = sourceStore.list?.find(s => s.id === id)
 				this.selectedSource = found ? { value: found, label: found.name, title: found.name } : null
 			}
 			// Dates
@@ -519,7 +497,9 @@ export default {
 				this.successCount = logs.filter(log => log.statusCode >= 200 && log.statusCode < 300).length
 				this.errorCount = logs.filter(log => log.statusCode >= 400).length
 				const responseTimes = logs.filter(log => log.response?.responseTime).map(log => log.response.responseTime / 1000)
-				this.averageResponseTime = responseTimes.length > 0 ? (responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length).toFixed(3) : 0
+				this.averageResponseTime = responseTimes.length > 0
+					? Math.round((responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length) * 1000) / 1000
+					: 0
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 			}
@@ -557,7 +537,7 @@ export default {
 				logs.forEach(log => {
 					const sourceId = log.sourceId
 					if (!sourceMap[sourceId]) {
-						const source = sourceStore.sourceList?.find(s => s.id === sourceId)
+						const source = sourceStore.list?.find(s => s.id === sourceId)
 						sourceMap[sourceId] = {
 							name: source?.name || `Source ${sourceId}`,
 							count: 0,
@@ -576,7 +556,7 @@ export default {
 		 */
 		handleSourceChange(sourceOption) {
 			const source = sourceOption && sourceOption.value ? sourceOption.value : null
-			sourceStore.setSourceItem(source)
+			sourceStore.setItem(source)
 			this.applyFilters()
 		},
 	},
@@ -584,19 +564,16 @@ export default {
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection {
+.sidebarSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child {
+.sidebarSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3 {
+.sidebarSection__title {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -604,58 +581,26 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
+.sidebarSection__body {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 12px;
 	padding: 0 16px;
-	margin-bottom: 16px;
 }
 
-.filterGroup label {
+.sidebarSection__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.sidebarSection__fieldLabel {
 	font-size: 0.9em;
 	color: var(--color-text-maxcontrast);
 }
 
-.actionGroup {
-	padding: 12px;
-	margin-bottom: 12px;
-}
-
-.filter-hint {
+.sidebarSection__hint {
 	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
-
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
-
-.statCard.success {
-	border-left: 4px solid var(--color-success);
-}
-
-.statCard.error {
-	border-left: 4px solid var(--color-error);
-}
-
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .statusDistribution,
@@ -669,10 +614,5 @@ export default {
 	font-size: 1rem;
 	font-weight: 500;
 	color: var(--color-main-text);
-}
-
-/* Add some spacing between select inputs */
-:deep(.v-select) {
-	margin-bottom: 8px;
 }
 </style>

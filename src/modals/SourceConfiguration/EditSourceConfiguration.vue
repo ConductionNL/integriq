@@ -110,7 +110,7 @@ export default {
 			if (!sourceStore.sourceConfigurationKey) {
 				return
 			}
-			const configurationItem = Object.entries(sourceStore.sourceItem.configuration).find(([key]) => key === sourceStore.sourceConfigurationKey)
+			const configurationItem = Object.entries(sourceStore.item.configuration).find(([key]) => key === sourceStore.sourceConfigurationKey)
 			if (configurationItem) {
 				this.configurationItem = {
 					key: configurationItem[0] || '',
@@ -121,8 +121,8 @@ export default {
 			}
 		},
 		checkIfKeyIsUnique(key) {
-			if (!sourceStore.sourceItem.configuration) return false
-			const keys = Object.keys(sourceStore.sourceItem.configuration)
+			if (!sourceStore.item.configuration) return false
+			const keys = Object.keys(sourceStore.item.configuration)
 			if (this.oldKey === key) return false
 			if (keys.includes(key)) return true
 			return false
@@ -145,9 +145,9 @@ export default {
 			this.loading = true
 
 			const newSourceItem = {
-				...sourceStore.sourceItem,
+				...sourceStore.item,
 				configuration: {
-					...sourceStore.sourceItem.configuration,
+					...sourceStore.item.configuration,
 					[this.configurationItem.key]: this.configurationItem.value,
 				},
 			}
@@ -159,7 +159,7 @@ export default {
 			try {
 				const sourceItem = new Source(newSourceItem)
 
-				await sourceStore.saveSource(sourceItem)
+				await sourceStore.save(sourceItem)
 				// Close modal or show success message
 				this.success = true
 				this.loading = false
