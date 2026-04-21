@@ -78,7 +78,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								{{ t('openconnector', 'Add rule') }}
+								{{ t('openconnector', 'Add Rule') }}
 							</NcActionButton>
 							<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 								<template #icon>
@@ -119,7 +119,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 									<td>{{ endpoint.version }}</td>
 								</tr>
 								<tr v-if="endpoint.targetType">
-									<td>{{ t('openconnector', 'Target type') }}</td>
+									<td>{{ t('openconnector', 'Target Type') }}</td>
 									<td>{{ endpoint.targetType }}</td>
 								</tr>
 								<tr v-if="endpoint.targetId">
@@ -215,7 +215,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						{{ t('openconnector', 'Add rule') }}
+						{{ t('openconnector', 'Add Rule') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 						<template #icon>

@@ -74,7 +74,7 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 			<!-- Tabs -->
 			<div class="tabContainer">
 				<BTabs content-class="mt-3" justified>
-					<BTab title="Rules">
+					<BTab :title="t('openconnector', 'Rules')">
 						<div v-if="endpointStore.endpointItem?.rules?.length" class="rules-list">
 							<NcListItem v-for="ruleId in endpointStore.endpointItem.rules"
 								:key="ruleId"
@@ -87,20 +87,20 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 								</template>
 								<template #subname>
 									<span v-if="rulesLoaded">{{ getRuleType(ruleId) }}</span>
-									<span v-else>Loading...</span>
+									<span v-else>{{ t('openconnector', 'Loading...') }}</span>
 								</template>
 								<template #actions>
 									<NcActionButton close-after-click @click.stop="viewRule(ruleId)">
 										<template #icon>
 											<EyeOutline :size="20" />
 										</template>
-										View
+										{{ t('openconnector', 'View') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click.stop="removeRule(ruleId)">
 										<template #icon>
 											<LinkOff :size="20" />
 										</template>
-										Remove
+										{{ t('openconnector', 'Remove') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
@@ -129,19 +129,19 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
-					Edit
+					{{ t('openconnector', 'Edit') }}
 				</NcButton>
 				<NcButton @click="addRule()">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
-					Add Rule
+					{{ t('openconnector', 'Add Rule') }}
 				</NcButton>
 				<NcButton type="error" @click="navigationStore.setDialog('deleteEndpoint')">
 					<template #icon>
 						<TrashCanOutline :size="20" />
 					</template>
-					Delete
+					{{ t('openconnector', 'Delete') }}
 				</NcButton>
 			</div>
 		</div>
@@ -188,9 +188,6 @@ export default {
 		this.loadRules()
 	},
 	methods: {
-		/**
-		 * Load rules from the store
-		 */
 		async loadRules() {
 			try {
 				await ruleStore.refreshRuleList()
@@ -200,42 +197,27 @@ export default {
 				console.error('Failed to load rules:', error)
 			}
 		},
-		/**
-		 * Get rule name by ID
-		 * @param {string|number} ruleId - The rule ID
-		 * @return {string} Rule name
-		 */
 		getRuleName(ruleId) {
 			const rule = this.rulesList.find(rule => String(rule.id) === String(ruleId))
-			return rule ? rule.name : `Rule ${ruleId}`
+			return rule ? rule.name : t('openconnector', 'Rule {id}', { id: ruleId })
 		},
-		/**
-		 * Get rule type by ID
-		 * @param {string|number} ruleId - The rule ID
-		 * @return {string} Rule type
-		 */
 		getRuleType(ruleId) {
 			const rule = this.rulesList.find(rule => String(rule.id) === String(ruleId))
-			if (!rule) return 'Unknown type'
+			if (!rule) return t('openconnector', 'Unknown type')
 
-			// Convert type to more readable format
 			switch (rule.type) {
 			case 'error':
-				return 'Error Handler'
+				return t('openconnector', 'Error Handler')
 			case 'mapping':
-				return 'Data Mapping'
+				return t('openconnector', 'Data Mapping')
 			case 'synchronization':
-				return 'Synchronization'
+				return t('openconnector', 'Synchronization')
 			case 'javascript':
-				return 'JavaScript'
+				return t('openconnector', 'JavaScript')
 			default:
-				return rule.type || 'Unknown type'
+				return rule.type || t('openconnector', 'Unknown type')
 			}
 		},
-		/**
-		 * View rule details
-		 * @param {string|number} ruleId - The rule ID
-		 */
 		viewRule(ruleId) {
 			const rule = this.rulesList.find(rule => String(rule.id) === String(ruleId))
 			if (rule) {
@@ -243,15 +225,10 @@ export default {
 				this.$router.push(`/rules/${ruleId}`)
 			}
 		},
-		/**
-		 * Remove rule from endpoint
-		 * @param {string|number} ruleId - The rule ID to remove
-		 */
 		async removeRule(ruleId) {
 			try {
 				const updatedEndpoint = _.cloneDeep(endpointStore.endpointItem)
 
-				// Remove the rule ID from the rules array
 				updatedEndpoint.rules = updatedEndpoint.rules.filter(id => String(id) !== String(ruleId))
 
 				const newEndpointItem = new Endpoint({
@@ -262,18 +239,13 @@ export default {
 					rules: updatedEndpoint.rules.map(id => String(id)),
 				})
 
-				// Save the updated endpoint
 				await endpointStore.saveEndpoint(newEndpointItem)
 
-				// Refresh the rules list
 				await this.loadRules()
 			} catch (error) {
 				console.error('Failed to remove rule:', error)
 			}
 		},
-		/**
-		 * Add rule to endpoint
-		 */
 		addRule() {
 			navigationStore.setModal('addEndpointRule')
 		},

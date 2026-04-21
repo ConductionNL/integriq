@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { translate as t } from '@nextcloud/l10n'
 import { Endpoint, TEndpoint } from '../../entities/index.js'
 import { TLog } from '../../entities/log/log.types.js'
 import { MissingParameterError } from '../../services/errors/index.js'
@@ -147,7 +148,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			setEndpointLogs(data)
 			return { response, data }
 		} catch (err) {
-			error.value = err.message || 'Failed to load endpoint logs'
+			error.value = err.message || t('openconnector', 'Failed to load endpoint logs')
 			throw err
 		} finally {
 			loading.value = false

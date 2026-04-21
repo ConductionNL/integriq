@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 import { Endpoint } from '../../entities/index.js'
 </script>
@@ -8,11 +9,11 @@ import { Endpoint } from '../../entities/index.js'
 		label-id="addEndpointRule"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>Add Rule to Endpoint</h2>
+			<h2>{{ t('openconnector', 'Add Rule to Endpoint') }}</h2>
 
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
-					<p>Rule successfully added to endpoint</p>
+					<p>{{ t('openconnector', 'Rule successfully added to endpoint') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error }}</p>
@@ -24,7 +25,7 @@ import { Endpoint } from '../../entities/index.js'
 					v-bind="ruleOptions"
 					v-model="ruleOptions.value"
 					:loading="loading"
-					input-label="Select Rule"
+					:input-label="t('openconnector', 'Select rule')"
 					:multiple="false"
 					:clearable="false" />
 			</form>
@@ -35,7 +36,7 @@ import { Endpoint } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton v-if="!success"
 					:disabled="loading || !ruleOptions.value"
@@ -45,7 +46,7 @@ import { Endpoint } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -95,7 +96,6 @@ export default {
 			try {
 				await ruleStore.refreshRuleList()
 
-				// Filter out rules that are already added to the endpoint
 				const availableRules = ruleStore.ruleList.filter(rule =>
 					!endpointStore.endpointItem.rules?.includes(rule.id),
 				)
@@ -106,7 +106,7 @@ export default {
 				}))
 			} catch (error) {
 				console.error('Failed to load rules:', error)
-				this.error = 'Failed to load available rules'
+				this.error = t('openconnector', 'Failed to load available rules')
 			} finally {
 				this.loading = false
 			}
@@ -118,29 +118,25 @@ export default {
 			this.loading = true
 
 			try {
-				// Create a copy of the current endpoint
 				const updatedEndpoint = endpointStore.endpointItem.cloneRaw()
 
-				// Initialize rules array if it doesn't exist
 				if (!updatedEndpoint.rules) {
 					updatedEndpoint.rules = []
 				} else if (!Array.isArray(updatedEndpoint.rules)) {
 					updatedEndpoint.rules = []
 				}
 
-				// Convert existing rules to strings and add the new rule ID as string
 				const updatedRules = [
 					...updatedEndpoint.rules.map(id => String(id)),
 					String(this.ruleOptions.value.value),
 				]
 
-				// Prepare endpoint data for saving
 				const endpointToSave = new Endpoint({
 					...updatedEndpoint,
 					endpointArray: Array.isArray(updatedEndpoint.endpointArray)
 						? updatedEndpoint.endpointArray
 						: updatedEndpoint.endpointArray.split(/ *, */g),
-					rules: updatedRules, // Use the array of string IDs
+					rules: updatedRules,
 				})
 
 				const { response } = await endpointStore.saveEndpoint(endpointToSave)
@@ -151,12 +147,12 @@ export default {
 					this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)
 				} else {
 					this.success = false
-					this.error = 'Failed to add rule to endpoint'
+					this.error = t('openconnector', 'Failed to add rule to endpoint')
 				}
 			} catch (error) {
 				console.error('Error adding rule:', error)
 				this.success = false
-				this.error = error.message || 'An error occurred while adding the rule'
+				this.error = error.message || t('openconnector', 'An error occurred while adding the rule')
 			} finally {
 				this.loading = false
 			}

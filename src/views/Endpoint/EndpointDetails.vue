@@ -75,7 +75,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						{{ t('openconnector', 'Add rule') }}
+						{{ t('openconnector', 'Add Rule') }}
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -113,11 +113,11 @@ import { translate as t } from '@nextcloud/l10n'
 						<td>{{ endpoint?.endpoint || '-' }}</td>
 					</tr>
 					<tr v-if="endpoint?.endpointArray?.length">
-						<td>{{ t('openconnector', 'Endpoint array') }}</td>
+						<td>{{ t('openconnector', 'Endpoint Array') }}</td>
 						<td>{{ endpoint.endpointArray.join(', ') }}</td>
 					</tr>
 					<tr v-if="endpoint?.endpointRegex">
-						<td>{{ t('openconnector', 'Endpoint regex') }}</td>
+						<td>{{ t('openconnector', 'Endpoint Regex') }}</td>
 						<td>{{ endpoint.endpointRegex }}</td>
 					</tr>
 					<tr>
@@ -125,7 +125,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<td>{{ endpoint?.method || '-' }}</td>
 					</tr>
 					<tr>
-						<td>{{ t('openconnector', 'Target type') }}</td>
+						<td>{{ t('openconnector', 'Target Type') }}</td>
 						<td>{{ endpoint?.targetType || '-' }}</td>
 					</tr>
 					<tr>
@@ -156,12 +156,12 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="tabButtonsContainer">
 							<NcButton type="primary"
 								class="fullWidthButton"
-								:aria-label="t('openconnector', 'Add rule')"
+								:aria-label="t('openconnector', 'Add Rule')"
 								@click="navigationStore.setModal('addEndpointRule')">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								{{ t('openconnector', 'Add rule') }}
+								{{ t('openconnector', 'Add Rule') }}
 							</NcButton>
 						</div>
 						<div v-if="endpoint?.rules?.length">
@@ -328,7 +328,7 @@ export default {
 		},
 		getRuleName(ruleId) {
 			const rule = this.rulesList.find(rule => String(rule.id) === String(ruleId))
-			return rule ? rule.name : `Rule ${ruleId}`
+			return rule ? rule.name : t('openconnector', 'Rule {id}', { id: ruleId })
 		},
 		getRuleType(ruleId) {
 			const rule = this.rulesList.find(rule => String(rule.id) === String(ruleId))
