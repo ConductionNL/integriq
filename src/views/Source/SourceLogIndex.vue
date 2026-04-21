@@ -13,7 +13,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 			:objects="filteredLogs"
 			:columns="tableColumns"
 			:pagination="paginationData"
-			:loading="logStore.loading"
+			:loading="sourceStore.logsLoading"
 			view-mode="table"
 			:show-view-toggle="false"
 			:show-add="false"
@@ -192,10 +192,10 @@ export default {
 	},
 	computed: {
 		filteredLogs() {
-			return (sourceStore.sourceLogs && Array.isArray(sourceStore.sourceLogs.results)) ? sourceStore.sourceLogs.results : []
+			return (sourceStore.logs && Array.isArray(sourceStore.logs.results)) ? sourceStore.logs.results : []
 		},
 		totalLogs() {
-			return (sourceStore.sourceLogs && sourceStore.sourceLogs.total) ? sourceStore.sourceLogs.total : 0
+			return (sourceStore.logs && sourceStore.logs.total) ? sourceStore.logs.total : 0
 		},
 		tableColumns() {
 			return [
@@ -222,7 +222,7 @@ export default {
 	},
 	mounted() {
 		sourceStore.refreshList()
-		sourceStore.refreshSourceLogs()
+		sourceStore.refreshLogs()
 		this.$root.$on('source-log-filters-changed', this.handleFiltersChanged)
 	},
 	beforeDestroy() {
@@ -231,16 +231,16 @@ export default {
 	methods: {
 		handleFiltersChanged(filters) {
 			logStore.setLogFilters(filters)
-			sourceStore.refreshSourceLogs(filters)
+			sourceStore.refreshLogs(filters)
 		},
 		onPageChanged(page) {
 			this.pagination.page = page
-			sourceStore.refreshSourceLogs({ ...logStore.logFilters, page, limit: this.pagination.limit })
+			sourceStore.refreshLogs({ ...logStore.logFilters, page, limit: this.pagination.limit })
 		},
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
-			sourceStore.refreshSourceLogs({ ...logStore.logFilters, page: 1, limit: pageSize })
+			sourceStore.refreshLogs({ ...logStore.logFilters, page: 1, limit: pageSize })
 		},
 		onSelect(ids) {
 			this.selectedLogs = ids
@@ -315,7 +315,7 @@ export default {
 			}
 		},
 		refreshLogs() {
-			sourceStore.refreshSourceLogs(logStore.logFilters)
+			sourceStore.refreshLogs(logStore.logFilters)
 			this.selectedLogs = []
 		},
 		formatBytes(bytes) {

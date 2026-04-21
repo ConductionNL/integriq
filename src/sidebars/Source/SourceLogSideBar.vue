@@ -297,7 +297,7 @@ export default {
 		 */
 		async loadLogData() {
 			try {
-				await sourceStore.refreshSourceLogs()
+				await sourceStore.refreshLogs()
 				this.updateFilteredCount()
 			} catch (error) {
 				console.error('Error loading log data:', error)
@@ -323,7 +323,7 @@ export default {
 			logStore.setLogFilters({})
 
 			// Refresh without applying filters
-			sourceStore.refreshSourceLogs()
+			sourceStore.refreshLogs()
 
 			// Write SPOT to URL
 			this.updateRouteQueryFromState()
@@ -395,7 +395,7 @@ export default {
 
 			// Set filters in store and refresh data
 			logStore.setLogFilters(filters)
-			sourceStore.refreshSourceLogs(filters)
+			sourceStore.refreshLogs(filters)
 
 			// Also emit for legacy compatibility
 			this.$root.$emit('source-log-filters-changed', filters)
@@ -483,7 +483,7 @@ export default {
 		 * Update filtered count from store
 		 */
 		updateFilteredCount() {
-			const logs = (sourceStore.sourceLogs && Array.isArray(sourceStore.sourceLogs.results)) ? sourceStore.sourceLogs.results : []
+			const logs = (sourceStore.logs && Array.isArray(sourceStore.logs.results)) ? sourceStore.logs.results : []
 			this.filteredCount = logs.length
 			this.totalLogs = logs.length
 		},
@@ -492,7 +492,7 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				const logs = (sourceStore.sourceLogs && Array.isArray(sourceStore.sourceLogs.results)) ? sourceStore.sourceLogs.results : []
+				const logs = (sourceStore.logs && Array.isArray(sourceStore.logs.results)) ? sourceStore.logs.results : []
 				this.totalLogs = logs.length
 				this.successCount = logs.filter(log => log.statusCode >= 200 && log.statusCode < 300).length
 				this.errorCount = logs.filter(log => log.statusCode >= 400).length
@@ -509,7 +509,7 @@ export default {
 		 */
 		async loadStatusDistribution() {
 			try {
-				const logs = (sourceStore.sourceLogs && Array.isArray(sourceStore.sourceLogs.results)) ? sourceStore.sourceLogs.results : []
+				const logs = (sourceStore.logs && Array.isArray(sourceStore.logs.results)) ? sourceStore.logs.results : []
 				const statusMap = {}
 				logs.forEach(log => {
 					const code = log.statusCode
@@ -532,7 +532,7 @@ export default {
 		 */
 		async loadTopSources() {
 			try {
-				const logs = (sourceStore.sourceLogs && Array.isArray(sourceStore.sourceLogs.results)) ? sourceStore.sourceLogs.results : []
+				const logs = (sourceStore.logs && Array.isArray(sourceStore.logs.results)) ? sourceStore.logs.results : []
 				const sourceMap = {}
 				logs.forEach(log => {
 					const sourceId = log.sourceId

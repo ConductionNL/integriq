@@ -344,7 +344,7 @@ export default {
 			}
 		},
 		refreshSourceLogs() {
-			sourceStore.refreshSourceLogs()
+			sourceStore.refreshLogs()
 		},
 		checkIfStatusIsOk(statusCode) {
 			if (statusCode > 199 && statusCode < 300) {

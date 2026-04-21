@@ -152,7 +152,7 @@ export default {
 			return endpointStore
 		},
 		filteredLogs() {
-			return (endpointStore.endpointLogs && Array.isArray(endpointStore.endpointLogs)) ? endpointStore.endpointLogs : []
+			return (endpointStore.logs && Array.isArray(endpointStore.logs)) ? endpointStore.logs : []
 		},
 		paginatedLogs() {
 			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
@@ -181,7 +181,7 @@ export default {
 		},
 	},
 	mounted() {
-		endpointStore.refreshEndpointLogs()
+		endpointStore.refreshLogs()
 	},
 	methods: {
 		onPageChanged(page) {
@@ -228,7 +228,7 @@ export default {
 			// TODO: Implement export
 		},
 		refreshLogs() {
-			endpointStore.refreshEndpointLogs()
+			endpointStore.refreshLogs()
 			this.selectedLogs = []
 		},
 	},
