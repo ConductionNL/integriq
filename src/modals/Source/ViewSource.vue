@@ -25,15 +25,15 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 					<tbody>
 						<tr>
 							<td>{{ t('openconnector', 'Status') }}</td>
-							<td>{{ sourceStore.item?.status || 'Unknown' }}</td>
+							<td>{{ sourceStore.item?.status || t('openconnector', 'Unknown') }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Enabled') }}</td>
-							<td>{{ sourceStore.item?.isEnabled ? 'Enabled' : 'Disabled' }}</td>
+							<td>{{ sourceStore.item?.isEnabled ? t('openconnector', 'Enabled') : t('openconnector', 'Disabled') }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Type') }}</td>
-							<td>{{ sourceStore.item?.type || 'Unknown' }}</td>
+							<td>{{ sourceStore.item?.type || t('openconnector', 'Unknown') }}</td>
 						</tr>
 						<tr v-if="sourceStore.item?.location">
 							<td>{{ t('openconnector', 'Location') }}</td>
@@ -69,7 +69,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 			<!-- Tabs -->
 			<div class="tabContainer">
 				<BTabs content-class="mt-3" justified>
-					<BTab title="Configurations">
+					<BTab :title="t('openconnector', 'Configurations')">
 						<div v-if="Object.keys(configuration)?.length" class="configurations-list">
 							<NcListItem v-for="(value, key, i) in configuration"
 								:key="`${key}${i}`"
@@ -89,13 +89,13 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										{{ t('openconnector', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="deleteSourceConfiguration(key)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
-										Delete
+										{{ t('openconnector', 'Delete') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
@@ -115,7 +115,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 							</NcEmptyContent>
 						</div>
 					</BTab>
-					<BTab title="Authentication">
+					<BTab :title="t('openconnector', 'Authentication')">
 						<div v-if="Object.keys(configurationAuthentication)?.length" class="authentication-list">
 							<NcListItem v-for="(value, key, i) in configurationAuthentication"
 								:key="`${key}${i}`"
@@ -134,13 +134,13 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										{{ t('openconnector', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="sourceStore.setSourceConfigurationKey(key); navigationStore.setModal('deleteSourceConfigurationAuthentication')">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
-										Delete
+										{{ t('openconnector', 'Delete') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
@@ -160,7 +160,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 							</NcEmptyContent>
 						</div>
 					</BTab>
-					<BTab title="Synchronizations">
+					<BTab :title="t('openconnector', 'Synchronizations')">
 						<div v-if="linkedSynchronizations?.length" class="synchronizations-list">
 							<NcListItem v-for="sync in linkedSynchronizations"
 								:key="sync.id"
@@ -178,19 +178,19 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 										<template #icon>
 											<EyeOutline :size="20" />
 										</template>
-										View
+										{{ t('openconnector', 'View') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="synchronizationStore.setSynchronizationItem(sync); navigationStore.setModal('editSynchronization')">
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										{{ t('openconnector', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="synchronizationStore.setSynchronizationItem(sync); navigationStore.setDialog('deleteSynchronization')">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
-										Delete
+										{{ t('openconnector', 'Delete') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
@@ -214,25 +214,25 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
-					Edit
+					{{ t('openconnector', 'Edit') }}
 				</NcButton>
 				<NcButton @click="navigationStore.setModal('testSource')">
 					<template #icon>
 						<Sync :size="20" />
 					</template>
-					Test
+					{{ t('openconnector', 'Test') }}
 				</NcButton>
 				<NcButton @click="viewSourceLogs()">
 					<template #icon>
 						<TimelineQuestionOutline :size="20" />
 					</template>
-					Logs
+					{{ t('openconnector', 'Logs') }}
 				</NcButton>
 				<NcButton type="error" @click="navigationStore.setDialog('deleteSource')">
 					<template #icon>
 						<TrashCanOutline :size="20" />
 					</template>
-					Delete
+					{{ t('openconnector', 'Delete') }}
 				</NcButton>
 			</div>
 		</div>
@@ -284,15 +284,15 @@ export default {
 			if (!source) return {}
 
 			const authData = {}
-			if (source.auth) authData['Auth Type'] = source.auth
-			if (source.username) authData.Username = source.username
-			if (source.apikey) authData['API Key'] = source.apikey
-			if (source.jwt) authData.JWT = source.jwt
-			if (source.secret) authData.Secret = source.secret
-			if (source.authorizationHeader) authData['Authorization Header'] = source.authorizationHeader
+			if (source.auth) authData[t('openconnector', 'Auth Type')] = source.auth
+			if (source.username) authData[t('openconnector', 'Username')] = source.username
+			if (source.apikey) authData[t('openconnector', 'API Key')] = source.apikey
+			if (source.jwt) authData[t('openconnector', 'JWT')] = source.jwt
+			if (source.secret) authData[t('openconnector', 'Secret')] = source.secret
+			if (source.authorizationHeader) authData[t('openconnector', 'Authorization Header')] = source.authorizationHeader
 			if (source.authenticationConfig && source.authenticationConfig.length > 0) {
 				source.authenticationConfig.forEach((config, index) => {
-					authData[`Auth Config ${index + 1}`] = typeof config === 'object' ? JSON.stringify(config) : config
+					authData[t('openconnector', 'Auth config {index}', { index: index + 1 })] = typeof config === 'object' ? JSON.stringify(config) : config
 				})
 			}
 
