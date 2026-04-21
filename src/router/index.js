@@ -6,6 +6,7 @@ import Dashboard from '../views/dashboard/DashboardIndex.vue'
 import SourcesIndex from '../views/Source/SourcesIndex.vue'
 import SourceLogIndex from '../views/Source/SourceLogIndex.vue'
 import EndpointsIndex from '../views/Endpoint/EndpointsIndex.vue'
+import EndpointDetails from '../views/Endpoint/EndpointDetails.vue'
 import EndpointLogIndex from '../views/Endpoint/EndpointLogIndex.vue'
 import ConsumersIndex from '../views/Consumer/ConsumersIndex.vue'
 import WebhooksIndex from '../views/Webhook/WebhooksIndex.vue'
@@ -39,7 +40,7 @@ const router = new Router({
 		{ path: '/sources/logs', components: { default: SourceLogIndex, sidebar: SourceLogSideBar } },
 		{ path: '/endpoints', components: { default: EndpointsIndex } },
 		{ path: '/endpoints/logs', components: { default: EndpointLogIndex, sidebar: EndpointLogSideBar } },
-		{ path: '/endpoints/:id', components: { default: EndpointsIndex } },
+		{ path: '/endpoints/:id', components: { default: EndpointDetails } },
 		{ path: '/consumers', components: { default: ConsumersIndex } },
 		{ path: '/consumers/:id', components: { default: ConsumersIndex } },
 		{ path: '/webhooks', components: { default: WebhooksIndex } },
