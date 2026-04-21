@@ -97,7 +97,7 @@ export default {
 				await ruleStore.refreshRuleList()
 
 				const availableRules = ruleStore.ruleList.filter(rule =>
-					!endpointStore.endpointItem.rules?.includes(rule.id),
+					!endpointStore.item.rules?.includes(rule.id),
 				)
 
 				this.ruleOptions.options = availableRules.map(rule => ({
@@ -118,7 +118,7 @@ export default {
 			this.loading = true
 
 			try {
-				const updatedEndpoint = endpointStore.endpointItem.cloneRaw()
+				const updatedEndpoint = endpointStore.item.cloneRaw()
 
 				if (!updatedEndpoint.rules) {
 					updatedEndpoint.rules = []
@@ -139,7 +139,7 @@ export default {
 					rules: updatedRules,
 				})
 
-				const { response } = await endpointStore.saveEndpoint(endpointToSave)
+				const { response } = await endpointStore.save(endpointToSave)
 
 				if (response.ok) {
 					this.success = true

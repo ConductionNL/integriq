@@ -29,7 +29,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			row-key="id"
 			:empty-text="emptyContentName"
 			@add="addEndpoint"
-			@refresh="endpointStore.refreshEndpointList()"
+			@refresh="endpointStore.refreshList()"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
 			@view-mode-change="endpointStore.setViewMode($event)"
@@ -56,13 +56,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('viewEndpoint')">
+							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('viewEndpoint')">
 								<template #icon>
 									<Eye :size="20" />
 								</template>
 								{{ t('openconnector', 'View') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('editEndpoint')">
+							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('editEndpoint')">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
@@ -74,13 +74,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openconnector', 'Export endpoint') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('addEndpointRule')">
+							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('addEndpointRule')">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
 								{{ t('openconnector', 'Add Rule') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
+							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -193,13 +193,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('viewEndpoint')">
+					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('viewEndpoint')">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
 						{{ t('openconnector', 'View') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('editEndpoint')">
+					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('editEndpoint')">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
@@ -211,13 +211,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openconnector', 'Export endpoint') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('addEndpointRule')">
+					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('addEndpointRule')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
 						{{ t('openconnector', 'Add Rule') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
+					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -276,7 +276,7 @@ export default {
 			return navigationStore
 		},
 		filteredEndpoints() {
-			return endpointStore.endpointList || []
+			return endpointStore.list || []
 		},
 		tableColumns() {
 			return [
@@ -298,16 +298,16 @@ export default {
 		},
 		emptyContentName() {
 			if (endpointStore.error) return endpointStore.error
-			if (!endpointStore.endpointList?.length) return t('openconnector', 'No endpoints found')
+			if (!endpointStore.list?.length) return t('openconnector', 'No endpoints found')
 			return t('openconnector', 'Loading endpoints...')
 		},
 	},
 	mounted() {
-		endpointStore.refreshEndpointList()
+		endpointStore.refreshList()
 	},
 	methods: {
 		addEndpoint() {
-			endpointStore.setEndpointItem(null)
+			endpointStore.setItem(null)
 			navigationStore.setModal('editEndpoint')
 		},
 		openEndpoint(endpoint) {

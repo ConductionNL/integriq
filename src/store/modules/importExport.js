@@ -76,9 +76,9 @@ export const useImportExportStore = defineStore(
 								)
 							case 'endpoint':
 								return (
-									endpointStore.refreshEndpointList().then(() => {
-										const endpoint = endpointStore.endpointList.find(endpoint => endpoint.id === response.data.object.id)
-										endpointStore.setEndpointItem(endpoint)
+									endpointStore.refreshList().then(() => {
+										const endpoint = endpointStore.list.find(endpoint => endpoint.id === response.data.object.id)
+										endpointStore.setItem(endpoint)
 									})
 								)
 							case 'job':

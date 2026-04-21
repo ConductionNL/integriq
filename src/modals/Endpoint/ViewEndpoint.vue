@@ -6,11 +6,11 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewEndpoint'"
 		ref="modalRef"
-		:name="endpointStore.endpointItem?.name || t('openconnector', 'Endpoint Details')"
+		:name="endpointStore.item?.name || t('openconnector', 'Endpoint Details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
-			<p v-if="endpointStore.endpointItem?.description" class="endpoint-description">
-				{{ endpointStore.endpointItem.description }}
+			<p v-if="endpointStore.item?.description" class="endpoint-description">
+				{{ endpointStore.item.description }}
 			</p>
 
 			<!-- Endpoint Properties -->
@@ -25,47 +25,47 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 					<tbody>
 						<tr>
 							<td>{{ t('openconnector', 'ID') }}</td>
-							<td>{{ endpointStore.endpointItem?.id || '-' }}</td>
+							<td>{{ endpointStore.item?.id || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'UUID') }}</td>
-							<td>{{ endpointStore.endpointItem?.uuid || '-' }}</td>
+							<td>{{ endpointStore.item?.uuid || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Version') }}</td>
-							<td>{{ endpointStore.endpointItem?.version || '-' }}</td>
+							<td>{{ endpointStore.item?.version || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Endpoint') }}</td>
-							<td>{{ endpointStore.endpointItem?.endpoint || '-' }}</td>
+							<td>{{ endpointStore.item?.endpoint || '-' }}</td>
 						</tr>
-						<tr v-if="endpointStore.endpointItem?.endpointArray?.length">
+						<tr v-if="endpointStore.item?.endpointArray?.length">
 							<td>{{ t('openconnector', 'Endpoint Array') }}</td>
-							<td>{{ endpointStore.endpointItem.endpointArray.join(', ') || '-' }}</td>
+							<td>{{ endpointStore.item.endpointArray.join(', ') || '-' }}</td>
 						</tr>
-						<tr v-if="endpointStore.endpointItem?.endpointRegex">
+						<tr v-if="endpointStore.item?.endpointRegex">
 							<td>{{ t('openconnector', 'Endpoint Regex') }}</td>
-							<td>{{ endpointStore.endpointItem.endpointRegex }}</td>
+							<td>{{ endpointStore.item.endpointRegex }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Method') }}</td>
-							<td>{{ endpointStore.endpointItem?.method || '-' }}</td>
+							<td>{{ endpointStore.item?.method || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Target Type') }}</td>
-							<td>{{ endpointStore.endpointItem?.targetType || '-' }}</td>
+							<td>{{ endpointStore.item?.targetType || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Target ID') }}</td>
-							<td>{{ endpointStore.endpointItem?.targetId || '-' }}</td>
+							<td>{{ endpointStore.item?.targetId || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Created') }}</td>
-							<td>{{ endpointStore.endpointItem?.created ? new Date(endpointStore.endpointItem.created).toLocaleDateString() : '-' }}</td>
+							<td>{{ endpointStore.item?.created ? new Date(endpointStore.item.created).toLocaleDateString() : '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Updated') }}</td>
-							<td>{{ endpointStore.endpointItem?.updated ? new Date(endpointStore.endpointItem.updated).toLocaleDateString() : '-' }}</td>
+							<td>{{ endpointStore.item?.updated ? new Date(endpointStore.item.updated).toLocaleDateString() : '-' }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -75,8 +75,8 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 			<div class="tabContainer">
 				<BTabs content-class="mt-3" justified>
 					<BTab :title="t('openconnector', 'Rules')">
-						<div v-if="endpointStore.endpointItem?.rules?.length" class="rules-list">
-							<NcListItem v-for="ruleId in endpointStore.endpointItem.rules"
+						<div v-if="endpointStore.item?.rules?.length" class="rules-list">
+							<NcListItem v-for="ruleId in endpointStore.item.rules"
 								:key="ruleId"
 								:name="getRuleName(ruleId)"
 								:bold="false"
@@ -105,7 +105,7 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 								</template>
 							</NcListItem>
 						</div>
-						<div v-if="!endpointStore.endpointItem?.rules?.length" class="tabPanel">
+						<div v-if="!endpointStore.item?.rules?.length" class="tabPanel">
 							<NcEmptyContent
 								:name="t('openconnector', 'No rules')"
 								:description="t('openconnector', 'No rules found for this endpoint')">
@@ -227,7 +227,7 @@ export default {
 		},
 		async removeRule(ruleId) {
 			try {
-				const updatedEndpoint = _.cloneDeep(endpointStore.endpointItem)
+				const updatedEndpoint = _.cloneDeep(endpointStore.item)
 
 				updatedEndpoint.rules = updatedEndpoint.rules.filter(id => String(id) !== String(ruleId))
 
@@ -239,7 +239,7 @@ export default {
 					rules: updatedEndpoint.rules.map(id => String(id)),
 				})
 
-				await endpointStore.saveEndpoint(newEndpointItem)
+				await endpointStore.save(newEndpointItem)
 
 				await this.loadRules()
 			} catch (error) {

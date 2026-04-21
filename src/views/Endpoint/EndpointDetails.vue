@@ -59,7 +59,7 @@ import { translate as t } from '@nextcloud/l10n'
 						</template>
 						{{ t('openconnector', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.exportEndpoint(endpointStore.endpointItem.id)">
+					<NcActionButton close-after-click @click="endpointStore.exportEndpoint(endpointStore.item.id)">
 						<template #icon>
 							<FileExportOutline :size="20" />
 						</template>
@@ -275,7 +275,7 @@ export default {
 				await this.loadByRoute(newId)
 			},
 		},
-		'endpointStore.endpointItem': {
+		'endpointStore.item': {
 			handler(newItem) {
 				if (newItem && String(newItem.id) === String(this.$route.params.id)) {
 					this.endpoint = newItem
@@ -293,16 +293,15 @@ export default {
 			this.loadError = false
 			if (!id) {
 				this.endpoint = null
-				endpointStore.setEndpointItem(null)
+				endpointStore.setItem(null)
 				this.loading = false
 				return
 			}
 
 			this.loading = true
 			try {
-				const { entity, response } = await endpointStore.fetchEndpoint(String(id))
+				const entity = await endpointStore.getOne(String(id))
 				if (this.activeLoadId !== loadId) return
-				if (!response.ok) throw new Error(response.statusText)
 				this.endpoint = entity
 			} catch (e) {
 				if (this.activeLoadId !== loadId) return
@@ -313,7 +312,7 @@ export default {
 			}
 		},
 		backToList() {
-			endpointStore.setEndpointItem(null)
+			endpointStore.setItem(null)
 			this.loadError = false
 			this.$router.push('/endpoints')
 		},
@@ -350,7 +349,7 @@ export default {
 		},
 		async removeRule(ruleId) {
 			try {
-				const updatedEndpoint = _.cloneDeep(endpointStore.endpointItem)
+				const updatedEndpoint = _.cloneDeep(endpointStore.item)
 				updatedEndpoint.rules = updatedEndpoint.rules.filter(id => String(id) !== String(ruleId))
 
 				const newEndpointItem = new Endpoint({
@@ -361,9 +360,9 @@ export default {
 					rules: updatedEndpoint.rules.map(id => String(id)),
 				})
 
-				await endpointStore.saveEndpoint(newEndpointItem)
+				await endpointStore.save(newEndpointItem)
 				await this.loadRules()
-				this.endpoint = endpointStore.getEndpointItem()
+				this.endpoint = endpointStore.item
 			} catch (error) {
 				console.error('Failed to remove rule:', error)
 			}

@@ -215,25 +215,25 @@ export default {
 	},
 	methods: {
 		initializeEndpointItem() {
-			if (endpointStore.endpointItem?.id) {
+			if (endpointStore.item?.id) {
 				this.endpointItem = {
-					...endpointStore.endpointItem,
-					name: endpointStore.endpointItem.name,
-					description: endpointStore.endpointItem.description,
-					endpoint: endpointStore.endpointItem.endpoint,
-					endpointArray: endpointStore.endpointItem.endpointArray.join(', '),
-					endpointRegex: endpointStore.endpointItem.endpointRegex,
-					method: endpointStore.endpointItem.method,
-					targetType: this.targetTypeOptions.options.find(i => i.label === endpointStore.endpointItem.targetType),
-					targetId: endpointStore.endpointItem.targetId,
-					slug: endpointStore.endpointItem.slug,
-					configurations: endpointStore.endpointItem.configurations || [],
+					...endpointStore.item,
+					name: endpointStore.item.name,
+					description: endpointStore.item.description,
+					endpoint: endpointStore.item.endpoint,
+					endpointArray: endpointStore.item.endpointArray.join(', '),
+					endpointRegex: endpointStore.item.endpointRegex,
+					method: endpointStore.item.method,
+					targetType: this.targetTypeOptions.options.find(i => i.label === endpointStore.item.targetType),
+					targetId: endpointStore.item.targetId,
+					slug: endpointStore.item.slug,
+					configurations: endpointStore.item.configurations || [],
 				}
 
 				// If the method of the endpointItem exists on the methodOptions, apply it to the value
 				// this is done for future proofing incase we were to change the method options
-				if (this.methodOptions.options.map(i => i.label).indexOf(endpointStore.endpointItem.method) >= 0) {
-					this.methodOptions.value = { label: endpointStore.endpointItem.method }
+				if (this.methodOptions.options.map(i => i.label).indexOf(endpointStore.item.method) >= 0) {
+					this.methodOptions.value = { label: endpointStore.item.method }
 				}
 
 				// Set the configurations value if there are any
@@ -299,7 +299,7 @@ export default {
 
 			const responseData = (await response.json()).results
 
-			const registerId = endpointStore.endpointItem?.targetId?.split('/')[0]
+			const registerId = endpointStore.item?.targetId?.split('/')[0]
 
 			const selectedRegister = responseData.find(register => _.toString(register.id) === registerId)
 
@@ -399,7 +399,7 @@ export default {
 			}
 		},
 		setSchemaOptions(register) {
-			const schemaId = endpointStore.endpointItem?.targetId.split('/')[1]
+			const schemaId = endpointStore.item?.targetId.split('/')[1]
 
 			const selectedSchema = this.schemas.find(schema => _.toString(schema.id) === schemaId)
 
@@ -435,7 +435,7 @@ export default {
 				configurations: this.configurationOptions.value.map(v => v.id),
 			})
 
-			await endpointStore.saveEndpoint(endpointItem)
+			await endpointStore.save(endpointItem)
 				.then(({ response }) => {
 					this.success = response.ok
 					this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)

@@ -8,30 +8,28 @@ describe('Endpoint Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets endpoint item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useEndpointStore()
 
-		store.setEndpointItem(mockEndpoint()[0])
+		store.setItem(mockEndpoint()[0])
 
-		expect(store.endpointItem).toBeInstanceOf(Endpoint)
-		expect(store.endpointItem).toEqual(mockEndpoint()[0])
+		expect(store.item).toBeInstanceOf(Endpoint)
+		expect(store.item).toEqual(mockEndpoint()[0])
 
-		expect(store.endpointItem.validate().success).toBe(true)
+		expect(store.item.validate().success).toBe(true)
 	})
 
-	it('sets endpoint list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useEndpointStore()
 
-		store.setEndpointList(mockEndpoint())
+		store.setList(mockEndpoint())
 
-		expect(store.endpointList).toHaveLength(mockEndpoint().length)
+		expect(store.list).toHaveLength(mockEndpoint().length)
 
-		store.endpointList.forEach((item, index) => {
+		store.list.forEach((item: Endpoint, index: number) => {
 			expect(item).toBeInstanceOf(Endpoint)
 			expect(item).toEqual(mockEndpoint()[index])
 			expect(item.validate().success).toBe(true)
 		})
 	})
-
-	// ... other tests ...
 })

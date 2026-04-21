@@ -9,7 +9,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			{{ t('openconnector', 'Do you want to delete {name}? This action cannot be undone.', { name: endpointStore.endpointItem?.name }) }}
+			{{ t('openconnector', 'Do you want to delete {name}? This action cannot be undone.', { name: endpointStore.item?.name }) }}
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -80,7 +80,7 @@ export default {
 		async deleteEndpoint() {
 			this.loading = true
 
-			await endpointStore.deleteEndpoint(endpointStore.endpointItem.id)
+			await endpointStore.deleteOne(endpointStore.item)
 				.then(({ response }) => {
 					this.success = response.ok
 					this.error = false
