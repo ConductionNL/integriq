@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { sourceStore, navigationStore } from '../../store/store.js'
 import { Source } from '../../entities/index.js'
 </script>
@@ -8,9 +9,9 @@ import { Source } from '../../entities/index.js'
 		label-id="editSourceConfigurationAuthentication"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ isEdit ? 'Edit' : 'Add' }} Authentication</h2>
+			<h2>{{ isEdit ? t('openconnector', 'Edit Authentication') : t('openconnector', 'Add Authentication') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Authentication successfully added</p>
+				<p>{{ t('openconnector', 'Authentication successfully added') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -20,14 +21,14 @@ import { Source } from '../../entities/index.js'
 				<div class="form-group">
 					<NcTextField
 						id="key"
-						label="Key*"
+						:label="t('openconnector', 'Key') + '*'"
 						required
 						:error="checkIfKeyIsUnique(configurationItem.key)"
-						:helper-text="checkIfKeyIsUnique(configurationItem.key) ? 'This key is already in use. Please choose a different key name.' : ''"
+						:helper-text="checkIfKeyIsUnique(configurationItem.key) ? t('openconnector', 'This key is already in use. Please choose a different key name.') : ''"
 						:value.sync="configurationItem.key" />
 					<NcTextField
 						id="value"
-						label="Value"
+						:label="t('openconnector', 'Value')"
 						:value.sync="configurationItem.value" />
 				</div>
 			</form>
@@ -38,7 +39,7 @@ import { Source } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -49,7 +50,7 @@ import { Source } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -160,7 +161,7 @@ export default {
 			} catch (error) {
 				this.loading = false
 				this.success = false
-				this.error = error.message || 'An error occurred while saving the authentication configuration'
+				this.error = error.message || t('openconnector', 'An error occurred while saving the authentication configuration')
 			}
 		},
 	},
