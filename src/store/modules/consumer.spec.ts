@@ -8,30 +8,28 @@ describe('Consumer Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets consumer item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useConsumerStore()
 
-		store.setConsumerItem(mockConsumer()[0])
+		store.setItem(mockConsumer()[0])
 
-		expect(store.getConsumerItem()).toBeInstanceOf(Consumer)
-		expect(store.getConsumerItem()).toEqual(mockConsumer()[0])
+		expect(store.item).toBeInstanceOf(Consumer)
+		expect(store.item).toEqual(mockConsumer()[0])
 
-		expect(store.getConsumerItem().validate().success).toBe(true)
+		expect(store.item.validate().success).toBe(true)
 	})
 
-	it('sets consumer list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useConsumerStore()
 
-		store.setConsumerList(mockConsumer())
+		store.setList(mockConsumer())
 
-		expect(store.getConsumerList()).toHaveLength(mockConsumer().length)
+		expect(store.list).toHaveLength(mockConsumer().length)
 
-		store.getConsumerList().forEach((item, index) => {
+		store.list.forEach((item: Consumer, index: number) => {
 			expect(item).toBeInstanceOf(Consumer)
 			expect(item).toEqual(mockConsumer()[index])
 			expect(item.validate().success).toBe(true)
 		})
 	})
-
-	// ... other tests ...
 })

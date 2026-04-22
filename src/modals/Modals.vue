@@ -6,8 +6,6 @@ import { navigationStore } from '../store/store.js'
 	<div>
 		<EditEndpoint />
 		<DeleteEndpoint />
-		<EditConsumer />
-		<DeleteConsumer />
 		<DeleteSource />
 		<EditSource />
 		<ViewSource />
@@ -55,8 +53,6 @@ import { navigationStore } from '../store/store.js'
 <script>
 import EditEndpoint from './Endpoint/EditEndpoint.vue'
 import DeleteEndpoint from './Endpoint/DeleteEndpoint.vue'
-import EditConsumer from './Consumer/EditConsumer.vue'
-import DeleteConsumer from './Consumer/DeleteConsumer.vue'
 import EditSource from './Source/EditSource.vue'
 import ViewSource from './Source/ViewSource.vue'
 import TestSource from './TestSource/TestSource.vue'
@@ -104,8 +100,6 @@ export default {
 	components: {
 		EditEndpoint,
 		DeleteEndpoint,
-		EditConsumer,
-		DeleteConsumer,
 		DeleteSource,
 		EditSource,
 		ViewSource,

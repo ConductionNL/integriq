@@ -9,6 +9,7 @@ import EndpointsIndex from '../views/Endpoint/EndpointsIndex.vue'
 import EndpointDetails from '../views/Endpoint/EndpointDetails.vue'
 import EndpointLogIndex from '../views/Endpoint/EndpointLogIndex.vue'
 import ConsumersIndex from '../views/Consumer/ConsumersIndex.vue'
+import ConsumerDetails from '../views/Consumer/ConsumerDetails.vue'
 import WebhooksIndex from '../views/Webhook/WebhooksIndex.vue'
 import JobsIndex from '../views/Job/JobsIndex.vue'
 import JobLogIndex from '../views/Job/JobLogIndex.vue'
@@ -42,7 +43,7 @@ const router = new Router({
 		{ path: '/endpoints/logs', components: { default: EndpointLogIndex, sidebar: EndpointLogSideBar } },
 		{ path: '/endpoints/:id', components: { default: EndpointDetails } },
 		{ path: '/consumers', components: { default: ConsumersIndex } },
-		{ path: '/consumers/:id', components: { default: ConsumersIndex } },
+		{ path: '/consumers/:id', components: { default: ConsumerDetails } },
 		{ path: '/webhooks', components: { default: WebhooksIndex } },
 		{ path: '/jobs', components: { default: JobsIndex } },
 		{ path: '/jobs/logs', components: { default: JobLogIndex, sidebar: JobLogSideBar } },
