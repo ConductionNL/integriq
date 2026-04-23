@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-/* eslint-disable */
+/* eslint-disable n/no-process-exit */
+/* eslint-disable no-console */
+/* eslint-disable n/shebang */
 /**
  * l10n/i18n consistency checker for openconnector.
  *
@@ -18,7 +20,6 @@ const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
 
-const APP = 'openconnector'
 const ROOT = path.resolve(__dirname, '..')
 const SRC_DIR = path.join(ROOT, 'src')
 const L10N_FILE = path.join(ROOT, 'l10n', 'en.js')
