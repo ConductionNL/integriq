@@ -6,8 +6,6 @@ import { navigationStore } from '../store/store.js'
 	<div>
 		<EditEndpoint />
 		<DeleteEndpoint />
-		<DeleteSource />
-		<EditSource />
 		<ViewSource />
 		<TestSource />
 		<DeleteJob />
@@ -53,10 +51,8 @@ import { navigationStore } from '../store/store.js'
 <script>
 import EditEndpoint from './Endpoint/EditEndpoint.vue'
 import DeleteEndpoint from './Endpoint/DeleteEndpoint.vue'
-import EditSource from './Source/EditSource.vue'
 import ViewSource from './Source/ViewSource.vue'
 import TestSource from './TestSource/TestSource.vue'
-import DeleteSource from './Source/DeleteSource.vue'
 import TestJob from './Job/TestJob.vue'
 import RunJob from './Job/RunJob.vue'
 import EditJob from './Job/EditJob.vue'
@@ -100,8 +96,6 @@ export default {
 	components: {
 		EditEndpoint,
 		DeleteEndpoint,
-		DeleteSource,
-		EditSource,
 		ViewSource,
 		TestSource,
 		DeleteJob,

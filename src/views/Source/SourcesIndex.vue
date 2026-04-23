@@ -1,6 +1,7 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { sourceStore, navigationStore } from '../../store/store.js'
+import { sourceSchema } from './sourceSchema.js'
 </script>
 
 <template>
@@ -11,15 +12,14 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			:description="t('openconnector', 'Manage your data sources and their configurations')"
 			:show-title="true"
 			:objects="filteredSources"
+			:schema="schema"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:loading="sourceStore.loading"
 			:view-mode="sourceStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedSources"
-			:show-edit-action="false"
 			:show-copy-action="false"
-			:show-delete-action="false"
 			:show-mass-import="false"
 			:show-mass-export="false"
 			:show-mass-copy="false"
@@ -28,7 +28,11 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			:add-label="t('openconnector', 'Add source')"
 			row-key="id"
 			:empty-text="emptyContentName"
-			@add="addSource"
+			name-field="name"
+			@add="onAdd"
+			@create="onSave"
+			@edit="onSave"
+			@delete="onDelete"
 			@refresh="sourceStore.refreshList()"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -52,7 +56,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openconnector', 'View') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="sourceStore.setItem(source); navigationStore.setModal('editSource')">
+							<NcActionButton close-after-click @click="editSource(source)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
@@ -82,7 +86,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openconnector', 'Add authentication') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="sourceStore.setItem(source); navigationStore.setDialog('deleteSource')">
+							<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(source)">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -499,7 +503,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openconnector', 'View') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="sourceStore.setItem(source); navigationStore.setModal('editSource')">
+					<NcActionButton close-after-click @click="editSource(source)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
@@ -529,7 +533,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openconnector', 'Add authentication') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="sourceStore.setItem(source); navigationStore.setDialog('deleteSource')">
+					<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(source)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -588,6 +592,9 @@ export default {
 		}
 	},
 	computed: {
+		schema() {
+			return sourceSchema()
+		},
 		filteredSources() {
 			return sourceStore.list || []
 		},
@@ -619,9 +626,32 @@ export default {
 		sourceStore.refreshList()
 	},
 	methods: {
-		addSource() {
-			sourceStore.setItem({})
-			navigationStore.setModal('editSource')
+		onAdd() {
+			this.$refs.indexPage.openFormDialog(null)
+		},
+		editSource(source) {
+			this.$refs.indexPage.openFormDialog(source)
+		},
+		async onSave(formData) {
+			try {
+				const payload = { ...formData, location: (formData.location || '').replace(/\/+$/, '') }
+				await sourceStore.save(payload)
+				this.$refs.indexPage.setFormResult({ success: true })
+			} catch (e) {
+				this.$refs.indexPage.setFormResult({
+					error: e.message || t('openconnector', 'An error occurred while saving the source'),
+				})
+			}
+		},
+		async onDelete(id) {
+			try {
+				await sourceStore.deleteOne({ id })
+				this.$refs.indexPage.setSingleDeleteResult({ success: true })
+			} catch (e) {
+				this.$refs.indexPage.setSingleDeleteResult({
+					error: e.message || t('openconnector', 'An error occurred while deleting the source'),
+				})
+			}
 		},
 		onPageChanged(page) {
 			this.pagination.page = page
