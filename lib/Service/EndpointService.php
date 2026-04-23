@@ -667,7 +667,7 @@ class EndpointService
                 $id = pos($pathParams);
             }
 
-            $main = $mapper->findByUuid($pathParams['id'])->getObject();
+            $main = $mapper->find($pathParams['id'])->getObject();
 
             if(isset($main[$property]) === false) {
                 return $this->replaceInternalReferences(mapper: $mapper, object: $mapper->find($pathParams['id']));
