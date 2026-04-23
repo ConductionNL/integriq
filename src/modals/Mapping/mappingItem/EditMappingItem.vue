@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { mappingStore, navigationStore } from '../../../store/store.js'
 import { Mapping } from '../../../entities/index.js'
 </script>
@@ -9,13 +10,13 @@ import { Mapping } from '../../../entities/index.js'
 		ref="modalRef"
 		label-id="editMappingItem"
 		:can-close="true"
-		:name="(isEdit ? 'Edit ' : 'Add ') + modalLabel"
+		:name="isEdit ? t('openconnector', 'Edit {label}', { label: modalLabel }) : t('openconnector', 'Add {label}', { label: modalLabel })"
 		@close="closeDialog"
 		@cancel="closeDialog"
 		@update:open="val => { if (!val) closeDialog() }">
 		<div class="modalContent">
 			<NcNoteCard v-if="success" type="success">
-				<p>{{ modalLabel }} successfully {{ isEdit ? 'updated' : 'added' }}</p>
+				<p>{{ isEdit ? t('openconnector', '{label} successfully updated', { label: modalLabel }) : t('openconnector', '{label} successfully added', { label: modalLabel }) }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -28,12 +29,12 @@ import { Mapping } from '../../../entities/index.js'
 						:label="keyLabel"
 						required
 						:error="isKeyTaken(keyInput)"
-						:helper-text="isKeyTaken(keyInput) ? 'This key is already in use. Please choose a different key name.' : ''"
+						:helper-text="isKeyTaken(keyInput) ? t('openconnector', 'This key is already in use. Please choose a different key name.') : ''"
 						:value.sync="keyInput" />
 					<NcTextField
 						v-if="showsValueField"
 						id="value"
-						label="Value"
+						:label="t('openconnector', 'Value')"
 						:value.sync="valueInput" />
 				</div>
 			</form>
@@ -44,7 +45,7 @@ import { Mapping } from '../../../entities/index.js'
 					<template #icon>
 						<CancelIcon :size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -55,7 +56,7 @@ import { Mapping } from '../../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -104,13 +105,13 @@ export default {
 			return this.itemType === 'cast' || this.itemType === 'mapping'
 		},
 		keyLabel() {
-			return this.itemType === 'unset' ? 'Unset Key*' : 'Key*'
+			return this.itemType === 'unset' ? this.t('openconnector', 'Unset Key*') : this.t('openconnector', 'Key*')
 		},
 		modalLabel() {
-			if (this.itemType === 'cast') return 'Cast'
-			if (this.itemType === 'mapping') return 'Mapping'
-			if (this.itemType === 'unset') return 'Mapping Unset'
-			return 'Mapping Item'
+			if (this.itemType === 'cast') return this.t('openconnector', 'Cast')
+			if (this.itemType === 'mapping') return this.t('openconnector', 'Mapping')
+			if (this.itemType === 'unset') return this.t('openconnector', 'Mapping Unset')
+			return this.t('openconnector', 'Mapping Item')
 		},
 		isSaveDisabled() {
 			if (this.loading) return true
@@ -213,7 +214,7 @@ export default {
 				// Ensure mapping has a valid name to avoid backend slug errors
 				const active = mappingStore.item
 				if (!active?.name || typeof active.name !== 'string' || !active.name.trim()) {
-					throw new Error('Please set a valid mapping name before adding items')
+					throw new Error(this.t('openconnector', 'Please set a valid mapping name before adding items'))
 				}
 
 				let newMappingRaw = { ...mappingStore.item }
@@ -262,7 +263,7 @@ export default {
 			} catch (e) {
 				this.loading = false
 				this.success = false
-				this.error = e?.message || 'An error occurred while saving the mapping'
+				this.error = e?.message || this.t('openconnector', 'An error occurred while saving the mapping')
 			}
 		},
 	},

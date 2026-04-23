@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { mappingStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -6,8 +7,8 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 	<NcAppContent>
 		<CnIndexPage
 			ref="indexPage"
-			title="Mappings"
-			description="Manage your data mappings"
+			:title="t('openconnector', 'Mappings')"
+			:description="t('openconnector', 'Manage your data mappings')"
 			:show-title="true"
 			:objects="mappingStore.list"
 			:exclude-columns="['mapping', 'cast', 'unset']"
@@ -22,7 +23,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 			:show-mass-copy="false"
 			:show-mass-delete="false"
 			show-view-toggle
-			add-label="Add mapping"
+			:add-label="t('openconnector', 'Add mapping')"
 			row-key="id"
 			:empty-text="emptyContentName"
 			name-field="name"
@@ -42,7 +43,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 							<SitemapOutline :size="20" />
 							{{ mapping.name }}
 						</h2>
-						<NcActions :primary="true" menu-name="Actions">
+						<NcActions :primary="true" :menu-name="t('openconnector', 'Actions')">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
@@ -50,19 +51,19 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 								<template #icon>
 									<Eye :size="20" />
 								</template>
-								View
+								{{ t('openconnector', 'View') }}
 							</NcActionButton>
 							<NcActionButton close-after-click @click="editMapping(mapping)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
-								Edit
+								{{ t('openconnector', 'Edit') }}
 							</NcActionButton>
 							<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(mapping)">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
-								Delete
+								{{ t('openconnector', 'Delete') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -73,26 +74,26 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 						<table class="statisticsTable mappingStats">
 							<thead>
 								<tr>
-									<th>Property</th>
-									<th>Value</th>
+									<th>{{ t('openconnector', 'Property') }}</th>
+									<th>{{ t('openconnector', 'Value') }}</th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr>
-									<td>Mappings</td>
+									<td>{{ t('openconnector', 'Mappings') }}</td>
 									<td>{{ Object.keys(mapping.mapping || {}).length }}</td>
 								</tr>
 								<tr>
-									<td>Casts</td>
+									<td>{{ t('openconnector', 'Casts') }}</td>
 									<td>{{ Object.keys(mapping.cast || {}).length }}</td>
 								</tr>
 								<tr>
-									<td>Unsets</td>
+									<td>{{ t('openconnector', 'Unsets') }}</td>
 									<td>{{ (mapping.unset || []).length }}</td>
 								</tr>
 								<tr>
-									<td>Pass through</td>
-									<td>{{ mapping.passThrough ? 'Yes' : 'No' }}</td>
+									<td>{{ t('openconnector', 'Pass through') }}</td>
+									<td>{{ mapping.passThrough ? t('openconnector', 'Yes') : t('openconnector', 'No') }}</td>
 								</tr>
 							</tbody>
 						</table>
@@ -114,7 +115,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 			</template>
 
 			<template #column-passThrough="{ row }">
-				{{ row.passThrough ? 'Yes' : 'No' }}
+				{{ row.passThrough ? t('openconnector', 'Yes') : t('openconnector', 'No') }}
 			</template>
 
 			<template #column-reference="{ row }">
@@ -135,19 +136,19 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Eye :size="20" />
 						</template>
-						View
+						{{ t('openconnector', 'View') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="editMapping(mapping)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
-						Edit
+						{{ t('openconnector', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(mapping)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
-						Delete
+						{{ t('openconnector', 'Delete') }}
 					</NcActionButton>
 				</NcActions>
 			</template>
@@ -196,8 +197,8 @@ export default {
 		},
 		emptyContentName() {
 			if (mappingStore.error) return mappingStore.error
-			if (!mappingStore.list?.length) return 'No mappings found'
-			return 'Loading mappings...'
+			if (!mappingStore.list?.length) return this.t('openconnector', 'No mappings found')
+			return this.t('openconnector', 'Loading mappings...')
 		},
 	},
 	mounted() {
@@ -222,7 +223,7 @@ export default {
 				this.$refs.indexPage.setSingleDeleteResult({ success: true })
 			} catch (e) {
 				this.$refs.indexPage.setSingleDeleteResult({
-					error: e.message || 'An error occurred while deleting the mapping',
+					error: e.message || this.t('openconnector', 'An error occurred while deleting the mapping'),
 				})
 			}
 		},

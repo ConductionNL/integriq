@@ -47,7 +47,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 				<!-- Tabs -->
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
-						<BTab title="Mapping">
+						<BTab :title="t('openconnector', 'Mapping')">
 							<div v-if="mappingStore.item?.mapping !== null && Object.keys(mappingStore.item?.mapping || {}).length" class="mapping-list">
 								<NcListItem v-for="(value, key, i) in mappingStore.item?.mapping"
 									:key="`${key}${i}`"
@@ -67,13 +67,13 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
-											Edit
+											{{ t('openconnector', 'Edit') }}
 										</NcActionButton>
 										<NcActionButton close-after-click @click="deleteMappingMapping(key)">
 											<template #icon>
 												<Delete :size="20" />
 											</template>
-											Delete
+											{{ t('openconnector', 'Delete') }}
 										</NcActionButton>
 									</template>
 								</NcListItem>
@@ -93,7 +93,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 								</NcEmptyContent>
 							</div>
 						</BTab>
-						<BTab title="Cast">
+						<BTab :title="t('openconnector', 'Cast')">
 							<div v-if="mappingStore.item?.cast !== null && Object.keys(mappingStore.item?.cast || {}).length" class="cast-list">
 								<NcListItem v-for="(value, key, i) in mappingStore.item?.cast"
 									:key="`${key}${i}`"
@@ -113,13 +113,13 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
-											Edit
+											{{ t('openconnector', 'Edit') }}
 										</NcActionButton>
 										<NcActionButton close-after-click @click="deleteMappingCast(key)">
 											<template #icon>
 												<Delete :size="20" />
 											</template>
-											Delete
+											{{ t('openconnector', 'Delete') }}
 										</NcActionButton>
 									</template>
 								</NcListItem>
@@ -139,7 +139,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 								</NcEmptyContent>
 							</div>
 						</BTab>
-						<BTab title="Unset">
+						<BTab :title="t('openconnector', 'Unset')">
 							<div v-if="mappingStore.item?.unset?.length" class="unset-list">
 								<NcListItem v-for="(value, i) in mappingStore.item?.unset"
 									:key="`${value}${i}`"
@@ -154,13 +154,13 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<Pencil :size="20" />
 											</template>
-											Edit
+											{{ t('openconnector', 'Edit') }}
 										</NcActionButton>
 										<NcActionButton close-after-click @click="deleteMappingUnset(value)">
 											<template #icon>
 												<Delete :size="20" />
 											</template>
-											Delete
+											{{ t('openconnector', 'Delete') }}
 										</NcActionButton>
 									</template>
 								</NcListItem>
@@ -189,37 +189,37 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
-						Edit
+						{{ t('openconnector', 'Edit') }}
 					</NcButton>
 					<NcButton @click="addMappingMapping()">
 						<template #icon>
 							<MapPlus :size="20" />
 						</template>
-						Add Mapping
+						{{ t('openconnector', 'Add Mapping') }}
 					</NcButton>
 					<NcButton @click="addMappingCast()">
 						<template #icon>
 							<SwapHorizontal :size="20" />
 						</template>
-						Add Cast
+						{{ t('openconnector', 'Add Cast') }}
 					</NcButton>
 					<NcButton @click="addMappingUnset()">
 						<template #icon>
 							<Eraser :size="20" />
 						</template>
-						Add Unset
+						{{ t('openconnector', 'Add Unset') }}
 					</NcButton>
 					<NcButton @click="navigationStore.setModal('testMapping')">
 						<template #icon>
 							<TestTube :size="20" />
 						</template>
-						Test
+						{{ t('openconnector', 'Test') }}
 					</NcButton>
 					<NcButton type="error" @click="showDeleteDialog = true">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
-						Delete
+						{{ t('openconnector', 'Delete') }}
 					</NcButton>
 				</div>
 			</div>

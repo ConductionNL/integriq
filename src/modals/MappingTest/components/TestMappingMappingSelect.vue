@@ -1,61 +1,17 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { mappingStore } from '../../../store/store.js'
 </script>
 
 <template>
 	<div>
-		<div v-if="!openRegister.isInstalled && !closeAlert" class="openregister-notecard">
-			<NcNoteCard
-				:type="openRegister.isAvailable ? 'info' : 'error'"
-				:heading="openRegister.isAvailable ? 'Open Register is not installed' : 'Failed to install Open Register'">
-				<p>
-					{{ openRegister.isAvailable
-						? 'Some features require Open Register to be installed'
-						: 'This either means that Open Register is not available on this server or you need to confirm your password' }}
-				</p>
-
-				<div class="install-buttons">
-					<NcButton v-if="openRegister.isAvailable"
-						aria-label="Install OpenRegister"
-						size="small"
-						type="primary"
-						@click="installOpenRegister">
-						<template #icon>
-							<CloudDownload :size="20" />
-						</template>
-						Install OpenRegister
-					</NcButton>
-					<NcButton
-						aria-label="Install OpenRegister Manually"
-						size="small"
-						type="secondary"
-						@click="openLink('/index.php/settings/apps/organization/openregister', '_blank')">
-						<template #icon>
-							<OpenInNew :size="20" />
-						</template>
-						Install OpenRegister Manually
-					</NcButton>
-				</div>
-				<div class="close-button">
-					<NcActions>
-						<NcActionButton close-after-click @click="closeAlert = true">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-							Close
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</NcNoteCard>
-		</div>
-
-		<h4>Test mapping</h4>
+		<h4>{{ t('openconnector', 'Test mapping') }}</h4>
 
 		<div class="content">
 			<div class="mapping-select">
 				<NcSelect v-bind="mappings"
 					v-model="mappings.value"
-					input-label="Mapping"
+					:input-label="t('openconnector', 'Mapping')"
 					:clearable="false"
 					:loading="mappingsLoading || mappingTest.loading"
 					required
@@ -63,10 +19,10 @@ import { mappingStore } from '../../../store/store.js'
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">
-							Loading...
+							{{ t('openconnector', 'Loading...') }}
 						</p>
 						<p v-if="!loading && !mappings.options?.length">
-							Er zijn geen mappings beschikbaar
+							{{ t('openconnector', 'No mappings available') }}
 						</p>
 					</template>
 					<!-- eslint-disable-next-line vue/no-unused-vars  -->
@@ -90,18 +46,17 @@ import { mappingStore } from '../../../store/store.js'
 
 				<NcSelect v-bind="schemas"
 					v-model="schemas.value"
-					input-label="Schema"
+					:input-label="t('openconnector', 'Schema')"
 					:loading="schemasLoading"
-					:disabled="!openRegister.isInstalled"
 					required
 					@input="emitSchemaSelected">
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">
-							Loading...
+							{{ t('openconnector', 'Loading...') }}
 						</p>
 						<p v-if="!loading && !schemas.options?.length">
-							Er zijn geen schemas beschikbaar
+							{{ t('openconnector', 'No schemas available') }}
 						</p>
 					</template>
 					<!-- eslint-disable-next-line vue/no-unused-vars  -->
@@ -125,35 +80,35 @@ import { mappingStore } from '../../../store/store.js'
 			</div>
 
 			<div class="edit-mapping">
-				<h4>Edit mapping</h4>
+				<h4>{{ t('openconnector', 'Edit mapping') }}</h4>
 
 				<NcTextField :value.sync="mappingItem.name"
-					label="name" />
+					:label="t('openconnector', 'Name')" />
 
 				<NcTextArea
 					resize="vertical"
 					:value.sync="mappingItem.description"
-					label="description" />
+					:label="t('openconnector', 'Description')" />
 
 				<NcTextArea
 					resize="vertical"
 					:value.sync="mappingItem.mapping"
-					label="mapping"
+					:label="t('openconnector', 'Mapping')"
 					:error="!validJson(mappingItem.mapping)"
-					:helper-text="!validJson(mappingItem.mapping) ? 'Invalid JSON' : ''" />
+					:helper-text="!validJson(mappingItem.mapping) ? t('openconnector', 'Invalid JSON') : ''" />
 
 				<NcTextArea
 					resize="vertical"
 					:value.sync="mappingItem.cast"
-					label="cast"
+					:label="t('openconnector', 'Cast')"
 					:error="!validJson(mappingItem.cast, true)"
-					:helper-text="!validJson(mappingItem.cast, true) ? 'Invalid JSON' : ''" />
+					:helper-text="!validJson(mappingItem.cast, true) ? t('openconnector', 'Invalid JSON') : ''" />
 
 				<NcTextArea
 					resize="vertical"
 					:value.sync="mappingItem.unset"
-					label="unset"
-					helper-text="Enter a comma-separated list of keys." />
+					:label="t('openconnector', 'Unset')"
+					:helper-text="t('openconnector', 'Enter a comma-separated list of keys.')" />
 
 				<div class="modal-actions">
 					<NcButton v-if="!success"
@@ -161,7 +116,7 @@ import { mappingStore } from '../../../store/store.js'
 						<template #icon>
 							<CancelIcon size="20" />
 						</template>
-						Cancel
+						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
 					<NcButton class="reset-button"
 						type="secondary"
@@ -169,7 +124,7 @@ import { mappingStore } from '../../../store/store.js'
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
-						Reset
+						{{ t('openconnector', 'Reset') }}
 					</NcButton>
 					<NcButton :disabled="mappingTest.loading || !mappings.value || !inputObject.isValid || !validJson(mappingItem.mapping) || !validJson(mappingItem.cast, true)"
 						class="test-button"
@@ -179,7 +134,7 @@ import { mappingStore } from '../../../store/store.js'
 							<NcLoadingIcon v-if="mappingTest.loading" :size="20" />
 							<TestTube v-if="!mappingTest.loading" :size="20" />
 						</template>
-						Test
+						{{ t('openconnector', 'Test') }}
 					</NcButton>
 					<NcButton class="save-button"
 						type="primary"
@@ -188,7 +143,7 @@ import { mappingStore } from '../../../store/store.js'
 							<NcLoadingIcon v-if="savingMapping" :size="20" />
 							<ContentSaveOutline v-if="!savingMapping" :size="20" />
 						</template>
-						Save
+						{{ t('openconnector', 'Save') }}
 					</NcButton>
 				</div>
 			</div>
@@ -202,15 +157,9 @@ import {
 	NcTextField,
 	NcTextArea,
 	NcButton,
-	NcActions,
-	NcActionButton,
 	NcLoadingIcon,
-	NcNoteCard,
 } from '@nextcloud/vue'
 
-import CloudDownload from 'vue-material-design-icons/CloudDownload.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import CancelIcon from 'vue-material-design-icons/Cancel.vue'
 
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
@@ -221,8 +170,6 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 
 import { Mapping } from '../../../entities/index.js'
 
-import openLink from '../../../services/openLink.js'
-
 export default {
 	name: 'TestMappingMappingSelect',
 	components: {
@@ -230,10 +177,7 @@ export default {
 		NcTextField,
 		NcTextArea,
 		NcButton,
-		NcActions,
-		NcActionButton,
 		NcLoadingIcon,
-		NcNoteCard,
 		CancelIcon,
 	},
 	props: {
@@ -266,11 +210,6 @@ export default {
 			},
 			schemas: [],
 			schemasLoading: false,
-			openRegister: {
-				isInstalled: true,
-				isAvailable: true,
-			},
-			closeAlert: false,
 		}
 	},
 	watch: {
@@ -356,7 +295,7 @@ export default {
 						options: [
 							{
 								id: this.uniqueMappingId,
-								label: 'No mapping',
+								label: this.t('openconnector', 'No mapping'),
 								removeStyle: true,
 							},
 							...mappingStore.list.map((mapping) => ({
@@ -389,29 +328,17 @@ export default {
 		async fetchSchemas() {
 			this.schemasLoading = true
 
-			// checking if OpenRegister is installed
-			console.info('Fetching schemas from Open Register')
 			const response = await fetch('/index.php/apps/openregister/api/schemas', {
 				headers: {
 					accept: '*/*',
-					'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-					'cache-control': 'no-cache',
-					pragma: 'no-cache',
 					'x-requested-with': 'XMLHttpRequest',
 				},
-				referrerPolicy: 'no-referrer',
-				body: null,
 				method: 'GET',
-				mode: 'cors',
 				credentials: 'include',
 			})
 
 			if (!response.ok) {
-				console.info('Open Register is not installed')
 				this.schemasLoading = false
-				this.$emit('open-register', {
-					isInstalled: false,
-				})
 				return
 			}
 
@@ -457,7 +384,7 @@ export default {
 					this.mappingTest.result = data
 				})
 				.catch((error) => {
-					this.mappingTest.error = error.message || 'An error occurred while testing the mapping'
+					this.mappingTest.error = error.message || this.t('openconnector', 'An error occurred while testing the mapping')
 				})
 				.finally(() => {
 					this.mappingTest.loading = false
@@ -490,36 +417,6 @@ export default {
 					setTimeout(() => (this.savingMappingSuccess = null), 2000)
 					this.savingMapping = false
 				})
-		},
-		async installOpenRegister() {
-			console.info('Installing Open Register')
-			const token = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
-
-			const response = await fetch('/index.php/settings/apps/enable', {
-				headers: {
-					accept: '*/*',
-					'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-					'cache-control': 'no-cache',
-					'content-type': 'application/json',
-					pragma: 'no-cache',
-					requesttoken: token,
-					'x-requested-with': 'XMLHttpRequest, XMLHttpRequest',
-				},
-				referrerPolicy: 'no-referrer',
-				body: '{"appIds":["openregister"],"groups":[]}',
-				method: 'POST',
-				mode: 'cors',
-				credentials: 'include',
-			})
-
-			if (!response.ok) {
-				console.info('Failed to install Open Register')
-				this.openRegister.isAvailable = false
-			} else {
-				console.info('Open Register installed')
-				this.openRegister.isInstalled = true
-				this.fetchSchemas()
-			}
 		},
 		validJson(object, optional = false) {
 			if (optional && !object) {

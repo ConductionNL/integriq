@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, mappingStore } from '../../../store/store.js'
 import { Mapping } from '../../../entities/index.js'
 </script>
@@ -13,24 +14,24 @@ import { Mapping } from '../../../entities/index.js'
 		@update:open="val => { if (!val) closeDialog() }">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
-				<p>Successfully deleted {{ modalLabel.toLowerCase() }}</p>
+				<p>{{ t('openconnector', 'Successfully deleted {label}', { label: modalLabel.toLowerCase() }) }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>Something went wrong deleting the {{ modalLabel.toLowerCase() }}</p>
+				<p>{{ t('openconnector', 'Something went wrong deleting the {label}', { label: modalLabel.toLowerCase() }) }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
 			</NcNoteCard>
 		</div>
 		<p v-if="success === null">
-			Do you want to delete <b>{{ currentKey }}</b>? This action cannot be undone.
+			{{ t('openconnector', 'Do you want to delete {key}? This action cannot be undone.', { key: currentKey }) }}
 		</p>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{ success !== null ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -42,7 +43,7 @@ import { Mapping } from '../../../entities/index.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ t('openconnector', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -78,13 +79,13 @@ export default {
 			return mappingStore.editingMode
 		},
 		modalLabel() {
-			if (this.itemType === 'cast') return 'Cast'
-			if (this.itemType === 'mapping') return 'Mapping'
-			if (this.itemType === 'unset') return 'Mapping Unset'
-			return 'Mapping Item'
+			if (this.itemType === 'cast') return this.t('openconnector', 'Cast')
+			if (this.itemType === 'mapping') return this.t('openconnector', 'Mapping')
+			if (this.itemType === 'unset') return this.t('openconnector', 'Mapping Unset')
+			return this.t('openconnector', 'Mapping Item')
 		},
 		dialogTitle() {
-			return `Delete ${this.modalLabel}`
+			return this.t('openconnector', 'Delete {label}', { label: this.modalLabel })
 		},
 		currentKey() {
 			if (this.itemType === 'cast') return mappingStore.mappingCastKey
@@ -114,7 +115,7 @@ export default {
 			try {
 				const keyToDelete = this.currentKey
 				if (!keyToDelete) {
-					this.error = 'No key selected to delete'
+					this.error = this.t('openconnector', 'No key selected to delete')
 					this.loading = false
 					return
 				}
@@ -127,7 +128,7 @@ export default {
 					if (index > -1) {
 						cloneUnset.splice(index, 1)
 					} else {
-						this.error = 'Mapping unset not found'
+						this.error = this.t('openconnector', 'Mapping unset not found')
 						this.loading = false
 						return
 					}
@@ -164,7 +165,7 @@ export default {
 						this.loading = false
 					})
 			} catch (e) {
-				this.error = e?.message || 'Error while deleting mapping item'
+				this.error = e?.message || this.t('openconnector', 'Error while deleting mapping item')
 				this.loading = false
 			}
 		},

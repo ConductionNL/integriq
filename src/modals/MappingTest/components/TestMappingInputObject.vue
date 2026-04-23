@@ -1,12 +1,12 @@
 <template>
 	<div class="input-object-container">
-		<h4>Input object</h4>
+		<h4>{{ t('openconnector', 'Input object') }}</h4>
 
 		<NcTextArea :value.sync="inputObject"
 			resize="vertical"
 			class="textarea"
 			:error="!validJson(inputObject)"
-			:helper-text="!validJson(inputObject) ? 'Invalid JSON' : ''"
+			:helper-text="!validJson(inputObject) ? t('openconnector', 'Invalid JSON') : ''"
 			@input="emitInputObjectChanged($event)" />
 	</div>
 </template>

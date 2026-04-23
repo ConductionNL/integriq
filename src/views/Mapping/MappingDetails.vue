@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { mappingStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -6,49 +7,49 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 	<NcAppContent>
 		<NcEmptyContent v-if="loading"
 			class="detailContainer"
-			name="Loading..."
-			description="Fetching mapping details">
+			:name="t('openconnector', 'Loading...')"
+			:description="t('openconnector', 'Fetching mapping details')">
 			<template #icon>
 				<NcLoadingIcon />
 			</template>
 		</NcEmptyContent>
 		<NcEmptyContent v-else-if="loadError"
 			class="detailContainer"
-			name="Error"
-			description="Failed to load mapping.">
+			:name="t('openconnector', 'Error')"
+			:description="t('openconnector', 'Failed to load mapping.')">
 			<template #icon>
 				<SitemapOutline />
 			</template>
 			<template #action>
 				<NcButton type="secondary" @click="backToList">
-					Back
+					{{ t('openconnector', 'Back') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
 		<NcEmptyContent v-else-if="!mapping"
 			class="detailContainer"
-			name="Mapping not found">
+			:name="t('openconnector', 'Mapping not found')">
 			<template #icon>
 				<SitemapOutline />
 			</template>
 			<template #action>
 				<NcButton type="secondary" @click="backToList">
-					Back
+					{{ t('openconnector', 'Back') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
 		<div v-else class="detailContainer">
 			<div class="detailHeader">
-				<NcButton type="tertiary" aria-label="Back to mappings" @click="backToList">
+				<NcButton type="tertiary" :aria-label="t('openconnector', 'Back to mappings')" @click="backToList">
 					<template #icon>
 						<ArrowLeft :size="20" />
 					</template>
-					Mappings
+					{{ t('openconnector', 'Mappings') }}
 				</NcButton>
 				<h1 class="h1">
 					{{ mapping?.name || '-' }}
 				</h1>
-				<NcActions :primary="true" menu-name="Actions">
+				<NcActions :primary="true" :menu-name="t('openconnector', 'Actions')">
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
@@ -56,43 +57,43 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
-						Edit
+						{{ t('openconnector', 'Edit') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="addMappingMapping">
 						<template #icon>
 							<MapPlus :size="20" />
 						</template>
-						Add Mapping
+						{{ t('openconnector', 'Add Mapping') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="addMappingCast">
 						<template #icon>
 							<SwapHorizontal :size="20" />
 						</template>
-						Add Cast
+						{{ t('openconnector', 'Add Cast') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="addMappingUnset">
 						<template #icon>
 							<Eraser :size="20" />
 						</template>
-						Add Unset
+						{{ t('openconnector', 'Add Unset') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="navigationStore.setModal('testMapping')">
 						<template #icon>
 							<TestTube :size="20" />
 						</template>
-						Test
+						{{ t('openconnector', 'Test') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="mappingStore.exportMapping(mapping.id)">
 						<template #icon>
 							<FileExportOutline :size="20" />
 						</template>
-						Export mapping
+						{{ t('openconnector', 'Export mapping') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="showDeleteDialog = true">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
-						Delete
+						{{ t('openconnector', 'Delete') }}
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -100,54 +101,54 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 			<table class="statisticsTable mappingStats">
 				<thead>
 					<tr>
-						<th>Property</th>
-						<th>Value</th>
+						<th>{{ t('openconnector', 'Property') }}</th>
+						<th>{{ t('openconnector', 'Value') }}</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr>
-						<td>ID</td>
+						<td>{{ t('openconnector', 'ID') }}</td>
 						<td>{{ mapping?.id || '-' }}</td>
 					</tr>
 					<tr>
-						<td>UUID</td>
+						<td>{{ t('openconnector', 'UUID') }}</td>
 						<td>{{ mapping?.uuid || '-' }}</td>
 					</tr>
 					<tr>
-						<td>Name</td>
+						<td>{{ t('openconnector', 'Name') }}</td>
 						<td>{{ mapping?.name || '-' }}</td>
 					</tr>
 					<tr>
-						<td>Description</td>
+						<td>{{ t('openconnector', 'Description') }}</td>
 						<td>{{ mapping?.description || '-' }}</td>
 					</tr>
 					<tr>
-						<td>Reference</td>
+						<td>{{ t('openconnector', 'Reference') }}</td>
 						<td>{{ mapping?.reference || '-' }}</td>
 					</tr>
 					<tr>
-						<td>Version</td>
+						<td>{{ t('openconnector', 'Version') }}</td>
 						<td>{{ mapping?.version || '-' }}</td>
 					</tr>
 					<tr>
-						<td>Pass through</td>
-						<td>{{ mapping?.passThrough ? 'Yes' : 'No' }}</td>
+						<td>{{ t('openconnector', 'Pass through') }}</td>
+						<td>{{ mapping?.passThrough ? t('openconnector', 'Yes') : t('openconnector', 'No') }}</td>
 					</tr>
 				</tbody>
 			</table>
 
 			<div class="tabContainer">
 				<BTabs content-class="mt-3" justified>
-					<BTab title="Mapping">
+					<BTab :title="t('openconnector', 'Mapping')">
 						<div class="tabButtonsContainer">
 							<NcButton type="primary"
 								class="fullWidthButton"
-								aria-label="Add Mapping"
+								:aria-label="t('openconnector', 'Add Mapping')"
 								@click="addMappingMapping">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Add Mapping
+								{{ t('openconnector', 'Add Mapping') }}
 							</NcButton>
 						</div>
 						<div v-if="mapping?.mapping !== null && Object.keys(mapping?.mapping || {}).length">
@@ -172,31 +173,31 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										{{ t('openconnector', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="deleteMappingMapping(key)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
-										Delete
+										{{ t('openconnector', 'Delete') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
 						</div>
 						<div v-if="!Object.keys(mapping?.mapping || {}).length" class="tabPanel">
-							No mapping found
+							{{ t('openconnector', 'No mapping found') }}
 						</div>
 					</BTab>
-					<BTab title="Cast">
+					<BTab :title="t('openconnector', 'Cast')">
 						<div class="tabButtonsContainer">
 							<NcButton type="primary"
 								class="fullWidthButton"
-								aria-label="Add Cast"
+								:aria-label="t('openconnector', 'Add Cast')"
 								@click="addMappingCast">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Add Cast
+								{{ t('openconnector', 'Add Cast') }}
 							</NcButton>
 						</div>
 						<div v-if="mapping?.cast !== null && Object.keys(mapping?.cast || {}).length">
@@ -221,31 +222,31 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										{{ t('openconnector', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="deleteMappingCast(key)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
-										Delete
+										{{ t('openconnector', 'Delete') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
 						</div>
 						<div v-if="!Object.keys(mapping?.cast || {}).length" class="tabPanel">
-							No cast found
+							{{ t('openconnector', 'No cast found') }}
 						</div>
 					</BTab>
-					<BTab title="Unset">
+					<BTab :title="t('openconnector', 'Unset')">
 						<div class="tabButtonsContainer">
 							<NcButton type="primary"
 								class="fullWidthButton"
-								aria-label="Add Unset"
+								:aria-label="t('openconnector', 'Add Unset')"
 								@click="addMappingUnset">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
-								Add Unset
+								{{ t('openconnector', 'Add Unset') }}
 							</NcButton>
 						</div>
 						<div v-if="mapping?.unset?.length">
@@ -265,19 +266,19 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
-										Edit
+										{{ t('openconnector', 'Edit') }}
 									</NcActionButton>
 									<NcActionButton close-after-click @click="deleteMappingUnset(value)">
 										<template #icon>
 											<Delete :size="20" />
 										</template>
-										Delete
+										{{ t('openconnector', 'Delete') }}
 									</NcActionButton>
 								</template>
 							</NcListItem>
 						</div>
 						<div v-if="!mapping?.unset?.length" class="tabPanel">
-							No unset found
+							{{ t('openconnector', 'No unset found') }}
 						</div>
 					</BTab>
 				</BTabs>
@@ -289,8 +290,8 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 			ref="deleteDialog"
 			:item="mapping"
 			name-field="name"
-			dialog-title="Delete mapping"
-			success-text="Successfully deleted mapping"
+			:dialog-title="t('openconnector', 'Delete mapping')"
+			:success-text="t('openconnector', 'Successfully deleted mapping')"
 			@confirm="onDeleteConfirm"
 			@close="showDeleteDialog = false" />
 	</NcAppContent>
@@ -404,7 +405,7 @@ export default {
 				this.$router.push('/mappings')
 			} catch (e) {
 				this.$refs.deleteDialog.setResult({
-					error: e.message || 'An error occurred while deleting the mapping',
+					error: e.message || this.t('openconnector', 'An error occurred while deleting the mapping'),
 				})
 			}
 		},
