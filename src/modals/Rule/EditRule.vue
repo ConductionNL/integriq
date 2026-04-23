@@ -1041,10 +1041,10 @@ export default {
 		async getMappings() {
 			try {
 				this.mappingOptions.loading = true
-				await mappingStore.refreshMappingList()
+				await mappingStore.refreshList()
 
-				// Use the store's mappingList directly
-				const mappings = mappingStore.mappingList
+				// Use the store's list directly
+				const mappings = mappingStore.list
 				if (mappings?.length) {
 
 					// Set active filepart upload mapping

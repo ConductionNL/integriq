@@ -4,71 +4,22 @@ import { Mapping } from '../../entities/index.js'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'editMapping'"
+	<NcModal
 		ref="modalRef"
 		class="EditMappingMainModal"
 		label-id="editMapping"
 		size="large"
 		:can-close="true"
 		:width="1200"
-		:name="mappingStore.mappingItem?.id ? 'Edit Mapping' : 'Create New Mapping'"
+		:name="mappingStore.item?.id ? 'Edit Mapping' : 'Create New Mapping'"
 		@close="closeModal">
 		<div class="modalContent">
-			<!-- ====================== -->
-			<!-- Open Register notecard -->
-			<!-- ====================== -->
-			<div v-if="!openRegisterInstalled && !openRegisterCloseAlert" class="openregister-notecard">
-				<NcNoteCard
-					:type="openRegisterIsAvailable ? 'info' : 'error'"
-					:heading="openRegisterIsAvailable ? 'Open Register is not installed' : 'Failed to install Open Register'">
-					<p>
-						{{ openRegisterIsAvailable
-							? 'Some features require Open Register to be installed'
-							: 'This either means that Open Register is not available on this server or you need to confirm your password' }}
-					</p>
-
-					<div class="install-buttons">
-						<NcButton v-if="openRegisterIsAvailable"
-							aria-label="Install OpenRegister"
-							size="small"
-							type="primary"
-							:loading="openRegisterLoading"
-							@click="installOpenRegister">
-							<template #icon>
-								<CloudDownload :size="20" />
-							</template>
-							Install OpenRegister
-						</NcButton>
-						<NcButton
-							aria-label="Install OpenRegister Manually"
-							size="small"
-							type="secondary"
-							@click="openLink('/index.php/settings/apps/organization/openregister', '_blank')">
-							<template #icon>
-								<OpenInNew :size="20" />
-							</template>
-							Install OpenRegister Manually
-						</NcButton>
-					</div>
-					<div class="close-button">
-						<NcActions>
-							<NcActionButton close-after-click @click="openRegisterCloseAlert = true">
-								<template #icon>
-									<Close :size="20" />
-								</template>
-								Close
-							</NcActionButton>
-						</NcActions>
-					</div>
-				</NcNoteCard>
-			</div>
-
 			<!-- ====================== -->
 			<!-- Success/Error notecard -->
 			<!-- ====================== -->
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
-					<p>Mapping successfully {{ mappingStore.mappingItem?.id ? 'updated' : 'created' }}</p>
+					<p>Mapping successfully {{ mappingStore.item?.id ? 'updated' : 'created' }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error || 'An error occurred' }}</p>
@@ -435,8 +386,7 @@ import { Mapping } from '../../entities/index.js'
 								<NcSelect v-bind="schemaOptions"
 									v-model="schemaOptions.value"
 									input-label="Schema (Optional)"
-									:loading="schemasLoading"
-									:disabled="!openRegisterInstalled">
+									:loading="schemasLoading">
 									<template #no-options="{ loading: isLoading }">
 										<p v-if="isLoading">
 											Loading...
@@ -524,7 +474,7 @@ import { Mapping } from '../../entities/index.js'
 									v-model="registerOptions.value"
 									input-label="Register"
 									:loading="registersLoading"
-									:disabled="!openRegisterInstalled || saveObjectLoading">
+									:disabled="saveObjectLoading">
 									<template #no-options="{ loading: isLoading }">
 										<p v-if="isLoading">
 											Loading...
@@ -629,15 +579,10 @@ import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRi
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
-import CloudDownload from 'vue-material-design-icons/CloudDownload.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CancelIcon from 'vue-material-design-icons/Cancel.vue'
-
-import openLink from '../../services/openLink.js'
 
 export default {
 	name: 'EditMapping',
@@ -666,9 +611,6 @@ export default {
 		DatabaseArrowLeftOutline,
 		ArrowRight,
 		SwapHorizontal,
-		CloudDownload,
-		OpenInNew,
-		Close,
 		Pencil,
 		Delete,
 		Plus,
@@ -731,12 +673,6 @@ export default {
 				success: null,
 				error: '',
 			},
-
-			// OpenRegister status
-			openRegisterInstalled: true,
-			openRegisterLoading: false,
-			openRegisterIsAvailable: true,
-			openRegisterCloseAlert: false,
 
 			// Dialog states
 			showMappingDialog: false,
@@ -820,7 +756,7 @@ export default {
 	},
 	watch: {
 		// Keep local mapping fields in sync with store after edits/deletions from dialogs
-		'mappingStore.mappingItem': {
+		'mappingStore.item': {
 			deep: true,
 			handler(newItem) {
 				// Only sync when the edit modal is open and a mapping exists
@@ -843,15 +779,15 @@ export default {
 		this.fetchSchemas()
 		this.fetchRegisters()
 		this.storeUnsubscribe = mappingStore.$subscribe(() => {
-			if (navigationStore.modal !== 'editMapping' || !mappingStore.mappingItem) return
+			if (navigationStore.modal !== 'editMapping' || !mappingStore.item) return
 			this.mappingItem = {
 				...this.mappingItem,
-				mapping: mappingStore.mappingItem.mapping ?? '{}',
-				cast: mappingStore.mappingItem.cast ?? '{}',
-				unset: mappingStore.mappingItem.unset ?? '',
-				passThrough: !!mappingStore.mappingItem.passThrough,
+				mapping: mappingStore.item.mapping ?? '{}',
+				cast: mappingStore.item.cast ?? '{}',
+				unset: mappingStore.item.unset ?? '',
+				passThrough: !!mappingStore.item.passThrough,
 			}
-			this.passThroughLocal = !!mappingStore.mappingItem.passThrough
+			this.passThroughLocal = !!mappingStore.item.passThrough
 		})
 	},
 	updated() {
@@ -871,9 +807,9 @@ export default {
 		 * Initialize the mapping item with data from the store or default values
 		 */
 		initializeMappingItem() {
-			if (mappingStore.mappingItem?.id) {
+			if (mappingStore.item?.id) {
 				// Clone into a plain, mutable object to avoid readonly assignments from entity instances
-				const src = mappingStore.mappingItem
+				const src = mappingStore.item
 				this.mappingItem = {
 					name: src.name || '',
 					description: src.description || '',
@@ -906,21 +842,13 @@ export default {
 				const response = await fetch('/index.php/apps/openregister/api/schemas', {
 					headers: {
 						accept: '*/*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						pragma: 'no-cache',
 						'x-requested-with': 'XMLHttpRequest',
 					},
-					referrerPolicy: 'no-referrer',
 					method: 'GET',
-					mode: 'cors',
 					credentials: 'include',
 				})
 
-				if (!response.ok) {
-					this.openRegisterInstalled = false
-					return
-				}
+				if (!response.ok) return
 
 				const responseData = (await response.json()).results
 
@@ -934,7 +862,6 @@ export default {
 				}
 			} catch (error) {
 				console.error('Failed to fetch schemas:', error)
-				this.openRegisterInstalled = false
 			} finally {
 				this.schemasLoading = false
 			}
@@ -949,8 +876,7 @@ export default {
 			try {
 				const { data } = await mappingStore.getMappingObjects()
 
-				this.openRegisterInstalled = data.openRegisters
-				if (!data.openRegisters) return
+				if (!data?.availableRegisters) return
 
 				this.registerOptions = {
 					options: data.availableRegisters.map((register) => ({
@@ -962,72 +888,8 @@ export default {
 				}
 			} catch (error) {
 				console.error('Failed to fetch registers:', error)
-				this.openRegisterInstalled = false
 			} finally {
 				this.registersLoading = false
-			}
-		},
-
-		/**
-		 * Install OpenRegister
-		 */
-		async installOpenRegister() {
-			this.openRegisterLoading = true
-
-			try {
-				const requesttoken = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
-
-				const forceResponse = await fetch('/index.php/settings/apps/force', {
-					headers: {
-						accept: 'application/json, text/plain, */*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						'content-type': 'application/json',
-						pragma: 'no-cache',
-						requesttoken,
-						'x-requested-with': 'XMLHttpRequest, XMLHttpRequest',
-					},
-					referrerPolicy: 'no-referrer',
-					body: '{"appId":"openregister"}',
-					method: 'POST',
-					mode: 'cors',
-					credentials: 'include',
-				})
-
-				if (!forceResponse.ok) {
-					this.openRegisterIsAvailable = false
-					return
-				}
-
-				const response = await fetch('/index.php/settings/apps/enable', {
-					headers: {
-						accept: '*/*',
-						'accept-language': 'en-US,en;q=0.9,nl;q=0.8',
-						'cache-control': 'no-cache',
-						'content-type': 'application/json',
-						pragma: 'no-cache',
-						requesttoken,
-						'x-requested-with': 'XMLHttpRequest, XMLHttpRequest',
-					},
-					referrerPolicy: 'no-referrer',
-					body: '{"appIds":["openregister"],"groups":[]}',
-					method: 'POST',
-					mode: 'cors',
-					credentials: 'include',
-				})
-
-				if (!response.ok) {
-					this.openRegisterIsAvailable = false
-				} else {
-					this.openRegisterInstalled = true
-					this.fetchSchemas()
-					this.fetchRegisters()
-				}
-			} catch (error) {
-				console.error('Failed to install OpenRegister:', error)
-				this.openRegisterIsAvailable = false
-			} finally {
-				this.openRegisterLoading = false
 			}
 		},
 
@@ -1055,7 +917,7 @@ export default {
 
 			try {
 				const mappingData = {
-					...mappingStore.mappingItem,
+					...mappingStore.item,
 					name: this.mappingItem.name,
 					description: this.mappingItem.description,
 					mapping: this.mappingRules,
@@ -1153,14 +1015,14 @@ export default {
 
 			try {
 				const mappingItem = new Mapping({
-					...mappingStore.mappingItem,
+					...mappingStore.item,
 					...this.mappingItem,
 					mapping: this.mappingRules,
 					cast: this.castRules,
 					unset: this.unsetRules,
 				})
 
-				const { response } = await mappingStore.saveMapping(mappingItem)
+				const { response } = await mappingStore.save(mappingItem)
 
 				this.success = response.ok
 				if (this.success) {
@@ -1203,7 +1065,7 @@ export default {
 		 */
 		addMappingRule() {
 			mappingStore.setEditingMode('mapping')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingMappingKey(null)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -1260,7 +1122,7 @@ export default {
 			this.castDialogData = { property: '', castType: '' }
 			this.editingCastRule = false
 			mappingStore.setEditingMode('cast')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingCastKey(null)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -1326,7 +1188,7 @@ export default {
 			this.unsetDialogData = { property: '' }
 			this.editingUnsetRule = null
 			mappingStore.setEditingMode('unset')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingUnsetKey(null)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -1381,7 +1243,7 @@ export default {
 
 		openEditMappingItemDialog(mode, key) {
 			mappingStore.setEditingMode(mode)
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			if (mode === 'mapping') {
 				mappingStore.setMappingMappingKey(key)
 			} else if (mode === 'cast') {
@@ -1394,7 +1256,7 @@ export default {
 
 		openDeleteMappingItemDialog(mode, key) {
 			mappingStore.setEditingMode(mode)
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			if (mode === 'mapping') {
 				mappingStore.setMappingMappingKey(key)
 			} else if (mode === 'cast') {

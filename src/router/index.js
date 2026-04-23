@@ -14,6 +14,7 @@ import WebhooksIndex from '../views/Webhook/WebhooksIndex.vue'
 import JobsIndex from '../views/Job/JobsIndex.vue'
 import JobLogIndex from '../views/Job/JobLogIndex.vue'
 import MappingsIndex from '../views/Mapping/MappingsIndex.vue'
+import MappingDetails from '../views/Mapping/MappingDetails.vue'
 import RulesIndex from '../views/rule/RuleIndex.vue'
 import SynchronizationsIndex from '../views/Synchronization/SynchronizationsIndex.vue'
 import ContractsIndex from '../views/contracts/ContractsIndex.vue'
@@ -48,7 +49,7 @@ const router = new Router({
 		{ path: '/jobs', components: { default: JobsIndex } },
 		{ path: '/jobs/logs', components: { default: JobLogIndex, sidebar: JobLogSideBar } },
 		{ path: '/mappings', components: { default: MappingsIndex } },
-		{ path: '/mappings/:id', components: { default: MappingsIndex } },
+		{ path: '/mappings/:id', components: { default: MappingDetails } },
 		{ path: '/rules', components: { default: RulesIndex } },
 		{ path: '/rules/:id', components: { default: RulesIndex } },
 		{ path: '/synchronizations', components: { default: SynchronizationsIndex } },

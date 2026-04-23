@@ -131,7 +131,7 @@ export default {
 	},
 	methods: {
 		getItemTypeFromModal() {
-			return mappingStore.getEditingMode()
+			return mappingStore.editingMode
 		},
 		initialize() {
 			this.itemType = this.getItemTypeFromModal()
@@ -142,11 +142,11 @@ export default {
 			this.oldKey = ''
 			this.isEdit = false
 
-			if (!mappingStore.mappingItem) return
+			if (!mappingStore.item) return
 
 			if (this.itemType === 'cast') {
 				if (!mappingStore.mappingCastKey) return
-				const castEntry = Object.entries(mappingStore.mappingItem.cast || {}).find(([key]) => key === mappingStore.mappingCastKey)
+				const castEntry = Object.entries(mappingStore.item.cast || {}).find(([key]) => key === mappingStore.mappingCastKey)
 				if (castEntry) {
 					this.keyInput = castEntry[0] || ''
 					this.valueInput = castEntry[1] || ''
@@ -155,7 +155,7 @@ export default {
 				}
 			} else if (this.itemType === 'mapping') {
 				if (!mappingStore.mappingMappingKey) return
-				const mappingEntry = Object.entries(mappingStore.mappingItem.mapping || {}).find(([key]) => key === mappingStore.mappingMappingKey)
+				const mappingEntry = Object.entries(mappingStore.item.mapping || {}).find(([key]) => key === mappingStore.mappingMappingKey)
 				if (mappingEntry) {
 					this.keyInput = mappingEntry[0] || ''
 					this.valueInput = mappingEntry[1] || ''
@@ -172,15 +172,15 @@ export default {
 		},
 		isKeyTaken(key) {
 			if (!key) return false
-			if (!mappingStore.mappingItem) return false
+			if (!mappingStore.item) return false
 
 			if (this.itemType === 'unset') {
-				const allKeys = mappingStore.mappingItem?.unset || []
+				const allKeys = mappingStore.item?.unset || []
 				if (this.oldKey === key) return false
 				return allKeys.includes(key)
 			}
 
-			const container = (mappingStore.mappingItem && mappingStore.mappingItem[this.itemType]) || {}
+			const container = (mappingStore.item && mappingStore.item[this.itemType]) || {}
 			if (this.oldKey === key) return false
 			return Object.prototype.hasOwnProperty.call(container, key)
 		},
@@ -211,15 +211,15 @@ export default {
 
 			try {
 				// Ensure mapping has a valid name to avoid backend slug errors
-				const active = mappingStore.mappingItem
+				const active = mappingStore.item
 				if (!active?.name || typeof active.name !== 'string' || !active.name.trim()) {
 					throw new Error('Please set a valid mapping name before adding items')
 				}
 
-				let newMappingRaw = { ...mappingStore.mappingItem }
+				let newMappingRaw = { ...mappingStore.item }
 
 				if (this.itemType === 'unset') {
-					const currentUnset = Array.isArray(mappingStore.mappingItem?.unset) ? [...mappingStore.mappingItem.unset] : []
+					const currentUnset = Array.isArray(mappingStore.item?.unset) ? [...mappingStore.item.unset] : []
 					if (this.isEdit && this.oldKey) {
 						const index = currentUnset.indexOf(this.oldKey)
 						if (index > -1) {
@@ -234,7 +234,7 @@ export default {
 					}
 				} else {
 					const prop = this.itemType
-					const existingObj = (mappingStore.mappingItem && mappingStore.mappingItem[prop]) || {}
+					const existingObj = (mappingStore.item && mappingStore.item[prop]) || {}
 					const nextObj = {
 						...existingObj,
 						[(this.keyInput || '').trim()]: (this.valueInput || '').trim(),
@@ -249,14 +249,14 @@ export default {
 				}
 
 				const mappingEntity = new Mapping(newMappingRaw)
-				await mappingStore.saveMapping(mappingEntity)
+				await mappingStore.save(mappingEntity)
 
 				this.success = true
 				this.loading = false
 				// refresh active mapping state immediately
-				const refreshId = (mappingStore.getEditingMappingId && mappingStore.getEditingMappingId()) || (mappingStore.getMappingItem && mappingStore.getMappingItem()?.id)
+				const refreshId = mappingStore.editingMappingId || mappingStore.item?.id
 				if (refreshId) {
-					mappingStore.fetchMapping(refreshId)
+					mappingStore.getOne(refreshId)
 				}
 				this.closeTimeoutFunc = setTimeout(this.closeDialog, 2000)
 			} catch (e) {

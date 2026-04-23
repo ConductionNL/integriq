@@ -90,9 +90,9 @@ export const useImportExportStore = defineStore(
 								)
 							case 'mapping':
 								return (
-									mappingStore.refreshMappingList().then(() => {
-										const mapping = mappingStore.mappingList.find(mapping => mapping.id === response.data.object.id)
-										mappingStore.setMappingItem(mapping)
+									mappingStore.refreshList().then(() => {
+										const mapping = mappingStore.list.find(mapping => mapping.id === response.data.object.id)
+										mappingStore.setItem(mapping)
 									})
 								)
 							case 'rule':

@@ -4,229 +4,242 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'viewMapping'"
-		ref="modalRef"
-		:name="mappingStore.mappingItem?.name || t('openconnector', 'Mapping Details')"
-		@close="navigationStore.setModal(false)">
-		<div class="modal-content">
-			<p v-if="mappingStore.mappingItem?.description" class="mapping-description">
-				{{ mappingStore.mappingItem.description }}
-			</p>
+	<Fragment>
+		<NcModal v-if="navigationStore.modal === 'viewMapping'"
+			ref="modalRef"
+			:name="mappingStore.item?.name || t('openconnector', 'Mapping Details')"
+			@close="navigationStore.setModal(false)">
+			<div class="modal-content">
+				<p v-if="mappingStore.item?.description" class="mapping-description">
+					{{ mappingStore.item.description }}
+				</p>
 
-			<!-- Mapping Properties -->
-			<div class="mapping-properties">
-				<table class="statisticsTable mappingStats">
-					<thead>
-						<tr>
-							<th>{{ t('openconnector', 'Property') }}</th>
-							<th>{{ t('openconnector', 'Value') }}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>{{ t('openconnector', 'ID') }}</td>
-							<td>{{ mappingStore.mappingItem?.id || '-' }}</td>
-						</tr>
-						<tr>
-							<td>{{ t('openconnector', 'UUID') }}</td>
-							<td>{{ mappingStore.mappingItem?.uuid || '-' }}</td>
-						</tr>
-						<tr>
-							<td>{{ t('openconnector', 'Reference') }}</td>
-							<td>{{ mappingStore.mappingItem?.reference || '-' }}</td>
-						</tr>
-						<tr>
-							<td>{{ t('openconnector', 'Version') }}</td>
-							<td>{{ mappingStore.mappingItem?.version || '-' }}</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+				<!-- Mapping Properties -->
+				<div class="mapping-properties">
+					<table class="statisticsTable mappingStats">
+						<thead>
+							<tr>
+								<th>{{ t('openconnector', 'Property') }}</th>
+								<th>{{ t('openconnector', 'Value') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>{{ t('openconnector', 'ID') }}</td>
+								<td>{{ mappingStore.item?.id || '-' }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openconnector', 'UUID') }}</td>
+								<td>{{ mappingStore.item?.uuid || '-' }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openconnector', 'Reference') }}</td>
+								<td>{{ mappingStore.item?.reference || '-' }}</td>
+							</tr>
+							<tr>
+								<td>{{ t('openconnector', 'Version') }}</td>
+								<td>{{ mappingStore.item?.version || '-' }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 
-			<!-- Tabs -->
-			<div class="tabContainer">
-				<BTabs content-class="mt-3" justified>
-					<BTab title="Mapping">
-						<div v-if="mappingStore.mappingItem?.mapping !== null && Object.keys(mappingStore.mappingItem?.mapping || {}).length" class="mapping-list">
-							<NcListItem v-for="(value, key, i) in mappingStore.mappingItem?.mapping"
-								:key="`${key}${i}`"
-								:name="key"
-								:bold="false"
-								:force-display-actions="true"
-								:active="mappingStore.mappingMappingKey === key"
-								@click="setActiveMappingMappingKey(key)">
-								<template #icon>
-									<SitemapOutline :class="mappingStore.mappingMappingKey === key && 'selectedIcon'" :size="44" />
-								</template>
-								<template #subname>
-									{{ value }}
-								</template>
-								<template #actions>
-									<NcActionButton close-after-click @click="editMappingMapping(key)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton close-after-click @click="deleteMappingMapping(key)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</template>
-							</NcListItem>
-						</div>
-						<div v-if="!Object.keys(mappingStore.mappingItem?.mapping || {}).length" class="tabPanel">
-							<NcEmptyContent
-								:name="t('openconnector', 'No mapping')"
-								:description="t('openconnector', 'No mapping found for this mapping')">
-								<template #icon>
-									<SitemapOutline :size="64" />
-								</template>
-								<template #action>
-									<NcButton @click="addMappingMapping">
-										{{ t('openconnector', 'Add Mapping') }}
-									</NcButton>
-								</template>
-							</NcEmptyContent>
-						</div>
-					</BTab>
-					<BTab title="Cast">
-						<div v-if="mappingStore.mappingItem?.cast !== null && Object.keys(mappingStore.mappingItem?.cast || {}).length" class="cast-list">
-							<NcListItem v-for="(value, key, i) in mappingStore.mappingItem?.cast"
-								:key="`${key}${i}`"
-								:name="key"
-								:bold="false"
-								:force-display-actions="true"
-								:active="mappingStore.mappingCastKey === key"
-								@click="setActiveMappingCastKey(key)">
-								<template #icon>
-									<SwapHorizontal :class="mappingStore.mappingCastKey === key && 'selectedIcon'" :size="44" />
-								</template>
-								<template #subname>
-									{{ value }}
-								</template>
-								<template #actions>
-									<NcActionButton close-after-click @click="editMappingCast(key)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton close-after-click @click="deleteMappingCast(key)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</template>
-							</NcListItem>
-						</div>
-						<div v-if="!Object.keys(mappingStore.mappingItem?.cast || {}).length" class="tabPanel">
-							<NcEmptyContent
-								:name="t('openconnector', 'No cast')"
-								:description="t('openconnector', 'No cast found for this mapping')">
-								<template #icon>
-									<SwapHorizontal :size="64" />
-								</template>
-								<template #action>
-									<NcButton @click="addMappingCast">
-										{{ t('openconnector', 'Add Cast') }}
-									</NcButton>
-								</template>
-							</NcEmptyContent>
-						</div>
-					</BTab>
-					<BTab title="Unset">
-						<div v-if="mappingStore.mappingItem?.unset?.length" class="unset-list">
-							<NcListItem v-for="(value, i) in mappingStore.mappingItem?.unset"
-								:key="`${value}${i}`"
-								:name="value"
-								:bold="false"
-								:force-display-actions="true">
-								<template #icon>
-									<Eraser :class="mappingStore.mappingUnsetKey === value && 'selectedIcon'" :size="44" />
-								</template>
-								<template #actions>
-									<NcActionButton close-after-click @click="editMappingUnset(value)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton close-after-click @click="deleteMappingUnset(value)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</template>
-							</NcListItem>
-						</div>
-						<div v-if="!mappingStore.mappingItem?.unset?.length" class="tabPanel">
-							<NcEmptyContent
-								:name="t('openconnector', 'No unset')"
-								:description="t('openconnector', 'No unset found for this mapping')">
-								<template #icon>
-									<Eraser :size="64" />
-								</template>
-								<template #action>
-									<NcButton @click="addMappingUnset">
-										{{ t('openconnector', 'Add Unset') }}
-									</NcButton>
-								</template>
-							</NcEmptyContent>
-						</div>
-					</BTab>
-				</BTabs>
-			</div>
+				<!-- Tabs -->
+				<div class="tabContainer">
+					<BTabs content-class="mt-3" justified>
+						<BTab title="Mapping">
+							<div v-if="mappingStore.item?.mapping !== null && Object.keys(mappingStore.item?.mapping || {}).length" class="mapping-list">
+								<NcListItem v-for="(value, key, i) in mappingStore.item?.mapping"
+									:key="`${key}${i}`"
+									:name="key"
+									:bold="false"
+									:force-display-actions="true"
+									:active="mappingStore.mappingMappingKey === key"
+									@click="setActiveMappingMappingKey(key)">
+									<template #icon>
+										<SitemapOutline :class="mappingStore.mappingMappingKey === key && 'selectedIcon'" :size="44" />
+									</template>
+									<template #subname>
+										{{ value }}
+									</template>
+									<template #actions>
+										<NcActionButton close-after-click @click="editMappingMapping(key)">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+										<NcActionButton close-after-click @click="deleteMappingMapping(key)">
+											<template #icon>
+												<Delete :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="!Object.keys(mappingStore.item?.mapping || {}).length" class="tabPanel">
+								<NcEmptyContent
+									:name="t('openconnector', 'No mapping')"
+									:description="t('openconnector', 'No mapping found for this mapping')">
+									<template #icon>
+										<SitemapOutline :size="64" />
+									</template>
+									<template #action>
+										<NcButton @click="addMappingMapping">
+											{{ t('openconnector', 'Add Mapping') }}
+										</NcButton>
+									</template>
+								</NcEmptyContent>
+							</div>
+						</BTab>
+						<BTab title="Cast">
+							<div v-if="mappingStore.item?.cast !== null && Object.keys(mappingStore.item?.cast || {}).length" class="cast-list">
+								<NcListItem v-for="(value, key, i) in mappingStore.item?.cast"
+									:key="`${key}${i}`"
+									:name="key"
+									:bold="false"
+									:force-display-actions="true"
+									:active="mappingStore.mappingCastKey === key"
+									@click="setActiveMappingCastKey(key)">
+									<template #icon>
+										<SwapHorizontal :class="mappingStore.mappingCastKey === key && 'selectedIcon'" :size="44" />
+									</template>
+									<template #subname>
+										{{ value }}
+									</template>
+									<template #actions>
+										<NcActionButton close-after-click @click="editMappingCast(key)">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+										<NcActionButton close-after-click @click="deleteMappingCast(key)">
+											<template #icon>
+												<Delete :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="!Object.keys(mappingStore.item?.cast || {}).length" class="tabPanel">
+								<NcEmptyContent
+									:name="t('openconnector', 'No cast')"
+									:description="t('openconnector', 'No cast found for this mapping')">
+									<template #icon>
+										<SwapHorizontal :size="64" />
+									</template>
+									<template #action>
+										<NcButton @click="addMappingCast">
+											{{ t('openconnector', 'Add Cast') }}
+										</NcButton>
+									</template>
+								</NcEmptyContent>
+							</div>
+						</BTab>
+						<BTab title="Unset">
+							<div v-if="mappingStore.item?.unset?.length" class="unset-list">
+								<NcListItem v-for="(value, i) in mappingStore.item?.unset"
+									:key="`${value}${i}`"
+									:name="value"
+									:bold="false"
+									:force-display-actions="true">
+									<template #icon>
+										<Eraser :class="mappingStore.mappingUnsetKey === value && 'selectedIcon'" :size="44" />
+									</template>
+									<template #actions>
+										<NcActionButton close-after-click @click="editMappingUnset(value)">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+											Edit
+										</NcActionButton>
+										<NcActionButton close-after-click @click="deleteMappingUnset(value)">
+											<template #icon>
+												<Delete :size="20" />
+											</template>
+											Delete
+										</NcActionButton>
+									</template>
+								</NcListItem>
+							</div>
+							<div v-if="!mappingStore.item?.unset?.length" class="tabPanel">
+								<NcEmptyContent
+									:name="t('openconnector', 'No unset')"
+									:description="t('openconnector', 'No unset found for this mapping')">
+									<template #icon>
+										<Eraser :size="64" />
+									</template>
+									<template #action>
+										<NcButton @click="addMappingUnset">
+											{{ t('openconnector', 'Add Unset') }}
+										</NcButton>
+									</template>
+								</NcEmptyContent>
+							</div>
+						</BTab>
+					</BTabs>
+				</div>
 
-			<!-- Action buttons -->
-			<div class="modal-actions">
-				<NcButton @click="navigationStore.setModal('editMapping')">
-					<template #icon>
-						<Pencil :size="20" />
-					</template>
-					Edit
-				</NcButton>
-				<NcButton @click="addMappingMapping()">
-					<template #icon>
-						<MapPlus :size="20" />
-					</template>
-					Add Mapping
-				</NcButton>
-				<NcButton @click="addMappingCast()">
-					<template #icon>
-						<SwapHorizontal :size="20" />
-					</template>
-					Add Cast
-				</NcButton>
-				<NcButton @click="addMappingUnset()">
-					<template #icon>
-						<Eraser :size="20" />
-					</template>
-					Add Unset
-				</NcButton>
-				<NcButton @click="navigationStore.setModal('testMapping')">
-					<template #icon>
-						<TestTube :size="20" />
-					</template>
-					Test
-				</NcButton>
-				<NcButton type="error" @click="navigationStore.setDialog('deleteMapping')">
-					<template #icon>
-						<TrashCanOutline :size="20" />
-					</template>
-					Delete
-				</NcButton>
+				<!-- Action buttons -->
+				<div class="modal-actions">
+					<NcButton @click="navigationStore.setModal('editMapping')">
+						<template #icon>
+							<Pencil :size="20" />
+						</template>
+						Edit
+					</NcButton>
+					<NcButton @click="addMappingMapping()">
+						<template #icon>
+							<MapPlus :size="20" />
+						</template>
+						Add Mapping
+					</NcButton>
+					<NcButton @click="addMappingCast()">
+						<template #icon>
+							<SwapHorizontal :size="20" />
+						</template>
+						Add Cast
+					</NcButton>
+					<NcButton @click="addMappingUnset()">
+						<template #icon>
+							<Eraser :size="20" />
+						</template>
+						Add Unset
+					</NcButton>
+					<NcButton @click="navigationStore.setModal('testMapping')">
+						<template #icon>
+							<TestTube :size="20" />
+						</template>
+						Test
+					</NcButton>
+					<NcButton type="error" @click="showDeleteDialog = true">
+						<template #icon>
+							<TrashCanOutline :size="20" />
+						</template>
+						Delete
+					</NcButton>
+				</div>
 			</div>
-		</div>
-	</NcModal>
+		</NcModal>
+
+		<CnDeleteDialog
+			v-if="showDeleteDialog && mappingStore.item"
+			ref="deleteDialog"
+			:item="mappingStore.item"
+			name-field="name"
+			:dialog-title="t('openconnector', 'Delete mapping')"
+			:success-text="t('openconnector', 'Successfully deleted mapping')"
+			@confirm="onDeleteConfirm"
+			@close="showDeleteDialog = false" />
+	</Fragment>
 </template>
 
 <script>
 import { NcModal, NcButton, NcListItem, NcActionButton, NcEmptyContent } from '@nextcloud/vue'
+import { CnDeleteDialog } from '@conduction/nextcloud-vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import MapPlus from 'vue-material-design-icons/MapPlus.vue'
@@ -245,6 +258,7 @@ export default {
 		NcListItem,
 		NcActionButton,
 		NcEmptyContent,
+		CnDeleteDialog,
 		BTabs,
 		BTab,
 		Pencil,
@@ -256,14 +270,31 @@ export default {
 		TestTube,
 		Eraser,
 	},
+	data() {
+		return {
+			showDeleteDialog: false,
+		}
+	},
 	methods: {
+		async onDeleteConfirm() {
+			try {
+				await mappingStore.deleteOne(mappingStore.item)
+				this.$refs.deleteDialog.setResult({ success: true })
+				this.showDeleteDialog = false
+				navigationStore.setModal(false)
+			} catch (e) {
+				this.$refs.deleteDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while deleting the mapping'),
+				})
+			}
+		},
 		/**
 		 * Delete mapping mapping
 		 * @param {string} key - The mapping key to delete
 		 */
 		deleteMappingMapping(key) {
 			mappingStore.setEditingMode('mapping')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingMappingKey(key)
 			navigationStore.setDialog('deleteMappingItem')
 		},
@@ -273,7 +304,7 @@ export default {
 		 */
 		editMappingMapping(key) {
 			mappingStore.setEditingMode('mapping')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingMappingKey(key)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -282,7 +313,7 @@ export default {
 		 */
 		addMappingMapping() {
 			mappingStore.setEditingMode('mapping')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingMappingKey(null)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -303,7 +334,7 @@ export default {
 		 */
 		deleteMappingCast(key) {
 			mappingStore.setEditingMode('cast')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingCastKey(key)
 			navigationStore.setDialog('deleteMappingItem')
 		},
@@ -313,7 +344,7 @@ export default {
 		 */
 		editMappingCast(key) {
 			mappingStore.setEditingMode('cast')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingCastKey(key)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -322,7 +353,7 @@ export default {
 		 */
 		addMappingCast() {
 			mappingStore.setEditingMode('cast')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingCastKey(null)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -343,7 +374,7 @@ export default {
 		 */
 		editMappingUnset(value) {
 			mappingStore.setEditingMode('unset')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingUnsetKey(value)
 			navigationStore.setDialog('editMappingItem')
 		},
@@ -353,7 +384,7 @@ export default {
 		 */
 		deleteMappingUnset(value) {
 			mappingStore.setEditingMode('unset')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingUnsetKey(value)
 			navigationStore.setDialog('deleteMappingItem')
 		},
@@ -362,7 +393,7 @@ export default {
 		 */
 		addMappingUnset() {
 			mappingStore.setEditingMode('unset')
-			mappingStore.setEditingMappingId(mappingStore.mappingItem?.id)
+			mappingStore.setEditingMappingId(mappingStore.item?.id)
 			mappingStore.setMappingUnsetKey(null)
 			navigationStore.setDialog('editMappingItem')
 		},

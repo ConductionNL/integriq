@@ -12,8 +12,7 @@ import { navigationStore } from '../store/store.js'
 		<EditJob />
 		<DeleteLog />
 		<EditLog />
-		<DeleteMapping />
-		<EditMapping />
+		<EditMapping v-if="navigationStore.modal === 'editMapping'" />
 		<TestMapping v-if="navigationStore.modal === 'testMapping'" />
 		<EditMappingItem />
 		<DeleteMappingItem />
@@ -55,7 +54,6 @@ import DeleteJob from './Job/DeleteJob.vue'
 import EditLog from './Log/EditLog.vue'
 import DeleteLog from './Log/DeleteLog.vue'
 import EditMapping from './Mapping/EditMapping.vue'
-import DeleteMapping from './Mapping/DeleteMapping.vue'
 import TestMapping from './MappingTest/TestMapping.vue'
 import EditSynchronization from './Synchronization/EditSynchronization.vue'
 import DeleteSynchronization from './Synchronization/DeleteSynchronization.vue'
@@ -96,7 +94,6 @@ export default {
 		TestJob,
 		DeleteLog,
 		EditLog,
-		DeleteMapping,
 		EditMapping,
 		TestMapping,
 		DeleteSynchronization,

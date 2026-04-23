@@ -75,7 +75,7 @@ export default {
 	},
 	computed: {
 		itemType() {
-			return mappingStore.getEditingMode()
+			return mappingStore.editingMode
 		},
 		modalLabel() {
 			if (this.itemType === 'cast') return 'Cast'
@@ -119,10 +119,10 @@ export default {
 					return
 				}
 
-				let newMappingRaw = { ...mappingStore.mappingItem }
+				let newMappingRaw = { ...mappingStore.item }
 
 				if (this.itemType === 'unset') {
-					const cloneUnset = Array.isArray(mappingStore.mappingItem?.unset) ? [...mappingStore.mappingItem.unset] : []
+					const cloneUnset = Array.isArray(mappingStore.item?.unset) ? [...mappingStore.item.unset] : []
 					const index = cloneUnset.indexOf(keyToDelete)
 					if (index > -1) {
 						cloneUnset.splice(index, 1)
@@ -137,7 +137,7 @@ export default {
 					}
 				} else {
 					const prop = this.itemType
-					const clonedContainer = { ...(mappingStore.mappingItem?.[prop] || {}) }
+					const clonedContainer = { ...(mappingStore.item?.[prop] || {}) }
 					if (Object.prototype.hasOwnProperty.call(clonedContainer, keyToDelete)) {
 						delete clonedContainer[keyToDelete]
 					}
@@ -148,14 +148,14 @@ export default {
 				}
 
 				const mappingItem = new Mapping(newMappingRaw)
-				mappingStore.saveMapping(mappingItem)
+				mappingStore.save(mappingItem)
 					.then(({ response }) => {
 						this.loading = false
 						this.success = response?.ok ?? true
 						// refresh mapping state
-						const refreshId = (mappingStore.getEditingMappingId && mappingStore.getEditingMappingId()) || (mappingStore.getMappingItem && mappingStore.getMappingItem()?.id)
+						const refreshId = mappingStore.editingMappingId || mappingStore.item?.id
 						if (refreshId) {
-							mappingStore.fetchMapping(refreshId)
+							mappingStore.getOne(refreshId)
 						}
 						this.closeTimeoutFunc = setTimeout(this.closeDialog, 2000)
 					})

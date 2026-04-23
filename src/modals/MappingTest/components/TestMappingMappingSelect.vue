@@ -335,20 +335,20 @@ export default {
 		async fetchMappings(currentMappingItem = null) {
 			this.mappingsLoading = true
 
-			return mappingStore.refreshMappingList()
+			return mappingStore.refreshList()
 				.then(() => {
 					if (!currentMappingItem) {
-						currentMappingItem = mappingStore.mappingItem || null
+						currentMappingItem = mappingStore.item || null
 					}
 
-					const selectedMapping = mappingStore.mappingList.find((mapping) => mapping.id === (currentMappingItem?.id || Symbol('mapping item id not found')))
+					const selectedMapping = mappingStore.list.find((mapping) => mapping.id === (currentMappingItem?.id || Symbol('mapping item id not found')))
 
-					const fallbackMapping = mappingStore.mappingList[0]
+					const fallbackMapping = mappingStore.list[0]
 						? {
-							id: mappingStore.mappingList[0].id,
-							label: mappingStore.mappingList[0].name,
-							summary: mappingStore.mappingList[0].description,
-							fullMapping: mappingStore.mappingList[0],
+							id: mappingStore.list[0].id,
+							label: mappingStore.list[0].name,
+							summary: mappingStore.list[0].description,
+							fullMapping: mappingStore.list[0],
 						}
 						: null
 
@@ -359,7 +359,7 @@ export default {
 								label: 'No mapping',
 								removeStyle: true,
 							},
-							...mappingStore.mappingList.map((mapping) => ({
+							...mappingStore.list.map((mapping) => ({
 								id: mapping.id,
 								label: mapping.name,
 								summary: mapping.description,
@@ -475,7 +475,7 @@ export default {
 				unset: this.mappingItem.unset.split(/ *, */g).filter(Boolean),
 			})
 
-			mappingStore.saveMapping(newMappingItem)
+			mappingStore.save(newMappingItem)
 				.then(({ response, entity }) => {
 					this.savingMappingSuccess = response.ok
 					response.ok && this.fetchMappings(entity)

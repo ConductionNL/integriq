@@ -570,8 +570,9 @@ export default {
 		getSourceTargetMappings() {
 			this.sourceTargetMappingLoading = true
 
-			mappingStore.refreshMappingList()
-				.then(({ entities }) => {
+			mappingStore.refreshList()
+				.then(() => {
+					const entities = mappingStore.list
 					const activeSourceMapping = entities.find(mapping => mapping.id.toString() === this.synchronizationItem.sourceTargetMapping.toString())
 					const activeTargetMapping = entities.find(mapping => mapping.id.toString() === this.synchronizationItem.targetSourceMapping.toString())
 					const sourceHashMapping = entities.find(mapping => mapping.id.toString() === this.synchronizationItem.sourceHashMapping.toString())
