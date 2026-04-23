@@ -2989,7 +2989,7 @@ class SynchronizationService
 
 		try {
 			$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-			$objectEntity = $objectService->findByUuid(uuid: $objectId);
+			$objectEntity = $objectService->find(id: $objectId);
 			$file = $fileService->saveFile(
 				objectEntity: $objectEntity,
 				fileName: $filename,
@@ -3017,7 +3017,7 @@ class SynchronizationService
 			if ($shouldPublish && $file !== null) {
 				try {
 					$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-					$objectEntity = $objectService->findByUuid(uuid: $objectId);
+					$objectEntity = $objectService->find(id: $objectId);
 					$fileService->publishFile(object: $objectEntity, file: $filename);
 				} catch (Exception $e) {
 					// Log but don't fail the entire operation
@@ -3498,7 +3498,7 @@ class SynchronizationService
 
         // Get the object entity and file service
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-        $objectEntity = $objectService->findByUuid(uuid: $objectId);
+        $objectEntity = $objectService->find(id: $objectId);
         $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 
         // Check if associative array (multiple files with metadata)
@@ -3800,7 +3800,7 @@ class SynchronizationService
 
 		// Check if object adheres to conditions.
 		// Take note, JsonLogic::apply() returns a range of return types, so checking it with '=== false' or '!== true' does not work properly.
-		
+
 		if ($synchronization->getConditions() !== [] && !JsonLogic::apply($synchronization->getConditions(), $conditionsObject)) {
 			// Increment skipped count in log since object doesn't meet conditions
 			$result['objects']['skipped']++;
@@ -4058,7 +4058,7 @@ class SynchronizationService
 			// Get the object entity
 			$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
 			try {
-				$objectEntity = $objectService->findByUuid(uuid: $objectId);
+				$objectEntity = $objectService->find(id: $objectId);
 			} catch (DoesNotExistException $e) {
 				// It is possible we are trying to delete files for an object id where the object has not been persisted yet (for example a zgw informatieobject can have a beforehand generated uuid)
 				return 0;
