@@ -11,6 +11,8 @@ export type TEndpoint = {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
     targetType: string
     targetId: string
+    slug: string
+    configurations: string[]
     created: string
     updated: string
     rules: string[] // Array of rule IDs associated with this endpoint
