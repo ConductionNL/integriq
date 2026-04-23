@@ -1,6 +1,8 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { endpointStore, navigationStore } from '../../store/store.js'
+import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
+import { Endpoint } from '../../entities/index.js'
+import { endpointSchema } from './endpointSchema.js'
 </script>
 
 <template>
@@ -11,15 +13,14 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			:description="t('openconnector', 'Manage your endpoints and their rules')"
 			:show-title="true"
 			:objects="filteredEndpoints"
-			:columns="tableColumns"
+			:schema="schema"
+			:exclude-columns="['description', 'endpointArray', 'endpointRegex', 'configurations', 'slug', 'targetId', 'targetType', 'version']"
 			:pagination="paginationData"
 			:loading="endpointStore.loading"
 			:view-mode="endpointStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedEndpoints"
-			:show-edit-action="false"
 			:show-copy-action="false"
-			:show-delete-action="false"
 			:show-mass-import="false"
 			:show-mass-export="false"
 			:show-mass-copy="false"
@@ -28,7 +29,9 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			:add-label="t('openconnector', 'Add endpoint')"
 			row-key="id"
 			:empty-text="emptyContentName"
-			@add="addEndpoint"
+			name-field="name"
+			@add="onAdd"
+			@delete="onDelete"
 			@refresh="endpointStore.refreshList()"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -56,13 +59,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('viewEndpoint')">
+							<NcActionButton close-after-click @click="openEndpoint(endpoint)">
 								<template #icon>
 									<Eye :size="20" />
 								</template>
 								{{ t('openconnector', 'View') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('editEndpoint')">
+							<NcActionButton close-after-click @click="editEndpoint(endpoint)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
@@ -74,13 +77,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openconnector', 'Export endpoint') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('addEndpointRule')">
+							<NcActionButton close-after-click @click="openAddRuleDialog(endpoint)">
 								<template #icon>
 									<Plus :size="20" />
 								</template>
 								{{ t('openconnector', 'Add Rule') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
+							<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(endpoint)">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -169,10 +172,6 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				<span v-else>-</span>
 			</template>
 
-			<template #column-version="{ row }">
-				{{ row.version || '-' }}
-			</template>
-
 			<template #column-rules="{ row }">
 				{{ row.rules?.length || 0 }}
 			</template>
@@ -187,19 +186,37 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				<span v-else>-</span>
 			</template>
 
+			<!-- Override the built-in form-dialog so we can inject the targetId picker.
+			     CnIndexPage does not forward per-field scoped slots to its inner CnFormDialog. -->
+			<template #form-dialog="{ show, item: editItem, schema: dialogSchema, close }">
+				<CnFormDialog
+					v-if="show"
+					ref="formDialog"
+					:schema="dialogSchema"
+					:item="editItem"
+					:dialog-title="editItem?.id ? t('openconnector', 'Edit endpoint') : t('openconnector', 'Create endpoint')"
+					name-field="name"
+					@confirm="onFormConfirmInSlot(editItem, $event)"
+					@close="close">
+					<template #field-targetId="{ value, updateField }">
+						<EndpointTargetIdField :model-value="value || ''" @update:model-value="updateField('targetId', $event)" />
+					</template>
+				</CnFormDialog>
+			</template>
+
 			<!-- Row actions (table view) -->
-			<template #row-actions="{ row: endpoint }">
+			<template #row-actions="{ object: endpoint }">
 				<NcActions :primary="false">
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('viewEndpoint')">
+					<NcActionButton close-after-click @click="openEndpoint(endpoint)">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
 						{{ t('openconnector', 'View') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('editEndpoint')">
+					<NcActionButton close-after-click @click="editEndpoint(endpoint)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
@@ -211,13 +228,13 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openconnector', 'Export endpoint') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setModal('addEndpointRule')">
+					<NcActionButton close-after-click @click="openAddRuleDialog(endpoint)">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
 						{{ t('openconnector', 'Add Rule') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
+					<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(endpoint)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -226,12 +243,24 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				</NcActions>
 			</template>
 		</CnIndexPage>
+
+		<!-- Standalone add-rule dialog, driven by a local flag so the list page
+		     doesn't rely on navigationStore coordination -->
+		<CnFormDialog
+			v-if="showAddRuleDialog && addRuleTarget"
+			ref="addRuleDialog"
+			:schema="addRuleSchemaForTarget"
+			:item="{}"
+			:dialog-title="t('openconnector', 'Add rule to endpoint')"
+			:confirm-label="t('openconnector', 'Add')"
+			@confirm="onAddRuleConfirm"
+			@close="closeAddRuleDialog" />
 	</NcAppContent>
 </template>
 
 <script>
 import { NcAppContent, NcActions, NcActionButton, NcDateTime } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnFormDialog } from '@conduction/nextcloud-vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -241,12 +270,14 @@ import FileImportOutline from 'vue-material-design-icons/FileImportOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import { getTheme } from '../../services/getTheme.js'
+import EndpointTargetIdField from './EndpointTargetIdField.vue'
 
 export default {
 	name: 'EndpointsIndex',
 	components: {
 		NcAppContent,
 		CnIndexPage,
+		CnFormDialog,
 		NcActions,
 		NcActionButton,
 		NcDateTime,
@@ -258,6 +289,7 @@ export default {
 		FileImportOutline,
 		Plus,
 		Eye,
+		EndpointTargetIdField,
 	},
 	data() {
 		return {
@@ -266,6 +298,8 @@ export default {
 				page: 1,
 				limit: 20,
 			},
+			showAddRuleDialog: false,
+			addRuleTarget: null,
 		}
 	},
 	computed: {
@@ -275,19 +309,11 @@ export default {
 		navigationStore() {
 			return navigationStore
 		},
+		schema() {
+			return endpointSchema()
+		},
 		filteredEndpoints() {
 			return endpointStore.list || []
-		},
-		tableColumns() {
-			return [
-				{ key: 'name', label: t('openconnector', 'Name'), sortable: true },
-				{ key: 'method', label: t('openconnector', 'Method') },
-				{ key: 'endpoint', label: t('openconnector', 'Endpoint') },
-				{ key: 'version', label: t('openconnector', 'Version') },
-				{ key: 'rules', label: t('openconnector', 'Rules') },
-				{ key: 'created', label: t('openconnector', 'Created'), sortable: true },
-				{ key: 'updated', label: t('openconnector', 'Updated'), sortable: true },
-			]
 		},
 		paginationData() {
 			const page = this.pagination.page || 1
@@ -301,18 +327,103 @@ export default {
 			if (!endpointStore.list?.length) return t('openconnector', 'No endpoints found')
 			return t('openconnector', 'Loading endpoints...')
 		},
+		addRuleSchemaForTarget() {
+			const existing = (this.addRuleTarget?.rules || []).map(id => String(id))
+			return {
+				title: t('openconnector', 'Add rule to endpoint'),
+				required: ['rule'],
+				properties: {
+					rule: {
+						type: 'string',
+						title: t('openconnector', 'Select rule'),
+						enum: async () => {
+							await ruleStore.refreshRuleList()
+							return (ruleStore.ruleList || [])
+								.filter(r => !existing.includes(String(r.id)))
+								.map(r => ({ id: String(r.id), label: r.name }))
+						},
+					},
+				},
+			}
+		},
 	},
 	mounted() {
 		endpointStore.refreshList()
 	},
 	methods: {
-		addEndpoint() {
-			endpointStore.setItem(null)
-			navigationStore.setModal('editEndpoint')
+		onAdd() {
+			this.$refs.indexPage.openFormDialog(null)
+		},
+		editEndpoint(endpoint) {
+			this.$refs.indexPage.openFormDialog(endpoint)
 		},
 		openEndpoint(endpoint) {
 			if (endpoint?.id == null) return
 			this.$router.push('/endpoints/' + endpoint.id)
+		},
+		async onFormConfirmInSlot(editItem, formData) {
+			try {
+				const merged = editItem?.id ? { ...formData, id: editItem.id } : formData
+				const payload = this.prepareSavePayload(merged)
+				await endpointStore.save(payload)
+				this.$refs.formDialog.setResult({ success: true })
+			} catch (e) {
+				this.$refs.formDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while saving the endpoint'),
+				})
+			}
+		},
+		async onDelete(id) {
+			try {
+				await endpointStore.deleteOne({ id })
+				this.$refs.indexPage.setSingleDeleteResult({ success: true })
+			} catch (e) {
+				this.$refs.indexPage.setSingleDeleteResult({
+					error: e.message || t('openconnector', 'An error occurred while deleting the endpoint'),
+				})
+			}
+		},
+		prepareSavePayload(formData) {
+			return new Endpoint({
+				...formData,
+				endpointArray: Array.isArray(formData.endpointArray)
+					? formData.endpointArray
+					: (formData.endpointArray || '').split(/ *, */g).filter(Boolean),
+				configurations: (formData.configurations || []).map(c => String(c?.id ?? c)),
+				rules: (formData.rules || []).map(id => String(id)),
+			})
+		},
+		openAddRuleDialog(endpoint) {
+			this.addRuleTarget = endpoint
+			this.showAddRuleDialog = true
+		},
+		closeAddRuleDialog() {
+			this.showAddRuleDialog = false
+			this.addRuleTarget = null
+		},
+		async onAddRuleConfirm(formData) {
+			try {
+				const ruleValue = formData.rule
+				const ruleId = ruleValue?.id ?? ruleValue
+				const base = this.addRuleTarget
+				const updatedRules = [
+					...(base.rules || []).map(id => String(id)),
+					String(ruleId),
+				]
+				const payload = new Endpoint({
+					...base,
+					endpointArray: Array.isArray(base.endpointArray)
+						? base.endpointArray
+						: (base.endpointArray || '').split(/ *, */g).filter(Boolean),
+					rules: updatedRules,
+				})
+				await endpointStore.save(payload)
+				this.$refs.addRuleDialog.setResult({ success: true })
+			} catch (e) {
+				this.$refs.addRuleDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while adding the rule'),
+				})
+			}
 		},
 		onPageChanged(page) {
 			this.pagination.page = page

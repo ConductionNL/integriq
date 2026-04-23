@@ -26,6 +26,8 @@ export class Endpoint extends ReadonlyBaseClass implements TEndpoint {
 	public readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 	public readonly targetType: string
 	public readonly targetId: string
+	public readonly slug: string
+	public readonly configurations: string[]
 	public readonly created: string
 	public readonly updated: string
 	public readonly rules: string[] // Array of rule IDs associated with this endpoint
@@ -44,6 +46,8 @@ export class Endpoint extends ReadonlyBaseClass implements TEndpoint {
 			method: endpoint.method || 'GET',
 			targetType: endpoint.targetType || '',
 			targetId: endpoint.targetId || '',
+			slug: endpoint.slug || '',
+			configurations: endpoint.configurations ?? [],
 			created: getValidISOstring(endpoint.created) ?? '',
 			updated: getValidISOstring(endpoint.updated) ?? '',
 			rules: endpoint.rules ?? [], // Initialize rules array with empty array if not provided
@@ -76,6 +80,9 @@ export class Endpoint extends ReadonlyBaseClass implements TEndpoint {
 			endpointRegex: z.string(),
 			method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
 			targetType: z.string(),
+			targetId: z.string(),
+			slug: z.string().optional(),
+			configurations: z.string().array(),
 			created: z.string().datetime().or(z.literal('')).optional(),
 			updated: z.string().datetime().or(z.literal('')).optional(),
 			rules: z.string().array(), // Validate rules as array of strings (rule IDs)

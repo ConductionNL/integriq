@@ -15,6 +15,8 @@ export const mockEndpointData = (): TEndpoint[] => [
 		method: 'POST',
 		targetType: '',
 		targetId: '',
+		slug: '',
+		configurations: [],
 		created: '2024-10-08T09:05:25.812Z',
 		updated: '2024-10-08T09:05:25.812Z',
 		rules: [], // Added empty rules array
@@ -32,6 +34,8 @@ export const mockEndpointData = (): TEndpoint[] => [
 		method: 'GET',
 		targetType: '',
 		targetId: '',
+		slug: '',
+		configurations: [],
 		created: '2024-10-08T09:05:25.812Z',
 		updated: '2024-10-08T09:05:25.812Z',
 		rules: [], // Added empty rules array

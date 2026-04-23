@@ -1,13 +1,14 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
+import { endpointSchema } from '../../views/Endpoint/endpointSchema.js'
 </script>
 
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewEndpoint'"
 		ref="modalRef"
 		:name="endpointStore.item?.name || t('openconnector', 'Endpoint Details')"
-		@close="navigationStore.setModal(false)">
+		@close="onModalClose">
 		<div class="modal-content">
 			<p v-if="endpointStore.item?.description" class="endpoint-description">
 				{{ endpointStore.item.description }}
@@ -113,7 +114,7 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 									<SitemapOutline :size="64" />
 								</template>
 								<template #action>
-									<NcButton @click="addRule">
+									<NcButton @click="showAddRuleDialog = true">
 										{{ t('openconnector', 'Add Rule') }}
 									</NcButton>
 								</template>
@@ -125,31 +126,66 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 
 			<!-- Action buttons -->
 			<div class="modal-actions">
-				<NcButton @click="navigationStore.setModal('editEndpoint')">
+				<NcButton @click="showEditDialog = true">
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
 					{{ t('openconnector', 'Edit') }}
 				</NcButton>
-				<NcButton @click="addRule()">
+				<NcButton @click="showAddRuleDialog = true">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
 					{{ t('openconnector', 'Add Rule') }}
 				</NcButton>
-				<NcButton type="error" @click="navigationStore.setDialog('deleteEndpoint')">
+				<NcButton type="error" @click="showDeleteDialog = true">
 					<template #icon>
 						<TrashCanOutline :size="20" />
 					</template>
 					{{ t('openconnector', 'Delete') }}
 				</NcButton>
 			</div>
+
+			<CnFormDialog
+				v-if="showEditDialog && endpointStore.item"
+				ref="formDialog"
+				:schema="schema"
+				:item="endpointStore.item"
+				:dialog-title="t('openconnector', 'Edit endpoint')"
+				name-field="name"
+				@confirm="onFormConfirm"
+				@close="showEditDialog = false">
+				<template #field-targetId="{ value, updateField }">
+					<EndpointTargetIdField :model-value="value || ''" @update:model-value="updateField('targetId', $event)" />
+				</template>
+			</CnFormDialog>
+
+			<CnDeleteDialog
+				v-if="showDeleteDialog && endpointStore.item"
+				ref="deleteDialog"
+				:item="endpointStore.item"
+				name-field="name"
+				:dialog-title="t('openconnector', 'Delete endpoint')"
+				:success-text="t('openconnector', 'Successfully deleted endpoint')"
+				@confirm="onDeleteConfirm"
+				@close="showDeleteDialog = false" />
+
+			<CnFormDialog
+				v-if="showAddRuleDialog && endpointStore.item"
+				ref="addRuleDialog"
+				:schema="addRuleSchema"
+				:item="{}"
+				:dialog-title="t('openconnector', 'Add rule to endpoint')"
+				:confirm-label="t('openconnector', 'Add')"
+				@confirm="onAddRuleConfirm"
+				@close="showAddRuleDialog = false" />
 		</div>
 	</NcModal>
 </template>
 
 <script>
 import { NcModal, NcButton, NcListItem, NcActionButton, NcEmptyContent } from '@nextcloud/vue'
+import { CnFormDialog, CnDeleteDialog } from '@conduction/nextcloud-vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -160,6 +196,7 @@ import LinkOff from 'vue-material-design-icons/LinkOff.vue'
 import _ from 'lodash'
 
 import { Endpoint } from '../../entities/index.js'
+import EndpointTargetIdField from '../../views/Endpoint/EndpointTargetIdField.vue'
 
 export default {
 	name: 'ViewEndpoint',
@@ -169,6 +206,8 @@ export default {
 		NcListItem,
 		NcActionButton,
 		NcEmptyContent,
+		CnFormDialog,
+		CnDeleteDialog,
 		BTabs,
 		BTab,
 		SitemapOutline,
@@ -177,12 +216,40 @@ export default {
 		Plus,
 		EyeOutline,
 		LinkOff,
+		EndpointTargetIdField,
 	},
 	data() {
 		return {
 			rulesList: [],
 			rulesLoaded: false,
+			showEditDialog: false,
+			showDeleteDialog: false,
+			showAddRuleDialog: false,
 		}
+	},
+	computed: {
+		schema() {
+			return endpointSchema()
+		},
+		addRuleSchema() {
+			const existing = (endpointStore.item?.rules || []).map(id => String(id))
+			return {
+				title: t('openconnector', 'Add rule to endpoint'),
+				required: ['rule'],
+				properties: {
+					rule: {
+						type: 'string',
+						title: t('openconnector', 'Select rule'),
+						enum: async () => {
+							await ruleStore.refreshRuleList()
+							return (ruleStore.ruleList || [])
+								.filter(r => !existing.includes(String(r.id)))
+								.map(r => ({ id: String(r.id), label: r.name }))
+						},
+					},
+				},
+			}
+		},
 	},
 	mounted() {
 		this.loadRules()
@@ -246,8 +313,69 @@ export default {
 				console.error('Failed to remove rule:', error)
 			}
 		},
-		addRule() {
-			navigationStore.setModal('addEndpointRule')
+		onModalClose() {
+			this.showEditDialog = false
+			this.showDeleteDialog = false
+			this.showAddRuleDialog = false
+			navigationStore.setModal(false)
+		},
+		prepareSavePayload(formData) {
+			return new Endpoint({
+				...formData,
+				endpointArray: Array.isArray(formData.endpointArray)
+					? formData.endpointArray
+					: (formData.endpointArray || '').split(/ *, */g).filter(Boolean),
+				configurations: (formData.configurations || []).map(c => String(c?.id ?? c)),
+				rules: (formData.rules || []).map(id => String(id)),
+			})
+		},
+		async onFormConfirm(formData) {
+			try {
+				const payload = this.prepareSavePayload(formData)
+				await endpointStore.save(payload)
+				this.$refs.formDialog.setResult({ success: true })
+				await endpointStore.getOne(String(endpointStore.item.id))
+			} catch (e) {
+				this.$refs.formDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while saving the endpoint'),
+				})
+			}
+		},
+		async onDeleteConfirm() {
+			try {
+				await endpointStore.deleteOne(endpointStore.item)
+				this.$refs.deleteDialog.setResult({ success: true })
+				navigationStore.setModal(false)
+			} catch (e) {
+				this.$refs.deleteDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while deleting the endpoint'),
+				})
+			}
+		},
+		async onAddRuleConfirm(formData) {
+			try {
+				const ruleValue = formData.rule
+				const ruleId = ruleValue?.id ?? ruleValue
+				const base = endpointStore.item
+				const updatedRules = [
+					...(base.rules || []).map(id => String(id)),
+					String(ruleId),
+				]
+				const payload = new Endpoint({
+					...base,
+					endpointArray: Array.isArray(base.endpointArray)
+						? base.endpointArray
+						: (base.endpointArray || '').split(/ *, */g).filter(Boolean),
+					rules: updatedRules,
+				})
+				await endpointStore.save(payload)
+				this.$refs.addRuleDialog.setResult({ success: true })
+				await this.loadRules()
+			} catch (e) {
+				this.$refs.addRuleDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while adding the rule'),
+				})
+			}
 		},
 	},
 }
