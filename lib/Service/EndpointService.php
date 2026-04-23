@@ -384,7 +384,7 @@ class EndpointService
      * @throws NotFoundExceptionInterface
      */
     private function replaceInternalReferences(
-        QBMapper|\OCA\OpenRegister\Service\ObjectService $mapper,
+        QBMapper|\OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter $mapper,
         ?ObjectEntity $object = null,
         array $serializedObject = [],
 		array $extend = []
@@ -576,13 +576,13 @@ class EndpointService
      * Inverse of replaceInternalReferences, rewriting external references to internal references for query parameters.
      *
      * @param array $parameters The incoming request parameters.
-     * @param \OCA\OpenRegister\Service\ObjectService|QBMapper $mapper The ObjectService containing the request schema.
+     * @param \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper The ObjectService containing the request schema.
      *
      * @return array The updated request parameters.
      *
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
      */
-    private function rewriteExternalReferences(array $parameters, \OCA\OpenRegister\Service\ObjectService|QBMapper $mapper): array
+    private function rewriteExternalReferences(array $parameters, \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper): array
     {
         $schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
         $schema        = $schemaMapper->find($mapper->getSchema());
@@ -634,7 +634,7 @@ class EndpointService
      * @throws Exception
      */
     private function getObjects(
-        \OCA\OpenRegister\Service\ObjectService|QBMapper $mapper,
+        \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper,
         array                                            $parameters,
         array                                            $pathParams,
         int                                              &$status = 200
