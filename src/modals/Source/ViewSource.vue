@@ -1,6 +1,7 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { sourceStore, navigationStore, logStore, synchronizationStore } from '../../store/store.js'
+import { sourceSchema } from '../../views/Source/sourceSchema.js'
 </script>
 
 <template>
@@ -210,7 +211,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 
 			<!-- Action buttons -->
 			<div class="modal-actions">
-				<NcButton @click="navigationStore.setModal('editSource')">
+				<NcButton @click="showEditDialog = true">
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
@@ -228,19 +229,40 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 					</template>
 					{{ t('openconnector', 'Logs') }}
 				</NcButton>
-				<NcButton type="error" @click="navigationStore.setDialog('deleteSource')">
+				<NcButton type="error" @click="showDeleteDialog = true">
 					<template #icon>
 						<TrashCanOutline :size="20" />
 					</template>
 					{{ t('openconnector', 'Delete') }}
 				</NcButton>
 			</div>
+
+			<CnFormDialog
+				v-if="showEditDialog"
+				ref="formDialog"
+				:schema="schema"
+				:item="sourceStore.item"
+				:dialog-title="t('openconnector', 'Edit source')"
+				name-field="name"
+				@confirm="onFormConfirm"
+				@close="showEditDialog = false" />
+
+			<CnDeleteDialog
+				v-if="showDeleteDialog && sourceStore.item"
+				ref="deleteDialog"
+				:item="sourceStore.item"
+				name-field="name"
+				:dialog-title="t('openconnector', 'Delete source')"
+				:success-text="t('openconnector', 'Successfully deleted source')"
+				@confirm="onDeleteConfirm"
+				@close="showDeleteDialog = false" />
 		</div>
 	</NcModal>
 </template>
 
 <script>
 import { NcModal, NcButton, NcListItem, NcActionButton, NcEmptyContent } from '@nextcloud/vue'
+import { CnFormDialog, CnDeleteDialog } from '@conduction/nextcloud-vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
 import KeyOutline from 'vue-material-design-icons/KeyOutline.vue'
@@ -261,6 +283,8 @@ export default {
 		NcListItem,
 		NcActionButton,
 		NcEmptyContent,
+		CnFormDialog,
+		CnDeleteDialog,
 		BTabs,
 		BTab,
 		FileCogOutline,
@@ -273,7 +297,16 @@ export default {
 		Sync,
 		TrashCanOutline,
 	},
+	data() {
+		return {
+			showEditDialog: false,
+			showDeleteDialog: false,
+		}
+	},
 	computed: {
+		schema() {
+			return sourceSchema()
+		},
 		configuration() {
 			const config = sourceStore.item?.configuration || {}
 			const { authentication, ...configWithoutAuth } = config
@@ -309,6 +342,30 @@ export default {
 		synchronizationStore.refreshSynchronizationList()
 	},
 	methods: {
+		async onFormConfirm(formData) {
+			try {
+				const payload = { ...formData, location: (formData.location || '').replace(/\/+$/, '') }
+				await sourceStore.save(payload)
+				const id = sourceStore.item?.id
+				if (id != null) await sourceStore.getOne(String(id))
+				this.$refs.formDialog.setResult({ success: true })
+			} catch (e) {
+				this.$refs.formDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while saving the source'),
+				})
+			}
+		},
+		async onDeleteConfirm() {
+			try {
+				await sourceStore.deleteOne(sourceStore.item)
+				this.$refs.deleteDialog.setResult({ success: true })
+				navigationStore.setModal(false)
+			} catch (e) {
+				this.$refs.deleteDialog.setResult({
+					error: e.message || t('openconnector', 'An error occurred while deleting the source'),
+				})
+			}
+		},
 		deleteSourceConfiguration(key) {
 			sourceStore.setSourceConfigurationKey(key)
 			navigationStore.setModal('deleteSourceConfiguration')

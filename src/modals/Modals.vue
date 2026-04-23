@@ -8,8 +8,6 @@ import { navigationStore } from '../store/store.js'
 		<DeleteEndpoint />
 		<EditConsumer />
 		<DeleteConsumer />
-		<DeleteSource />
-		<EditSource />
 		<ViewSource />
 		<TestSource />
 		<DeleteJob />
@@ -57,10 +55,8 @@ import EditEndpoint from './Endpoint/EditEndpoint.vue'
 import DeleteEndpoint from './Endpoint/DeleteEndpoint.vue'
 import EditConsumer from './Consumer/EditConsumer.vue'
 import DeleteConsumer from './Consumer/DeleteConsumer.vue'
-import EditSource from './Source/EditSource.vue'
 import ViewSource from './Source/ViewSource.vue'
 import TestSource from './TestSource/TestSource.vue'
-import DeleteSource from './Source/DeleteSource.vue'
 import TestJob from './Job/TestJob.vue'
 import RunJob from './Job/RunJob.vue'
 import EditJob from './Job/EditJob.vue'
@@ -106,8 +102,6 @@ export default {
 		DeleteEndpoint,
 		EditConsumer,
 		DeleteConsumer,
-		DeleteSource,
-		EditSource,
 		ViewSource,
 		TestSource,
 		DeleteJob,
