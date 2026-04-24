@@ -126,6 +126,6 @@ return [
 		['name' => 'ui#import', 'url' => '/import', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for frontend routes only.
 		// Exclude API paths so JSON endpoints resolve to their resource/controller routes.
-		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '^(?!api(?:/|$)).+'], 'defaults' => ['path' => '']],
+		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(?:/|$)).+'], 'defaults' => ['path' => '']],
 	],
 ];
