@@ -427,5 +427,4 @@ export default {
 .gridDoubleWidth {
 	grid-column: span 2;
 }
-
 </style>

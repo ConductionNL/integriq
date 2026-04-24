@@ -336,5 +336,4 @@ export default {
 		background-color: var(--OC-color-status-background-debug);
 		color: var(--OC-color-status-debug);
 	}
-
 </style>
