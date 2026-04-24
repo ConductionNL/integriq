@@ -124,7 +124,8 @@ return [
 		['name' => 'ui#cloudEventsEventsId', 'url' => '/cloud-events/events/{id}', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
 		['name' => 'ui#import', 'url' => '/import', 'verb' => 'GET'],
-		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
-		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
+		// SPA catch-all — serves the Vue app for frontend routes only.
+		// Exclude API paths so JSON endpoints resolve to their resource/controller routes.
+		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '^(?!api(?:/|$)).+'], 'defaults' => ['path' => '']],
 	],
 ];
