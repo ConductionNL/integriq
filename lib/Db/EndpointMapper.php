@@ -209,6 +209,7 @@ class EndpointMapper extends QBMapper
 	public function updateFromArray(int $id, array $object): Endpoint
 	{
 		$obj = $this->find($id);
+		$updateRegex = false;
 
 		// Set version
 		if (empty($obj->getVersion()) === true) {

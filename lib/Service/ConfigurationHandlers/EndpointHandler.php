@@ -4,6 +4,7 @@ namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
 use OCA\OpenConnector\Db\Endpoint;
 use OCA\OpenConnector\Db\EndpointMapper;
+use OCA\OpenConnector\Db\RuleMapper;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -29,8 +30,43 @@ class EndpointHandler implements ConfigurationHandlerInterface
      * @param EndpointMapper $endpointMapper The endpoint mapper
      */
     public function __construct(
-        private readonly EndpointMapper $endpointMapper
+        private readonly EndpointMapper $endpointMapper,
+        private readonly RuleMapper $ruleMapper
     ) {
+    }
+
+    /**
+     * Resolve a rule identifier from imported endpoint data to a rule ID.
+     *
+     * Supports rule slugs, numeric IDs, names, and references so first-time
+     * imports do not silently drop endpoint rules when the source format varies.
+     *
+     * @param int|string $ruleIdentifier Imported rule identifier
+     * @param array      $mappings       Current import mappings
+     *
+     * @return int|string|null
+     */
+    private function resolveRuleIdentifier(int|string $ruleIdentifier, array $mappings): int|string|null
+    {
+        if (isset($mappings['rule']['slugToId'][$ruleIdentifier]) === true) {
+            return $mappings['rule']['slugToId'][$ruleIdentifier];
+        }
+
+        if (is_numeric($ruleIdentifier) === true) {
+            return (int) $ruleIdentifier;
+        }
+
+        $rulesByName = $this->ruleMapper->findAll(filters: ['name' => $ruleIdentifier], limit: 1);
+        if ($rulesByName !== []) {
+            return $rulesByName[0]->getId();
+        }
+
+        $rulesByReference = $this->ruleMapper->findByRef(reference: $ruleIdentifier);
+        if ($rulesByReference !== []) {
+            return $rulesByReference[0]->getId();
+        }
+
+        return null;
     }
 
     /**
@@ -153,13 +189,15 @@ class EndpointHandler implements ConfigurationHandlerInterface
 			$data['rules'] = [];
 		}
 		
-		$data['rules'] = array_filter(array_map(function(int|string $rule) use ($mappings) {
-			if(isset($mappings['rule']['slugToId'][$rule]) === true) {
-
-				return $mappings['rule']['slugToId'][$rule];
-			}
-			return null;
-		}, $data['rules']));
+		$data['rules'] = array_values(
+            array_filter(
+                array_map(
+                    fn(int|string $rule) => $this->resolveRuleIdentifier(ruleIdentifier: $rule, mappings: $mappings),
+                    $data['rules']
+                ),
+                static fn($ruleId) => $ruleId !== null
+            )
+        );
 
 
 		// Check if endpoint with this slug already exists.
