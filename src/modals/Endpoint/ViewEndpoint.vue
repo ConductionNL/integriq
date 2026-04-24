@@ -299,10 +299,6 @@ export default {
 	margin-bottom: 20px;
 }
 
-.tabPanel {
-	padding: 15px 0 15px 15px;
-}
-
 .selectedIcon {
 	color: var(--color-primary);
 }

@@ -428,7 +428,4 @@ export default {
 	grid-column: span 2;
 }
 
-.tabPanel {
-	padding: 15px 0 15px 15px;
-}
 </style>

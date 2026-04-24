@@ -356,7 +356,4 @@ export default {
 	word-wrap: break-word;
 }
 
-.tabPanel {
-	padding: 15px 0 15px 15px;
-}
 </style>
