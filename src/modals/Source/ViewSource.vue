@@ -389,7 +389,7 @@ export default {
 }
 
 .tabPanel {
-	padding: 15px 0;
+	padding: 15px 0 15px 15px;
 }
 
 .selectedIcon {

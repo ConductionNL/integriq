@@ -324,4 +324,8 @@ export default {
 	gap: 1rem;
 	margin-bottom: 1rem;
 }
+
+.tabPanel {
+	padding: 15px 0 15px 15px;
+}
 </style>

@@ -336,4 +336,8 @@ export default {
 		background-color: var(--OC-color-status-background-debug);
 		color: var(--OC-color-status-debug);
 	}
+
+.tabPanel {
+	padding: 15px 0 15px 15px;
+}
 </style>
