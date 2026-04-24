@@ -22,6 +22,7 @@ use OCA\OpenConnector\Service\ConfigurationHandlers\MappingHandler;
 use OCA\OpenConnector\Service\ConfigurationHandlers\JobHandler;
 use OCA\OpenConnector\Service\ConfigurationHandlers\SourceHandler;
 use OCA\OpenConnector\Service\ConfigurationHandlers\RuleHandler;
+use OCP\AppFramework\Db\Entity;
 
 /**
  * Class ConfigurationService
@@ -216,6 +217,93 @@ class ConfigurationService
         $this->mappings['register']['slugToId'] = $this->registerMapper->getSlugToIdMap();
         $this->mappings['schema']['idToSlug'] = $this->schemaMapper->getIdToSlugMap();
         $this->mappings['schema']['slugToId'] = $this->schemaMapper->getSlugToIdMap();
+    }
+
+    /**
+     * Register a freshly imported entity in the in-memory slug/ID maps.
+     *
+     * This keeps references created earlier in the same import run available
+     * to later entities without requiring a second import pass.
+     *
+     * @param string $entityType Mapping bucket name
+     * @param Entity $entity     Imported entity
+     *
+     * @return void
+     */
+    private function registerImportedEntityMapping(string $entityType, Entity $entity): void
+    {
+        if (isset($this->mappings[$entityType]) === false) {
+            return;
+        }
+
+        if (method_exists($entity, 'getId') === false || method_exists($entity, 'getSlug') === false) {
+            return;
+        }
+
+        $id   = $entity->getId();
+        $slug = $entity->getSlug();
+
+        if ($id === null || $slug === null || $slug === '') {
+            return;
+        }
+
+        $id = (string) $id;
+
+        $this->mappings[$entityType]['idToSlug'][$id] = $slug;
+        $this->mappings[$entityType]['slugToId'][$slug] = $id;
+    }
+
+    /**
+     * Ensure imported component payloads always carry their component-key slug.
+     *
+     * Some exports reference related entities by component key even when the nested
+     * payload is missing or inconsistent about its own slug field. Normalizing the
+     * slug up front keeps first-pass imports referentially stable.
+     *
+     * @param array  $data Component payload
+     * @param string $slug Component key
+     *
+     * @return array
+     */
+    private function withComponentSlug(array $data, string $slug): array
+    {
+        if (($data['slug'] ?? null) === null || $data['slug'] === '') {
+            $data['slug'] = $slug;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Re-run import handlers after all mappings are known to resolve late references.
+     *
+     * This is intentionally limited to entity types that commonly depend on other
+     * imported slugs created earlier in the same run.
+     *
+     * @param array<string,mixed>               $components Original imported components
+     * @param array<string,array<string,Entity>> $result     Imported entity result map
+     *
+     * @return void
+     */
+    private function reconcileImportedReferences(array $components, array &$result): void
+    {
+        if (isset($components['endpoints']) && is_array($components['endpoints'])) {
+            foreach ($components['endpoints'] as $endpointSlug => $endpointData) {
+                $endpointData = $this->withComponentSlug($endpointData, $endpointSlug);
+                $endpoint = $this->handlers['endpoint']->import($endpointData, $this->mappings);
+                $result['endpoints'][$endpointSlug] = $endpoint;
+                $this->registerImportedEntityMapping('endpoint', $endpoint);
+            }
+        }
+
+        if (isset($components['synchronizations']) && is_array($components['synchronizations'])) {
+            foreach ($components['synchronizations'] as $syncSlug => $syncData) {
+                $syncData = $this->withComponentSlug($syncData, $syncSlug);
+                $synchronization = $this->handlers['synchronization']->import($syncData, $this->mappings);
+                $result['synchronizations'][$syncSlug] = $synchronization;
+                $this->registerImportedEntityMapping('synchronization', $synchronization);
+            }
+        }
     }
 
     /**
@@ -753,50 +841,65 @@ class ConfigurationService
         // 1. Import sources first (no dependencies).
         if (isset($components['sources'])) {
             foreach ($components['sources'] as $sourceSlug => $sourceData) {
+                $sourceData = $this->withComponentSlug($sourceData, $sourceSlug);
                 $source = $this->handlers['source']->import($sourceData, $this->mappings);
                 $result['sources'][$sourceSlug] = $source;
+                $this->registerImportedEntityMapping('source', $source);
             }
         }
 
         // 2. Import mappings (depends on sources).
         if (isset($components['mappings'])) {
             foreach ($components['mappings'] as $mappingSlug => $mappingData) {
+                $mappingData = $this->withComponentSlug($mappingData, $mappingSlug);
                 $mapping = $this->handlers['mapping']->import($mappingData, $this->mappings);
                 $result['mappings'][$mappingSlug] = $mapping;
+                $this->registerImportedEntityMapping('mapping', $mapping);
             }
         }
 
         // 3. Import rules (depends on sources).
         if (isset($components['rules'])) {
             foreach ($components['rules'] as $ruleSlug => $ruleData) {
+                $ruleData = $this->withComponentSlug($ruleData, $ruleSlug);
                 $rule = $this->handlers['rule']->import($ruleData, $this->mappings);
                 $result['rules'][$ruleSlug] = $rule;
+                $this->registerImportedEntityMapping('rule', $rule);
             }
         }
 
         // 4. Import endpoints (depends on sources and mappings).
         if (isset($components['endpoints'])) {
             foreach ($components['endpoints'] as $endpointSlug => $endpointData) {
+                $endpointData = $this->withComponentSlug($endpointData, $endpointSlug);
                 $endpoint = $this->handlers['endpoint']->import($endpointData, $this->mappings);
                 $result['endpoints'][$endpointSlug] = $endpoint;
+                $this->registerImportedEntityMapping('endpoint', $endpoint);
             }
         }
 
         // 5. Import synchronizations (depends on sources, mappings, and endpoints).
         if (isset($components['synchronizations'])) {
             foreach ($components['synchronizations'] as $syncSlug => $syncData) {
+                $syncData = $this->withComponentSlug($syncData, $syncSlug);
                 $synchronization = $this->handlers['synchronization']->import($syncData, $this->mappings);
                 $result['synchronizations'][$syncSlug] = $synchronization;
+                $this->registerImportedEntityMapping('synchronization', $synchronization);
             }
         }
 
         // 6. Import jobs (depends on synchronizations, endpoints, and sources).
         if (isset($components['jobs'])) {
             foreach ($components['jobs'] as $jobSlug => $jobData) {
+                $jobData = $this->withComponentSlug($jobData, $jobSlug);
                 $job = $this->handlers['job']->import($jobData, $this->mappings);
                 $result['jobs'][$jobSlug] = $job;
+                $this->registerImportedEntityMapping('job', $job);
             }
         }
+
+        $this->resetMappings();
+        $this->reconcileImportedReferences($components, $result);
 
         return $result;
     }
