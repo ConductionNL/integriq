@@ -236,7 +236,7 @@ class ConfigurationService
             return;
         }
 
-        if (method_exists($entity, 'getId') === false || method_exists($entity, 'getSlug') === false) {
+        if (method_exists($entity, 'getSlug') === false) {
             return;
         }
 
@@ -275,10 +275,14 @@ class ConfigurationService
     }
 
     /**
-     * Re-run import handlers after all mappings are known to resolve late references.
+     * Re-run import handlers for entity types whose dependencies are imported later
+     * in the ordered pass, so those references are resolved with the complete mapping set.
      *
-     * This is intentionally limited to entity types that commonly depend on other
-     * imported slugs created earlier in the same run.
+     * Rules (step 3) and endpoints (step 4) are imported before synchronizations (step 5),
+     * so any references they hold to synchronizations cannot be resolved in the first pass.
+     * Synchronizations and jobs are imported last and have no such forward dependencies.
+     *
+     * Each handler is idempotent (upsert by slug), so re-running it is safe.
      *
      * @param array<string,mixed>               $components Original imported components
      * @param array<string,array<string,Entity>> $result     Imported entity result map
@@ -287,21 +291,17 @@ class ConfigurationService
      */
     private function reconcileImportedReferences(array $components, array &$result): void
     {
-        if (isset($components['endpoints']) && is_array($components['endpoints'])) {
-            foreach ($components['endpoints'] as $endpointSlug => $endpointData) {
-                $endpointData = $this->withComponentSlug($endpointData, $endpointSlug);
-                $endpoint = $this->handlers['endpoint']->import($endpointData, $this->mappings);
-                $result['endpoints'][$endpointSlug] = $endpoint;
-                $this->registerImportedEntityMapping('endpoint', $endpoint);
+        if (isset($components['rules']) && is_array($components['rules'])) {
+            foreach ($components['rules'] as $ruleSlug => $ruleData) {
+                $ruleData = $this->withComponentSlug($ruleData, $ruleSlug);
+                $result['rules'][$ruleSlug] = $this->handlers['rule']->import($ruleData, $this->mappings);
             }
         }
 
-        if (isset($components['synchronizations']) && is_array($components['synchronizations'])) {
-            foreach ($components['synchronizations'] as $syncSlug => $syncData) {
-                $syncData = $this->withComponentSlug($syncData, $syncSlug);
-                $synchronization = $this->handlers['synchronization']->import($syncData, $this->mappings);
-                $result['synchronizations'][$syncSlug] = $synchronization;
-                $this->registerImportedEntityMapping('synchronization', $synchronization);
+        if (isset($components['endpoints']) && is_array($components['endpoints'])) {
+            foreach ($components['endpoints'] as $endpointSlug => $endpointData) {
+                $endpointData = $this->withComponentSlug($endpointData, $endpointSlug);
+                $result['endpoints'][$endpointSlug] = $this->handlers['endpoint']->import($endpointData, $this->mappings);
             }
         }
     }
@@ -898,7 +898,6 @@ class ConfigurationService
             }
         }
 
-        $this->resetMappings();
         $this->reconcileImportedReferences($components, $result);
 
         return $result;
