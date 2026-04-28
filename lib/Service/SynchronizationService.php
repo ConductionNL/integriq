@@ -37,6 +37,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use React\Promise\Timer;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
@@ -1152,7 +1153,7 @@ class SynchronizationService
 
 				$targetIdsToDelete = [];
 				[$registerId, $schemaId] = explode(separator: '/', string: $synchronization->getTargetId());
-				$allContracts = $this->synchronizationContractMapper->findAllBySynchronizationAndSchema(synchronizationId: $synchronization->getId(), schemaId: $schemaId);
+				$allContracts = $this->synchronizationContractMapper->findAllBySynchronization(synchronizationId: $synchronization->getId());
 				$allContractTargetIds = [];
                 $allContractSourceIds = [];
 				foreach ($allContracts as $contract) {
@@ -1177,7 +1178,40 @@ class SynchronizationService
                     });
                 }
 
+				// Resolve OpenRegister's ObjectService for the scope-checked existence verification.
+				// This replaces the previous INNER JOIN against openregister_objects, which is no
+				// longer populated under OpenRegister's per-register/schema "magic table" architecture.
+				$openRegisterObjectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+
 				foreach ($targetIdsToDelete as $targetIdToDelete) {
+					// Verify the target object exists in this sync's register/schema. If not, skip:
+					// ObjectService::deleteObject(uuid) is unscoped and would happily delete a UUID
+					// that lives in a foreign register/schema. _rbac/_multitenancy are off because
+					// the SQL-level guard this replaces did not apply RBAC either.
+					try {
+						$existingObject = $openRegisterObjectService->find(
+							id: $targetIdToDelete,
+							register: $registerId,
+							schema: $schemaId,
+							_rbac: false,
+							_multitenancy: false
+						);
+					} catch (Throwable $e) {
+						$this->logger->warning(
+							'Scope check failed for sync cleanup candidate; skipping',
+							[
+								'synchronizationId' => $synchronization->getId(),
+								'targetId' => $targetIdToDelete,
+								'error' => $e->getMessage(),
+							]
+						);
+						continue;
+					}
+
+					if ($existingObject === null) {
+						continue;
+					}
+
 					try {
 						$synchronizationContract = $this->synchronizationContractMapper->findOnTarget(synchronization: $synchronization->getId(), targetId: $targetIdToDelete);
 						if ($synchronizationContract === null) {
@@ -1187,7 +1221,14 @@ class SynchronizationService
 						$this->synchronizationContractMapper->update($synchronizationContract);
 						$deletedObjectsCount++;
 					} catch (DoesNotExistException $exception) {
-						// @todo log
+						$this->logger->warning(
+							'Contract not found on second lookup during sync cleanup; continuing',
+							[
+								'synchronizationId' => $synchronization->getId(),
+								'targetId' => $targetIdToDelete,
+								'error' => $exception->getMessage(),
+							]
+						);
 					}
 				}
 				break;
