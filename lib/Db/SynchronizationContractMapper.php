@@ -195,31 +195,24 @@ class SynchronizationContractMapper extends QBMapper
     }
 
     /**
-     * Find all synchronization contracts by synchronization ID and where target have the given schema id
+     * Find all synchronization contracts for a given synchronization ID.
      *
-     * @param string $synchronization The synchronization ID
+     * Scope-checking against the target object's register/schema is performed
+     * in the cleanup pass via ObjectService::find, decoupling this mapper from
+     * OpenRegister's storage layout.
      *
-     * @return array An array of target IDs or an empty array if none found
+     * @param string $synchronizationId The synchronization ID
+     *
+     * @return SynchronizationContract[] An array of contracts, or [] on error
      */
-    public function findAllBySynchronizationAndSchema(string $synchronizationId, string $schemaId): array
+    public function findAllBySynchronization(string $synchronizationId): array
     {
-        // Create query builder
         $qb = $this->db->getQueryBuilder();
 
-        // Build select query with synchronization ID and schema filter
-        $qb->select('c.*')
-            ->from('openconnector_synchronization_contracts', 'c')
-            ->innerJoin(
-                'c',
-                'openregister_objects',
-                'o',
-                $qb->expr()->eq('c.target_id', 'o.uuid')
-            )
+        $qb->select('*')
+            ->from('openconnector_synchronization_contracts')
             ->where(
-                $qb->expr()->andX(
-                    $qb->expr()->eq('c.synchronization_id', $qb->createNamedParameter($synchronizationId)),
-                    $qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId))
-                )
+                $qb->expr()->eq('synchronization_id', $qb->createNamedParameter($synchronizationId))
             );
 
         try {
