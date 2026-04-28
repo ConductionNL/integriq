@@ -178,7 +178,7 @@ class CallLogMapper extends QBMapper
            ->groupBy('hour')
            ->orderBy('hour', 'ASC');
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $counts = [];
 
         // Fetch results and build the return array

@@ -229,7 +229,7 @@ class RuleMapper extends QBMapper
 		$qb->select($qb->createFunction('COALESCE(MAX(`order`), 0) as max_order'))
 		   ->from('openconnector_rules');
 
-		$result = $qb->execute();
+		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
 
@@ -248,7 +248,7 @@ class RuleMapper extends QBMapper
 		$qb->select($qb->createFunction('COUNT(*) as count'))
 		   ->from('openconnector_rules');
 
-		$result = $qb->execute();
+		$result = $qb->executeQuery();
 		$row = $result->fetch();
 
 		return (int)$row['count'];
@@ -267,7 +267,7 @@ class RuleMapper extends QBMapper
 			$qb->update('openconnector_rules')
 			   ->set('order', $qb->createNamedParameter($newOrder, IQueryBuilder::PARAM_INT))
 			   ->where($qb->expr()->eq('id', $qb->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-			   ->execute();
+			   ->executeQuery();
 		}
 	}
 
