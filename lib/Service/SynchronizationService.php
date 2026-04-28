@@ -1495,7 +1495,7 @@ class SynchronizationService
 				$synchronizationContract->setTargetLastAction($synchronizationContract->getTargetId() ? 'update' : 'create');
 				break;
 			case 'delete':
-				$objectService->delete(object: ['id' => $synchronizationContract->getTargetId()]);
+				$objectService->deleteObject(uuid: $synchronizationContract->getTargetId());
 				$synchronizationContract->setTargetId(null);
 				$synchronizationContract->setTargetLastAction('delete');
 				break;
