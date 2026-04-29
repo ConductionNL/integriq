@@ -1154,7 +1154,18 @@ class SynchronizationService
 			case 'register/schema':
 
 				$targetIdsToDelete = [];
-				[$registerId, $schemaId] = explode(separator: '/', string: $synchronization->getTargetId());
+				$rawTargetId = $synchronization->getTargetId();
+				if (is_string($rawTargetId) === false || str_contains($rawTargetId, '/') === false) {
+					$this->logger->warning(
+						'deleteInvalidObjects: targetId not in register/schema format; skipping cleanup',
+						[
+							'synchronizationId' => $synchronization->getId(),
+							'targetId' => $rawTargetId,
+						]
+					);
+					break;
+				}
+				[$registerId, $schemaId] = explode(separator: '/', string: $rawTargetId, limit: 2);
 				$allContracts = $this->synchronizationContractMapper->findAllBySynchronization(synchronizationId: $synchronization->getId());
 				$allContractTargetIds = [];
                 $allContractSourceIds = [];
@@ -1183,7 +1194,18 @@ class SynchronizationService
 				// Resolve OpenRegister's ObjectService for the scope-checked existence verification.
 				// This replaces the previous INNER JOIN against openregister_objects, which is no
 				// longer populated under OpenRegister's per-register/schema "magic table" architecture.
-				$openRegisterObjectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+				try {
+					$openRegisterObjectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+				} catch (Throwable $e) {
+					$this->logger->warning(
+						'deleteInvalidObjects: OpenRegister ObjectService unavailable; skipping cleanup',
+						[
+							'synchronizationId' => $synchronization->getId(),
+							'error' => $e->getMessage(),
+						]
+					);
+					break;
+				}
 
 				foreach ($targetIdsToDelete as $targetIdToDelete) {
 					// Verify the target object exists in this sync's register/schema. If not, skip:
@@ -1198,12 +1220,16 @@ class SynchronizationService
 							_rbac: false,
 							_multitenancy: false
 						);
-					} catch (Throwable $e) {
+					} catch (DoesNotExistException $e) {
+						// Expected scope-miss: target lives outside this register/schema or is gone.
+						continue;
+					} catch (\Exception $e) {
 						$this->logger->warning(
 							'Scope check failed for sync cleanup candidate; skipping',
 							[
 								'synchronizationId' => $synchronization->getId(),
 								'targetId' => $targetIdToDelete,
+								'class' => get_class($e),
 								'error' => $e->getMessage(),
 							]
 						);

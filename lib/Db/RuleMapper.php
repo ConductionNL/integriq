@@ -267,7 +267,7 @@ class RuleMapper extends QBMapper
 			$qb->update('openconnector_rules')
 			   ->set('order', $qb->createNamedParameter($newOrder, IQueryBuilder::PARAM_INT))
 			   ->where($qb->expr()->eq('id', $qb->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-			   ->executeQuery();
+			   ->executeStatement();
 		}
 	}
 

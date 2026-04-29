@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main, beta, development]
+    branches: [main, beta]
 
 jobs:
   unstable:

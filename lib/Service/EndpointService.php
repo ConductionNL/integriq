@@ -1554,9 +1554,9 @@ class EndpointService
 
         $config  = $rule->getConfiguration()['write_file'];
         $dataDot = new Dot($data);
-		$flowTokenArray = $flowToken->getRequestOriginal();
-		$flowTokenArray['body'] = $flowTokenArray['parameters'];
-		$flowTokenDot = new Dot($flowTokenArray);
+        $flowTokenArray = $flowToken->getRequestOriginal();
+        $flowTokenArray['body'] = $flowTokenArray['parameters'];
+        $flowTokenDot = new Dot($flowTokenArray);
 
 
         $files = $dataDot[$config['filePath']] ?? $flowTokenDot[$config['filePath']];
