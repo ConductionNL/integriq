@@ -117,10 +117,18 @@ class MappingService
     /**
      * Renders a Twig template string using the mapping Twig environment.
      *
+     * @note The rendered output is passed through `html_entity_decode` before
+     *     return — this is intentional for the URL/path templating use case,
+     *     where Twig's HTML escaping (`&` → `&amp;`, `/` → `&#47;`, etc.) would
+     *     otherwise corrupt the result. Callers that render JSON, binary, or
+     *     other content where literal `&amp;` / `&lt;` / `&gt;` sequences are
+     *     significant must NOT use this method — call `$this->twig->createTemplate($template)->render($context)`
+     *     directly to keep the raw Twig output.
+     *
      * @param string $template The Twig template to render.
      * @param array $context The context available inside the template.
      *
-     * @return string The rendered template result.
+     * @return string The rendered template result, with HTML entities decoded.
      * @throws LoaderError|SyntaxError Twig exceptions
      */
     public function renderTemplateString(string $template, array $context = []): string

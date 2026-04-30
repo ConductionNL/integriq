@@ -237,14 +237,15 @@ class SynchronizationServiceCleanupTest extends TestCase
         $sync = $this->makeSync();
         $inScope = $this->makeContract(self::TARGET_IN_SCOPE, 'origin-a');
         $outOfScope = $this->makeContract(self::TARGET_OUT_OF_SCOPE, 'origin-b');
+        $pos = $this->findParamPositions();
 
         $this->contractMapper->method('findAllBySynchronization')
             ->with(self::SYNC_DB_ID)
             ->willReturn([$inScope, $outOfScope]);
 
         $this->openRegisterObjectService->method('find')
-            ->willReturnCallback(function ($id) {
-                return $id === self::TARGET_IN_SCOPE
+            ->willReturnCallback(function (...$args) use ($pos) {
+                return $args[$pos['id']] === self::TARGET_IN_SCOPE
                     ? $this->createMock(ObjectEntity::class)
                     : null;
             });

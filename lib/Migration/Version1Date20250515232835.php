@@ -143,7 +143,7 @@ class Version1Date20250515232835 extends SimpleMigrationStep {
 					$query->expr()->isNull('slug'),
 					$query->expr()->eq('slug', $query->createNamedParameter(''))
 				));
-			$query->executeQuery();
+			$query->executeStatement();
 
 			// Then, ensure uniqueness across all tables
 			$query = $connection->getQueryBuilder();
@@ -188,7 +188,7 @@ class Version1Date20250515232835 extends SimpleMigrationStep {
 				$query->update($tableName)
 					->set('slug', $query->createNamedParameter($update['slug']))
 					->where($query->expr()->eq('id', $query->createNamedParameter($update['id'])));
-				$query->executeQuery();
+				$query->executeStatement();
 			}
 
 			$output->info("Updated slugs for table: " . $tableName);

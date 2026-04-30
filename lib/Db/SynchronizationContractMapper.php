@@ -139,11 +139,13 @@ class SynchronizationContractMapper extends QBMapper
     /**
      * Find a synchronization contract by synchronization ID and target ID
      *
-     * @param string $synchronization The synchronization ID
+     * @param int|string $synchronization The synchronization ID — accepts the
+     *     entity DB id (int, as returned by Synchronization::getId()) or a UUID
+     *     string. Both are stored against the same `synchronization_id` column.
      * @param string $targetId The target ID
      * @return SynchronizationContract|bool|null The found contract, false, or null if not found
      */
-    public function findOnTarget(string $synchronization, string $targetId): SynchronizationContract|bool|null
+    public function findOnTarget(int|string $synchronization, string $targetId): SynchronizationContract|bool|null
     {
         // Create query builder
         $qb = $this->db->getQueryBuilder();
@@ -201,11 +203,13 @@ class SynchronizationContractMapper extends QBMapper
      * in the cleanup pass via ObjectService::find, decoupling this mapper from
      * OpenRegister's storage layout.
      *
-     * @param string $synchronizationId The synchronization ID
+     * @param int|string $synchronizationId The synchronization ID — accepts the
+     *     entity DB id (int, as returned by Synchronization::getId()) or a UUID
+     *     string.
      *
      * @return SynchronizationContract[] An array of contracts, or [] on error
      */
-    public function findAllBySynchronization(string $synchronizationId): array
+    public function findAllBySynchronization(int|string $synchronizationId): array
     {
         $qb = $this->db->getQueryBuilder();
 
