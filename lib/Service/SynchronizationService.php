@@ -629,6 +629,11 @@ class SynchronizationService
             $stageStartTime = microtime(true);
             $result['objects']['found'] = count($objectList);
 
+	            // `_object` mode handling is intentionally split between
+	            // `getAllObjectsFromApi` (returns the single object as-is) and
+	            // here (wraps it into a single-element list for iteration).
+	            // Non-`_object` mode is the inverse — see the matching comment
+	            // on the wrap in `getAllObjectsFromApi` (~line 2016).
 	            if ($sourceConfig['resultsPosition'] === '_object') {
 	                if (array_is_list($objectList) === false) {
 	                    $objectList = [$objectList];
@@ -1405,11 +1410,15 @@ class SynchronizationService
 		$synchronizationContract->setSourceLastChanged(new DateTime());
 		$synchronizationContract->setSourceLastChecked(new DateTime());
 
-        // Execute mapping if found
+        // Capture the source object on the flow token unconditionally — every
+        // mutation (including deletes and no-mapping passes) should leave a
+        // pre-transformation snapshot in the audit trail.
 		$objectBeforeMapping = $object;
-        if ($sourceTargetMapping && $mutationType !== 'delete') {
-            $flowToken->setSyncOutputOriginal($object);
+        $flowToken->setSyncOutputOriginal($object);
 
+        // Execute mapping if found. Skipped on deletes — there's no payload to
+        // transform when the target is being removed.
+        if ($sourceTargetMapping && $mutationType !== 'delete') {
             $object = $this->mappingService->executeMapping(mapping: $sourceTargetMapping, input: $object);
             $flowToken->setSyncOutputAmended($object);
         }
@@ -2011,6 +2020,12 @@ class SynchronizationService
             usesPagination: $usesPagination
 		);
 
+			// In non-`_object` mode, normalize a single associative response
+			// into a list-of-one so downstream iteration is uniform. In
+			// `_object` mode the wrap is deliberately deferred to
+			// `synchronizeExternToIntern` (Stage 3) so other callers that
+			// expect a single object as-is keep getting the raw shape from
+			// this method. The two sites are intentionally complementary.
 			if ($sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
 				$objects = [$objects];
 			}
