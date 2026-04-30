@@ -23,6 +23,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 
 /**
  * Tests the scope-checked cleanup behavior in SynchronizationService::deleteInvalidObjects.
@@ -32,7 +33,7 @@ use Psr\Log\LoggerInterface;
  */
 class SynchronizationServiceCleanupTest extends TestCase
 {
-    private const SYNC_ID = 'sync-uuid-1';
+    private const SYNC_DB_ID = 1;
     private const REGISTER_ID = '1';
     private const SCHEMA_ID = '2';
     private const TARGET_IN_SCOPE = 'object-in-scope-uuid';
@@ -91,8 +92,8 @@ class SynchronizationServiceCleanupTest extends TestCase
     private function makeSync(): Synchronization
     {
         $sync = new Synchronization();
-        $sync->setId(1);
-        $sync->setUuid(self::SYNC_ID);
+        $sync->setId(self::SYNC_DB_ID);
+        $sync->setUuid('sync-uuid-1');
         $sync->setTargetType('register/schema');
         $sync->setTargetId(self::REGISTER_ID . '/' . self::SCHEMA_ID);
         return $sync;
@@ -101,34 +102,52 @@ class SynchronizationServiceCleanupTest extends TestCase
     private function makeContract(string $targetId, string $originId = 'origin-x'): SynchronizationContract
     {
         $contract = new SynchronizationContract();
-        $contract->setSynchronizationId(self::SYNC_ID);
+        $contract->setSynchronizationId((string) self::SYNC_DB_ID);
         $contract->setTargetId($targetId);
         $contract->setOriginId($originId);
         return $contract;
+    }
+
+    /**
+     * Map ObjectService::find parameter names to positional indices.
+     *
+     * Production calls find() with named arguments; PHPUnit's stub receives positional
+     * arguments after the runtime expansion. Using reflection here keeps assertions
+     * robust against signature changes — adding a parameter shifts all later positions
+     * but the named lookup follows automatically.
+     */
+    private function findParamPositions(): array
+    {
+        $rm = new ReflectionMethod(\OCA\OpenRegister\Service\ObjectService::class, 'find');
+        $positions = [];
+        foreach ($rm->getParameters() as $i => $p) {
+            $positions[$p->getName()] = $i;
+        }
+        return $positions;
     }
 
     public function testInScopeOrphanIsDeleted(): void
     {
         $sync = $this->makeSync();
         $contract = $this->makeContract(self::TARGET_IN_SCOPE);
+        $pos = $this->findParamPositions();
 
         $this->contractMapper->method('findAllBySynchronization')
-            ->with(self::SYNC_ID)
+            ->with(self::SYNC_DB_ID)
             ->willReturn([$contract]);
 
         $this->contractMapper->method('findOnTarget')
-            ->with(self::SYNC_ID, self::TARGET_IN_SCOPE)
+            ->with(self::SYNC_DB_ID, self::TARGET_IN_SCOPE)
             ->willReturn($contract);
 
         $this->openRegisterObjectService->expects($this->once())
             ->method('find')
-            ->willReturnCallback(function (...$args) {
-                // Positional after named-arg expansion: id, _extend, files, register, schema, _rbac, _multitenancy
-                $this->assertSame(self::TARGET_IN_SCOPE, $args[0]);
-                $this->assertSame(self::REGISTER_ID, $args[3]);
-                $this->assertSame(self::SCHEMA_ID, $args[4]);
-                $this->assertFalse($args[5], '_rbac must be false to match prior unscoped JOIN behavior');
-                $this->assertFalse($args[6], '_multitenancy must be false to match prior unscoped JOIN behavior');
+            ->willReturnCallback(function (...$args) use ($pos) {
+                $this->assertSame(self::TARGET_IN_SCOPE, $args[$pos['id']]);
+                $this->assertSame(self::REGISTER_ID, $args[$pos['register']]);
+                $this->assertSame(self::SCHEMA_ID, $args[$pos['schema']]);
+                $this->assertFalse($args[$pos['_rbac']], '_rbac must be false to match prior unscoped JOIN behavior');
+                $this->assertFalse($args[$pos['_multitenancy']], '_multitenancy must be false to match prior unscoped JOIN behavior');
                 return $this->createMock(ObjectEntity::class);
             });
 
@@ -148,7 +167,7 @@ class SynchronizationServiceCleanupTest extends TestCase
         $contract = $this->makeContract(self::TARGET_OUT_OF_SCOPE);
 
         $this->contractMapper->method('findAllBySynchronization')
-            ->with(self::SYNC_ID)
+            ->with(self::SYNC_DB_ID)
             ->willReturn([$contract]);
 
         // Foreign-scope find returns null — object exists but lives in a different register/schema.
@@ -167,7 +186,7 @@ class SynchronizationServiceCleanupTest extends TestCase
         $contract = $this->makeContract(self::TARGET_MISSING);
 
         $this->contractMapper->method('findAllBySynchronization')
-            ->with(self::SYNC_ID)
+            ->with(self::SYNC_DB_ID)
             ->willReturn([$contract]);
 
         // No object with that UUID exists anywhere.
@@ -186,7 +205,7 @@ class SynchronizationServiceCleanupTest extends TestCase
         $contract = $this->makeContract(self::TARGET_IN_SCOPE);
 
         $this->contractMapper->method('findAllBySynchronization')
-            ->with(self::SYNC_ID)
+            ->with(self::SYNC_DB_ID)
             ->willReturn([$contract]);
 
         $this->openRegisterObjectService->method('find')
@@ -220,7 +239,7 @@ class SynchronizationServiceCleanupTest extends TestCase
         $outOfScope = $this->makeContract(self::TARGET_OUT_OF_SCOPE, 'origin-b');
 
         $this->contractMapper->method('findAllBySynchronization')
-            ->with(self::SYNC_ID)
+            ->with(self::SYNC_DB_ID)
             ->willReturn([$inScope, $outOfScope]);
 
         $this->openRegisterObjectService->method('find')
