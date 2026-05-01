@@ -22,3 +22,8 @@
 # Test/build artifacts
 .docusaurus
 .phpunit.result.cache
+
+# SBOM is published as release asset (see SECURITY.md), not stored in repo
+sbom.cdx.json
+bom-php.cdx.json
+bom-npm.cdx.json
