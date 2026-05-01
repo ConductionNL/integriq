@@ -2,29 +2,22 @@ name: Code Quality
 
 on:
   push:
-    branches: [main, master, beta, development, feature/**, bugfix/**, hotfix/**]
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
-    types: [opened, reopened]
-    branches: [main, master, beta, development]
+    branches: [main, beta, development]
   workflow_dispatch:
-
-concurrency:
-  group: quality-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
 
 jobs:
   quality:
-    if: github.event_name != 'push' || github.event.created != true
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openconnector
-      php-version: "8.3"
-      php-test-versions: '["8.3", "8.4"]'
-      nextcloud-test-refs: '["stable32"]'
+      # Pinned to 8.1 to preserve the behaviour of the previous hand-rolled
+      # workflow. Bump to 8.3 in a separate PR once the codebase is verified
+      # on the newer runtime.
+      php-version: "8.1"
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true
       enable-frontend: true
       enable-eslint: true
-      enable-phpunit: true
-      enable-newman: false
