@@ -522,4 +522,9 @@ export default {
 .tabButtonsContainer {
 	margin-bottom: 10px;
 }
+
+.tabPanel {
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+}
 </style>
