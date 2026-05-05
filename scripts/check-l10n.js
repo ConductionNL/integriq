@@ -1,14 +1,15 @@
 #!/usr/bin/env node
+/* eslint-disable jsdoc/require-param */
 /* eslint-disable n/no-process-exit */
 /* eslint-disable no-console */
 /* eslint-disable n/shebang */
 /**
- * l10n/i18n consistency checker for openconnector.
+ * l10n/i18n consistency checker.
  *
  * Scans src/ (*.vue, *.js, *.ts) and compares against l10n/en.js.
  *
  * Reports:
- *   1. MISSING   — strings used via t('openconnector', '...') but absent from en.js
+ *   1. MISSING   — strings used via t('<app>', '...') but absent from en.js
  *   2. UNUSED    — keys defined in en.js with no matching t() call
  *   3. UNWRAPPED — string literals in .vue files that match an en.js key but
  *                  are not wrapped in t() (likely missing translation)
@@ -18,7 +19,8 @@
 
 const fs = require('fs')
 const path = require('path')
-const vm = require('vm')
+
+const { loadJsTranslations, walk } = require('./lib/l10n.js')
 
 const ROOT = path.resolve(__dirname, '..')
 const SRC_DIR = path.join(ROOT, 'src')
@@ -32,64 +34,32 @@ const DIM = '\x1b[2m'
 const BOLD = '\x1b[1m'
 const RESET = '\x1b[0m'
 
-function walk(dir, exts, out = []) {
-	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-		const full = path.join(dir, entry.name)
-		if (entry.isDirectory()) {
-			if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
-			walk(full, exts, out)
-		} else if (exts.includes(path.extname(entry.name))) {
-			out.push(full)
-		}
-	}
-	return out
-}
-
 function rel(p) {
 	return path.relative(ROOT, p)
 }
 
-function loadKeys() {
-	const code = fs.readFileSync(L10N_FILE, 'utf8')
-	let captured = null
-	const sandbox = {
-		OC: {
-			L10N: {
-				register: (_app, translations) => { captured = translations },
-			},
-		},
-	}
-	vm.createContext(sandbox)
-	vm.runInContext(code, sandbox, { filename: L10N_FILE })
-	if (!captured || typeof captured !== 'object') {
-		throw new Error(`OC.L10N.register was not called with a translations object in ${L10N_FILE}`)
-	}
-	return new Set(Object.keys(captured))
+function escapeRegex(s) {
+	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**
- * Extract t('openconnector', '...') calls.
+ * Extract t('<app>', '...') calls.
  * Captures simple string-literal args (single or double quotes, with escapes).
  * Returns { found: Map<key, [{file,line}]>, unanalyzable: [{file,line,snippet}] }.
  */
-function extractTCalls(files) {
+function extractTCalls(files, app) {
 	const found = new Map()
 	const unanalyzable = []
 
-	// Match t('openconnector', ...) or t("openconnector", ...)
-	// We find the "t(" occurrence, then parse the arg list manually to handle
-	// template literals / concatenation gracefully.
-	const tCallRe = /\bt\s*\(\s*(['"])openconnector\1\s*,\s*/g
+	const tCallRe = new RegExp(`\\bt\\s*\\(\\s*(['"])${escapeRegex(app)}\\1\\s*,\\s*`, 'g')
 
 	for (const file of files) {
 		const text = fs.readFileSync(file, 'utf8')
-		// Build line offsets once
 		const lineStarts = [0]
 		for (let i = 0; i < text.length; i++) {
 			if (text.charCodeAt(i) === 10) lineStarts.push(i + 1)
 		}
 		const posToLine = (pos) => {
-			// binary search
 			let lo = 0; let hi = lineStarts.length - 1
 			while (lo < hi) {
 				const mid = (lo + hi + 1) >> 1
@@ -100,12 +70,12 @@ function extractTCalls(files) {
 		}
 
 		let m
+		tCallRe.lastIndex = 0
 		while ((m = tCallRe.exec(text)) !== null) {
 			const argStart = tCallRe.lastIndex
 			const line = posToLine(m.index)
 			const ch = text[argStart]
 			if (ch === '\'' || ch === '"') {
-				// Parse simple quoted string with \\ escapes
 				let i = argStart + 1
 				let value = ''
 				let closed = false
@@ -113,7 +83,6 @@ function extractTCalls(files) {
 					const c = text[i]
 					if (c === '\\' && i + 1 < text.length) {
 						const n = text[i + 1]
-						// Keep common escapes literal
 						if (n === 'n') value += '\n'
 						else if (n === 't') value += '\t'
 						else if (n === 'r') value += '\r'
@@ -122,12 +91,11 @@ function extractTCalls(files) {
 						continue
 					}
 					if (c === ch) { closed = true; break }
-					if (c === '\n') break // unterminated on this line
+					if (c === '\n') break
 					value += c
 					i++
 				}
 				if (closed) {
-					// Ensure next non-space char is , or )  — i.e. it's the full arg, not "'foo' + bar"
 					let j = i + 1
 					while (j < text.length && (text[j] === ' ' || text[j] === '\t')) j++
 					const next = text[j]
@@ -137,10 +105,8 @@ function extractTCalls(files) {
 						continue
 					}
 				}
-				// Fell through — unanalyzable
 				unanalyzable.push({ file, line, snippet: text.slice(m.index, Math.min(m.index + 80, text.length)).replace(/\n/g, ' ') })
 			} else {
-				// template literal, variable, concatenation, etc.
 				unanalyzable.push({ file, line, snippet: text.slice(m.index, Math.min(m.index + 80, text.length)).replace(/\n/g, ' ') })
 			}
 		}
@@ -160,6 +126,13 @@ function extractTCalls(files) {
  * This is heuristic and can produce false positives; each hit is reported with
  * file:line so humans can audit.
  */
+// Attributes whose value is an internal identifier (route name, slot key, etc.)
+// rather than user-visible prose. Values on these attrs may coincidentally
+// match an l10n key but must NOT be wrapped in t().
+const NON_DISPLAY_ATTRS = new Set([
+	'back-route', // Vue Router route name passed to $router.push({ name })
+])
+
 function findUnwrapped(vueFiles, keys) {
 	const hits = []
 	for (const file of vueFiles) {
@@ -183,7 +156,6 @@ function findUnwrapped(vueFiles, keys) {
 			return lo + 1
 		}
 
-		// 1) Text between tags: match >TEXT< where TEXT has no < or { or }
 		const textRe = />([^<>{}]+)</g
 		let tm
 		while ((tm = textRe.exec(tpl)) !== null) {
@@ -196,8 +168,6 @@ function findUnwrapped(vueFiles, keys) {
 			}
 		}
 
-		// 2) Static attribute values (unbound): attr="value" where attr does NOT start with : or @ or v-
-		//    We scan tag-by-tag to know which attr we're on.
 		const tagRe = /<[a-zA-Z][^>]*>/g
 		let tag
 		while ((tag = tagRe.exec(tpl)) !== null) {
@@ -208,6 +178,7 @@ function findUnwrapped(vueFiles, keys) {
 			while ((am = attrRe.exec(tagText)) !== null) {
 				const name = am[2]
 				if (name.startsWith(':') || name.startsWith('@') || name.startsWith('v-')) continue
+				if (NON_DISPLAY_ATTRS.has(name.toLowerCase())) continue
 				const value = am[4] !== undefined ? am[4] : am[5]
 				const trimmed = value.trim()
 				if (!trimmed) continue
@@ -229,18 +200,19 @@ function printSection(title, color, body) {
 }
 
 function main() {
-	const keys = loadKeys()
+	const { app, translations } = loadJsTranslations(L10N_FILE)
+	const keys = new Set(Object.keys(translations))
 	const files = walk(SRC_DIR, ['.vue', '.js', '.ts'])
 	const vueFiles = files.filter(f => f.endsWith('.vue'))
 
-	const { found, unanalyzable } = extractTCalls(files)
+	const { found, unanalyzable } = extractTCalls(files, app)
 	const usedKeys = new Set(found.keys())
 
 	const missing = [...usedKeys].filter(k => !keys.has(k)).sort()
 	const unused = [...keys].filter(k => !usedKeys.has(k)).sort()
 	const unwrapped = findUnwrapped(vueFiles, keys)
 
-	console.log(`${BOLD}${CYAN}openconnector l10n check${RESET}`)
+	console.log(`${BOLD}${CYAN}${app} l10n check${RESET}`)
 	console.log(`${DIM}Scanned ${files.length} files (${vueFiles.length} .vue), ${keys.size} keys in en.js${RESET}`)
 	console.log('')
 

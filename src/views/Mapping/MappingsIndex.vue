@@ -14,6 +14,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 			:exclude-columns="['mapping', 'cast', 'unset']"
 			:pagination="paginationData"
 			:loading="mappingStore.loading"
+			:refreshing="mappingStore.loading"
 			:view-mode="mappingStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedMappings"

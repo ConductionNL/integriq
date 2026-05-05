@@ -16,6 +16,7 @@ import { consumerSchema } from './consumerSchema.js'
 			:exclude-columns="['authorizationConfiguration']"
 			:pagination="paginationData"
 			:loading="consumerStore.loading"
+			:refreshing="consumerStore.loading"
 			:view-mode="consumerStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedConsumers"

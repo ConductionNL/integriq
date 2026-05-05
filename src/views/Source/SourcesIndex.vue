@@ -16,6 +16,7 @@ import { sourceSchema } from './sourceSchema.js'
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:loading="sourceStore.loading"
+			:refreshing="sourceStore.loading"
 			:view-mode="sourceStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedSources"

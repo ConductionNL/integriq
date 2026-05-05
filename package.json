@@ -16,7 +16,8 @@
     "test-coverage": "jest --silent --coverage",
     "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
     "check:l10n": "node scripts/check-l10n.js",
-    "clean:l10n": "node scripts/clean-l10n.js --apply"
+    "clean:l10n": "node scripts/clean-l10n.js --apply",
+    "find:unwrapped": "node scripts/find-unwrapped.js"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"

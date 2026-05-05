@@ -17,6 +17,7 @@ import { endpointSchema } from './endpointSchema.js'
 			:exclude-columns="['description', 'endpointArray', 'endpointRegex', 'configurations', 'slug', 'targetId', 'targetType', 'version']"
 			:pagination="paginationData"
 			:loading="endpointStore.loading"
+			:refreshing="endpointStore.loading"
 			:view-mode="endpointStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedEndpoints"
