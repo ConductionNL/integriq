@@ -1,6 +1,6 @@
 import { setActivePinia, createPinia } from 'pinia'
 
-import { useJobStore } from './job.js'
+import { useJobStore } from './job'
 import { Job, mockJob } from '../../entities/index.js'
 
 describe('Job Store', () => {
@@ -8,30 +8,28 @@ describe('Job Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets job item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useJobStore()
 
-		store.setJobItem(mockJob()[0])
+		store.setItem(mockJob()[0])
 
-		expect(store.jobItem).toBeInstanceOf(Job)
-		expect(store.jobItem).toEqual(mockJob()[0])
+		expect(store.item).toBeInstanceOf(Job)
+		expect(store.item).toEqual(mockJob()[0])
 
-		expect(store.jobItem.validate().success).toBe(true)
+		expect(store.item.validate().success).toBe(true)
 	})
 
-	it('sets job list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useJobStore()
 
-		store.setJobList(mockJob())
+		store.setList(mockJob())
 
-		expect(store.jobList).toHaveLength(mockJob().length)
+		expect(store.list).toHaveLength(mockJob().length)
 
-		store.jobList.forEach((item, index) => {
+		store.list.forEach((item: Job, index: number) => {
 			expect(item).toBeInstanceOf(Job)
 			expect(item).toEqual(mockJob()[index])
 			expect(item.validate().success).toBe(true)
 		})
 	})
-
-	// ... other tests ...
 })

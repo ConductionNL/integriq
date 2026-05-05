@@ -8,7 +8,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Do you want to delete <b>{{ jobStore.jobItem.name }}</b>? This action cannot be undone.
+			Do you want to delete <b>{{ jobStore.item.name }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -80,13 +80,13 @@ export default {
 		async deleteJob() {
 			this.loading = true
 			try {
-				await jobStore.deleteJob(jobStore.jobItem.id)
+				await jobStore.deleteOne(jobStore.item.id)
 				// Close modal or show success message
 				this.success = true
 				this.loading = false
 				this.error = false
 
-				jobStore.setJobItem(null)
+				jobStore.setItem(null)
 				this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)
 			} catch (error) {
 				this.loading = false

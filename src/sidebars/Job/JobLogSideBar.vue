@@ -255,28 +255,28 @@ export default {
 	},
 	computed: {
 		jobOptions() {
-			return jobStore.jobList?.map(job => ({
+			return jobStore.list?.map(job => ({
 				value: job,
 				label: job.name,
 				title: job.name,
 			})) || []
 		},
 		selectedJobValue() {
-			if (!jobStore.jobItem) return null
-			const found = jobStore.jobList?.find(j => j.id === jobStore.jobItem.id) || null
+			if (!jobStore.item) return null
+			const found = jobStore.list?.find(j => j.id === jobStore.item.id) || null
 			return found ? { value: found, label: found.name, title: found.name } : null
 		},
 	},
 	watch: {
-		'jobStore.jobItem'() {
+		'jobStore.item'() {
 			this.selectedJob = this.selectedJobValue
 			this.applyFilters()
 		},
 	},
 	mounted() {
 		// Load required data
-		if (!jobStore.jobList?.length) {
-			jobStore.refreshJobList()
+		if (!jobStore.list?.length) {
+			jobStore.refreshList()
 		}
 
 		// Load initial log data
@@ -306,9 +306,9 @@ export default {
 		 */
 		async loadLogData() {
 			try {
-				// Only refresh logs if a job is selected
-				if (this.filters.jobId) {
-					await jobStore.refreshJobLogs(this.filters.jobId)
+				// Only refresh logs if a job is selected (item.id was set by onJobSelected)
+				if (jobStore.item?.id) {
+					await jobStore.refreshLogs()
 					this.updateFilteredCount()
 				}
 			} catch (error) {
@@ -328,13 +328,13 @@ export default {
 			this.filters.showOnlySlow = false
 
 			// Clear global stores
-			jobStore.setJobItem(null)
+			jobStore.setItem(null)
 
 			// Clear store filters
 			logStore.setLogFilters({})
 
 			// Refresh without applying filters
-			jobStore.refreshJobLogs()
+			jobStore.refreshLogs()
 		},
 		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
@@ -400,7 +400,7 @@ export default {
 
 			// Set filters in store and refresh data
 			logStore.setLogFilters(filters)
-			jobStore.refreshJobLogs(filters)
+			jobStore.refreshLogs(filters)
 
 			// Also emit for legacy compatibility
 			this.$root.$emit('job-log-filters-changed', filters)
@@ -458,7 +458,7 @@ export default {
 			// Job id
 			if (q.job_id) {
 				const id = Number(q.job_id)
-				const found = jobStore.jobList?.find(j => j.id === id)
+				const found = jobStore.list?.find(j => j.id === id)
 				this.selectedJob = found ? { value: found, label: found.name, title: found.name } : null
 				this.filters.jobId = found ? found.id : null
 			}
@@ -477,7 +477,7 @@ export default {
 		 * Update filtered count from store
 		 */
 		updateFilteredCount() {
-			const logs = jobStore.jobLogs || []
+			const logs = jobStore.logs || []
 			this.filteredCount = logs.length
 			this.totalLogs = logs.length
 			this.successCount = logs.filter(log => log.level === 'SUCCESS').length
@@ -498,7 +498,7 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				const logs = (jobStore.jobLogs && Array.isArray(jobStore.jobLogs.results)) ? jobStore.jobLogs.results : []
+				const logs = (jobStore.logs && Array.isArray(jobStore.logs.results)) ? jobStore.logs.results : []
 				this.totalLogs = logs.length
 				this.successCount = logs.filter(log => log.level === 'SUCCESS').length
 				this.errorCount = logs.filter(log => ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'].includes(log.level)).length
@@ -513,7 +513,7 @@ export default {
 		 */
 		async loadLevelDistribution() {
 			try {
-				const logs = (jobStore.jobLogs && Array.isArray(jobStore.jobLogs.results)) ? jobStore.jobLogs.results : []
+				const logs = (jobStore.logs && Array.isArray(jobStore.logs.results)) ? jobStore.logs.results : []
 				const levelMap = {}
 				logs.forEach(log => {
 					const level = log.level
@@ -535,12 +535,12 @@ export default {
 		 */
 		async loadTopJobs() {
 			try {
-				const logs = (jobStore.jobLogs && Array.isArray(jobStore.jobLogs.results)) ? jobStore.jobLogs.results : []
+				const logs = (jobStore.logs && Array.isArray(jobStore.logs.results)) ? jobStore.logs.results : []
 				const jobMap = {}
 				logs.forEach(log => {
 					const jobId = log.jobId
 					if (!jobMap[jobId]) {
-						const job = jobStore.jobList?.find(j => j.id === jobId)
+						const job = jobStore.list?.find(j => j.id === jobId)
 						jobMap[jobId] = {
 							name: job?.name || `Job ${jobId}`,
 							count: 0,
@@ -563,7 +563,13 @@ export default {
 			this.selectedJob = job && job.value ? job : (jobObj ? { value: jobObj, label: jobObj.name, title: jobObj.name } : null)
 			const jobId = jobObj && jobObj.id ? jobObj.id : null
 			this.filters.jobId = jobId
-			jobStore.selectedJobId = jobId
+			// Drive the active item from the sidebar selection (item.id is the source of truth
+			// for which job's logs we're scoped to — replaces the legacy `selectedJobId` field).
+			if (jobObj) {
+				jobStore.setItem(jobObj)
+			} else {
+				jobStore.setItem(null)
+			}
 			this.loadLogData()
 		},
 	},

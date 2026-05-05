@@ -20,7 +20,7 @@ import { Job } from '../../entities/index.js'
 			</NcNoteCard>
 		</div>
 		<p v-if="success === null">
-			Do you want to delete <b>{{ jobStore.jobArgumentKey }}</b>? This action cannot be undone.
+			Do you want to delete <b>{{ jobStore.argumentKey }}</b>? This action cannot be undone.
 		</p>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeModal">
@@ -78,8 +78,8 @@ export default {
 		deleteJobArgument() {
 			this.loading = true
 
-			const jobItemClone = jobStore.jobItem.cloneRaw()
-			delete jobItemClone?.arguments[jobStore.jobArgumentKey]
+			const jobItemClone = jobStore.item.cloneRaw()
+			delete jobItemClone?.arguments[jobStore.argumentKey]
 
 			const scheduleAfter = jobItemClone.scheduleAfter ? new Date(jobItemClone.scheduleAfter.date) : null
 
@@ -88,7 +88,7 @@ export default {
 				scheduleAfter,
 			})
 
-			jobStore.saveJob(jobItem)
+			jobStore.save(jobItem)
 				.then(() => {
 					this.loading = false
 					this.success = true

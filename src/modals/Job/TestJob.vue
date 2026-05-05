@@ -29,46 +29,46 @@ import { jobStore, navigationStore } from '../../store/store.js'
 					Test job
 				</NcButton>
 			</div>
-			<div v-if="jobStore.jobTest">
-				<NcNoteCard v-if="jobStore.jobTest?.level === 'INFO'" type="success">
-					<p>The job test was successful. {{ jobStore.jobTest?.message }}</p>
+			<div v-if="jobStore.testResult">
+				<NcNoteCard v-if="jobStore.testResult?.level === 'INFO'" type="success">
+					<p>The job test was successful. {{ jobStore.testResult?.message }}</p>
 				</NcNoteCard>
-				<NcNoteCard v-if="(jobStore.jobTest?.level !== 'INFO') || error" type="error">
-					<p>An error occurred while testing the job test: {{ jobStore.jobTest ? jobStore.jobTest.message : error }}</p>
+				<NcNoteCard v-if="(jobStore.testResult?.level !== 'INFO') || error" type="error">
+					<p>An error occurred while testing the job test: {{ jobStore.testResult ? jobStore.testResult.message : error }}</p>
 				</NcNoteCard>
 			</div>
 
-			<div v-if="jobStore.jobTest" class="jobTestTable">
+			<div v-if="jobStore.testResult" class="jobTestTable">
 				<table>
 					<tr>
 						<th>UUID</th>
-						<td>{{ jobStore.jobTest.uuid }}</td>
+						<td>{{ jobStore.testResult.uuid }}</td>
 					</tr>
 					<tr>
 						<th>Level</th>
-						<td>{{ jobStore.jobTest.level }}</td>
+						<td>{{ jobStore.testResult.level }}</td>
 					</tr>
 					<tr>
 						<th>Message</th>
-						<td>{{ jobStore.jobTest.message }}</td>
+						<td>{{ jobStore.testResult.message }}</td>
 					</tr>
 					<tr>
 						<th>Job ID</th>
-						<td>{{ jobStore.jobTest.jobId }}</td>
+						<td>{{ jobStore.testResult.jobId }}</td>
 					</tr>
 					<tr>
 						<th>Job List ID</th>
-						<td>{{ jobStore.jobTest.jobListId }}</td>
+						<td>{{ jobStore.testResult.jobListId }}</td>
 					</tr>
 					<tr>
 						<th>Job Class</th>
-						<td>{{ jobStore.jobTest.jobClass || 'N/A' }}</td>
+						<td>{{ jobStore.testResult.jobClass || 'N/A' }}</td>
 					</tr>
 					<tr>
 						<th>Arguments</th>
 						<td>
 							<ul>
-								<li v-for="(value, key) in jobStore.jobTest.arguments" :key="key">
+								<li v-for="(value, key) in jobStore.testResult.arguments" :key="key">
 									{{ key }}: {{ value }}
 								</li>
 							</ul>
@@ -76,21 +76,21 @@ import { jobStore, navigationStore } from '../../store/store.js'
 					</tr>
 					<tr>
 						<th>Execution Time</th>
-						<td>{{ jobStore.jobTest.executionTime }} ms</td>
+						<td>{{ jobStore.testResult.executionTime }} ms</td>
 					</tr>
 					<tr>
 						<th>User ID</th>
-						<td>{{ jobStore.jobTest.userId || 'N/A' }}</td>
+						<td>{{ jobStore.testResult.userId || 'N/A' }}</td>
 					</tr>
 					<tr>
 						<th>Session ID</th>
-						<td>{{ jobStore.jobTest.sessionId || 'N/A' }}</td>
+						<td>{{ jobStore.testResult.sessionId || 'N/A' }}</td>
 					</tr>
 					<tr>
 						<th>Stack Trace</th>
 						<td>
 							<ol>
-								<li v-for="(step, index) in jobStore.jobTest.stackTrace" :key="index">
+								<li v-for="(step, index) in jobStore.testResult.stackTrace" :key="index">
 									{{ step }}
 								</li>
 							</ol>
@@ -139,7 +139,7 @@ export default {
 			this.loading = true
 
 			try {
-				await jobStore.testJob(jobStore.jobItem.id)
+				await jobStore.testJob(jobStore.item.id)
 				this.success = true
 				this.loading = false
 				this.error = false
@@ -147,7 +147,7 @@ export default {
 				this.loading = false
 				this.success = false
 				this.error = error.message || 'An error occurred while testing the job'
-				jobStore.setJobTest(false)
+				jobStore.setTestResult(false)
 			}
 		},
 	},

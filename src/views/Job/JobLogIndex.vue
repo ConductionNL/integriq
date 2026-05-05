@@ -15,6 +15,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 			:pagination="paginationData"
 			:loading="logStore.loading"
 			:refreshing="refreshing"
+			:inline-action-count="3"
 			view-mode="table"
 			:show-view-toggle="false"
 			:show-add="false"
@@ -34,7 +35,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
 			@select="onSelect">
-			<!-- Action bar extras: Export and bulk Delete -->
+			<!-- Action bar extras: Export and bulk Delete (kept inline via :inline-action-count) -->
 			<template #action-items>
 				<NcActionButton
 					v-if="selectedLogs.length > 0"
@@ -184,10 +185,10 @@ export default {
 	},
 	computed: {
 		filteredLogs() {
-			return (jobStore.jobLogs && Array.isArray(jobStore.jobLogs.results)) ? jobStore.jobLogs.results : []
+			return (jobStore.logs && Array.isArray(jobStore.logs.results)) ? jobStore.logs.results : []
 		},
 		totalLogs() {
-			return (jobStore.jobLogs && jobStore.jobLogs.total) ? jobStore.jobLogs.total : this.filteredLogs.length
+			return (jobStore.logs && jobStore.logs.total) ? jobStore.logs.total : this.filteredLogs.length
 		},
 		tableColumns() {
 			return [
@@ -202,7 +203,7 @@ export default {
 			const page = this.pagination.page || 1
 			const limit = this.pagination.limit || 20
 			const total = this.totalLogs
-			const pages = Math.max(1, jobStore.jobLogs?.pages || Math.ceil(total / limit))
+			const pages = Math.max(1, jobStore.logs?.pages || Math.ceil(total / limit))
 			return { page, pages, total, limit }
 		},
 		emptyContentName() {
@@ -212,13 +213,9 @@ export default {
 		},
 	},
 	mounted() {
-		jobStore.refreshJobList()
-		const jobId = jobStore.selectedJobId || jobStore.jobItem?.id
-		if (jobId) {
-			jobStore.refreshJobLogs(jobId)
-		} else {
-			jobStore.refreshJobLogs()
-		}
+		jobStore.refreshList()
+		// Plugin's refreshLogs uses jobStore.item?.id automatically; null item → all-jobs mode.
+		jobStore.refreshLogs()
 		this.$root.$on('job-log-filters-changed', this.handleFiltersChanged)
 	},
 	beforeDestroy() {
@@ -227,22 +224,17 @@ export default {
 	methods: {
 		handleFiltersChanged(filters) {
 			logStore.setLogFilters(filters)
-			const jobId = filters.jobId || jobStore.selectedJobId || jobStore.jobItem?.id
-			if (jobId) {
-				jobStore.refreshJobLogs(jobId)
-			} else {
-				jobStore.refreshJobLogs()
-			}
+			jobStore.refreshLogs(filters)
 		},
 		async onPageChanged(page) {
 			this.pagination.page = page
-			await jobStore.refreshJobLogs(undefined, { _page: page, _limit: this.pagination.limit })
+			await jobStore.refreshLogs({ ...logStore.logFilters, _page: page, _limit: this.pagination.limit })
 			this.selectedLogs = []
 		},
 		async onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
-			await jobStore.refreshJobLogs(undefined, { _page: 1, _limit: pageSize })
+			await jobStore.refreshLogs({ ...logStore.logFilters, _page: 1, _limit: pageSize })
 			this.selectedLogs = []
 		},
 		onSelect(ids) {
@@ -250,7 +242,7 @@ export default {
 		},
 		getJobName(jobId) {
 			if (!jobId) return t('openconnector', 'Unknown Job')
-			const job = jobStore.jobList?.find(j => j.id === jobId)
+			const job = jobStore.list?.find(j => j.id === jobId)
 			return job?.name || `Job ${jobId}`
 		},
 		getLogLevelClass(log) {
@@ -318,7 +310,7 @@ export default {
 		async refreshLogs() {
 			this.refreshing = true
 			try {
-				await jobStore.refreshJobLogs(logStore.logFilters)
+				await jobStore.refreshLogs(logStore.logFilters)
 				this.selectedLogs = []
 			} finally {
 				this.refreshing = false

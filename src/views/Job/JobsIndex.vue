@@ -60,25 +60,25 @@ import { jobStore, navigationStore } from '../../store/store.js'
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('viewJob')">
+							<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('viewJob')">
 								<template #icon>
 									<Eye :size="20" />
 								</template>
 								{{ t('openconnector', 'View details') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('editJob')">
+							<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('editJob')">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
 								{{ t('openconnector', 'Edit') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('testJob')">
+							<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('testJob')">
 								<template #icon>
 									<Sync :size="20" />
 								</template>
 								{{ t('openconnector', 'Test') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('runJob')">
+							<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('runJob')">
 								<template #icon>
 									<Play :size="20" />
 								</template>
@@ -102,7 +102,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 								</template>
 								{{ t('openconnector', 'Export') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setDialog('deleteJob')">
+							<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setDialog('deleteJob')">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -209,25 +209,25 @@ import { jobStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<DotsHorizontal :size="20" />
 					</template>
-					<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('viewJob')">
+					<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('viewJob')">
 						<template #icon>
 							<Eye :size="20" />
 						</template>
 						{{ t('openconnector', 'View details') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('editJob')">
+					<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('editJob')">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						{{ t('openconnector', 'Edit') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('testJob')">
+					<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('testJob')">
 						<template #icon>
 							<Sync :size="20" />
 						</template>
 						{{ t('openconnector', 'Test') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setModal('runJob')">
+					<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setModal('runJob')">
 						<template #icon>
 							<Play :size="20" />
 						</template>
@@ -251,7 +251,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 						</template>
 						{{ t('openconnector', 'Export') }}
 					</NcActionButton>
-					<NcActionButton close-after-click @click="jobStore.setJobItem(job); navigationStore.setDialog('deleteJob')">
+					<NcActionButton close-after-click @click="jobStore.setItem(job); navigationStore.setDialog('deleteJob')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -312,7 +312,7 @@ export default {
 	},
 	computed: {
 		filteredJobs() {
-			return jobStore.jobList || []
+			return jobStore.list || []
 		},
 		tableColumns() {
 			return [
@@ -335,14 +335,14 @@ export default {
 		emptyContentName() {
 			if (this.loadError) return this.loadError
 			if (this.loading) return t('openconnector', 'Loading jobs...')
-			if (!jobStore.jobList?.length) return t('openconnector', 'No jobs found')
+			if (!jobStore.list?.length) return t('openconnector', 'No jobs found')
 			return ''
 		},
 	},
 	async mounted() {
 		this.loading = true
 		try {
-			await jobStore.refreshJobList()
+			await jobStore.refreshList()
 		} catch (e) {
 			this.loadError = e.message || t('openconnector', 'Failed to load jobs')
 		} finally {
@@ -351,14 +351,14 @@ export default {
 	},
 	methods: {
 		onAdd() {
-			jobStore.setJobItem({})
+			jobStore.setItem({})
 			navigationStore.setModal('editJob')
 		},
 		async onRefresh() {
 			this.refreshing = true
 			this.loadError = null
 			try {
-				await jobStore.refreshJobList()
+				await jobStore.refreshList()
 			} catch (e) {
 				this.loadError = e.message || t('openconnector', 'Failed to load jobs')
 			} finally {
@@ -380,13 +380,13 @@ export default {
 			return Object.keys(args).length
 		},
 		addJobArgument(job) {
-			jobStore.setJobItem(job)
-			jobStore.setJobArgumentKey(null)
+			jobStore.setItem(job)
+			jobStore.setArgumentKey(null)
 			navigationStore.setModal('editJobArgument')
 		},
 		viewJobLogs(job) {
-			jobStore.setJobItem(job)
-			jobStore.refreshJobLogs(job.id)
+			jobStore.setItem(job)
+			jobStore.refreshLogs()
 			this.$router.push('/jobs/logs')
 		},
 	},

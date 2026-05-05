@@ -97,7 +97,7 @@ export default {
 	},
 	computed: {
 		initialItem() {
-			const item = jobStore.jobItem
+			const item = jobStore.item
 			if (!item || !item.id) return null
 			// Normalize scheduleAfter (backend returns { date: '...' }) into a Date for the picker
 			const scheduleAfter = item.scheduleAfter?.date
@@ -138,7 +138,7 @@ export default {
 			immediate: true,
 			handler(modal) {
 				if (modal === 'editJob') {
-					const item = jobStore.jobItem || {}
+					const item = jobStore.item || {}
 					this.extraFlags = {
 						timeSensitive: !!item.timeSensitive,
 						allowParallelRuns: !!item.allowParallelRuns,
@@ -166,7 +166,7 @@ export default {
 					...payload,
 					...this.extraFlags,
 				})
-				await jobStore.saveJob(job)
+				await jobStore.save(job)
 				this.$refs.formDialog.setResult({ success: true })
 			} catch (error) {
 				this.$refs.formDialog.setResult({

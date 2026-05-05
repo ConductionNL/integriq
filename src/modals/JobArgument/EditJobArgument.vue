@@ -106,10 +106,10 @@ export default {
 	},
 	methods: {
 		initializeJobArgument() {
-			if (!jobStore.jobArgumentKey) {
+			if (!jobStore.argumentKey) {
 				return
 			}
-			const argumentItem = Object.entries(jobStore.jobItem.arguments).find(([key]) => key === jobStore.jobArgumentKey)
+			const argumentItem = Object.entries(jobStore.item.arguments).find(([key]) => key === jobStore.argumentKey)
 			if (argumentItem) {
 				this.argumentItem = {
 					key: argumentItem[0] || '',
@@ -120,8 +120,8 @@ export default {
 			}
 		},
 		checkIfKeyIsUnique(key) {
-			if (!jobStore.jobItem.arguments) return false
-			const keys = Object.keys(jobStore.jobItem.arguments)
+			if (!jobStore.item.arguments) return false
+			const keys = Object.keys(jobStore.item.arguments)
 			if (this.oldKey === key) return false
 			if (keys.includes(key)) return true
 			return false
@@ -143,7 +143,7 @@ export default {
 		async editJobArgument() {
 			this.loading = true
 
-			const jobItemClone = jobStore.jobItem.cloneRaw()
+			const jobItemClone = jobStore.item.cloneRaw()
 
 			const scheduleAfter = jobItemClone.scheduleAfter ? new Date(jobItemClone.scheduleAfter.date) : null
 
@@ -160,7 +160,7 @@ export default {
 				delete newJobItem.arguments[this.oldKey]
 			}
 
-			jobStore.saveJob(new Job(newJobItem))
+			jobStore.save(new Job(newJobItem))
 				.then(({ response }) => {
 					this.success = response.ok
 					this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)

@@ -83,9 +83,9 @@ export const useImportExportStore = defineStore(
 								)
 							case 'job':
 								return (
-									jobStore.refreshJobList().then(() => {
-										const job = jobStore.jobList.find(job => job.id === response.data.object.id)
-										jobStore.setJobItem(job)
+									jobStore.refreshList().then(() => {
+										const job = jobStore.list.find(job => job.id === response.data.object.id)
+										jobStore.setItem(job)
 									})
 								)
 							case 'mapping':

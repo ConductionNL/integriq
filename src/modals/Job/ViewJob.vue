@@ -6,11 +6,11 @@ import { jobStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewJob'"
 		ref="modalRef"
-		:name="jobStore.jobItem?.name || t('openconnector', 'Job Details')"
+		:name="jobStore.item?.name || t('openconnector', 'Job Details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
-			<p v-if="jobStore.jobItem?.description" class="job-description">
-				{{ jobStore.jobItem.description }}
+			<p v-if="jobStore.item?.description" class="job-description">
+				{{ jobStore.item.description }}
 			</p>
 
 			<!-- Job Properties -->
@@ -25,47 +25,47 @@ import { jobStore, navigationStore } from '../../store/store.js'
 					<tbody>
 						<tr>
 							<td>{{ t('openconnector', 'Status') }}</td>
-							<td>{{ jobStore.jobItem?.status || 'Unknown' }}</td>
+							<td>{{ jobStore.item?.status || 'Unknown' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Enabled') }}</td>
-							<td>{{ jobStore.jobItem?.isEnabled ? 'Enabled' : 'Disabled' }}</td>
+							<td>{{ jobStore.item?.isEnabled ? 'Enabled' : 'Disabled' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Version') }}</td>
-							<td>{{ jobStore.jobItem?.version || '-' }}</td>
+							<td>{{ jobStore.item?.version || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Job Class') }}</td>
-							<td>{{ jobStore.jobItem?.jobClass || '-' }}</td>
+							<td>{{ jobStore.item?.jobClass || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Interval') }}</td>
-							<td>{{ jobStore.jobItem?.interval || '-' }}</td>
+							<td>{{ jobStore.item?.interval || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Execution Time') }}</td>
-							<td>{{ jobStore.jobItem?.executionTime || '-' }}</td>
+							<td>{{ jobStore.item?.executionTime || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Time Sensitive') }}</td>
-							<td>{{ jobStore.jobItem?.timeSensitive || '-' }}</td>
+							<td>{{ jobStore.item?.timeSensitive || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Allow Parallel Runs') }}</td>
-							<td>{{ jobStore.jobItem?.allowParallelRuns || '-' }}</td>
+							<td>{{ jobStore.item?.allowParallelRuns || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Single Run') }}</td>
-							<td>{{ jobStore.jobItem?.singleRun || '-' }}</td>
+							<td>{{ jobStore.item?.singleRun || '-' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Next Run') }}</td>
-							<td>{{ getValidISOstring(jobStore.jobItem?.nextRun) ? new Date(jobStore.jobItem.nextRun).toLocaleString() : 'N/A' }}</td>
+							<td>{{ getValidISOstring(jobStore.item?.nextRun) ? new Date(jobStore.item.nextRun).toLocaleString() : 'N/A' }}</td>
 						</tr>
 						<tr>
 							<td>{{ t('openconnector', 'Last Run') }}</td>
-							<td>{{ getValidISOstring(jobStore.jobItem?.lastRun) ? new Date(jobStore.jobItem.lastRun).toLocaleString() : 'N/A' }}</td>
+							<td>{{ getValidISOstring(jobStore.item?.lastRun) ? new Date(jobStore.item.lastRun).toLocaleString() : 'N/A' }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -75,16 +75,16 @@ import { jobStore, navigationStore } from '../../store/store.js'
 			<div class="tabContainer">
 				<BTabs content-class="mt-3" justified>
 					<BTab title="Job Arguments">
-						<div v-if="jobStore.jobItem?.arguments !== null && Object.keys(jobStore.jobItem?.arguments || {}).length" class="arguments-list">
-							<NcListItem v-for="(value, key, i) in jobStore.jobItem?.arguments"
+						<div v-if="jobStore.item?.arguments !== null && Object.keys(jobStore.item?.arguments || {}).length" class="arguments-list">
+							<NcListItem v-for="(value, key, i) in jobStore.item?.arguments"
 								:key="`${key}${i}`"
 								:name="key"
 								:bold="false"
 								:force-display-actions="true"
-								:active="jobStore.jobArgumentKey === key"
+								:active="jobStore.argumentKey === key"
 								@click="setActiveJobArgumentKey(key)">
 								<template #icon>
-									<SitemapOutline :class="jobStore.jobArgumentKey === key && 'selectedIcon'" :size="44" />
+									<SitemapOutline :class="jobStore.argumentKey === key && 'selectedIcon'" :size="44" />
 								</template>
 								<template #subname>
 									{{ value }}
@@ -105,7 +105,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 								</template>
 							</NcListItem>
 						</div>
-						<div v-if="!jobStore.jobItem?.arguments || !Object.keys(jobStore.jobItem?.arguments).length" class="tabPanel">
+						<div v-if="!jobStore.item?.arguments || !Object.keys(jobStore.item?.arguments).length" class="tabPanel">
 							<NcEmptyContent
 								:name="t('openconnector', 'No arguments')"
 								:description="t('openconnector', 'No arguments found for this job')">
@@ -200,7 +200,7 @@ export default {
 		 * @param {string} key - The argument key to delete
 		 */
 		deleteJobArgument(key) {
-			jobStore.setJobArgumentKey(key)
+			jobStore.setArgumentKey(key)
 			navigationStore.setModal('deleteJobArgument')
 		},
 		/**
@@ -208,14 +208,14 @@ export default {
 		 * @param {string} key - The argument key to edit
 		 */
 		editJobArgument(key) {
-			jobStore.setJobArgumentKey(key)
+			jobStore.setArgumentKey(key)
 			navigationStore.setModal('editJobArgument')
 		},
 		/**
 		 * Add job argument
 		 */
 		addJobArgument() {
-			jobStore.setJobArgumentKey(null)
+			jobStore.setArgumentKey(null)
 			navigationStore.setModal('editJobArgument')
 		},
 		/**
@@ -223,25 +223,25 @@ export default {
 		 * @param {string} jobArgumentKey - The argument key to set as active
 		 */
 		setActiveJobArgumentKey(jobArgumentKey) {
-			if (jobStore.jobArgumentKey === jobArgumentKey) {
-				jobStore.setJobArgumentKey(false)
+			if (jobStore.argumentKey === jobArgumentKey) {
+				jobStore.setArgumentKey(false)
 			} else {
-				jobStore.setJobArgumentKey(jobArgumentKey)
+				jobStore.setArgumentKey(jobArgumentKey)
 			}
 		},
 		/**
 		 * View job logs
 		 */
 		viewJobLogs() {
-			jobStore.setJobItem(jobStore.jobItem)
+			jobStore.setItem(jobStore.item)
 			this.$router.push('/jobs/logs')
 		},
 		/**
 		 * Refresh job logs
 		 */
 		refreshJobLogs() {
-			if (jobStore.jobItem?.id) {
-				jobStore.refreshJobLogs(jobStore.jobItem.id)
+			if (jobStore.item?.id) {
+				jobStore.refreshLogs()
 			}
 		},
 		/**
