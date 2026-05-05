@@ -70,7 +70,7 @@ node scripts/l10n-ai.js rename <old> <new> [--force]
 Rules and gotchas:
 
 - **Always `add` before `set`.** `set` errors if the key isn't present in the target locale.
-- **`add` needs a value per targeted locale.** Run `list-locales` first if you don't know which locales ship. Don't fabricate translations for languages you can't translate to — narrow with `--locales=en` and let the human / translation workflow add the rest.
+- **`add` needs a value per targeted locale, and you are responsible for all of them.** Run `list-locales` first to see which locales ship. Provide a context-appropriate translation for every locale on the list — don't narrow with `--locales=en` and defer NL (or any other locale) to a later "human pass". Read the surrounding code to understand how the string is used (button label vs. heading vs. error message vs. tooltip) and pick a translation that fits that role; literal-from-English is fine when the context is unambiguous, but a button verb should stay a verb, an error sentence should stay a sentence, etc. If you genuinely don't know a translation for a locale you don't read, ask the user before adding the key rather than skipping the locale.
 - **Pluralized keys (array values) cannot be edited via `set`** — the script will refuse and tell you to edit the file by hand. Use this only for plural arrays; do not use it as a workaround for single-string edits.
 - **`rm` checks references in `src/`.** Trust the refusal; investigate before passing `--force`.
 - **`rename` does not touch callsites.** After renaming, grep `src/` for the old key and update each `t('opencatalogi', '<old>')` to `<new>`.
@@ -152,11 +152,13 @@ Important constraints:
 ## End-to-end recipe: introducing a new user-visible string
 
 1. Write the markup with the wrap in place: `<NcButton :title="t('opencatalogi', 'Save changes')">…</NcButton>`.
-2. Register the key:
+2. Register the key with values for **every** locale `list-locales` reports:
    ```bash
-   node scripts/l10n-ai.js add "Save changes" --value en="Save changes" --locales=en
+   node scripts/l10n-ai.js add "Save changes" \
+       --value en="Save changes" \
+       --value nl="Wijzigingen opslaan"
    ```
-   (Add `--value nl="Wijzigingen opslaan"` when you have the translation.)
+   Do not omit a locale because translating it feels like extra work — that's the job. If the surrounding code makes the string's role ambiguous (verb vs. noun, button vs. heading), read the call site first, then pick a translation that fits that role.
 3. `npm run check:l10n` — confirm no MISSING.
 4. `npm run find:unwrapped` — confirm no related candidates remain.
 

@@ -1,285 +1,204 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { jobStore, navigationStore } from '../../store/store.js'
 import { Job } from '../../entities/index.js'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'editJob'"
-		ref="modalRef"
-		label-id="editJob"
+	<CnFormDialog
+		v-if="navigationStore.modal === 'editJob'"
+		ref="formDialog"
+		:item="initialItem"
+		:fields="formFields"
+		:dialog-title="initialItem?.id ? t('openconnector', 'Edit job') : t('openconnector', 'Add job')"
+		name-field="name"
+		size="normal"
+		@confirm="onConfirm"
 		@close="closeModal">
-		<div class="modalContent">
-			<h2>{{ jobItem?.id ? 'Edit' : 'Add' }} job</h2>
-			<NcNoteCard v-if="success" type="success">
-				<p>Successfully added job</p>
-			</NcNoteCard>
-			<NcNoteCard v-if="error" type="error">
-				<p>{{ error }}</p>
-			</NcNoteCard>
-
-			<form v-if="!success" @submit.prevent="handleSubmit">
-				<div class="form-group">
-					<NcTextField
-						label="Name"
-						maxlength="255"
-						:value.sync="jobItem.name"
-						required />
-
-					<NcTextArea
-						resize="vertical"
-						label="Description"
-						:value.sync="jobItem.description" />
-
-					<NcSelect v-bind="classOptions"
-						v-model="classOptions.value"
-						class="jobClassSelect"
-						input-label="Job Class"
-						:multiple="false"
-						:clearable="false" />
-
-					<NcInputField
-						type="number"
-						label="Interval"
-						:value.sync="jobItem.interval" />
-
-					<NcInputField
-						type="number"
-						label="Execution Time"
-						:value.sync="jobItem.executionTime" />
-
-					<div class="jobCheckboxContainerGrid">
-						<NcCheckboxRadioSwitch
-							:disabled="loading"
-							:checked.sync="jobItem.timeSensitive">
-							Time Sensitive
-						</NcCheckboxRadioSwitch>
-
-						<NcCheckboxRadioSwitch
-							:disabled="loading"
-							:checked.sync="jobItem.allowParallelRuns">
-							Allow Parallel Runs
-						</NcCheckboxRadioSwitch>
-
-						<NcCheckboxRadioSwitch
-							:disabled="loading"
-							:checked.sync="jobItem.isEnabled">
-							Enabled
-						</NcCheckboxRadioSwitch>
-
-						<NcCheckboxRadioSwitch
-							:disabled="loading"
-							:checked.sync="jobItem.singleRun">
-							Single Run
-						</NcCheckboxRadioSwitch>
-					</div>
-					<div>
-						<span>
-							<p>Schedule After</p>
-							<NcDateTimePicker v-model="jobItem.scheduleAfter"
-								:disabled="loading"
-								label="Schedule After" />
-						</span>
-					</div>
-					<NcTextField
-						label="User ID"
-						maxlength="255"
-						:value.sync="jobItem.userId" />
-
-					<NcInputField
-						type="number"
-						label="Log Retention"
-						:value.sync="jobItem.logRetention" />
-
-					<NcInputField
-						type="number"
-						label="Error Retention"
-						:value.sync="jobItem.errorRetention" />
-				</div>
-			</form>
-
-			<div class="modal-actions">
-				<NcButton v-if="!success"
-					@click="closeModal">
-					<template #icon>
-						<CancelIcon size="20" />
-					</template>
-					Cancel
-				</NcButton>
-				<NcButton
-					v-if="!success"
-					:disabled="loading || !jobItem.name"
-					type="primary"
-					@click="editJob()">
-					<template #icon>
-						<NcLoadingIcon v-if="loading" :size="20" />
-						<ContentSaveOutline v-if="!loading" :size="20" />
-					</template>
-					Save
-				</NcButton>
+		<!-- Job class: hardcoded options with label/value pairs (not a flat enum) -->
+		<template #field-jobClass="{ value, updateField }">
+			<div class="cn-form-dialog__select-wrapper">
+				<label for="cn-form-jobClass" class="cn-form-dialog__label">
+					{{ t('openconnector', 'Job class') }}
+				</label>
+				<NcSelect
+					input-id="cn-form-jobClass"
+					class="jobClassSelect"
+					:options="classOptions"
+					:value="resolvedClassOption(value)"
+					:multiple="false"
+					:clearable="false"
+					@input="option => updateField('jobClass', option ? option.label : null)" />
 			</div>
-		</div>
-	</NcModal>
+		</template>
+
+		<!-- Synthetic field "_flags" positioned between executionTime and scheduleAfter,
+		     rendered as the 2-col switch grid (state lives in component-local extraFlags). -->
+		<template #field-_flags>
+			<div class="jobCheckboxContainerGrid">
+				<NcCheckboxRadioSwitch :checked.sync="extraFlags.timeSensitive">
+					{{ t('openconnector', 'Time sensitive') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="extraFlags.allowParallelRuns">
+					{{ t('openconnector', 'Allow parallel runs') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="extraFlags.isEnabled">
+					{{ t('openconnector', 'Enabled') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch :checked.sync="extraFlags.singleRun">
+					{{ t('openconnector', 'Single run') }}
+				</NcCheckboxRadioSwitch>
+			</div>
+		</template>
+
+		<!-- Schedule After: keep NcDateTimePicker rather than the default datetime input -->
+		<template #field-scheduleAfter="{ value, updateField }">
+			<div class="cn-form-dialog__select-wrapper">
+				<label class="cn-form-dialog__label">
+					{{ t('openconnector', 'Schedule after') }}
+				</label>
+				<NcDateTimePicker
+					:value="value || null"
+					@input="$event => updateField('scheduleAfter', $event)" />
+			</div>
+		</template>
+	</CnFormDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcModal,
-	NcSelect,
-	NcTextField,
-	NcTextArea,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcInputField,
-	NcCheckboxRadioSwitch,
-	NcDateTimePicker,
-} from '@nextcloud/vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import CancelIcon from 'vue-material-design-icons/Cancel.vue'
+import { NcSelect, NcDateTimePicker, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { CnFormDialog } from '@conduction/nextcloud-vue'
+
+const CLASS_OPTIONS = [
+	{ label: 'OCA\\OpenConnector\\Action\\SynchronizationAction' },
+	{ label: 'OCA\\OpenConnector\\Action\\PingAction' },
+]
+
+const DEFAULT_FLAGS = {
+	timeSensitive: false,
+	allowParallelRuns: false,
+	isEnabled: true,
+	singleRun: false,
+}
 
 export default {
 	name: 'EditJob',
 	components: {
-		NcModal,
+		CnFormDialog,
 		NcSelect,
-		NcTextField,
-		NcTextArea,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		NcInputField,
-		NcCheckboxRadioSwitch,
 		NcDateTimePicker,
-		// Icons
-		ContentSaveOutline,
-		CancelIcon,
+		NcCheckboxRadioSwitch,
 	},
 	data() {
 		return {
-			jobItem: {
-				name: '',
-				description: '',
-				jobClass: '',
-				interval: '3600',
-				executionTime: '3600',
-				timeSensitive: false,
-				allowParallelRuns: false,
-				isEnabled: true,
-				singleRun: false,
-				scheduleAfter: '',
-				userId: '',
-				logRetention: '3600',
-				errorRetention: '86400',
-			},
-			success: false,
-			loading: false,
-			error: false,
-			classOptions: {
-				options: [
-					{ label: 'OCA\\OpenConnector\\Action\\SynchronizationAction' },
-					{ label: 'OCA\\OpenConnector\\Action\\PingAction' },
-				],
-				value: { label: 'OCA\\OpenConnector\\Action\\SynchronizationAction' },
-			},
-			statusOptions: [
-				{ label: 'Open', value: 'open' },
-				{ label: 'In Progress', value: 'in_progress' },
-				{ label: 'Completed', value: 'completed' },
-			],
-			hasUpdated: false,
-			closeTimeoutFunc: null,
+			classOptions: CLASS_OPTIONS,
+			extraFlags: { ...DEFAULT_FLAGS },
 		}
 	},
-	mounted() {
-		this.initializeJobItem()
+	computed: {
+		initialItem() {
+			const item = jobStore.jobItem
+			if (!item || !item.id) return null
+			// Normalize scheduleAfter (backend returns { date: '...' }) into a Date for the picker
+			const scheduleAfter = item.scheduleAfter?.date
+				? new Date(item.scheduleAfter.date)
+				: (item.scheduleAfter || null)
+			return {
+				...item,
+				name: item.name || '',
+				description: item.description || '',
+				jobClass: item.jobClass || CLASS_OPTIONS[0].label,
+				interval: item.interval ?? 3600,
+				executionTime: item.executionTime ?? 3600,
+				scheduleAfter,
+				userId: item.userId || '',
+				logRetention: item.logRetention ?? 3600,
+				errorRetention: item.errorRetention ?? 86400,
+			}
+		},
+		formFields() {
+			return [
+				{ key: 'name', label: t('openconnector', 'Name'), widget: 'text', required: true, validation: { maxLength: 255 } },
+				{ key: 'description', label: t('openconnector', 'Description'), widget: 'textarea' },
+				{ key: 'jobClass', label: t('openconnector', 'Job class'), widget: 'select', default: CLASS_OPTIONS[0].label },
+				{ key: 'interval', label: t('openconnector', 'Interval'), widget: 'number', default: 3600 },
+				{ key: 'executionTime', label: t('openconnector', 'Execution time'), widget: 'number', default: 3600 },
+				// Synthetic field — rendered via #field-_flags slot to host the boolean switch grid
+				// at the same position the original modal used (between executionTime and scheduleAfter).
+				{ key: '_flags', label: '', widget: 'custom' },
+				{ key: 'scheduleAfter', label: t('openconnector', 'Schedule after'), widget: 'datetime' },
+				{ key: 'userId', label: t('openconnector', 'User ID'), widget: 'text', validation: { maxLength: 255 } },
+				{ key: 'logRetention', label: t('openconnector', 'Log retention'), widget: 'number', default: 3600 },
+				{ key: 'errorRetention', label: t('openconnector', 'Error retention'), widget: 'number', default: 86400 },
+			]
+		},
 	},
-	updated() {
-		if (navigationStore.modal === 'editJob' && !this.hasUpdated) {
-			this.initializeJobItem()
-			this.hasUpdated = true
-		}
+	watch: {
+		'navigationStore.modal': {
+			immediate: true,
+			handler(modal) {
+				if (modal === 'editJob') {
+					const item = jobStore.jobItem || {}
+					this.extraFlags = {
+						timeSensitive: !!item.timeSensitive,
+						allowParallelRuns: !!item.allowParallelRuns,
+						isEnabled: typeof item.isEnabled === 'boolean' ? item.isEnabled : true,
+						singleRun: !!item.singleRun,
+					}
+				}
+			},
+		},
 	},
 	methods: {
-		initializeJobItem() {
-			if (jobStore.jobItem?.id) {
-				const scheduleAfter = jobStore.jobItem.scheduleAfter ? new Date(jobStore.jobItem.scheduleAfter.date) : null
-
-				const activeJobClass = this.classOptions.options.find(option => option.label === jobStore.jobItem.jobClass)
-				activeJobClass && (this.classOptions.value = activeJobClass)
-
-				this.jobItem = {
-					...jobStore.jobItem,
-					name: jobStore.jobItem.name || '',
-					description: jobStore.jobItem.description || '',
-					jobClass: jobStore.jobItem.jobClass || '',
-					interval: jobStore.jobItem.interval || '3600',
-					executionTime: jobStore.jobItem.executionTime || '3600',
-					timeSensitive: typeof jobStore.jobItem.timeSensitive === 'boolean' ? jobStore.jobItem.timeSensitive : false,
-					allowParallelRuns: typeof jobStore.jobItem.allowParallelRuns === 'boolean' ? jobStore.jobItem.allowParallelRuns : false,
-					isEnabled: typeof jobStore.jobItem.isEnabled === 'boolean' ? jobStore.jobItem.isEnabled : true,
-					singleRun: typeof jobStore.jobItem.singleRun === 'boolean' ? jobStore.jobItem.singleRun : false,
-					scheduleAfter,
-					logRetention: jobStore.jobItem.logRetention || '3600',
-					errorRetention: jobStore.jobItem.errorRetention || '86400',
-					userId: jobStore.jobItem.userId || '',
-				}
-			}
+		resolvedClassOption(value) {
+			if (!value) return CLASS_OPTIONS[0]
+			return CLASS_OPTIONS.find(opt => opt.label === value) || { label: value }
 		},
 		closeModal() {
 			navigationStore.setModal(false)
-			clearTimeout(this.closeTimeoutFunc)
-			this.success = null
-			this.loading = false
-			this.error = false
-			this.hasUpdated = false
-			this.jobItem = {
-				name: '',
-				description: '',
-				jobClass: '',
-				interval: '3600',
-				executionTime: '3600',
-				timeSensitive: false,
-				allowParallelRuns: false,
-				isEnabled: true,
-				singleRun: false,
-				scheduleAfter: '',
-				logRetention: '3600',
-				errorRetention: '86400',
-				userId: '',
-			}
-			this.classOptions.value = this.classOptions.options[0]
+			this.extraFlags = { ...DEFAULT_FLAGS }
 		},
-		async editJob() {
-			this.loading = true
+		async onConfirm(formData) {
+			// Drop the synthetic flag-grid placeholder; real values live in `extraFlags`.
+			const { _flags, ...payload } = formData
 			try {
-				const jobItem = new Job({
-					...this.jobItem,
-					jobClass: this.classOptions.value.label,
+				const job = new Job({
+					...payload,
+					...this.extraFlags,
 				})
-
-				await jobStore.saveJob(jobItem)
-				// Close modal or show success message
-				this.success = true
-				this.loading = false
-				this.closeTimeoutFunc = setTimeout(this.closeModal, 2000)
-
+				await jobStore.saveJob(job)
+				this.$refs.formDialog.setResult({ success: true })
 			} catch (error) {
-				this.loading = false
-				this.success = false
-				this.error = error.message || 'An error occurred while saving the job'
+				this.$refs.formDialog.setResult({
+					error: error.message || t('openconnector', 'An error occurred while saving the job'),
+				})
 			}
 		},
 	},
 }
 </script>
+
 <style scoped>
 .jobCheckboxContainerGrid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 10px;
+	margin-top: 10px;
 }
 
 .jobClassSelect {
 	width: 100%;
+}
+
+.cn-form-dialog__select-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.cn-form-dialog__label {
+	font-weight: 600;
+	font-size: 0.9em;
+	color: var(--color-main-text);
 }
 </style>
