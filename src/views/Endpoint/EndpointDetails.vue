@@ -317,7 +317,6 @@ export default {
 }
 
 .tabPanel {
-	padding: 20px;
 	text-align: center;
 	color: var(--color-text-maxcontrast);
 }
