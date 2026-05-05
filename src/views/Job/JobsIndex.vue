@@ -15,6 +15,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 			:pagination="paginationData"
 			:loading="loading"
 			:refreshing="refreshing"
+			:inline-action-count="2"
 			:view-mode="jobStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedJobs"
