@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\AppInfo;
 
+use OCA\OpenConnector\Dashboard\JobQueueWidget;
+use OCA\OpenConnector\Dashboard\RecentCallsWidget;
+use OCA\OpenConnector\Dashboard\SourceSyncWidget;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
@@ -53,6 +56,10 @@ class Application extends App implements IBootstrap {
         // @todo: remove this temporary listener to the software catalog application
 //        $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
 
+		// Dashboard widgets — see lib/Dashboard/*.php and src/*Widget.js.
+		$context->registerDashboardWidget(JobQueueWidget::class);
+		$context->registerDashboardWidget(RecentCallsWidget::class);
+		$context->registerDashboardWidget(SourceSyncWidget::class);
 	}
 
 	public function boot(IBootContext $context): void {

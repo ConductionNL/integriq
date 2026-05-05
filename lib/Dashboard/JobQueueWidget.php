@@ -78,6 +78,11 @@ class JobQueueWidget implements IWidget
      */
     public function load(): void
     {
+        // Shared chunks emitted by webpack splitChunks + runtimeChunk (see webpack.config.js).
+        // Order: runtime → vendor → nc-vue → widget.
+        Util::addScript(Application::APP_ID, Application::APP_ID.'-runtime');
+        Util::addScript(Application::APP_ID, Application::APP_ID.'-shared-vendor');
+        Util::addScript(Application::APP_ID, Application::APP_ID.'-shared-nc-vue');
         Util::addScript(Application::APP_ID, Application::APP_ID.'-jobQueueWidget');
         Util::addStyle(Application::APP_ID, 'dashboardWidgets');
 
