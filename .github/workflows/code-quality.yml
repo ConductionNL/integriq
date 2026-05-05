@@ -1,70 +1,23 @@
 name: Code Quality
 
 on:
+  push:
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
-    branches: [main, master, development]
-
-concurrency:
-  group: quality-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+    branches: [main, beta, development]
+  workflow_dispatch:
 
 jobs:
-  php-checks:
-    name: ${{ matrix.check.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        check:
-          - { name: "PHP Lint", command: "composer lint" }
-          - { name: "PHPCS", command: "./vendor/bin/phpcs --standard=phpcs.xml" }
-          - { name: "PHPMD", command: "./vendor/bin/phpmd lib text phpmd.xml" }
-          - { name: "Psalm", command: "./vendor/bin/psalm --threads=1 --no-cache --output-format=github" }
-          - { name: "PHPStan", command: "./vendor/bin/phpstan analyse --memory-limit=1G" }
-          - { name: "PHPUnit", command: "./vendor/bin/phpunit --colors=always" }
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          extensions: mbstring, xml, ctype, iconv, intl, dom, filter, gd, json, posix, zip, soap
-          tools: composer:v2
-
-      - name: Cache Composer dependencies
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
-
-      - name: ${{ matrix.check.name }}
-        run: ${{ matrix.check.command }}
-  frontend-quality:
-    name: Frontend Quality
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: ESLint
-        run: npm run lint
-
-      - name: Stylelint
-        run: npm run stylelint
+  quality:
+    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    with:
+      app-name: openconnector
+      # Pinned to 8.1 to preserve the behaviour of the previous hand-rolled
+      # workflow. Bump to 8.3 in a separate PR once the codebase is verified
+      # on the newer runtime.
+      php-version: "8.1"
+      enable-psalm: true
+      enable-phpstan: true
+      enable-phpmetrics: true
+      enable-frontend: true
+      enable-eslint: true

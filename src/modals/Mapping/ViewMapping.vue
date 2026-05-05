@@ -388,10 +388,6 @@ export default {
 	margin-bottom: 20px;
 }
 
-.tabPanel {
-	padding: 15px 0;
-}
-
 .selectedIcon {
 	color: var(--color-primary);
 }
