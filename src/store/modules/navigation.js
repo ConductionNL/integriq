@@ -14,6 +14,7 @@ export const useNavigationStore = defineStore(
 				sourceLogs: true,
 				endpointLogs: true,
 				jobLogs: true,
+				eventLogs: true,
 				contracts: true,
 				logs: true,
 			},

@@ -52,28 +52,30 @@ import { translate as t } from '@nextcloud/l10n'
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
+							:disabled="refreshing"
 							@click="refreshLogs">
 							<template #icon>
-								<Refresh :size="20" />
+								<NcLoadingIcon v-if="refreshing" :size="20" />
+								<Refresh v-else :size="20" />
 							</template>
-							{{ t('openconnector', 'Refresh') }}
+							{{ refreshing ? t('openconnector', 'Refreshing...') : t('openconnector', 'Refresh') }}
 						</NcActionButton>
 					</NcActions>
 				</div>
 			</div>
 
 			<!-- Loading State -->
-			<div v-if="logStore.loading" class="viewLoading">
+			<div v-if="eventStore.logsLoading" class="viewLoading">
 				<NcLoadingIcon :size="64" />
 				<p>{{ t('openconnector', 'Loading event logs...') }}</p>
 			</div>
 
 			<!-- Empty State -->
-			<NcEmptyContent v-else-if="logStore.error || !filteredLogs.length"
+			<NcEmptyContent v-else-if="eventStore.logsError || !filteredLogs.length"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
-					<NcLoadingIcon v-if="logStore.loading" :size="64" />
+					<NcLoadingIcon v-if="eventStore.logsLoading" :size="64" />
 					<TimelineQuestionOutline v-else :size="64" />
 				</template>
 			</NcEmptyContent>
@@ -248,6 +250,7 @@ export default {
 		return {
 			selectedLogs: [],
 			copyStates: {},
+			refreshing: false,
 			pagination: {
 				page: 1,
 				limit: 20,
@@ -263,7 +266,7 @@ export default {
 			)
 		},
 		filteredLogs() {
-			return (eventStore.eventLogs && Array.isArray(eventStore.eventLogs.results)) ? eventStore.eventLogs.results : []
+			return (eventStore.logs && Array.isArray(eventStore.logs.results)) ? eventStore.logs.results : []
 		},
 		paginatedLogs() {
 			return this.filteredLogs
@@ -275,11 +278,11 @@ export default {
 			return this.selectedLogs.length > 0 && !this.allSelected
 		},
 		emptyContentName() {
-			if (logStore.loading) {
+			if (eventStore.logsLoading) {
 				return t('openconnector', 'Loading logs...')
-			} else if (logStore.error) {
-				return logStore.error
-			} else if (!eventStore.eventLogs?.length) {
+			} else if (eventStore.logsError) {
+				return eventStore.logsError
+			} else if (!eventStore.logs?.length) {
 				return t('openconnector', 'No logs found')
 			} else if (!this.filteredLogs.length) {
 				return t('openconnector', 'No logs match your filters')
@@ -287,11 +290,11 @@ export default {
 			return ''
 		},
 		emptyContentDescription() {
-			if (logStore.loading) {
+			if (eventStore.logsLoading) {
 				return t('openconnector', 'Please wait while we fetch your logs.')
-			} else if (logStore.error) {
+			} else if (eventStore.logsError) {
 				return t('openconnector', 'Please try again later.')
-			} else if (!eventStore.eventLogs?.length) {
+			} else if (!eventStore.logs?.length) {
 				return t('openconnector', 'No event logs are available.')
 			} else if (!this.filteredLogs.length) {
 				return t('openconnector', 'Try adjusting your filter settings in the sidebar.')
@@ -300,8 +303,8 @@ export default {
 		},
 	},
 	mounted() {
-		eventStore.refreshEventList()
-		eventStore.refreshEventLogs()
+		eventStore.refreshList()
+		eventStore.refreshLogs()
 		// Listen for filter changes from sidebar
 		this.$root.$on('event-log-filters-changed', this.handleFiltersChanged)
 	},
@@ -311,7 +314,7 @@ export default {
 	methods: {
 		handleFiltersChanged(filters) {
 			logStore.setLogFilters(filters)
-			eventStore.refreshEventLogs(filters)
+			eventStore.refreshLogs(filters)
 		},
 		toggleSelectAll(checked) {
 			if (checked) {
@@ -336,7 +339,7 @@ export default {
 		},
 		getEventName(eventId) {
 			if (!eventId) return t('openconnector', 'Unknown Event')
-			const event = eventStore.eventList?.find(e => e.id === eventId)
+			const event = eventStore.list?.find(e => e.id === eventId)
 			return event?.name || `Event ${eventId}`
 		},
 		getLogLevelClass(log) {
@@ -403,9 +406,14 @@ export default {
 				OC.Notification.showError(this.t('openconnector', 'Export failed'))
 			}
 		},
-		refreshLogs() {
-			eventStore.refreshEventLogs(logStore.logFilters)
+		async refreshLogs() {
+			this.refreshing = true
 			this.selectedLogs = []
+			try {
+				await eventStore.refreshLogs(logStore.logFilters)
+			} finally {
+				this.refreshing = false
+			}
 		},
 		formatBytes(bytes) {
 			if (!bytes) return '0 B'

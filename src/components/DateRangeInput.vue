@@ -104,7 +104,7 @@
 					@keyup.enter="finalize('end')">
 			</div>
 			<button class="calendarBtn" type="button" @click="toggleCalendar('end')">
-				<CalendarIcon size="16" />
+				<CalendarIcon :size="16" />
 			</button>
 		</div>
 		<div v-if="openCalendar" class="popupAnchor" @mousedown.stop>

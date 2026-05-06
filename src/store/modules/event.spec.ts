@@ -1,5 +1,6 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { useEventStore } from './event.js'
+
+import { useEventStore } from './event'
 import { Event, mockEvent } from '../../entities/index.js'
 
 describe('Event Store', () => {
@@ -7,22 +8,25 @@ describe('Event Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets event item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useEventStore()
-		store.setEventItem(mockEvent()[0])
 
-		expect(store.eventItem).toBeInstanceOf(Event)
-		expect(store.eventItem).toEqual(mockEvent()[0])
-		expect(store.eventItem.validate().success).toBe(true)
+		store.setItem(mockEvent()[0])
+
+		expect(store.item).toBeInstanceOf(Event)
+		expect(store.item).toEqual(mockEvent()[0])
+
+		expect(store.item.validate().success).toBe(true)
 	})
 
-	it('sets event list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useEventStore()
-		store.setEventList(mockEvent())
 
-		expect(store.eventList).toHaveLength(mockEvent().length)
+		store.setList(mockEvent())
 
-		store.eventList.forEach((item, index) => {
+		expect(store.list).toHaveLength(mockEvent().length)
+
+		store.list.forEach((item: Event, index: number) => {
 			expect(item).toBeInstanceOf(Event)
 			expect(item).toEqual(mockEvent()[index])
 			expect(item.validate().success).toBe(true)

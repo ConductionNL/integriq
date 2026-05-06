@@ -1,167 +1,97 @@
 <script setup>
-import { eventStore } from '../../store/store.js'
+import { eventStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcAppSidebar>
-		<div class="sidebarContainer">
-			<!-- Filter Section -->
-			<div class="sidebarSection">
-				<h2 class="sidebarSectionTitle">
-					{{ t('openconnector', 'Filter Logs') }}
-				</h2>
-
-				<!-- Event Filter -->
-				<div class="sidebarFilter">
-					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Event') }}
-					</label>
-					<NcSelect
-						v-model="filters.eventId"
-						:options="eventOptions"
-						:clearable="true"
-						:placeholder="t('openconnector', 'Select event')"
-						@input="handleFilterChange" />
+	<NcAppSidebar
+		ref="sidebar"
+		:name="t('openconnector', 'Event Log Management')"
+		:subtitle="t('openconnector', 'Filter and analyze event execution logs')"
+		:subname="t('openconnector', 'View, filter, or refresh event logs')"
+		:open="navigationStore.sidebarState.eventLogs"
+		@update:open="(e) => navigationStore.setSidebarState('eventLogs', e)">
+		<!-- Filter Section -->
+		<div class="sidebarSection">
+			<h3 class="sidebarSection__title">
+				{{ t('openconnector', 'Filter Event Logs') }}
+			</h3>
+			<div class="sidebarSection__body">
+				<NcSelect
+					v-model="filters.eventId"
+					:options="eventOptions"
+					:input-label="t('openconnector', 'Event')"
+					:placeholder="t('openconnector', 'Select event')"
+					:clearable="true"
+					@input="handleFilterChange" />
+				<NcSelect
+					v-model="filters.level"
+					:options="logLevelOptions"
+					:input-label="t('openconnector', 'Log Level')"
+					:placeholder="t('openconnector', 'Select level')"
+					:clearable="true"
+					@input="handleFilterChange" />
+				<div class="sidebarSection__field">
+					<span class="sidebarSection__fieldLabel">{{ t('openconnector', 'Date range') }}</span>
+					<DateRangeInput
+						:start="filters.startDate"
+						:end="filters.endDate"
+						:max-start="new Date()"
+						@update:start="(v) => { filters.startDate = v }"
+						@update:end="(v) => { filters.endDate = v }"
+						@change="handleFilterChange" />
 				</div>
-
-				<!-- Log Level Filter -->
-				<div class="sidebarFilter">
-					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Log Level') }}
-					</label>
-					<NcSelect
-						v-model="filters.level"
-						:options="logLevelOptions"
-						:clearable="true"
-						:placeholder="t('openconnector', 'Select level')"
-						@input="handleFilterChange" />
-				</div>
-
-				<!-- Date Range Filter -->
-				<div class="sidebarFilter">
-					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Date Range') }}
-					</label>
-					<div class="dateRangeContainer">
-						<DateRangeInput
-							:start="filters.startDate"
-							:end="filters.endDate"
-							:max-start="new Date()"
-							@update:start="(v) => { filters.startDate = v; }"
-							@update:end="(v) => { filters.endDate = v; }"
-							@change="handleFilterChange" />
-					</div>
-				</div>
-
-				<!-- Message Filter -->
-				<div class="sidebarFilter">
-					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Message') }}
-					</label>
-					<NcTextField
-						:value="filters.message"
-						type="text"
-						:placeholder="t('openconnector', 'Search in messages')"
-						@input="handleMessageFilterChange" />
-				</div>
-
-				<!-- Additional Filters -->
-				<div class="sidebarFilter">
-					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Options') }}
-					</label>
-					<div class="filterOptions">
-						<NcCheckboxRadioSwitch
-							:checked="filters.showOnlyErrors"
-							:title="t('openconnector', 'Show only errors')"
-							@update:checked="(v) => { filters.showOnlyErrors = v; handleFilterChange() }">
-							{{ t('openconnector', 'Show only errors') }}
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							:checked="filters.showOnlySlow"
-							:title="t('openconnector', 'Show only slow executions')"
-							@update:checked="(v) => { filters.showOnlySlow = v; handleFilterChange() }">
-							{{ t('openconnector', 'Show only slow executions') }}
-						</NcCheckboxRadioSwitch>
-					</div>
-				</div>
-
-				<!-- Clear Filters Button -->
-				<NcButton
-					v-if="hasActiveFilters"
-					type="secondary"
-					class="clearFiltersButton"
-					@click="clearFilters">
+				<NcTextField
+					:value="filters.message"
+					:label="t('openconnector', 'Message')"
+					:placeholder="t('openconnector', 'Search in messages')"
+					@input="handleMessageFilterChange" />
+				<NcCheckboxRadioSwitch
+					:checked="filters.showOnlyErrors"
+					@update:checked="(v) => { filters.showOnlyErrors = v; handleFilterChange() }">
+					{{ t('openconnector', 'Show only errors') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:checked="filters.showOnlySlow"
+					@update:checked="(v) => { filters.showOnlySlow = v; handleFilterChange() }">
+					{{ t('openconnector', 'Show only slow executions') }}
+				</NcCheckboxRadioSwitch>
+				<NcButton @click="clearFilters">
 					<template #icon>
-						<Close :size="20" />
+						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
-
-			<!-- Statistics Section -->
-			<div class="sidebarSection">
-				<h2 class="sidebarSectionTitle">
-					{{ t('openconnector', 'Statistics') }}
-				</h2>
-
-				<div class="statisticsGrid">
-					<div class="statisticCard">
-						<span class="statisticLabel">
-							{{ t('openconnector', 'Total Logs') }}
-						</span>
-						<span class="statisticValue">
-							{{ statistics.totalLogs }}
-						</span>
-					</div>
-					<div class="statisticCard">
-						<span class="statisticLabel">
-							{{ t('openconnector', 'Successful') }}
-						</span>
-						<span class="statisticValue success">
-							{{ statistics.successfulLogs }}
-						</span>
-					</div>
-					<div class="statisticCard">
-						<span class="statisticLabel">
-							{{ t('openconnector', 'Failed') }}
-						</span>
-						<span class="statisticValue error">
-							{{ statistics.failedLogs }}
-						</span>
-					</div>
-					<div class="statisticCard">
-						<span class="statisticLabel">
-							{{ t('openconnector', 'Avg. Execution Time') }}
-						</span>
-						<span class="statisticValue">
-							{{ formatExecutionTime(statistics.averageExecutionTime) }}
-						</span>
-					</div>
-				</div>
-			</div>
-
-			<!-- Note Section -->
-			<div class="sidebarSection">
-				<NcNoteCard type="info">
-					<template #icon>
-						<InformationOutline :size="20" />
-					</template>
-					<template #title>
-						{{ t('openconnector', 'About Event Logs') }}
-					</template>
-					{{ t('openconnector', 'Event logs track the execution of events in the system. Use the filters above to find specific logs or analyze patterns in event execution.') }}
-				</NcNoteCard>
-			</div>
 		</div>
+
+		<NcNoteCard type="info" class="sidebarSection__hint">
+			{{ t('openconnector', 'Use filters to narrow down event logs by event, level, date range, or message content.') }}
+		</NcNoteCard>
+
+		<!-- Statistics Panel: stats grid + level distribution + top events -->
+		<CnStatsPanel class="eventStatsPanel" :sections="statsSections" />
 	</NcAppSidebar>
 </template>
 
 <script>
-import { NcAppSidebar, NcSelect, NcTextField, NcButton, NcCheckboxRadioSwitch, NcNoteCard } from '@nextcloud/vue'
+import {
+	NcAppSidebar,
+	NcSelect,
+	NcTextField,
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcNoteCard,
+} from '@nextcloud/vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import Close from 'vue-material-design-icons/Close.vue'
+import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import ChartLine from 'vue-material-design-icons/ChartLine.vue'
+import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import Update from 'vue-material-design-icons/Update.vue'
 import DateRangeInput from '../../components/DateRangeInput.vue'
 import getValidISOstring from '@/services/getValidISOstring.js'
 
@@ -174,8 +104,8 @@ export default {
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcNoteCard,
-		Close,
-		InformationOutline,
+		CnStatsPanel,
+		FilterOffOutline,
 		DateRangeInput,
 	},
 	data() {
@@ -189,7 +119,6 @@ export default {
 				{ label: t('openconnector', 'Emergency'), value: 'EMERGENCY' },
 				{ label: t('openconnector', 'Info'), value: 'INFO' },
 			],
-
 			filters: {
 				eventId: null,
 				level: null,
@@ -199,45 +128,159 @@ export default {
 				showOnlyErrors: false,
 				showOnlySlow: false,
 			},
-			statistics: {
-				totalLogs: 0,
-				successfulLogs: 0,
-				failedLogs: 0,
-				averageExecutionTime: 0,
-			},
+			filterTimeout: null,
 		}
 	},
 	computed: {
+		eventOptions() {
+			if (!eventStore.list) return []
+			return eventStore.list.map(event => ({
+				label: event.name,
+				value: event.id,
+			}))
+		},
+		logsArray() {
+			return (eventStore.logs && Array.isArray(eventStore.logs.results)) ? eventStore.logs.results : []
+		},
+		totalLogs() {
+			return this.logsArray.length
+		},
+		successfulLogs() {
+			return this.logsArray.filter(log => log.level === 'SUCCESS').length
+		},
+		failedLogs() {
+			return this.logsArray.filter(log => ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'].includes(log.level)).length
+		},
+		averageExecutionTimeSeconds() {
+			const times = this.logsArray.filter(log => log.executionTime).map(log => log.executionTime)
+			if (!times.length) return 0
+			const avgMs = times.reduce((sum, time) => sum + time, 0) / times.length
+			return Math.round((avgMs / 1000) * 1000) / 1000
+		},
+		levelDistribution() {
+			const map = {}
+			this.logsArray.forEach(log => {
+				const level = log.level || 'UNKNOWN'
+				map[level] = (map[level] || 0) + 1
+			})
+			return Object.entries(map)
+				.map(([level, count]) => ({ level, count }))
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 10)
+		},
+		topEvents() {
+			const map = {}
+			this.logsArray.forEach(log => {
+				const id = log.eventId
+				if (!id) return
+				if (!map[id]) {
+					const entity = eventStore.list?.find(e => String(e.id) === String(id))
+					map[id] = { id, name: entity?.name || `Event ${id}`, count: 0 }
+				}
+				map[id].count++
+			})
+			return Object.values(map)
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 10)
+		},
 		hasActiveFilters() {
 			return Object.values(this.filters).some(value => {
 				if (typeof value === 'boolean') return value
 				return value !== null && value !== ''
 			})
 		},
-		eventOptions() {
-			if (!eventStore.eventList) return []
-			return eventStore.eventList.map(event => ({
-				label: event.name,
-				value: event.id,
-			}))
+		statsSections() {
+			const sections = [
+				{
+					id: 'stats',
+					type: 'stats',
+					title: t('openconnector', 'Event Log Statistics'),
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openconnector', 'Total event logs'),
+							count: this.totalLogs,
+							countLabel: t('openconnector', 'events'),
+							icon: TimelineQuestionOutline,
+						},
+						{
+							title: t('openconnector', 'Successful events'),
+							count: this.successfulLogs,
+							countLabel: t('openconnector', 'events'),
+							icon: CheckCircle,
+							variant: 'success',
+						},
+						{
+							title: t('openconnector', 'Failed events'),
+							count: this.failedLogs,
+							countLabel: t('openconnector', 'events'),
+							icon: AlertCircle,
+							variant: 'error',
+						},
+						{
+							title: t('openconnector', 'Average execution time'),
+							count: this.averageExecutionTimeSeconds,
+							countLabel: t('openconnector', 'seconds'),
+							icon: ChartLine,
+						},
+					],
+				},
+			]
+			if (this.levelDistribution.length) {
+				sections.push({
+					id: 'levelDistribution',
+					type: 'list',
+					title: t('openconnector', 'Log Level Distribution'),
+					items: this.levelDistribution.map(entry => ({
+						key: entry.level,
+						name: entry.level,
+						subname: t('openconnector', '{count} events', { count: entry.count }),
+						icon: this.iconForLevel(entry.level),
+					})),
+				})
+			}
+			if (this.topEvents.length) {
+				sections.push({
+					id: 'topEvents',
+					type: 'list',
+					title: t('openconnector', 'Most Active Events'),
+					items: this.topEvents.map(entry => ({
+						key: String(entry.id),
+						name: entry.name,
+						subname: t('openconnector', '{count} events', { count: entry.count }),
+						icon: Update,
+					})),
+				})
+			}
+			return sections
 		},
 	},
 	mounted() {
-		eventStore.refreshEventList()
-		this.updateStatistics()
-		// Initialize SPOT from URL
+		eventStore.refreshList()
 		this.applyQueryParamsFromRoute()
 	},
 	methods: {
+		iconForLevel(level) {
+			if (level === 'SUCCESS') return CheckCircle
+			if (level === 'WARNING') return AlertCircle
+			if (['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'].includes(level)) return CloseCircle
+			return InformationOutline
+		},
 		handleFilterChange() {
 			this.$root.$emit('event-log-filters-changed', this.filters)
-			this.updateStatistics()
 			this.updateRouteQueryFromState()
 		},
 		handleMessageFilterChange(value) {
 			const nextValue = typeof value === 'string' ? value : (value && value.target ? value.target.value : '')
 			this.filters.message = nextValue
-			this.handleFilterChange()
+			this.debouncedHandleFilterChange()
+		},
+		debouncedHandleFilterChange() {
+			clearTimeout(this.filterTimeout)
+			this.filterTimeout = setTimeout(() => {
+				this.handleFilterChange()
+			}, 500)
 		},
 		clearFilters() {
 			this.filters = {
@@ -286,107 +329,54 @@ export default {
 			this.filters.showOnlySlow = String(q.slowExecutions) === 'true'
 			this.handleFilterChange()
 		},
-		updateStatistics() {
-			const logs = eventStore.eventLogs?.results || []
-			this.statistics = {
-				totalLogs: logs.length,
-				successfulLogs: logs.filter(log => log.level === 'SUCCESS').length,
-				failedLogs: logs.filter(log => ['ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'].includes(log.level)).length,
-				averageExecutionTime: this.calculateAverageExecutionTime(logs),
-			}
-		},
-		calculateAverageExecutionTime(logs) {
-			const executionTimes = logs
-				.filter(log => log.executionTime)
-				.map(log => log.executionTime)
-			if (executionTimes.length === 0) return 0
-			return executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length
-		},
-		formatExecutionTime(time) {
-			if (!time) return '0s'
-			return `${(time / 1000).toFixed(3)}s`
-		},
 	},
 }
 </script>
 
 <style scoped>
-.sidebarContainer {
-	padding: 16px;
-	display: flex;
-	flex-direction: column;
-	gap: 24px;
-}
-
 .sidebarSection {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.sidebarSection:last-child {
+	border-bottom: none;
+}
+
+.sidebarSection__title {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	padding: 0 16px;
+	margin: 0 0 12px 0;
+}
+
+.sidebarSection__body {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
-}
-
-.sidebarSectionTitle {
-	font-size: 1.1em;
-	font-weight: 600;
-	margin: 0;
-}
-
-.sidebarFilter {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.sidebarFilterLabel {
-	font-size: 0.9em;
-	color: var(--color-text-lighter);
-}
-
-.dateRangeContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.filterOptions {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.clearFiltersButton {
-	margin-top: 8px;
-}
-
-.statisticsGrid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
 	gap: 12px;
+	padding: 0 16px;
 }
 
-.statisticCard {
-	background: var(--color-background-hover);
-	padding: 12px;
-	border-radius: 8px;
+.sidebarSection__field {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
 
-.statisticLabel {
-	font-size: 0.8em;
-	color: var(--color-text-lighter);
+.sidebarSection__fieldLabel {
+	font-size: 0.9em;
+	color: var(--color-text-maxcontrast);
 }
 
-.statisticValue {
-	font-size: 1.2em;
-	font-weight: 600;
+.sidebarSection__hint {
+	margin: 8px 16px;
 }
 
-.statisticValue.success {
-	color: var(--color-success);
-}
-
-.statisticValue.error {
-	color: var(--color-error);
+/* Pad CnStatsPanel section content to match the sidebar's 16px gutter; titles already have their own padding. */
+.eventStatsPanel :deep(.cn-kpi-grid),
+.eventStatsPanel :deep(.cn-stats-panel__list),
+.eventStatsPanel :deep(.cn-stats-panel__stack) {
+	padding: 0 16px;
 }
 </style>

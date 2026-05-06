@@ -20,6 +20,7 @@ import SynchronizationsIndex from '../views/Synchronization/SynchronizationsInde
 import ContractsIndex from '../views/contracts/ContractsIndex.vue'
 import SynchronizationLogIndex from '../views/Synchronization/SynchronizationLogIndex.vue'
 import EventsIndex from '../views/event/EventIndex.vue'
+import EventDetails from '../views/event/EventDetails.vue'
 import EventLogIndex from '../views/event/EventLogIndex.vue'
 import ImportIndex from '../views/Import/ImportIndex.vue'
 
@@ -57,7 +58,7 @@ const router = new Router({
 		{ path: '/synchronizations/logs', components: { default: SynchronizationLogIndex, sidebar: LogsSideBar } },
 		{ path: '/cloud-events', redirect: '/cloud-events/events' },
 		{ path: '/cloud-events/events', components: { default: EventsIndex } },
-		{ path: '/cloud-events/events/:id', components: { default: EventsIndex } },
+		{ path: '/cloud-events/events/:id', components: { default: EventDetails } },
 		{ path: '/cloud-events/logs', components: { default: EventLogIndex, sidebar: EventLogSideBar } },
 		{ path: '/import', components: { default: ImportIndex } },
 		{ path: '*', redirect: '/' },
