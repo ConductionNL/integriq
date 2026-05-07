@@ -243,6 +243,7 @@ export default function Home() {
       <main className="marketing-page">
         <DetailHero
           appId="openconnector"
+          background="cobalt"
           status={{ label: 'Beta', color: 'var(--c-orange-knvb)' }}
           version="v1.2"
           locales="EN"
