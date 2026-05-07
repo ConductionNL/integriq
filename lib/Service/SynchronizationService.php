@@ -171,19 +171,24 @@ class SynchronizationService
 
         $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
         foreach ($directSynchronizations as $synchronization) {
+            if ($this->shouldTriggerOnEvent($synchronization, $eventMutationType) === false) {
+                continue;
+            }
             try {
                 if ($eventMutationType === 'delete') {
+                    $eventObject = $object;
                     $this->synchronize(
                         synchronization: $synchronization,
                         force: true,
-                        object: $object,
+                        object: $eventObject,
                         mutationType: 'delete'
                     );
                 } else {
+                    $eventObjectArray = $objectArray;
                     $this->synchronize(
                         synchronization: $synchronization,
                         force: true,
-                        object: $objectArray
+                        object: $eventObjectArray
                     );
                 }
 
@@ -206,6 +211,9 @@ class SynchronizationService
 
         foreach ($triggeredSynchronizations as $synchronization) {
             if (in_array($synchronization->getId(), $processedSynchronizationIds, true) === true) {
+                continue;
+            }
+            if ($this->shouldTriggerOnEvent($synchronization, $eventMutationType) === false) {
                 continue;
             }
 
