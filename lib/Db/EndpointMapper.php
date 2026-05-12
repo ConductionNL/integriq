@@ -47,12 +47,13 @@ class EndpointMapper extends QBMapper
 
 		// If it's a string but can be converted to a numeric value without data loss, use as ID
 		if (is_string($id) && ctype_digit($id) === false) {
-			// For non-numeric strings, search in uuid and slug columns
+			// For non-numeric strings, search uuid/slug only -- comparing the
+			// bigint `id` column to a non-numeric string makes Postgres throw
+			// ("invalid input syntax for type bigint") and can never match.
 			$qb->where(
 				$qb->expr()->orX(
 					$qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('slug', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('id', $qb->createNamedParameter($id))
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id))
 				)
 			);
 
