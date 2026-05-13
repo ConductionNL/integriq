@@ -28,7 +28,7 @@ By the end you will have created a Mapping that takes objects in the shape your 
 
    ![Add Mapping dialog](/screenshots/tutorials/user/03-create-mapping-02.png)
 
-3. Open the **Mapping** tab. Add field assignments one by one. For each target field, decide between a direct dot-notation reference (`input.naam`) and a Twig expression (`{{ input.startdatum | date('Y-m-d') }}`). Twig is needed whenever you reshape values, concatenate strings, or call a filter.
+3. Open the **Mapping** tab. Add field assignments one by one. For each target field, decide between a direct dot-notation reference (`input.naam`) and a Twig expression (`\{\{ input.startdatum | date('Y-m-d') \}\}`). Twig is needed whenever you reshape values, concatenate strings, or call a filter.
 
    ![Mapping field editor](/screenshots/tutorials/user/03-create-mapping-03.png)
 
@@ -48,7 +48,7 @@ You are done when: the test pane produces an output that matches the target sche
 
 | Symptom | Fix |
 |---|---|
-| Test output has empty strings for fields that should have values | The dot-notation path doesn't match the source structure — print the raw `input` object first (`{{ input | json_encode }}`) to inspect the real path. |
+| Test output has empty strings for fields that should have values | The dot-notation path doesn't match the source structure — print the raw `input` object first (`\{\{ input | json_encode \}\}`) to inspect the real path. |
 | Twig expression throws "filter does not exist" | The filter name is misspelled or the filter requires arguments — see the Mappings reference for the supported filter set. |
 | Cast doesn't apply | The cast field path is computed from a Twig expression instead of a static path — casts only run on statically-resolvable paths. |
 
