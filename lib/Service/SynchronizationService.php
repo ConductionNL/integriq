@@ -609,6 +609,30 @@ class SynchronizationService
     }
 
     /**
+     * Determines whether a synchronization should run for the given mutation type.
+     *
+     * Checks sourceConfig['triggerOnlyOnEvents'] (case-insensitive). When the key
+     * is absent or empty the synchronization always runs; when present it runs only
+     * if $eventMutationType is listed.
+     *
+     * @param Synchronization $synchronization    The synchronization to evaluate.
+     * @param string          $eventMutationType  One of create|update|delete.
+     *
+     * @return bool True when the synchronization should run, false when it should be skipped.
+     */
+    private function shouldTriggerOnEvent(Synchronization $synchronization, string $eventMutationType): bool
+    {
+        $allowedEvents = $synchronization->getSourceConfig()['triggerOnlyOnEvents'] ?? [];
+
+        if (empty($allowedEvents) === true) {
+            return true;
+        }
+
+        $normalised = array_map('strtolower', (array) $allowedEvents);
+        return in_array(strtolower($eventMutationType), $normalised, true);
+    }
+
+    /**
      * Resolve and fetch the parent object for a related-object trigger.
      *
      * @param Synchronization $synchronization The synchronization that should run.
@@ -838,9 +862,7 @@ class SynchronizationService
 
 			if ($isTest === true && is_array($synchronizationContract) === true) {
 				// If this is a log and contract array return for the test endpoint.
-				$logAndContractArray = $synchronizationContract;
-
-				return $logAndContractArray;
+				return $synchronizationContract;
 			}
 		} else {
 			// @todo this is wierd
@@ -850,9 +872,7 @@ class SynchronizationService
 				$this->synchronizationContractMapper->update(entity: $synchronizationContract);
 			} elseif ($isTest === true && is_array($synchronizationContract) === true) {
 				// If this is a log and contract array return for the test endpoint.
-				$logAndContractArray = $synchronizationContract;
-
-				return $logAndContractArray;
+				return $synchronizationContract;
 			}
 		}
 
@@ -2291,10 +2311,14 @@ class SynchronizationService
 			&& str_contains($endpoint, '{{') === true
 			&& str_contains($endpoint, '}}') === true
 		) {
+			$contextData = $data ?? [];
+			if (isset($contextData['@self']['relations']) === true && is_array($contextData['@self']['relations']) === true) {
+				$contextData = array_merge($contextData['@self']['relations'], $contextData);
+			}
 			$endpoint = $this->mappingService->renderTemplateString(
 				template: $endpoint,
 				context: [
-					'data' => $data ?? [],
+					'data' => $contextData,
 				]
 			);
 		}

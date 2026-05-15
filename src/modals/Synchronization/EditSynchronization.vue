@@ -111,12 +111,12 @@ import { translate as t } from '@nextcloud/l10n'
 								:input-label="t('openconnector', 'Source ID')" />
 
 							<div v-if="typeOptions.value?.id === 'register/schema'">
-								<NcSelect v-bind="registerOptions"
+								<NcSelect :options="registerOptions.options"
 									v-model="registerOptions.sourceValue"
 									:disabled="!openRegisterInstalled"
 									:input-label="t('openconnector', 'Register')" />
 
-								<NcSelect v-bind="selectedRegisterSourceValueSchemas"
+								<NcSelect :options="selectedRegisterSourceValueSchemas"
 									v-model="schemaOptions.sourceValue"
 									:disabled="!openRegisterInstalled"
 									:input-label="t('openconnector', 'Schema')" />
@@ -268,12 +268,12 @@ import { translate as t } from '@nextcloud/l10n'
 								:input-label="t('openconnector', 'Target ID')" />
 
 							<div v-if="targetTypeOptions.value?.id === 'register/schema'">
-								<NcSelect v-bind="registerOptions"
+								<NcSelect :options="registerOptions.options"
 									v-model="registerOptions.value"
 									:disabled="!openRegisterInstalled"
 									:input-label="t('openconnector', 'Register')" />
 
-								<NcSelect v-bind="selectedRegisterValueSchemas"
+								<NcSelect :options="selectedRegisterValueSchemas"
 									v-model="schemaOptions.value"
 									:disabled="!openRegisterInstalled"
 									:input-label="t('openconnector', 'Schema')" />
@@ -468,11 +468,11 @@ export default {
 	computed: {
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 		selectedRegisterSourceValueSchemas() {
-			return this.registerOptions?.sourceValue?.schemas || []
+			return this.registerOptions?.sourceValue?.schemas?.options || []
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 		selectedRegisterValueSchemas() {
-			return this.registerOptions?.value?.schemas || []
+			return this.registerOptions?.value?.schemas?.options || []
 		},
 	},
 	watch: {
