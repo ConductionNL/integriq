@@ -13,8 +13,6 @@ return [
 		'SynchronizationContracts' => ['url' => 'api/synchronization-contracts'],
 	],
 	'routes' => [
-		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
-
 		// Metrics and health
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
@@ -125,6 +123,6 @@ return [
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
 		['name' => 'ui#import', 'url' => '/import', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
-		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
+		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
 	],
 ];

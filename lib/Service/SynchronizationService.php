@@ -69,6 +69,7 @@ class SynchronizationService
     const EXTRA_DATA_CONFIGS_LOCATION           = 'extraDataConfigs';
     const EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION  = 'dynamicEndpointLocation';
     const EXTRA_DATA_STATIC_ENDPOINT_LOCATION   = 'staticEndpoint';
+    const EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION = 'endpointTemplate';
     const KEY_FOR_EXTRA_DATA_LOCATION           = 'keyToSetExtraData';
     const MERGE_EXTRA_DATA_OBJECT_LOCATION      = 'mergeExtraData';
     const UNSET_CONFIG_KEY_LOCATION             = 'unsetConfigKey';
@@ -170,6 +171,7 @@ class SynchronizationService
         $processedSynchronizationIds = [];
 
         $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
+
         foreach ($directSynchronizations as $synchronization) {
             if ($this->shouldTriggerOnEvent($synchronization, $eventMutationType) === false) {
                 continue;
@@ -244,6 +246,30 @@ class SynchronizationService
                 ]);
             }
         }
+    }
+
+    /**
+     * Determines whether a synchronization should run for the given mutation type.
+     *
+     * Checks sourceConfig['triggerOnlyOnEvents'] (case-insensitive). When the key
+     * is absent or empty the synchronization always runs; when present it runs only
+     * if $eventMutationType is listed.
+     *
+     * @param Synchronization $synchronization    The synchronization to evaluate.
+     * @param string          $eventMutationType  One of create|update|delete.
+     *
+     * @return bool True when the synchronization should run, false when it should be skipped.
+     */
+    private function shouldTriggerOnEvent(Synchronization $synchronization, string $eventMutationType): bool
+    {
+        $allowedEvents = $synchronization->getSourceConfig()['triggerOnlyOnEvents'] ?? [];
+
+        if (empty($allowedEvents) === true) {
+            return true;
+        }
+
+        $normalised = array_map('strtolower', (array) $allowedEvents);
+        return in_array(strtolower($eventMutationType), $normalised, true);
     }
 
     /**
@@ -476,9 +502,7 @@ class SynchronizationService
 
 			if ($isTest === true && is_array($synchronizationContract) === true) {
 				// If this is a log and contract array return for the test endpoint.
-				$logAndContractArray = $synchronizationContract;
-
-				return $logAndContractArray;
+				return $synchronizationContract;
 			}
 		} else {
 			// @todo this is wierd
@@ -488,9 +512,7 @@ class SynchronizationService
 				$this->synchronizationContractMapper->update(entity: $synchronizationContract);
 			} elseif ($isTest === true && is_array($synchronizationContract) === true) {
 				// If this is a log and contract array return for the test endpoint.
-				$logAndContractArray = $synchronizationContract;
-
-				return $logAndContractArray;
+				return $synchronizationContract;
 			}
 		}
 
@@ -975,6 +997,21 @@ class SynchronizationService
 			}
 		}
 
+		if (isset($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
+			&& is_string($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
+			&& $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION] !== ''
+		) {
+			$endpoint = $this->mappingService->renderTemplateString(
+				template: $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION],
+				context: [
+					'endpoint' => $endpoint ?? null,
+					'object' => $object,
+					'originId' => $originId,
+					'extraDataConfig' => $extraDataConfig,
+				]
+			);
+		}
+
 		if (!$endpoint) {
 			throw new Exception(
 				sprintf(
@@ -1294,7 +1331,7 @@ class SynchronizationService
 
         // Execute mapping if found
 		$objectBeforeMapping = $object;
-        if ($sourceTargetMapping) {
+        if ($sourceTargetMapping && $mutationType !== 'delete') {
             $flowToken->setSyncOutputOriginal($object);
 
             $object = $this->mappingService->executeMapping(mapping: $sourceTargetMapping, input: $object);
@@ -1838,6 +1875,21 @@ class SynchronizationService
 		// Extract source configuration
 		$sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig()); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
 		$endpoint = $sourceConfig['endpoint'] ?? '';
+		if (is_string($endpoint) === true
+			&& str_contains($endpoint, '{{') === true
+			&& str_contains($endpoint, '}}') === true
+		) {
+			$contextData = $data ?? [];
+			if (isset($contextData['@self']['relations']) === true && is_array($contextData['@self']['relations']) === true) {
+				$contextData = array_merge($contextData['@self']['relations'], $contextData);
+			}
+			$endpoint = $this->mappingService->renderTemplateString(
+				template: $endpoint,
+				context: [
+					'data' => $contextData,
+				]
+			);
+		}
 		$headers = $sourceConfig['headers'] ?? [];
 		$query = $sourceConfig['query'] ?? [];
         $usesPagination = true;

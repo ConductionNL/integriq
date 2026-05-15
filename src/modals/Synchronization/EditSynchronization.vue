@@ -110,12 +110,12 @@ import { Synchronization } from '../../entities/index.js'
 								input-label="Source ID" />
 
 							<div v-if="typeOptions.value?.id === 'register/schema'">
-								<NcSelect v-bind="registerOptions"
+								<NcSelect :options="registerOptions.options"
 									v-model="registerOptions.sourceValue"
 									:disabled="!openRegisterInstalled"
 									input-label="Register" />
 
-								<NcSelect v-bind="selectedRegisterSourceValueSchemas"
+								<NcSelect :options="selectedRegisterSourceValueSchemas"
 									v-model="schemaOptions.sourceValue"
 									:disabled="!openRegisterInstalled"
 									input-label="Schema" />
@@ -267,12 +267,12 @@ import { Synchronization } from '../../entities/index.js'
 								input-label="Target ID" />
 
 							<div v-if="targetTypeOptions.value?.id === 'register/schema'">
-								<NcSelect v-bind="registerOptions"
+								<NcSelect :options="registerOptions.options"
 									v-model="registerOptions.value"
 									:disabled="!openRegisterInstalled"
 									input-label="Register" />
 
-								<NcSelect v-bind="selectedRegisterValueSchemas"
+								<NcSelect :options="selectedRegisterValueSchemas"
 									v-model="schemaOptions.value"
 									:disabled="!openRegisterInstalled"
 									input-label="Schema" />
@@ -466,10 +466,10 @@ export default {
 	},
 	computed: {
 		selectedRegisterSourceValueSchemas() {
-			return this.registerOptions?.sourceValue?.schemas || []
+			return this.registerOptions?.sourceValue?.schemas?.options || []
 		},
 		selectedRegisterValueSchemas() {
-			return this.registerOptions?.value?.schemas || []
+			return this.registerOptions?.value?.schemas?.options || []
 		},
 	},
 	watch: {

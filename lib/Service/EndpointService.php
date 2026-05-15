@@ -1133,8 +1133,11 @@ class EndpointService
 
                 $data['flowToken'] = $flowToken->__serialize();
 
+                $conditionsPassed = $this->checkRuleConditions(rule: $rule, data: $data, logicResult: $logicResult);
+                $timingMatches = $rule->getTiming() === $timing;
+
                 // Check rule conditions
-                if ($this->checkRuleConditions(rule: $rule, data: $data, logicResult:  $logicResult) === false || $rule->getTiming() !== $timing) {
+                if ($conditionsPassed === false || $timingMatches === false) {
                     $this->logger->info('Rule condition check failed for endpoint ' . $endpoint->getName() . ' and rule ' . $rule->getName() . ' of type: ' . $rule->getType());
 
                     continue;
@@ -1642,6 +1645,7 @@ class EndpointService
             $synchronizationId = $config['synchronization'];
         }
 
+        $this->logger->debug('[EndpointService] processSyncRule ruleId=' . $rule->getId() . ' synchronizationId=' . $synchronizationId);
 
         // Fetch the synchronization.
         if (is_numeric($synchronizationId) === true) {
@@ -1649,6 +1653,8 @@ class EndpointService
         } else {
             $synchronization = $this->synchronizationService->getSynchronization(filters: ['reference' => $synchronizationId]);
         }
+
+        $this->logger->debug('[EndpointService] processSyncRule synchronization fetched id=' . $synchronization->getId() . ' name=' . $synchronization->getName());
 
         // Check if the synchronization should be in test mode.
         if(isset($data['body']['isTest']) === true) {
@@ -1708,7 +1714,10 @@ class EndpointService
         if (isset($sourceConfig['synchronizationType']) === true && $sourceConfig['synchronizationType'] === 'delete') {
             $mutationType = 'delete';
         }
+
+        $this->logger->debug('[EndpointService] processSyncRule calling synchronize syncId=' . $synchronization->getId() . ' isTest=' . var_export($test, true) . ' force=' . var_export($force, true) . ' mutationType=' . var_export($mutationType, true));
         $log = $this->synchronizationService->synchronize(synchronization: $synchronization, isTest: $test, force: $force, object: $fetchedObject, mutationType: $mutationType, data: $object, flowToken: $flowToken);
+        $this->logger->debug('[EndpointService] processSyncRule synchronize complete syncId=' . $synchronization->getId());
 
         // $object got updated through reference.
         $returnedObject = $object;
