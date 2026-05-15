@@ -27,3 +27,10 @@
 sbom.cdx.json
 bom-php.cdx.json
 bom-npm.cdx.json
+
+# Playwright (journeydoc / ADR-030)
+/tests/e2e/.auth/
+/tests/e2e/playwright-report/
+/tests/e2e/test-results/
+/test-results/
+/playwright-report/
