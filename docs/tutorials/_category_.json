@@ -1,0 +1,8 @@
+{
+  "label": "Tutorials",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Step-by-step, capture-driven user and admin tutorials for OpenConnector. Each tutorial maps to one user story and is kept in sync with the UI by the journeydoc capture spec (ADR-030)."
+  }
+}

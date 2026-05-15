@@ -1,115 +1,151 @@
 // @ts-check
-// `@type` JSDoc annotations allow editor autocompletion and type checking
-// (when paired with `@ts-check`).
-// There are various equivalent ways to declare your Docusaurus config.
-// See: https://docusaurus.io/docs/api/docusaurus-config
 
-/** @type {import('@docusaurus/types').Config} */
-const config = {
-  title: 'Open Connector',
-  tagline: 'Synchronize data between Nextcloud and external sources',
-  url: 'https://conductionnl.github.io',
-  baseUrl: '/openconnector/',
-  organizationName: 'conductionnl',
+/**
+ * OpenConnector documentation site.
+ *
+ * Built on @conduction/docusaurus-preset for brand defaults (tokens,
+ * theme swizzles for Navbar / Footer, four-locale i18n scaffolding,
+ * KvK / BTW copyright). Site-specific overrides — locale, sidebar
+ * path, custom prism themes, openconnector-only navbar items — are
+ * passed through createConfig() opts.
+ */
+
+const { createConfig, baseFooterLinks } = require('@conduction/docusaurus-preset');
+
+/* createConfig replaces themes wholesale when `themes:` is passed, so
+   we re-include the brand theme plugin alongside @docusaurus/theme-mermaid.
+   Without the brand theme entry the Navbar/Footer swizzles and
+   brand.css auto-load would silently drop. */
+const BRAND_THEME = require.resolve('@conduction/docusaurus-preset/theme');
+
+const config = createConfig({
+  title: 'OpenConnector',
+  tagline: 'The integration layer for Nextcloud. REST, SOAP, GraphQL, file drops, message queues. Pulls data from your existing systems into typed registers without writing glue code.',
+  url: 'https://openconnector.conduction.nl',
+  baseUrl: '/',
+
+  organizationName: 'ConductionNL',
   projectName: 'openconnector',
-  favicon: 'img/favicon.ico',
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
+  /* English-only for now. The brand preset's default i18n block
+     (nl/en/de/fr) is replaced wholesale here. Re-enable additional
+     locales once translated markdown is in place under docs/i18n/. */
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
+    localeConfigs: {
+      en: { label: 'English' },
+    },
   },
 
+  /* The openconnector docs source lives at the repo root in `docs/`
+     while the Docusaurus config + pages live in the sibling
+     `docusaurus/` folder. Override the preset's default `presets:`
+     block to point `docs.path` at `../docs` and disable the blog
+     plugin. customCss carries openconnector-specific CSS only — brand
+     tokens and the theme swizzles are auto-loaded by the brand theme
+     entry in `themes:` below. */
   presets: [
     [
       'classic',
-      /** @type {import('@docusaurus/preset-classic').Options} */
-      ({
+      {
         docs: {
           path: '../docs',
+          /* Exclude node_modules just in case the docs folder ever has
+             one (it does today, from a separate dependency install
+             during MD tooling). The src/ exclude that mydash and
+             openregister use does not apply here because docs/ has no
+             src/ folder; pages live in `../docusaurus/src/pages/`.
+
+             rules.md and administrators-legacy/mapping/mapping.md
+             contain raw `{` / `}` expressions inside backtick code
+             samples that the Docusaurus 3.10 MDX parser tries to
+             evaluate as JSX expressions. They pre-date this preset
+             migration; flag for an MDX-cleanup follow-up PR (escape
+             `{` as `\{`) and exclude them here so the build can ship. */
+          exclude: [
+            '**/node_modules/**',
+            'rules.md',
+            'administrators-legacy/mapping/mapping.md',
+          ],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/conductionnl/openconnector/tree/main/docusaurus/',
+          editUrl: 'https://github.com/ConductionNL/openconnector/tree/main/docs/',
         },
         blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
-      }),
+      },
     ],
   ],
 
-  themeConfig:
-    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
-    ({
-      navbar: {
-        title: 'Open Connector',
-        logo: {
-          alt: 'Open Connector Logo',
-          src: 'img/logo.svg',
+  themes: [BRAND_THEME, '@docusaurus/theme-mermaid'],
+
+  /* Brand navbar provides locale dropdown + GitHub by default; we
+     replace items[] with openconnector's own (Documentation sidebar
+     link, openconnector GitHub link). Object.assign in createConfig is
+     shallow, so items: replaces wholesale. */
+  navbar: {
+    items: [
+      {
+        type: 'docSidebar',
+        sidebarId: 'tutorialSidebar',
+        position: 'left',
+        label: 'Documentation',
+      },
+      {
+        href: 'https://github.com/ConductionNL/openconnector',
+        label: 'GitHub',
+        position: 'right',
+      },
+    ],
+  },
+
+  /* Per-property footer override: pass `links` only, brand
+     `style: 'dark'` and KvK/BTW/IBAN/address copyright string both
+     inherit unchanged. Single column: brand "Conduction" anchor. */
+  footer: {
+    links: [
+      ...baseFooterLinks().filter((column) => column.title === 'Conduction'),
+    ],
+  },
+
+  /* Drop the canal-footer's boat-sinking + kade-cyclist mini-games
+     on this product-doc footer. The static skyline + canal decoration
+     are kept; the interactive layer goes away. */
+  minigames: false,
+
+  /* themeConfig is shallow-merged into the preset's defaults
+     (colorMode + navbar + footer). Custom prism + mermaid theme
+     overrides land alongside. */
+  themeConfig: {
+    prism: {
+      theme: {
+        plain: {
+          color: '#393A34',
+          backgroundColor: '#f6f8fa',
         },
-        items: [
-          {
-            type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
-            position: 'left',
-            label: 'Documentation',
-          },
-          {
-            href: 'https://github.com/conductionnl/openconnector',
-            label: 'GitHub',
-            position: 'right',
-          },
-        ],
+        styles: [],
       },
-      footer: {
-        style: 'dark',
-        links: [
-          {
-            title: 'Documentation',
-            items: [
-              {
-                label: 'Getting Started',
-                to: '/docs/getting-started',
-              },
-              {
-                label: 'Tutorial',
-                to: '/docs/tutorial',
-              },
-            ],
-          },
-          {
-            title: 'Community',
-            items: [
-              {
-                label: 'GitHub',
-                href: 'https://github.com/conductionnl/openconnector',
-              },
-            ],
-          },
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} Conduction. Built with Docusaurus.`,
-      },
-      prism: {
-        theme: {
-          plain: {
-            color: "#393A34",
-            backgroundColor: "#f6f8fa"
-          },
-          styles: []
+      darkTheme: {
+        plain: {
+          color: '#F8F8F2',
+          backgroundColor: '#282A36',
         },
-        darkTheme: {
-          plain: {
-            color: "#F8F8F2",
-            backgroundColor: "#282A36"
-          },
-          styles: []
-        }
+        styles: [],
       },
-    }),
+    },
+  },
+});
+
+/* createConfig doesn't pass-through arbitrary top-level fields; assign
+   markdown + onBroken* directly so they make it into the final
+   Docusaurus config. */
+config.onBrokenLinks = 'warn';
+config.onBrokenMarkdownLinks = 'warn';
+config.onBrokenAnchors = 'warn';
+config.markdown = {
+  mermaid: true,
 };
 
 module.exports = config;
