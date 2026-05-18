@@ -892,15 +892,21 @@ export default {
 }
 
 /* Open Register notecard */
+.openregister-notecard {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
 .openregister-notecard .notecard {
     position: relative;
+    width: fit-content;
 }
 .close-button {
     position: absolute;
     top: 5px;
     right: 5px;
 }
-.close-button .button-vue--vue-tertiary:hover:not(:disabled) {
+.close-button :deep(.button-vue--vue-tertiary:hover:not(:disabled)) {
     background-color: rgba(var(--color-info-rgb), 0.1);
 }
 
@@ -1025,7 +1031,7 @@ export default {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	margin-bottom: 10px;
+	margin: 10px 0;
 	padding: 15px;
 	background-color: var(--color-background-soft);
 	border-radius: 6px;

@@ -1681,8 +1681,8 @@ export default {
 
 .install-buttons {
     display: flex;
-    gap: 0.5rem;
-    margin-block-start: 1rem;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .close-button {
@@ -1690,7 +1690,7 @@ export default {
     top: 5px;
     right: 5px;
 }
-.close-button .button-vue--vue-tertiary:hover:not(:disabled) {
+.close-button :deep(.button-vue--vue-tertiary:hover:not(:disabled)) {
     background-color: rgba(var(--color-info-rgb), 0.1);
 }
 
@@ -1812,9 +1812,15 @@ export default {
 	color: #260dd4;
 }
 
-/* close button for notecard */
+/* Open Register notecard */
+.openregister-notecard {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
 .openregister-notecard .notecard {
     position: relative;
+    width: fit-content;
 }
 
 /* Schema option */

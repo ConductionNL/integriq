@@ -1373,11 +1373,6 @@ export default {
 	opacity: 0.95;
 }
 
-/* Spacing for section content */
-.center-card .section-content {
-	padding: 12px 14px 6px 14px;
-}
-
 /* Add button spacing */
 .table-container .nc-button {
 	margin-top: 8px;
@@ -1386,5 +1381,177 @@ export default {
 .unset-disabled-note {
 	margin-top: 6px;
 	opacity: 0.8;
+}
+
+/* ====================== */
+/* Mapping Modal Styles   */
+/* ====================== */
+
+/* Three-Column Layout for Mapping Modal */
+.mapping-layout {
+	display: flex !important;
+	flex-direction: row !important;
+	gap: 20px;
+	margin: 15px 0;
+	min-height: 600px;
+	width: 100%;
+	align-items: stretch;
+}
+
+.mapping-section {
+	flex: 1 1 33.333%;
+	min-width: 350px;
+	max-width: none;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background-color: var(--color-main-background);
+}
+
+.mapping-section .section-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px;
+	background-color: var(--color-background-hover);
+	border-bottom: 1px solid var(--color-border);
+	border-radius: 8px 8px 0 0;
+}
+
+.mapping-section .section-header h3 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.mapping-section .section-content {
+	flex: 1;
+	padding: 12px;
+	overflow-y: auto;
+}
+
+.mapping-section .info-card {
+	padding: 12px;
+	background-color: var(--color-background-soft);
+	border-radius: 6px;
+	margin-bottom: 15px;
+}
+
+.mapping-section .section-description {
+	margin: 0;
+	font-size: 14px;
+	color: var(--color-text-maxcontrast);
+}
+
+.mapping-section .subsection {
+	margin-bottom: 15px;
+}
+
+.mapping-section .subsection h4 {
+	margin: 0 0 10px 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--color-text-light);
+}
+
+.mapping-section .form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 15px;
+}
+
+/* Section-specific styling */
+.input-section .section-header {
+	background-color: rgba(var(--color-primary-rgb), 0.1);
+}
+
+.transformation-section .section-header {
+	background-color: rgba(var(--color-warning-rgb), 0.1);
+}
+
+.output-section .section-header {
+	background-color: rgba(var(--color-success-rgb), 0.1);
+}
+
+/* Center column cards for transformation section */
+.transformation-section {
+	border: none !important;
+	background-color: transparent !important;
+}
+
+.center-card {
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	background-color: var(--color-main-background);
+	display: flex;
+	flex-direction: column;
+}
+
+.center-card .section-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px;
+	background-color: var(--color-background-hover);
+	border-bottom: 1px solid var(--color-border);
+	border-radius: 8px 8px 0 0;
+}
+
+.center-card .section-header h3 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.center-card .section-content {
+	flex: 1;
+	padding: 12px;
+}
+
+/* Data Flow Visualization */
+.data-flow {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 10px 0;
+	padding: 15px;
+	background-color: var(--color-background-soft);
+	border-radius: 6px;
+	border: 1px solid var(--color-border);
+}
+
+.flow-step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 5px;
+	padding: 10px;
+}
+
+.flow-step span {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+}
+
+.flow-arrow {
+	margin: 0 10px;
+	color: var(--color-text-maxcontrast);
+}
+
+/* Responsive Design for Mapping Modal */
+@media (max-width: 1400px) {
+	.mapping-layout {
+		flex-direction: column !important;
+	}
+
+	.mapping-section {
+		flex: none;
+		min-width: auto;
+		max-width: none;
+	}
 }
 </style>
