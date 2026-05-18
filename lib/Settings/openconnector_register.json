@@ -1,0 +1,95 @@
+{
+  "@self": {
+    "id": "openconnector-dso-seed",
+    "title": "OpenConnector DSO Seed Data",
+    "description": "Seed sources and activiteiten mappings for the DSO / Omgevingsloket adapter",
+    "version": "1.0.0"
+  },
+  "schemas": {
+    "DsoSource": {
+      "title": "DSO Source",
+      "description": "OpenConnector Source entity pre-configured for DSO-LV integration",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["dso"] },
+        "location": { "type": "string" },
+        "configuration": { "type": "object" }
+      }
+    },
+    "DsoActiviteitMapping": {
+      "title": "DSO Activiteit Mapping",
+      "description": "Maps a DSO activiteitcode to a zaaktype and samenloop strategy",
+      "type": "object",
+      "properties": {
+        "activiteitCode": { "type": "string" },
+        "zaaktypeIdentificatie": { "type": "string" },
+        "strategy": { "type": "string", "enum": ["single", "deelzaken", "gecombineerd"] }
+      }
+    }
+  },
+  "objects": {
+    "DsoSource": [
+      {
+        "id": "dso-source-acceptance",
+        "name": "DSO-LV Acceptatie",
+        "type": "dso",
+        "location": "https://api.pre.dso-lv.nl",
+        "configuration": {
+          "dsoApiUrl": "https://api.pre.dso-lv.nl",
+          "organisatieOin": "00000001234567890000",
+          "bevoegdGezagCode": "0344",
+          "stamApiVersion": "v1",
+          "pkiCertPath": "/var/www/nextcloud/data/certs/dso-cert-acc.pem",
+          "pkiKeyPath": "/var/www/nextcloud/data/certs/dso-key-acc.pem"
+        }
+      },
+      {
+        "id": "dso-source-production",
+        "name": "DSO-LV Productie",
+        "type": "dso",
+        "location": "https://api.dso-lv.nl",
+        "configuration": {
+          "dsoApiUrl": "https://api.dso-lv.nl",
+          "organisatieOin": "00000001234567890000",
+          "bevoegdGezagCode": "0344",
+          "stamApiVersion": "v1",
+          "pkiCertPath": "/var/www/nextcloud/data/certs/dso-cert.pem",
+          "pkiKeyPath": "/var/www/nextcloud/data/certs/dso-key.pem"
+        }
+      }
+    ],
+    "DsoActiviteitMapping": [
+      {
+        "id": "mapping-bouwen-01",
+        "activiteitCode": "bouwen-01",
+        "zaaktypeIdentificatie": "ZAAKTYPE-BOUWEN-2024",
+        "strategy": "deelzaken"
+      },
+      {
+        "id": "mapping-kappen-01",
+        "activiteitCode": "kappen-01",
+        "zaaktypeIdentificatie": "ZAAKTYPE-KAPPEN-2024",
+        "strategy": "gecombineerd"
+      },
+      {
+        "id": "mapping-uitrit-01",
+        "activiteitCode": "uitrit-01",
+        "zaaktypeIdentificatie": "ZAAKTYPE-UITRIT-2024",
+        "strategy": "gecombineerd"
+      },
+      {
+        "id": "mapping-milieu-01",
+        "activiteitCode": "milieu-01",
+        "zaaktypeIdentificatie": "ZAAKTYPE-MILIEU-2024",
+        "strategy": "deelzaken"
+      },
+      {
+        "id": "mapping-slopen-01",
+        "activiteitCode": "slopen-01",
+        "zaaktypeIdentificatie": "ZAAKTYPE-SLOPEN-2024",
+        "strategy": "gecombineerd"
+      }
+    ]
+  }
+}

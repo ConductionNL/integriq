@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector DSO Parser Service
  *
@@ -9,12 +10,12 @@
  * @package  OCA\OpenConnector\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
+ * @link https://conduction.nl
  *
- * @link https://www.OpenConnector.nl
+ * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -28,6 +29,8 @@ use Psr\Log\LoggerInterface;
  *
  * Extracts aanvrager, locatie, activiteiten, bijlagen, and projectbeschrijving
  * from DSO-LV STAM koppelvlak payloads (JSON or XML).
+ *
+ * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
  */
 class DSOParserService
 {
@@ -47,7 +50,7 @@ class DSOParserService
     ];
 
     /**
-     * Valid verzoek types.
+     * Valid verzoek types per STAM schema.
      *
      * @var array
      */
@@ -62,7 +65,9 @@ class DSOParserService
     /**
      * DSOParserService constructor.
      *
-     * @param LoggerInterface $logger Logger for error handling
+     * @param LoggerInterface $logger Logger for error handling.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
      */
     public function __construct(
         private readonly LoggerInterface $logger
@@ -79,6 +84,8 @@ class DSOParserService
      * @param array $payload The verzoek payload data.
      *
      * @return array Array of validation error objects with 'field', 'error', and 'message' keys.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-3
      */
     public function validatePayload(array $payload): array
     {
@@ -86,7 +93,10 @@ class DSOParserService
 
         // Check required fields.
         foreach (self::REQUIRED_FIELDS as $field) {
-            if (isset($payload[$field]) === false || $payload[$field] === '' || $payload[$field] === null) {
+            if (isset($payload[$field]) === false
+                || $payload[$field] === ''
+                || $payload[$field] === null
+            ) {
                 $errors[] = [
                     'field'   => $field,
                     'error'   => 'required_field_missing',
@@ -119,8 +129,7 @@ class DSOParserService
 
         // Validate BSN if aanvrager contains one.
         if (isset($payload['aanvrager']['bsn']) === true) {
-            $bsnValid = $this->validateBSN($payload['aanvrager']['bsn']);
-            if ($bsnValid === false) {
+            if ($this->validateBSN(bsn: $payload['aanvrager']['bsn']) === false) {
                 $errors[] = [
                     'field'   => 'aanvrager.bsn',
                     'error'   => 'invalid_bsn',
@@ -131,7 +140,7 @@ class DSOParserService
 
         // Validate indieningsdatum format (ISO 8601).
         if (isset($payload['indieningsdatum']) === true
-            && $this->validateISODate($payload['indieningsdatum']) === false
+            && $this->validateISODate(date: $payload['indieningsdatum']) === false
         ) {
             $errors[] = [
                 'field'   => 'indieningsdatum',
@@ -154,22 +163,29 @@ class DSOParserService
      * @param array $payload The raw verzoek payload.
      *
      * @return array The parsed and structured verzoek data.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
      */
     public function parseVerzoek(array $payload): array
     {
+        $bouwkosten = null;
+        if (isset($payload['bouwkosten']) === true) {
+            $bouwkosten = (float) $payload['bouwkosten'];
+        }
+
         $verzoek = [
-            'verzoekId'        => $payload['verzoekId'] ?? null,
-            'bronorganisatie'  => $payload['bronorganisatie'] ?? null,
-            'type'             => $payload['type'] ?? null,
-            'indieningsdatum'  => $payload['indieningsdatum'] ?? null,
-            'aanvrager'        => $this->parseAanvrager($payload['aanvrager'] ?? []),
-            'locatie'          => $this->parseLocatie($payload['locatie'] ?? []),
-            'activiteiten'     => $this->parseActiviteiten($payload['activiteiten'] ?? []),
-            'bouwkosten'       => isset($payload['bouwkosten']) === true ? (float) $payload['bouwkosten'] : null,
-            'bijlagen'         => $payload['bijlagen'] ?? [],
-            'status'           => 'ontvangen',
-            'environment'      => $payload['environment'] ?? 'productie',
-            'stamApiVersion'   => $payload['stamApiVersion'] ?? null,
+            'verzoekId'       => ($payload['verzoekId'] ?? null),
+            'bronorganisatie' => ($payload['bronorganisatie'] ?? null),
+            'type'            => ($payload['type'] ?? null),
+            'indieningsdatum' => ($payload['indieningsdatum'] ?? null),
+            'aanvrager'       => $this->parseAanvrager(aanvrager: ($payload['aanvrager'] ?? [])),
+            'locatie'         => $this->parseLocatie(locatie: ($payload['locatie'] ?? [])),
+            'activiteiten'    => $this->parseActiviteiten(activiteiten: ($payload['activiteiten'] ?? [])),
+            'bouwkosten'      => $bouwkosten,
+            'bijlagen'        => ($payload['bijlagen'] ?? []),
+            'status'          => 'ontvangen',
+            'environment'     => ($payload['environment'] ?? 'productie'),
+            'stamApiVersion'  => ($payload['stamApiVersion'] ?? null),
         ];
 
         if (isset($payload['projectbeschrijving']) === true) {
@@ -196,24 +212,36 @@ class DSOParserService
      *
      * @return bool True if the BSN passes the 11-proef.
      *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-3
+     *
      * @see \OCA\OpenRegister\Formats\BsnFormat::validate() Canonical BSN validation (ADR-011)
      */
     public function validateBSN(string $bsn): bool
     {
         // BSN must be 8 or 9 digits.
-        $bsn = ltrim($bsn, '0');
-        $bsn = str_pad($bsn, 9, '0', STR_PAD_LEFT);
+        $bsn = ltrim(string: $bsn, characters: '0');
+        $bsn = str_pad(string: $bsn, length: 9, pad_string: '0', pad_type: STR_PAD_LEFT);
 
-        if (preg_match('/^\d{9}$/', $bsn) !== 1) {
+        if (preg_match(pattern: '/^\d{9}$/', subject: $bsn) !== 1) {
             return false;
         }
 
         // 11-proef: multiply each digit by its weight factor.
-        $sum = 0;
-        $weights = [9, 8, 7, 6, 5, 4, 3, 2, -1];
+        $sum     = 0;
+        $weights = [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            -1,
+        ];
 
         for ($i = 0; $i < 9; $i++) {
-            $sum += (int) $bsn[$i] * $weights[$i];
+            $sum += ((int) $bsn[$i] * $weights[$i]);
         }
 
         return ($sum % 11 === 0 && $sum !== 0);
@@ -227,6 +255,8 @@ class DSOParserService
      * @param string $date The date string to validate.
      *
      * @return bool True if the date is valid ISO 8601.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-3
      */
     public function validateISODate(string $date): bool
     {
@@ -256,17 +286,19 @@ class DSOParserService
      * @param array $aanvrager The raw aanvrager data.
      *
      * @return array The parsed aanvrager data.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
      */
     private function parseAanvrager(array $aanvrager): array
     {
         return [
-            'bsn'              => $aanvrager['bsn'] ?? null,
-            'kvkNummer'        => $aanvrager['kvkNummer'] ?? null,
-            'vestigingsnummer' => $aanvrager['vestigingsnummer'] ?? null,
-            'naam'             => $aanvrager['naam'] ?? null,
-            'bedrijfsnaam'     => $aanvrager['bedrijfsnaam'] ?? null,
-            'adres'            => $aanvrager['adres'] ?? null,
-            'contactgegevens'  => $aanvrager['contactgegevens'] ?? null,
+            'bsn'              => ($aanvrager['bsn'] ?? null),
+            'kvkNummer'        => ($aanvrager['kvkNummer'] ?? null),
+            'vestigingsnummer' => ($aanvrager['vestigingsnummer'] ?? null),
+            'naam'             => ($aanvrager['naam'] ?? null),
+            'bedrijfsnaam'     => ($aanvrager['bedrijfsnaam'] ?? null),
+            'adres'            => ($aanvrager['adres'] ?? null),
+            'contactgegevens'  => ($aanvrager['contactgegevens'] ?? null),
         ];
 
     }//end parseAanvrager()
@@ -280,18 +312,20 @@ class DSOParserService
      * @param array $locatie The raw locatie data.
      *
      * @return array The parsed locatie data.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
      */
     private function parseLocatie(array $locatie): array
     {
         $parsed = [
-            'bagAdres'             => $locatie['bagAdres'] ?? null,
-            'kadastraleAanduiding' => $locatie['kadastraleAanduiding'] ?? null,
+            'bagAdres'             => ($locatie['bagAdres'] ?? null),
+            'kadastraleAanduiding' => ($locatie['kadastraleAanduiding'] ?? null),
             'geometrie'            => null,
         ];
 
         // Convert GML to GeoJSON if present.
         if (isset($locatie['gmlGeometrie']) === true) {
-            $parsed['geometrie'] = $this->convertGMLToGeoJSON($locatie['gmlGeometrie']);
+            $parsed['geometrie'] = $this->convertGMLToGeoJSON(gml: $locatie['gmlGeometrie']);
         }
 
         return $parsed;
@@ -305,14 +339,19 @@ class DSOParserService
      * @param array $activiteiten The raw activiteiten data.
      *
      * @return array The parsed activiteiten data.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
      */
     private function parseActiviteiten(array $activiteiten): array
     {
         $parsed = [];
         foreach ($activiteiten as $activiteit) {
+            $code         = ($activiteit['code'] ?? ($activiteit['activiteitCode'] ?? null));
+            $omschrijving = ($activiteit['omschrijving'] ?? null);
+
             $parsed[] = [
-                'code'          => $activiteit['code'] ?? $activiteit['activiteitCode'] ?? null,
-                'omschrijving'  => $activiteit['omschrijving'] ?? null,
+                'code'         => $code,
+                'omschrijving' => $omschrijving,
             ];
         }
 
@@ -324,20 +363,30 @@ class DSOParserService
     /**
      * Convert a GML geometry string to GeoJSON.
      *
-     * This is a basic implementation that handles common GML point and polygon formats.
-     * For full GML support, a dedicated geometry library should be used.
+     * Handles common GML point format (gml:pos). For full GML polygon
+     * and complex geometry support a dedicated geometry library is needed.
      *
      * @param string $gml The GML geometry string.
      *
      * @return array|null The GeoJSON geometry object, or null if conversion fails.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-2
      */
     private function convertGMLToGeoJSON(string $gml): ?array
     {
-        // Try to parse as GML Point.
-        if (preg_match('/<gml:pos>([\d.]+)\s+([\d.]+)<\/gml:pos>/', $gml, $matches) === 1) {
+        $matchCount = preg_match(
+            pattern: '/<gml:pos>([\d.]+)\s+([\d.]+)<\/gml:pos>/',
+            subject: $gml,
+            matches: $matches
+        );
+
+        if ($matchCount === 1) {
             return [
                 'type'        => 'Point',
-                'coordinates' => [(float) $matches[2], (float) $matches[1]],
+                'coordinates' => [
+                    (float) $matches[2],
+                    (float) $matches[1],
+                ],
             ];
         }
 

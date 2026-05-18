@@ -34,3 +34,6 @@ The DSO adapter follows the existing OpenConnector adapter pattern with several 
 - Procest app dependency not yet available -- zaak creation will use OpenRegister directly until Procest is ready
 - DSO-LV STAM API access requires PKIoverheid certificates and OIN registration
 - GML to GeoJSON conversion requires a geometry library (not yet in OpenConnector)
+
+## Status
+status: pr-created
