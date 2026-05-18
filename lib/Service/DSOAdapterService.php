@@ -823,6 +823,15 @@ class DSOAdapterService
         $clientOptions = ['timeout' => 10];
 
         if ($certPath !== null) {
+            $certStatus = $this->validateCertificate(certPath: $certPath);
+            if ($certStatus['valid'] === false) {
+                return [
+                    'success'      => false,
+                    'message'      => 'Client certificate is invalid or not found',
+                    'responseTime' => 0.0,
+                ];
+            }
+
             $clientOptions['cert'] = $certPath;
         }
 
