@@ -33,7 +33,6 @@ import { navigationStore } from '../store/store.js'
 		<EditSynchronizationTargetConfig v-if="navigationStore.modal === 'editSynchronizationTargetConfig'" />
 		<ImportFile v-if="navigationStore.modal === 'importFile'" />
 		<EditRule v-if="navigationStore.modal === 'editRule'" />
-		<DeleteRule v-if="navigationStore.dialog === 'deleteRule'" />
 		<ViewJob v-if="navigationStore.modal === 'viewJob'" />
 		<ViewEndpoint v-if="navigationStore.modal === 'viewEndpoint'" />
 		<ViewSynchronization v-if="navigationStore.modal === 'viewSynchronization'" />
@@ -69,7 +68,6 @@ import EditSynchronizationSourceConfig from './SynchronizationSourceConfig/EditS
 import EditSynchronizationTargetConfig from './SynchronizationTargetConfig/EditSynchronizationTargetConfig.vue'
 import ImportFile from './Import/ImportFile.vue'
 import EditRule from './Rule/EditRule.vue'
-import DeleteRule from './Rule/DeleteRule.vue'
 import ViewJob from './Job/ViewJob.vue'
 import ViewEndpoint from './Endpoint/ViewEndpoint.vue'
 import ViewSynchronization from './Synchronization/ViewSynchronization.vue'
@@ -107,7 +105,6 @@ export default {
 		EditSynchronizationTargetConfig,
 		ImportFile,
 		EditRule,
-		DeleteRule,
 		ViewJob,
 		ViewEndpoint,
 		ViewSynchronization,

@@ -16,6 +16,7 @@ import JobLogIndex from '../views/Job/JobLogIndex.vue'
 import MappingsIndex from '../views/Mapping/MappingsIndex.vue'
 import MappingDetails from '../views/Mapping/MappingDetails.vue'
 import RulesIndex from '../views/rule/RuleIndex.vue'
+import RuleDetails from '../views/rule/RuleDetails.vue'
 import SynchronizationsIndex from '../views/Synchronization/SynchronizationsIndex.vue'
 import ContractsIndex from '../views/contracts/ContractsIndex.vue'
 import SynchronizationLogIndex from '../views/Synchronization/SynchronizationLogIndex.vue'
@@ -52,7 +53,7 @@ const router = new Router({
 		{ path: '/mappings', components: { default: MappingsIndex } },
 		{ path: '/mappings/:id', components: { default: MappingDetails } },
 		{ path: '/rules', components: { default: RulesIndex } },
-		{ path: '/rules/:id', components: { default: RulesIndex } },
+		{ path: '/rules/:id', components: { default: RuleDetails } },
 		{ path: '/synchronizations', components: { default: SynchronizationsIndex } },
 		{ path: '/synchronizations/contracts', components: { default: ContractsIndex, sidebar: ContractsSideBar } },
 		{ path: '/synchronizations/logs', components: { default: SynchronizationLogIndex, sidebar: LogsSideBar } },
