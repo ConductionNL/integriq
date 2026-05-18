@@ -5,191 +5,148 @@ import { translate as t } from '@nextcloud/l10n'
 
 <template>
 	<NcAppContent>
-		<div class="viewContainer">
-			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					{{ t('openconnector', 'Synchronization Logs') }}
-				</h1>
-				<p>{{ t('openconnector', 'Monitor and analyze synchronization logs and their performance') }}</p>
-			</div>
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openconnector', 'Showing {showing} of {total} logs', { showing: paginatedLogs.length, total: filteredLogs.length }) }}
-					</span>
-					<span v-if="selectedLogs.length > 0" class="viewIndicator">
-						({{ t('openconnector', '{count} selected', { count: selectedLogs.length }) }})
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions :force-name="true" :inline="3" menu-name="Actions">
-						<NcActionButton v-if="selectedLogs.length > 0"
-							type="error"
-							:disabled="deletingLogs"
-							close-after-click
-							@click="bulkDeleteLogs">
-							<template #icon>
-								<NcLoadingIcon v-if="deletingLogs" :size="20" />
-								<Delete v-else :size="20" />
-							</template>
-							{{ deletingLogs ? t('openconnector', 'Deleting...') : t('openconnector', 'Delete ({count})', { count: selectedLogs.length }) }}
-						</NcActionButton>
-						<NcActionButton close-after-click @click="exportLogs">
-							<template #icon>
-								<FileExportOutline :size="20" />
-							</template>
-							{{ t('openconnector', 'Export') }}
-						</NcActionButton>
-						<NcActionButton close-after-click @click="refreshLogs">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openconnector', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
-			<div v-if="synchronizationStore.loading" class="viewLoading">
-				<NcLoadingIcon :size="64" />
-				<p>{{ t('openconnector', 'Loading synchronization logs...') }}</p>
-			</div>
-			<NcEmptyContent v-else-if="synchronizationStore.error || !filteredLogs.length"
-				:name="emptyContentName"
-				:description="emptyContentDescription">
-				<template #icon>
-					<NcLoadingIcon v-if="synchronizationStore.loading" :size="64" />
-					<TimelineQuestionOutline v-else :size="64" />
-				</template>
-			</NcEmptyContent>
-			<div v-else class="viewTableContainer">
-				<table class="viewTable">
-					<thead>
-						<tr>
-							<th class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="allSelected"
-									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
-							</th>
-							<th>{{ t('openconnector', 'Status') }}</th>
-							<th>{{ t('openconnector', 'Synchronization') }}</th>
-							<th>{{ t('openconnector', 'Details') }}</th>
-							<th>{{ t('openconnector', 'Execution Time') }}</th>
-							<th>{{ t('openconnector', 'Created') }}</th>
-							<th class="tableColumnActions">
-								{{ t('openconnector', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="log in paginatedLogs"
-							:key="log.id"
-							class="viewTableRow"
-							:class="[getLogStatusClass(log), { viewTableRowSelected: selectedLogs.includes(log.id) }]">
-							<td class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="selectedLogs.includes(log.id)"
-									@update:checked="(checked) => toggleLogSelection(log.id, checked)" />
-							</td>
-							<td>
-								<span class="statusBadge" :class="getLogStatusClass(log)">
-									<CheckCircle v-if="log.message === 'Success'" :size="16" />
-									<CloseCircle v-else :size="16" />
-									{{ log.message === 'Success' ? t('openconnector', 'Success') : t('openconnector', 'Error') }}
-								</span>
-							</td>
-							<td>{{ getSynchronizationName(log.synchronizationId) }}</td>
-							<td>
-								<span v-if="log.message === 'Success'">
-									{{ getObjectsSummary(log) }}
-								</span>
-								<span v-else>{{ log.message }}</span>
-							</td>
-							<td class="responseTimeColumn">
-								<span :class="getExecutionTimeClass(log)">
-									{{ (getExecutionTime(log) / 1000).toFixed(3) }}s
-								</span>
-							</td>
-							<td class="timestampColumn">
-								<span class="createdTime">{{ new Date(log.created).toLocaleString() }}</span>
-							</td>
-							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton close-after-click @click="viewLogDetails(log)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openconnector', 'View Details') }}
-									</NcActionButton>
-									<NcActionButton close-after-click @click="copyLogData(log)">
-										<template #icon>
-											<ContentCopy :size="20" />
-										</template>
-										{{ t('openconnector', 'Copy Data') }}
-									</NcActionButton>
-									<NcActionButton :disabled="deletingLogs" close-after-click @click="deleteLog(log)">
-										<template #icon>
-											<NcLoadingIcon v-if="deletingLogs" :size="20" />
-											<Delete v-else :size="20" />
-										</template>
-										{{ deletingLogs ? t('openconnector', 'Deleting...') : t('openconnector', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-			<PaginationComponent
-				v-if="filteredLogs.length > 0 || synchronizationStore.synchronizationLogs?.total > 0"
-				:current-page="synchronizationStore.synchronizationLogs?.page || pagination.page || 1"
-				:total-pages="synchronizationStore.synchronizationLogs?.pages || Math.ceil((synchronizationStore.synchronizationLogs?.total || 0) / (pagination.limit || 20))"
-				:total-items="synchronizationStore.synchronizationLogs?.total || filteredLogs.length"
-				:current-page-size="pagination.limit || 20"
-				:min-items-to-show="0"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
-		</div>
+		<CnIndexPage
+			ref="indexPage"
+			:title="t('openconnector', 'Synchronization Logs')"
+			:description="t('openconnector', 'Monitor and analyze synchronization logs and their performance')"
+			:show-title="true"
+			:objects="filteredLogs"
+			:columns="tableColumns"
+			:pagination="paginationData"
+			:loading="synchronizationStore.loading"
+			:refreshing="refreshing"
+			:inline-action-count="3"
+			view-mode="table"
+			:show-view-toggle="false"
+			:show-add="false"
+			:selectable="true"
+			:selected-ids="selectedLogs"
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
+			:show-mass-import="false"
+			:show-mass-export="false"
+			:show-mass-copy="false"
+			:show-mass-delete="false"
+			row-key="id"
+			:empty-text="emptyContentName"
+			:row-class="getLogStatusClass"
+			@refresh="refreshLogs"
+			@page-changed="onPageChanged"
+			@page-size-changed="onPageSizeChanged"
+			@select="onSelect">
+			<template #action-items>
+				<NcActionButton
+					v-if="selectedLogs.length > 0"
+					type="error"
+					:disabled="deletingLogs"
+					close-after-click
+					@click="bulkDeleteLogs">
+					<template #icon>
+						<NcLoadingIcon v-if="deletingLogs" :size="20" />
+						<Delete v-else :size="20" />
+					</template>
+					{{ deletingLogs ? t('openconnector', 'Deleting...') : t('openconnector', 'Delete ({count})', { count: selectedLogs.length }) }}
+				</NcActionButton>
+				<NcActionButton close-after-click @click="exportLogs">
+					<template #icon>
+						<FileExportOutline :size="20" />
+					</template>
+					{{ t('openconnector', 'Export') }}
+				</NcActionButton>
+			</template>
+
+			<template #column-status="{ row: log }">
+				<CnStatusBadge
+					:label="log.message === 'Success' ? t('openconnector', 'Success') : t('openconnector', 'Error')"
+					:variant="log.message === 'Success' ? 'success' : 'error'" />
+			</template>
+
+			<template #column-synchronization="{ row: log }">
+				{{ getSynchronizationName(log.synchronizationId) }}
+			</template>
+
+			<template #column-details="{ row: log }">
+				<span v-if="log.message === 'Success'">{{ getObjectsSummary(log) }}</span>
+				<span v-else>{{ log.message }}</span>
+			</template>
+
+			<template #column-executionTime="{ row: log }">
+				<span :class="getExecutionTimeClass(log)">
+					{{ (getExecutionTime(log) / 1000).toFixed(3) }}s
+				</span>
+			</template>
+
+			<template #column-created="{ row: log }">
+				<NcDateTime v-if="log.created" :timestamp="new Date(log.created)" />
+			</template>
+
+			<template #row-actions="{ row: log }">
+				<NcActions>
+					<NcActionButton close-after-click @click="viewLogDetails(log)">
+						<template #icon>
+							<Eye :size="20" />
+						</template>
+						{{ t('openconnector', 'View Details') }}
+					</NcActionButton>
+					<NcActionButton close-after-click @click="copyLogData(log)">
+						<template #icon>
+							<Check v-if="copyStates[log.id]" :size="20" class="copySuccessIcon" />
+							<ContentCopy v-else :size="20" />
+						</template>
+						{{ copyStates[log.id] ? t('openconnector', 'Copied!') : t('openconnector', 'Copy Data') }}
+					</NcActionButton>
+					<NcActionButton
+						:disabled="deletingLogs"
+						close-after-click
+						class="deleteAction"
+						@click="deleteLog(log)">
+						<template #icon>
+							<NcLoadingIcon v-if="deletingLogs" :size="20" />
+							<Delete v-else :size="20" />
+						</template>
+						{{ deletingLogs ? t('openconnector', 'Deleting...') : t('openconnector', 'Delete') }}
+					</NcActionButton>
+				</NcActions>
+			</template>
+		</CnIndexPage>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import { NcAppContent, NcActions, NcActionButton, NcDateTime, NcLoadingIcon } from '@nextcloud/vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileExportOutline from 'vue-material-design-icons/FileExportOutline.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
-import PaginationComponent from '../../components/PaginationComponent.vue'
+import Check from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'SynchronizationLogIndex',
 	components: {
 		NcAppContent,
-		NcEmptyContent,
-		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
-		NcCheckboxRadioSwitch,
-		TimelineQuestionOutline,
+		NcDateTime,
+		NcLoadingIcon,
+		CnIndexPage,
+		CnStatusBadge,
 		Delete,
-		Refresh,
 		Eye,
 		FileExportOutline,
 		ContentCopy,
-		CheckCircle,
-		CloseCircle,
-		PaginationComponent,
+		Check,
 	},
 	data() {
 		return {
 			synchronizationStore,
 			navigationStore,
 			selectedLogs: [],
+			copyStates: {},
+			refreshing: false,
 			deletingLogs: false,
+			filters: {},
 			pagination: {
 				page: 1,
 				limit: 20,
@@ -198,65 +155,75 @@ export default {
 	},
 	computed: {
 		filteredLogs() {
-			if (!this.synchronizationStore.synchronizationLogs) return []
-			if (Array.isArray(this.synchronizationStore.synchronizationLogs.results)) {
-				return this.synchronizationStore.synchronizationLogs.results
+			const logs = this.synchronizationStore.synchronizationLogs
+			if (!logs) return []
+			if (Array.isArray(logs.results)) return logs.results
+			return Array.isArray(logs) ? logs : []
+		},
+		totalLogs() {
+			return this.synchronizationStore.synchronizationLogs?.total ?? this.filteredLogs.length
+		},
+		tableColumns() {
+			return [
+				{ key: 'status', label: t('openconnector', 'Status') },
+				{ key: 'synchronization', label: t('openconnector', 'Synchronization') },
+				{ key: 'details', label: t('openconnector', 'Details') },
+				{ key: 'executionTime', label: t('openconnector', 'Execution Time') },
+				{ key: 'created', label: t('openconnector', 'Created') },
+			]
+		},
+		paginationData() {
+			const limit = this.pagination.limit || 20
+			const total = this.totalLogs
+			const apiPage = this.synchronizationStore.synchronizationLogs?.page
+			const apiPages = this.synchronizationStore.synchronizationLogs?.pages
+			return {
+				page: apiPage || this.pagination.page || 1,
+				pages: apiPages || Math.max(1, Math.ceil(total / limit)),
+				total,
+				limit,
 			}
-			return this.synchronizationStore.synchronizationLogs
-		},
-		paginatedLogs() {
-			return this.filteredLogs
-		},
-		allSelected() {
-			return this.filteredLogs.length > 0 && this.filteredLogs.every(log => this.selectedLogs.includes(log.id))
-		},
-		someSelected() {
-			return this.selectedLogs.length > 0 && !this.allSelected
 		},
 		emptyContentName() {
-			if (this.synchronizationStore.loading) {
-				return t('openconnector', 'Loading logs...')
-			} else if (this.synchronizationStore.error) {
-				return this.synchronizationStore.error
-			} else if (!this.synchronizationStore.synchronizationLogs?.length) {
-				return t('openconnector', 'No logs found')
-			}
-			return ''
+			if (this.synchronizationStore.error) return this.synchronizationStore.error
+			if (!this.filteredLogs.length) return t('openconnector', 'No synchronization logs are available.')
+			return t('openconnector', 'Loading synchronization logs...')
 		},
-		emptyContentDescription() {
-			if (this.synchronizationStore.loading) {
-				return t('openconnector', 'Please wait while we fetch your logs.')
-			} else if (this.synchronizationStore.error) {
-				return t('openconnector', 'Please try again later.')
-			} else if (!this.synchronizationStore.synchronizationLogs?.length) {
-				return t('openconnector', 'No synchronization logs are available.')
-			}
-			return ''
+	},
+	watch: {
+		filteredLogs(logs) {
+			this.$root.$emit('logs-filtered-count', logs.length)
 		},
 	},
 	mounted() {
 		this.loadLogs()
+		this.$root.$emit('logs-filtered-count', this.filteredLogs.length)
+		this.$root.$emit('logs-selection-count', this.selectedLogs.length)
+		this.$root.$on('logs-filters-changed', this.onFiltersChanged)
+		this.$root.$on('logs-bulk-delete', this.bulkDeleteLogs)
+		this.$root.$on('logs-export-filtered', this.exportLogs)
+	},
+	beforeDestroy() {
+		this.$root.$off('logs-filters-changed', this.onFiltersChanged)
+		this.$root.$off('logs-bulk-delete', this.bulkDeleteLogs)
+		this.$root.$off('logs-export-filtered', this.exportLogs)
 	},
 	methods: {
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.selectedLogs = this.filteredLogs.map(log => log.id)
-			} else {
-				this.selectedLogs = []
-			}
-		},
-		toggleLogSelection(logId, checked) {
-			if (checked) {
-				this.selectedLogs.push(logId)
-			} else {
-				this.selectedLogs = this.selectedLogs.filter(id => id !== logId)
-			}
-		},
 		async loadLogs() {
 			await this.synchronizationStore.refreshSynchronizationLogs({
 				page: this.pagination.page,
 				limit: this.pagination.limit,
+				...this.filters,
 			})
+		},
+		onFiltersChanged(filters) {
+			this.filters = filters || {}
+			this.pagination.page = 1
+			this.loadLogs()
+		},
+		onSelect(ids) {
+			this.selectedLogs = ids
+			this.$root.$emit('logs-selection-count', ids.length)
 		},
 		async onPageChanged(page) {
 			this.pagination.page = page
@@ -268,25 +235,30 @@ export default {
 			await this.loadLogs()
 		},
 		getLogStatusClass(log) {
-			if (log.message === 'Success') return 'successStatus'
-			return 'clientErrorStatus' // For non-success messages, treat as error
+			return log.message === 'Success' ? 'successStatus' : 'clientErrorStatus'
 		},
 		getExecutionTime(log) {
 			return log.result?.timing?.total_ms || log.executionTime || 0
 		},
 		getExecutionTimeClass(log) {
 			const ms = this.getExecutionTime(log)
-			if (ms < 5000) return 'fast-response' // Below 5 seconds is good
-			if (ms < 30000) return 'medium-response' // Under 30 seconds is average
-			return 'slow-response' // Above 30 seconds is bad
+			if (ms < 5000) return 'fast-response'
+			if (ms < 30000) return 'medium-response'
+			return 'slow-response'
 		},
-		viewLogDetails(log) {
+		viewLogDetails() {
 			// TODO: Implement view log details modal
 		},
 		async copyLogData(log) {
 			try {
 				const data = JSON.stringify(log, null, 2)
 				await navigator.clipboard.writeText(data)
+
+				this.$set(this.copyStates, log.id, true)
+				setTimeout(() => {
+					this.$set(this.copyStates, log.id, false)
+				}, 2000)
+
 				OC.Notification.showSuccess(t('openconnector', 'Log data copied to clipboard'))
 			} catch (error) {
 				console.error('Error copying to clipboard:', error)
@@ -299,20 +271,16 @@ export default {
 				const result = await this.synchronizationStore.deleteSynchronizationLog(log.id.toString())
 				if (result.response.ok) {
 					OC.Notification.showSuccess(t('openconnector', 'Log deleted successfully'))
-					// Clear selection if the deleted log was selected
 					this.selectedLogs = this.selectedLogs.filter(id => id !== log.id)
-					// Check if we need to adjust pagination after deleting
 					let targetPage = this.pagination.page
 					if (this.filteredLogs.length === 1 && this.pagination.page > 1) {
-						// If this was the last item on the current page, go to previous page
 						targetPage = this.pagination.page - 1
 						this.pagination.page = targetPage
 					}
-
-					// Force refresh the table with adjusted pagination
 					await this.synchronizationStore.refreshSynchronizationLogs({
 						page: targetPage,
 						limit: this.pagination.limit,
+						...this.filters,
 					})
 				} else {
 					const errorData = await result.response.json()
@@ -336,7 +304,6 @@ export default {
 				let deletedCount = 0
 				const errors = []
 
-				// Delete each log individually
 				for (const logId of this.selectedLogs) {
 					try {
 						const result = await this.synchronizationStore.deleteSynchronizationLog(logId.toString())
@@ -352,7 +319,6 @@ export default {
 					}
 				}
 
-				// Show results
 				if (deletedCount === totalLogs) {
 					OC.Notification.showSuccess(t('openconnector', 'All {count} selected logs deleted successfully', { count: deletedCount }))
 				} else if (deletedCount > 0) {
@@ -367,25 +333,21 @@ export default {
 					}))
 				}
 
-				// After deleting multiple logs, we might need to adjust pagination
-				// If we deleted all logs on current page, go to previous page
 				const remainingLogsOnPage = this.filteredLogs.length - deletedCount
 				let targetPage = this.pagination.page
-
 				if (remainingLogsOnPage === 0 && this.pagination.page > 1) {
 					targetPage = this.pagination.page - 1
 					this.pagination.page = targetPage
 				}
-
-				// Force refresh the table with adjusted pagination
 				await this.synchronizationStore.refreshSynchronizationLogs({
 					page: targetPage,
 					limit: this.pagination.limit,
+					...this.filters,
 				})
 			} finally {
 				this.deletingLogs = false
-				// Ensure selection is cleared even if refresh fails
 				this.selectedLogs = []
+				this.$root.$emit('logs-selection-count', 0)
 			}
 		},
 		async exportLogs() {
@@ -402,19 +364,21 @@ export default {
 			}
 		},
 		async refreshLogs() {
+			this.refreshing = true
 			try {
-				// Force a fresh reload of the logs
 				await this.loadLogs()
-				// Clear any selections after refresh
 				this.selectedLogs = []
+				this.$root.$emit('logs-selection-count', 0)
 			} catch (error) {
 				OC.Notification.showError(t('openconnector', 'Failed to refresh logs'))
+			} finally {
+				this.refreshing = false
 			}
 		},
 		getSynchronizationName(synchronizationId) {
 			if (!synchronizationId) return t('openconnector', 'Unknown')
-			// TODO: Get synchronization name from store if available
-			return `Sync ${synchronizationId}`
+			const sync = this.synchronizationStore.synchronizationList?.find(s => String(s.id) === String(synchronizationId))
+			return sync?.name || `Sync ${synchronizationId}`
 		},
 		getObjectsSummary(log) {
 			const o = log.result?.objects || {}
@@ -425,5 +389,31 @@ export default {
 </script>
 
 <style scoped>
-/* All CSS is provided by main.css */
+.fast-response {
+	color: var(--color-success);
+	font-weight: 600;
+}
+
+.medium-response {
+	color: var(--color-warning);
+	font-weight: 600;
+}
+
+.slow-response {
+	color: var(--color-error);
+	font-weight: 600;
+}
+
+.copySuccessIcon {
+	color: var(--color-success) !important;
+}
+
+:deep(.deleteAction) {
+	color: var(--color-error) !important;
+}
+
+:deep(.deleteAction:hover) {
+	background-color: var(--color-error) !important;
+	color: var(--color-main-background) !important;
+}
 </style>

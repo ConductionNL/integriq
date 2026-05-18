@@ -16,10 +16,11 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 				<FilterOutline :size="20" />
 			</template>
 
-			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Logs') }}</h3>
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Level') }}</label>
+			<div class="sidebarSection">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Filter Logs') }}
+				</h3>
+				<div class="sidebarSection__body">
 					<NcSelect
 						v-model="filters.level"
 						:options="levelOptions"
@@ -27,10 +28,6 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 						:input-label="t('openconnector', 'Level')"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Contract') }}</label>
 					<NcSelect
 						v-model="filters.contract"
 						:options="contractOptions"
@@ -38,10 +35,6 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 						:input-label="t('openconnector', 'Contract')"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Synchronization') }}</label>
 					<NcSelect
 						v-model="filters.synchronization"
 						:options="synchronizationOptions"
@@ -49,43 +42,38 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 						:input-label="t('openconnector', 'Synchronization')"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
-					<DateRangeInput
-						:start="filters.dateFrom"
-						:end="filters.dateTo"
-						:max-start="new Date()"
-						@update:start="(v) => { filters.dateFrom = v; }"
-						@update:end="(v) => { filters.dateTo = v; }"
-						@change="applyFilters" />
-				</div>
-
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Message') }}</label>
+					<div class="sidebarSection__field">
+						<span class="sidebarSection__fieldLabel">{{ t('openconnector', 'Date Range') }}</span>
+						<DateRangeInput
+							:start="filters.dateFrom"
+							:end="filters.dateTo"
+							:max-start="new Date()"
+							@update:start="(v) => { filters.dateFrom = v }"
+							@update:end="(v) => { filters.dateTo = v }"
+							@change="applyFilters" />
+					</div>
 					<NcTextField
 						v-model="filters.message"
+						:label="t('openconnector', 'Message')"
 						:placeholder="t('openconnector', 'Search in messages...')"
 						@input="debouncedApplyFilters" />
+					<NcButton v-if="hasActiveFilters" @click="clearFilters">
+						<template #icon>
+							<FilterOffOutline :size="20" />
+						</template>
+						{{ t('openconnector', 'Clear Filters') }}
+					</NcButton>
 				</div>
 			</div>
 
-			<div class="actionGroup">
-				<NcButton v-if="hasActiveFilters" @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openconnector', 'Clear Filters') }}
-				</NcButton>
-			</div>
-
-			<div v-if="selectedCount > 0" class="filterSection">
-				<h3>{{ t('openconnector', 'Bulk Actions') }}</h3>
-				<p class="selection-info">
-					{{ t('openconnector', '{count} logs selected', { count: selectedCount }) }}
-				</p>
-				<div class="filterGroup">
+			<div v-if="selectedCount > 0" class="sidebarSection">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Bulk Actions') }}
+				</h3>
+				<div class="sidebarSection__body">
+					<p class="sidebarSection__fieldLabel">
+						{{ t('openconnector', '{count} logs selected', { count: selectedCount }) }}
+					</p>
 					<NcButton type="error" @click="bulkDelete">
 						<template #icon>
 							<Delete :size="20" />
@@ -95,9 +83,11 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 				</div>
 			</div>
 
-			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Export') }}</h3>
-				<div class="filterGroup">
+			<div class="sidebarSection">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Export') }}
+				</h3>
+				<div class="sidebarSection__body">
 					<NcButton @click="exportFiltered">
 						<template #icon>
 							<Download :size="20" />
@@ -112,71 +102,10 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
-
-			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ filteredCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openconnector', 'Total Logs') }}
-					</div>
-				</div>
-
-				<div class="statRow">
-					<div class="statItem">
-						<div class="statLabel">
-							{{ t('openconnector', 'Error Logs') }}
-						</div>
-						<div class="statValue error">
-							{{ statistics.errorCount || 0 }}
-						</div>
-					</div>
-					<div class="statItem">
-						<div class="statLabel">
-							{{ t('openconnector', 'Warning Logs') }}
-						</div>
-						<div class="statValue warning">
-							{{ statistics.warningCount || 0 }}
-						</div>
-					</div>
-					<div class="statItem">
-						<div class="statLabel">
-							{{ t('openconnector', 'Info Logs') }}
-						</div>
-						<div class="statValue success">
-							{{ statistics.infoCount || 0 }}
-						</div>
-					</div>
-				</div>
-
-				<div v-if="statisticsLoading" class="loading-small">
-					<NcLoadingIcon :size="24" />
-				</div>
-
-				<div v-if="statistics.levelDistribution" class="chart-container">
-					<h4 class="subTitle">
-						{{ t('openconnector', 'Level Distribution') }}
-					</h4>
-					<div class="level-chart">
-						<div v-for="(count, level) in statistics.levelDistribution"
-							:key="level"
-							class="level-bar"
-							:class="'level-' + level">
-							<div class="level-label">
-								{{ getLevelLabel(level) }}
-							</div>
-							<div class="level-progress">
-								<div class="level-fill" :style="{ width: getLevelPercentage(count) + '%' }" />
-							</div>
-							<div class="level-count">
-								{{ count }}
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+			<CnStatsPanel
+				class="logsStatsPanel"
+				:sections="statsSections"
+				:loading="statisticsLoading" />
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -188,13 +117,17 @@ import {
 	NcSelect,
 	NcTextField,
 	NcButton,
-	NcLoadingIcon,
 } from '@nextcloud/vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import DateRangeInput from '../../components/DateRangeInput.vue'
 import { translate as t } from '@nextcloud/l10n'
 import getValidISOstring from '@/services/getValidISOstring.js'
@@ -207,7 +140,7 @@ export default {
 		NcSelect,
 		NcTextField,
 		NcButton,
-		NcLoadingIcon,
+		CnStatsPanel,
 		FilterOutline,
 		ChartLine,
 		FilterOffOutline,
@@ -242,47 +175,89 @@ export default {
 		}
 	},
 	computed: {
-		/**
-		 * Get contract filter options
-		 * @return {Array} Array of contract options
-		 */
 		contractOptions() {
 			return contractStore.contractsList.map(contract => ({
 				id: contract.id,
 				label: contract.name || `Contract ${contract.id}`,
 			}))
 		},
-		/**
-		 * Get synchronization filter options
-		 * @return {Array} Array of synchronization options
-		 */
 		synchronizationOptions() {
 			return synchronizationStore.synchronizationList.map(sync => ({
 				id: sync.id,
 				label: sync.name || `Synchronization ${sync.id}`,
 			}))
 		},
-		/**
-		 * Check if any filters are active
-		 * @return {boolean} Whether any filters are active
-		 */
 		hasActiveFilters() {
 			return Object.values(this.filters).some(value => value !== null && value !== '')
 		},
+		statsSections() {
+			const sections = [
+				{
+					id: 'totals',
+					type: 'stats',
+					title: t('openconnector', 'Statistics'),
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openconnector', 'Total Logs'),
+							count: this.filteredCount,
+							countLabel: t('openconnector', 'logs'),
+							icon: TimelineQuestionOutline,
+							variant: 'primary',
+						},
+						{
+							title: t('openconnector', 'Error Logs'),
+							count: this.statistics.errorCount || 0,
+							countLabel: t('openconnector', 'logs'),
+							icon: CloseCircle,
+							variant: 'error',
+						},
+						{
+							title: t('openconnector', 'Warning Logs'),
+							count: this.statistics.warningCount || 0,
+							countLabel: t('openconnector', 'logs'),
+							icon: AlertCircle,
+							variant: 'warning',
+						},
+						{
+							title: t('openconnector', 'Info Logs'),
+							count: this.statistics.infoCount || 0,
+							countLabel: t('openconnector', 'logs'),
+							icon: InformationOutline,
+							variant: 'success',
+						},
+					],
+				},
+			]
+			const distribution = this.statistics.levelDistribution
+			if (distribution && Object.keys(distribution).length) {
+				sections.push({
+					id: 'levelDistribution',
+					type: 'progress',
+					title: t('openconnector', 'Level Distribution'),
+					showPercentage: true,
+					items: Object.entries(distribution).map(([level, count]) => ({
+						key: level,
+						label: this.getLevelLabel(level),
+						count,
+						variant: this.variantForLevel(level),
+					})),
+				})
+			}
+			return sections
+		},
 	},
 	async mounted() {
-		// Load initial statistics
 		await this.loadStatistics()
 
-		// Listen for events from main view
 		this.$root.$on('logs-selection-count', this.updateSelectionCount)
 		this.$root.$on('logs-filtered-count', this.updateFilteredCount)
-		// Initialize filters from URL
 		this.applyQueryParamsFromRoute()
 	},
 	beforeDestroy() {
-		this.$root.$off('logs-selection-count')
-		this.$root.$off('logs-filtered-count')
+		this.$root.$off('logs-selection-count', this.updateSelectionCount)
+		this.$root.$off('logs-filtered-count', this.updateFilteredCount)
 
 		if (this.debounceTimer) {
 			clearTimeout(this.debounceTimer)
@@ -290,10 +265,6 @@ export default {
 	},
 	methods: {
 		t,
-		/**
-		 * Load statistics data
-		 * @return {Promise<void>}
-		 */
 		async loadStatistics() {
 			this.statisticsLoading = true
 			try {
@@ -306,10 +277,6 @@ export default {
 				this.statisticsLoading = false
 			}
 		},
-		/**
-		 * Apply filters with debouncing for number inputs
-		 * @return {void}
-		 */
 		debouncedApplyFilters() {
 			if (this.debounceTimer) {
 				clearTimeout(this.debounceTimer)
@@ -318,12 +285,7 @@ export default {
 				this.applyFilters()
 			}, 500)
 		},
-		/**
-		 * Apply current filters
-		 * @return {void}
-		 */
 		applyFilters() {
-			// Clean up empty values
 			const cleanFilters = {}
 			Object.entries(this.filters).forEach(([key, value]) => {
 				if (value !== null && value !== '') {
@@ -331,14 +293,12 @@ export default {
 				}
 			})
 
-			// Emit filters to main view
 			this.$root.$emit('logs-filters-changed', cleanFilters)
-			// Write filters to URL
 			this.updateRouteQueryFromState()
 		},
 		buildQueryFromState() {
 			const q = {}
-			if (this.filters.level) q.level = this.filters.level
+			if (this.filters.level) q.level = this.filters.level.id || this.filters.level
 			if (this.filters.contract) q.contract = String(this.filters.contract.id || this.filters.contract)
 			if (this.filters.synchronization) q.synchronization = String(this.filters.synchronization.id || this.filters.synchronization)
 			if (this.filters.dateFrom) q.dateFrom = getValidISOstring(this.filters.dateFrom)
@@ -361,7 +321,7 @@ export default {
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/synchronizations/logs') return
 			const q = this.$route.query || {}
-			this.filters.level = q.level || null
+			this.filters.level = q.level ? this.levelOptions.find(opt => opt.id === q.level) || null : null
 			this.filters.contract = q.contract
 				? this.contractOptions.find(opt => String(opt.id) === String(q.contract)) || null
 				: null
@@ -373,10 +333,6 @@ export default {
 			this.filters.message = q.message || ''
 			this.applyFilters()
 		},
-		/**
-		 * Clear all filters
-		 * @return {void}
-		 */
 		clearFilters() {
 			this.filters = {
 				level: null,
@@ -388,72 +344,43 @@ export default {
 			}
 			this.applyFilters()
 		},
-		/**
-		 * Update selection count from main view
-		 * @param {number} count - Number of selected items
-		 * @return {void}
-		 */
 		updateSelectionCount(count) {
 			this.selectedCount = count
 		},
-		/**
-		 * Update filtered count from main view
-		 * @param {number} count - Number of filtered items
-		 * @return {void}
-		 */
 		updateFilteredCount(count) {
 			this.filteredCount = count
 		},
-		/**
-		 * Trigger bulk delete action
-		 * @return {void}
-		 */
 		bulkDelete() {
 			this.$root.$emit('logs-bulk-delete')
 		},
-		/**
-		 * Trigger export filtered action
-		 * @return {void}
-		 */
 		exportFiltered() {
 			this.$root.$emit('logs-export-filtered')
 		},
-		/**
-		 * Get level label for display
-		 * @param {string} level - Log level
-		 * @return {string} Level label
-		 */
 		getLevelLabel(level) {
 			const levelOption = this.levelOptions.find(option => option.id === level)
 			return levelOption ? levelOption.label : level
 		},
-		/**
-		 * Get percentage for level distribution
-		 * @param {number} count - Count for this level
-		 * @return {number} Percentage
-		 */
-		getLevelPercentage(count) {
-			const total = Object.values(this.statistics.levelDistribution || {}).reduce((sum, c) => sum + c, 0)
-			return total > 0 ? (count / total) * 100 : 0
+		variantForLevel(level) {
+			if (level === 'error') return 'error'
+			if (level === 'warning') return 'warning'
+			if (level === 'success' || level === 'info') return 'success'
+			return 'default'
 		},
 	},
 }
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection {
+.sidebarSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child {
+.sidebarSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3 {
+.sidebarSection__title {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -461,94 +388,32 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.subTitle {
-	margin: 0 16px 12px;
-	font-size: 1rem;
-	font-weight: 500;
-}
-
-.filterGroup {
+.sidebarSection__body {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 12px;
 	padding: 0 16px;
-	margin-bottom: 16px;
 }
 
-.filterGroup label {
+.sidebarSection__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.sidebarSection__fieldLabel {
 	font-size: 0.9em;
 	color: var(--color-text-maxcontrast);
-}
-
-.actionGroup {
-	padding: 12px;
-	margin-bottom: 12px;
-}
-
-.selection-info {
-	color: var(--color-text-maxcontrast);
-	padding: 0 16px 8px;
 	margin: 0;
 }
 
-/* Stats */
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin: 12px 16px 16px;
-	text-align: center;
+.logsStatsPanel :deep(.cn-kpi-grid),
+.logsStatsPanel :deep(.cn-stats-panel__list),
+.logsStatsPanel :deep(.cn-stats-panel__stack) {
+	padding: 0 16px;
 }
 
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
+:deep(.v-select) {
+	margin-bottom: 0;
 }
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
-}
-
-.statRow {
-	display: grid;
-	grid-template-columns: 1fr 1fr 1fr;
-	gap: 12px;
-	padding: 0 16px 8px;
-}
-
-.statItem {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 12px;
-	text-align: center;
-}
-
-.statValue {
-	font-weight: 600;
-	font-size: 1.1rem;
-}
-
-.statValue.error { color: var(--color-error); }
-.statValue.warning { color: var(--color-warning); }
-.statValue.success { color: var(--color-success); }
-
-/* Chart */
-.chart-container { margin: 12px 16px 16px; }
-.level-chart { display: flex; flex-direction: column; gap: 8px; }
-.level-bar { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
-.level-label { min-width: 60px; font-weight: 500; }
-.level-progress { flex: 1; height: 8px; background: var(--color-background-dark); border-radius: 4px; overflow: hidden; }
-.level-fill { height: 100%; transition: width 0.3s ease; }
-.level-bar.level-error .level-fill { background: var(--color-error); }
-.level-bar.level-warning .level-fill { background: var(--color-warning); }
-.level-bar.level-info .level-fill,
-.level-bar.level-success .level-fill { background: var(--color-success); }
-.level-bar.level-debug .level-fill { background: var(--color-background-dark); }
-.level-count { min-width: 30px; text-align: right; font-weight: 500; }
-
-/* Inputs spacing */
-:deep(.v-select) { margin-bottom: 8px; }
 </style>

@@ -10,40 +10,28 @@
 			:pagination="paginationData"
 			:loading="loading"
 			:refreshing="refreshing"
-			:inline-action-count="2"
+			:inline-action-count="1"
 			:view-mode="synchronizationStore.viewMode"
 			:selectable="true"
 			:selected-ids="selectedSynchronizations"
 			:show-edit-action="false"
 			:show-copy-action="false"
-			:show-delete-action="false"
-			:show-mass-import="false"
-			:show-mass-export="false"
 			:show-mass-copy="false"
-			:show-mass-delete="false"
 			show-view-toggle
 			:add-label="t('openconnector', 'Add synchronization')"
 			row-key="id"
 			:empty-text="emptyContentName"
 			name-field="name"
 			@add="onAdd"
+			@delete="onDelete"
+			@mass-delete="onMassDelete"
+			@mass-export="onMassExport"
+			@mass-import="onMassImport"
 			@refresh="onRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
 			@view-mode-change="synchronizationStore.setViewMode($event)"
 			@select="onSelect">
-			<!-- Action bar extras: Import button -->
-			<template #action-items>
-				<NcActionButton
-					close-after-click
-					@click="navigationStore.setModal('importFile')">
-					<template #icon>
-						<FileImportOutline :size="20" />
-					</template>
-					{{ t('openconnector', 'Import') }}
-				</NcActionButton>
-			</template>
-
 			<!-- Card view -->
 			<template #card="{ object: synchronization }">
 				<div class="card">
@@ -104,7 +92,7 @@
 								</template>
 								{{ t('openconnector', 'Export') }}
 							</NcActionButton>
-							<NcActionButton close-after-click @click="synchronizationStore.setSynchronizationItem(synchronization); navigationStore.setDialog('deleteSynchronization')">
+							<NcActionButton close-after-click @click="$refs.indexPage.openDeleteDialog(synchronization)">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
@@ -433,12 +421,28 @@
 				</NcActions>
 			</template>
 		</CnIndexPage>
+		<CnDeleteDialog
+			v-if="sourceConfigToDelete"
+			ref="deleteSourceConfigDialog"
+			:item="{ id: sourceConfigToDelete.key, name: sourceConfigToDelete.key }"
+			name-field="name"
+			:dialog-title="t('openconnector', 'Delete source config')"
+			@confirm="onConfirmDeleteSourceConfig"
+			@close="sourceConfigToDelete = null" />
+		<CnDeleteDialog
+			v-if="targetConfigToDelete"
+			ref="deleteTargetConfigDialog"
+			:item="{ id: targetConfigToDelete.key, name: targetConfigToDelete.key }"
+			name-field="name"
+			:dialog-title="t('openconnector', 'Delete target config')"
+			@confirm="onConfirmDeleteTargetConfig"
+			@close="targetConfigToDelete = null" />
 	</NcAppContent>
 </template>
 
 <script>
 import { NcAppContent, NcActions, NcActionButton, NcButton, NcDateTime } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnDeleteDialog } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
@@ -452,16 +456,17 @@ import DatabaseSettingsOutline from 'vue-material-design-icons/DatabaseSettingsO
 import CardBulletedSettingsOutline from 'vue-material-design-icons/CardBulletedSettingsOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FileExportOutline from 'vue-material-design-icons/FileExportOutline.vue'
-import FileImportOutline from 'vue-material-design-icons/FileImportOutline.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 
-import { synchronizationStore, navigationStore } from '../../store/store.js'
+import { Synchronization } from '../../entities/index.js'
+import { synchronizationStore, navigationStore, importExportStore } from '../../store/store.js'
 
 export default {
 	name: 'SynchronizationsIndex',
 	components: {
 		NcAppContent,
 		CnIndexPage,
+		CnDeleteDialog,
 		NcActions,
 		NcActionButton,
 		NcButton,
@@ -478,7 +483,6 @@ export default {
 		CardBulletedSettingsOutline,
 		FileDocumentOutline,
 		FileExportOutline,
-		FileImportOutline,
 		ArrowLeft,
 	},
 	data() {
@@ -494,6 +498,8 @@ export default {
 				limit: 20,
 			},
 			syncViewStates: {},
+			sourceConfigToDelete: null,
+			targetConfigToDelete: null,
 		}
 	},
 	computed: {
@@ -627,9 +633,7 @@ export default {
 			navigationStore.setModal('editSynchronizationSourceConfig')
 		},
 		deleteSourceConfig(synchronization, key) {
-			synchronizationStore.setSynchronizationItem(synchronization)
-			synchronizationStore.setSynchronizationSourceConfigKey(key)
-			navigationStore.setModal('deleteSynchronizationSourceConfig')
+			this.sourceConfigToDelete = { synchronization, key }
 		},
 		editTargetConfig(synchronization, key) {
 			synchronizationStore.setSynchronizationItem(synchronization)
@@ -637,9 +641,100 @@ export default {
 			navigationStore.setModal('editSynchronizationTargetConfig')
 		},
 		deleteTargetConfig(synchronization, key) {
-			synchronizationStore.setSynchronizationItem(synchronization)
-			synchronizationStore.setSynchronizationTargetConfigKey(key)
-			navigationStore.setModal('deleteSynchronizationTargetConfig')
+			this.targetConfigToDelete = { synchronization, key }
+		},
+		async onDelete(id) {
+			try {
+				await synchronizationStore.deleteSynchronization(id)
+				await synchronizationStore.refreshSynchronizationList()
+				this.$refs.indexPage.setSingleDeleteResult({ success: true })
+			} catch (e) {
+				this.$refs.indexPage.setSingleDeleteResult({
+					error: e.message || t('openconnector', 'An error occurred while deleting the synchronization'),
+				})
+			}
+		},
+		async onMassDelete(ids) {
+			const errors = []
+			for (const id of ids) {
+				try {
+					await synchronizationStore.deleteSynchronization(id)
+				} catch (e) {
+					errors.push(e.message || id)
+				}
+			}
+			await synchronizationStore.refreshSynchronizationList()
+			this.selectedSynchronizations = []
+			if (errors.length) {
+				this.$refs.indexPage.setMassDeleteResult({
+					error: t('openconnector', 'Failed to delete some synchronizations: {list}', { list: errors.join(', ') }),
+				})
+			} else {
+				this.$refs.indexPage.setMassDeleteResult({ success: true })
+			}
+		},
+		async onMassExport({ ids }) {
+			try {
+				for (const id of ids) {
+					await synchronizationStore.exportSynchronization(id)
+				}
+				this.$refs.indexPage.setExportResult({ success: true })
+			} catch (e) {
+				this.$refs.indexPage.setExportResult({
+					error: e.message || t('openconnector', 'Export failed'),
+				})
+			}
+		},
+		async onMassImport({ file }) {
+			try {
+				await importExportStore.importFile({ value: [file] }, () => {})
+				await synchronizationStore.refreshSynchronizationList()
+				this.$refs.indexPage.setImportResult({ success: true })
+			} catch (e) {
+				this.$refs.indexPage.setImportResult({
+					error: e?.response?.data?.error || e.message || t('openconnector', 'Import failed'),
+				})
+			}
+		},
+		async onConfirmDeleteSourceConfig() {
+			const { synchronization, key } = this.sourceConfigToDelete
+			try {
+				const cloneSource = synchronization.cloneRaw ? synchronization.cloneRaw() : { ...synchronization }
+				const sourceConfigClone = { ...(cloneSource.sourceConfig || {}) }
+				delete sourceConfigClone[key]
+				const updated = new Synchronization({ ...cloneSource, sourceConfig: sourceConfigClone })
+				const { response } = await synchronizationStore.saveSynchronization(updated)
+				if (!response.ok) {
+					throw new Error(t('openconnector', 'Failed to delete source config'))
+				}
+				await synchronizationStore.refreshSynchronizationList()
+				this.$refs.deleteSourceConfigDialog.setResult({ success: true })
+				setTimeout(() => { this.sourceConfigToDelete = null }, 2000)
+			} catch (e) {
+				this.$refs.deleteSourceConfigDialog.setResult({
+					error: e.message || t('openconnector', 'Failed to delete source config'),
+				})
+			}
+		},
+		async onConfirmDeleteTargetConfig() {
+			const { synchronization, key } = this.targetConfigToDelete
+			try {
+				const cloneSource = synchronization.cloneRaw ? synchronization.cloneRaw() : { ...synchronization }
+				const targetConfigClone = { ...(cloneSource.targetConfig || {}) }
+				delete targetConfigClone[key]
+				const updated = new Synchronization({ ...cloneSource, targetConfig: targetConfigClone })
+				const { response } = await synchronizationStore.saveSynchronization(updated)
+				if (!response.ok) {
+					throw new Error(t('openconnector', 'Failed to delete target config'))
+				}
+				await synchronizationStore.refreshSynchronizationList()
+				this.$refs.deleteTargetConfigDialog.setResult({ success: true })
+				setTimeout(() => { this.targetConfigToDelete = null }, 2000)
+			} catch (e) {
+				this.$refs.deleteTargetConfigDialog.setResult({
+					error: e.message || t('openconnector', 'Failed to delete target config'),
+				})
+			}
 		},
 	},
 }

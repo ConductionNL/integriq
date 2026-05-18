@@ -1007,17 +1007,17 @@ export default {
 
 /* Source Section Styling */
 .source-section .section-header {
-	background-color: rgba(var(--color-primary-rgb), 0.1);
+	background-color: var(--color-info);
 }
 
 /* General Section Styling */
 .general-section .section-header {
-	background-color: rgba(var(--color-warning-rgb), 0.1);
+	background-color: var(--color-warning);
 }
 
 /* Target Section Styling */
 .target-section .section-header {
-	background-color: rgba(var(--color-success-rgb), 0.1);
+	background-color: var(--color-success);
 }
 
 /* Data Flow Visualization */
@@ -1025,7 +1025,7 @@ export default {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	margin: 10px 0;
+	margin-bottom: 10px;
 	padding: 15px;
 	background-color: var(--color-background-soft);
 	border-radius: 6px;

@@ -1049,7 +1049,6 @@
   background-color: var(--color-main-background);
   display: flex;
   flex-direction: column;
-  margin-bottom: 15px;
 }
 
 .center-card .section-header {
