@@ -6,22 +6,18 @@ OpenConnector is an open-source data-synchronization app for the Nextcloud works
 
 ## Docs
 
-- [Tutorials](https://openconnector.conduction.nl/tutorials): step-by-step walkthroughs.
-- [Features](https://openconnector.conduction.nl/Features): what the app does, organised by capability.
-- [Use cases](https://openconnector.conduction.nl/UseCases): real customer scenarios.
-- [Integrations](https://openconnector.conduction.nl/Integrations): which external systems the app talks to.
-- [Technical](https://openconnector.conduction.nl/Technical): architecture, data model, security posture.
-- [User guide](https://openconnector.conduction.nl/user-guide): end-user documentation.
-- [API](https://openconnector.conduction.nl/api): OpenAPI reference.
+- [Documentation](https://openconnector.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
+- [API reference](https://openconnector.conduction.nl/api): OpenAPI documentation.
 
 ## Optional
 
-- [Install](https://openconnector.conduction.nl/installation): install from the Nextcloud app store.
-- [Source](https://github.com/ConductionNL/OpenConnector): repository and issue tracker.
+- [Install](https://www.conduction.nl/install): self-host on your Nextcloud instance.
+- [Source code](https://github.com/ConductionNL/openconnector): repository and issue tracker.
 - [App page](https://www.conduction.nl/apps/openconnector): product positioning on conduction.nl.
 
 ## Contact
 
 - Email: info@conduction.nl
-- GitHub: https://github.com/ConductionNL/OpenConnector
+- Web: https://www.conduction.nl
+- GitHub: https://github.com/ConductionNL
 - Conduction B.V. · KvK 76741850 · Lauriergracht 14h, Amsterdam, Netherlands
