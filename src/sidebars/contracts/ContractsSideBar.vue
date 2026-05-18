@@ -1,5 +1,5 @@
 <script setup>
-import { synchronizationStore, navigationStore } from '../../store/store.js'
+import { contractStore, synchronizationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -16,11 +16,11 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 				<FilterOutline :size="20" />
 			</template>
 
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Contracts') }}</h3>
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Synchronization') }}</label>
+			<div class="sidebarSection">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Filter Contracts') }}
+				</h3>
+				<div class="sidebarSection__body">
 					<NcSelect
 						v-model="filters.synchronization"
 						:options="synchronizationOptions"
@@ -28,10 +28,6 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						:input-label="t('openconnector', 'Synchronization')"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Sync Status') }}</label>
 					<NcSelect
 						v-model="filters.syncStatus"
 						:options="syncStatusOptions"
@@ -39,46 +35,30 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						:input-label="t('openconnector', 'Sync Status')"
 						:clearable="true"
 						@input="applyFilters" />
-				</div>
-
-				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Last Synced') }}</label>
-					<DateRangeInput
-						:start="filters.dateFrom"
-						:end="filters.dateTo"
-						:max-start="new Date()"
-						@update:start="(v) => { filters.dateFrom = v }"
-						@update:end="(v) => { filters.dateTo = v }"
-						@change="applyFilters" />
-				</div>
-			</div>
-
-			<div class="actionGroup">
-				<NcButton v-if="hasActiveFilters" @click="clearFilters">
-					{{ t('openconnector', 'Clear Filters') }}
-				</NcButton>
-			</div>
-
-			<!-- Bulk Actions Section -->
-			<div v-if="selectedCount > 0" class="filterSection">
-				<h3>{{ t('openconnector', 'Bulk Actions') }}</h3>
-				<p class="selection-info">
-					{{ t('openconnector', '{count} contracts selected', { count: selectedCount }) }}
-				</p>
-				<div class="filterGroup">
-					<NcButton type="error" @click="bulkDelete">
+					<div class="sidebarSection__field">
+						<span class="sidebarSection__fieldLabel">{{ t('openconnector', 'Last Synced') }}</span>
+						<DateRangeInput
+							:start="filters.dateFrom"
+							:end="filters.dateTo"
+							:max-start="new Date()"
+							@update:start="(v) => { filters.dateFrom = v }"
+							@update:end="(v) => { filters.dateTo = v }"
+							@change="applyFilters" />
+					</div>
+					<NcButton v-if="hasActiveFilters" @click="clearFilters">
 						<template #icon>
-							<Delete :size="20" />
+							<FilterOffOutline :size="20" />
 						</template>
-						{{ t('openconnector', 'Delete Selected') }}
+						{{ t('openconnector', 'Clear Filters') }}
 					</NcButton>
 				</div>
 			</div>
 
-			<!-- Export Section -->
-			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Export') }}</h3>
-				<div class="filterGroup">
+			<div class="sidebarSection">
+				<h3 class="sidebarSection__title">
+					{{ t('openconnector', 'Export') }}
+				</h3>
+				<div class="sidebarSection__body">
 					<NcButton @click="exportFiltered">
 						<template #icon>
 							<Download :size="20" />
@@ -93,18 +73,10 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 			<template #icon>
 				<ChartLine :size="20" />
 			</template>
-
-			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Contracts Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ filteredCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openconnector', 'Total Contracts') }}
-					</div>
-				</div>
-			</div>
+			<CnStatsPanel
+				class="contractsStatsPanel"
+				:sections="statsSections"
+				:loading="statisticsLoading" />
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -116,10 +88,15 @@ import {
 	NcSelect,
 	NcButton,
 } from '@nextcloud/vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
+import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
 import DateRangeInput from '../../components/DateRangeInput.vue'
 import { translate as t } from '@nextcloud/l10n'
 import getValidISOstring from '@/services/getValidISOstring.js'
@@ -131,10 +108,11 @@ export default {
 		NcAppSidebarTab,
 		NcSelect,
 		NcButton,
+		CnStatsPanel,
 		FilterOutline,
 		ChartLine,
+		FilterOffOutline,
 		Download,
-		Delete,
 		DateRangeInput,
 	},
 	data() {
@@ -146,69 +124,99 @@ export default {
 				dateFrom: null,
 				dateTo: null,
 			},
-			selectedCount: 0,
-			filteredCount: 0,
 			statistics: {},
 			statisticsLoading: false,
-			debounceTimer: null,
 		}
 	},
 	computed: {
 		syncStatusOptions() {
 			return [
-				{ id: 'synced', label: this.t('openconnector', 'Synced') },
-				{ id: 'stale', label: this.t('openconnector', 'Stale') },
-				{ id: 'unsynced', label: this.t('openconnector', 'Unsynced') },
+				{ id: 'synced', label: t('openconnector', 'Synced') },
+				{ id: 'stale', label: t('openconnector', 'Stale') },
+				{ id: 'unsynced', label: t('openconnector', 'Unsynced') },
+				{ id: 'error', label: t('openconnector', 'Error') },
 			]
 		},
-		/**
-		 * Get synchronization filter options
-		 * @return {Array} Array of synchronization options
-		 */
 		synchronizationOptions() {
 			return synchronizationStore.synchronizationList.map(sync => ({
 				id: sync.id,
 				label: sync.name || `Synchronization ${sync.id}`,
 			}))
 		},
-		/**
-		 * Check if any filters are active
-		 * @return {boolean} Whether any filters are active
-		 */
 		hasActiveFilters() {
 			return Object.values(this.filters).some(value => value !== null && value !== '')
 		},
+		statsSections() {
+			const stats = this.statistics || {}
+			const toCount = (value) => Number(value) || 0
+			const sections = [
+				{
+					id: 'totals',
+					type: 'stats',
+					title: t('openconnector', 'Statistics'),
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openconnector', 'Total Contracts'),
+							count: toCount(stats.total),
+							countLabel: t('openconnector', 'contracts'),
+							icon: FileDocumentOutline,
+							variant: 'primary',
+						},
+						{
+							title: t('openconnector', 'Synced'),
+							count: toCount(stats.synced),
+							countLabel: t('openconnector', 'contracts'),
+							icon: CheckCircle,
+							variant: 'success',
+						},
+						{
+							title: t('openconnector', 'Stale'),
+							count: toCount(stats.stale),
+							countLabel: t('openconnector', 'contracts'),
+							icon: AlertCircle,
+							variant: 'warning',
+						},
+						{
+							title: t('openconnector', 'Errors'),
+							count: toCount(stats.error),
+							countLabel: t('openconnector', 'contracts'),
+							icon: CloseCircle,
+							variant: 'error',
+						},
+					],
+				},
+			]
+			const distribution = stats.syncStatusDistribution
+			if (distribution && Object.keys(distribution).length) {
+				sections.push({
+					id: 'syncStatusDistribution',
+					type: 'progress',
+					title: t('openconnector', 'Sync Status Distribution'),
+					showPercentage: true,
+					items: Object.entries(distribution).map(([status, count]) => ({
+						key: status,
+						label: this.getSyncStatusLabel(status),
+						count,
+						variant: this.variantForSyncStatus(status),
+					})),
+				})
+			}
+			return sections
+		},
 	},
 	async mounted() {
-		// Load initial statistics
 		await this.loadStatistics()
-
-		// Listen for events from main view
-		this.$root.$on('contracts-selection-count', this.updateSelectionCount)
-		this.$root.$on('contracts-filtered-count', this.updateFilteredCount)
-		// Initialize SPOT from URL
 		this.applyQueryParamsFromRoute()
-	},
-	beforeDestroy() {
-		this.$root.$off('contracts-selection-count')
-		this.$root.$off('contracts-filtered-count')
-
-		if (this.debounceTimer) {
-			clearTimeout(this.debounceTimer)
-		}
 	},
 	methods: {
 		t,
-		/**
-		 * Load statistics data
-		 * @return {Promise<void>}
-		 */
 		async loadStatistics() {
 			this.statisticsLoading = true
 			try {
-				// For contracts, we only need basic count statistics
-				// The filteredCount will be updated from the main view
-				this.statistics = {}
+				await contractStore.fetchStatistics()
+				this.statistics = contractStore.contractsStatistics
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 				this.statistics = {}
@@ -216,24 +224,7 @@ export default {
 				this.statisticsLoading = false
 			}
 		},
-		/**
-		 * Apply filters with debouncing for number inputs
-		 * @return {void}
-		 */
-		debouncedApplyFilters() {
-			if (this.debounceTimer) {
-				clearTimeout(this.debounceTimer)
-			}
-			this.debounceTimer = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
-		/**
-		 * Apply current filters
-		 * @return {void}
-		 */
 		applyFilters() {
-			// Clean up empty values
 			const cleanFilters = {}
 			Object.entries(this.filters).forEach(([key, value]) => {
 				if (value !== null && value !== '') {
@@ -241,9 +232,7 @@ export default {
 				}
 			})
 
-			// Emit filters to main view
 			this.$root.$emit('contracts-filters-changed', cleanFilters)
-			// Write URL (SPOT)
 			this.updateRouteQueryFromState()
 		},
 		buildQueryFromState() {
@@ -279,10 +268,6 @@ export default {
 			this.filters.dateTo = q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
 			this.applyFilters()
 		},
-		/**
-		 * Clear all filters
-		 * @return {void}
-		 */
 		clearFilters() {
 			this.filters = {
 				synchronization: null,
@@ -292,54 +277,34 @@ export default {
 			}
 			this.applyFilters()
 		},
-		/**
-		 * Update selection count from main view
-		 * @param {number} count - Number of selected items
-		 * @return {void}
-		 */
-		updateSelectionCount(count) {
-			this.selectedCount = count
-		},
-		/**
-		 * Update filtered count from main view
-		 * @param {number} count - Number of filtered items
-		 * @return {void}
-		 */
-		updateFilteredCount(count) {
-			this.filteredCount = count
-		},
-		/**
-		 * Trigger bulk delete action
-		 * @return {void}
-		 */
-		bulkDelete() {
-			this.$root.$emit('contracts-bulk-delete')
-		},
-		/**
-		 * Trigger export filtered action
-		 * @return {void}
-		 */
 		exportFiltered() {
 			this.$root.$emit('contracts-export-filtered')
+		},
+		getSyncStatusLabel(status) {
+			const opt = this.syncStatusOptions.find(o => o.id === status)
+			return opt ? opt.label : status
+		},
+		variantForSyncStatus(status) {
+			if (status === 'synced') return 'success'
+			if (status === 'stale') return 'warning'
+			if (status === 'error') return 'error'
+			return 'default'
 		},
 	},
 }
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection {
+.sidebarSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child {
+.sidebarSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3 {
+.sidebarSection__title {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -347,32 +312,32 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
+.sidebarSection__body {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 12px;
 	padding: 0 16px;
-	margin-bottom: 16px;
 }
 
-.filterGroup label {
+.sidebarSection__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.sidebarSection__fieldLabel {
 	font-size: 0.9em;
 	color: var(--color-text-maxcontrast);
-}
-
-.actionGroup {
-	padding: 12px;
-	margin-bottom: 12px;
-}
-
-.selection-info {
-	color: var(--color-text-maxcontrast);
-	padding: 0 16px 8px;
 	margin: 0;
 }
 
-/* Add some spacing between select inputs */
+.contractsStatsPanel :deep(.cn-kpi-grid),
+.contractsStatsPanel :deep(.cn-stats-panel__list),
+.contractsStatsPanel :deep(.cn-stats-panel__stack) {
+	padding: 0 16px;
+}
+
 :deep(.v-select) {
-	margin-bottom: 8px;
+	margin-bottom: 0;
 }
 </style>

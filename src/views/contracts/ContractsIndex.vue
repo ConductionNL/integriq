@@ -5,207 +5,123 @@ import { contractStore, synchronizationStore } from '../../store/store.js'
 
 <template>
 	<NcAppContent>
-		<div class="viewContainer">
-			<!-- Header -->
-			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					{{ t('openconnector', 'Synchronization Contracts') }}
-				</h1>
-				<p>{{ t('openconnector', 'Manage and monitor synchronization contracts') }}</p>
-			</div>
+		<CnIndexPage
+			ref="indexPage"
+			:title="t('openconnector', 'Synchronization Contracts')"
+			:description="t('openconnector', 'Manage and monitor synchronization contracts')"
+			:show-title="true"
+			:objects="filteredItems"
+			:columns="tableColumns"
+			:pagination="paginationData"
+			:loading="contractStore.contractsLoading"
+			:refreshing="refreshing"
+			:inline-action-count="2"
+			view-mode="table"
+			:show-view-toggle="false"
+			:show-add="false"
+			:selectable="true"
+			:selected-ids="selectedItems"
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
+			:show-mass-import="false"
+			:show-mass-export="false"
+			:show-mass-copy="false"
+			:show-mass-delete="true"
+			:name-formatter="getContractName"
+			row-key="id"
+			:empty-text="emptyContentName"
+			:row-class="getSyncStatusClass"
+			@refresh="onRefresh"
+			@page-changed="onPageChanged"
+			@page-size-changed="onPageSizeChanged"
+			@select="onSelect"
+			@mass-delete="onMassDelete">
+			<!-- Action bar extras: Export -->
+			<template #action-items>
+				<NcActionButton
+					close-after-click
+					@click="exportFiltered">
+					<template #icon>
+						<FileExportOutline :size="20" />
+					</template>
+					{{ t('openconnector', 'Export') }}
+				</NcActionButton>
+			</template>
 
-			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openconnector', 'Showing {showing} of {total} contracts', { showing: paginatedItems.length, total: filteredItems.length }) }}
-					</span>
-					<span v-if="hasActiveFilters" class="viewIndicator">
-						({{ t('openconnector', 'Filtered') }})
-					</span>
-					<span v-if="selectedItems.length > 0" class="viewIndicator">
-						({{ t('openconnector', '{count} selected', { count: selectedItems.length }) }})
+			<!-- Contract column -->
+			<template #column-contract="{ row }">
+				<div class="contractInfo">
+					<span class="contractName">{{ getContractName(row) }}</span>
+					<span v-if="row.uuid" class="contractUuid" :title="row.uuid">
+						{{ row.uuid }}
 					</span>
 				</div>
-				<div class="viewActions">
-					<NcActions
-						:force-name="true"
-						:inline="selectedItems.length > 0 ? 3 : 2"
-						menu-name="Actions">
-						<NcActionButton
-							v-if="selectedItems.length > 0"
-							type="error"
-							close-after-click
-							@click="bulkDelete">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							{{ t('openconnector', 'Delete ({count})', { count: selectedItems.length }) }}
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="exportFiltered">
-							<template #icon>
-								<FileExportOutline :size="20" />
-							</template>
-							{{ t('openconnector', 'Export') }}
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="refreshItems">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openconnector', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+			</template>
 
-			<!-- Loading State -->
-			<div v-if="contractStore.contractsLoading" class="viewLoading">
-				<NcLoadingIcon :size="64" />
-				<p>{{ t('openconnector', 'Loading contracts...') }}</p>
-			</div>
+			<!-- Synchronization column -->
+			<template #column-synchronization="{ row }">
+				<span class="synchronizationName">{{ getSynchronizationName(row.synchronizationId) }}</span>
+			</template>
 
-			<!-- Empty State -->
-			<NcEmptyContent v-else-if="!filteredItems.length"
-				:name="emptyContentName"
-				:description="emptyContentDescription">
-				<template #icon>
-					<FileDocumentOutline :size="64" />
-				</template>
-			</NcEmptyContent>
+			<!-- Sync status column -->
+			<template #column-syncStatus="{ row }">
+				<CnStatusBadge
+					:label="getSyncStatusLabel(row.getSyncStatus())"
+					:color-map="syncStatusColorMap">
+					<template #icon>
+						<CheckCircle v-if="row.getSyncStatus() === 'synced'" :size="14" />
+						<AlertCircle v-else-if="row.getSyncStatus() === 'stale'" :size="14" />
+						<CloseCircle v-else-if="row.getSyncStatus() === 'error'" :size="14" />
+						<InformationOutline v-else :size="14" />
+					</template>
+				</CnStatusBadge>
+			</template>
 
-			<!-- Contracts Table -->
-			<div v-else class="viewTableContainer">
-				<table class="viewTable contractsTable">
-					<thead>
-						<tr>
-							<th class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="allSelected"
-									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
-							</th>
-							<th class="contractColumn">
-								{{ t('openconnector', 'Contract') }}
-							</th>
-							<th class="synchronizationColumn">
-								{{ t('openconnector', 'Synchronization') }}
-							</th>
-							<th class="statusColumn">
-								{{ t('openconnector', 'Sync Status') }}
-							</th>
-							<th class="timestampColumn">
-								{{ t('openconnector', 'Last Synced') }}
-							</th>
-							<th class="actionColumn">
-								{{ t('openconnector', 'Last Action') }}
-							</th>
-							<th class="tableColumnActions">
-								{{ t('openconnector', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="item in paginatedItems"
-							:key="item.id"
-							class="viewTableRow contractRow"
-							:class="getSyncStatusClass(item)">
-							<td class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="selectedItems.includes(item.id)"
-									@update:checked="(checked) => toggleItemSelection(item.id, checked)" />
-							</td>
-							<td class="contractColumn">
-								<div class="contractInfo">
-									<span class="contractName">{{ getContractName(item) }}</span>
-									<span v-if="item.uuid" class="contractUuid" :title="item.uuid">
-										{{ item.uuid }}
-									</span>
-								</div>
-							</td>
-							<td class="synchronizationColumn">
-								<span class="synchronizationName">{{ getSynchronizationName(item.synchronizationId) }}</span>
-							</td>
-							<td class="statusColumn">
-								<span class="statusBadge" :class="getSyncStatusClass(item)">
-									<CheckCircle v-if="item.getSyncStatus() === 'synced'" :size="16" />
-									<AlertCircle v-else-if="item.getSyncStatus() === 'stale'" :size="16" />
-									<CloseCircle v-else-if="item.getSyncStatus() === 'error'" :size="16" />
-									<InformationOutline v-else :size="16" />
-									{{ getSyncStatusLabel(item.getSyncStatus()) }}
-								</span>
-							</td>
-							<td class="timestampColumn">
-								<div class="timestampInfo">
-									<span v-if="item.getLastSyncDate()" class="lastSyncTime">
-										{{ new Date(item.getLastSyncDate()).toLocaleString() }}
-									</span>
-									<span v-else class="neverSynced">
-										{{ t('openconnector', 'Never') }}
-									</span>
-								</div>
-							</td>
-							<td class="actionColumn">
-								<span class="actionBadge" :class="getActionClass(item.getLastAction())">
-									{{ getLastActionLabel(item.getLastAction()) }}
-								</span>
-							</td>
-							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton close-after-click @click="enforceContract(item)">
-										<template #icon>
-											<PlayCircle :size="20" />
-										</template>
-										{{ t('openconnector', 'Enforce Contract') }}
-									</NcActionButton>
-									<NcActionButton close-after-click @click="viewLogs(item)">
-										<template #icon>
-											<TextBoxOutline :size="20" />
-										</template>
-										{{ t('openconnector', 'View Logs') }}
-									</NcActionButton>
-									<NcActionButton close-after-click class="deleteAction" @click="deleteContract(item)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openconnector', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<!-- Last synced column -->
+			<template #column-lastSynced="{ row }">
+				<NcDateTime v-if="row.getLastSyncDate()" :timestamp="new Date(row.getLastSyncDate())" />
+				<span v-else>{{ t('openconnector', 'Never') }}</span>
+			</template>
 
-			<!-- Pagination -->
-			<PaginationComponent
-				v-if="filteredItems.length > 0"
-				:current-page="currentPage"
-				:total-pages="totalPages"
-				:total-items="filteredItems.length"
-				:current-page-size="pagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="changePage"
-				@page-size-changed="onPageSizeChanged" />
-		</div>
+			<!-- Last action column -->
+			<template #column-lastAction="{ row }">
+				<CnStatusBadge
+					:label="getLastActionLabel(row.getLastAction())"
+					:color-map="lastActionColorMap" />
+			</template>
+
+			<!-- Row actions -->
+			<template #row-actions="{ row }">
+				<NcActions>
+					<NcActionButton close-after-click @click="enforceContract(row)">
+						<template #icon>
+							<PlayCircle :size="20" />
+						</template>
+						{{ t('openconnector', 'Enforce Contract') }}
+					</NcActionButton>
+					<NcActionButton close-after-click @click="viewLogs(row)">
+						<template #icon>
+							<TextBoxOutline :size="20" />
+						</template>
+						{{ t('openconnector', 'View Logs') }}
+					</NcActionButton>
+					<NcActionButton close-after-click class="deleteAction" @click="deleteContract(row)">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						{{ t('openconnector', 'Delete') }}
+					</NcActionButton>
+				</NcActions>
+			</template>
+		</CnIndexPage>
 	</NcAppContent>
 </template>
 
 <script>
-import {
-	NcAppContent,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcActions,
-	NcActionButton,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import { NcAppContent, NcActions, NcActionButton, NcDateTime } from '@nextcloud/vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import FileExportOutline from 'vue-material-design-icons/FileExportOutline.vue'
@@ -213,20 +129,17 @@ import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CloseCircle from 'vue-material-design-icons/CloseCircle.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import PaginationComponent from '../../components/PaginationComponent.vue'
 
 export default {
 	name: 'ContractsIndex',
 	components: {
 		NcAppContent,
-		NcEmptyContent,
-		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
-		NcCheckboxRadioSwitch,
-		FileDocumentOutline,
+		NcDateTime,
+		CnIndexPage,
+		CnStatusBadge,
 		Delete,
-		Refresh,
 		PlayCircle,
 		TextBoxOutline,
 		FileExportOutline,
@@ -234,78 +147,61 @@ export default {
 		AlertCircle,
 		CloseCircle,
 		InformationOutline,
-		PaginationComponent,
 	},
 	data() {
 		return {
 			selectedItems: [],
-			pagination: {
-				page: 1,
-				limit: 20,
+			refreshing: false,
+			syncStatusColorMap: {
+				synced: 'success',
+				stale: 'warning',
+				error: 'error',
+				unsynced: 'default',
+			},
+			lastActionColorMap: {
+				created: 'success',
+				updated: 'primary',
+				deleted: 'error',
+				inserted: 'info',
+				none: 'default',
 			},
 		}
 	},
 	computed: {
-		hasActiveFilters() {
-			return Object.keys(contractStore.contractsFilters || {}).some(key =>
-				contractStore.contractsFilters[key] !== null
-				&& contractStore.contractsFilters[key] !== undefined
-				&& contractStore.contractsFilters[key] !== '',
-			)
-		},
 		filteredItems() {
 			return contractStore.contractsList || []
 		},
-		paginatedItems() {
-			return this.filteredItems
+		tableColumns() {
+			return [
+				{ key: 'contract', label: t('openconnector', 'Contract') },
+				{ key: 'synchronization', label: t('openconnector', 'Synchronization') },
+				{ key: 'syncStatus', label: t('openconnector', 'Sync Status') },
+				{ key: 'lastSynced', label: t('openconnector', 'Last Synced') },
+				{ key: 'lastAction', label: t('openconnector', 'Last Action') },
+			]
 		},
-		allSelected() {
-			return this.paginatedItems.length > 0 && this.paginatedItems.every(item => this.selectedItems.includes(item.id))
-		},
-		someSelected() {
-			return this.selectedItems.length > 0 && !this.allSelected
-		},
-		totalPages() {
-			return contractStore.contractsPagination.pages || 1
-		},
-		currentPage() {
-			return contractStore.contractsPagination.page || 1
+		paginationData() {
+			const p = contractStore.contractsPagination || {}
+			const page = p.page || 1
+			const limit = p.limit || 20
+			const total = p.total ?? this.filteredItems.length
+			const pages = Math.max(1, p.pages || Math.ceil(total / limit))
+			return { page, pages, total, limit }
 		},
 		emptyContentName() {
-			if (contractStore.contractsLoading) {
-				return t('openconnector', 'Loading contracts...')
-			} else if (contractStore.contractsError) {
-				return contractStore.contractsError
-			} else if (!contractStore.contractsList?.length) {
-				return t('openconnector', 'No contracts found')
-			} else if (!this.filteredItems.length) {
-				return t('openconnector', 'No contracts match your filters')
-			}
-			return ''
-		},
-		emptyContentDescription() {
-			if (contractStore.contractsLoading) {
-				return t('openconnector', 'Please wait while we fetch your contracts.')
-			} else if (contractStore.contractsError) {
-				return t('openconnector', 'Please try again later.')
-			} else if (!contractStore.contractsList?.length) {
-				return t('openconnector', 'No synchronization contracts are available.')
-			} else if (!this.filteredItems.length) {
-				return t('openconnector', 'Try adjusting your filter settings in the sidebar.')
-			}
+			if (contractStore.contractsError) return contractStore.contractsError
+			if (!contractStore.contractsList?.length) return t('openconnector', 'No contracts found')
 			return ''
 		},
 	},
 	mounted() {
 		this.loadItems()
 		this.$root.$on('contracts-filters-changed', this.handleFiltersChanged)
-		this.$root.$on('contracts-bulk-delete', this.bulkDelete)
 		this.$root.$on('contracts-export-filtered', this.exportFiltered)
 	},
 	beforeDestroy() {
-		this.$root.$off('contracts-filters-changed')
-		this.$root.$off('contracts-bulk-delete')
-		this.$root.$off('contracts-export-filtered')
+		this.$root.$off('contracts-filters-changed', this.handleFiltersChanged)
+		this.$root.$off('contracts-export-filtered', this.exportFiltered)
 	},
 	methods: {
 		async loadItems() {
@@ -369,23 +265,6 @@ export default {
 				return t('openconnector', 'Unknown')
 			}
 		},
-		getActionClass(action) {
-			switch (action) {
-			case 'create':
-			case 'created':
-				return 'createAction'
-			case 'update':
-			case 'updated':
-				return 'updateAction'
-			case 'delete':
-			case 'deleted':
-				return 'deleteAction'
-			case 'insert':
-				return 'insertAction'
-			default:
-				return 'noneAction'
-			}
-		},
 		getLastActionLabel(action) {
 			switch (action) {
 			case 'create':
@@ -403,38 +282,19 @@ export default {
 				return t('openconnector', 'None')
 			}
 		},
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.selectedItems = this.paginatedItems.map(item => item.id)
-			} else {
-				this.selectedItems = []
-			}
+		onSelect(ids) {
+			this.selectedItems = ids
 		},
-		toggleItemSelection(itemId, checked) {
-			if (checked) {
-				if (!this.selectedItems.includes(itemId)) {
-					this.selectedItems.push(itemId)
-				}
-			} else {
-				const index = this.selectedItems.indexOf(itemId)
-				if (index > -1) {
-					this.selectedItems.splice(index, 1)
-				}
-			}
-		},
-		async bulkDelete() {
-			if (this.selectedItems.length === 0) return
-
-			if (!confirm(this.t('openconnector', 'Are you sure you want to delete the selected contracts? This action cannot be undone.'))) {
-				return
-			}
-
+		async onMassDelete(ids) {
+			if (!ids?.length) return
 			try {
-				await contractStore.deleteMultiple(this.selectedItems)
+				await contractStore.deleteMultiple(ids)
+				this.$refs.indexPage?.setMassDeleteResult({ success: true, count: ids.length })
 				this.selectedItems = []
 				await this.loadItems()
 			} catch (error) {
 				console.error('Error deleting contracts:', error)
+				this.$refs.indexPage?.setMassDeleteResult({ success: false, error: error.message })
 			}
 		},
 		async enforceContract(contract) {
@@ -457,7 +317,7 @@ export default {
 			this.$router.push('/synchronizations/logs?contract=' + contract.id)
 			this.$root.$emit('logs-filter-by-contract', contract.id)
 		},
-		async changePage(page) {
+		async onPageChanged(page) {
 			try {
 				await contractStore.fetchContracts({ page })
 				this.selectedItems = []
@@ -466,8 +326,6 @@ export default {
 			}
 		},
 		async onPageSizeChanged(pageSize) {
-			this.pagination.page = 1
-			this.pagination.limit = pageSize
 			try {
 				await contractStore.fetchContracts({ page: 1, limit: pageSize })
 				this.selectedItems = []
@@ -475,9 +333,14 @@ export default {
 				console.error('Error changing page size:', error)
 			}
 		},
-		async refreshItems() {
-			await this.loadItems()
-			this.selectedItems = []
+		async onRefresh() {
+			this.refreshing = true
+			try {
+				await this.loadItems()
+				this.selectedItems = []
+			} finally {
+				this.refreshing = false
+			}
 		},
 		async exportFiltered() {
 			try {
@@ -491,5 +354,24 @@ export default {
 </script>
 
 <style scoped>
-/* All CSS is provided by main.css */
+.contractInfo {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.contractUuid {
+	font-size: 0.8em;
+	color: var(--color-text-maxcontrast);
+	font-family: var(--font-face-monospace, monospace);
+}
+
+:deep(.deleteAction) {
+	color: var(--color-error) !important;
+}
+
+:deep(.deleteAction:hover) {
+	background-color: var(--color-error) !important;
+	color: var(--color-main-background) !important;
+}
 </style>
