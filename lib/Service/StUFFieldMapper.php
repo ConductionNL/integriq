@@ -170,6 +170,8 @@ class StUFFieldMapper
      * @param string $isoDate The ISO 8601 date string (e.g., "1990-05-15").
      *
      * @return string The StUF date string (e.g., "19900515").
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function isoDateToStUF(string $isoDate): string
     {
@@ -189,6 +191,8 @@ class StUFFieldMapper
      * @param string $stufDate The StUF date string (e.g., "19900515").
      *
      * @return string The ISO 8601 date string (e.g., "1990-05-15").
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function stufDateToISO(string $stufDate): string
     {

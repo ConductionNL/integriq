@@ -212,12 +212,12 @@ npm run build      # Production build
 
 ```bash
 # PHP
-composer phpcs          # Check coding standards
+composer phpcs          # Check coding standards (no exclude-patterns in lib/)
 composer cs:fix         # Auto-fix PHPCS issues
-composer phpmd          # Mess detection
+composer phpmd          # Mess detection (0 violations; baseline-free)
 composer phpmetrics     # HTML metrics report
 composer psalm          # Static analysis
-composer phpstan        # PHPStan analysis
+composer phpstan        # PHPStan analysis (baseline in phpstan-baseline.neon)
 composer check:strict   # Run all checks (lint, phpcs, phpmd, psalm, phpstan, tests)
 
 # Frontend
@@ -225,6 +225,14 @@ npm run lint            # ESLint
 npm run stylelint       # CSS/SCSS linting
 npm run test            # Jest unit tests
 ```
+
+> **Quality gate status (as of 2026-05-18):**
+> - PHPCS: no `<exclude-pattern>` entries for lib/ — all files clean.
+> - PHPMD: 0 violations; no baseline required.
+> - PHPStan: `phpstan-baseline.neon` captures 1472 pre-existing errors (mostly missing
+>   OCA/OCP stubs for the Nextcloud framework). New code must not add new errors.
+>   Run `composer phpstan` before every PR. Once OR stubs are available the baseline
+>   can be deleted.
 
 ## Tech Stack
 

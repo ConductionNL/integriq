@@ -141,15 +141,5 @@
         <type>error</type>
     </rule>
 
-    <!-- The testing bootstrap file uses string concats to stop IDEs seeing the class aliases -->
-    <rule ref="Generic.Strings.UnnecessaryStringConcat">
-        <exclude-pattern>tests/bootstrap\.php</exclude-pattern>
-    </rule>
-
-    <!-- This test file specifically *needs* Windows line endings for testing purposes. -->
-    <rule ref="Generic.Files.LineEndings.InvalidEOLChar">
-        <exclude-pattern>tests/Core/Tokenizer/StableCommentWhitespaceWinTest\.php</exclude-pattern>
-    </rule>
-
     <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php"/>
 </ruleset>

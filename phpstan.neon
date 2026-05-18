@@ -1,0 +1,13 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    paths:
+        - lib
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    level: 5
+    excludePaths:
+        - vendor
+        - vendor-bin
+        - lib/Service/ExportService.php

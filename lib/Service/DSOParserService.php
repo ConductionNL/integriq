@@ -82,9 +82,28 @@ class DSOParserService
      */
     public function validatePayload(array $payload): array
     {
+        $errors = $this->validateRequiredFields($payload);
+        $errors = array_merge($errors, $this->validateTypeField($payload));
+        $errors = array_merge($errors, $this->validateActiviteiten($payload));
+        $errors = array_merge($errors, $this->validateAanvragerBsn($payload));
+        $errors = array_merge($errors, $this->validateIndieningsdatum($payload));
+
+        return $errors;
+
+    }//end validatePayload()
+
+
+    /**
+     * Validate required fields are present and non-empty.
+     *
+     * @param array $payload The verzoek payload data.
+     *
+     * @return array Validation errors for missing required fields.
+     */
+    private function validateRequiredFields(array $payload): array
+    {
         $errors = [];
 
-        // Check required fields.
         foreach (self::REQUIRED_FIELDS as $field) {
             if (isset($payload[$field]) === false || $payload[$field] === '' || $payload[$field] === null) {
                 $errors[] = [
@@ -95,54 +114,105 @@ class DSOParserService
             }
         }
 
-        // Validate type enum.
+        return $errors;
+
+    }//end validateRequiredFields()
+
+
+    /**
+     * Validate the type field against allowed enum values.
+     *
+     * @param array $payload The verzoek payload data.
+     *
+     * @return array Validation errors for invalid type values.
+     */
+    private function validateTypeField(array $payload): array
+    {
         if (isset($payload['type']) === true
             && in_array($payload['type'], self::VALID_TYPES, true) === false
         ) {
-            $errors[] = [
+            return [[
                 'field'   => 'type',
                 'error'   => 'invalid_enum_value',
                 'message' => 'Type must be one of: '.implode(', ', self::VALID_TYPES),
-            ];
+            ]];
         }
 
-        // Validate activiteiten is an array.
+        return [];
+
+    }//end validateTypeField()
+
+
+    /**
+     * Validate that activiteiten is an array when present.
+     *
+     * @param array $payload The verzoek payload data.
+     *
+     * @return array Validation errors for invalid activiteiten type.
+     */
+    private function validateActiviteiten(array $payload): array
+    {
         if (isset($payload['activiteiten']) === true
             && is_array($payload['activiteiten']) === false
         ) {
-            $errors[] = [
+            return [[
                 'field'   => 'activiteiten',
                 'error'   => 'invalid_type',
                 'message' => 'Activiteiten must be an array',
-            ];
+            ]];
         }
 
-        // Validate BSN if aanvrager contains one.
-        if (isset($payload['aanvrager']['bsn']) === true) {
-            $bsnValid = $this->validateBSN($payload['aanvrager']['bsn']);
-            if ($bsnValid === false) {
-                $errors[] = [
-                    'field'   => 'aanvrager.bsn',
-                    'error'   => 'invalid_bsn',
-                    'message' => 'BSN does not pass the 11-proef validation',
-                ];
-            }
+        return [];
+
+    }//end validateActiviteiten()
+
+
+    /**
+     * Validate the BSN in the aanvrager block when present.
+     *
+     * @param array $payload The verzoek payload data.
+     *
+     * @return array Validation errors for invalid BSN values.
+     */
+    private function validateAanvragerBsn(array $payload): array
+    {
+        if (isset($payload['aanvrager']['bsn']) === true
+            && $this->validateBSN($payload['aanvrager']['bsn']) === false
+        ) {
+            return [[
+                'field'   => 'aanvrager.bsn',
+                'error'   => 'invalid_bsn',
+                'message' => 'BSN does not pass the 11-proef validation',
+            ]];
         }
 
-        // Validate indieningsdatum format (ISO 8601).
+        return [];
+
+    }//end validateAanvragerBsn()
+
+
+    /**
+     * Validate the indieningsdatum field format when present.
+     *
+     * @param array $payload The verzoek payload data.
+     *
+     * @return array Validation errors for invalid date format.
+     */
+    private function validateIndieningsdatum(array $payload): array
+    {
         if (isset($payload['indieningsdatum']) === true
             && $this->validateISODate($payload['indieningsdatum']) === false
         ) {
-            $errors[] = [
+            return [[
                 'field'   => 'indieningsdatum',
                 'error'   => 'invalid_date_format',
                 'message' => 'Indieningsdatum must be in ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)',
-            ];
+            ]];
         }
 
-        return $errors;
+        return [];
 
-    }//end validatePayload()
+    }//end validateIndieningsdatum()
 
 
     /**
@@ -227,6 +297,8 @@ class DSOParserService
      * @param string $date The date string to validate.
      *
      * @return bool True if the date is valid ISO 8601.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function validateISODate(string $date): bool
     {

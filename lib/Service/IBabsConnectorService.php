@@ -125,8 +125,6 @@ class IBabsConnectorService
             $config = json_decode($config, true);
         }
 
-        $organisatieId = $config['organisatieId'] ?? null;
-
         $metadata = [
             'onderwerp'          => $voorstel['onderwerp'] ?? '',
             'portefeuillehouder' => $voorstel['portefeuillehouder'] ?? '',
@@ -155,6 +153,8 @@ class IBabsConnectorService
      * @param Source $source The iBabs source configuration.
      *
      * @return array Array of besluit records with zaak references and status.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function pollBesluiten(Source $source): array
     {

@@ -12,9 +12,9 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
+ * @link https://conduction.nl
  *
- * @link https://www.OpenConnector.nl
+ * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -36,12 +36,12 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
-class DSOController extends Controller
+class DsoController extends Controller
 {
 
 
     /**
-     * DSOController constructor.
+     * DsoController constructor.
      *
      * @param string           $appName The name of the app
      * @param IRequest         $request Request object
@@ -128,9 +128,11 @@ class DSOController extends Controller
      * the configured DSO-LV public certificate.
      *
      * @param string|null $signature The signature header value.
-     * @param mixed       $body      The request body.
+     * @param mixed       $body      The request body (reserved for PKIoverheid certificate chain validation).
      *
      * @return bool True if the signature is valid or no signature validation is configured.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function validateSignature(?string $signature, mixed $body): bool
     {

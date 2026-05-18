@@ -1,5 +1,24 @@
 <?php
 
+/**
+ * OpenConnector Mapping Twig Runtime
+ *
+ * Provides Twig runtime functions for executing data mappings inside templates.
+ *
+ * @category Twig
+ * @package  OCA\OpenConnector\Twig
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-3
+ */
+
+declare(strict_types=1);
+
 namespace OCA\OpenConnector\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
@@ -116,6 +135,8 @@ class MappingRuntime implements RuntimeExtensionInterface
 	 * @param bool $list Whether the mapping runs on multiple instances of the object.
 	 *
 	 * @return array
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list = false): array
 	{

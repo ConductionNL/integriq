@@ -1,5 +1,25 @@
 <?php
 
+/**
+ * OpenConnector Mapping Service
+ *
+ * Executes data mappings via Twig templates, delegating to OpenRegister's
+ * MappingService when available.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-3
+ */
+
+declare(strict_types=1);
+
 namespace OCA\OpenConnector\Service;
 
 use OCA\OpenConnector\Db\Mapping;
@@ -9,6 +29,7 @@ use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenConnector\Twig\MappingExtension;
 use OCA\OpenConnector\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Service\FileService;
 use Adbar\Dot;
 use Twig\Environment;
@@ -47,7 +68,7 @@ class MappingService
      *
      * @var \OCA\OpenRegister\Service\MappingService|null
      */
-    private $openRegisterMappingService = null;
+    private $orMappingService = null;
 
 	/**
 	 * Setting up the base class with required services.
@@ -74,12 +95,12 @@ class MappingService
         // Try to load OpenRegister's MappingService for delegation.
         try {
             $container = \OC::$server;
-            $this->openRegisterMappingService = $container->get(
+            $this->orMappingService = $container->get(
                 \OCA\OpenRegister\Service\MappingService::class
             );
         } catch (\Throwable $e) {
             // OpenRegister not available, falling back to local implementation.
-            $this->openRegisterMappingService = null;
+            $this->orMappingService = null;
             \OC::$server->getLogger()->info(
                 'OpenConnector MappingService: OpenRegister not available, using local implementation',
                 ['app' => 'openconnector']
@@ -131,8 +152,8 @@ class MappingService
     public function executeMapping(Mapping $mapping, array $input, bool $list = false): array
     {
         // Delegate to OpenRegister's MappingService if available.
-        if ($this->openRegisterMappingService !== null) {
-            $orMapping = new \OCA\OpenRegister\Db\Mapping();
+        if ($this->orMappingService !== null) {
+            $orMapping = new OrMapping();
             $orMapping->hydrate([
                 'name'        => $mapping->getName(),
                 'mapping'     => $mapping->getMapping(),
@@ -141,7 +162,7 @@ class MappingService
                 'passThrough' => $mapping->getPassThrough(),
             ]);
 
-            return $this->openRegisterMappingService->executeMapping(
+            return $this->orMappingService->executeMapping(
                 mapping: $orMapping,
                 input: $input,
                 list: $list

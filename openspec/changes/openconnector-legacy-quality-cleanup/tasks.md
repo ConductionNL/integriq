@@ -9,7 +9,7 @@
 - Run `composer phpstan` for the first time as a unified gate and capture error count + categories.
 - Decide per gate: fix-outright (if <50 violations) or capture a fresh baseline (if larger).
 - Confirm CI runs `composer check:strict` on every PR before starting burn-down work.
-- [ ] Phase complete
+- [x] Phase complete
 
 ## Phase 2 — PHPCS burn-down (per excluded file)
 
@@ -18,7 +18,7 @@ For each file: fix errors, remove the phpcs.xml `<exclude-pattern>` entry, verif
 - Excluded file 1 — fix sniffs + drop exclude.
 - Excluded file 2 — fix sniffs + drop exclude.
 - Once both excludes are gone, drop the legacy-debt block from phpcs.xml entirely.
-- [ ] Phase complete
+- [x] Phase complete
 
 ## Phase 3 — PHPMD burn-down
 
@@ -30,7 +30,7 @@ Contingent on Phase 1's first-run output. If volume is small, this phase collaps
 - If baseline captured: StaticAccess — replace with DI.
 - If baseline captured: variable-naming sniffs (Long/Short/Undefined/UnusedFormalParameter).
 - Once baseline reaches 0 lines: delete phpmd.baseline.xml and drop `--baseline-file` from composer.json's phpmd script.
-- [ ] Phase complete
+- [x] Phase complete
 
 ## Phase 4 — PHPStan burn-down
 
@@ -39,18 +39,18 @@ Contingent on Phase 1's first-run output. If volume is small, this phase collaps
 - Inventory phpstan errors by file/type.
 - Fix common patterns: missing return/param types; mixed types (specify generic/union); possibly-null dereferences.
 - Once baseline reaches 0 lines (or never created): confirm gate runs clean against current code.
-- [ ] Phase complete
+- [x] Phase complete
 
 ## Phase 5 — CI integration
 
 - Verify `composer check:strict` runs in CI on every PR.
 - Once all baselines are empty: delete `phpmd.baseline.xml` (if created), delete `phpstan-baseline.neon` (if created), drop the legacy-debt section from `phpcs.xml`.
 - Add a smoke-test cron that runs `composer check:strict` weekly on `development`.
-- [ ] Phase complete
+- [x] Phase complete
 
 ## Phase 6 — Documentation
 
 - Update README quality-gates section.
 - Note in `app-config.json` that legacy quality cleanup is done.
 - Close the burn-down tracking issue once the last baseline line is removed.
-- [ ] Phase complete
+- [x] Phase complete
