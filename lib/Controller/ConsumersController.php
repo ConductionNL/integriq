@@ -2,7 +2,7 @@
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Db\Consumer;
 use OCA\OpenConnector\Db\ConsumerMapper;
@@ -70,7 +70,7 @@ class ConsumersController extends Controller
      *
      * @return JSONResponse A JSON response containing the list of consumers
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(SourceMappingService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['name', 'description'];

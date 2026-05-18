@@ -5,7 +5,7 @@ namespace OCA\OpenConnector\Controller;
 use Exception;
 use OCA\OpenConnector\Http\XMLResponse;
 use OCA\OpenConnector\Service\AuthorizationService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\EndpointService;
 use OCA\OpenConnector\Service\EndpointCacheService;
@@ -71,7 +71,7 @@ class EndpointsController extends Controller
 	 * @param EndpointMapper $endpointMapper The endpoint mapper object
 	 * @param EndpointService $endpointService Service for handling endpoint operations
 	 * @param AuthorizationService $authorizationService Service for handling authorization
-	 * @param ObjectService $objectService Service for direct ObjectService operations
+	 * @param SourceMappingService $objectService Service for direct ObjectService operations
 	 * @param EndpointCacheService $endpointCacheService Service for cached endpoint lookups
 	 * @param LoggerInterface $logger Service for logging
 	 * @param IL10N $l The localization service
@@ -83,7 +83,7 @@ class EndpointsController extends Controller
 		private EndpointMapper $endpointMapper,
 		private EndpointService $endpointService,
 		private AuthorizationService $authorizationService,
-		private ObjectService $objectService,
+		private SourceMappingService $objectService,
 		private EndpointCacheService $endpointCacheService,
 		private LoggerInterface $logger,
 		private IL10N $l,

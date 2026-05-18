@@ -4,7 +4,7 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Db\Mapping;
@@ -44,7 +44,7 @@ class MappingsController extends Controller
         private readonly IAppConfig $config,
         private readonly MappingMapper $mappingMapper,
         private readonly MappingService $mappingService,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly IL10N $l
     )
     {
@@ -80,7 +80,7 @@ class MappingsController extends Controller
      *
      * @return JSONResponse A JSON response containing the list of mappings
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(SourceMappingService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['name', 'description'];
@@ -225,7 +225,7 @@ class MappingsController extends Controller
 	 *     "validationErrors": []
 	 * }
 	 */
-    public function test(ObjectService $objectService, IURLGenerator $urlGenerator): JSONResponse
+    public function test(SourceMappingService $objectService, IURLGenerator $urlGenerator): JSONResponse
     {
 		$openRegisters = $objectService->getOpenRegisters();
 

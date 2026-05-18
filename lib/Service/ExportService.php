@@ -34,7 +34,7 @@ class ExportService
 {
 	public function __construct(
 		private readonly IURLGenerator $urlGenerator,
-		private readonly ObjectService $objectService
+		private readonly SourceMappingService $objectService
 	) {}
 
 	/**

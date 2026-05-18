@@ -80,9 +80,6 @@ class SynchronizationService
     const DEFAULT_MAX_PAGES                     = 50; // Safety limit to prevent infinite page requesting loop
 
 
-    private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-    private const DEFAULT_ERROR_LOG_RETENTION = 259200000;
-
 	public function __construct(
 		private readonly CallService                      $callService,
 		private readonly MappingService                   $mappingService,
@@ -93,7 +90,7 @@ class SynchronizationService
 		private readonly SynchronizationLogMapper         $synchronizationLogMapper,
 		private readonly SynchronizationContractMapper    $synchronizationContractMapper,
 		private readonly SynchronizationContractLogMapper $synchronizationContractLogMapper,
-		private readonly ObjectService                    $objectService,
+		private readonly SourceMappingService                    $objectService,
         private readonly StorageService                   $storageService,
         private readonly RuleMapper                       $ruleMapper,
         private readonly LoggerInterface                  $logger,
@@ -101,13 +98,14 @@ class SynchronizationService
 	)
 	{
         if($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
-            $this->errorRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;;
+            $retentionConfig = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true);
+            $this->errorRetention = $retentionConfig['syncLogRetention'] ?? 259200000;
+            $this->errorContractRetention = $retentionConfig['syncContractLogRetention'] ?? 259200000;
+            $this->successRetention = $retentionConfig['successLogRetention'] ?? 3600000;
         } else {
-            $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
+            $this->errorRetention = 259200000;
+            $this->errorContractRetention = 259200000;
+            $this->successRetention = 3600000;
         }
 	}
 

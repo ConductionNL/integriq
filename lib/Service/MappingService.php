@@ -57,7 +57,7 @@ class MappingService
 	 * @param CallService   $callService   The call service.
 	 * @param SourceMapper  $sourceMapper  The source mapper.
 	 * @param FileService   $fileService   The file service.
-	 * @param ObjectService $objectService The object service.
+	 * @param SourceMappingService $objectService The object service.
 	 */
     public function __construct(
 		ArrayLoader $loader,
@@ -65,7 +65,7 @@ class MappingService
         CallService $callService,
         SourceMapper $sourceMapper,
         FileService $fileService,
-        ObjectService $objectService,
+        SourceMappingService $objectService,
     ) {
         $this->twig = new Environment($loader);
 		$this->twig->addExtension(new MappingExtension());

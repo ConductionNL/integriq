@@ -2,9 +2,10 @@
 
 namespace OCA\OpenConnector\Service;
 
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
@@ -49,20 +50,42 @@ class SoftwareCatalogueService
 
     private array $existingViews = [];
 
-    public const SUFFIX = '-sc';
+    /**
+     * Software-catalogue slug suffix, read from admin-config (default: -sc).
+     *
+     * @var string
+     */
+    private string $suffix;
 
     /**
      * Constructor for SoftwareCatalogueService
      *
-     * @param LoggerInterface $logger The logger instance
-     * @param ObjectService $objectService The object service for accessing OpenRegister
-     * @param SchemaMapper $schemaMapper The schema mapper for accessing OpenRegister
+     * @param LoggerInterface      $logger        The logger instance
+     * @param SourceMappingService $objectService The object service for accessing OpenRegister
+     * @param SchemaMapper         $schemaMapper  The schema mapper for accessing OpenRegister
+     * @param IAppConfig           $appConfig     App configuration for reading suffix setting
      */
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly SchemaMapper $schemaMapper,
+        IAppConfig $appConfig,
     ) {
+        $this->suffix = $appConfig->getValueString(
+            app: 'openconnector',
+            key: 'software_catalogue.suffix',
+            default: '-sc'
+        );
+    }
+
+    /**
+     * Returns the software-catalogue slug suffix (admin-configurable).
+     *
+     * @return string
+     */
+    public function getSuffix(): string
+    {
+        return $this->suffix;
     }
 
     /**
@@ -220,8 +243,8 @@ class SoftwareCatalogueService
     {
         return new Promise(function ($resolve, $reject) use ($node) {
             try {
-                if (str_ends_with($node['identifier'], self::SUFFIX) === false) {
-                    $node['identifier'] = $node['identifier'].self::SUFFIX;
+                if (str_ends_with($node['identifier'], $this->suffix) === false) {
+                    $node['identifier'] = $node['identifier'].$this->suffix;
                 }
                 // Find matching element for this node.
                 $element = $this->findElementForNode($node);
@@ -274,8 +297,8 @@ class SoftwareCatalogueService
     {
         return new Promise(function ($resolve, $reject) use ($connection) {
             try {
-                if (str_ends_with($connection['identifier'], self::SUFFIX) === false) {
-                    $connection['identifier'] = $connection['identifier'].self::SUFFIX;
+                if (str_ends_with($connection['identifier'], $this->suffix) === false) {
+                    $connection['identifier'] = $connection['identifier'].$this->suffix;
                 }
                 // Find matching element for this node.
                 $relationship = $this->findRelationForConnection($connection);
@@ -290,11 +313,11 @@ class SoftwareCatalogueService
                 // Extend the node with element properties.
                 $connection['relationship'] = $relationship;
 
-                if(str_ends_with(haystack: $connection['source'], needle: self::SUFFIX) === false) {
-                    $connection['source'] = $connection['source'].self::SUFFIX;
+                if(str_ends_with(haystack: $connection['source'], needle: $this->suffix) === false) {
+                    $connection['source'] = $connection['source'].$this->suffix;
                 }
-                if(str_ends_with(haystack: $connection['target'], needle: self::SUFFIX) === false) {
-                    $connection['target'] = $connection['target'].self::SUFFIX;
+                if(str_ends_with(haystack: $connection['target'], needle: $this->suffix) === false) {
+                    $connection['target'] = $connection['target'].$this->suffix;
                 }
 
 

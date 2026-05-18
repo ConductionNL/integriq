@@ -139,7 +139,7 @@ class RuleService
 
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly SoftwareCatalogueService $catalogueService,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -236,8 +236,8 @@ class RuleService
         $addedViews = array_map(function(ObjectEntity $view): array {
             $view = $view->jsonSerialize();
 
-            if(str_ends_with($view['identifier'], SoftwareCatalogueService::SUFFIX) === false) {
-                $view['identifier'] = $view['identifier'].SoftwareCatalogueService::SUFFIX;
+            if(str_ends_with($view['identifier'], $this->catalogueService->getSuffix()) === false) {
+                $view['identifier'] = $view['identifier'].$this->catalogueService->getSuffix();
             }
             return $view;
         }, $addedViews);

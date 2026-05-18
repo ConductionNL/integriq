@@ -3,7 +3,7 @@
 namespace OCA\OpenConnector\Controller;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Db\SynchronizationMapper;
@@ -86,7 +86,7 @@ class SynchronizationsController extends Controller
      *
      * @return JSONResponse A JSON response containing the list of synchronizations
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(SourceMappingService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['name', 'description'];

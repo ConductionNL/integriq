@@ -3,7 +3,7 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Db\EventMapper;
 use OCA\OpenConnector\Db\EventMessageMapper;
@@ -79,7 +79,7 @@ class EventsController extends Controller
      *
      * @return JSONResponse A JSON response containing the list of events
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(SourceMappingService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['name', 'description'];

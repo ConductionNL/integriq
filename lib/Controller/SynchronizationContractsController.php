@@ -20,7 +20,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenConnector\Db\SynchronizationContract;
 use OCA\OpenConnector\Db\SynchronizationContractMapper;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
@@ -56,9 +56,9 @@ class SynchronizationContractsController extends Controller
     /**
      * The object service
      *
-     * @var ObjectService
+     * @var SourceMappingService
      */
-    private ObjectService $objectService;
+    private SourceMappingService $objectService;
 
     /**
      * The localization service
@@ -73,14 +73,14 @@ class SynchronizationContractsController extends Controller
      * @param string                         $appName                        The application name
      * @param IRequest                       $request                        The request interface
      * @param SynchronizationContractMapper  $synchronizationContractMapper  The synchronization contract mapper
-     * @param ObjectService                  $objectService                  The object service
+     * @param SourceMappingService           $objectService                  The object service
      * @param IL10N                          $l                              The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         SynchronizationContractMapper $synchronizationContractMapper,
-        ObjectService $objectService,
+        SourceMappingService $objectService,
         IL10N $l
     ) {
         parent::__construct($appName, $request);

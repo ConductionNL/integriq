@@ -37,7 +37,7 @@ class ImportService
 	public function __construct(
 		private Client $client,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly ObjectService $objectService
+		private readonly SourceMappingService $objectService
 	) {
 		$this->client = new Client([]);
 	}

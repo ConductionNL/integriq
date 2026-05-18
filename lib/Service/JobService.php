@@ -57,8 +57,6 @@ class JobService
 
     private int $errorRetention;
     private int $successRetention;
-    private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-    private const DEFAULT_ERROR_LOG_RETENTION = 2592000000;
 
     /**
      * JobService constructor
@@ -92,11 +90,12 @@ class JobService
         private readonly IUserManager $userManager,
         IAppConfig $appConfig,
     ) {
-        $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-        $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
+        $this->errorRetention = 2592000000;
+        $this->successRetention = 3600000;
         if($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
-            $this->errorRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['jobLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
+            $retentionConfig = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true);
+            $this->errorRetention = $retentionConfig['jobLogRetention'] ?? 2592000000;
+            $this->successRetention = $retentionConfig['successLogRetention'] ?? 3600000;
         }
 
     }

@@ -141,3 +141,17 @@ metrics contract.
 - Retention discriminator on the log schema: does the schema have a `level` field, or do
   success and error logs live in different schemas? Audit didn't drill that deep; apply
   phase confirms before declaring `x-openregister-archival`.
+- `SynchronizationService::DEFAULT_ERROR_LOG_RETENTION` is `259200000` (3 days), not
+  `2592000000` (30 days) as in `JobService`/`CallService`. Preserved as-is per Decision 6
+  (magic-number defaults preserve current behavior). DPO confirmation pending.
+
+## See Also
+
+- `openspec/specs/openconnector-or-adoption/spec.md` — capability spec for this change
+  (added Requirements for all migrated and kept-app-local behaviours).
+- `openspec/specs/prometheus-metrics/spec.md` — current; not rewritten by this change
+  (audit stream 2 found it CURRENT).
+- `openspec/changes/ibabs-notubiz-connector/` — protocol-specific integration; stays
+  app-local via pluggable-integration-registry.
+- `openspec/changes/dso-omgevingsloket/` — protocol-specific integration; stays app-local.
+- `openspec/changes/stuf-adapter/` — protocol-specific integration; stays app-local.

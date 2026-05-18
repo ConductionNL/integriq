@@ -1,0 +1,122 @@
+{
+  "@self": {
+    "register": "openconnector",
+    "schema": "register",
+    "slug": "openconnector"
+  },
+  "title": "OpenConnector",
+  "description": "Configuration register for the OpenConnector integration fabric",
+  "schemas": {
+    "synchronization-log": {
+      "title": "Synchronization Log",
+      "description": "Log entries for synchronization runs",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["success", "warning", "info", "debug", "error"],
+          "description": "Log level — success/warning/info/debug are filter values; error is a lifecycle state"
+        }
+      },
+      "x-openregister-archival": {
+        "retention": [
+          {
+            "filter": {"level": ["success", "info", "debug", "warning"]},
+            "duration": "PT1H"
+          },
+          {
+            "filter": {"level": "error"},
+            "duration": "P30D"
+          }
+        ]
+      }
+    },
+    "call-log": {
+      "title": "Call Log",
+      "description": "Log entries for HTTP call operations",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["success", "warning", "info", "debug", "error"]
+        }
+      },
+      "x-openregister-archival": {
+        "retention": [
+          {
+            "filter": {"level": ["success", "info", "debug", "warning"]},
+            "duration": "PT1H"
+          },
+          {
+            "filter": {"level": "error"},
+            "duration": "P30D"
+          }
+        ]
+      }
+    },
+    "job-log": {
+      "title": "Job Log",
+      "description": "Log entries for background job execution",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["success", "warning", "info", "debug", "error"]
+        }
+      },
+      "x-openregister-archival": {
+        "retention": [
+          {
+            "filter": {"level": ["success", "info", "debug", "warning"]},
+            "duration": "PT1H"
+          },
+          {
+            "filter": {"level": "error"},
+            "duration": "P30D"
+          }
+        ]
+      }
+    },
+    "synchronization-contract": {
+      "title": "Synchronization Contract",
+      "description": "Contracts tracking which source objects are synchronized to which targets",
+      "x-openregister-lifecycle": {
+        "property": "status",
+        "initialState": "active",
+        "states": ["active", "inactive", "error"],
+        "transitions": [
+          {"from": "active", "to": "inactive"},
+          {"from": "inactive", "to": "active"},
+          {"from": "active", "to": "error"},
+          {"from": "error", "to": "active"},
+          {"from": "inactive", "to": "error"}
+        ]
+      }
+    },
+    "dso-message": {
+      "title": "DSO Message",
+      "description": "Inbound vergunningaanvragen / meldingen from DSO-LV STAM koppelvlak",
+      "x-openregister-lifecycle": {
+        "property": "status",
+        "initialState": "ontvangen",
+        "states": ["ontvangen", "verwerkt", "gefaald", "geretourneerd"],
+        "transitions": [
+          {"from": "ontvangen", "to": "verwerkt"},
+          {"from": "ontvangen", "to": "gefaald"},
+          {"from": "verwerkt", "to": "geretourneerd"}
+        ]
+      }
+    },
+    "event": {
+      "title": "Event",
+      "description": "CloudEvents dispatched by OpenConnector",
+      "x-openregister-lifecycle": {
+        "property": "status",
+        "initialState": "pending",
+        "states": ["pending", "delivered", "failed"],
+        "transitions": [
+          {"from": "pending", "to": "delivered"},
+          {"from": "pending", "to": "failed"},
+          {"from": "failed", "to": "pending"}
+        ]
+      }
+    }
+  }
+}

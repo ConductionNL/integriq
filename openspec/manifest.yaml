@@ -1,0 +1,40 @@
+# OpenConnector app manifest — fleet-wide adoption record (ADR-024)
+# See openspec/changes/openconnector-adopt-or-abstractions/design.md for context.
+
+app: openconnector
+tier: 2
+description: >
+  Integration / synchronization fabric for the Conduction stack.
+  Tier 2: domain-specific app with intentional store proliferation and a
+  custom mapping/rule engine, plus consumed OpenRegister abstractions.
+
+dependencies:
+  - openregister
+
+min_or_version: "1.0.0"
+
+consumes:
+  - register-resolver-service
+  - pluggable-integration-registry
+  - i18n-source-of-truth
+  - i18n-api-language-negotiation
+  - multi-tenancy-context
+
+keeps_app_local:
+  - name: pinia-stores
+    reason: >
+      20+ domain-specific Pinia store modules (source, mapping, endpoint,
+      contract, webhooks, rule, etc.) are intentionally not migrated to
+      createObjectStore. See openconnector-or-adoption capability spec,
+      Requirement: Domain-specific Pinia stores stay app-local.
+  - name: mapping-rule-engine
+    reason: >
+      Schema-to-schema transform engine (MappingService, RuleService) is
+      by-design app-local. Not a candidate for migration to OR.
+      See openconnector-or-adoption capability spec,
+      Requirement: Mapping/rule engine stays app-local.
+  - name: protocol-adapters
+    reason: >
+      DSO/Omgevingsloket, StUF, and iBabs-Notubiz adapters are
+      protocol-specific integrations registered via pluggable-integration-registry.
+      See openspec/changes/dso-omgevingsloket/, stuf-adapter/, ibabs-notubiz-connector/.

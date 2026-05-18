@@ -3,7 +3,7 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Db\Rule;
 use OCA\OpenConnector\Db\RuleMapper;
@@ -76,7 +76,7 @@ class RulesController extends Controller
      *
      * @return JSONResponse A JSON response containing the list of rules
      */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
+    public function index(SourceMappingService $objectService, SearchService $searchService): JSONResponse
     {
         $filters = $this->request->getParams();
         $fieldsToSearch = ['name', 'description'];

@@ -4,6 +4,7 @@ namespace OCA\OpenConnector\Service;
 
 use OCA\OpenConnector\Db\Endpoint;
 use OCA\OpenConnector\Db\EndpointMapper;
+use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -36,11 +37,6 @@ class EndpointCacheService
     private const CACHE_KEY = 'openconnector_endpoints_cache';
 
     /**
-     * Cache TTL in seconds (1 hour)
-     */
-    private const CACHE_TTL = 3600;
-
-    /**
      * In-memory cache for request lifetime
      *
      * @var array|null
@@ -48,17 +44,31 @@ class EndpointCacheService
     private ?array $memoryCache = null;
 
     /**
+     * Cache TTL in seconds, read from admin-config (default: 3600).
+     *
+     * @var int
+     */
+    private int $cacheTtl;
+
+    /**
      * Constructor for EndpointCacheService
      *
-     * @param ICacheFactory $cacheFactory Factory for creating cache instances
+     * @param ICacheFactory  $cacheFactory   Factory for creating cache instances
      * @param EndpointMapper $endpointMapper Mapper for endpoint database operations
-     * @param LoggerInterface $logger Logger for error handling
+     * @param LoggerInterface $logger        Logger for error handling
+     * @param IAppConfig     $appConfig      App configuration for reading TTL setting
      */
     public function __construct(
         private readonly ICacheFactory $cacheFactory,
         private readonly EndpointMapper $endpointMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        IAppConfig $appConfig,
     ) {
+        $this->cacheTtl = (int) $appConfig->getValueString(
+            app: 'openconnector',
+            key: 'endpoint_cache.ttl_seconds',
+            default: '3600'
+        );
     }
 
     /**
@@ -182,7 +192,7 @@ class EndpointCacheService
             
             // Store arrays in persistent cache - lighter and faster than objects
             $cache = $this->cacheFactory->createDistributed('openconnector');
-            $cache->set(self::CACHE_KEY, $endpointArrays, self::CACHE_TTL);
+            $cache->set(self::CACHE_KEY, $endpointArrays, $this->cacheTtl);
             
             // Mark cache as clean since we just loaded fresh data
             $this->endpointMapper->setCacheClean();
@@ -372,7 +382,7 @@ class EndpointCacheService
                 'memory_cached' => $this->memoryCache !== null,
                 'endpoint_count' => $cachedData && is_array($cachedData) ? count($cachedData) : 0,
                 'cache_key' => self::CACHE_KEY,
-                'cache_ttl' => self::CACHE_TTL,
+                'cache_ttl' => $this->cacheTtl,
                 'cache_dirty' => $this->endpointMapper->isCacheDirty()
             ];
             

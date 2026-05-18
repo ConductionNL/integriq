@@ -20,7 +20,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenConnector\Db\SynchronizationLog;
 use OCA\OpenConnector\Db\SynchronizationLogMapper;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
@@ -52,9 +52,9 @@ class LogsController extends Controller
     /**
      * The object service
      *
-     * @var ObjectService
+     * @var SourceMappingService
      */
-    private ObjectService $objectService;
+    private SourceMappingService $objectService;
 
     /**
      * The localization service
@@ -69,14 +69,14 @@ class LogsController extends Controller
      * @param string                   $appName                  The application name
      * @param IRequest                 $request                  The request interface
      * @param SynchronizationLogMapper $synchronizationLogMapper The synchronization log mapper
-     * @param ObjectService            $objectService            The object service
+     * @param SourceMappingService     $objectService            The object service
      * @param IL10N                    $l                        The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         SynchronizationLogMapper $synchronizationLogMapper,
-        ObjectService $objectService,
+        SourceMappingService $objectService,
         IL10N $l
     ) {
         parent::__construct($appName, $request);
