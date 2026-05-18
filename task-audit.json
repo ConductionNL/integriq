@@ -1,0 +1,104 @@
+{
+  "spec": "openspec/changes/openconnector-adopt-or-abstractions",
+  "generated": "2026-05-18",
+  "verified": [
+    {
+      "task": "7.1",
+      "file": "lib/Service/SourceMappingService.php",
+      "ok": true,
+      "note": "New canonical service file (renamed from ObjectService)"
+    },
+    {
+      "task": "7.1",
+      "file": "lib/Service/ObjectService.php",
+      "ok": true,
+      "note": "Deprecated alias — class ObjectService extends SourceMappingService"
+    },
+    {
+      "task": "7.2",
+      "file": "lib/Service/EndpointCacheService.php",
+      "ok": true,
+      "note": "CACHE_TTL constant removed; reads from IAppConfig (endpoint_cache.ttl_seconds, default 3600)"
+    },
+    {
+      "task": "7.3",
+      "file": "lib/Service/SoftwareCatalogueService.php",
+      "ok": true,
+      "note": "SUFFIX constant removed; reads from IAppConfig (software_catalogue.suffix, default -sc); getSuffix() added"
+    },
+    {
+      "task": "4",
+      "file": "lib/Service/JobService.php",
+      "ok": true,
+      "note": "DEFAULT_SUCCESS_LOG_RETENTION + DEFAULT_ERROR_LOG_RETENTION constants removed; literal defaults used"
+    },
+    {
+      "task": "4",
+      "file": "lib/Service/CallService.php",
+      "ok": true,
+      "note": "Same retention constants removed"
+    },
+    {
+      "task": "4",
+      "file": "lib/Service/SynchronizationService.php",
+      "ok": true,
+      "note": "Same retention constants removed; ObjectService → SourceMappingService type"
+    },
+    {
+      "task": "4",
+      "file": "lib/Settings/openconnector_register.json",
+      "ok": true,
+      "note": "x-openregister-archival declared on synchronization-log, call-log, job-log schemas (PT1H success / P30D error)"
+    },
+    {
+      "task": "2",
+      "file": "lib/Settings/openconnector_register.json",
+      "ok": true,
+      "note": "x-openregister-lifecycle declared on synchronization-contract, dso-message, event schemas"
+    },
+    {
+      "task": "8",
+      "file": "openspec/manifest.yaml",
+      "ok": true,
+      "note": "Manifest with tier:2, dependencies:[openregister], consumes list, keeps-app-local items"
+    },
+    {
+      "task": "10",
+      "file": "openspec/specs/openconnector-or-adoption/spec.md",
+      "ok": true,
+      "note": "Capability spec with domain-specific stores stay app-local + mapping/rule engine stays app-local requirements"
+    },
+    {
+      "task": "6",
+      "file": "openspec/changes/openconnector-adopt-or-abstractions/design.md",
+      "ok": true,
+      "note": "See Also block added citing prometheus-metrics, ibabs-notubiz-connector, stuf-adapter, dso-omgevingsloket"
+    },
+    {
+      "task": "5",
+      "file": "openspec/changes/openconnector-adopt-or-abstractions/tasks.md",
+      "ok": true,
+      "note": "Drift check confirmed: no prometheus-metrics/spec.md in repo (tracked externally); no rewrite needed"
+    }
+  ],
+  "stubs": [],
+  "missing_routes": [],
+  "gated_tasks": [
+    {
+      "task": "1",
+      "reason": "GATED — RegisterResolverService not yet shipped by OR; PROP_* GUID constants kept in RuleService.php:125-131"
+    },
+    {
+      "task": "2",
+      "reason": "Schema declared in register JSON; runtime lifecycle calls GATED on OR lifecycle annotation runtime"
+    },
+    {
+      "task": "3",
+      "reason": "GATED — x-openregister-notifications runtime not yet shipped by OR"
+    },
+    {
+      "task": "9",
+      "reason": "GATED — pending nc-vue multi-tenancy-context and OR i18n-source-of-truth / i18n-api-language-negotiation"
+    }
+  ]
+}
