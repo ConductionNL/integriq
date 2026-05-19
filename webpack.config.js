@@ -66,6 +66,12 @@ webpackConfig.module = {
 			loader: 'vue-loader',
 		},
 		{
+			test: /\.ts$/,
+			loader: 'ts-loader',
+			options: { appendTsSuffixTo: [/\.vue$/], transpileOnly: true },
+			exclude: /node_modules/,
+		},
+		{
 			test: /\.css$/,
 			use: ['style-loader', 'css-loader'],
 		},
