@@ -625,9 +625,11 @@ export default {
 	border: 1px solid var(--color-border);
 	z-index: 9999;
 }
+
 :deep(.v-select .vs__dropdown-menu .vs__dropdown-option) {
 	color: var(--color-text-maxcontrast);
 }
+
 :deep(.v-select .vs__dropdown-menu .vs__dropdown-option--highlight),
 :deep(.v-select .vs__dropdown-menu .vs__dropdown-option--selected) {
 	background: var(--color-primary-element-light);

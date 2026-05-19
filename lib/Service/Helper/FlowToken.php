@@ -10,22 +10,29 @@ use OCP\AppFramework\Http\Response;
  */
 class FlowToken
 {
+
     private array $requestOriginal;
+
     private array $requestAmended;
+
     private array $responseOriginal;
+
     private array $responseAmended;
 
     private array $syncInputOriginal;
+
     private array $syncInputAmended;
+
     private array $syncOutputOriginal;
+
     private array $syncOutputAmended;
 
     public function __construct(
-        Request|array $requestOriginal = [],
-        Response|array $responseOriginal = [],
-        array $syncInputOriginal = [],
-        array $syncOutputOriginal = [],
-        ?string $path = null
+        Request|array $requestOriginal=[],
+        Response|array $responseOriginal=[],
+        array $syncInputOriginal=[],
+        array $syncOutputOriginal=[],
+        ?string $path=null
     ) {
         $this->setRequestOriginal(requestOriginal: $requestOriginal, path: $path);
         $this->setRequestAmended($this->getRequestOriginal());
@@ -38,9 +45,9 @@ class FlowToken
 
         $this->setSyncOutputOriginal($syncOutputOriginal);
         $this->setSyncOutputAmended($this->getSyncOutputOriginal());
-    }
+    }//end __construct()
 
-    private function getHeaders(array $server, bool $proxyHeaders = false): array
+    private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
         $headers = array_filter(
             array: $server,
@@ -49,8 +56,7 @@ class FlowToken
                     return false;
                 } else if ($proxyHeaders === false
                     && (str_starts_with(haystack: $key, needle: 'HTTP_X_FORWARDED') === true
-                        || $key === 'HTTP_X_REAL_IP' || $key === 'HTTP_X_ORIGINAL_URI'
-                    )
+                    || $key === 'HTTP_X_REAL_IP' || $key === 'HTTP_X_ORIGINAL_URI')
                 ) {
                     return false;
                 }
@@ -67,10 +73,11 @@ class FlowToken
                 callback: function ($key) {
                     return strtolower(string: substr(string: $key, offset: 5));
                 },
-                array: $keys),
+                array: $keys
+                    ),
             $headers
         );
-    }
+    }//end getHeaders()
 
     /**
      * Gets the raw content for a http request from the input stream.
@@ -80,12 +87,12 @@ class FlowToken
     private function getRawContent(): string
     {
         return file_get_contents(filename: 'php://input');
-    }
+    }//end getRawContent()
 
     /**
      * Check if content appears to be XML
      *
-     * @param string $content Content to check
+     * @param  string $content Content to check
      * @return bool True if content is valid XML
      */
     private function looksLikeXml(string $content): bool
@@ -100,13 +107,13 @@ class FlowToken
         libxml_clear_errors();
 
         return $result;
-    }
+    }//end looksLikeXml()
 
     /**
      * Parse raw content into structured data based on content type
      *
-     * @param string $content The raw content to parse
-     * @param string|null $contentType Optional content type hint
+     * @param  string      $content     The raw content to parse
+     * @param  string|null $contentType Optional content type hint
      * @return mixed Parsed data (array for JSON/XML) or original string
      */
     private function parseContent(Request $request): mixed
@@ -116,7 +123,13 @@ class FlowToken
         if (str_contains($contentType, 'multipart/form-data') === true) {
             [$post, $files] = request_parse_body();
 
-            $parsedFiles = array_map(function ($file) { return file_get_contents($file['tmp_name']); }, $files);
+            $parsedFiles = array_map(
+                    function ($file) {
+                        return file_get_contents($file['tmp_name']);
+
+                    },
+                    $files
+                    );
 
             return array_merge($post, $parsedFiles);
         }
@@ -130,8 +143,9 @@ class FlowToken
         }
 
         // Try XML decode if content type suggests XML or content looks like XML
-        if ($contentType === 'application/xml' || $contentType === 'text/xml' ||
-            ($contentType === null && $this->looksLikeXml($content) === true)) {
+        if ($contentType === 'application/xml' || $contentType === 'text/xml'
+            || ($contentType === null && $this->looksLikeXml($content) === true)
+        ) {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($content);
             libxml_clear_errors();
@@ -143,48 +157,49 @@ class FlowToken
 
         // Return original content as fallback
         return $request->getParams();
-    }
+    }//end parseContent()
 
-    public function setRequestOriginal(array|Request $requestOriginal, ?string $path = null): array
+    public function setRequestOriginal(array|Request $requestOriginal, ?string $path=null): array
     {
         if ($requestOriginal instanceof Request) {
-            $request = $requestOriginal;
+            $request         = $requestOriginal;
             $requestOriginal = [
-                'method' => $request->getMethod(),
-                'headers' => $this->getHeaders($request->server, true),
+                'method'     => $request->getMethod(),
+                'headers'    => $this->getHeaders($request->server, true),
                 'parameters' => array_merge($request->getParams(), $this->parseContent($request)),
-                'path' => $path,
+                'path'       => $path,
             ];
         }
+
         $this->requestOriginal = $requestOriginal;
 
         return $this->requestOriginal;
-    }
+    }//end setRequestOriginal()
 
     public function getRequestOriginal(): array
     {
         return $this->requestOriginal;
-    }
+    }//end getRequestOriginal()
 
     public function setRequestAmended(array $requestAmended): array
     {
         $this->requestAmended = $requestAmended;
 
         return $this->requestAmended;
-    }
+    }//end setRequestAmended()
 
     public function getRequestAmended(): array
     {
         return $this->requestAmended;
-    }
+    }//end getRequestAmended()
 
     public function setResponseOriginal(array|Response $responseOriginal): array
     {
         if ($responseOriginal instanceof Response) {
             $responseOriginal = [
-                'data' => method_exists($responseOriginal, 'getData') ? $responseOriginal->getData() : [],
+                'data'    => method_exists($responseOriginal, 'getData') ? $responseOriginal->getData() : [],
                 'headers' => $responseOriginal->getHeaders(),
-                'status' => $responseOriginal->getStatus(),
+                'status'  => $responseOriginal->getStatus(),
                 'cookies' => $responseOriginal->getCookies(),
             ];
         }
@@ -192,78 +207,78 @@ class FlowToken
         $this->responseOriginal = $responseOriginal;
 
         return $responseOriginal;
-    }
+    }//end setResponseOriginal()
 
     public function getResponseOriginal(): array
     {
         return $this->responseOriginal;
-    }
+    }//end getResponseOriginal()
 
     public function setResponseAmended(array $responseAmended): array
     {
         $this->responseAmended = $responseAmended;
 
         return $this->responseAmended;
-    }
+    }//end setResponseAmended()
 
     public function getResponseAmended(): array
     {
         return $this->responseAmended;
-    }
+    }//end getResponseAmended()
 
     public function setSyncInputOriginal(array $syncInputOriginal): array
     {
         $this->syncInputOriginal = $syncInputOriginal;
 
         return $this->syncInputOriginal;
-    }
+    }//end setSyncInputOriginal()
 
     public function getSyncInputOriginal(): array
     {
         return $this->syncInputOriginal;
-    }
+    }//end getSyncInputOriginal()
 
     public function setSyncInputAmended(array $syncInputAmended): array
     {
         return $this->syncInputAmended = $syncInputAmended;
-    }
+    }//end setSyncInputAmended()
 
     public function getSyncInputAmended(): array
     {
         return $this->syncInputAmended;
-    }
+    }//end getSyncInputAmended()
 
     public function setSyncOutputOriginal(array $syncOutputOriginal): array
     {
         return $this->syncOutputOriginal = $syncOutputOriginal;
-    }
+    }//end setSyncOutputOriginal()
 
     public function getSyncOutputOriginal(): array
     {
         return $this->syncOutputOriginal;
-    }
+    }//end getSyncOutputOriginal()
 
     public function setSyncOutputAmended(array $syncOutputAmended): array
     {
         return $this->syncOutputAmended = $syncOutputAmended;
-    }
+    }//end setSyncOutputAmended()
 
     public function getSyncOutputAmended(): array
     {
         return $this->syncOutputAmended;
-    }
+    }//end getSyncOutputAmended()
 
     public function __serialize(): array
     {
         return [
-            'requestOriginal' => $this->requestOriginal,
-            'requestAmended' => $this->requestAmended,
-            'responseOriginal' => $this->responseOriginal,
-            'responseAmended' => $this->responseAmended,
-            'syncInputOriginal' => $this->syncInputOriginal,
-            'syncInputAmended' => $this->syncInputAmended,
+            'requestOriginal'    => $this->requestOriginal,
+            'requestAmended'     => $this->requestAmended,
+            'responseOriginal'   => $this->responseOriginal,
+            'responseAmended'    => $this->responseAmended,
+            'syncInputOriginal'  => $this->syncInputOriginal,
+            'syncInputAmended'   => $this->syncInputAmended,
             'syncOutputOriginal' => $this->syncOutputOriginal,
-            'syncOutputAmended' => $this->syncOutputAmended,
+            'syncOutputAmended'  => $this->syncOutputAmended,
         ];
-    }
-}
+    }//end __serialize()
+}//end class

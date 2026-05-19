@@ -33,8 +33,6 @@ use Psr\Log\LoggerInterface;
  */
 class IBabsConnectorService
 {
-
-
     /**
      * IBabsConnectorService constructor.
      *
@@ -49,7 +47,6 @@ class IBabsConnectorService
     ) {
 
     }//end __construct()
-
 
     /**
      * Test the connection to an iBabs API source.
@@ -106,7 +103,6 @@ class IBabsConnectorService
 
     }//end testConnection()
 
-
     /**
      * Push a collegevoorstel document to iBabs.
      *
@@ -145,7 +141,6 @@ class IBabsConnectorService
 
     }//end pushVoorstel()
 
-
     /**
      * Poll for besluiten from iBabs.
      *
@@ -164,7 +159,6 @@ class IBabsConnectorService
         return [];
 
     }//end pollBesluiten()
-
 
     /**
      * Map an iBabs besluit status to a Procest zaak status.
@@ -185,6 +179,4 @@ class IBabsConnectorService
         return $mapping[strtolower($ibabsStatus)] ?? 'Besluit: onbekend';
 
     }//end mapBesluitStatus()
-
-
 }//end class

@@ -126,93 +126,93 @@ export default defineComponent({
 
 <style scoped>
 .job-logs {
-  padding: 20px;
+	padding: 20px;
 }
 
 .loading, .error, .empty {
-  text-align: center;
-  padding: 20px;
-  color: var(--color-text-lighter);
+	text-align: center;
+	padding: 20px;
+	color: var(--color-text-lighter);
 }
 
 .table-container {
-  position: relative;
-  margin-bottom: 20px;
+	position: relative;
+	margin-bottom: 20px;
 }
 
 .table-loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(255, 255, 255, 0.7);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 1;
 }
 
 .job-logs-table {
-  width: 100%;
-  border-collapse: collapse;
+	width: 100%;
+	border-collapse: collapse;
 }
 
 .job-logs-table th,
 .job-logs-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
 }
 
 .job-logs-table th {
-  font-weight: bold;
-  color: var(--color-text-lighter);
+	font-weight: bold;
+	color: var(--color-text-lighter);
 }
 
 .status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.9em;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 0.9em;
 }
 
 .status-badge.success {
-  background-color: var(--color-success);
-  color: white;
+	background-color: var(--color-success);
+	color: white;
 }
 
 .status-badge.error {
-  background-color: var(--color-error);
-  color: white;
+	background-color: var(--color-error);
+	color: white;
 }
 
 .status-badge.warning {
-  background-color: var(--color-warning);
-  color: white;
+	background-color: var(--color-warning);
+	color: white;
 }
 
 .pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin-top: 20px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 16px;
+	margin-top: 20px;
 }
 
 .pagination-button {
-  padding: 8px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-background);
-  cursor: pointer;
+	padding: 8px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 4px;
+	background: var(--color-background);
+	cursor: pointer;
 }
 
 .pagination-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .pagination-info {
-  color: var(--color-text-lighter);
+	color: var(--color-text-lighter);
 }
 </style>

@@ -901,26 +901,29 @@ export default {
     position: relative;
     width: fit-content;
 }
+
 .close-button {
-    position: absolute;
-    top: 5px;
-    right: 5px;
+	position: absolute;
+	top: 5px;
+	right: 5px;
 }
 .close-button :deep(.button-vue--vue-tertiary:hover:not(:disabled)) {
     background-color: rgba(var(--color-info-rgb), 0.1);
 }
 
 .css-fix-reg\/schema {
-    width: 100%;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+	width: 100%;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
 }
+
 .css-fix-reg\/schema .v-select {
-    width: 100%;
+	width: 100%;
 }
+
 .css-fix-reg\/schema p {
-    align-self: end;
-    margin-block-end: 10px;
+	align-self: end;
+	margin-block-end: 10px;
 }
 
 /* Three-Column Layout */

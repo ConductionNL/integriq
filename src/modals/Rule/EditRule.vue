@@ -1669,7 +1669,7 @@ export default {
 
 <style scoped>
 .json-editor {
-    position: relative;
+	position: relative;
 	margin-bottom: 2.5rem;
 }
 
@@ -1680,25 +1680,26 @@ export default {
 }
 
 .install-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
+	display: flex;
+	gap: 0.5rem;
+	margin-block-start: 1rem;
 }
 
 .close-button {
-    position: absolute;
-    top: 5px;
-    right: 5px;
+	position: absolute;
+	top: 5px;
+	right: 5px;
 }
-.close-button :deep(.button-vue--vue-tertiary:hover:not(:disabled)) {
-    background-color: rgba(var(--color-info-rgb), 0.1);
+
+.close-button .button-vue--vue-tertiary:hover:not(:disabled) {
+	background-color: rgba(var(--color-info-rgb), 0.1);
 }
 
 .json-editor .error-message {
-    position: absolute;
+	position: absolute;
 	bottom: 0;
 	right: 50%;
-    transform: translateY(100%) translateX(50%);
+	transform: translateY(100%) translateX(50%);
 
 	color: var(--color-error);
 	font-size: 0.8rem;
@@ -1710,7 +1711,7 @@ export default {
 	position: absolute;
 	bottom: 0;
 	right: 0;
-    transform: translateY(100%);
+	transform: translateY(100%);
 }
 
 /* Add styles for the code editor */
@@ -1729,36 +1730,40 @@ export default {
 
 /* Extend lists */
 .extendList {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
+
 .extendItem {
-    display: flex;
+	display: flex;
 	justify-content: space-between;
 	align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	padding: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
 }
 
 .extendItem :deep(.v-select) {
-    min-width: 260px;
+	min-width: 260px;
 }
+
 .extendItem .remove-action.button-vue--vue-tertiary {
-    color: var(--color-error);
+	color: var(--color-error);
 	margin-inline-end: 15px;
-    background-color: rgba(var(--color-error-rgb), 0.08);
+	background-color: rgba(var(--color-error-rgb), 0.08);
 }
+
 .extendItem .remove-action.button-vue--vue-tertiary:hover:not(:disabled) {
-    background-color: rgba(var(--color-error-rgb), 0.14);
+	background-color: rgba(var(--color-error-rgb), 0.14);
 }
+
 .extendItemProperty {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 	align-items: center;
 	justify-content: center;
 }
@@ -1766,19 +1771,22 @@ export default {
 /* CodeMirror */
 .codeMirrorContainer {
 	margin-block-start: 6px;
-    text-align: left;
+	text-align: left;
 }
 
 .codeMirrorContainer :deep(.cm-content) {
 	border-radius: 0 !important;
 	border: none !important;
 }
+
 .codeMirrorContainer :deep(.cm-editor) {
 	outline: none !important;
 }
+
 .codeMirrorContainer.light > .vue-codemirror {
 	border: 1px dotted silver;
 }
+
 .codeMirrorContainer.dark > .vue-codemirror {
 	border: 1px dotted grey;
 }
@@ -1787,6 +1795,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼe) {
 	color: #448c27;
 }
+
 .codeMirrorContainer.dark :deep(.ͼe) {
 	color: #88c379;
 }
@@ -1800,6 +1809,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼd) {
 	color: #c68447;
 }
+
 .codeMirrorContainer.dark :deep(.ͼd) {
 	color: #d19a66;
 }
@@ -1808,6 +1818,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼc) {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.ͼc) {
 	color: #260dd4;
 }
@@ -1825,42 +1836,49 @@ export default {
 
 /* Schema option */
 .schema-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
+
 .schema-option > .material-design-icon {
-    margin-block-start: 2px;
+	margin-block-start: 2px;
 }
+
 .schema-option > h6 {
-    line-height: 0.8;
+	line-height: 0.8;
 }
+
 .draggable-form-item {
-    display: flex;
-    align-items: center;
-    gap: 3px;
+	display: flex;
+	align-items: center;
+	gap: 3px;
 
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 4px;
-    border-radius: 12px;
+	background-color: rgba(255, 255, 255, 0.05);
+	padding: 4px;
+	border-radius: 12px;
 
-    margin-block: 8px;
+	margin-block: 8px;
 }
+
 .draggable-form-item.light {
-    background-color: rgba(0, 0, 0, 0.05);
+	background-color: rgba(0, 0, 0, 0.05);
 }
+
 .draggable-form-item :deep(.v-select) {
-    min-width: 150px;
+	min-width: 150px;
 }
+
 .draggable-form-item :deep(.input-field__label) {
-    margin-block-start: 0 !important;
+	margin-block-start: 0 !important;
 }
+
 .draggable-form-item .input-field {
-    margin-block-start: 0 !important;
+	margin-block-start: 0 !important;
 }
 
 .draggable-item-container:last-child .drag-handle {
-    cursor: not-allowed;
+	cursor: not-allowed;
 }
 
 .apiKeyTextArea {
