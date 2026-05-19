@@ -235,7 +235,7 @@
 
     <!--
         Doc-quality rules are temporarily relaxed while bringing openconnector to a
-        clean phpcs baseline. The 2026-05 cleanup PR (#TBD) re-enabled the phpcs
+        clean phpcs baseline. The 2026-05 cleanup PR (#808) re-enabled the phpcs
         gate after auto-fixing 28,865 mechanical violations; the remaining
         ~3,500 doc-comment + line-length issues are tracked for incremental
         cleanup in follow-up issue #807. Once that work lands, remove these
