@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+description: Get started with OpenConnector, the integration layer for Nextcloud. Connect REST, SOAP, GraphQL, files, and queues to typed OpenRegister stores.
 ---
 
 # Introduction to OpenConnector
