@@ -225,7 +225,7 @@ class JobLogMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                $qb->createFunction('HOUR(created) as hour'),
+                $qb->createFunction('EXTRACT(HOUR FROM created) as hour'),
                 $qb->createFunction('SUM(CASE WHEN level = \'INFO\' THEN 1 ELSE 0 END) as info'),
                 $qb->createFunction('SUM(CASE WHEN level = \'WARNING\' THEN 1 ELSE 0 END) as warning'),
                 $qb->createFunction('SUM(CASE WHEN level = \'ERROR\' THEN 1 ELSE 0 END) as error'),

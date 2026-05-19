@@ -183,7 +183,7 @@ class CallLogMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         // Select the hour part of the created timestamp and count of logs
-        $qb->select($qb->createFunction('HOUR(created) as hour'), $qb->createFunction('COUNT(*) as count'))
+        $qb->select($qb->createFunction('EXTRACT(HOUR FROM created) as hour'), $qb->createFunction('COUNT(*) as count'))
             ->from('openconnector_call_logs')
             ->groupBy('hour')
             ->orderBy('hour', 'ASC');
@@ -312,7 +312,7 @@ class CallLogMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                $qb->createFunction('HOUR(created) as hour'),
+                $qb->createFunction('EXTRACT(HOUR FROM created) as hour'),
                 $qb->createFunction('SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) as success'),
                 $qb->createFunction('SUM(CASE WHEN status_code < 200 OR status_code >= 300 THEN 1 ELSE 0 END) as error')
             )

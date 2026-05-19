@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenConnector\Db\Mapping;
 use OCA\OpenConnector\Db\MappingMapper;
 use OCP\AppFramework\Controller;
@@ -367,7 +368,14 @@ class MappingsController extends Controller
         $data['openRegisters'] = false;
         if ($openRegisters !== null) {
             $data['openRegisters']      = true;
-            $data['availableRegisters'] = $openRegisters->getRegisters();
+            // OpenRegister's ObjectService no longer exposes getRegisters();
+            // fetch the register list via the mapper directly.
+            try {
+                $registerMapper = \OC::$server->get(RegisterMapper::class);
+                $data['availableRegisters'] = $registerMapper->findAll();
+            } catch (\Throwable $e) {
+                $data['availableRegisters'] = [];
+            }
         }
 
         return new JSONResponse($data);
