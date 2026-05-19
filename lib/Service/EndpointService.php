@@ -59,24 +59,24 @@ class EndpointService
         '_method',
         '_headers',
         '_route',
-        '_path'
+        '_path',
     ];
 
     /**
      * Constructor for EndpointService
      *
-     * @param ObjectService $objectService Service for handling object operations
-     * @param CallService $callService Service for making external API calls
-     * @param LoggerInterface $logger Logger interface for error logging
+     * @param ObjectService   $objectService Service for handling object operations
+     * @param CallService     $callService   Service for making external API calls
+     * @param LoggerInterface $logger        Logger interface for error logging
      */
     public function __construct(
-        private readonly ObjectService   $objectService,
-        private readonly CallService     $callService,
+        private readonly ObjectService $objectService,
+        private readonly CallService $callService,
         private readonly LoggerInterface $logger,
-        private readonly IURLGenerator   $urlGenerator,
-        private readonly MappingService  $mappingService,
-        private readonly EndpointMapper  $endpointMapper,
-        private readonly RuleMapper      $ruleMapper,
+        private readonly IURLGenerator $urlGenerator,
+        private readonly MappingService $mappingService,
+        private readonly EndpointMapper $endpointMapper,
+        private readonly RuleMapper $ruleMapper,
         private readonly IConfig $config,
         private readonly IAppConfig $appConfig,
         private readonly StorageService $storageService,
@@ -84,54 +84,60 @@ class EndpointService
         private readonly ContainerInterface $containerInterface,
         private readonly SynchronizationService $synchronizationService,
         private readonly RuleService $ruleService,
-    )
+    ) {
+    }//end __construct()
+
+    /**
+     * Parse the error message from the validation service for ZGW format
+     *
+     * @param  array $response     The response that is build
+     * @param  array $responseData The data from the responses found in the rules and openregister.
+     * @return array
+     */
+    private function parseMessage(array $response, array $responseData): array
     {
-    }
+        if (isset($responseData['message']) === true
+            && $responseData['message'] === 'Validation failed'
+            && isset($responseData['errors']) === true
+            && str_contains(haystack: $responseData['errors'][0]['message'], needle: 'missing')
+        ) {
+            $startChar = strpos($responseData['errors'][0]['message'], '(') + 1;
+            $endChar   = strpos($responseData['errors'][0]['message'], ')');
 
-	/**
-	 * Parse the error message from the validation service for ZGW format
-	 *
-	 * @param array $response The response that is build
-	 * @param array $responseData The data from the responses found in the rules and openregister.
-	 * @return array
-	 */
-	private function parseMessage(array $response, array $responseData): array
-    {
-		if (isset($responseData['message']) === true
-			&& $responseData['message'] === 'Validation failed'
-			&& isset($responseData['errors']) === true
-			&& str_contains(haystack: $responseData['errors'][0]['message'], needle: 'missing')
-		) {
-			$startChar = strpos($responseData['errors'][0]['message'], '(') + 1;
-			$endChar = strpos($responseData['errors'][0]['message'], ')');
+            $keys = explode(separator: ',', string: substr(string: $responseData['errors'][0]['message'], offset: $startChar, length: $endChar - $startChar));
 
-			$keys = explode(separator: ',', string: substr(string: $responseData['errors'][0]['message'], offset: $startChar, length: $endChar - $startChar));
-
-			$response['detail'] = $responseData['errors'][0]['message'];
-			$response['invalidParams'] = array_map(function (string $key) {
-				return ['property' => trim($key), 'code' => 'required', 'reason' => 'The required property is missing'];
-			}, $keys);
-		} else if (isset($responseData['message']) === true
-			&& $responseData['message'] === 'Validation failed'
-			&& isset($responseData['errors']) === true
+            $response['detail']        = $responseData['errors'][0]['message'];
+            $response['invalidParams'] = array_map(
+           function (string $key) {
+                return ['property' => trim($key), 'code' => 'required', 'reason' => 'The required property is missing'];
+           },
+            $keys
+            );
+        } else if (isset($responseData['message']) === true
+            && $responseData['message'] === 'Validation failed'
+            && isset($responseData['errors']) === true
             && isset($responseData['errors'][0]['errors'])
-		) {
-			$response['detail'] = $responseData['errors'][0]['message'];
-			$response['invalidParams'] = array_map(function (string $key, array $message) {
-				if (str_contains(haystack: $message[0], needle: 'type')) {
-					$code = 'invalid type';
-				} else {
-					$code = 'invalid value';
-				}
-				return ['property' => $key, 'code' => $code, 'reason' => $message[0]];
-			}, array_keys($responseData['errors'][0]['errors']), array_values($responseData['errors'][0]['errors']));
-		} else if (isset($responseData['errors']) === true) {
+        ) {
+            $response['detail']        = $responseData['errors'][0]['message'];
+            $response['invalidParams'] = array_map(
+           function (string $key, array $message) {
+            if (str_contains(haystack: $message[0], needle: 'type')) {
+                $code = 'invalid type';
+            } else {
+                $code = 'invalid value';
+            }
+
+                return ['property' => $key, 'code' => $code, 'reason' => $message[0]];
+           },
+            array_keys($responseData['errors'][0]['errors']),
+            array_values($responseData['errors'][0]['errors'])
+            );
+        } else if (isset($responseData['errors']) === true) {
             $response['invalidParams'] = $responseData['errors'];
-        }
+        }//end if
 
-
-		return $response;
-	}
+        return $response;
+    }//end parseMessage()
 
     /**
      * Transform outgoing errors according to a specified format
@@ -144,28 +150,26 @@ class EndpointService
     private function transformError(Response $result, Request $request): Response
     {
         if ($result->getStatus() < 200 || $result->getStatus() >= 300) {
-
             $resultData = $result->getData();
-            $message = $resultData['message'] ?? null;
-            $error = $resultData['error'] ?? null;
+            $message    = $resultData['message'] ?? null;
+            $error      = $resultData['error'] ?? null;
 
             $responseData = [
-                'type' => $message,
-                'code' => $result->getStatus(),
-                'title'   => $message,
-                'status' => $result->getStatus(),
+                'type'     => $message,
+                'code'     => $result->getStatus(),
+                'title'    => $message,
+                'status'   => $result->getStatus(),
                 'instance' => $request->getId(),
-                'detail'  => $error,
+                'detail'   => $error,
             ];
 
             $responseData = $this->parseMessage(response: $responseData, responseData: $resultData);
 
             return new JSONResponse(data: $responseData, statusCode: $result->getStatus());
-
         }
 
         return $result;
-    }
+    }//end transformError()
 
     /**
      * Handles incoming requests to endpoints
@@ -174,8 +178,8 @@ class EndpointService
      * It either routes to a schema within a register or proxies to an external source.
      *
      * @param Endpoint $endpoint The endpoint configuration to handle
-     * @param IRequest $request The incoming request object
-     * @param string $path The specific path or sub-route being requested
+     * @param IRequest $request  The incoming request object
+     * @param string   $path     The specific path or sub-route being requested
      *
      * @return JSONResponse Response containing the result
      * @throws Exception When endpoint configuration is invalid
@@ -188,53 +192,54 @@ class EndpointService
             return new JSONResponse(['error' => 'The following parameters are not correctly set', 'fields' => $errors], 400);
         }
 
-
         try {
-
             $flowToken = new FlowToken(requestOriginal: $request, path: $path);
 
-//            // Process initial data
-//            $responseBody = $this->parseContent(
-//                request: $request,
-//
-//            );
-//
-//            if ($responseBody == '') {
-//                $responseBody = [];
-//            }
-//
+            //            // Process initial data
+            //            $responseBody = $this->parseContent(
+            //                request: $request,
+            //
+            //            );
+            //
+            //            if ($responseBody == '') {
+            //                $responseBody = [];
+            //            }
+            //
             $currentDate = (new DateTime())->format('c');
-//
-//            // This is double becuase mapping needs it in body but other rules seek directly in data.
-//
-//            $incomingMethod = $request->getMethod();
-//            $incomingHeaders = $this->getHeaders($request->server, true);
-//            $incomingParams = array_merge($request->getParams(), $responseBody);
-//
-//            $incomingData = [
-//                'method' => $incomingMethod,
-//                'headers' => $incomingHeaders,
-//                'params' => $incomingParams
-//            ];
-
+            //
+            //            // This is double becuase mapping needs it in body but other rules seek directly in data.
+            //
+            //            $incomingMethod = $request->getMethod();
+            //            $incomingHeaders = $this->getHeaders($request->server, true);
+            //            $incomingParams = array_merge($request->getParams(), $responseBody);
+            //
+            //            $incomingData = [
+            //                'method' => $incomingMethod,
+            //                'headers' => $incomingHeaders,
+            //                'params' => $incomingParams
+            //            ];
             // @todo: This should eventually be merged into the flow tokens
             $data = [
-                'utility' => [
-                    'currentDate' => $currentDate
+                'utility'    => [
+                    'currentDate' => $currentDate,
                 ],
                 'parameters' => array_merge($flowToken->getRequestOriginal()['parameters'], $this->getPathParameters($endpoint->getEndpointArray(), $path)),
-                'headers' => $flowToken->getRequestOriginal()['headers'],
-                'path' => $flowToken->getRequestOriginal()['path'],
-                'method' => $flowToken->getRequestOriginal()['method'],
-                'body' => array_merge([
-                    '_utility' => [
-                        'currentDate' => $currentDate
-                    ],
-                    '_parameters' => $flowToken->getRequestOriginal()['parameters'],
-                    '_headers' => $flowToken->getRequestOriginal()['headers'],
-                    '_path' => $flowToken->getRequestOriginal()['path'],
-                    '_method' => $flowToken->getRequestOriginal()['method'],
-                ], $flowToken->getRequestOriginal()['parameters'])];
+                'headers'    => $flowToken->getRequestOriginal()['headers'],
+                'path'       => $flowToken->getRequestOriginal()['path'],
+                'method'     => $flowToken->getRequestOriginal()['method'],
+                'body'       => array_merge(
+                        [
+                            '_utility'    => [
+                                'currentDate' => $currentDate,
+                            ],
+                            '_parameters' => $flowToken->getRequestOriginal()['parameters'],
+                            '_headers'    => $flowToken->getRequestOriginal()['headers'],
+                            '_path'       => $flowToken->getRequestOriginal()['path'],
+                            '_method'     => $flowToken->getRequestOriginal()['method'],
+                        ],
+                        $flowToken->getRequestOriginal()['parameters']
+                        ),
+            ];
             // Process rules before handling the request
             $ruleResult = $this->processRules(
                 endpoint: $endpoint,
@@ -258,15 +263,15 @@ class EndpointService
 
                 // Process initial data
                 $data = [
-                    'utility' => [
-                        'currentDate' => (new DateTime())->format('c')
+                    'utility'        => [
+                        'currentDate' => (new DateTime())->format('c'),
                     ],
-                    'parameters' => $flowToken->getRequestAmended()['parameters'],
+                    'parameters'     => $flowToken->getRequestAmended()['parameters'],
                     'requestHeaders' => $flowToken->getRequestAmended()['headers'],
-                    'headers' => $flowToken->getResponseAmended()['headers'],
-                    'path' => $flowToken->getRequestAmended()['path'],
-                    'method' => $flowToken->getRequestAmended()['method'],
-                    'body' => $flowToken->getResponseOriginal()['data'],
+                    'headers'        => $flowToken->getResponseAmended()['headers'],
+                    'path'           => $flowToken->getRequestAmended()['path'],
+                    'method'         => $flowToken->getRequestAmended()['method'],
+                    'body'           => $flowToken->getResponseOriginal()['data'],
                 ];
 
                 $ruleResult = $this->processRules(
@@ -282,17 +287,16 @@ class EndpointService
                     return $ruleResult;
                 }
 
-
                 if ($ruleResult instanceof JSONResponse === true) {
                     return $this->transformError($ruleResult, $request);
                 }
 
-				if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
-					return $this->transformError($result, $request);
-				}
+                if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
+                    return $this->transformError($result, $request);
+                }
 
                 // Set the proper status code for the method.
-                //@TODO: we might want an override from rule processing.
+                // @TODO: we might want an override from rule processing.
                 switch ($flowToken->getRequestAmended()['method']) {
                     case 'POST':
                         $statusCode = Http::STATUS_CREATED;
@@ -313,7 +317,7 @@ class EndpointService
                 }
 
                 return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
-            }
+            }//end if
 
             // Check if endpoint connects to a source
             if ($endpoint->getTargetType() === 'api') {
@@ -323,22 +327,23 @@ class EndpointService
 
             // Invalid endpoint configuration
             throw new Exception('Endpoint must specify either a schema or source connection');
-
         } catch (Exception $e) {
-            $this->logger->error('Error handling endpoint request: ' . $e->getMessage());
+            $this->logger->error('Error handling endpoint request: '.$e->getMessage());
             return new JSONResponse(
-                ['error' => $e->getMessage(),
-                    'trace' => $e->getTrace()],
+                [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTrace(),
+                ],
                 400
             );
-        }
-    }
+        }//end try
+    }//end handleRequest()
 
     /**
      * Parses a path to get the parameters in a path.
      *
-     * @param array $endpointArray The endpoint array from an endpoint object.
-     * @param string $path The path called by the client.
+     * @param array  $endpointArray The endpoint array from an endpoint object.
+     * @param string $path          The path called by the client.
      *
      * @return array The parsed path with the fields having the correct name.
      */
@@ -354,7 +359,8 @@ class EndpointService
                     subject: $item
                 );
             },
-            $endpointArray);
+            $endpointArray
+                );
 
         try {
             $pathParams = array_combine(
@@ -370,14 +376,14 @@ class EndpointService
         }
 
         return $pathParams;
-    }
+    }//end getPathParameters()
 
     /**
      * Replaces internal pointers with urls and ids by endpoint urls.
      *
-     * @param QBMapper|\OCA\OpenRegister\Service\ObjectService $mapper The mapper used to find objects.
-     * @param ObjectEntity|null $object The object to substitute pointers in.
-     * @param array $serializedObject The serialized object (if the object itself is not available).
+     * @param QBMapper|\OCA\OpenRegister\Service\ObjectService $mapper           The mapper used to find objects.
+     * @param ObjectEntity|null                                $object           The object to substitute pointers in.
+     * @param array                                            $serializedObject The serialized object (if the object itself is not available).
      *
      * @return array|null The serialized object including substituted pointers.
      * @throws ContainerExceptionInterface
@@ -385,11 +391,10 @@ class EndpointService
      */
     private function replaceInternalReferences(
         QBMapper|\OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter $mapper,
-        ?ObjectEntity $object = null,
-        array $serializedObject = [],
-		array $extend = []
-    ): array
-    {
+        ?ObjectEntity $object=null,
+        array $serializedObject=[],
+        array $extend=[]
+    ): array {
         if ($serializedObject === [] && $object !== null) {
             $serializedObject = $object->jsonSerialize();
         } else if ($serializedObject === null) {
@@ -400,17 +405,16 @@ class EndpointService
         }
 
         $uses = (new Dot($object->jsonSerialize()))->flatten();
-//
-//        if(isset($serializedObject) === true && !empty($serializedObject['@self']['relations'])) {
-//            $uses = $serializedObject['@self']['relations'];
-//        }
-
+        //
+        //        if(isset($serializedObject) === true && !empty($serializedObject['@self']['relations'])) {
+        //            $uses = $serializedObject['@self']['relations'];
+        //        }
         $useUrls = [];
 
         $uuidToUrlMap = [];
         // Initiate schemaMapper here once for performance
         $schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
-        $schema        = $schemaMapper->find($object->getSchema());
+        $schema       = $schemaMapper->find($object->getSchema());
 
         // Find property names that are uris
         $validUriProperties = [];
@@ -437,50 +441,48 @@ class EndpointService
 
             if (Uuid::isValid(uuid: $use) === true) {
                 $useId = $use;
-            } else if (
-                str_contains(haystack: $use, needle: 'localhost') === true
+            } else if (str_contains(haystack: $use, needle: 'localhost') === true
                 || str_contains(haystack: $use, needle: 'nextcloud.local') === true
                 || str_contains(haystack: $use, needle: $this->urlGenerator->getBaseUrl()) === true
             ) {
                 $explodedUrl = explode(separator: '/', string: $use);
-                $useId = end($explodedUrl);
+                $useId       = end($explodedUrl);
             } else {
                 unset($uses[$key]);
                 continue;
             }
 
             try {
-                $generatedUrl = $this->generateEndpointUrl(id: $useId, parentIds: [$object->getUuid()], schemaMapper: $schemaMapper);
+                $generatedUrl         = $this->generateEndpointUrl(id: $useId, parentIds: [$object->getUuid()], schemaMapper: $schemaMapper);
                 $uuidToUrlMap[$useId] = $generatedUrl;
-                $useUrls[] = $generatedUrl;
+                $useUrls[]            = $generatedUrl;
             } catch (Exception $exception) {
                 continue;
             }
-        }
-
+        }//end foreach
 
         // @TODO: correct rewriting self url. This has to be fixed with issue CONNECTOR-314
         // Add self object URI mapping
-//        $uuidToUrlMap[$object->getUuid()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
+        //        $uuidToUrlMap[$object->getUuid()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
         $uuidToUrlMap[$object->getUri()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
 
         // @TODO: temporary fix for download endpoints. This has to be fixed with issue CONNECTOR-314
-        $uuidToUrlMap[$object->getUri(). '/download'] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper). '/download';
+        $uuidToUrlMap[$object->getUri().'/download'] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper).'/download';
 
         // Replace UUIDs in serializedObject recursively
         $serializedObject = $this->replaceUuidsInArray($serializedObject, $uuidToUrlMap, extend: $this->reduceExtendKeys($extend));
 
         return $serializedObject;
-    }
+    }//end replaceInternalReferences()
 
-	/**
-	 * Create a reduced list of extend keys and extends for checking purposes
-	 *
-	 * @param array $extend The original extend array
+    /**
+     * Create a reduced list of extend keys and extends for checking purposes
      *
-	 * @return array The reduced extend array
-	 */
-	private function reduceExtendKeys(array $extend): array
+     * @param array $extend The original extend array
+     *
+     * @return array The reduced extend array
+     */
+    private function reduceExtendKeys(array $extend): array
     {
         if (empty($extend)) {
             return $extend;
@@ -500,7 +502,7 @@ class EndpointService
             [$prefix, $newKey] = explode('.', $actualValue, 2);
 
             if (in_array($prefix, $extend, true)) {
-                $reducedKeys[] = $prefix . '.' . $newKey;
+                $reducedKeys[] = $prefix.'.'.$newKey;
                 continue;
             }
 
@@ -513,7 +515,7 @@ class EndpointService
         }
 
         return $dot->jsonSerialize();
-    }
+    }//end reduceExtendKeys()
 
     /**
      * Recursively replaces UUIDs in an array with their corresponding URLs.
@@ -522,15 +524,15 @@ class EndpointService
      * mapping array ($uuidToUrlMap) with their associated URLs. It ensures that 'id' and 'uuid'
      * fields remain unchanged.
      *
-     * @param array $data The input array that may contain UUIDs.
-     * @param array $uuidToUrlMap An associative array mapping UUIDs to URLs.
+     * @param array $data            The input array that may contain UUIDs.
+     * @param array $uuidToUrlMap    An associative array mapping UUIDs to URLs.
      * @param bool  $isRelatedObject Are we currently iterating through a related object.
      *
      * @return array The modified array with UUIDs replaced by URLs.
      */
-    private function replaceUuidsInArray(array $data, array $uuidToUrlMap, ?bool $isRelatedObject = false, array $extend = []): array {
+    private function replaceUuidsInArray(array $data, array $uuidToUrlMap, ?bool $isRelatedObject=false, array $extend=[]): array
+    {
         foreach ($data as $key => $value) {
-
             // Don't check @self
             if ($key === '@self') {
                 continue;
@@ -553,30 +555,30 @@ class EndpointService
                 continue;
             }
 
-			if (is_array($value) === true && array_is_list($value) === true && isset($extend[$key]) === true) {
-				$extend[$key] = array_fill(0, count($value), $extend[$key]);
-			}
-
+            if (is_array($value) === true && array_is_list($value) === true && isset($extend[$key]) === true) {
+                $extend[$key] = array_fill(0, count($value), $extend[$key]);
+            }
 
             if (is_array($value) === true && empty($value) === false) {
                 $data[$key] = $this->replaceUuidsInArray(
-					data: $value, uuidToUrlMap: $uuidToUrlMap,
-					isRelatedObject: true,
-					extend: isset($extend[$key]) === true && is_array($extend[$key]) === true ? $extend[$key] : $extend
-				);
-            } elseif (is_string($value) === true && isset($uuidToUrlMap[$value]) === true) {
+                    data: $value,
+                        uuidToUrlMap: $uuidToUrlMap,
+                    isRelatedObject: true,
+                    extend: isset($extend[$key]) === true && is_array($extend[$key]) === true ? $extend[$key] : $extend
+                   );
+            } else if (is_string($value) === true && isset($uuidToUrlMap[$value]) === true) {
                 $data[$key] = $uuidToUrlMap[$value];
             }
-        }
+        }//end foreach
 
         return $data;
-    }
+    }//end replaceUuidsInArray()
 
     /**
      * Inverse of replaceInternalReferences, rewriting external references to internal references for query parameters.
      *
-     * @param array $parameters The incoming request parameters.
-     * @param \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper The ObjectService containing the request schema.
+     * @param array                                                                                                 $parameters The incoming request parameters.
+     * @param \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper     The ObjectService containing the request schema.
      *
      * @return array The updated request parameters.
      *
@@ -585,31 +587,30 @@ class EndpointService
     private function rewriteExternalReferences(array $parameters, \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper): array
     {
         $schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
-        $schema        = $schemaMapper->find($mapper->getSchema());
+        $schema       = $schemaMapper->find($mapper->getSchema());
 
         $rewriteParameters = array_intersect(array_keys($parameters), array_keys($schema->getProperties()));
 
-        foreach($rewriteParameters as $rewriteParameter) {
+        foreach ($rewriteParameters as $rewriteParameter) {
             if (is_array($parameters[$rewriteParameter]) === true) {
-                //@TODO: this is a dirty hotfix, here we should run through values
+                // @TODO: this is a dirty hotfix, here we should run through values
                 continue;
             }
 
-            if (
-                filter_var($parameters[$rewriteParameter], FILTER_VALIDATE_URL) === false
-				|| in_array(parse_url($parameters[$rewriteParameter], PHP_URL_HOST), $this->config->getSystemValue('trusted_domains')) === false
+            if (filter_var($parameters[$rewriteParameter], FILTER_VALIDATE_URL) === false
+                || in_array(parse_url($parameters[$rewriteParameter], PHP_URL_HOST), $this->config->getSystemValue('trusted_domains')) === false
             ) {
                 continue;
             }
 
             $parsedPath = parse_url($parameters[$rewriteParameter], PHP_URL_PATH);
             $parsedPath = substr($parsedPath, 33);
-            $endpoints = $this->endpointMapper->findByPathRegex(
+            $endpoints  = $this->endpointMapper->findByPathRegex(
                 path: $parsedPath,
                 method: 'GET'
             );
 
-            if(count($endpoints) < 1) {
+            if (count($endpoints) < 1) {
                 continue;
             }
 
@@ -617,29 +618,27 @@ class EndpointService
 
             $pathArray = $this->getPathParameters(endpointArray: $endpoint->getEndpointArray(), path: $parsedPath);
             $parameters[$rewriteParameter] = [$parameters[$rewriteParameter], end($pathArray)];
-
-        }
+        }//end foreach
 
         return $parameters;
-    }
+    }//end rewriteExternalReferences()
 
     /**
      * Fetch objects for the endpoint.
      *
-     * @param \OCA\OpenRegister\Service\ObjectService|QBMapper $mapper The mapper for the object type
-     * @param array $parameters The parameters from the request
-     * @param array $pathParams The parameters in the path
-     * @param int $status The HTTP status to return.
+     * @param  \OCA\OpenRegister\Service\ObjectService|QBMapper $mapper     The mapper for the object type
+     * @param  array                                            $parameters The parameters from the request
+     * @param  array                                            $pathParams The parameters in the path
+     * @param  int                                              $status     The HTTP status to return.
      * @return Entity|array The object(s) confirming to the request.
      * @throws Exception
      */
     private function getObjects(
         \OCA\OpenRegister\Service\ObjectService|\OCA\OpenRegister\Service\ObjectServiceMapperAdapter|QBMapper $mapper,
-        array                                            $parameters,
-        array                                            $pathParams,
-        int                                              &$status = 200
-    ): Entity|array
-    {
+        array $parameters,
+        array $pathParams,
+        int &$status=200
+    ): Entity|array {
         if (isset($pathParams['id']) === true && $pathParams['id'] === end($pathParams)) {
             try {
                 $serializedObject = $mapper->find($pathParams['id'], extend: $parameters['extend'] ?? $parameters['_extend'] ?? null)->jsonSerialize();
@@ -647,16 +646,15 @@ class EndpointService
                 $status = 404;
                 return ['error' => 'not found', 'message' => "the object with id {$pathParams['id']} does not exist"];
             }
+
             $result = $this->replaceInternalReferences(
-				mapper: $mapper,
-				serializedObject: $serializedObject,
-				extend: $parameters['extend'] ?? $parameters['_extend'] ?? []
+                mapper: $mapper,
+                serializedObject: $serializedObject,
+                extend: $parameters['extend'] ?? $parameters['_extend'] ?? []
             );
 
-			return $result;
-
+            return $result;
         } else if (isset($pathParams['id']) === true) {
-
             // Set the array pointer to the location of the id, so we can fetch the parameters further down the line in order.
             while (prev($pathParams) !== $pathParams['id']) {
             }
@@ -669,7 +667,7 @@ class EndpointService
 
             $main = $mapper->find($pathParams['id'])->getObject();
 
-            if(isset($main[$property]) === false) {
+            if (isset($main[$property]) === false) {
                 return $this->replaceInternalReferences(mapper: $mapper, object: $mapper->find($pathParams['id']));
             }
 
@@ -677,8 +675,8 @@ class EndpointService
 
             if (isset($ids) === false || $ids === null || empty($ids) === true) {
                 $returnArray = [
-                    'count' => 0,
-                    'results' => []
+                    'count'   => 0,
+                    'results' => [],
                 ];
 
                 return $returnArray;
@@ -691,7 +689,6 @@ class EndpointService
             } else if (isset($id) === true) {
                 $status = 404;
                 return ['error' => 'not found', 'message' => "the subobject with id $id does not exist"];
-
             }
 
             $results = $mapper->findAll(['ids' => $ids]);
@@ -700,12 +697,12 @@ class EndpointService
             }
 
             $returnArray = [
-                'count' => count($results),
-                'results' => $results
+                'count'   => count($results),
+                'results' => $results,
             ];
 
             return $returnArray;
-        }
+        }//end if
 
         $parameters = $this->rewriteExternalReferences($parameters, $mapper);
 
@@ -713,7 +710,7 @@ class EndpointService
             $parameters['_limit'] = 30;
         }
 
-        $result = $mapper->findAllPaginated(requestParams: $parameters);
+        $result   = $mapper->findAllPaginated(requestParams: $parameters);
         $promises = [];
 
         foreach ($result['results'] as $index => $object) {
@@ -722,7 +719,7 @@ class EndpointService
                     try {
                         $updatedObject = $this->replaceInternalReferences(mapper: $mapper, serializedObject: $object->jsonSerialize());
                         $resolve($updatedObject);
-                    } catch(\Throwable $e) {
+                    } catch (\Throwable $e) {
                         $reject($e);
                     }
                 }
@@ -736,7 +733,7 @@ class EndpointService
         ];
 
         if ($result['page'] < $result['pages']) {
-            $parameters['page'] = $result['page'] + 1;
+            $parameters['page']  = $result['page'] + 1;
             $parameters['_path'] = implode('/', $pathParams);
 
             $returnArray['next'] = $this->urlGenerator->getAbsoluteURL(
@@ -746,8 +743,9 @@ class EndpointService
                 )
             );
         }
+
         if ($result['page'] > 1) {
-            $parameters['page'] = $result['page'] - 1;
+            $parameters['page']  = $result['page'] - 1;
             $parameters['_path'] = implode('/', $pathParams);
 
             $returnArray['previous'] = $this->urlGenerator->getAbsoluteURL(
@@ -761,14 +759,14 @@ class EndpointService
         $returnArray['results'] = $result['results'];
 
         return $returnArray;
-    }
+    }//end getObjects()
 
     /**
      * Handles requests for schema-based endpoints
      *
      * @param Endpoint $endpoint The endpoint configuration
-     * @param IRequest $request The incoming request
-     * @param string $path
+     * @param IRequest $request  The incoming request
+     * @param string   $path
      *
      * @return JSONResponse
      * @throws DoesNotExistException|LoaderError|MultipleObjectsReturnedException|SyntaxError
@@ -782,15 +780,15 @@ class EndpointService
         $target = explode('/', $endpoint->getTargetId());
 
         $register = $target[0];
-        $schema = $target[1];
+        $schema   = $target[1];
 
-        $mapper = $this->objectService->getMapper(schema: (int)$schema, register: (int)$register);
+        $mapper = $this->objectService->getMapper(schema: (int) $schema, register: (int) $register);
 
         $parameters = $flowToken->getRequestAmended()['parameters'];
 
         if ($endpoint->getInputMapping() !== null) {
             $inputMapping = $this->mappingService->getMapping($endpoint->getInputMapping());
-            $parameters = $this->mappingService->executeMapping(mapping: $inputMapping, input: $parameters);
+            $parameters   = $this->mappingService->executeMapping(mapping: $inputMapping, input: $parameters);
         }
 
         $pathParams = $this->getPathParameters($endpoint->getEndpointArray(), $path);
@@ -798,10 +796,10 @@ class EndpointService
         if (isset($pathParams['id']) === true) {
             $parameters['id'] = $pathParams['id'];
         }
+
         foreach ($this::UNSET_PARAMETERS as $parameter) {
             unset($parameters[$parameter]);
         }
-
 
         $status = 200;
 
@@ -814,7 +812,7 @@ class EndpointService
         try {
             switch ($method) {
                 case 'GET':
-                    $response =  new JSONResponse(
+                    $response = new JSONResponse(
                         $this->getObjects(mapper: $mapper, parameters: $parameters, pathParams: $pathParams, status: $status),
                         statusCode: $status,
                         headers: $headers
@@ -823,7 +821,7 @@ class EndpointService
                     $flowToken->setResponseAmended($flowToken->getResponseOriginal());
                     return $response;
                 case 'POST':
-                    $response =  new JSONResponse(
+                    $response = new JSONResponse(
                         $this->replaceInternalReferences(
                             mapper: $mapper,
                             serializedObject: $mapper->createFromArray(object: $parameters)->jsonSerialize()
@@ -843,7 +841,7 @@ class EndpointService
                     $flowToken->setResponseAmended($flowToken->getResponseOriginal());
                     return $response;
                 case 'PATCH':
-                    $response =  new JSONResponse(
+                    $response = new JSONResponse(
                         $this->replaceInternalReferences(
                             mapper: $mapper,
                             serializedObject: $mapper->updateFromArray($parameters['id'], $flowToken->getRequestAmended()['parameters'], true, true)->jsonSerialize()
@@ -854,10 +852,9 @@ class EndpointService
                     return $response;
                 case 'DELETE':
                     if (isset($parameters['id']) === false) {
-                        $response =  new JSONResponse(data: ['error' => 'No id given to delete'], statusCode: 400);
+                        $response = new JSONResponse(data: ['error' => 'No id given to delete'], statusCode: 400);
                         $flowToken->setResponseOriginal($response);
                         return $response;
-
                     }
 
                     if ($mapper->delete(['id' => $parameters['id']]) !== true) {
@@ -874,18 +871,16 @@ class EndpointService
 
                 default:
                     throw new Exception('Unsupported HTTP method');
-            }
-
+            }//end switch
         } catch (Exception $exception) {
-
             if (in_array(get_class($exception), ['OCA\OpenRegister\Exception\ValidationException', 'OCA\OpenRegister\Exception\CustomValidationException']) === true) {
                 return $mapper->getValidateHandler()->handleValidationException(exception: $exception);
             }
 
             throw $exception;
-        }
+        }//end try
 
-    }
+    }//end handleSchemaRequest()
 
     /**
      * Gets the raw content for a http request from the input stream.
@@ -895,17 +890,17 @@ class EndpointService
     private function getRawContent(): string
     {
         return file_get_contents(filename: 'php://input');
-    }
+    }//end getRawContent()
 
     /**
      * Get all headers for a HTTP request.
      *
-     * @param array $server The server data from the request.
-     * @param bool $proxyHeaders Whether the proxy headers should be returned.
+     * @param array $server       The server data from the request.
+     * @param bool  $proxyHeaders Whether the proxy headers should be returned.
      *
      * @return array The resulting headers.
      */
-    private function getHeaders(array $server, bool $proxyHeaders = false): array
+    private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
         $headers = array_filter(
             array: $server,
@@ -914,8 +909,7 @@ class EndpointService
                     return false;
                 } else if ($proxyHeaders === false
                     && (str_starts_with(haystack: $key, needle: 'HTTP_X_FORWARDED') === true
-                        || $key === 'HTTP_X_REAL_IP' || $key === 'HTTP_X_ORIGINAL_URI'
-                    )
+                    || $key === 'HTTP_X_REAL_IP' || $key === 'HTTP_X_ORIGINAL_URI')
                 ) {
                     return false;
                 }
@@ -932,25 +926,26 @@ class EndpointService
                 callback: function ($key) {
                     return strtolower(string: substr(string: $key, offset: 5));
                 },
-                array: $keys),
+                array: $keys
+                    ),
             $headers
         );
-    }
+    }//end getHeaders()
 
     /**
      * Check conditions for using an endpoint.
      *
      * @param Endpoint $endpoint The endpoint for which the checks should be done.
-     * @param IRequest $request The inbound request.
+     * @param IRequest $request  The inbound request.
      *
      * @return array
      * @throws Exception
      */
     private function checkConditions(Endpoint $endpoint, IRequest $request): array
     {
-        $conditions = $endpoint->getConditions();
+        $conditions         = $endpoint->getConditions();
         $data['parameters'] = $request->getParams();
-        $data['headers'] = $this->getHeaders($request->server, true);
+        $data['headers']    = $this->getHeaders($request->server, true);
 
         $result = JsonLogic::apply(logic: $conditions, data: $data);
 
@@ -959,13 +954,13 @@ class EndpointService
         }
 
         return $result;
-    }
+    }//end checkConditions()
 
     /**
      * Handles requests for source-based endpoints
      *
      * @param Endpoint $endpoint The endpoint configuration
-     * @param IRequest $request The incoming request
+     * @param IRequest $request  The incoming request
      *
      * @return JSONResponse
      * @throws GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception
@@ -980,9 +975,9 @@ class EndpointService
             endpoint: $endpoint->getPath(),
             method: $request->getMethod(),
             config: [
-                'query' => $request->getParams(),
+                'query'   => $request->getParams(),
                 'headers' => $headers,
-                'body' => $this->getRawContent(),
+                'body'    => $this->getRawContent(),
             ]
         );
 
@@ -990,40 +985,46 @@ class EndpointService
             $response->getResponse(),
             $response->getStatusCode()
         );
-    }
+    }//end handleSourceRequest()
 
     /**
      * Generates url based on available endpoints for the object type.
      *
-     * @param string $id The id of the object to generate an url for.
+     * @param string                           $id           The id of the object to generate an url for.
      * @param OCA\OpenRegister\Db\SchemaMapper $schemaMapper The mapper to get schemas
-     * @param int|null $register The register of the object (aids performance).
-     * @param int|null $schema The schema of the object (aids performance).
-     * @param array $parentIds The ids of the main object on subobjects.
+     * @param int|null                         $register     The register of the object (aids performance).
+     * @param int|null                         $schema       The schema of the object (aids performance).
+     * @param array                            $parentIds    The ids of the main object on subobjects.
      *
      * @return string The generated url.
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function generateEndpointUrl(string $id, \OCA\OpenRegister\Db\SchemaMapper $schemaMapper, ?int $register = null, ?int $schema = null, array $parentIds = []): string
+    public function generateEndpointUrl(string $id, \OCA\OpenRegister\Db\SchemaMapper $schemaMapper, ?int $register=null, ?int $schema=null, array $parentIds=[]): string
     {
         if ($register === null) {
-            $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($id);
+            $object   = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($id);
             $register = $object->getRegister();
             $schema   = $object->getSchema();
         }
 
-        $target = "$register/$schema";
+        $target    = "$register/$schema";
         $endpoints = $this->endpointMapper->findAll(filters: ['target_id' => $target, 'method' => 'GET']);
 
         if (count($endpoints) === 0) {
             return $id;
         }
 
-        $endpoint = $endpoints[0];
-        $filteredEndpoints = array_filter($endpoints, function(Endpoint $endpoint) {return in_array(needle: '{{id}}', haystack: $endpoint->getEndpointArray()) === true;});
+        $endpoint          = $endpoints[0];
+        $filteredEndpoints = array_filter(
+                $endpoints,
+                function (Endpoint $endpoint) {
+                    return in_array(needle: '{{id}}', haystack: $endpoint->getEndpointArray()) === true;
 
-        if(count($filteredEndpoints) > 0) {
+                }
+                );
+
+        if (count($filteredEndpoints) > 0) {
             $endpoint = array_shift($filteredEndpoints);
         }
 
@@ -1053,10 +1054,10 @@ class EndpointService
                 if ($placeholder === 'id' && $parentId !== null && $isSubEndpoint === true) {
                     // Replace {{id}} with parent id if set
                     $location[$key] = $parentId;
-                } elseif ($placeholder === 'id') {
+                } else if ($placeholder === 'id') {
                     // Otherwise, replace {{id}} with current object id
                     $location[$key] = $id;
-                } elseif ($placeholder === "{$schemaTitle}_id") {
+                } else if ($placeholder === "{$schemaTitle}_id") {
                     // Replace {{schematitle_id}} with object id
                     $location[$key] = $id;
                 }
@@ -1065,12 +1066,12 @@ class EndpointService
 
         $path = implode(separator: '/', array: $location);
         return $this->urlGenerator->getBaseUrl().'/apps/openconnector/api/endpoint/'.$path;
-    }
+    }//end generateEndpointUrl()
 
     /**
      * Saves object to OpenRegister
      *
-     * @param Rule $rule
+     * @param Rule  $rule
      * @param array $data
      *
      * @return array $data
@@ -1078,30 +1079,30 @@ class EndpointService
     private function processSaveObjectRule(Rule $rule, array $data): array
     {
         $configuration = $rule->getConfiguration();
-        $register = $configuration['save_object']['register'];
-        $schema = $configuration['save_object']['schema'];
-        $mapping = $configuration['save_object']['mapping'] ?? null;
+        $register      = $configuration['save_object']['register'];
+        $schema        = $configuration['save_object']['schema'];
+        $mapping       = $configuration['save_object']['mapping'] ?? null;
 
         if (isset($mapping) === true) {
             $data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
         }
 
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-        $data['body'] = $objectService->saveObject(register: $register, schema: $schema, object: $data['body']);
+        $data['body']  = $objectService->saveObject(register: $register, schema: $schema, object: $data['body']);
 
         return $data;
-    }
+    }//end processSaveObjectRule()
 
     /**
      * Processes rules for an endpoint request
      *
      * @param Endpoint $endpoint The endpoint being processed
-     * @param IRequest $request The incoming request
-     * @param array $data Current request data
+     * @param IRequest $request  The incoming request
+     * @param array    $data     Current request data
      *
      * @return array|JSONResponse Returns modified data or error response if rule fails
      */
-    private function processRules(Endpoint $endpoint, IRequest $request, array $data, string $timing, ?string $objectId = null, FlowToken $flowToken = null): array|Response
+    private function processRules(Endpoint $endpoint, IRequest $request, array $data, string $timing, ?string $objectId=null, FlowToken $flowToken=null): array|Response
     {
 
         $rules = $endpoint->getRules();
@@ -1123,30 +1124,28 @@ class EndpointService
 
             // Process each rule in order
             foreach ($ruleEntities as $rule) {
-
-//                // Skip if rule action doesn't match request method
-//                if (strtolower($rule->getAction()) !== strtolower($request->getMethod())) {
-//                    continue;
-//                }
-
+                //                // Skip if rule action doesn't match request method
+                //                if (strtolower($rule->getAction()) !== strtolower($request->getMethod())) {
+                //                    continue;
+                //                }
                 $logicResult = null;
 
                 $data['flowToken'] = $flowToken->__serialize();
 
                 // Check rule conditions
                 if ($this->checkRuleConditions(rule: $rule, data: $data, logicResult:  $logicResult) === false || $rule->getTiming() !== $timing) {
-                    $this->logger->info('Rule condition check failed for endpoint ' . $endpoint->getName() . ' and rule ' . $rule->getName() . ' of type: ' . $rule->getType());
+                    $this->logger->info('Rule condition check failed for endpoint '.$endpoint->getName().' and rule '.$rule->getName().' of type: '.$rule->getType());
 
                     continue;
                 }
 
-                if(is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
+                if (is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
                     $data['logicResult'] = json_decode($logicResult, true);
                 } else {
                     $data['logicResult'] = $logicResult;
                 }
 
-                $this->logger->info('Applying rule for endpoint ' . $endpoint->getName() . ' with rule ' . $rule->getName() . ' of type ' . $rule->getType());
+                $this->logger->info('Applying rule for endpoint '.$endpoint->getName().' with rule '.$rule->getName().' of type '.$rule->getType());
 
                 // At this moment, setting flowToken in $data when processing rules will result in data contamination.
                 unset($data['flowToken']);
@@ -1170,40 +1169,40 @@ class EndpointService
                         'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
                         'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
                         'custom' => $this->processCustomRule(rule: $rule, data: $data),
-                        default => throw new Exception('Unsupported rule type: ' . $rule->getType()),
+                        default => throw new Exception('Unsupported rule type: '.$rule->getType()),
                     };
                 } catch (Exception $e) {
-                    $message = 'Failed to apply rule for endpoint ' . $endpoint->getName() . ' with rule ' . $rule->getName() . ' of type ' . $rule->getType() . '. With error message: ' . $e->getMessage();
+                    $message = 'Failed to apply rule for endpoint '.$endpoint->getName().' with rule '.$rule->getName().' of type '.$rule->getType().'. With error message: '.$e->getMessage();
                     $this->logger->error($message);
                     return new JSONResponse(['error' => $message], 500);
-                }
+                }//end try
 
                 // If result is JSONResponse, return error immediately
-                if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true ) {
+                if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true) {
                     return $result;
                 }
 
                 // Update data with rule result
                 $data = $result;
 
-                $this->logger->info('Successfully applied rule for endpoint ' . $endpoint->getName() . ' with rule ' . $rule->getName() . ' of type ' . $rule->getType());
-			}
+                $this->logger->info('Successfully applied rule for endpoint '.$endpoint->getName().' with rule '.$rule->getName().' of type '.$rule->getType());
+            }//end foreach
 
-			unset($data['body']['_extendedInput']);
+            unset($data['body']['_extendedInput']);
 
-			return $data;
+            return $data;
         } catch (Exception $e) {
-            $this->logger->error('Error processing rules: ' . $e->getMessage());
-            return new JSONResponse(['error' => 'Rule processing failed: ' . $e->getMessage()], 500);
-        }
-    }
+            $this->logger->error('Error processing rules: '.$e->getMessage());
+            return new JSONResponse(['error' => 'Rule processing failed: '.$e->getMessage()], 500);
+        }//end try
+    }//end processRules()
 
     /**
      * This rule, that only can be run on timing 'after' overrides the content of a written object by the updated contents in the flow token.
      *
-     * @param Rule $rule The rule to process.
-     * @param array $data The data from the flow token.
-     * @param string $objectId The object to override.
+     * @param  Rule   $rule     The rule to process.
+     * @param  array  $data     The data from the flow token.
+     * @param  string $objectId The object to override.
      * @return array The updated object.
      *
      * @throws ContainerExceptionInterface
@@ -1224,7 +1223,7 @@ class EndpointService
         $data['body'] = $object->jsonSerialize();
 
         return $data;
-    }
+    }//end processOverrideRule()
 
     /**
      * Get a rule by its ID using RuleMapper
@@ -1236,17 +1235,17 @@ class EndpointService
     private function getRuleById(string $id): ?Rule
     {
         try {
-            return $this->ruleMapper->find((int)$id);
+            return $this->ruleMapper->find((int) $id);
         } catch (Exception $e) {
-            $this->logger->error('Error fetching rule: ' . $e->getMessage());
+            $this->logger->error('Error fetching rule: '.$e->getMessage());
             return null;
         }
-    }
+    }//end getRuleById()
 
     /**
      * Processes authentication rules
      *
-     * @param Rule $rule The rule to process
+     * @param Rule  $rule The rule to process
      * @param array $data The data of the request
      *
      * @return array|JSONResponse the unchanged $data array if authentication succeeds, or a JSONResponse containing an error on authentication.
@@ -1254,24 +1253,21 @@ class EndpointService
     private function processAuthenticationRule(Rule $rule, array $data): array|JSONResponse
     {
         $configuration = $rule->getConfiguration();
-        $header = $data['headers']['Authorization'] ?? $data['headers']['authorization'] ?? '';
+        $header        = $data['headers']['Authorization'] ?? $data['headers']['authorization'] ?? '';
 
-		if(isset($configuration['authentication']) === false) {
-			return $data;
-		}
+        if (isset($configuration['authentication']) === false) {
+            return $data;
+        }
 
-		if (isset($configuration['authentication']['header']) === true) {
-			$header = $data['headers'][$configuration['authentication']['header']] ??
-				$data['headers'][strtolower($configuration['authentication']['header'])] ??
-				$data['headers'][str_replace(search: '-', replace: '_', subject: strtolower($configuration['authentication']['header']))] ??
-				null;
-		}
+        if (isset($configuration['authentication']['header']) === true) {
+            $header = $data['headers'][$configuration['authentication']['header']] ?? $data['headers'][strtolower($configuration['authentication']['header'])] ?? $data['headers'][str_replace(search: '-', replace: '_', subject: strtolower($configuration['authentication']['header']))] ?? null;
+        }
 
         if ($header === '' || $header === null) {
             return new JSONResponse(['error' => 'forbidden', 'details' => 'you are not allowed to access this endpoint unauththenticated'], Http::STATUS_FORBIDDEN);
         }
 
-        switch($configuration['authentication']['type']) {
+        switch ($configuration['authentication']['type']) {
             case 'apikey':
                 try {
                     $this->authorizationService->authorizeApiKey(header: $header, keys: $configuration['authentication']['keys']);
@@ -1315,10 +1311,10 @@ class EndpointService
                 break;
             default:
                 return new JSONResponse(data: ['error' => 'The authentication method is not supported'], statusCode: Http::STATUS_NOT_IMPLEMENTED);
-        }
+        }//end switch
 
         return $data;
-    }
+    }//end processAuthenticationRule()
 
     /**
      * Processes an error rule
@@ -1327,12 +1323,12 @@ class EndpointService
      *
      * @return JSONResponse Response containing error details and HTTP status code
      */
-    private function processErrorRule(Rule $rule, array $data = []): JSONResponse
+    private function processErrorRule(Rule $rule, array $data=[]): JSONResponse
     {
         $config = $rule->getConfiguration();
 
         $response = [
-            'error' => $config['error']['name'],
+            'error'   => $config['error']['name'],
             'message' => $config['error']['message'],
         ];
 
@@ -1345,13 +1341,13 @@ class EndpointService
             $response,
             $config['error']['code']
         );
-    }
+    }//end processErrorRule()
 
     /**
      * Executes mapping on data from endpoint flow
      *
      * @param mapping $mapping
-     * @param array $data
+     * @param array   $data
      *
      * @return array $data
      */
@@ -1373,12 +1369,12 @@ class EndpointService
         $data['body'] = $this->mappingService->executeMapping($mapping, $data['body']);
 
         return $data;
-    }
+    }//end processMapping()
 
     /**
      * Processes a mapping rule
      *
-     * @param Rule $rule The rule object containing mapping details
+     * @param Rule  $rule The rule object containing mapping details
      * @param array $data The data to be processed through the mapping rule
      *
      * @return array The processed data after applying the mapping rule
@@ -1389,18 +1385,18 @@ class EndpointService
      */
     private function processMappingRule(Rule $rule, array $data): array
     {
-        $config = $rule->getConfiguration();
+        $config  = $rule->getConfiguration();
         $mapping = $this->mappingService->getMapping($config['mapping']);
 
         $data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
 
         return $data;
-    }
+    }//end processMappingRule()
 
     /**
      * Extends input for performing business logic
      *
-     * @param Rule $rule The rule containing the configuration which parameters could be extended
+     * @param Rule  $rule The rule containing the configuration which parameters could be extended
      * @param array $data The data array containing the input parameters.
      *
      * @return array The data array with the extended parameters in the 'extendedParameters' key.
@@ -1410,26 +1406,26 @@ class EndpointService
     private function processExtendInputRule(Rule $rule, array $data): array
     {
         $parameters = new Dot($data['parameters']);
-        $config = $rule->getConfiguration();
+        $config     = $rule->getConfiguration();
         $extendedParameters = new Dot();
 
         foreach ($config['extend_input']['properties'] as $property) {
             $value = $parameters->get($property);
 
-            if(filter_var($value, FILTER_VALIDATE_URL) !== false) {
+            if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
                 $exploded = explode(separator: '/', string: $value);
-                $value = end($exploded);
+                $value    = end($exploded);
             }
 
             // Only allow uuids in the extend_input rule
-            if(Uuid::isValid($value) === false) {
+            if (Uuid::isValid($value) === false) {
                 continue;
             }
 
-			$extends = [];
-			if(isset($config['extend_input']['extends']) === true && isset($config['extend_input']['extends'][$property]) === true) {
-				$extends = $config['extend_input']['extends'][$property];
-			}
+            $extends = [];
+            if (isset($config['extend_input']['extends']) === true && isset($config['extend_input']['extends'][$property]) === true) {
+                $extends = $config['extend_input']['extends'][$property];
+            }
 
             try {
                 $object = $this->objectService->getOpenRegisters()->find(id: $value, extend: $extends);
@@ -1438,28 +1434,28 @@ class EndpointService
                 $this->objectService->getOpenRegisters()->clearCurrents();
                 continue;
             }
+
             $extendedParameters->add($property, $object->jsonSerialize());
+        }//end foreach
 
-        }
-
-		if (isset($data['extendedParameters']) === true) {
-			$data['extendedParameters'] = array_merge($extendedParameters->all(), $data['extendedParameters']);
-		} else {
+        if (isset($data['extendedParameters']) === true) {
+            $data['extendedParameters'] = array_merge($extendedParameters->all(), $data['extendedParameters']);
+        } else {
             $data['extendedParameters'] = $extendedParameters->all();
         }
 
-		$data['body']['_extendedInput'] = $data['extendedParameters'];
+        $data['body']['_extendedInput'] = $data['extendedParameters'];
 
         return $data;
-    }
+    }//end processExtendInputRule()
 
     /**
      * Fetches the audit trail for an object, returns a specific audit rule if the path parameter audittrail-id is specified.
      *
-     * @param Rule $rule The rule to execute
+     * @param Rule     $rule     The rule to execute
      * @param Endpoint $endpoint The endpoint on which the rule is executed
-     * @param array $data The data from the request.
-     * @param string $objectId The object id for which the request was done.
+     * @param array    $data     The data from the request.
+     * @param string   $objectId The object id for which the request was done.
      *
      * @return array|Response The updated data array, or a json response with a not found error.
      *
@@ -1471,30 +1467,29 @@ class EndpointService
 
         $pathParameters = $this->getPathParameters(endpointArray: $endpoint->getEndpointArray(), path: $data['path']);
 
-        if(isset($pathParameters['audittrail-id']) === true) {
+        if (isset($pathParameters['audittrail-id']) === true) {
             $auditrule = $this->objectService->getOpenRegisters()->getLogs($objectId, filters: ['uuid' => $pathParameters['audittrail-id']]);
 
-            if(count($auditrule) === 1) {
+            if (count($auditrule) === 1) {
                 $data['body'] = $auditrule[0];
                 return $data;
             }
 
             return new JSONResponse(data: ['error' => 'Not found', 'reason' => 'The resource you are looking for does not exist'], statusCode: HTTP::STATUS_NOT_FOUND);
-
         }
+
         $audittrail = $this->objectService->getOpenRegisters()->getLogs($objectId);
 
         $data['body'] = $audittrail;
 
-
         return $data;
-    }
+    }//end processAuditTrailRule()
 
     /**
      * Process a locking rule, either locking or unlocking a resource.
      *
-     * @param Rule $rule Rule containing configuration for the execution of the rule.
-     * @param array $data The data to update
+     * @param Rule   $rule     Rule containing configuration for the execution of the rule.
+     * @param array  $data     The data to update
      * @param string $objectId The object id of the object to lock or unlock
      *
      * @return array The updated data array.
@@ -1507,9 +1502,9 @@ class EndpointService
     {
         $config = $rule->getConfiguration();
 
-        if($config['locking']['action'] === 'lock') {
+        if ($config['locking']['action'] === 'lock') {
             $process = (Uuid::v4())->jsonSerialize();
-            $object = $this->objectService->getOpenRegisters()->lockObject(identifier: $objectId, process: $process, duration: $config['locking']['duration'] ?? 3600);
+            $object  = $this->objectService->getOpenRegisters()->lockObject(identifier: $objectId, process: $process, duration: $config['locking']['duration'] ?? 3600);
         } else if ($config['locking']['action'] === 'unlock') {
             $object = $this->objectService->getOpenRegisters()->unlockObject(identifier: $objectId);
         }
@@ -1517,12 +1512,12 @@ class EndpointService
         $data['body'] = $object->jsonSerialize();
 
         return $data;
-    }
+    }//end processLockingRule()
 
     /**
      * Process a custom rule
      *
-     * @param Rule $rule The rule to process
+     * @param Rule  $rule The rule to process
      * @param array $data The data to process
      *
      * @return array The updated data array.
@@ -1530,16 +1525,16 @@ class EndpointService
     private function processCustomRule(Rule $rule, array $data): array|JSONResponse
     {
         return $this->ruleService->processCustomRule(rule: $rule, data: $data);
-    }
+    }//end processCustomRule()
 
     /**
      * Process a rule to write files.
      *
-     * @param Rule $rule The rule to process.
-     * @param array $data The data to write.
-     * @param string $objectId The object to write the data to.
-     * @param int $registerId The register the object is in.
-     * @param int $schemaId The schema the object is in.
+     * @param Rule   $rule       The rule to process.
+     * @param array  $data       The data to write.
+     * @param string $objectId   The object to write the data to.
+     * @param int    $registerId The register the object is in.
+     * @param int    $schemaId   The schema the object is in.
      *
      * @return array
      * @throws ContainerExceptionInterface
@@ -1554,7 +1549,7 @@ class EndpointService
 
         $config  = $rule->getConfiguration()['write_file'];
         $dataDot = new Dot($data);
-        $files = $dataDot[$config['filePath']];
+        $files   = $dataDot[$config['filePath']];
         if (isset($files) === false || empty($files) === true) {
             return $dataDot->jsonSerialize();
         }
@@ -1563,15 +1558,16 @@ class EndpointService
         if (is_array($files) === true && isset($files[0]) === true & array_keys($files[0]) !== range(0, count($files[0]) - 1)) {
             $result = [];
             foreach ($files as $key => $value) {
-
                 // Check for tags
                 $tags = [];
                 if (is_array($value) === true) {
                     $content = $value['content'];
-                    if (isset($value['label']) === true && isset($config['tags']) === true &&
-                        in_array(needle: $value['label'], haystack: $config['tags']) === true) {
+                    if (isset($value['label']) === true && isset($config['tags']) === true
+                        && in_array(needle: $value['label'], haystack: $config['tags']) === true
+                    ) {
                         $tags = [$value['label']];
                     }
+
                     if (isset($value['filename']) === true) {
                         $fileName = $value['filename'];
                     }
@@ -1582,47 +1578,48 @@ class EndpointService
                 try {
                     // Write file with OpenRegister ObjectService.
                     $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-                    $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-                    $file = $fileService->addFile(objectEntity: $objectService->find($objectId), fileName: $fileName, content: base64_decode($content));
+                    $fileService   = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+                    $file          = $fileService->addFile(objectEntity: $objectService->find($objectId), fileName: $fileName, content: base64_decode($content));
 
                     $tags = array_merge($config['tags'] ?? [], ["object:$objectId"]);
                     if ($file instanceof \OCP\Files\File === true) {
-//                        $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+                        //                        $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
                     }
 
                     $result[$key] = $file->getPath();
                 } catch (Exception $exception) {
                 }
-            }
+            }//end foreach
+
             $result[$key] = $file->getPath();
             $dataDot[$config['filePath']] = $result;
         } else {
-            $content = $files;
+            $content  = $files;
             $fileName = $dataDot[$config['fileNamePath']];
 
             try {
                 // Write file with OpenRegister ObjectService.
                 $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-				$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-                $file = $fileService->addFile(objectEntity: $objectService->find($objectId), fileName: $fileName, content: base64_decode($content));
+                $fileService   = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+                $file          = $fileService->addFile(objectEntity: $objectService->find($objectId), fileName: $fileName, content: base64_decode($content));
 
                 $tags = array_merge($config['tags'] ?? [], ["object:$objectId"]);
                 if ($file instanceof File === true) {
-//                    $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+                    //                    $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
                 }
+
                 $dataDot[$config['filePath']] = $file->getPath();
             } catch (Exception $exception) {
             }
-        }
-
+        }//end if
 
         return $dataDot->jsonSerialize();
-    }
+    }//end processWriteFileRule()
 
     /**
      * Processes a synchronization rule
      *
-     * @param Rule $rule The rule object containing synchronization details
+     * @param Rule  $rule The rule object containing synchronization details
      * @param array $data The data to be synchronized
      *
      * @return array The data after synchronization processing
@@ -1632,7 +1629,7 @@ class EndpointService
         $config = $rule->getConfiguration();
 
         // Check if base requirement is in config.
-        if(isset($config['synchronization']) === false) {
+        if (isset($config['synchronization']) === false) {
             return $data;
         }
 
@@ -1642,7 +1639,6 @@ class EndpointService
             $synchronizationId = $config['synchronization'];
         }
 
-
         // Fetch the synchronization.
         if (is_numeric($synchronizationId) === true) {
             $synchronization = $this->synchronizationService->getSynchronization(id: (int) $synchronizationId);
@@ -1651,18 +1647,18 @@ class EndpointService
         }
 
         // Check if the synchronization should be in test mode.
-        if(isset($data['body']['isTest']) === true) {
+        if (isset($data['body']['isTest']) === true) {
             $test = $data['body']['isTest'];
-        } elseif (isset($config['isTest']) === true) {
+        } else if (isset($config['isTest']) === true) {
             $test = $config['isTest'];
         } else {
             $test = false;
         }
 
         // Check if the synchronization should be forced.
-        if(isset($data['body']['force']) === true) {
+        if (isset($data['body']['force']) === true) {
             $force = $data['body']['force'];
-        } elseif (isset($config['force']) === true) {
+        } else if (isset($config['force']) === true) {
             $force = $config['force'];
         } else {
             $force = false;
@@ -1677,11 +1673,10 @@ class EndpointService
         $sendObject = $object;
 
         // If we have an objectIdPath, pull the id from the body and fetch the object from the database.
-
         $fetchedObject = null;
 
         if (isset($config['synchronization']['preDelay']) === true && is_int($config['synchronization']['preDelay']) === true) {
-            sleep ($config['synchronization']['preDelay']);
+            sleep($config['synchronization']['preDelay']);
         }
 
         if (isset($config['synchronization']['objectIdPath']) === true) {
@@ -1691,16 +1686,15 @@ class EndpointService
 
             if (filter_var(value: $id, filter: FILTER_VALIDATE_URL) !== false) {
                 $idExploded = explode(separator: '/', string: $id);
-                $id = end($idExploded);
+                $id         = end($idExploded);
             }
 
             $this->objectService->getOpenRegisters()->clearCurrents();
             $fetchedObject = $this->objectService->getOpenRegisters()->find($id);
-            $foData = $fetchedObject->jsonSerialize();
+            $foData        = $fetchedObject->jsonSerialize();
             $foData['synchronization_trigger'] = true;
             $fetchedObject->setObject($foData);
         }
-
 
         // Run synchronization.
         $mutationType = null;
@@ -1708,6 +1702,7 @@ class EndpointService
         if (isset($sourceConfig['synchronizationType']) === true && $sourceConfig['synchronizationType'] === 'delete') {
             $mutationType = 'delete';
         }
+
         $log = $this->synchronizationService->synchronize(synchronization: $synchronization, isTest: $test, force: $force, object: $fetchedObject, mutationType: $mutationType, data: $object, flowToken: $flowToken);
 
         // $object got updated through reference.
@@ -1720,7 +1715,7 @@ class EndpointService
         }
 
         if (isset($config['synchronization']['postDelay']) === true && is_int($config['synchronization']['postDelay']) === true) {
-            sleep ($config['synchronization']['postDelay']);
+            sleep($config['synchronization']['postDelay']);
         }
 
         if (isset($config['synchronizationConfig']['mergeResultToKey']) === true && $retainResponse === false) {
@@ -1732,6 +1727,7 @@ class EndpointService
                 $sendObject[$config['synchronizationConfig']['mergeResultToKey']] = $returnedObject;
                 $data['body'] = $sendObject;
             }
+
             // Overwrite body with result
         } else if (isset($config['synchronizationConfig']['overwriteObjectWithResult']) === true && filter_var($config['synchronizationConfig']['overwriteObjectWithResult'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true && $retainResponse === false) {
             $data['body'] = $returnedObject;
@@ -1740,13 +1736,13 @@ class EndpointService
         }
 
         return $data;
-    }
+    }//end processSyncRule()
 
     /**
      * Processes a file part creation rule.
      *
-     * @param Rule $rule The rule to process.
-     * @param array $data The created object in array form.
+     * @param Rule        $rule     The rule to process.
+     * @param array       $data     The created object in array form.
      * @param string|null $objectId The id of the resulting object.
      *
      * @return array The updated object data.
@@ -1762,7 +1758,7 @@ class EndpointService
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
      */
-    private function processFilePartRule(Rule $rule, array $data, Endpoint $endpoint, ?string $objectId = null): array|JSONResponse
+    private function processFilePartRule(Rule $rule, array $data, Endpoint $endpoint, ?string $objectId=null): array|JSONResponse
     {
         if ($objectId === null) {
             throw new Exception('Filepart rules can only be applied after the object has been created');
@@ -1776,7 +1772,7 @@ class EndpointService
 
         $targetId = explode('/', $endpoint->getTargetId());
 
-        $registerId = $targetId[0];
+        $registerId    = $targetId[0];
         $superSchemaId = $targetId[1];
 
         $sizeLocation     = $config['sizeLocation'];
@@ -1793,60 +1789,63 @@ class EndpointService
         $openRegister->setRegister($registerId);
         $openRegister->setSchema($superSchemaId);
 
-        $object   = $openRegister->find(id: $objectId);
-//        $location = $object->getFolder();
+        $object = $openRegister->find(id: $objectId);
+        //        $location = $object->getFolder();
+        $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+        $location    = $fileService->getObjectFolder($object)->getPath();
 
-		$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-		$location = $fileService->getObjectFolder($object)->getPath();
-
-
-        $dataDot = new Dot($data);
-        $size = $dataDot[$sizeLocation];
+        $dataDot  = new Dot($data);
+        $size     = $dataDot[$sizeLocation];
         $filename = $dataDot[$filenameLocation];
 
         $fileParts = $this->storageService->createUpload($location, $filename, $size, $objectId);
 
-		$fileParts = array_map(function ($filePart) use ($mapping, $registerId, $schemaId, $openRegister) {
+        $fileParts = array_map(
+          function ($filePart) use ($mapping, $registerId, $schemaId, $openRegister) {
 
-			if ($mapping !== null) {
-				$formatted = $this->mappingService->executeMapping(mapping: $mapping, input: $filePart);
-			} else {
-				$formatted = $filePart;
-			}
+            if ($mapping !== null) {
+                $formatted = $this->mappingService->executeMapping(mapping: $mapping, input: $filePart);
+            } else {
+                $formatted = $filePart;
+            }
 
-			try {
-				$object = $this->objectService->getOpenRegisters()->saveObject(
-					register: $registerId,
-					schema: $schemaId,
-					object: $formatted,
-					uuid: $formatted['id']
-				);
+            try {
+                $object = $this->objectService->getOpenRegisters()->saveObject(
+                    register: $registerId,
+                    schema: $schemaId,
+                    object: $formatted,
+                    uuid: $formatted['id']
+                );
                 return $this->replaceInternalReferences($openRegister, $object);
-			} catch (ValidationException $exception) {
-				return $this->objectService->getOpenRegisters()->handleValidationException($exception);
-			}
+            } catch (ValidationException $exception) {
+                return $this->objectService->getOpenRegisters()->handleValidationException($exception);
+            }
 
+          },
+          $fileParts
+          );
 
+        $errors = array_filter(
+          $fileParts,
+          function ($part) {
+            if ($part instanceof JSONResponse) {
+                return true;
+            }
+          }
+          );
 
-		}, $fileParts);
-
-		$errors = array_filter($fileParts, function($part) {
-			if($part instanceof JSONResponse) {
-				return true;
-			}
-		});
-
-		if(count($errors) > 0) {
-			return array_shift($errors);
-		}
-
-
+        if (count($errors) > 0) {
+            return array_shift($errors);
+        }
 
         $dataDot[$filePartLocation] = $fileParts;
 
-        $filepartIds = array_map(function($filePart) {
-            return $filePart['id'];
-        }, $fileParts);
+        $filepartIds = array_map(
+                function ($filePart) {
+                    return $filePart['id'];
+                },
+                $fileParts
+                );
 
         $saveObject = clone $dataDot;
         $saveObject[$filePartLocation] = $filepartIds;
@@ -1854,13 +1853,13 @@ class EndpointService
         $openRegister->saveObject(register: $registerId, schema: $schemaId, object: $saveObject->jsonSerialize());
 
         return $dataDot->jsonSerialize();
-    }
+    }//end processFilePartRule()
 
     /**
      * Processes the upload of a file part.
      *
-     * @param Rule $rule The rule to process.
-     * @param array $data The data from the object in array form.
+     * @param Rule        $rule     The rule to process.
+     * @param array       $data     The data from the object in array form.
      * @param string|null $objectId The id of the object.
      *
      * @return array The updated object data.
@@ -1872,7 +1871,7 @@ class EndpointService
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
      */
-    private function processFilePartUploadRule(Rule $rule, array $data, Request $request, ?string $objectId = null): array
+    private function processFilePartUploadRule(Rule $rule, array $data, Request $request, ?string $objectId=null): array
     {
         if (isset($rule->getConfiguration()['filepart_upload']) === false) {
             throw new Exception('No configuration found for filepart_upload');
@@ -1883,7 +1882,7 @@ class EndpointService
         $mappedData = $data;
 
         if (isset($config['mappingId']) === true) {
-            $mapping = $this->mappingService->getMapping($config['mappingId']);
+            $mapping    = $this->mappingService->getMapping($config['mappingId']);
             $mappedData = $this->mappingService->executeMapping(mapping: $mapping, input: $mappedData);
         }
 
@@ -1899,16 +1898,15 @@ class EndpointService
         $object->setObject($mappedData);
         $this->objectService->getOpenRegisters()->getMapper('objectEntity')->update($object);
 
-
         $data['body'] = $mappedData;
 
         return $data;
-    }
+    }//end processFilePartUploadRule()
 
     /**
      * Processes a JavaScript rule
      *
-     * @param Rule $rule The rule object containing JavaScript execution details
+     * @param Rule  $rule The rule object containing JavaScript execution details
      * @param array $data The input data to be processed by the JavaScript rule
      *
      * @return array The processed data after executing the JavaScript rule
@@ -1919,13 +1917,13 @@ class EndpointService
         // @todo: Here we need to implement the JavaScript execution logic
         // For now, just return the data unchanged
         return $data;
-    }
+    }//end processJavaScriptRule()
 
     /**
      * Downloads a file based upon configuration
      *
-     * @param Rule $rule The rule to execute.
-     * @param array $data The data to perform the rule on.
+     * @param Rule   $rule     The rule to execute.
+     * @param array  $data     The data to perform the rule on.
      * @param string $objectId The id of the requested object.
      *
      * @return Response A response containing the file requested.
@@ -1935,7 +1933,7 @@ class EndpointService
      * @throws NotFoundExceptionInterface
      * @throws \OCP\Files\NotFoundException
      */
-    private function processDownloadRule (Rule $rule, array $data, string $objectId): Response
+    private function processDownloadRule(Rule $rule, array $data, string $objectId): Response
     {
         $config = $rule->getConfiguration();
 
@@ -1949,12 +1947,12 @@ class EndpointService
         }
 
         if (isset($config['filenamePosition']) === true) {
-            $dot = new Dot($object->jsonSerialize());
+            $dot      = new Dot($object->jsonSerialize());
             $filename = $dot->get($config['filenamePosition']);
         }
 
-		$fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-        $files = $fileService->getFiles(object: $object, sharedFilesOnly: false);
+        $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+        $files       = $fileService->getFiles(object: $object, sharedFilesOnly: false);
 
         // Try to get filename from object its files (only works when object has 1 file)
         if (isset($filename) === false && count($object->getFiles()) === 1) {
@@ -1970,28 +1968,33 @@ class EndpointService
             throw new Exception('File could not be determined');
         }
 
-        if(isset($data['parameters']['version']) === true) {
-            /** @var File $file */
+        if (isset($data['parameters']['version']) === true) {
+            /**
+ * @var File $file
+*/
              $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
-        }else if(isset($data['parameters']['versie']) === true) {
+        } else if (isset($data['parameters']['versie']) === true) {
             // @TODO: This can be nicer by mapping, but let's first get something sure
-            /** @var File $file */
+            /**
+ * @var File $file
+*/
              $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
         } else {
-            /** @var File $file */
+            /**
+ * @var File $file
+*/
             $file = $fileService->getFile(object: $object, file: $filename);
         }
-
 
         $response = new DataDownloadResponse(data: $file->getContent(), filename: $file->getName(), contentType: $file->getMimeType());
 
         return $response;
-    }
+    }//end processDownloadRule()
 
     /**
      * Checks if rule conditions are met
      *
-     * @param Rule $rule The rule object containing conditions to be checked
+     * @param Rule  $rule The rule object containing conditions to be checked
      * @param array $data The input data against which the conditions are evaluated
      *
      * @return bool True if conditions are met, false otherwise
@@ -2005,39 +2008,39 @@ class EndpointService
         }
 
         return ($logicResult = JsonLogic::apply($conditions, $data)) == true;
-    }
+    }//end checkRuleConditions()
 
     /**
      * Updates request object with processed rule data
      *
-     * @param IRequest $request The request object to be updated
-     * @param array $ruleData The processed rule data to update the request with
-     * @param array $incomingData The processed rule data to update the request with
+     * @param IRequest $request      The request object to be updated
+     * @param array    $ruleData     The processed rule data to update the request with
+     * @param array    $incomingData The processed rule data to update the request with
      *
      * @return IRequest The updated request object
      */
     private function updateRequestWithRuleData(FlowToken $flowToken, array $ruleData): FlowToken
     {
         $parameters = $ruleData['body']['_parameters'] ?? $flowToken->getRequestAmended()['parameters'];
-        $method = $ruleData['body']['_method'] ?? $flowToken->getRequestAmended()['method'];
-        $headers = $ruleData['body']['_headers'] ?? $flowToken->getRequestAmended()['headers'];
+        $method     = $ruleData['body']['_method'] ?? $flowToken->getRequestAmended()['method'];
+        $headers    = $ruleData['body']['_headers'] ?? $flowToken->getRequestAmended()['headers'];
 
         $requestAmended = $flowToken->getRequestAmended();
 
-        $requestAmended['method'] = $method;
+        $requestAmended['method']     = $method;
         $requestAmended['parameters'] = $parameters;
-        $requestAmended['headers'] = $headers;
+        $requestAmended['headers']    = $headers;
 
         $flowToken->setRequestAmended($requestAmended);
 
         return $flowToken; // Return the overridden request
-    }
+    }//end updateRequestWithRuleData()
 
     /**
      * Parse raw content into structured data based on content type
      *
-     * @param string $content The raw content to parse
-     * @param string|null $contentType Optional content type hint
+     * @param  string      $content     The raw content to parse
+     * @param  string|null $contentType Optional content type hint
      * @return mixed Parsed data (array for JSON/XML) or original string
      */
     private function parseContent(Request $request): mixed
@@ -2047,7 +2050,13 @@ class EndpointService
         if (str_contains($contentType, 'multipart/form-data') === true) {
             [$post, $files] = request_parse_body();
 
-            $parsedFiles = array_map(function ($file) { return file_get_contents($file['tmp_name']); }, $files);
+            $parsedFiles = array_map(
+                    function ($file) {
+                        return file_get_contents($file['tmp_name']);
+
+                    },
+                    $files
+                    );
 
             return array_merge($post, $parsedFiles);
         }
@@ -2061,8 +2070,9 @@ class EndpointService
         }
 
         // Try XML decode if content type suggests XML or content looks like XML
-        if ($contentType === 'application/xml' || $contentType === 'text/xml' ||
-            ($contentType === null && $this->looksLikeXml($content) === true)) {
+        if ($contentType === 'application/xml' || $contentType === 'text/xml'
+            || ($contentType === null && $this->looksLikeXml($content) === true)
+        ) {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($content);
             libxml_clear_errors();
@@ -2074,12 +2084,12 @@ class EndpointService
 
         // Return original content as fallback
         return $request->getParams();
-    }
+    }//end parseContent()
 
     /**
      * Check if content appears to be XML
      *
-     * @param string $content Content to check
+     * @param  string $content Content to check
      * @return bool True if content is valid XML
      */
     private function looksLikeXml(string $content): bool
@@ -2094,5 +2104,5 @@ class EndpointService
         libxml_clear_errors();
 
         return $result;
-    }
-}
+    }//end looksLikeXml()
+}//end class

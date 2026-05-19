@@ -195,73 +195,82 @@ export default {
 .addFileContainer{
 	margin-block-end: var(--OC-margin-20);
 }
+
 .addFileContainer--disabled{
 	opacity: 0.4;
 }
 
 .zaakDetailsContainer {
-    margin-block-start: var(--OC-margin-20);
-    margin-inline-start: var(--OC-margin-20);
-    margin-inline-end: var(--OC-margin-20);
+	margin-block-start: var(--OC-margin-20);
+	margin-inline-start: var(--OC-margin-20);
+	margin-inline-end: var(--OC-margin-20);
 }
 
 .success {
-    color: green;
+	color: green;
 }
 
 .fileCardCustom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 14px;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 10px;
-    background: #ffffff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-    text-align: left;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid rgba(0,0,0,0.1);
+	border-radius: 10px;
+	background: #ffffff;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+	text-align: left;
 }
+
 .fileCardCustom__left {
-    min-width: 0;
-    flex: 1;
+	min-width: 0;
+	flex: 1;
 }
+
 .fileCardCustom__name {
-    font-weight: 600;
-    line-height: 1.3;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+	font-weight: 600;
+	line-height: 1.3;
+	word-break: break-word;
+	overflow-wrap: anywhere;
 }
+
 .fileCardCustom__meta {
-    margin-top: 4px;
-    color: #5f6c7b;
-    font-size: 0.9em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+	margin-top: 4px;
+	color: #5f6c7b;
+	font-size: 0.9em;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
+
 .fileCardCustom__dot {
-    opacity: 0.6;
+	opacity: 0.6;
 }
+
 .fileCardCustom__remove {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 8px;
-    background: #f7f8fa;
-    cursor: pointer;
-    transition: background 150ms ease, transform 50ms ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	border: 1px solid rgba(0,0,0,0.08);
+	border-radius: 8px;
+	background: #f7f8fa;
+	cursor: pointer;
+	transition: background 150ms ease, transform 50ms ease;
 }
+
 .fileCardCustom__remove:hover {
-    background: #eef1f5;
+	background: #eef1f5;
 }
+
 .fileCardCustom__remove:active {
-    transform: translateY(1px);
+	transform: translateY(1px);
 }
+
 .fileCardCustom__remove:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 </style>

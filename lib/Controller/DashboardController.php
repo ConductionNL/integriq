@@ -47,19 +47,19 @@ class DashboardController extends Controller
         private readonly IL10N $l
     ) {
         parent::__construct($appName, $request);
-    }
+    }//end __construct()
 
     /**
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function page(?string $getParameter): TemplateResponse
-	{
+    {
         try {
             $response = new TemplateResponse(
-				appName: $this->appName,
-				templateName: 'index',
-				params:[]
+                appName: $this->appName,
+                templateName: 'index',
+                params:[]
             );
 
             $csp = new ContentSecurityPolicy();
@@ -75,7 +75,7 @@ class DashboardController extends Controller
                 renderAs: '500'
             );
         }
-    }
+    }//end page()
 
     /**
      * @NoAdminRequired
@@ -85,97 +85,103 @@ class DashboardController extends Controller
     {
         try {
             $results = [
-                "sources" => $this->sourceMapper->getTotalCallCount(),
-                "mappings" => $this->mappingMapper->getTotalCallCount(),
-                "synchronizations" => $this->synchronizationMapper->getTotalCallCount(),
+                "sources"                  => $this->sourceMapper->getTotalCallCount(),
+                "mappings"                 => $this->mappingMapper->getTotalCallCount(),
+                "synchronizations"         => $this->synchronizationMapper->getTotalCallCount(),
                 "synchronizationContracts" => $this->synchronizationContractMapper->getTotalCallCount(),
-                "jobs" => $this->jobMapper->getTotalCount(),
-                "endpoints" => $this->endpointMapper->getTotalCallCount()
+                "jobs"                     => $this->jobMapper->getTotalCount(),
+                "endpoints"                => $this->endpointMapper->getTotalCallCount(),
             ];
             return new JSONResponse($results);
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-    }
+    }//end index()
 
     /**
      * Get call statistics for the dashboard
-     * 
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     * @param string|null $from Start date in ISO format
-     * @param string|null $to End date in ISO format
-     * @return JSONResponse
+     * @param           string|null $from Start date in ISO format
+     * @param           string|null $to   End date in ISO format
+     * @return          JSONResponse
      */
-    public function getCallStats(?string $from = null, ?string $to = null): JSONResponse 
+    public function getCallStats(?string $from=null, ?string $to=null): JSONResponse
     {
         try {
             $fromDate = $from ? new \DateTime($from) : (new \DateTime())->modify('-7 days');
-            $toDate = $to ? new \DateTime($to) : new \DateTime();
+            $toDate   = $to ? new \DateTime($to) : new \DateTime();
 
-            $dailyStats = $this->callLogMapper->getCallStatsByDateRange($fromDate, $toDate);
+            $dailyStats  = $this->callLogMapper->getCallStatsByDateRange($fromDate, $toDate);
             $hourlyStats = $this->callLogMapper->getCallStatsByHourRange($fromDate, $toDate);
 
-            return new JSONResponse([
-                'daily' => $dailyStats,
-                'hourly' => $hourlyStats
-            ]);
+            return new JSONResponse(
+                    [
+                        'daily'  => $dailyStats,
+                        'hourly' => $hourlyStats,
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+    }//end getCallStats()
 
     /**
      * Get job statistics for the dashboard
-     * 
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     * @param string|null $from Start date in ISO format
-     * @param string|null $to End date in ISO format
-     * @return JSONResponse
+     * @param           string|null $from Start date in ISO format
+     * @param           string|null $to   End date in ISO format
+     * @return          JSONResponse
      */
-    public function getJobStats(?string $from = null, ?string $to = null): JSONResponse 
+    public function getJobStats(?string $from=null, ?string $to=null): JSONResponse
     {
         try {
             $fromDate = $from ? new \DateTime($from) : (new \DateTime())->modify('-7 days');
-            $toDate = $to ? new \DateTime($to) : new \DateTime();
+            $toDate   = $to ? new \DateTime($to) : new \DateTime();
 
-            $dailyStats = $this->jobLogMapper->getJobStatsByDateRange($fromDate, $toDate);
+            $dailyStats  = $this->jobLogMapper->getJobStatsByDateRange($fromDate, $toDate);
             $hourlyStats = $this->jobLogMapper->getJobStatsByHourRange($fromDate, $toDate);
 
-            return new JSONResponse([
-                'daily' => $dailyStats,
-                'hourly' => $hourlyStats
-            ]);
+            return new JSONResponse(
+                    [
+                        'daily'  => $dailyStats,
+                        'hourly' => $hourlyStats,
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
+    }//end getJobStats()
 
     /**
      * Get synchronization statistics for the dashboard
-     * 
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     * @param string|null $from Start date in ISO format
-     * @param string|null $to End date in ISO format
-     * @return JSONResponse
+     * @param           string|null $from Start date in ISO format
+     * @param           string|null $to   End date in ISO format
+     * @return          JSONResponse
      */
-    public function getSyncStats(?string $from = null, ?string $to = null): JSONResponse 
+    public function getSyncStats(?string $from=null, ?string $to=null): JSONResponse
     {
         try {
             $fromDate = $from ? new \DateTime($from) : (new \DateTime())->modify('-7 days');
-            $toDate = $to ? new \DateTime($to) : new \DateTime();
+            $toDate   = $to ? new \DateTime($to) : new \DateTime();
 
-            $dailyStats = $this->synchronizationContractLogMapper->getSyncStatsByDateRange($fromDate, $toDate);
+            $dailyStats  = $this->synchronizationContractLogMapper->getSyncStatsByDateRange($fromDate, $toDate);
             $hourlyStats = $this->synchronizationContractLogMapper->getSyncStatsByHourRange($fromDate, $toDate);
 
-            return new JSONResponse([
-                'daily' => $dailyStats,
-                'hourly' => $hourlyStats
-            ]);
+            return new JSONResponse(
+                    [
+                        'daily'  => $dailyStats,
+                        'hourly' => $hourlyStats,
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }
-}
+    }//end getSyncStats()
+}//end class

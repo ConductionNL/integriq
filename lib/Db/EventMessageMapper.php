@@ -29,12 +29,12 @@ class EventMessageMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openconnector_event_messages');
-    }
+    }//end __construct()
 
     /**
      * Find a message by ID
      *
-     * @param int $id The message ID
+     * @param  int $id The message ID
      * @return EventMessage
      */
     public function find(int $id): EventMessage
@@ -48,17 +48,17 @@ class EventMessageMapper extends QBMapper
             );
 
         return $this->findEntity($qb);
-    }
+    }//end find()
 
     /**
      * Find all messages matching the given criteria
      *
-     * @param int|null $limit Maximum number of results
-     * @param int|null $offset Number of records to skip
-     * @param array|null $filters Key-value pairs for filtering
+     * @param  int|null   $limit   Maximum number of results
+     * @param  int|null   $offset  Number of records to skip
+     * @param  array|null $filters Key-value pairs for filtering
      * @return EventMessage[]
      */
-    public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -72,23 +72,25 @@ class EventMessageMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($filter));
                 continue;
             }
+
             if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         return $this->findEntities($qb);
-    }
+    }//end findAll()
 
     /**
      * Find messages that need to be retried
      *
-     * @param int $maxRetries Maximum number of retry attempts
+     * @param  int $maxRetries Maximum number of retry attempts
      * @return EventMessage[]
      */
-    public function findPendingRetries(int $maxRetries = 5): array
+    public function findPendingRetries(int $maxRetries=5): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -104,84 +106,90 @@ class EventMessageMapper extends QBMapper
             );
 
         return $this->findEntities($qb);
-    }
+    }//end findPendingRetries()
 
     /**
      * Create a new message from array data
      *
-     * @param array $data Message data
+     * @param  array $data Message data
      * @return EventMessage
      */
     public function createFromArray(array $data): EventMessage
     {
         $obj = new EventMessage();
         $obj->hydrate($data);
-        
+
         // Set uuid
         if ($obj->getUuid() === null) {
             $obj->setUuid(Uuid::v4());
         }
-        
+
         // Set timestamps
         $obj->setCreated(new DateTime());
         $obj->setUpdated(new DateTime());
 
         return $this->insert(entity: $obj);
-    }
+    }//end createFromArray()
 
     /**
      * Update an existing message
      *
-     * @param int $id Message ID
-     * @param array $data Updated message data
+     * @param  int   $id   Message ID
+     * @param  array $data Updated message data
      * @return EventMessage
      */
     public function updateFromArray(int $id, array $data): EventMessage
     {
         $obj = $this->find($id);
         $obj->hydrate($data);
-        
+
         // Update timestamp
         $obj->setUpdated(new DateTime());
 
         return $this->update($obj);
-    }
+    }//end updateFromArray()
 
     /**
      * Mark a message as delivered
      *
-     * @param int $id Message ID
-     * @param array $response Response from the consumer
+     * @param  int   $id       Message ID
+     * @param  array $response Response from the consumer
      * @return EventMessage
      */
     public function markDelivered(int $id, array $response): EventMessage
     {
-        return $this->updateFromArray($id, [
-            'status' => 'delivered',
-            'lastResponse' => $response,
-            'lastAttempt' => new DateTime()
-        ]);
-    }
+        return $this->updateFromArray(
+                $id,
+                [
+                    'status'       => 'delivered',
+                    'lastResponse' => $response,
+                    'lastAttempt'  => new DateTime(),
+                ]
+                );
+    }//end markDelivered()
 
     /**
      * Mark a message as failed
      *
-     * @param int $id Message ID
-     * @param array $response Error response
-     * @param int $backoffMinutes Minutes to wait before next attempt
+     * @param  int   $id             Message ID
+     * @param  array $response       Error response
+     * @param  int   $backoffMinutes Minutes to wait before next attempt
      * @return EventMessage
      */
-    public function markFailed(int $id, array $response, int $backoffMinutes = 5): EventMessage
+    public function markFailed(int $id, array $response, int $backoffMinutes=5): EventMessage
     {
         $message = $this->find($id);
         $message->incrementRetry($backoffMinutes);
-        
-        return $this->updateFromArray($id, [
-            'status' => 'failed',
-            'lastResponse' => $response,
-            'retryCount' => $message->getRetryCount(),
-            'lastAttempt' => $message->getLastAttempt(),
-            'nextAttempt' => $message->getNextAttempt()
-        ]);
-    }
-} 
+
+        return $this->updateFromArray(
+                $id,
+                [
+                    'status'       => 'failed',
+                    'lastResponse' => $response,
+                    'retryCount'   => $message->getRetryCount(),
+                    'lastAttempt'  => $message->getLastAttempt(),
+                    'nextAttempt'  => $message->getNextAttempt(),
+                ]
+                );
+    }//end markFailed()
+}//end class

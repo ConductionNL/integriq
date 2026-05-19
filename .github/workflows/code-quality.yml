@@ -12,10 +12,11 @@ jobs:
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openconnector
-      # Pinned to 8.1 to preserve the behaviour of the previous hand-rolled
-      # workflow. Bump to 8.3 in a separate PR once the codebase is verified
-      # on the newer runtime.
-      php-version: "8.1"
+      # composer.json `config.platform.php` is pinned to 8.3, so phpcs/phpmd/etc
+      # need the matching runtime or `vendor/composer/platform_check.php` aborts
+      # with `Composer dependencies require a PHP version ">= 8.3.0"`.
+      php-version: "8.3"
+      enable-phpcs: true
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true
