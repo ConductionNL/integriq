@@ -174,12 +174,15 @@ export default {
 	border-radius: 0 !important;
 	border: none !important;
 }
+
 .codeMirrorContainer :deep(.cm-editor) {
 	outline: none !important;
 }
+
 .codeMirrorContainer.light > .vue-codemirror {
 	border: 1px dotted silver;
 }
+
 .codeMirrorContainer.dark > .vue-codemirror {
 	border: 1px dotted grey;
 }
@@ -188,6 +191,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼe) {
 	color: #448c27;
 }
+
 .codeMirrorContainer.dark :deep(.ͼe) {
 	color: #88c379;
 }
@@ -201,6 +205,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼd) {
 	color: #c68447;
 }
+
 .codeMirrorContainer.dark :deep(.ͼd) {
 	color: #d19a66;
 }
@@ -209,6 +214,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼc) {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.ͼc) {
 	color: #260dd4;
 }
