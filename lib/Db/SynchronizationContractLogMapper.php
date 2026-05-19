@@ -202,7 +202,7 @@ class SynchronizationContractLogMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                $qb->createFunction('HOUR(created) as hour'),
+                $qb->createFunction('EXTRACT(HOUR FROM created) as hour'),
                 $qb->createFunction('COUNT(*) as executions')
             )
             ->from('openconnector_synchronization_contract_logs')
