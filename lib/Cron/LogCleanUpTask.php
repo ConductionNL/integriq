@@ -36,75 +36,76 @@ use OCP\AppFramework\Utility\ITimeFactory;
  */
 class LogCleanUpTask extends TimedJob
 {
-	/**
-	 * Call log mapper for database operations
-	 */
-	private readonly CallLogMapper $callLogMapper;
 
-	/**
-	 * Job log mapper for database operations
-	 */
-	private readonly JobLogMapper $jobLogMapper;
+    /**
+     * Call log mapper for database operations
+     */
+    private readonly CallLogMapper $callLogMapper;
 
-	/**
-	 * LogCleanUpTask constructor
-	 *
-	 * Initializes the log cleanup task with required dependencies
-	 * and configures the background job settings.
-	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param CallLogMapper $callLogMapper Mapper for call log operations
-	 * @param JobLogMapper $jobLogMapper Mapper for job log operations
-	 *
-	 * @psalm-param ITimeFactory $time
-	 * @psalm-param CallLogMapper $callLogMapper
-	 * @psalm-param JobLogMapper $jobLogMapper
-	 */
-	public function __construct(
-		ITimeFactory $time,
-		CallLogMapper $callLogMapper,
-		JobLogMapper $jobLogMapper,
+    /**
+     * Job log mapper for database operations
+     */
+    private readonly JobLogMapper $jobLogMapper;
+
+    /**
+     * LogCleanUpTask constructor
+     *
+     * Initializes the log cleanup task with required dependencies
+     * and configures the background job settings.
+     *
+     * @param ITimeFactory  $time          Time factory for job scheduling
+     * @param CallLogMapper $callLogMapper Mapper for call log operations
+     * @param JobLogMapper  $jobLogMapper  Mapper for job log operations
+     *
+     * @psalm-param ITimeFactory $time
+     * @psalm-param CallLogMapper $callLogMapper
+     * @psalm-param JobLogMapper $jobLogMapper
+     */
+    public function __construct(
+        ITimeFactory $time,
+        CallLogMapper $callLogMapper,
+        JobLogMapper $jobLogMapper,
         private readonly SynchronizationContractLogMapper $syncContractLogMapper,
         private readonly SynchronizationLogMapper $syncLogMapper
-	) {
-		parent::__construct($time);
-		$this->callLogMapper = $callLogMapper;
-		$this->jobLogMapper = $jobLogMapper;
+    ) {
+        parent::__construct($time);
+        $this->callLogMapper = $callLogMapper;
+        $this->jobLogMapper  = $jobLogMapper;
 
-		// Run every minute @todo change to hour
-		$this->setInterval(60);
+        // Run every minute @todo change to hour
+        $this->setInterval(60);
 
-		// Delay until low-load time
-		$this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
+        // Delay until low-load time
+        $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
 
-		// Only run one instance of this job at a time
-		$this->setAllowParallelRuns(true);
-	}
+        // Only run one instance of this job at a time
+        $this->setAllowParallelRuns(true);
+    }//end __construct()
 
-	/**
-	 * Execute the log cleanup task
-	 *
-	 * This method removes expired logs from both call logs and job logs
-	 * tables to maintain database performance and prevent storage bloat.
-	 *
-	 * @param mixed $argument Task arguments (not used in this implementation)
-	 *
-	 * @return void
-	 *
-	 * @psalm-param mixed $argument
-	 * @phpstan-param mixed $argument
-	 */
-	public function run(mixed $argument): void
-	{
-		// Clear expired call logs from the database
-		$this->callLogMapper->clearLogs();
+    /**
+     * Execute the log cleanup task
+     *
+     * This method removes expired logs from both call logs and job logs
+     * tables to maintain database performance and prevent storage bloat.
+     *
+     * @param mixed $argument Task arguments (not used in this implementation)
+     *
+     * @return void
+     *
+     * @psalm-param   mixed $argument
+     * @phpstan-param mixed $argument
+     */
+    public function run(mixed $argument): void
+    {
+        // Clear expired call logs from the database
+        $this->callLogMapper->clearLogs();
 
-		// Clear expired job logs from the database
-		$this->jobLogMapper->clearLogs();
+        // Clear expired job logs from the database
+        $this->jobLogMapper->clearLogs();
 
         // Clear expired synchronization contract logs
         $this->syncContractLogMapper->clearLogs();
 
         $this->syncLogMapper->cleanupExpired();
-	}
-}
+    }//end run()
+}//end class

@@ -11,13 +11,14 @@ use OCA\OpenConnector\Service\CallService;
  */
 class EventAction
 {
+
     private CallService $callService;
 
     public function __construct(
         CallService $callService,
     ) {
         $this->callService = $callService;
-    }
+    }//end __construct()
 
     /**
      * Run the event action.
@@ -28,12 +29,10 @@ class EventAction
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function run(array $argument = []): array
+    public function run(array $argument=[]): array
     {
         // @todo: implement this
-
         // Let's report back about what we have just done
         return [];
-    }
-
-}
+    }//end run()
+}//end class

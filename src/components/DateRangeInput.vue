@@ -357,16 +357,19 @@ export default {
 	flex-direction: column;
 	gap: 4px;
 }
+
 .dateGroupLabel {
 	font-size: 0.9em;
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 4px;
 }
+
 .row {
 	display: flex;
 	align-items: center;
 	gap: 2px;
 }
+
 .numInput {
 	width: 44px;
 	padding: 6px 8px;
@@ -375,7 +378,9 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .yearInput { width: 64px; }
+
 .timeInput {
 	width: 110px;
 	padding: 6px 8px;
@@ -384,9 +389,12 @@ export default {
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 }
+
 .sep, .timeSep {
 	color: var(--color-text-lighter);
 }
+
 .calendarBtn { border: 1px solid var(--color-border); background: var(--color-background-hover); border-radius: var(--border-radius); padding: 6px 8px; cursor: pointer; }
+
 .popupAnchor { position: relative; margin-top: 8px; }
 </style>
