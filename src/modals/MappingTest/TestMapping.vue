@@ -101,39 +101,42 @@ export default {
 <style scoped>
 /* modal */
 div[class='modal-container']:has(.TestMappingMainModal) {
-    width: clamp(1000px, 100%, 1200px) !important;
+	width: clamp(1000px, 100%, 1200px) !important;
 }
 </style>
 
 <style scoped>
 .content {
-    height: 600px;
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
+	height: 600px;
+	display: flex;
+	flex-direction: row;
+	gap: 12px;
 }
+
 .content > * {
-    height: 100%;
-    overflow: auto;
-    padding-top: var(--OC-margin-20);
-    padding-bottom: var(--OC-margin-20);
+	height: 100%;
+	overflow: auto;
+	padding-top: var(--OC-margin-20);
+	padding-bottom: var(--OC-margin-20);
 }
+
 .content > *:not(:last-child) {
-    border-right: 1px solid gray;
+	border-right: 1px solid gray;
 }
 
 .content > :deep(h4) {
-    margin-top: 0;
+	margin-top: 0;
 }
 
 /* Open Register note card */
 .openregister-notecard {
-   display: flex;
-   justify-content: center;
+	display: flex;
+	justify-content: center;
 }
+
 .openregister-notecard > .notecard {
-    width: fit-content;
-    /* max-width: 500px; */
+	width: fit-content;
+	/* max-width: 500px; */
 }
 
 </style>

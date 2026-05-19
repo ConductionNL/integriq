@@ -8,7 +8,7 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * Class SynchronizationContractLog
- * 
+ *
  * Entity class representing a synchronization contract log entry
  */
 /**
@@ -16,22 +16,38 @@ use OCP\AppFramework\Db\Entity;
  */
 class SynchronizationContractLog extends Entity implements JsonSerializable
 {
+
     protected ?string $uuid = null;
-	protected ?string $message = null;
+
+    protected ?string $message = null;
+
     protected ?string $synchronizationId = null;
+
     protected ?string $synchronizationContractId = null;
+
     protected ?string $synchronizationLogId = null;
+
     protected ?array $source = [];
+
     protected ?array $target = [];
+
     protected ?string $targetResult = null; // CRUD action taken on target (create/read/update/delete)
+
     protected ?string $userId = null;
+
     protected ?string $sessionId = null;
+
     protected ?bool $test = false;
+
     protected ?bool $force = false;
+
     protected ?DateTime $expires = null;
+
     protected ?DateTime $created = null;
-    
-    /** @var int $size Size of this log entry in bytes (calculated from serialized object) */
+
+    /**
+     * @var int $size Size of this log entry in bytes (calculated from serialized object)
+     */
     protected int $size = 4096;
 
     /**
@@ -42,7 +58,7 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
     public function getSource(): ?array
     {
         return $this->source;
-    }
+    }//end getSource()
 
     /**
      * Get the target data
@@ -52,7 +68,7 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
     public function getTarget(): ?array
     {
         return $this->target;
-    }
+    }//end getTarget()
 
     /**
      * SynchronizationContractLog constructor
@@ -63,7 +79,8 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
      * @psalm-api
      * @phpstan-api
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->addType('uuid', 'string');
         $this->addType('message', 'string');
         $this->addType('synchronizationId', 'string');
@@ -84,19 +101,22 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
         if ($this->expires === null) {
             $this->expires = new DateTime('+1 week');
         }
-        
+
         // Calculate and set object size
         $this->calculateSize();
-    }
+    }//end __construct()
 
     public function getJsonFields(): array
     {
         return array_keys(
-            array_filter($this->getFieldTypes(), function ($field) {
-                return $field === 'json';
-            })
+            array_filter(
+                    $this->getFieldTypes(),
+                    function ($field) {
+                        return $field === 'json';
+                    }
+                    )
         );
-    }
+    }//end getJsonFields()
 
     public function hydrate(array $object): self
     {
@@ -120,7 +140,7 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
         $this->calculateSize();
 
         return $this;
-    }
+    }//end hydrate()
 
     /**
      * Calculate and set the size of this log entry
@@ -130,7 +150,7 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
      *
      * @return void
      *
-     * @psalm-return void
+     * @psalm-return   void
      * @phpstan-return void
      */
     public function calculateSize(): void
@@ -138,25 +158,25 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
         // Serialize the current object to calculate its size
         $serialized = json_encode($this->jsonSerialize());
         $this->size = strlen($serialized);
-        
+
         // Ensure minimum size of 4KB if calculated size is smaller
         if ($this->size < 4096) {
             $this->size = 4096;
         }
-    }
+    }//end calculateSize()
 
     /**
      * Get the size of this log entry in bytes
      *
      * @return int The size in bytes
      *
-     * @psalm-return int
+     * @psalm-return   int
      * @phpstan-return int
      */
     public function getSize(): int
     {
         return $this->size;
-    }
+    }//end getSize()
 
     /**
      * Set the size of this log entry in bytes
@@ -165,35 +185,35 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
      *
      * @return void
      *
-     * @psalm-param int $size
-     * @psalm-return void
-     * @phpstan-param int $size
+     * @psalm-param    int $size
+     * @psalm-return   void
+     * @phpstan-param  int $size
      * @phpstan-return void
      */
     public function setSize(int $size): void
     {
         $this->size = $size;
-    }
+    }//end setSize()
 
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'message' => $this->message,
-            'synchronizationId' => $this->synchronizationId,
+            'id'                        => $this->id,
+            'uuid'                      => $this->uuid,
+            'message'                   => $this->message,
+            'synchronizationId'         => $this->synchronizationId,
             'synchronizationContractId' => $this->synchronizationContractId,
-            'synchronizationLogId' => $this->synchronizationLogId,
-            'source' => $this->source,
-            'target' => $this->target,
-            'targetResult' => $this->targetResult,
-            'userId' => $this->userId,
-            'sessionId' => $this->sessionId,
-            'test' => $this->test,
-            'force' => $this->force,
-            'expires' => isset($this->expires) ? $this->expires->format('c') : null,
-            'created' => isset($this->created) ? $this->created->format('c') : null,
-            'size' => $this->size,
+            'synchronizationLogId'      => $this->synchronizationLogId,
+            'source'                    => $this->source,
+            'target'                    => $this->target,
+            'targetResult'              => $this->targetResult,
+            'userId'                    => $this->userId,
+            'sessionId'                 => $this->sessionId,
+            'test'                      => $this->test,
+            'force'                     => $this->force,
+            'expires'                   => isset($this->expires) ? $this->expires->format('c') : null,
+            'created'                   => isset($this->created) ? $this->created->format('c') : null,
+            'size'                      => $this->size,
         ];
-    }
-}
+    }//end jsonSerialize()
+}//end class

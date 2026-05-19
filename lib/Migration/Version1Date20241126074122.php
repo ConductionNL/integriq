@@ -23,50 +23,53 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241126074122 extends SimpleMigrationStep {
+class Version1Date20241126074122 extends SimpleMigrationStep
+{
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end preSchemaChange()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+    /**
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /**
+         * @var ISchemaWrapper $schema
+         */
+        $schema = $schemaClosure();
+        if ($schema->hasTable(tableName: 'openconnector_synchronizations') === true) {
+            $table = $schema->getTable(tableName: 'openconnector_synchronizations');
+            if ($table->hasColumn(name: 'conditions') === false) {
+                $table->addColumn(name: 'conditions', typeName: Types::JSON)
+                    ->setDefault(default: '{}')
+                    ->setNotnull(notnull:false);
+            }
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
-		 * @var ISchemaWrapper $schema
-		 */
-		$schema = $schemaClosure();
-		if ($schema->hasTable(tableName: 'openconnector_synchronizations') === true) {
-			$table = $schema->getTable(tableName: 'openconnector_synchronizations');
-			if ($table->hasColumn(name: 'conditions') === false) {
-				$table->addColumn(name: 'conditions', typeName: Types::JSON)
-					->setDefault(default: '{}')
-					->setNotnull(notnull:false);
-			}
-			if ($table->hasColumn(name: 'follow_ups') === false) {
+            if ($table->hasColumn(name: 'follow_ups') === false) {
+                $table->addColumn(name: 'follow_ups', typeName: Types::JSON)
+                    ->setDefault(default: '{}')
+                    ->setNotnull(notnull:false);
+            }
+        }
 
-				$table->addColumn(name: 'follow_ups', typeName: Types::JSON)
-					->setDefault(default: '{}')
-					->setNotnull(notnull:false);
-			}
-		}
+        return $schema;
+    }//end changeSchema()
 
-		return $schema;
-	}
-
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end postSchemaChange()
+}//end class
