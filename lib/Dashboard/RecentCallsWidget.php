@@ -13,15 +13,12 @@ use OCP\Util;
  */
 class RecentCallsWidget implements IWidget
 {
-
-
     public function __construct(
         private IL10N $l10n,
         private IURLGenerator $url
     ) {
 
     }//end __construct()
-
 
     /**
      * @inheritDoc
@@ -32,7 +29,6 @@ class RecentCallsWidget implements IWidget
 
     }//end getId()
 
-
     /**
      * @inheritDoc
      */
@@ -41,7 +37,6 @@ class RecentCallsWidget implements IWidget
         return $this->l10n->t('Recente calls');
 
     }//end getTitle()
-
 
     /**
      * @inheritDoc
@@ -52,7 +47,6 @@ class RecentCallsWidget implements IWidget
 
     }//end getOrder()
 
-
     /**
      * @inheritDoc
      */
@@ -61,7 +55,6 @@ class RecentCallsWidget implements IWidget
         return 'icon-openconnector-widget';
 
     }//end getIconClass()
-
 
     /**
      * @inheritDoc
@@ -72,7 +65,6 @@ class RecentCallsWidget implements IWidget
 
     }//end getUrl()
 
-
     /**
      * @inheritDoc
      */
@@ -82,6 +74,4 @@ class RecentCallsWidget implements IWidget
         Util::addStyle(Application::APP_ID, 'dashboardWidgets');
 
     }//end load()
-
-
 }//end class

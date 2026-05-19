@@ -35,8 +35,6 @@ use Psr\Log\LoggerInterface;
  */
 class HealthController extends Controller
 {
-
-
     /**
      * HealthController constructor.
      *
@@ -54,7 +52,6 @@ class HealthController extends Controller
         parent::__construct($appName, $request);
 
     }//end __construct()
-
 
     /**
      * Return health check status.
@@ -77,7 +74,7 @@ class HealthController extends Controller
             $checks['database'] = 'ok';
         } catch (\Exception $e) {
             $checks['database'] = 'error';
-            $status              = 'error';
+            $status = 'error';
             $this->logger->error('Health check: database failed', ['exception' => $e->getMessage()]);
         }
 
@@ -91,7 +88,7 @@ class HealthController extends Controller
             $checks['sources_table'] = 'ok';
         } catch (\Exception $e) {
             $checks['sources_table'] = 'error';
-            $status                   = 'degraded';
+            $status = 'degraded';
             $this->logger->warning('Health check: sources table not accessible', ['exception' => $e->getMessage()]);
         }
 
@@ -103,6 +100,4 @@ class HealthController extends Controller
         );
 
     }//end index()
-
-
 }//end class

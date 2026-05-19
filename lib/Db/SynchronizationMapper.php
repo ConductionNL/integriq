@@ -19,145 +19,147 @@ use Symfony\Component\Uid\Uuid;
  */
 class SynchronizationMapper extends QBMapper
 {
-	public function __construct(IDBConnection $db)
-	{
-		parent::__construct($db, 'openconnector_synchronizations');
-	}
+    public function __construct(IDBConnection $db)
+    {
+        parent::__construct($db, 'openconnector_synchronizations');
+    }//end __construct()
 
-	/**
-	 * Find a synchronization by ID, UUID, or slug
-	 *
-	 * @param int|string $id The ID, UUID, or slug of the synchronization to find
-	 * @return Synchronization
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException
-	 */
-	public function find(int|string $id): Synchronization
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Find a synchronization by ID, UUID, or slug
+     *
+     * @param  int|string $id The ID, UUID, or slug of the synchronization to find
+     * @return Synchronization
+     * @throws \OCP\AppFramework\Db\DoesNotExistException
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException
+     */
+    public function find(int|string $id): Synchronization
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openconnector_synchronizations');
+        $qb->select('*')
+            ->from('openconnector_synchronizations');
 
-		// If it's a string but can be converted to a numeric value without data loss, use as ID
-		if (is_string($id) && ctype_digit($id) === false) {
-			// For non-numeric strings, search in uuid and slug columns
-			$qb->where(
-				$qb->expr()->orX(
-					$qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('slug', $qb->createNamedParameter($id))
-				)
-			);
+        // If it's a string but can be converted to a numeric value without data loss, use as ID
+        if (is_string($id) && ctype_digit($id) === false) {
+            // For non-numeric strings, search in uuid and slug columns
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
+                    $qb->expr()->eq('slug', $qb->createNamedParameter($id))
+                )
+            );
 
-			return $this->findEntity(query: $qb);
-		}
+            return $this->findEntity(query: $qb);
+        }
 
-		// For numeric values, search in id column
-		$qb->where(
-			$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-		);
+        // For numeric values, search in id column
+        $qb->where(
+            $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+        );
 
-		return $this->findEntity(query: $qb);
-	}
+        return $this->findEntity(query: $qb);
+    }//end find()
 
-	public function findByUuid(string $uuid): Synchronization
-	{
-		$qb = $this->db->getQueryBuilder();
+    public function findByUuid(string $uuid): Synchronization
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openconnector_synchronizations')
-			->where(
-				$qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
-			);
+        $qb->select('*')
+            ->from('openconnector_synchronizations')
+            ->where(
+                $qb->expr()->eq('uuid', $qb->createNamedParameter($uuid))
+            );
 
-		return $this->findEntity(query: $qb);
-	}
+        return $this->findEntity(query: $qb);
+    }//end findByUuid()
 
-	public function findByRef(string $reference): array
-	{
-		$qb = $this->db->getQueryBuilder();
+    public function findByRef(string $reference): array
+    {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openconnector_synchronizations')
-			->where(
-				$qb->expr()->eq('reference', $qb->createNamedParameter($reference))
-			);
+        $qb->select('*')
+            ->from('openconnector_synchronizations')
+            ->where(
+                $qb->expr()->eq('reference', $qb->createNamedParameter($reference))
+            );
 
-		return $this->findEntities(query: $qb);
-	}
+        return $this->findEntities(query: $qb);
+    }//end findByRef()
 
-	/**
-	 * Find all synchronizations matching the given criteria
-	 *
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array<string,mixed> $filters Array of field => value pairs to filter by
-	 * @param array<string> $searchConditions Array of search conditions to apply
-	 * @param array<string,mixed> $searchParams Array of parameters for the search conditions
-	 * @param array<string,array<string>> $ids Array of IDs to search for, keyed by type ('id', 'uuid', or 'slug')
-	 * @return array<Synchronization> Array of Synchronization entities
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-		?array $ids = []
-	): array {
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Find all synchronizations matching the given criteria
+     *
+     * @param  int|null                    $limit            Maximum number of results to return
+     * @param  int|null                    $offset           Number of results to skip
+     * @param  array<string,mixed>         $filters          Array of field => value pairs to filter by
+     * @param  array<string>               $searchConditions Array of search conditions to apply
+     * @param  array<string,mixed>         $searchParams     Array of parameters for the search conditions
+     * @param  array<string,array<string>> $ids              Array of IDs to search for, keyed by type ('id', 'uuid', or 'slug')
+     * @return array<Synchronization> Array of Synchronization entities
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function findAll(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=[],
+        ?array $searchConditions=[],
+        ?array $searchParams=[],
+        ?array $ids=[]
+    ): array {
+        $qb = $this->db->getQueryBuilder();
 
-		$qb->select('*')
-			->from('openconnector_synchronizations')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+        $qb->select('*')
+            ->from('openconnector_synchronizations')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
-		// Apply ID filters if provided
-		if (!empty($ids)) {
-			$idConditions = [];
-			
-			if (!empty($ids['id'])) {
-				$idConditions[] = $qb->expr()->in('id', $qb->createNamedParameter($ids['id'], IQueryBuilder::PARAM_INT_ARRAY));
-			}
-			
-			if (!empty($ids['uuid'])) {
-				$idConditions[] = $qb->expr()->in('uuid', $qb->createNamedParameter($ids['uuid'], IQueryBuilder::PARAM_STR_ARRAY));
-			}
-			
-			if (!empty($ids['slug'])) {
-				$idConditions[] = $qb->expr()->in('slug', $qb->createNamedParameter($ids['slug'], IQueryBuilder::PARAM_STR_ARRAY));
-			}
-			
-			if (!empty($idConditions)) {
-				$qb->andWhere($qb->expr()->orX(...$idConditions));
-			}
-		}
+        // Apply ID filters if provided
+        if (!empty($ids)) {
+            $idConditions = [];
 
-		// Apply regular filters
-		foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+            if (!empty($ids['id'])) {
+                $idConditions[] = $qb->expr()->in('id', $qb->createNamedParameter($ids['id'], IQueryBuilder::PARAM_INT_ARRAY));
+            }
 
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+            if (!empty($ids['uuid'])) {
+                $idConditions[] = $qb->expr()->in('uuid', $qb->createNamedParameter($ids['uuid'], IQueryBuilder::PARAM_STR_ARRAY));
+            }
 
-		return $this->findEntities(query: $qb);
-	}
+            if (!empty($ids['slug'])) {
+                $idConditions[] = $qb->expr()->in('slug', $qb->createNamedParameter($ids['slug'], IQueryBuilder::PARAM_STR_ARRAY));
+            }
+
+            if (!empty($idConditions)) {
+                $qb->andWhere($qb->expr()->orX(...$idConditions));
+            }
+        }
+
+        // Apply regular filters
+        foreach ($filters as $filter => $value) {
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+        }
+
+        if (empty($searchConditions) === false) {
+            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
+            foreach ($searchParams as $param => $value) {
+                $qb->setParameter($param, $value);
+            }
+        }
+
+        return $this->findEntities(query: $qb);
+    }//end findAll()
 
     /**
      * Find synchronizations that are configured to trigger on related-object mutations.
@@ -165,9 +167,9 @@ class SynchronizationMapper extends QBMapper
      * sourceConfig shape:
      * - triggerFromRelatedObjects: {"<register/schema>": {"<relationKey>": ["create","update","delete"]}}
      *
-     * @param string|int $register Related object register
-     * @param string|int $schema Related object schema
-     * @param string $mutationType create|update|delete
+     * @param string|int $register     Related object register
+     * @param string|int $schema       Related object schema
+     * @param string     $mutationType create|update|delete
      *
      * @return array<Synchronization>
      */
@@ -178,21 +180,26 @@ class SynchronizationMapper extends QBMapper
             return [];
         }
 
-        $relatedSourceId = "$register/$schema";
+        $relatedSourceId  = "$register/$schema";
         $synchronizations = $this->findAll(limit: null, offset: null, filters: ['source_type' => 'register/schema']);
 
-        return array_values(array_filter($synchronizations, function (Synchronization $synchronization) use ($relatedSourceId, $mutationType): bool {
-            $sourceConfig = $synchronization->getSourceConfig();
+        return array_values(
+                array_filter(
+                $synchronizations,
+                function (Synchronization $synchronization) use ($relatedSourceId, $mutationType): bool {
+                    $sourceConfig = $synchronization->getSourceConfig();
 
-            $triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
+                    $triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
 
-            if (is_array($triggerConfig) === false || isset($triggerConfig[$relatedSourceId]) === false) {
-                return false;
-            }
+                    if (is_array($triggerConfig) === false || isset($triggerConfig[$relatedSourceId]) === false) {
+                        return false;
+                    }
 
-            return $this->isRelatedTriggerConfigAllowed($triggerConfig[$relatedSourceId], $mutationType);
-        }));
-    }
+                    return $this->isRelatedTriggerConfigAllowed($triggerConfig[$relatedSourceId], $mutationType);
+                }
+                )
+                );
+    }//end findAllByRelatedObjectTrigger()
 
     /**
      * Validates trigger configuration for one related source entry.
@@ -200,8 +207,8 @@ class SynchronizationMapper extends QBMapper
      * Expected shape:
      * {"<relationKey>": ["create","update","delete"]}
      *
-     * @param mixed $triggerSourceConfig Config value for one register/schema key.
-     * @param string $mutationType Current mutation type to validate.
+     * @param mixed  $triggerSourceConfig Config value for one register/schema key.
+     * @param string $mutationType        Current mutation type to validate.
      *
      * @return bool True when the config allows the given mutation type.
      */
@@ -225,13 +232,13 @@ class SynchronizationMapper extends QBMapper
         }
 
         return false;
-    }
+    }//end isRelatedTriggerConfigAllowed()
 
     /**
      * Checks whether a mutation list allows the given mutation type.
      *
-     * @param mixed $mutationConfig Array of allowed mutations.
-     * @param string $mutationType Current mutation type.
+     * @param mixed  $mutationConfig Array of allowed mutations.
+     * @param string $mutationType   Current mutation type.
      *
      * @return bool True when allowed (or "all" is present), false otherwise.
      */
@@ -259,7 +266,7 @@ class SynchronizationMapper extends QBMapper
 
         // Delete remains strict and must be explicitly configured.
         return $normalMutation === 'delete' && in_array('delete', $normalizedMutations, true);
-    }
+    }//end isRelatedObjectMutationAllowed()
 
     /**
      * Determines whether an array has associative keys.
@@ -275,46 +282,46 @@ class SynchronizationMapper extends QBMapper
         }
 
         return array_keys($array) !== range(0, count($array) - 1);
-    }
+    }//end isAssociativeArray()
 
-	public function createFromArray(array $object): Synchronization
-	{
-		$obj = new Synchronization();
-		$obj->hydrate($object);
+    public function createFromArray(array $object): Synchronization
+    {
+        $obj = new Synchronization();
+        $obj->hydrate($object);
 
-		// Set uuid
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
+        // Set uuid
+        if ($obj->getUuid() === null) {
+            $obj->setUuid(Uuid::v4());
+        }
 
-		// Set version
-		if (empty($obj->getVersion()) === true) {
-			$obj->setVersion('0.0.1');
-		}
+        // Set version
+        if (empty($obj->getVersion()) === true) {
+            $obj->setVersion('0.0.1');
+        }
 
-		return $this->insert(entity: $obj);
-	}
+        return $this->insert(entity: $obj);
+    }//end createFromArray()
 
-	public function updateFromArray(int $id, array $object): Synchronization
-	{
-		$obj = $this->find($id);
+    public function updateFromArray(int $id, array $object): Synchronization
+    {
+        $obj = $this->find($id);
 
-		// Set version
-		if (empty($obj->getVersion()) === true) {
-			$object['version'] = '0.0.1';
-		} else if (empty($object['version']) === true) {
-			// Update version
-			$version = explode('.', $obj->getVersion());
-			if (isset($version[2]) === true) {
-				$version[2] = (int) $version[2] + 1;
-				$object['version'] = implode('.', $version);
-			}
-		}
+        // Set version
+        if (empty($obj->getVersion()) === true) {
+            $object['version'] = '0.0.1';
+        } else if (empty($object['version']) === true) {
+            // Update version
+            $version = explode('.', $obj->getVersion());
+            if (isset($version[2]) === true) {
+                $version[2]        = (int) $version[2] + 1;
+                $object['version'] = implode('.', $version);
+            }
+        }
 
-		$obj->hydrate($object);
+        $obj->hydrate($object);
 
-		return $this->update($obj);
-	}
+        return $this->update($obj);
+    }//end updateFromArray()
 
     /**
      * Get the total count of synchronizations with optional filters
@@ -323,21 +330,21 @@ class SynchronizationMapper extends QBMapper
      * that match the provided filters. It supports the same filtering capabilities
      * as the findAll method for consistent behavior.
      *
-     * @param array<string, mixed> $filters Optional filters to apply to the count query
+     * @param  array<string, mixed> $filters Optional filters to apply to the count query
      * @return int The total number of synchronizations matching the filters
      *
-     * @psalm-param array<string, mixed> $filters
-     * @psalm-return int
-     * @phpstan-param array<string, mixed> $filters
+     * @psalm-param    array<string, mixed> $filters
+     * @psalm-return   int
+     * @phpstan-param  array<string, mixed> $filters
      * @phpstan-return int
      */
-    public function getTotalCount(array $filters = []): int
+    public function getTotalCount(array $filters=[]): int
     {
         $qb = $this->db->getQueryBuilder();
 
         // Select count of all synchronizations
         $qb->select($qb->createFunction('COUNT(*) as count'))
-           ->from('openconnector_synchronizations');
+            ->from('openconnector_synchronizations');
 
         // Apply filters if provided (same logic as findAll method)
         foreach ($filters as $filter => $value) {
@@ -345,20 +352,22 @@ class SynchronizationMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($filter));
                 continue;
             }
+
             if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         // Return the total count
-        return (int)($row['count'] ?? 0);
-    }
+        return (int) ($row['count'] ?? 0);
+    }//end getTotalCount()
 
     /**
      * Get the total count of all call logs.
@@ -366,28 +375,28 @@ class SynchronizationMapper extends QBMapper
      * This method provides backward compatibility for existing code
      * that uses getTotalCallCount. New code should use getTotalCount instead.
      *
-     * @return int The total number of call logs in the database.
+     * @return     int The total number of call logs in the database.
      * @deprecated Use getTotalCount() instead
-     * 
-     * @psalm-return int
+     *
+     * @psalm-return   int
      * @phpstan-return int
      */
     public function getTotalCallCount(): int
     {
         return $this->getTotalCount();
-    }
+    }//end getTotalCallCount()
 
     /**
      * Find all synchronizations that belong to a specific configuration.
      *
-     * @param string $configurationId The ID of the configuration to find synchronizations for
+     * @param  string $configurationId The ID of the configuration to find synchronizations for
      * @return array<Synchronization> Array of Synchronization entities
      */
     public function findByConfiguration(string $configurationId): array
     {
-        $sql = 'SELECT * FROM `' . $this->getTableName() . '` WHERE JSON_CONTAINS(configurations, ?)';
+        $sql = 'SELECT * FROM `'.$this->getTableName().'` WHERE JSON_CONTAINS(configurations, ?)';
         return $this->findEntities($sql, [$configurationId]);
-    }
+    }//end findByConfiguration()
 
     /**
      * Find all synchronizations that are connected to a specific register and/or schema.
@@ -395,17 +404,17 @@ class SynchronizationMapper extends QBMapper
      * 1. Their sourceType or targetType is 'register/schema'
      * 2. The sourceId or targetId matches the provided register and/or schema
      *
-     * @param string|null $registerId The ID of the register to find synchronizations for
-     * @param string|null $schemaId The ID of the schema to find synchronizations for
-     * @param bool $searchSource Whether to search in source fields (default: true)
-     * @param bool $searchTarget Whether to search in target fields (default: true)
+     * @param  string|null $registerId   The ID of the register to find synchronizations for
+     * @param  string|null $schemaId     The ID of the schema to find synchronizations for
+     * @param  bool        $searchSource Whether to search in source fields (default: true)
+     * @param  bool        $searchTarget Whether to search in target fields (default: true)
      * @return array<Synchronization> Array of Synchronization entities
      * @throws InvalidArgumentException If neither registerId nor schemaId is provided
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    public function getByTarget(?string $registerId = null, ?string $schemaId = null, bool $searchSource = true, bool $searchTarget = true): array
+    public function getByTarget(?string $registerId=null, ?string $schemaId=null, bool $searchSource=true, bool $searchTarget=true): array
     {
         // Validate that at least one parameter is provided
         if ($registerId === null && $schemaId === null) {
@@ -425,46 +434,46 @@ class SynchronizationMapper extends QBMapper
         $conditions = [];
 
         if ($searchSource) {
-            $sourceConditions = [];
+            $sourceConditions   = [];
             $sourceConditions[] = $qb->expr()->eq('source_type', $qb->createNamedParameter('register/schema'));
             $sourceConditions[] = $this->buildIdCondition($qb, 'source_id', $registerId, $schemaId);
-            $conditions[] = $qb->expr()->andX(...$sourceConditions);
+            $conditions[]       = $qb->expr()->andX(...$sourceConditions);
         }
 
         if ($searchTarget) {
-            $targetConditions = [];
+            $targetConditions   = [];
             $targetConditions[] = $qb->expr()->eq('target_type', $qb->createNamedParameter('register/schema'));
             $targetConditions[] = $this->buildIdCondition($qb, 'target_id', $registerId, $schemaId);
-            $conditions[] = $qb->expr()->andX(...$targetConditions);
+            $conditions[]       = $qb->expr()->andX(...$targetConditions);
         }
 
         // Combine conditions with OR
         $qb->where($qb->expr()->orX(...$conditions));
 
         return $this->findEntities($qb);
-    }
+    }//end getByTarget()
 
     /**
      * Build an ID condition for register/schema matching.
      *
-     * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb The query builder
-     * @param string $column The column name to match against
-     * @param string|null $registerId The register ID
-     * @param string|null $schemaId The schema ID
+     * @param  \OCP\DB\QueryBuilder\IQueryBuilder $qb         The query builder
+     * @param  string                             $column     The column name to match against
+     * @param  string|null                        $registerId The register ID
+     * @param  string|null                        $schemaId   The schema ID
      * @return mixed The query expression
      */
     private function buildIdCondition($qb, string $column, ?string $registerId, ?string $schemaId)
     {
         if ($registerId !== null && $schemaId !== null) {
-            return $qb->expr()->eq($column, $qb->createNamedParameter($registerId . '/' . $schemaId));
+            return $qb->expr()->eq($column, $qb->createNamedParameter($registerId.'/'.$schemaId));
         }
 
         if ($registerId !== null) {
-            return $qb->expr()->like($column, $qb->createNamedParameter($registerId . '/%'));
+            return $qb->expr()->like($column, $qb->createNamedParameter($registerId.'/%'));
         }
 
-        return $qb->expr()->like($column, $qb->createNamedParameter('%/' . $schemaId));
-    }
+        return $qb->expr()->like($column, $qb->createNamedParameter('%/'.$schemaId));
+    }//end buildIdCondition()
 
     /**
      * Get all synchronization ID to slug mappings
@@ -477,13 +486,14 @@ class SynchronizationMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->executeQuery();
+        $result   = $qb->executeQuery();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['id']] = $row['slug'];
         }
+
         return $mappings;
-    }
+    }//end getIdToSlugMap()
 
     /**
      * Get all synchronization slug to ID mappings
@@ -496,11 +506,12 @@ class SynchronizationMapper extends QBMapper
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $result = $qb->executeQuery();
+        $result   = $qb->executeQuery();
         $mappings = [];
         while ($row = $result->fetch()) {
             $mappings[$row['slug']] = $row['id'];
         }
+
         return $mappings;
-    }
-}
+    }//end getSlugToIdMap()
+}//end class
