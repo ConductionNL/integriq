@@ -634,7 +634,8 @@
 
 <script>
 import { defineComponent } from 'vue'
-import { translate as t } from '@nextcloud/l10n'
+// `t` is registered as a global Vue method by `main.js` (Vue.mixin), so
+// templates can call `t('openconnector', '...')` without importing it here.
 import { CnVersionInfoCard } from '@conduction/nextcloud-vue'
 import {
 	NcSettingsSection,
