@@ -532,21 +532,33 @@ export default {
 }
 
 .statValue.error { color: var(--color-error); }
+
 .statValue.warning { color: var(--color-warning); }
+
 .statValue.success { color: var(--color-success); }
 
 /* Chart */
 .chart-container { margin: 12px 16px 16px; }
+
 .level-chart { display: flex; flex-direction: column; gap: 8px; }
+
 .level-bar { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+
 .level-label { min-width: 60px; font-weight: 500; }
+
 .level-progress { flex: 1; height: 8px; background: var(--color-background-dark); border-radius: 4px; overflow: hidden; }
+
 .level-fill { height: 100%; transition: width 0.3s ease; }
+
 .level-bar.level-error .level-fill { background: var(--color-error); }
+
 .level-bar.level-warning .level-fill { background: var(--color-warning); }
+
 .level-bar.level-info .level-fill,
 .level-bar.level-success .level-fill { background: var(--color-success); }
+
 .level-bar.level-debug .level-fill { background: var(--color-background-dark); }
+
 .level-count { min-width: 30px; text-align: right; font-weight: 500; }
 
 /* Inputs spacing */

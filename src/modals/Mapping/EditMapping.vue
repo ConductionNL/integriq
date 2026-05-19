@@ -1443,17 +1443,20 @@ export default {
 .mapping-property-table {
 	margin-top: 8px;
 }
+
 .statisticsTable {
 	width: 100%;
 	table-layout: fixed;
 	margin-bottom: 12px;
 }
+
 .statisticsTable thead tr th {
 	text-align: left;
 	font-weight: 700;
 	padding: 10px 12px;
 	background-color: var(--color-background-hover);
 }
+
 .statisticsTable tbody tr td {
 	padding: 10px 12px;
 	background-color: var(--color-background);
@@ -1463,9 +1466,11 @@ export default {
 .statisticsTable tbody tr:nth-child(even) td {
 	background-color: var(--color-background-hover);
 }
+
 .statisticsTable tbody tr {
 	transition: background 0.15s ease-in-out;
 }
+
 .statisticsTable tbody tr:hover td {
 	background-color: var(--color-background-hover);
 }
@@ -1478,6 +1483,7 @@ export default {
 	overflow: hidden;
 	white-space: nowrap;
 }
+
 .mapping-property {
 	flex: 1 1 auto;
 	min-width: 0;
@@ -1485,11 +1491,13 @@ export default {
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
+
 .template-cell {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
+
 .actions-cell {
 	width: 120px;
 	text-align: right;
@@ -1506,6 +1514,7 @@ export default {
 	color: inherit;
 	transition: background 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }
+
 .icon-inline:hover {
 	background: rgba(255, 255, 255, 0.12);
 	opacity: 0.95;

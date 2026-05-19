@@ -112,20 +112,20 @@ export default {
 <style scoped>
 
 .responseHeadersTable {
-    margin-inline-start: 65px;
+	margin-inline-start: 65px;
 }
 
 .responseBody {
-    word-break: break-all;
+	word-break: break-all;
 }
 
 .keyColumn {
-    padding-inline-end: 10px;
+	padding-inline-end: 10px;
 }
 
 /* modal */
 div[class='modal-container']:has(.ViewJobLog) {
-    width: clamp(150px, 100%, 800px) !important;
+	width: clamp(150px, 100%, 800px) !important;
 }
 
 </style>
@@ -138,21 +138,26 @@ div[class='modal-container']:has(.ViewJobLog) {
 	max-width: 100%;
 	overflow: hidden;
 }
+
 .dataTable table {
-  table-layout: fixed;
-  width: 100%;
+	table-layout: fixed;
+	width: 100%;
 }
+
 .tableTitle {
 	margin-block-end: 10px;
 }
+
 .dataTable td {
-  white-space: normal !important;
-  overflow-wrap: break-word;
-  word-break: break-word;
+	white-space: normal !important;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
+
 .dataTable td:not(.keyColumn) {
-  width: calc(100% - 200px); /* Remaining width after keyColumn */
+	width: calc(100% - 200px); /* Remaining width after keyColumn */
 }
+
 .keyColumn {
 	width: 200px; /* Fixed width for first column */
 	padding-inline-end: 10px;
@@ -161,18 +166,18 @@ div[class='modal-container']:has(.ViewJobLog) {
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
-    border-radius: var(--border-radius);
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 1rem;
+	border-radius: var(--border-radius);
 }
 
 td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--color-border);
-    white-space: inherit;
-    word-wrap: break-word;
-    word-break: break-word;
+	padding: 0.75rem;
+	border-bottom: 1px solid var(--color-border);
+	white-space: inherit;
+	word-wrap: break-word;
+	word-break: break-word;
 }
 
 tr {
@@ -184,6 +189,6 @@ tr:nth-child(odd) td {
 }
 
 tr:last-child td {
-    border-bottom: none;
+	border-bottom: none;
 }
 </style>
