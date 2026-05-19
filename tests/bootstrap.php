@@ -12,7 +12,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // mock objects without needing the full Nextcloud framework installed.
 
 if (interface_exists('OCP\IRequest') === false) {
-    interface_exists('OCP\IRequest') || eval('namespace OCP; interface IRequest { public function getParams(): array; public function getHeader(string $name): string; }');
+    eval('namespace OCP; interface IRequest { public function getParams(): array; public function getHeader(string $name): string; }');
 }
 
 if (interface_exists('OCP\Http\Client\IClientService') === false) {
