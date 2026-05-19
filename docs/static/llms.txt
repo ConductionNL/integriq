@@ -1,0 +1,23 @@
+# OpenConnector
+
+> OpenConnector is an open-source data-synchronization app for the Nextcloud workspace.
+
+OpenConnector is an open-source data-synchronization app for the Nextcloud workspace. It connects APIs, databases, file systems, and external services to OpenRegister, transforms payloads through configurable mappings, and schedules automated sync jobs with event and webhook triggers. It also exposes endpoints, consumers, and business rules, so government teams can build integrations without a separate ESB. Released under EUPL-1.2 and maintained by Conduction since 2019.
+
+## Docs
+
+- [Documentation](https://openconnector.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
+- [API reference](https://openconnector.conduction.nl/api): OpenAPI documentation.
+
+## Optional
+
+- [Install](https://www.conduction.nl/install): self-host on your Nextcloud instance.
+- [Source code](https://github.com/ConductionNL/openconnector): repository and issue tracker.
+- [App page](https://www.conduction.nl/apps/openconnector): product positioning on conduction.nl.
+
+## Contact
+
+- Email: info@conduction.nl
+- Web: https://www.conduction.nl
+- GitHub: https://github.com/ConductionNL
+- Conduction B.V. · KvK 76741850 · Lauriergracht 14h, Amsterdam, Netherlands

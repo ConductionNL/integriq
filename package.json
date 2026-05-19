@@ -14,6 +14,8 @@
     "lint-fix": "npm run lint -- --fix",
     "test": "jest --silent",
     "test-coverage": "jest --silent --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:docs": "playwright test --project docs-capture",
     "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css"
   },
   "browserslist": [
@@ -57,6 +59,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.25.3",
     "@babel/preset-typescript": "^7.28.5",
+    "@playwright/test": "^1.59.1",
     "@cyclonedx/cyclonedx-npm": "^4.2.1",
     "@eslint/config-helpers": "^0.4.2",
     "@eslint/eslintrc": "^3.3.1",
@@ -85,5 +88,10 @@
     "typescript": "^5.5.4",
     "vue-eslint-parser": "^10.2.0",
     "vue-jest": "^3.0.7"
+  },
+  "overrides": {
+    "@vue/test-utils": {
+      "vue": "$vue"
+    }
   }
 }
