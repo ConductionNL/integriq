@@ -12,18 +12,18 @@ use Twig\RuntimeLoader\RuntimeLoaderInterface;
  */
 class AuthenticationRuntimeLoader implements RuntimeLoaderInterface
 {
-	public function __construct(
-		private readonly AuthenticationService $authenticationService,
-	) {
+    public function __construct(
+        private readonly AuthenticationService $authenticationService,
+    ) {
 
-	}
+    }//end __construct()
 
-	public function load(string $class): ?AuthenticationRuntime
-	{
-		if ($class === AuthenticationRuntime::class) {
-			return new AuthenticationRuntime($this->authenticationService);
-		}
+    public function load(string $class): ?AuthenticationRuntime
+    {
+        if ($class === AuthenticationRuntime::class) {
+            return new AuthenticationRuntime($this->authenticationService);
+        }
 
-		return null;
-	}
-}
+        return null;
+    }//end load()
+}//end class

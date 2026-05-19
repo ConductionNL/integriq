@@ -33,6 +33,7 @@ use function React\Promise\all;
  */
 class SoftwareCatalogueService
 {
+
     /**
      * Array to store all elements from the model
      *
@@ -54,21 +55,21 @@ class SoftwareCatalogueService
     /**
      * Constructor for SoftwareCatalogueService
      *
-     * @param LoggerInterface $logger The logger instance
-     * @param ObjectService $objectService The object service for accessing OpenRegister
-     * @param SchemaMapper $schemaMapper The schema mapper for accessing OpenRegister
+     * @param LoggerInterface $logger        The logger instance
+     * @param ObjectService   $objectService The object service for accessing OpenRegister
+     * @param SchemaMapper    $schemaMapper  The schema mapper for accessing OpenRegister
      */
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
     ) {
-    }
+    }//end __construct()
 
     /**
      * Extend all views for a model
      *
-     * @param int|string $modelId The id of the model for which the views should be extended
+     * @param  int|string $modelId The id of the model for which the views should be extended
      * @return PromiseInterface The resulting promises
      *
      * @throws \Psr\Container\ContainerExceptionInterface
@@ -85,9 +86,10 @@ class SoftwareCatalogueService
             $deferred->reject(new \Exception('OpenRegister service is not available'));
             return $deferred->promise();
         }
+
         $modelObject = $openRegister->find($modelId, register: 'vng-gemma', schema: 'model');
-        $model = $modelObject->jsonSerialize();
-        $views = $model['views'];
+        $model       = $modelObject->jsonSerialize();
+        $views       = $model['views'];
 
         // Set the register and schema.
         $openRegister->setRegister($modelObject->getRegister());
@@ -99,30 +101,39 @@ class SoftwareCatalogueService
 
         // Extend all views.
         all([$views, $model])
-        ->then(function($data) use ($deferred, $openRegister) {
+            ->then(
+                function ($data) use ($deferred, $openRegister) {
             [$views, $model] = $data;
 
-            $promises = array_map(function($view) use ($model) {
-                $this->extendView($view, $model);
-            }, $views);
+                    $promises = array_map(
+                    function ($view) use ($model) {
+                        $this->extendView($view, $model);
+                    },
+                    $views
+                    );
 
-            all($promises)
-                ->then(onRejected: function($error) use ($deferred) {
-                    $deferred->reject($error);
-                });
-        });
+                    all($promises)
+                        ->then(
+                        onRejected: function ($error) use ($deferred) {
+                            $deferred->reject($error);
+                        }
+                        );
+                }
+                );
 
-        $deferred->promise()->catch(function($error) {
-        });
+        $deferred->promise()->catch(
+                function ($error) {
+                }
+                );
 
         return $deferred->promise();
 
-    }//end extendModel
+    }//end extendModel()
 
     /**
      * Extends a view by fetching it from the object store and processing its nodes in parallel.
      *
-     * @param int $viewId The ID of the view to extend
+     * @param int $viewId  The ID of the view to extend
      * @param int $modelId The ID of the model to use for extending
      *
      * @return PromiseInterface A promise that resolves when all nodes have been processed
@@ -142,70 +153,99 @@ class SoftwareCatalogueService
             $deferred->reject(new \Exception('OpenRegister service is not available'));
             return $deferred->promise();
         }
-        // Fetch both view and model objects.
 
+        // Fetch both view and model objects.
         // Lets get the extendView from the schema mapper by slug.
         $extendViewSchema = $this->schemaMapper->find('extendview');
         unset($viewPromise['@self'], $viewPromise['id']);
 
-        $existingObjects = array_filter($this->existingViews, function(ObjectEntity $view) use ($viewPromise) {
-            return $view->jsonSerialize()['identifier'] === $viewPromise['identifier'];
-        });
+        $existingObjects = array_filter(
+                $this->existingViews,
+                function (ObjectEntity $view) use ($viewPromise) {
+                    return $view->jsonSerialize()['identifier'] === $viewPromise['identifier'];
+                }
+                );
 
         $id = null;
 
-        if($existingObjects !== []) {
+        if ($existingObjects !== []) {
             $id = array_shift($existingObjects)->getUuid();
         }
 
         // Lets prepare the object service for saving to the extend view.
         $openRegister->setSchema($extendViewSchema);
 
-        $this->elements = $modelPromise['elements'];
+        $this->elements  = $modelPromise['elements'];
         $this->relations = $modelPromise['relationships'];
-        $nodes = $viewPromise['nodes'];
-        $connections = $viewPromise['connections'];
+        $nodes           = $viewPromise['nodes'];
+        $connections     = $viewPromise['connections'];
 
         // Process both objects
         all([$viewPromise, $modelPromise, $nodes, $connections])
-            ->then(function (array $results) use ($deferred, $openRegister, $id) {
+            ->then(
+                    function (array $results) use ($deferred, $openRegister, $id) {
                 [$view, $model, $nodes, $connections] = $results;
 
-                if ($view === null || $model === null) {
-                    $deferred->reject(new DoesNotExistException('View or model not found'));
-                    return;
-                }
+                        if ($view === null || $model === null) {
+                            $deferred->reject(new DoesNotExistException('View or model not found'));
+                            return;
+                        }
 
-                // Process each node in parallel using ReactPHP.
-                $promisesNodes = array_map([$this, 'extendNode'], $nodes);
-                $promisesConnections = array_map([$this, 'extendConnection'], $connections);
+                        // Process each node in parallel using ReactPHP.
+                        $promisesNodes       = array_map([$this, 'extendNode'], $nodes);
+                        $promisesConnections = array_map([$this, 'extendConnection'], $connections);
 
-                $promises = array_merge($promisesNodes, $promisesConnections);
+                        $promises = array_merge($promisesNodes, $promisesConnections);
 
-                // Wait for all node processing to complete.
-                all($promises)
-                    ->then(function (array $results) use ($deferred, $view, $id, $model) {
+                        // Wait for all node processing to complete.
+                        all($promises)
+                            ->then(
+                            function (array $results) use ($deferred, $view, $id, $model) {
 
-                        $view['model'] = $model['id'] ?? $model['@self']['id'];
-                        // Update the view with the extended nodes.
-                        $view['nodes'] = array_values(array_filter($results, function ($result) { return $result['type'] !== 'Relationship';}));
-                        $view['connections'] = array_values(array_filter($results, function ($result) { return $result['type'] === 'Relationship';}));
+                                $view['model'] = $model['id'] ?? $model['@self']['id'];
+                                // Update the view with the extended nodes.
+                                $view['nodes']       = array_values(
+                                array_filter(
+                                $results,
+                                function ($result) {
+                                    return $result['type'] !== 'Relationship';
 
-                        // Save the updated view.
-                        $this->objectService->getOpenRegisters()->saveObject($view, uuid: $id);
-                    })
-                    ->otherwise(function ($error) use ($deferred) {
+                                }
+                                )
+                                );
+                                $view['connections'] = array_values(
+                                array_filter(
+                                $results,
+                                function ($result) {
+                                    return $result['type'] === 'Relationship';
+
+                                }
+                                )
+                                );
+
+                                // Save the updated view.
+                                $this->objectService->getOpenRegisters()->saveObject($view, uuid: $id);
+                            }
+                            )
+                            ->otherwise(
+                            function ($error) use ($deferred) {
+                                $deferred->reject($error);
+                            }
+                            );
+                    }
+                    )
+            ->otherwise(
+                    function ($error) use ($deferred) {
                         $deferred->reject($error);
-                    });
-            })
-            ->otherwise(function ($error) use ($deferred) {
-                $deferred->reject($error);
-            });
-        $deferred->promise()->catch(function($error) {
-        });
+                    }
+                    );
+        $deferred->promise()->catch(
+                function ($error) {
+                }
+                );
 
         return $deferred->promise();
-    }//end extendView
+    }//end extendView()
 
     /**
      * Extends a single node using the global elements and relations.
@@ -218,106 +258,121 @@ class SoftwareCatalogueService
      */
     private function extendNode(array $node): PromiseInterface
     {
-        return new Promise(function ($resolve, $reject) use ($node) {
-            try {
-                if (str_ends_with($node['identifier'], self::SUFFIX) === false) {
-                    $node['identifier'] = $node['identifier'].self::SUFFIX;
+        return new Promise(
+                function ($resolve, $reject) use ($node) {
+                    try {
+                        if (str_ends_with($node['identifier'], self::SUFFIX) === false) {
+                            $node['identifier'] = $node['identifier'].self::SUFFIX;
+                        }
+
+                        // Find matching element for this node.
+                        $element = $this->findElementForNode($node);
+                        if ($element === null) {
+                            $this->logger->warning('No matching element found for node', ['node' => $node]);
+                            $resolve($node);
+                            return;
+                        }
+
+                        // Find relations for this element.
+                        $relations = $this->findRelationsForElement($element);
+
+                        // Extend the node with element properties.
+                        $node['element'] = $element;
+
+                        // Check if the node has nested nodes that need to be extended.
+                        if (!isset($node['nodes']) || !is_array($node['nodes'])) {
+                            $resolve($node);
+                            return;
+                        }
+
+                        // Process nested nodes in parallel.
+                        $nestedPromises = array_map([$this, 'extendNode'], $node['nodes']);
+
+                        all($nestedPromises)
+                            ->then(
+                            function (array $extendedNestedNodes) use ($node, $resolve) {
+                                $node['nodes'] = $extendedNestedNodes;
+                                $resolve($node);
+                            }
+                                    )
+                            ->otherwise(
+                                    function ($error) use ($reject) {
+                                        $reject($error);
+                                    }
+                                    );
+                    } catch (\Exception $e) {
+                        $this->logger->error(
+                        'Failed to extend node: '.$e->getMessage(),
+                        [
+                            'exception' => $e,
+                            'node'      => $node,
+                        ]
+                        );
+                        $reject($e);
+                    }//end try
                 }
-                // Find matching element for this node.
-                $element = $this->findElementForNode($node);
-                if ($element === null) {
-                    $this->logger->warning('No matching element found for node', ['node' => $node]);
-                    $resolve($node);
-                    return;
-                }
-
-                // Find relations for this element.
-                $relations = $this->findRelationsForElement($element);
-
-                // Extend the node with element properties.
-                $node['element'] = $element;
-
-                // Check if the node has nested nodes that need to be extended.
-                if (!isset($node['nodes']) || !is_array($node['nodes'])) {
-                    $resolve($node);
-                    return;
-                }
-
-                // Process nested nodes in parallel.
-                $nestedPromises = array_map([$this, 'extendNode'], $node['nodes']);
-
-                all($nestedPromises)
-                    ->then(function (array $extendedNestedNodes) use ($node, $resolve) {
-                        $node['nodes'] = $extendedNestedNodes;
-                        $resolve($node);
-                    })
-                    ->otherwise(function ($error) use ($reject) {
-                        $reject($error);
-                    });
-            } catch (\Exception $e) {
-                $this->logger->error('Failed to extend node: ' . $e->getMessage(), [
-                    'exception' => $e,
-                    'node' => $node
-                ]);
-                $reject($e);
-            }
-        });
-    }//end extendNode
+                );
+    }//end extendNode()
 
     /**
      * Extend connections in the same way as we extend nodes
      *
-     * @param array $connection The connection to extend
+     * @param  array $connection The connection to extend
      * @return PromiseInterface The resulting promise
      */
     private function extendConnection(array $connection): PromiseInterface
     {
-        return new Promise(function ($resolve, $reject) use ($connection) {
-            try {
-                if (str_ends_with($connection['identifier'], self::SUFFIX) === false) {
-                    $connection['identifier'] = $connection['identifier'].self::SUFFIX;
+        return new Promise(
+                function ($resolve, $reject) use ($connection) {
+                    try {
+                        if (str_ends_with($connection['identifier'], self::SUFFIX) === false) {
+                            $connection['identifier'] = $connection['identifier'].self::SUFFIX;
+                        }
+
+                        // Find matching element for this node.
+                        $relationship = $this->findRelationForConnection($connection);
+                        if ($relationship === null) {
+                            $this->logger->warning('No matching element found for node', ['node' => $connection]);
+                            $resolve($connection);
+                            return;
+                        }
+
+                        // Find relations for this element.
+                        // Extend the node with element properties.
+                        $connection['relationship'] = $relationship;
+
+                        if (str_ends_with(haystack: $connection['source'], needle: self::SUFFIX) === false) {
+                            $connection['source'] = $connection['source'].self::SUFFIX;
+                        }
+
+                        if (str_ends_with(haystack: $connection['target'], needle: self::SUFFIX) === false) {
+                            $connection['target'] = $connection['target'].self::SUFFIX;
+                        }
+
+                        $resolve($connection);
+                    } catch (\Exception $e) {
+                        $this->logger->error(
+                        'Failed to extend node: '.$e->getMessage(),
+                        [
+                            'exception' => $e,
+                            'node'      => $connection,
+                        ]
+                        );
+                        $reject($e);
+                    }//end try
                 }
-                // Find matching element for this node.
-                $relationship = $this->findRelationForConnection($connection);
-                if ($relationship === null) {
-                    $this->logger->warning('No matching element found for node', ['node' => $connection]);
-                    $resolve($connection);
-                    return;
-                }
-
-                // Find relations for this element.
-
-                // Extend the node with element properties.
-                $connection['relationship'] = $relationship;
-
-                if(str_ends_with(haystack: $connection['source'], needle: self::SUFFIX) === false) {
-                    $connection['source'] = $connection['source'].self::SUFFIX;
-                }
-                if(str_ends_with(haystack: $connection['target'], needle: self::SUFFIX) === false) {
-                    $connection['target'] = $connection['target'].self::SUFFIX;
-                }
-
-
-                $resolve($connection);
-            } catch (\Exception $e) {
-                $this->logger->error('Failed to extend node: ' . $e->getMessage(), [
-                    'exception' => $e,
-                    'node' => $connection
-                ]);
-                $reject($e);
-            }
-        });
-    }//end extendConnection
+                );
+    }//end extendConnection()
 
     /**
      * Finds the matching element for a given node
      *
-     * @param array $node The node to find an element for
+     * @param  array $node The node to find an element for
      * @return array|null The matching element or null if not found
      */
     private function findElementForNode(array $node): ?array
     {
-        if(isset($node['elementRef']) === false) {
+        if (isset($node['elementRef']) === false) {
             return null;
         }
 
@@ -330,18 +385,19 @@ class SoftwareCatalogueService
         if ($index !== false) {
             return $this->elements[$index];
         }
+
         return null;
-    }//end findElementForNode
+    }//end findElementForNode()
 
     /**
      * Finds the matching element for a given node
      *
-     * @param array $connection The connection to find an relationship for
+     * @param  array $connection The connection to find an relationship for
      * @return array|null The matching relationship or null if not found
      */
     private function findRelationForConnection(array $connection): ?array
     {
-        if(isset($connection['relationshipRef']) === false) {
+        if (isset($connection['relationshipRef']) === false) {
             return null;
         }
 
@@ -354,13 +410,14 @@ class SoftwareCatalogueService
         if ($index !== false) {
             return $this->relations[$index];
         }
+
         return null;
-    }//end findRelationForConnection
+    }//end findRelationForConnection()
 
     /**
      * Finds all relations for a given element
      *
-     * @param array $element The element to find relations for
+     * @param  array $element The element to find relations for
      * @return array Array of relations
      */
     private function findRelationsForElement(array $element): array
@@ -369,20 +426,22 @@ class SoftwareCatalogueService
         // Iterate over each relation to find those associated with the given element.
         foreach ($this->relations as $relation) {
             // Check if the element's ID matches the source or target of the relation.
-            if ($relation['source'] === $element['identifier'] ||
-                $relation['target'] === $element['identifier']) {
+            if ($relation['source'] === $element['identifier']
+                || $relation['target'] === $element['identifier']
+            ) {
                 // Add the matching relation to the relations array.
                 $relations[] = $relation;
             }
         }
+
         // Return the array of found relations.
         return $relations;
-    }//end findRelationsForElement.
+    }//end findRelationsForElement()
 
     /**
      * Handles a new organization in the software catalog
      *
-     * @param ObjectEntity $organization The organization object
+     * @param  ObjectEntity $organization The organization object
      * @return void
      * @throws \Exception If the operation fails
      */
@@ -396,12 +455,12 @@ class SoftwareCatalogueService
 
         // Create security group for the organization
         $this->createSecurityGroup($organization);
-    }
+    }//end handleNewOrganization()
 
     /**
      * Handles a new contact in the software catalog
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the operation fails
      */
@@ -412,12 +471,12 @@ class SoftwareCatalogueService
 
         // Send welcome email to the contact
         $this->sendContactWelcomeEmail($contact);
-    }
+    }//end handleNewContact()
 
     /**
      * Handles contact updates in the software catalog
      *
-     * @param ObjectEntity $contact The updated contact object
+     * @param  ObjectEntity $contact The updated contact object
      * @return void
      * @throws \Exception If the operation fails
      */
@@ -428,12 +487,12 @@ class SoftwareCatalogueService
 
         // Send update notification email
         $this->sendContactUpdateEmail($contact);
-    }
+    }//end handleContactUpdate()
 
     /**
      * Handles contact deletion in the software catalog
      *
-     * @param ObjectEntity $contact The deleted contact object
+     * @param  ObjectEntity $contact The deleted contact object
      * @return void
      * @throws \Exception If the operation fails
      */
@@ -444,12 +503,12 @@ class SoftwareCatalogueService
 
         // Send deletion notification email
         $this->sendContactDeletionEmail($contact);
-    }
+    }//end handleContactDeletion()
 
     /**
      * Sends a welcome email to a new organization
      *
-     * @param ObjectEntity $organization The organization object
+     * @param  ObjectEntity $organization The organization object
      * @return void
      * @throws \Exception If the email sending fails
      */
@@ -457,12 +516,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement email sending logic
         $this->logger->info('Sending welcome email to organization', ['organization' => $organization]);
-    }
+    }//end sendWelcomeEmail()
 
     /**
      * Sends a notification to VNG about a new organization
      *
-     * @param ObjectEntity $organization The organization object
+     * @param  ObjectEntity $organization The organization object
      * @return void
      * @throws \Exception If the notification sending fails
      */
@@ -470,12 +529,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement VNG notification logic
         $this->logger->info('Sending VNG notification about new organization', ['organization' => $organization]);
-    }
+    }//end sendVngNotification()
 
     /**
      * Creates a security group for an organization
      *
-     * @param ObjectEntity $organization The organization object
+     * @param  ObjectEntity $organization The organization object
      * @return void
      * @throws \Exception If the security group creation fails
      */
@@ -483,12 +542,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement security group creation logic
         $this->logger->info('Creating security group for organization', ['organization' => $organization]);
-    }
+    }//end createSecurityGroup()
 
     /**
      * Creates or enables a user for a contact
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the user creation/enabling fails
      */
@@ -496,12 +555,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement user creation/enabling logic
         $this->logger->info('Creating or enabling user for contact', ['contact' => $contact]);
-    }
+    }//end createOrEnableUser()
 
     /**
      * Updates user information for a contact
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the user update fails
      */
@@ -509,12 +568,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement user update logic
         $this->logger->info('Updating user for contact', ['contact' => $contact]);
-    }
+    }//end updateUser()
 
     /**
      * Disables a user account for a deleted contact
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the user disabling fails
      */
@@ -522,12 +581,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement user disabling logic
         $this->logger->info('Disabling user for contact', ['contact' => $contact]);
-    }
+    }//end disableUser()
 
     /**
      * Sends a welcome email to a new contact
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the email sending fails
      */
@@ -535,12 +594,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement contact welcome email logic
         $this->logger->info('Sending welcome email to contact', ['contact' => $contact]);
-    }
+    }//end sendContactWelcomeEmail()
 
     /**
      * Sends an update notification email to a contact
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the email sending fails
      */
@@ -548,12 +607,12 @@ class SoftwareCatalogueService
     {
         // TODO: Implement contact update email logic
         $this->logger->info('Sending update email to contact', ['contact' => $contact]);
-    }
+    }//end sendContactUpdateEmail()
 
     /**
      * Sends a deletion notification email to a contact
      *
-     * @param ObjectEntity $contact The contact object
+     * @param  ObjectEntity $contact The contact object
      * @return void
      * @throws \Exception If the email sending fails
      */
@@ -561,5 +620,5 @@ class SoftwareCatalogueService
     {
         // TODO: Implement contact deletion email logic
         $this->logger->info('Sending deletion email to contact', ['contact' => $contact]);
-    }
-}
+    }//end sendContactDeletionEmail()
+}//end class

@@ -12,16 +12,18 @@ use OCA\OpenConnector\Db\SourceMapper;
  */
 class PingAction
 {
+
     private CallService $callService;
+
     private SourceMapper $sourceMapper;
 
     public function __construct(
         CallService $callService,
         SourceMapper $sourceMapper,
     ) {
-        $this->callService = $callService;
+        $this->callService  = $callService;
         $this->sourceMapper = $sourceMapper;
-    }
+    }//end __construct()
 
     /**
      * Executes a simple API-call (ping / GET) on a source by using the callService.
@@ -34,7 +36,7 @@ class PingAction
      *
      * @return array An array containing the execution stack trace of the actions performed.
      */
-    public function run(array $arguments = []): array
+    public function run(array $arguments=[]): array
     {
         $response = [];
         $response['stackTrace'][] = 'Running PingAction';
@@ -60,6 +62,5 @@ class PingAction
 
         // Let's report back about what we have just done
         return $response;
-    }
-
-}
+    }//end run()
+}//end class

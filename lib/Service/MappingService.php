@@ -17,6 +17,8 @@ use Twig\Error\SyntaxError;
 use Twig\Loader\ArrayLoader;
 use Throwable;
 use Exception;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Mapping service that delegates core execution to OpenRegister's MappingService
@@ -35,6 +37,7 @@ use Exception;
  */
 class MappingService
 {
+
     /**
      * Create a private variable to store the twig environment.
      *
@@ -49,38 +52,41 @@ class MappingService
      */
     private $openRegisterMappingService = null;
 
-	/**
-	 * Setting up the base class with required services.
-	 *
-	 * @param ArrayLoader   $loader		   The ArrayLoader for Twig.
-	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param CallService   $callService   The call service.
-	 * @param SourceMapper  $sourceMapper  The source mapper.
-	 * @param FileService   $fileService   The file service.
-	 * @param ObjectService $objectService The object service.
-	 */
+    /**
+     * Setting up the base class with required services.
+     *
+     * @param ArrayLoader        $loader        The ArrayLoader for Twig.
+     * @param MappingMapper      $mappingMapper The mapping mapper.
+     * @param CallService        $callService   The call service.
+     * @param SourceMapper       $sourceMapper  The source mapper.
+     * @param FileService        $fileService   The file service.
+     * @param ObjectService      $objectService The object service.
+     * @param ContainerInterface $container     The PSR container (injected; replaces \OC::$server for service lookup).
+     * @param LoggerInterface    $logger        The logger (injected; replaces \OC::$server->getLogger()).
+     */
     public function __construct(
-		ArrayLoader $loader,
-		private readonly MappingMapper $mappingMapper,
+        ArrayLoader $loader,
+        private readonly MappingMapper $mappingMapper,
         CallService $callService,
         SourceMapper $sourceMapper,
         FileService $fileService,
         ObjectService $objectService,
+        ContainerInterface $container,
+        private readonly LoggerInterface $logger,
     ) {
         $this->twig = new Environment($loader);
-		$this->twig->addExtension(new MappingExtension());
-		$this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper, callService: $callService, sourceMapper: $sourceMapper, fileService: $fileService, objectService: $objectService->getOpenRegisters()));
+        $this->twig->addExtension(new MappingExtension());
+        $this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper, callService: $callService, sourceMapper: $sourceMapper, fileService: $fileService, objectService: $objectService->getOpenRegisters()));
 
         // Try to load OpenRegister's MappingService for delegation.
         try {
-            $container = \OC::$server;
             $this->openRegisterMappingService = $container->get(
                 \OCA\OpenRegister\Service\MappingService::class
             );
         } catch (\Throwable $e) {
             // OpenRegister not available, falling back to local implementation.
             $this->openRegisterMappingService = null;
-            \OC::$server->getLogger()->info(
+            $this->logger->info(
                 'OpenConnector MappingService: OpenRegister not available, using local implementation',
                 ['app' => 'openconnector']
             );
@@ -125,21 +131,22 @@ class MappingService
      * @param bool    $list    Whether we want a list instead of a single item
      *
      * @return array The result (output) of the mapping process
-     *@throws LoaderError|SyntaxError Twig Exceptions
-     *
+     * @throws LoaderError|SyntaxError Twig Exceptions
      */
-    public function executeMapping(Mapping $mapping, array $input, bool $list = false): array
+    public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {
         // Delegate to OpenRegister's MappingService if available.
         if ($this->openRegisterMappingService !== null) {
             $orMapping = new \OCA\OpenRegister\Db\Mapping();
-            $orMapping->hydrate([
-                'name'        => $mapping->getName(),
-                'mapping'     => $mapping->getMapping(),
-                'unset'       => ($mapping->getUnset() ?? []),
-                'cast'        => ($mapping->getCast() ?? []),
-                'passThrough' => $mapping->getPassThrough(),
-            ]);
+            $orMapping->hydrate(
+                    [
+                        'name'        => $mapping->getName(),
+                        'mapping'     => $mapping->getMapping(),
+                        'unset'       => ($mapping->getUnset() ?? []),
+                        'cast'        => ($mapping->getCast() ?? []),
+                        'passThrough' => $mapping->getPassThrough(),
+                    ]
+                    );
 
             return $this->openRegisterMappingService->executeMapping(
                 mapping: $orMapping,
@@ -164,7 +171,7 @@ class MappingService
      *
      * @SuppressWarnings(PHPMD.ElseExpression)
      */
-    private function executeMappingLocal(Mapping $mapping, array $input, bool $list = false): array
+    private function executeMappingLocal(Mapping $mapping, array $input, bool $list=false): array
     {
         // Check for list
         if ($list === true) {
@@ -192,7 +199,7 @@ class MappingService
         }//end if
 
         $originalInput = $input;
-        $input = $this->encodeArrayKeys($input, '.', '&#46;');
+        $input         = $this->encodeArrayKeys($input, '.', '&#46;');
 
         // Determine pass through.
         // Let's get the dot array based on https://github.com/adbario/php-dot-notation.
@@ -201,6 +208,7 @@ class MappingService
         } else {
             $dotArray = new Dot();
         }
+
         $dotInput = new Dot($input);
 
         // Let's do the actual mapping.
@@ -218,7 +226,7 @@ class MappingService
             }
 
             try {
-			    $dotArray->set($key, html_entity_decode($this->twig->createTemplate($value)->render($originalInput)));
+                $dotArray->set($key, html_entity_decode($this->twig->createTemplate($value)->render($originalInput)));
             } catch (Throwable $e) {
                 throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
             }
@@ -265,7 +273,7 @@ class MappingService
         if (count($keys) === 1 && $keys[0] === '#') {
             // Ensure we always return an array, even if the value is null
             $rootValue = $output['#'];
-            $output = is_array($rootValue) ? $rootValue : [$rootValue];
+            $output    = is_array($rootValue) ? $rootValue : [$rootValue];
             if ($rootValue === null) {
                 $output = [];
             }
@@ -310,141 +318,143 @@ class MappingService
 
         // Todo: Add more casts.
         switch ($cast) {
-        case 'string':
-            $value = (string) $value;
-            break;
-        case 'bool':
-        case 'boolean':
-            if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-                $value = true;
+            case 'string':
+                $value = (string) $value;
                 break;
-            }
+            case 'bool':
+            case 'boolean':
+                if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
+                    $value = true;
+                    break;
+                }
 
-            $value = false;
-            break;
-		case '?bool':
-		case '?boolean':
-			if($value === null) {
-				break;
-			}
-			if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-				$value = true;
-				break;
-			}
-
-			$value = false;
-
-			break;
-        case 'int':
-        case 'integer':
-            $value = (int) $value;
-            break;
-        case 'float':
-            $value = (float) $value;
-            break;
-        case 'array':
-            $value = (array) $value;
-            break;
-        case 'date':
-            $value = date($value);
-            break;
-        case 'url':
-            $value = urlencode($value);
-            break;
-        case 'urlDecode':
-            $value = urldecode($value);
-            break;
-        case 'rawurl':
-            $value = rawurlencode($value);
-            break;
-        case 'rawurlDecode':
-            $value = rawurldecode($value);
-            break;
-        case 'html':
-            $value = htmlentities($value);
-            break;
-        case 'htmlDecode':
-            $value = html_entity_decode($value);
-            break;
-        case 'base64':
-            $value = base64_encode($value);
-            break;
-        case 'base64Decode':
-            $value = base64_decode($value);
-            break;
-        case 'json':
-            $value = json_encode($value);
-            break;
-        case 'jsonToArray':
-            if (is_array($value) === true) {
+                $value = false;
                 break;
-            }
-            $value = html_entity_decode($value);
-            $value = json_decode($value, true);
-            break;
-        case 'utf8':
-            // https://www.php.net/manual/en/function.iconv.php
-            setlocale(LC_CTYPE, 'cs_CZ');
-            $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
-            break;
-        case 'nullStringToNull':
-            if ($value === 'null') {
-                $value = null;
-            }
-            break;
-        case 'coordinateStringToArray':
-            $value = $this->coordinateStringToArray($value);
-            break;
-        case 'keyCantBeValue':
-            if ($key == $value) {
-                $dotArray->delete($key);
-            }
-            break;
-        case 'unsetIfValue':
-            if (isset($unsetIfValue) === true
-                && $value == $unsetIfValue
-                || ($unsetIfValue === '' && empty($value))
-                || ($unsetIfValue === '' && $value === null)
-            ) {
-                $dotArray->delete($key);
-            }
+            case '?bool':
+            case '?boolean':
+                if ($value === null) {
+                    break;
+                }
 
-            if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
-                $dotArray->delete($key);
-            }
-            break;
-        case 'setNullIfValue':
-            if (isset($setNullIfValue) === true
-                && $value == $setNullIfValue
-                || ($setNullIfValue === '' && empty($value))
-                || ($setNullIfValue === '' && $value === null)
-            ) {
-                $value = null;
-            }
+                if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
+                    $value = true;
+                    break;
+                }
 
-            if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
-                $value = null;
-            }
-            break;
-        case 'countValue':
-            if (isset($countValue) === true
-                && empty($countValue) === false
-                && $dotArray->has($countValue) === true
-                && is_countable($dotArray->get($countValue)) === true
-            ) {
-                $value = count($dotArray->get($countValue));
-            }
-            break;
-        case 'moneyStringToInt':
-            $value = str_replace('.', '', $value);
-            $value = (int) str_replace(',', '', $value);
-            break;
-        case 'intToMoneyString':
-            $value = ($value / 100);
-            $value = number_format($value, 2, ',', '.');
-            break;
-        default:
-            break;
+                $value = false;
+
+                break;
+            case 'int':
+            case 'integer':
+                $value = (int) $value;
+                break;
+            case 'float':
+                $value = (float) $value;
+                break;
+            case 'array':
+                $value = (array) $value;
+                break;
+            case 'date':
+                $value = date($value);
+                break;
+            case 'url':
+                $value = urlencode($value);
+                break;
+            case 'urlDecode':
+                $value = urldecode($value);
+                break;
+            case 'rawurl':
+                $value = rawurlencode($value);
+                break;
+            case 'rawurlDecode':
+                $value = rawurldecode($value);
+                break;
+            case 'html':
+                $value = htmlentities($value);
+                break;
+            case 'htmlDecode':
+                $value = html_entity_decode($value);
+                break;
+            case 'base64':
+                $value = base64_encode($value);
+                break;
+            case 'base64Decode':
+                $value = base64_decode($value);
+                break;
+            case 'json':
+                $value = json_encode($value);
+                break;
+            case 'jsonToArray':
+                if (is_array($value) === true) {
+                    break;
+                }
+
+                $value = html_entity_decode($value);
+                $value = json_decode($value, true);
+                break;
+            case 'utf8':
+                // https://www.php.net/manual/en/function.iconv.php
+                setlocale(LC_CTYPE, 'cs_CZ');
+                $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
+                break;
+            case 'nullStringToNull':
+                if ($value === 'null') {
+                    $value = null;
+                }
+                break;
+            case 'coordinateStringToArray':
+                $value = $this->coordinateStringToArray($value);
+                break;
+            case 'keyCantBeValue':
+                if ($key == $value) {
+                    $dotArray->delete($key);
+                }
+                break;
+            case 'unsetIfValue':
+                if (isset($unsetIfValue) === true
+                    && $value == $unsetIfValue
+                    || ($unsetIfValue === '' && empty($value))
+                    || ($unsetIfValue === '' && $value === null)
+                ) {
+                    $dotArray->delete($key);
+                }
+
+                if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                    $dotArray->delete($key);
+                }
+                break;
+            case 'setNullIfValue':
+                if (isset($setNullIfValue) === true
+                    && $value == $setNullIfValue
+                    || ($setNullIfValue === '' && empty($value))
+                    || ($setNullIfValue === '' && $value === null)
+                ) {
+                    $value = null;
+                }
+
+                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                    $value = null;
+                }
+                break;
+            case 'countValue':
+                if (isset($countValue) === true
+                    && empty($countValue) === false
+                    && $dotArray->has($countValue) === true
+                    && is_countable($dotArray->get($countValue)) === true
+                ) {
+                    $value = count($dotArray->get($countValue));
+                }
+                break;
+            case 'moneyStringToInt':
+                $value = str_replace('.', '', $value);
+                $value = (int) str_replace(',', '', $value);
+                break;
+            case 'intToMoneyString':
+                $value = ($value / 100);
+                $value = number_format($value, 2, ',', '.');
+                break;
+            default:
+                break;
         }//end switch
 
         // Don't reset key that was deleted on purpose.
@@ -472,6 +482,7 @@ class MappingService
                 if ($this->areAllArrayKeysNull($value) === false) {
                     return false;
                 }
+
                 continue;
             }
 
@@ -499,7 +510,7 @@ class MappingService
         foreach ($halves as $half) {
             if (count($point) > 1) {
                 $coordinateArray[] = $point;
-                $point             = [];
+                $point = [];
             }
 
             $point[] = $half;
@@ -515,7 +526,6 @@ class MappingService
 
     }//end coordinateStringToArray()
 
-
     /**
      * Retrieves a single mapping by its ID.
      *
@@ -524,7 +534,7 @@ class MappingService
      * mappings through this service layer, rather than accessing the mapper directly.
      * This maintains proper encapsulation and separation of concerns.
      *
-     * @param string $mappingId The unique identifier of the mapping to retrieve
+     * @param  string $mappingId The unique identifier of the mapping to retrieve
      * @return Mapping The requested mapping entity
      * @throws \OCP\AppFramework\Db\DoesNotExistException If mapping is not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple mappings found
@@ -533,7 +543,7 @@ class MappingService
     {
         // Forward the find request to the mapper while maintaining encapsulation
         return $this->mappingMapper->find($mappingId);
-    }
+    }//end getMapping()
 
     /**
      * Retrieves all available mappings.
@@ -550,6 +560,5 @@ class MappingService
         // Forward the findAll request to the mapper while maintaining encapsulation
         // @todo: add filtering options
         return $this->mappingMapper->findAll();
-    }
-
-}
+    }//end getMappings()
+}//end class
