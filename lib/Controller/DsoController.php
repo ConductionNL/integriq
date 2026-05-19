@@ -145,10 +145,10 @@ class DsoController extends Controller
             return true;
         }
 
-        // Signature validation would use the DSO-LV public certificate
-        // to verify the HMAC/RSA signature of the request body.
-        // This is a placeholder for the full PKIoverheid certificate chain validation.
-        return true;
+        // Signature validation not yet implemented (PKIoverheid certificate chain).
+        // Fail-closed: reject any signed request until validation is wired up.
+        $this->logger->warning('DSO STAM: Signature header present but validation not yet implemented — request rejected');
+        return false;
 
     }//end validateSignature()
 
