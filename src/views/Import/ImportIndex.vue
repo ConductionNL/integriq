@@ -210,43 +210,44 @@ export default {
 }
 
 .files-table-td-name span {
-  float: left;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 10%);
+	float: left;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	max-width: calc(100% - 10%);
 }
 
 .files-table-name {
-  color: var(--color-main-text);
+	color: var(--color-main-text);
 }
+
 .files-table-extension {
-  color: var(--color-text-maxcontrast);
+	color: var(--color-text-maxcontrast);
 }
 
 .files-table-tr {
-  color: var(--color-text-maxcontrast);
-  border-bottom: 1px solid var(--color-border);
+	color: var(--color-text-maxcontrast);
+	border-bottom: 1px solid var(--color-border);
 }
 
 .files-table-tr > td {
-  height: 55px;
+	height: 55px;
 }
 
 .files-table-remove-button {
-  text-align: -webkit-right;
+	text-align: -webkit-right;
 }
 
 .files-list__row-icon {
-  position: relative;
-  display: flex;
-  overflow: visible;
-  align-items: center;
-  flex: 0 0 32px;
-  justify-content: center;
-  width: 32px;
-  height: 100%;
-  margin-right: var(--checkbox-padding);
-  color: var(--color-primary-element);
+	position: relative;
+	display: flex;
+	overflow: visible;
+	align-items: center;
+	flex: 0 0 32px;
+	justify-content: center;
+	width: 32px;
+	height: 100%;
+	margin-right: var(--checkbox-padding);
+	color: var(--color-primary-element);
 }
 </style>
