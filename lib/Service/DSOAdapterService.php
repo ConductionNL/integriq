@@ -249,6 +249,21 @@ class DSOAdapterService
                 continue;
             }
 
+            // Only allow HTTPS to prevent SSRF via file://, http://localhost, etc.
+            $scheme = parse_url(url: $url, component: PHP_URL_SCHEME);
+            if ($scheme !== 'https') {
+                $this->logger->warning(
+                    'DSO: bijlage URL rejected — scheme not allowed',
+                    [
+                        'url'    => $url,
+                        'scheme' => $scheme,
+                    ]
+                );
+                $result['status'] = 'rejected_scheme';
+                $results[]        = $result;
+                continue;
+            }
+
             $attempt    = 0;
             $downloaded = false;
 
