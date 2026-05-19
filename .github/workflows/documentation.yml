@@ -13,4 +13,4 @@ jobs:
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     with:
       cname: openconnector.conduction.nl
-      source-folder: docusaurus
+      source-folder: docs
