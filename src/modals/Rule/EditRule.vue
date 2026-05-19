@@ -14,7 +14,6 @@ import { ruleSchema, RULE_TYPE_KEYS, ruleTypeLabel } from '../../views/rule/rule
 		:fields="formFields"
 		:dialog-title="initialItem?.id ? t('openconnector', 'Edit rule') : t('openconnector', 'Add rule')"
 		name-field="name"
-		size="large"
 		@confirm="onConfirm"
 		@close="closeModal">
 		<!-- Open Register install prompt -->
@@ -58,18 +57,46 @@ import { ruleSchema, RULE_TYPE_KEYS, ruleTypeLabel } from '../../views/rule/rule
 			</NcNoteCard>
 		</template>
 
-		<!-- Type select: needs to track selectedType locally so the dynamic fields recompute -->
-		<template #field-type="{ value, updateField }">
-			<div class="cn-form-dialog__select-wrapper">
+		<!-- Conditions: shorter editor height than the CnFormDialog default -->
+		<template #field-conditions="{ field, updateField }">
+			<div class="cn-form-dialog__json-wrapper">
 				<label class="cn-form-dialog__label">
-					{{ t('openconnector', 'Type') }} *
+					{{ field.label }}
 				</label>
-				<NcSelect
-					:options="typeSelectOptions"
-					:value="resolvedTypeOption(value)"
-					:selectable="isTypeSelectable"
-					:clearable="false"
-					@input="opt => onTypeChange(opt, updateField)" />
+				<CnJsonViewer
+					:value="conditionsDraft"
+					language="json"
+					height="150px"
+					:error-text="conditionsError || ''"
+					@update:value="value => onConditionsInput(value, updateField)" />
+			</div>
+		</template>
+
+		<!-- Synthetic row hosting action + type in a 2-col grid.
+		     Values are tracked in component-local `meta`; merged in onConfirm. -->
+		<template #field-_rowMeta>
+			<div class="ruleMetaRow">
+				<div class="cn-form-dialog__select-wrapper">
+					<label class="cn-form-dialog__label">
+						{{ t('openconnector', 'Action') }} *
+					</label>
+					<NcSelect
+						:options="actionSelectOptions"
+						:value="actionSelectOptions.find(o => o.id === meta.action) || actionSelectOptions[0]"
+						:clearable="false"
+						@input="opt => (meta.action = opt ? opt.id : 'post')" />
+				</div>
+				<div class="cn-form-dialog__select-wrapper">
+					<label class="cn-form-dialog__label">
+						{{ t('openconnector', 'Type') }} *
+					</label>
+					<NcSelect
+						:options="typeSelectOptions"
+						:value="resolvedTypeOption(meta.type)"
+						:selectable="isTypeSelectable"
+						:clearable="false"
+						@input="opt => onTypeChange(opt)" />
+				</div>
 			</div>
 		</template>
 
@@ -312,7 +339,7 @@ import { ruleSchema, RULE_TYPE_KEYS, ruleTypeLabel } from '../../views/rule/rule
 
 <script>
 import { NcSelect, NcTextField, NcTextArea, NcButton, NcNoteCard } from '@nextcloud/vue'
-import { CnFormDialog } from '@conduction/nextcloud-vue'
+import { CnFormDialog, CnJsonViewer } from '@conduction/nextcloud-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import Drag from 'vue-material-design-icons/Drag.vue'
 import Close from 'vue-material-design-icons/Close.vue'
@@ -330,6 +357,7 @@ export default {
 	name: 'EditRule',
 	components: {
 		CnFormDialog,
+		CnJsonViewer,
 		NcSelect,
 		NcTextField,
 		NcTextArea,
@@ -373,6 +401,16 @@ export default {
 				isAvailable: true,
 			},
 			closeAlert: false,
+
+			conditionsDraft: '{}',
+			conditionsError: null,
+
+			// Synthetic "row meta" values rendered via #field-_rowMeta slot.
+			// Not in formData — merged in onConfirm. Same pattern as EditJob's extraFlags.
+			meta: {
+				action: 'post',
+				type: 'error',
+			},
 		}
 	},
 	computed: {
@@ -387,6 +425,14 @@ export default {
 		},
 		typeSelectOptions() {
 			return RULE_TYPE_KEYS.map(id => ({ id, label: ruleTypeLabel(id) }))
+		},
+		actionSelectOptions() {
+			return [
+				{ id: 'post', label: t('openconnector', 'Post (Create)') },
+				{ id: 'get', label: t('openconnector', 'Get (Read)') },
+				{ id: 'put', label: t('openconnector', 'Put (Update)') },
+				{ id: 'delete', label: t('openconnector', 'Delete (Delete)') },
+			]
 		},
 		authTypeOptions() {
 			return [
@@ -436,20 +482,7 @@ export default {
 			const base = [
 				{ key: 'name', label: labels.name, widget: 'text', required: true, validation: { maxLength: 255 } },
 				{ key: 'description', label: labels.description, widget: 'textarea' },
-				{ key: 'type', label: labels.type, widget: 'custom' },
-				{
-					key: 'action',
-					label: labels.action,
-					widget: 'select',
-					enum: ['post', 'get', 'put', 'delete'],
-					enumLabels: {
-						post: t('openconnector', 'Post (Create)'),
-						get: t('openconnector', 'Get (Read)'),
-						put: t('openconnector', 'Put (Update)'),
-						delete: t('openconnector', 'Delete (Delete)'),
-					},
-					required: true,
-				},
+				{ key: 'conditions', label: labels.conditions, widget: 'json', default: {} },
 				{
 					key: 'timing',
 					label: labels.timing,
@@ -462,7 +495,9 @@ export default {
 					required: true,
 				},
 				{ key: 'order', label: labels.order, widget: 'number', default: 0 },
-				{ key: 'conditions', label: labels.conditions, widget: 'json', default: {} },
+				// Synthetic field — rendered via #field-_rowMeta slot as a 2-col grid
+				// hosting action + type on one horizontal row.
+				{ key: '_rowMeta', label: '', widget: 'custom' },
 			]
 			return [...base, ...this.typeSpecificFields(this.selectedType)]
 		},
@@ -533,7 +568,13 @@ export default {
 			const cfg = item?.configuration || {}
 
 			this.selectedType = item?.type || 'error'
+			this.meta = {
+				action: item?.action || 'post',
+				type: item?.type || 'error',
+			}
 			this.closeAlert = false
+			this.conditionsDraft = JSON.stringify(item?.conditions || {}, null, 2)
+			this.conditionsError = null
 
 			this.authTypeLocal = cfg.authentication?.type || 'basic'
 			this.apiKeys = [{ apiKey: '', user: null }]
@@ -879,10 +920,10 @@ export default {
 			if (TYPES_REQUIRING_OPENREGISTER.has(option.id)) return this.openRegister.isInstalled
 			return true
 		},
-		onTypeChange(opt, updateField) {
+		onTypeChange(opt) {
 			const id = opt?.id || 'error'
 			this.selectedType = id
-			updateField('type', id)
+			this.meta.type = id
 		},
 		resolvedAuthTypeOption(value) {
 			return this.authTypeOptions.find(o => o.value === value) || this.authTypeOptions[0]
@@ -1079,19 +1120,41 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
-		async onConfirm(formData) {
+		onConditionsInput(value, updateField) {
+			this.conditionsDraft = value
+			const trimmed = (value || '').trim()
+			if (!trimmed) {
+				this.conditionsError = null
+				updateField('conditions', {})
+				return
+			}
 			try {
-				const type = formData.type || this.selectedType
-				const configuration = this.packConfig(type, formData)
+				const parsed = JSON.parse(trimmed)
+				this.conditionsError = null
+				updateField('conditions', parsed)
+			} catch (e) {
+				this.conditionsError = t('openconnector', 'Invalid JSON: {msg}', { msg: e.message })
+			}
+		},
+		async onConfirm(formData) {
+			if (this.conditionsError) {
+				this.$refs.formDialog.setResult({ error: this.conditionsError })
+				return
+			}
+			try {
+				// Drop the synthetic placeholder; action/type live in `meta`.
+				const { _rowMeta, ...payload } = formData
+				const type = this.meta.type || 'error'
+				const configuration = this.packConfig(type, payload)
 				const rule = new Rule({
 					...(ruleStore.ruleItem || {}),
-					name: formData.name || '',
-					description: formData.description || '',
+					name: payload.name || '',
+					description: payload.description || '',
 					type,
-					action: formData.action || 'post',
-					timing: formData.timing || 'before',
-					order: Number(formData.order) || 0,
-					conditions: formData.conditions || {},
+					action: this.meta.action || 'post',
+					timing: payload.timing || 'before',
+					order: Number(payload.order) || 0,
+					conditions: payload.conditions || {},
 					configuration,
 				})
 				await ruleStore.saveRule(rule)
@@ -1112,6 +1175,13 @@ export default {
 	gap: 10px;
 	margin-top: 10px;
 	align-items: center;
+}
+
+.ruleMetaRow {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	align-items: start;
 }
 
 .cn-form-dialog__select-wrapper {
