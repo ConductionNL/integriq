@@ -1,0 +1,12 @@
+name: Beta Release
+
+on:
+  push:
+    branches: [beta]
+
+jobs:
+  release:
+    uses: ConductionNL/.github/.github/workflows/release-beta.yml@main
+    with:
+      app-name: openconnector
+    secrets: inherit

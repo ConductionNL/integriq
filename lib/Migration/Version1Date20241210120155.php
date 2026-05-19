@@ -19,6 +19,8 @@ use OCP\Migration\SimpleMigrationStep;
  * This migration changes the following:
  * - Adding 1 new column for the table Synchronization: currentPage
  * - Adding 1 new column for the table SynchronizationContractLogs: message
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241210120155 extends SimpleMigrationStep {
 

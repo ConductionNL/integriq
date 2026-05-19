@@ -886,163 +886,160 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .apexcharts-svg {
-    background-color: transparent !important;
+	background-color: transparent !important;
 }
 
 .dashboard-content {
-    margin-inline: auto;
-    max-width: 1000px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+	margin-inline: auto;
+	max-width: 1000px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
 }
+
 .dashboard-content > * {
-    margin-block-end: 4rem;
+	margin-block-end: 4rem;
 }
 
 /* default theme */
 @media (prefers-color-scheme: light) {
-    :root {
-        --dashboard-item-background-color: rgba(0, 0, 0, 0.07);
-    }
+	:root {
+		--dashboard-item-background-color: rgba(0, 0, 0, 0.07);
+	}
 }
 @media (prefers-color-scheme: dark) {
-    :root {
-        --dashboard-item-background-color: rgba(255, 255, 255, 0.1);
-    }
+	:root {
+		--dashboard-item-background-color: rgba(255, 255, 255, 0.1);
+	}
 }
 /* do theme checks, light mode | dark mode */
 :root:has(body[data-theme-light]) {
-    --dashboard-item-background-color: rgba(0, 0, 0, 0.07);
+	--dashboard-item-background-color: rgba(0, 0, 0, 0.07);
 }
+
 :root:has(body[data-theme-dark]) {
-    --dashboard-item-background-color: rgba(255, 255, 255, 0.1);
+	--dashboard-item-background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* most searched terms */
 .dashboard-content > .stats {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1rem;
 }
 @media screen and (min-width: 880px) {
-    .dashboard-content > .stats {
-        grid-template-columns: 1fr 1fr;
-    }
+	.dashboard-content > .stats {
+		grid-template-columns: 1fr 1fr;
+	}
 }
 @media screen and (min-width: 1024px) {
-    .dashboard-content > .stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
+	.dashboard-content > .stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
 }
 @media screen and (min-width: 1220px) {
-    .dashboard-content > .stats {
-        grid-template-columns: repeat(3, 1fr);
-    }
+	.dashboard-content > .stats {
+		grid-template-columns: repeat(3, 1fr);
+	}
 }
 @media screen and (min-width: 1590px) {
-    .dashboard-content > .stats {
-        grid-template-columns: repeat(3, 1fr);
-    }
+	.dashboard-content > .stats {
+		grid-template-columns: repeat(3, 1fr);
+	}
 }
+
 .dashboard-content > .stats > div {
-    padding: 1rem;
-    height: 150px;
-    width: 250px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out;
+	padding: 1rem;
+	height: 150px;
+	width: 250px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: transform 0.2s ease-in-out;
 }
 
 .dashboard-content > .stats > div:hover {
-    transform: scale(1.02);
+	transform: scale(1.02);
 }
 
 /* default theme */
 @media (prefers-color-scheme: light) {
-    .dashboard-content > .stats > div {
-        background-color: rgba(0, 0, 0, 0.07);
-    }
+	.dashboard-content > .stats > div {
+		background-color: rgba(0, 0, 0, 0.07);
+	}
 }
 @media (prefers-color-scheme: dark) {
-    .dashboard-content > .stats > div {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
+	.dashboard-content > .stats > div {
+		background-color: rgba(255, 255, 255, 0.1);
+	}
 }
 /* do theme checks, light mode | dark mode */
 body[data-theme-light] .dashboard-content > .stats > div {
-    background-color: rgba(0, 0, 0, 0.07);
+	background-color: rgba(0, 0, 0, 0.07);
 }
+
 body[data-theme-dark] .dashboard-content > .stats > div {
-    background-color: rgba(255, 255, 255, 0.1);
+	background-color: rgba(255, 255, 255, 0.1);
 }
+
 .dashboard-content > .stats > div > h5 {
-    margin: 0;
-    font-weight: normal;
-}
-.dashboard-content > .stats > div > .content {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: calc(100% - 40px);
-
-    font-size: 3.5rem;
+	margin: 0;
+	font-weight: normal;
 }
 
-/* Update the graph section styling */
-.graph-section {
-    width: 100%;
-    margin-bottom: 4rem;
-}
-
-.graph-section > h3 {
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-/* Update the graphs container styling */
-.dashboard-content > .graph-section > .graphs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    width: 100%;
-    justify-content: center;
-}
-
-.dashboard-content > .graph-section > .graphs > div {
-    flex: 1;
-    min-width: 300px; /* Minimum width for readable graphs */
-    max-width: calc(50% - 1rem); /* Maximum width of 50% minus half the gap */
-}
-
-/* On smaller screens (mobile) */
-@media screen and (max-width: 768px) {
-    .dashboard-content > .graph-section > .graphs {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .dashboard-content > .graph-section > .graphs > div {
-        width: 100%;
-        max-width: 100%;
-    }
-}
-
-/* Remove the old .graphs styles that were causing the issue */
-.dashboard-content > .graphs {
-    display: none;
-}
-
-/* Add these new styles for the loading state */
 .dashboard-content > .stats > div > .content {
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	height: calc(100% - 40px);
+
 	font-size: 3.5rem;
+}
+
+/* Update the graph section styling */
+.graph-section {
+	width: 100%;
+	margin-bottom: 4rem;
+}
+
+.graph-section > h3 {
+	margin-bottom: 1rem;
+	text-align: center;
+}
+
+/* Update the graphs container styling */
+.dashboard-content > .graph-section > .graphs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2rem;
+	width: 100%;
+	justify-content: center;
+}
+
+.dashboard-content > .graph-section > .graphs > div {
+	flex: 1;
+	min-width: 300px; /* Minimum width for readable graphs */
+	max-width: calc(50% - 1rem); /* Maximum width of 50% minus half the gap */
+}
+
+/* On smaller screens (mobile) */
+@media screen and (max-width: 768px) {
+	.dashboard-content > .graph-section > .graphs {
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.dashboard-content > .graph-section > .graphs > div {
+		width: 100%;
+		max-width: 100%;
+	}
+}
+
+/* Remove the old .graphs styles that were causing the issue */
+.dashboard-content > .graphs {
+	display: none;
 }
 
 /* Adjust the loading icon size and color to match the theme */
@@ -1052,7 +1049,7 @@ body[data-theme-dark] .dashboard-content > .stats > div {
 }
 
 .clickable {
-    cursor: pointer;
+	cursor: pointer;
 }
 
 .date-range-selector {

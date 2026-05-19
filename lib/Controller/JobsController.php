@@ -11,6 +11,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\BackgroundJob\IJobList;
 use OCA\OpenConnector\Db\JobLogMapper;
@@ -20,6 +21,16 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Db\SynchronizationMapper;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class JobsController extends Controller
 {
     /**
@@ -38,7 +49,8 @@ class JobsController extends Controller
         private JobService $jobService,
         private IJobList $jobList,
         private SynchronizationService $synchronizationService,
-        private SynchronizationMapper $synchronizationMapper
+        private SynchronizationMapper $synchronizationMapper,
+        private IL10N $l
     )
     {
         parent::__construct($appName, $request);
@@ -102,7 +114,7 @@ class JobsController extends Controller
         try {
             return new JSONResponse($this->jobMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
     }
 
@@ -285,7 +297,7 @@ class JobsController extends Controller
                 'total' => $total
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Failed to retrieve logs: ' . $e->getMessage()], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
         }
     }
 
@@ -326,9 +338,9 @@ class JobsController extends Controller
             // Return the execution results
             return new JSONResponse($result);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Job not found'], 404);
+            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         } catch (Exception $e) {
-            return new JSONResponse(['error' => 'Failed to execute job: ' . $e->getMessage()], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }
     }
 
@@ -369,9 +381,9 @@ class JobsController extends Controller
             // Return the execution results
             return new JSONResponse($result);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Job not found'], 404);
+            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         } catch (Exception $e) {
-            return new JSONResponse(['error' => 'Failed to execute job: ' . $e->getMessage()], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }
     }
 }

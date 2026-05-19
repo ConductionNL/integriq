@@ -24,6 +24,7 @@ use OCA\OpenConnector\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
+use OCP\IL10N;
 use OCP\IRequest;
 
 /**
@@ -34,6 +35,10 @@ use OCP\IRequest;
  *
  * @category Controller
  * @package  OCA\OpenConnector\Controller
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class LogsController extends Controller
 {
@@ -52,23 +57,33 @@ class LogsController extends Controller
     private ObjectService $objectService;
 
     /**
+     * The localization service
+     *
+     * @var IL10N
+     */
+    private IL10N $l;
+
+    /**
      * Constructor for the LogsController
      *
      * @param string                   $appName                  The application name
      * @param IRequest                 $request                  The request interface
      * @param SynchronizationLogMapper $synchronizationLogMapper The synchronization log mapper
      * @param ObjectService            $objectService            The object service
+     * @param IL10N                    $l                        The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         SynchronizationLogMapper $synchronizationLogMapper,
-        ObjectService $objectService
+        ObjectService $objectService,
+        IL10N $l
     ) {
         parent::__construct($appName, $request);
-        
+
         $this->synchronizationLogMapper = $synchronizationLogMapper;
         $this->objectService = $objectService;
+        $this->l = $l;
     }
 
     /**
@@ -156,7 +171,7 @@ class LogsController extends Controller
             $log = $this->synchronizationLogMapper->find((int) $id);
             return new JSONResponse($log);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Log not found'], 404);
+            return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         }
     }
 
@@ -178,9 +193,9 @@ class LogsController extends Controller
             $log = $this->synchronizationLogMapper->find((int) $id);
             $this->synchronizationLogMapper->delete($log);
             
-            return new JSONResponse(['message' => 'Log deleted successfully']);
+            return new JSONResponse(['message' => $this->l->t('Log deleted successfully')]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Log not found or could not be deleted'], 404);
+            return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
         }
     }
 
@@ -222,7 +237,7 @@ class LogsController extends Controller
                 'levelDistribution' => $levelDistribution,
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not fetch statistics'], 500);
+            return new JSONResponse(['error' => $this->l->t('Could not fetch statistics')], 500);
         }
     }
 
@@ -297,7 +312,7 @@ class LogsController extends Controller
                 'contentType' => 'text/csv'
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not export logs'], 500);
+            return new JSONResponse(['error' => $this->l->t('Could not export logs')], 500);
         }
     }
 } 

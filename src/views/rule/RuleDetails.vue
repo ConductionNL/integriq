@@ -120,7 +120,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .gridDoubleWidth {
 	grid-column: span 2;
 }

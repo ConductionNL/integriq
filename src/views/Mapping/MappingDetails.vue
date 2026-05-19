@@ -317,7 +317,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .tabButtonsContainer {
 	display: flex;
 	flex-direction: column;

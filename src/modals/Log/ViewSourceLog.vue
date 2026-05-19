@@ -186,25 +186,25 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .responseBody {
-    word-break: break-all;
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: var(--color-background-dark);
-    border-radius: var(--border-radius);
+	word-break: break-all;
+	margin-top: 1rem;
+	padding: 1rem;
+	background-color: var(--color-background-dark);
+	border-radius: var(--border-radius);
 }
 
 .keyColumn {
-    width: 200px; /* Fixed width for first column */
-    padding-inline-end: 10px;
-    font-weight: bold;
-    color: var(--color-text-lighter);
+	width: 200px; /* Fixed width for first column */
+	padding-inline-end: 10px;
+	font-weight: bold;
+	color: var(--color-text-lighter);
 }
 
 /* modal */
 div[class='modal-container']:has(.ViewSourceLog) {
-    width: clamp(150px, 100%, 800px) !important;
+	width: clamp(150px, 100%, 800px) !important;
 }
 </style>
 
@@ -216,32 +216,38 @@ div[class='modal-container']:has(.ViewSourceLog) {
 	max-width: 100%;
 	overflow: hidden;
 }
+
 .dataTable table {
-  table-layout: fixed;
-  width: 100%;
+	table-layout: fixed;
+	width: 100%;
 }
+
 .tableTitle {
 	margin-block-end: 10px;
 }
+
 .dataTable td {
-  white-space: normal !important;
-  overflow-wrap: break-word;
-  word-break: break-word;
+	white-space: normal !important;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
+
 .dataTable td:not(.keyColumn) {
-  width: calc(100% - 200px); /* Remaining width after keyColumn */
+	width: calc(100% - 200px); /* Remaining width after keyColumn */
 }
+
 .responseBodyJson {
-    position: relative;
+	position: relative;
 	font-family: monospace;
-    white-space: pre-wrap;
+	white-space: pre-wrap;
 }
+
 .responseBodyJsonActions {
-    position: absolute;
-    top: 0;
-    right: 0;
-    transform: translateY(-50%);
-    z-index: 1;
+	position: absolute;
+	top: 0;
+	right: 0;
+	transform: translateY(-50%);
+	z-index: 1;
 }
 
 .notFoundText {
@@ -253,18 +259,18 @@ div[class='modal-container']:has(.ViewSourceLog) {
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
-    border-radius: var(--border-radius);
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: 1rem;
+	border-radius: var(--border-radius);
 }
 
 td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--color-border);
-    white-space: inherit;
-    word-wrap: break-word;
-    word-break: break-word;
+	padding: 0.75rem;
+	border-bottom: 1px solid var(--color-border);
+	white-space: inherit;
+	word-wrap: break-word;
+	word-break: break-word;
 }
 
 tr {
@@ -276,21 +282,21 @@ tr:nth-child(odd) td {
 }
 
 tr:last-child td {
-    border-bottom: none;
+	border-bottom: none;
 }
 
 .responseBodyContent {
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 1rem;
-    background-color: var(--color-background-dark);
-    border-radius: var(--border-radius);
+	max-height: 400px;
+	overflow-y: auto;
+	padding: 1rem;
+	background-color: var(--color-background-dark);
+	border-radius: var(--border-radius);
 }
 
 .responseBodyLabel {
-    font-weight: bold;
-    color: var(--color-text-lighter);
-    display: block;
-    margin-bottom: 0.5rem;
+	font-weight: bold;
+	color: var(--color-text-lighter);
+	display: block;
+	margin-bottom: 0.5rem;
 }
 </style>

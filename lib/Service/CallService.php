@@ -37,6 +37,19 @@ use Twig\Loader\ArrayLoader;
  * and managing call logs. It utilizes Twig for templating and Guzzle for making HTTP requests, and logs all calls.
  *
  * @todo We should test the effect of @Authors & @Package(s) in Class doc-blocks. And add them if possible.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CamelCaseVariableName)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class CallService
 {
@@ -75,12 +88,11 @@ class CallService
 		$this->twig->addRuntimeLoader(new AuthenticationRuntimeLoader($authenticationService));
 		$this->cookieJar = new CookieJar();
 
+        $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
+        $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
         if($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
             $this->errorRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['callLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
             $this->successRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
-        } else {
-            $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
         }
 	}
 
@@ -121,7 +133,9 @@ class CallService
 				&& str_contains(haystack: $value, needle: "}}") === true
 			) {
 				return $this->twig->createTemplate(template: $value, name: "sourceConfig")->render(context: ['source' => $source]);
-			} else if (is_array($value) === true) {
+			}
+
+			if (is_array($value) === true) {
 				$value = array_map(function($value) use ($source) {
 					if (is_string($value) === false && is_array($value) === false) {
 						return $value;
@@ -241,7 +255,9 @@ class CallService
         if (isset($config['cert']) === true) {
             if (is_array($config['cert']) === true) {
                 $config['cert'][0] = $this->writeFile('certificate', $config['cert'][0]);
-            } else if (is_string($config['cert'])) {
+            }
+
+            if (is_array($config['cert']) === false && is_string($config['cert'])) {
                 $config['cert'] = $this->writeFile('certificate', $config['cert']);
 			}
         }
@@ -249,7 +265,9 @@ class CallService
         if (isset($config['ssl_key']) === true) {
             if (is_array($config['ssl_key']) === true) {
                 $config['ssl_key'][0] = $this->writeFile('privateKey', $config['ssl_key'][0]);
-            } else if (is_string($config['ssl_key']) === true) {
+            }
+
+            if (is_array($config['ssl_key']) === false && is_string($config['ssl_key']) === true) {
                 $config['ssl_key'] = $this->writeFile('privateKey', $config['ssl_key']);
             }
         }
@@ -451,11 +469,15 @@ class CallService
             $soapService = new SOAPService($this->cookieJar);
 
             $response = $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
-        } else {
+        }
+
+        if ($source->getType() !== 'soap') {
             try {
                 if ($asynchronous === false) {
                     $response = $this->client->request($method, $url, $config);
-                } else {
+                }
+
+                if ($asynchronous === true) {
                     // @todo: we want to get rate limit headers from async calls as well
                     return $this->client->requestAsync($method, $url, $config);
                 }
@@ -506,14 +528,14 @@ class CallService
 		$callLog->setCreated(new \DateTime());
         $callLog->setExpires($data['response']['statusCode'] < 400 ? $successExpires : $errorExpires);
 
-		// Only persist response if we get bad requests or server errors.
-		if ($callLog->getStatusCode() >= 400 && $callLog->getStatusCode() < 600 || $logBody === true) {
-			$callLog->setResponse($data['response']);
-		} else {
-            $response = $data['response'];
-            unset($response['body']);
-            $callLog->setResponse($response);
-        }
+		// Only persist response body if we get bad requests or server errors.
+		$responseData = $data['response'];
+		if ($callLog->getStatusCode() < 400 || $callLog->getStatusCode() >= 600) {
+			if ($logBody !== true) {
+				unset($responseData['body']);
+			}
+		}
+		$callLog->setResponse($responseData);
 
 		$this->callLogMapper->insert($callLog);
 

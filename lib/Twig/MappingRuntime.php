@@ -3,6 +3,7 @@
 namespace OCA\OpenConnector\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
+use OC\Files\Node\File;
 use OCA\OpenConnector\Db\Mapping;
 use OCA\OpenConnector\Db\MappingMapper;
 use OCA\OpenConnector\Db\Source;
@@ -10,15 +11,25 @@ use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\DB\Exception;
+use OCP\Files\IRootFolder;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 use Twig\Extension\RuntimeExtensionInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Uid\UuidV4;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ */
 class MappingRuntime implements RuntimeExtensionInterface
 {
 	public function __construct(
@@ -26,8 +37,9 @@ class MappingRuntime implements RuntimeExtensionInterface
 		private readonly MappingMapper  $mappingMapper,
         private readonly CallService $callService,
         private readonly SourceMapper $sourceMapper,
+        private readonly FileService $fileService,
+        private readonly ObjectService $objectService,
 	) {
-
 	}
 
     /**
@@ -112,14 +124,20 @@ class MappingRuntime implements RuntimeExtensionInterface
 			$mappingObject->hydrate($mapping);
 
 			$mapping = $mappingObject;
-		} else if (is_string($mapping) === true || is_int($mapping) === true) {
-			if (is_string($mapping) === true && str_starts_with($mapping, 'http')) {
-				$mapping = $this->mappingMapper->findByRef($mapping)[0];
-			} else {
-				// If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
-				// In the future we should be able to find the mapping by uuid (string) as well.
-				$mapping = $this->mappingMapper->find($mapping);
-			}
+		}
+
+		if ((is_string($mapping) === true || is_int($mapping) === true)
+			&& is_string($mapping) === true && str_starts_with($mapping, 'http')
+		) {
+			$mapping = $this->mappingMapper->findByRef($mapping)[0];
+		}
+
+		if ((is_string($mapping) === true || is_int($mapping) === true)
+			&& !(is_string($mapping) === true && str_starts_with($mapping, 'http'))
+		) {
+			// If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
+			// In the future we should be able to find the mapping by uuid (string) as well.
+			$mapping = $this->mappingMapper->find($mapping);
 		}
 
 		return $this->mappingService->executeMapping(
@@ -132,8 +150,83 @@ class MappingRuntime implements RuntimeExtensionInterface
 	 *
 	 * @return array
 	 */
-	public function generateUuid(): UuidV4
-	{
-		return Uuid::v4();
-	}
+    public function generateUuid(): UuidV4
+    {
+        return Uuid::v4();
+    }
+
+    /**
+     * Fetch the content of a specific file for an object.
+     *
+     * @param string|int $fileId The file node ID to fetch.
+     * @param string $objectId The object ID that owns the file.
+     * 
+     * @return string|null The file contents when found, otherwise null.
+     */
+    public function getFileContents(string|int $fileId, string $objectId): ?string
+    {
+        $object = $this->objectService->getMapper('objectEntity')->find($objectId);
+        $files = $this->fileService->getFilesForEntity($object);
+
+        $files = array_filter($files, fn ($file) => $file instanceof File === true && $file->getId() === (int) $fileId);
+
+        if (count($files) === 1) {
+            return $files[0]->getContent();
+        }
+
+        return get_class($file);
+    }
+
+    /**
+     * Fetch and format all files for an object.
+     *
+     * @param string $objectId The object ID to fetch files for.
+     * 
+     * @return array The formatted file metadata list.
+     */
+    public function getFiles(string $objectId): array
+    {
+        $files = $this->fileService->getFiles(object: $objectId);
+
+        $formattedFiles = [];
+        foreach ($files as $file) {
+            $formattedFiles[] = $this->fileService->formatFile($file);
+        }
+
+        return $formattedFiles;
+    }
+
+    /**
+     * Creates a URL-friendly slug from text.
+     *
+     * Conversion steps:
+     * 1. Convert to lowercase
+     * 2. Replace spaces and underscores with hyphens
+     * 3. Remove special characters
+     * 4. Remove multiple consecutive hyphens
+     * 5. Trim hyphens from start and end
+     *
+     * @param string $text The text to convert to a slug.
+     *
+     * @return string The generated slug.
+     */
+    public function createSlug(string $text): string
+    {
+        // Convert to lowercase.
+        $slug = strtolower($text);
+
+        // Replace spaces and underscores with hyphens.
+        $slug = str_replace([' ', '_'], '-', $slug);
+
+        // Remove all characters that are not a-z, 0-9, or hyphen.
+        $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
+
+        // Replace multiple consecutive hyphens with single hyphen.
+        $slug = preg_replace('/-+/', '-', $slug);
+
+        // Trim hyphens from start and end.
+        $slug = trim($slug, '-');
+
+        return $slug;
+    }//end createSlug()
 }

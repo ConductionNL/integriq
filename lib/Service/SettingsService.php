@@ -29,6 +29,12 @@ use Psr\Log\LoggerInterface;
  *
  * Provides functionality for retrieving database statistics and
  * system information for the OpenConnector application.
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.MissingImport)
  */
 class SettingsService
 {
@@ -185,17 +191,18 @@ class SettingsService
             ];
 
             // Retention Settings with defaults
+            // Retention Settings with defaults
+            $data['retention'] = [
+                'successLogRetention'          => 3600000,     // 1 Hour default
+                'callLogRetention'             => 2592000000,  // 1 month default
+                'eventMessageRetention'        => 604800000,   // 1 week default
+                'jobLogRetention'              => 2592000000,  // 1 month default
+                'syncContractLogRetention'     => 7776000000,  // 3 months default
+                'syncLogRetention'             => 2592000000,  // 1 month default
+            ];
+
             $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
-            if (empty($retentionConfig)) {
-                $data['retention'] = [
-                    'successLogRetention'          => 3600000,     // 1 Hour default
-                    'callLogRetention'             => 2592000000,  // 1 month default
-                    'eventMessageRetention'        => 604800000,   // 1 week default
-                    'jobLogRetention'              => 2592000000,  // 1 month default
-                    'syncContractLogRetention'     => 7776000000,  // 3 months default
-                    'syncLogRetention'             => 2592000000,  // 1 month default
-                ];
-            } else {
+            if (empty($retentionConfig) === false) {
                 $retentionData     = json_decode($retentionConfig, true);
                 $data['retention'] = [
                     'successLogRetention'          => $retentionData['successLogRetention'] ?? 3600000,
@@ -205,7 +212,7 @@ class SettingsService
                     'syncContractLogRetention'     => $retentionData['syncContractLogRetention'] ?? 7776000000,
                     'syncLogRetention'             => $retentionData['syncLogRetention'] ?? 2592000000,
                 ];
-            }//end if
+            }
 
             return $data;
         } catch (\Exception $e) {
@@ -327,6 +334,7 @@ class SettingsService
                     // Check if expires column exists before updating
                     $checkQuery = "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'";
                     $checkResult = $this->db->executeQuery($checkQuery);
+                    $results['retentionResults']['eventMessagesUpdated'] = 'Column expires not found - skipped';
                     if ($checkResult->fetchColumn() !== false) {
                         $expiryQuery = "
                             UPDATE `*PREFIX*openconnector_event_messages`
@@ -336,8 +344,6 @@ class SettingsService
                         $stmt = $this->db->prepare($expiryQuery);
                         $stmt->execute([$retentionMs * 1000]);
                         $results['retentionResults']['eventMessagesUpdated'] = $stmt->rowCount();
-                    } else {
-                        $results['retentionResults']['eventMessagesUpdated'] = 'Column expires not found - skipped';
                     }
                 } catch (\Exception $e) {
                     $error = 'Failed to set event messages expiry dates: '.$e->getMessage();

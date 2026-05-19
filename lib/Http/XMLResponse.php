@@ -13,6 +13,9 @@ use DOMText;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
+/**
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ */
 class XMLResponse extends Response
 {
 	/** 
@@ -197,14 +200,16 @@ class XMLResponse extends Response
 					foreach ($value as $item) {
 						$this->createChildElement($dom, $element, $key, $item);
 					}
-				} else {
-					// Handle associative arrays (complex elements)
-					$this->createChildElement($dom, $element, $key, $value);
+					continue;
 				}
-			} else {
-				// Handle simple value elements
+
+				// Handle associative arrays (complex elements)
 				$this->createChildElement($dom, $element, $key, $value);
+				continue;
 			}
+
+			// Handle simple value elements
+			$this->createChildElement($dom, $element, $key, $value);
 		}
 	}
 
@@ -233,20 +238,18 @@ class XMLResponse extends Response
 		
 		if (is_array($data) === true) {
 			$this->buildXmlElement($dom, $childElement, $data);
-		} else {
-			// Handle objects that might not be convertible to string directly
-			if (is_object($data) === true) {
-				// For QueryBuilder objects or objects without __toString(), create a placeholder
-				if ($data instanceof IQueryBuilder || 
-					method_exists($data, '__toString') === false) {
-					$data = '[Object of class ' . get_class($data) . ']';
-				} else {
-					// For objects with __toString() method
-					$data = (string)$data;
-				}
-			}
-			$childElement->appendChild($this->createSafeTextNode($dom, (string)$data));
+			return;
 		}
+
+		// Handle objects that might not be convertible to string directly
+		if (is_object($data) === true) {
+			// For QueryBuilder objects or objects without __toString(), create a placeholder
+			$data = method_exists($data, '__toString') === true && !($data instanceof IQueryBuilder)
+				? (string)$data
+				: '[Object of class ' . get_class($data) . ']';
+		}
+
+		$childElement->appendChild($this->createSafeTextNode($dom, (string)$data));
 	}
 	
 	/**

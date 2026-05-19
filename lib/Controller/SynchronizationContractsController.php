@@ -24,6 +24,7 @@ use OCA\OpenConnector\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
+use OCP\IL10N;
 use OCP\IRequest;
 
 /**
@@ -34,6 +35,14 @@ use OCP\IRequest;
  *
  * @category Controller
  * @package  OCA\OpenConnector\Controller
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class SynchronizationContractsController extends Controller
 {
@@ -52,23 +61,33 @@ class SynchronizationContractsController extends Controller
     private ObjectService $objectService;
 
     /**
+     * The localization service
+     *
+     * @var IL10N
+     */
+    private IL10N $l;
+
+    /**
      * Constructor for the SynchronizationContractsController
      *
      * @param string                         $appName                        The application name
      * @param IRequest                       $request                        The request interface
      * @param SynchronizationContractMapper  $synchronizationContractMapper  The synchronization contract mapper
      * @param ObjectService                  $objectService                  The object service
+     * @param IL10N                          $l                              The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         SynchronizationContractMapper $synchronizationContractMapper,
-        ObjectService $objectService
+        ObjectService $objectService,
+        IL10N $l
     ) {
         parent::__construct($appName, $request);
-        
+
         $this->synchronizationContractMapper = $synchronizationContractMapper;
         $this->objectService = $objectService;
+        $this->l = $l;
     }
 
     /**
@@ -171,7 +190,7 @@ class SynchronizationContractsController extends Controller
             $contract = $this->synchronizationContractMapper->find((int) $id);
             return new JSONResponse($contract);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Contract not found'], 404);
+            return new JSONResponse(['error' => $this->l->t('Contract not found')], 404);
         }
     }
 
@@ -196,7 +215,7 @@ class SynchronizationContractsController extends Controller
             
             return new JSONResponse($contract, 201);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not create contract: ' . $e->getMessage()], 400);
+            return new JSONResponse(['error' => $this->l->t('Could not create contract: %s', [$e->getMessage()])], 400);
         }
     }
 
@@ -223,7 +242,7 @@ class SynchronizationContractsController extends Controller
             
             return new JSONResponse($contract);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not update contract: ' . $e->getMessage()], 400);
+            return new JSONResponse(['error' => $this->l->t('Could not update contract: %s', [$e->getMessage()])], 400);
         }
     }
 
@@ -245,9 +264,9 @@ class SynchronizationContractsController extends Controller
             $contract = $this->synchronizationContractMapper->find((int) $id);
             $this->synchronizationContractMapper->delete($contract);
             
-            return new JSONResponse(['message' => 'Contract deleted successfully']);
+            return new JSONResponse(['message' => $this->l->t('Contract deleted successfully')]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Contract not found or could not be deleted'], 404);
+            return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deleted')], 404);
         }
     }
 
@@ -271,9 +290,9 @@ class SynchronizationContractsController extends Controller
             // Set contract as active (implementation depends on your business logic)
             // For now, we'll just return success
             
-            return new JSONResponse(['message' => 'Contract activated successfully']);
+            return new JSONResponse(['message' => $this->l->t('Contract activated successfully')]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Contract not found or could not be activated'], 404);
+            return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
         }
     }
 
@@ -297,9 +316,9 @@ class SynchronizationContractsController extends Controller
             // Set contract as inactive (implementation depends on your business logic)
             // For now, we'll just return success
             
-            return new JSONResponse(['message' => 'Contract deactivated successfully']);
+            return new JSONResponse(['message' => $this->l->t('Contract deactivated successfully')]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Contract not found or could not be deactivated'], 404);
+            return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
         }
     }
 
@@ -323,9 +342,9 @@ class SynchronizationContractsController extends Controller
             // Execute contract (implementation depends on your business logic)
             // For now, we'll just return success
             
-            return new JSONResponse(['message' => 'Contract executed successfully']);
+            return new JSONResponse(['message' => $this->l->t('Contract executed successfully')]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Contract not found or could not be executed'], 404);
+            return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);
         }
     }
 
@@ -355,7 +374,7 @@ class SynchronizationContractsController extends Controller
                 'errorCount' => $errorCount,
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not fetch statistics'], 500);
+            return new JSONResponse(['error' => $this->l->t('Could not fetch statistics')], 500);
         }
     }
 
@@ -394,7 +413,7 @@ class SynchronizationContractsController extends Controller
 
             return new JSONResponse($performanceData);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not fetch performance data'], 500);
+            return new JSONResponse(['error' => $this->l->t('Could not fetch performance data')], 500);
         }
     }
 
@@ -476,7 +495,7 @@ class SynchronizationContractsController extends Controller
                 'contentType' => 'text/csv'
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Could not export contracts'], 500);
+            return new JSONResponse(['error' => $this->l->t('Could not export contracts')], 500);
         }
     }
 } 

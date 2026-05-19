@@ -9,6 +9,10 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
 
+/**
+ * @SuppressWarnings(PHPMD.Superglobals)
+ * @SuppressWarnings(PHPMD.CountInLoopExpression)
+ */
 class ImportController extends Controller
 {
 	/**

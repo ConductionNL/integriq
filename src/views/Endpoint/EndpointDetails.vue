@@ -284,7 +284,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .detailHeader {
 	display: flex;
 	justify-content: space-between;
@@ -304,10 +304,12 @@ export default {
 	gap: 20px;
 	margin: 20px 0;
 }
+
 .gridContent {
 	display: flex;
 	gap: 10px;
 }
+
 .gridFullWidth {
 	grid-column: 1 / -1;
 }
@@ -317,7 +319,6 @@ export default {
 }
 
 .tabPanel {
-	padding: 20px;
 	text-align: center;
 	color: var(--color-text-maxcontrast);
 }

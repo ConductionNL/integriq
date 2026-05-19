@@ -7,8 +7,16 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class SynchronizationMapper extends QBMapper
 {
 	public function __construct(IDBConnection $db)
@@ -40,12 +48,14 @@ class SynchronizationMapper extends QBMapper
 					$qb->expr()->eq('slug', $qb->createNamedParameter($id))
 				)
 			);
-		} else {
-			// For numeric values, search in id column
-			$qb->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-			);
+
+			return $this->findEntity(query: $qb);
 		}
+
+		// For numeric values, search in id column
+		$qb->where(
+			$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+		);
 
 		return $this->findEntity(query: $qb);
 	}
@@ -86,6 +96,9 @@ class SynchronizationMapper extends QBMapper
 	 * @param array<string,mixed> $searchParams Array of parameters for the search conditions
 	 * @param array<string,array<string>> $ids Array of IDs to search for, keyed by type ('id', 'uuid', or 'slug')
 	 * @return array<Synchronization> Array of Synchronization entities
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function findAll(
 		?int $limit = null,
@@ -127,11 +140,13 @@ class SynchronizationMapper extends QBMapper
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
 		if (empty($searchConditions) === false) {
@@ -143,6 +158,124 @@ class SynchronizationMapper extends QBMapper
 
 		return $this->findEntities(query: $qb);
 	}
+
+    /**
+     * Find synchronizations that are configured to trigger on related-object mutations.
+     *
+     * sourceConfig shape:
+     * - triggerFromRelatedObjects: {"<register/schema>": {"<relationKey>": ["create","update","delete"]}}
+     *
+     * @param string|int $register Related object register
+     * @param string|int $schema Related object schema
+     * @param string $mutationType create|update|delete
+     *
+     * @return array<Synchronization>
+     */
+    public function findAllByRelatedObjectTrigger(string|int $register, string|int $schema, string $mutationType): array
+    {
+        $allowedMutationTypes = ['create', 'update', 'delete'];
+        if (in_array($mutationType, $allowedMutationTypes, true) === false) {
+            return [];
+        }
+
+        $relatedSourceId = "$register/$schema";
+        $synchronizations = $this->findAll(limit: null, offset: null, filters: ['source_type' => 'register/schema']);
+
+        return array_values(array_filter($synchronizations, function (Synchronization $synchronization) use ($relatedSourceId, $mutationType): bool {
+            $sourceConfig = $synchronization->getSourceConfig();
+
+            $triggerConfig = $sourceConfig['triggerFromRelatedObjects'];
+
+            if (is_array($triggerConfig) === false || isset($triggerConfig[$relatedSourceId]) === false) {
+                return false;
+            }
+
+            return $this->isRelatedTriggerConfigAllowed($triggerConfig[$relatedSourceId], $mutationType);
+        }));
+    }
+
+    /**
+     * Validates trigger configuration for one related source entry.
+     *
+     * Expected shape:
+     * {"<relationKey>": ["create","update","delete"]}
+     *
+     * @param mixed $triggerSourceConfig Config value for one register/schema key.
+     * @param string $mutationType Current mutation type to validate.
+     *
+     * @return bool True when the config allows the given mutation type.
+     */
+    private function isRelatedTriggerConfigAllowed(mixed $triggerSourceConfig, string $mutationType): bool
+    {
+        if (is_array($triggerSourceConfig) === false) {
+            return false;
+        }
+
+        // Required shape: {"<relationKey>": ["create", "update", "delete"]}
+        if ($this->isAssociativeArray($triggerSourceConfig) === true) {
+            $firstRelationKey = array_key_first($triggerSourceConfig);
+            if (is_string($firstRelationKey) === false || trim($firstRelationKey) === '') {
+                return false;
+            }
+
+            return $this->isRelatedObjectMutationAllowed(
+                $triggerSourceConfig[$firstRelationKey] ?? [],
+                $mutationType
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether a mutation list allows the given mutation type.
+     *
+     * @param mixed $mutationConfig Array of allowed mutations.
+     * @param string $mutationType Current mutation type.
+     *
+     * @return bool True when allowed (or "all" is present), false otherwise.
+     */
+    private function isRelatedObjectMutationAllowed(mixed $mutationConfig, string $mutationType): bool
+    {
+        if (is_array($mutationConfig) === false) {
+            return false;
+        }
+
+        $normalizedMutations = array_map(
+            static fn (mixed $mutation): string => strtolower((string) $mutation),
+            $mutationConfig
+        );
+
+        if (in_array('all', $normalizedMutations, true) === true) {
+            return true;
+        }
+
+        $normalMutation = strtolower($mutationType);
+
+        // Create and update are treated as one "upsert" group for trigger checks.
+        if ($normalMutation === 'create' || $normalMutation === 'update') {
+            return in_array('create', $normalizedMutations, true) || in_array('update', $normalizedMutations, true);
+        }
+
+        // Delete remains strict and must be explicitly configured.
+        return $normalMutation === 'delete' && in_array('delete', $normalizedMutations, true);
+    }
+
+    /**
+     * Determines whether an array has associative keys.
+     *
+     * @param array $array The array to inspect.
+     *
+     * @return bool True when associative, false when list-like.
+     */
+    private function isAssociativeArray(array $array): bool
+    {
+        if ($array === []) {
+            return false;
+        }
+
+        return array_keys($array) !== range(0, count($array) - 1);
+    }
 
 	public function createFromArray(array $object): Synchronization
 	{
@@ -210,11 +343,13 @@ class SynchronizationMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         $result = $qb->executeQuery();
@@ -265,18 +400,21 @@ class SynchronizationMapper extends QBMapper
      * @param bool $searchSource Whether to search in source fields (default: true)
      * @param bool $searchTarget Whether to search in target fields (default: true)
      * @return array<Synchronization> Array of Synchronization entities
-     * @throws \InvalidArgumentException If neither registerId nor schemaId is provided
+     * @throws InvalidArgumentException If neither registerId nor schemaId is provided
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function getByTarget(?string $registerId = null, ?string $schemaId = null, bool $searchSource = true, bool $searchTarget = true): array
     {
         // Validate that at least one parameter is provided
         if ($registerId === null && $schemaId === null) {
-            throw new \InvalidArgumentException('Either registerId or schemaId must be provided');
+            throw new InvalidArgumentException('Either registerId or schemaId must be provided');
         }
 
         // Validate that at least one search location is specified
         if (!$searchSource && !$searchTarget) {
-            throw new \InvalidArgumentException('At least one of searchSource or searchTarget must be true');
+            throw new InvalidArgumentException('At least one of searchSource or searchTarget must be true');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -285,35 +423,18 @@ class SynchronizationMapper extends QBMapper
 
         // Build the conditions for source and target
         $conditions = [];
-        $params = [];
 
         if ($searchSource) {
             $sourceConditions = [];
             $sourceConditions[] = $qb->expr()->eq('source_type', $qb->createNamedParameter('register/schema'));
-            
-            if ($registerId !== null && $schemaId !== null) {
-                $sourceConditions[] = $qb->expr()->eq('source_id', $qb->createNamedParameter($registerId . '/' . $schemaId));
-            } elseif ($registerId !== null) {
-                $sourceConditions[] = $qb->expr()->like('source_id', $qb->createNamedParameter($registerId . '/%'));
-            } else {
-                $sourceConditions[] = $qb->expr()->like('source_id', $qb->createNamedParameter('%/' . $schemaId));
-            }
-            
+            $sourceConditions[] = $this->buildIdCondition($qb, 'source_id', $registerId, $schemaId);
             $conditions[] = $qb->expr()->andX(...$sourceConditions);
         }
 
         if ($searchTarget) {
             $targetConditions = [];
             $targetConditions[] = $qb->expr()->eq('target_type', $qb->createNamedParameter('register/schema'));
-            
-            if ($registerId !== null && $schemaId !== null) {
-                $targetConditions[] = $qb->expr()->eq('target_id', $qb->createNamedParameter($registerId . '/' . $schemaId));
-            } elseif ($registerId !== null) {
-                $targetConditions[] = $qb->expr()->like('target_id', $qb->createNamedParameter($registerId . '/%'));
-            } else {
-                $targetConditions[] = $qb->expr()->like('target_id', $qb->createNamedParameter('%/' . $schemaId));
-            }
-            
+            $targetConditions[] = $this->buildIdCondition($qb, 'target_id', $registerId, $schemaId);
             $conditions[] = $qb->expr()->andX(...$targetConditions);
         }
 
@@ -321,6 +442,28 @@ class SynchronizationMapper extends QBMapper
         $qb->where($qb->expr()->orX(...$conditions));
 
         return $this->findEntities($qb);
+    }
+
+    /**
+     * Build an ID condition for register/schema matching.
+     *
+     * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb The query builder
+     * @param string $column The column name to match against
+     * @param string|null $registerId The register ID
+     * @param string|null $schemaId The schema ID
+     * @return mixed The query expression
+     */
+    private function buildIdCondition($qb, string $column, ?string $registerId, ?string $schemaId)
+    {
+        if ($registerId !== null && $schemaId !== null) {
+            return $qb->expr()->eq($column, $qb->createNamedParameter($registerId . '/' . $schemaId));
+        }
+
+        if ($registerId !== null) {
+            return $qb->expr()->like($column, $qb->createNamedParameter($registerId . '/%'));
+        }
+
+        return $qb->expr()->like($column, $qb->createNamedParameter('%/' . $schemaId));
     }
 
     /**

@@ -45,6 +45,8 @@ use OCP\Migration\SimpleMigrationStep;
  * @license AGPL-3.0
  * @version 1.0.0
  * @link https://github.com/OpenConnector/openconnector
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250826120000 extends SimpleMigrationStep
 {
@@ -107,31 +109,35 @@ class Version1Date20250826120000 extends SimpleMigrationStep
 
         // Add size column to each log table
         foreach ($logTables as $tableName) {
-            if ($schema->hasTable($tableName)) {
-                $table = $schema->getTable($tableName);
-                
-                // Check if the size column doesn't already exist
-                if (!$table->hasColumn('size')) {
-                    // Add the size column with default value of 4096 bytes (4KB)
-                    $table->addColumn('size', Types::INTEGER, [
-                        'notnull' => true,
-                        'default' => 4096,
-                        'comment' => 'Size of the log entry in bytes'
-                    ]);
-                    
-                    $tablesUpdated++;
-                    $output->info("Added 'size' column to {$tableName} table");
-                } else {
-                    $output->info("'size' column already exists in {$tableName} table, skipping");
-                }
-            } else {
+            if (!$schema->hasTable($tableName)) {
                 $output->warning("Table {$tableName} not found, skipping");
+                continue;
             }
+
+            $table = $schema->getTable($tableName);
+
+            // Check if the size column already exists
+            if ($table->hasColumn('size')) {
+                $output->info("'size' column already exists in {$tableName} table, skipping");
+                continue;
+            }
+
+            // Add the size column with default value of 4096 bytes (4KB)
+            $table->addColumn('size', Types::INTEGER, [
+                'notnull' => true,
+                'default' => 4096,
+                'comment' => 'Size of the log entry in bytes'
+            ]);
+
+            $tablesUpdated++;
+            $output->info("Added 'size' column to {$tableName} table");
         }
 
         if ($tablesUpdated > 0) {
             $output->info("Successfully added 'size' column to {$tablesUpdated} log tables");
-        } else {
+        }
+
+        if ($tablesUpdated === 0) {
             $output->info("No tables were modified - all size columns already exist");
         }
 

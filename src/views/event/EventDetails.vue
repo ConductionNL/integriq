@@ -291,7 +291,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 	.successLevel * .counter-bubble__counter {
 		background-color: var(--OC-color-status-background-success);
 		color: var(--OC-color-status-success);

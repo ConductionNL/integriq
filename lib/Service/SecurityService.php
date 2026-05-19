@@ -36,6 +36,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenConnector\Service
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class SecurityService
 {

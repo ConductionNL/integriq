@@ -5,35 +5,30 @@
 			description="A central place for managing your Open Connector"
 			doc-url="https://docs.openconnector.nl" />
 
-		<NcSettingsSection
-			name="Version Information"
-			description="Current application version information">
-			<div v-if="!loadingVersionInfo" class="version-info">
-				<div class="version-details">
-					<div class="version-item">
-						<strong>Application:</strong> {{ versionInfo.appName }} v{{ versionInfo.appVersion }}
-					</div>
-					<div class="version-item">
-						<strong>License:</strong> EUPL-1.2
-					</div>
-					<div class="version-item">
-						<strong>Author:</strong> Conduction B.V.
-					</div>
-					<div class="version-item">
-						<strong>Website:</strong>
-						<a href="https://github.com/ConductionNL/OpenConnector" target="_blank" rel="noopener noreferrer">
-							https://github.com/ConductionNL/OpenConnector
-						</a>
-					</div>
+		<!-- Version Information -->
+		<CnVersionInfoCard
+			app-name="OpenConnector"
+			:app-version="versionInfo.appVersion || 'Unknown'"
+			:loading="loading"
+			:additional-items="[
+				{ label: 'License', value: 'EUPL-1.2' },
+				{ label: 'Author', value: 'Conduction B.V.' },
+				{ label: 'Website', value: 'https://github.com/ConductionNL/OpenConnector' },
+			]">
+			<template #footer>
+				<div class="cn-support-info">
+					<h4>Support</h4>
+					<p>
+						For support, contact us at
+						<a href="mailto:support@conduction.nl">support@conduction.nl</a>
+					</p>
+					<p>
+						For a Service Level Agreement (SLA), contact
+						<a href="mailto:sales@conduction.nl">sales@conduction.nl</a>
+					</p>
 				</div>
-			</div>
-
-			<!-- Loading State -->
-			<NcLoadingIcon v-else
-				class="loading-icon"
-				:size="64"
-				appearance="dark" />
-		</NcSettingsSection>
+			</template>
+		</CnVersionInfoCard>
 
 		<NcSettingsSection name="System Statistics"
 			description="Overview of your Open Connector data and potential issues">
@@ -641,6 +636,7 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { CnVersionInfoCard } from '@conduction/nextcloud-vue'
 import {
 	NcSettingsSection,
 	NcButton,
@@ -666,6 +662,7 @@ import Save from 'vue-material-design-icons/ContentSave.vue'
 export default defineComponent({
 	name: 'Settings',
 	components: {
+		CnVersionInfoCard,
 		NcSettingsSection,
 		NcButton,
 		NcLoadingIcon,
@@ -684,7 +681,6 @@ export default defineComponent({
 			loading: true,
 			saving: false,
 			rebasing: false,
-			loadingVersionInfo: false,
 			loadingStats: true,
 			showRebaseConfirmation: false,
 			stats: {
@@ -832,18 +828,21 @@ export default defineComponent({
 					return
 				}
 
+				// Unwrap config from dependency-check response envelope
+				const config = data.config || data
+
 				// Version information
-				this.versionInfo = data.version
+				this.versionInfo = config.version
 
 				// Retention settings
-				if (data.retention) {
+				if (config.retention) {
 					this.retentionOptions = {
-						successLogRetention: data.retention.successLogRetention || 2592000000,
-						callLogRetention: data.retention.callLogRetention || 2592000000,
-						eventMessageRetention: data.retention.eventMessageRetention || 604800000,
-						jobLogRetention: data.retention.jobLogRetention || 2592000000,
-						syncContractLogRetention: data.retention.syncContractLogRetention || 7776000000,
-						syncLogRetention: data.retention.syncLogRetention || 2592000000,
+						successLogRetention: config.retention.successLogRetention || 2592000000,
+						callLogRetention: config.retention.callLogRetention || 2592000000,
+						eventMessageRetention: config.retention.eventMessageRetention || 604800000,
+						jobLogRetention: config.retention.jobLogRetention || 2592000000,
+						syncContractLogRetention: config.retention.syncContractLogRetention || 7776000000,
+						syncLogRetention: config.retention.syncLogRetention || 2592000000,
 					}
 				}
 
@@ -1020,33 +1019,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.version-info {
-	max-width: none;
-}
-
-.version-details {
-	margin-bottom: 2rem;
-	padding: 1rem;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.version-item {
-	margin-bottom: 0.5rem;
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.version-item:last-child {
-	margin-bottom: 0;
-}
-
-.loading-icon {
-	display: flex;
-	justify-content: center;
-	margin: 2rem 0;
-}
 
 .section-header-inline {
 	display: flex;

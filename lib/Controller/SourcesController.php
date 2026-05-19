@@ -12,8 +12,18 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.CamelCaseVariableName)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class SourcesController extends Controller
 {
     /**
@@ -28,7 +38,8 @@ class SourcesController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper,
-        private readonly CallLogMapper $callLogMapper
+        private readonly CallLogMapper $callLogMapper,
+        private readonly IL10N $l
     )
     {
         parent::__construct($appName, $request);
@@ -91,7 +102,7 @@ class SourcesController extends Controller
         try {
             return new JSONResponse($this->sourceMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
     }
 
@@ -295,7 +306,7 @@ class SourcesController extends Controller
                 'total' => $total
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Failed to retrieve logs: ' . $e->getMessage()], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
         }
     }
 
@@ -325,7 +336,7 @@ class SourcesController extends Controller
         try {
             $source = $this->sourceMapper->find(id: (int) $id);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
         // Get the request data

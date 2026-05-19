@@ -3,7 +3,6 @@
 namespace OCA\OpenConnector\Action;
 
 use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Db\SourceMapper;
 
 /**
  * This class is used to run the action tasks for the OpenConnector app. It hooks into the cron job list and runs the classes that are set as the job class in the job.
@@ -13,15 +12,22 @@ use OCA\OpenConnector\Db\SourceMapper;
 class EventAction
 {
     private CallService $callService;
-    private SourceMapper $sourceMapper;
+
     public function __construct(
         CallService $callService,
-        SourceMapper $sourceMapper,
     ) {
         $this->callService = $callService;
     }
 
-    //@todo: make this a bit more generic :')
+    /**
+     * Run the event action.
+     *
+     * @param array $argument The arguments for the action.
+     *
+     * @return array The result of the action.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
     public function run(array $argument = []): array
     {
         // @todo: implement this

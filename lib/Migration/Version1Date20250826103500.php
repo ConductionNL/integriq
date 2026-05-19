@@ -39,6 +39,11 @@ use OCP\Migration\SimpleMigrationStep;
  * @license AGPL-3.0
  * @version 1.0.0
  * @link https://github.com/OpenConnector/openconnector
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class Version1Date20250826103500 extends SimpleMigrationStep
 {
@@ -90,25 +95,27 @@ class Version1Date20250826103500 extends SimpleMigrationStep
         $schema = $schemaClosure();
 
         // Check if the job_logs table exists
-        if ($schema->hasTable('openconnector_job_logs')) {
-            $table = $schema->getTable('openconnector_job_logs');
-
-            // Check if the message column exists
-            if ($table->hasColumn('message')) {
-                // Change the column to TEXT type to allow longer messages
-                // In Nextcloud migrations, we use changeColumn to modify existing columns
-                $table->changeColumn('message', [
-                    'type' => \Doctrine\DBAL\Types\Type::getType(Types::TEXT),
-                    'notnull' => true,
-                ]);
-
-                $output->info('Updated message column in openconnector_job_logs table to TEXT type');
-            } else {
-                $output->warning('Message column not found in openconnector_job_logs table');
-            }
-        } else {
+        if (!$schema->hasTable('openconnector_job_logs')) {
             $output->warning('openconnector_job_logs table not found');
+            return $schema;
         }
+
+        $table = $schema->getTable('openconnector_job_logs');
+
+        // Check if the message column exists
+        if (!$table->hasColumn('message')) {
+            $output->warning('Message column not found in openconnector_job_logs table');
+            return $schema;
+        }
+
+        // Change the column to TEXT type to allow longer messages
+        // In Nextcloud migrations, we use changeColumn to modify existing columns
+        $table->changeColumn('message', [
+            'type' => \Doctrine\DBAL\Types\Type::getType(Types::TEXT),
+            'notnull' => true,
+        ]);
+
+        $output->info('Updated message column in openconnector_job_logs table to TEXT type');
 
         return $schema;
     }

@@ -15,17 +15,18 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
  */
 class SynchronizationAction
 {
-    private SynchronizationService $synchronizationService;
-    private SynchronizationMapper $synchronizationMapper;
-    private SynchronizationContractMapper $synchronizationContractMapper;
+    private SynchronizationService $syncService;
+    private SynchronizationMapper $syncMapper;
+    private SynchronizationContractMapper $contractMapper;
+
     public function __construct(
-        SynchronizationService $synchronizationService,
-        SynchronizationMapper $synchronizationMapper,
-        SynchronizationContractMapper $synchronizationContractMapper,
+        SynchronizationService $syncService,
+        SynchronizationMapper $syncMapper,
+        SynchronizationContractMapper $contractMapper,
     ) {
-        $this->synchronizationService = $synchronizationService;
-        $this->synchronizationMapper = $synchronizationMapper;
-        $this->synchronizationContractMapper = $synchronizationContractMapper;
+        $this->syncService = $syncService;
+        $this->syncMapper = $syncMapper;
+        $this->contractMapper = $contractMapper;
     }
 
 	/**
@@ -60,7 +61,7 @@ class SynchronizationAction
 
         // Let's find a synchronysation
         $response['stackTrace'][] = 'Getting synchronization: '.$argument['synchronizationId'];
-        $synchronization = $this->synchronizationMapper->find((int) $argument['synchronizationId']);
+        $synchronization = $this->syncMapper->find((int) $argument['synchronizationId']);
         if ($synchronization === null) {
             $response['level'] = 'WARNING';
 			$response['stackTrace'][] = $response['message'] = 'Synchronization not found: '.$argument['synchronizationId'];
@@ -70,7 +71,7 @@ class SynchronizationAction
         // Doing the synchronization
         $response['stackTrace'][] = 'Doing the synchronization';
         try {
-            $objects = $this->synchronizationService->synchronize($synchronization);
+            $objects = $this->syncService->synchronize($synchronization);
         } catch (TooManyRequestsHttpException $e) {
 			$response['level'] = 'WARNING';
 			$response['stackTrace'][] = $response['message'] = 'Stopped synchronization: ' . $e->getMessage();

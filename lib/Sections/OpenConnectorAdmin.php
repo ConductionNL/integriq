@@ -5,6 +5,9 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\Settings\IIconSection;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ */
 class OpenConnectorAdmin implements IIconSection {
     private IL10N $l;
     private IURLGenerator $urlGenerator;
@@ -15,7 +18,7 @@ class OpenConnectorAdmin implements IIconSection {
     }
 
     public function getIcon(): string {
-        return $this->urlGenerator->imagePath('core', 'actions/settings-dark.svg');
+        return $this->urlGenerator->imagePath('openconnector', 'app-dark.svg');
     }
 
     public function getID(): string {

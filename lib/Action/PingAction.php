@@ -20,42 +20,45 @@ class PingAction
         SourceMapper $sourceMapper,
     ) {
         $this->callService = $callService;
-		$this->sourceMapper = $sourceMapper;
+        $this->sourceMapper = $sourceMapper;
     }
 
-	/**
-	 * Executes a simple API-call (ping / GET) on a source by using the callService.
-	 * The method logs actions performed during execution and returns a stack trace of the operations.
-	 *
-	 * @todo Make this method more generic to support additional actions.
-	 * @todo Add logging or better handling for cases when 'sourceId' is not provided.
-	 *
-	 * @param array $arguments An array of arguments including optional 'sourceId' to define the source for the call.
-	 *
-	 * @return array An array containing the execution stack trace of the actions performed.
-	 */
+    /**
+     * Executes a simple API-call (ping / GET) on a source by using the callService.
+     * The method logs actions performed during execution and returns a stack trace of the operations.
+     *
+     * @todo Make this method more generic to support additional actions.
+     * @todo Add logging or better handling for cases when 'sourceId' is not provided.
+     *
+     * @param array $arguments An array of arguments including optional 'sourceId' to define the source for the call.
+     *
+     * @return array An array containing the execution stack trace of the actions performed.
+     */
     public function run(array $arguments = []): array
-	{
-		$response = [];
-		$response['stackTrace'][] = 'Running PingAction';
+    {
+        $response = [];
+        $response['stackTrace'][] = 'Running PingAction';
 
         // For now we only have one action, so this is a bit overkill, but it's a good starting point
+        $sourceId = 1;
+        if (isset($arguments['sourceId']) === false || is_int((int) $arguments['sourceId']) === false) {
+            // @todo log and / or not default to just using the first source
+            $response['stackTrace'][] = "No sourceId in arguments, default to sourceId = 1";
+        }
+
         if (isset($arguments['sourceId']) && is_int((int) $arguments['sourceId'])) {
-			$response['stackTrace'][] = "Found sourceId {$arguments['sourceId']} in arguments";
-            $source = $this->sourceMapper->find((int) $arguments['sourceId']);
-		}
-        else {
-			// @todo log and / or not default to just using the first source
-			$response['stackTrace'][] = "No sourceId in arguments, default to sourceId = 1";
-            $source = $this->sourceMapper->find(1);
-		}
+            $sourceId = (int) $arguments['sourceId'];
+            $response['stackTrace'][] = "Found sourceId {$sourceId} in arguments";
+        }
 
-		$response['stackTrace'][] = "Calling callService...";
-		$callLog = $this->callService->call($source);
+        $source = $this->sourceMapper->find($sourceId);
 
-		$response['stackTrace'][] = "Created callLog with id: ".$callLog->getId();
+        $response['stackTrace'][] = "Calling callService...";
+        $callLog = $this->callService->call($source);
 
-		// Let's report back about what we have just done
+        $response['stackTrace'][] = "Created callLog with id: ".$callLog->getId();
+
+        // Let's report back about what we have just done
         return $response;
     }
 

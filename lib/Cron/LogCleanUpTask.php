@@ -31,6 +31,8 @@ use OCP\AppFramework\Utility\ITimeFactory;
  * from the database to prevent database bloat and maintain performance.
  *
  * @psalm-api
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class LogCleanUpTask extends TimedJob
 {

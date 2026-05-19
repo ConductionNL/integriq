@@ -1,0 +1,12 @@
+name: Stable Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    uses: ConductionNL/.github/.github/workflows/release-stable.yml@main
+    with:
+      app-name: openconnector
+    secrets: inherit

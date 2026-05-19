@@ -18,6 +18,8 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
  * Service class for managing events and their delivery
  *
  * @package OCA\OpenConnector\Service
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class EventService
 {

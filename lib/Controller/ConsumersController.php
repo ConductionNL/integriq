@@ -10,9 +10,15 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class ConsumersController extends Controller
 {
     /**
@@ -22,12 +28,14 @@ class ConsumersController extends Controller
      * @param IRequest $request The request object
      * @param IAppConfig $config The app configuration object
      * @param ConsumerMapper $consumerMapper The consumer mapper object
+     * @param IL10N $l The localization service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private IAppConfig $config,
-        private ConsumerMapper $consumerMapper
+        private ConsumerMapper $consumerMapper,
+        private IL10N $l
     )
     {
         parent::__construct($appName, $request);
@@ -90,7 +98,7 @@ class ConsumersController extends Controller
         try {
             return new JSONResponse($this->consumerMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
     }
 

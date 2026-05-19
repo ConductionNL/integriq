@@ -11,6 +11,9 @@ use OCP\AppFramework\Db\Entity;
  * 
  * Entity class representing a synchronization contract log entry
  */
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class SynchronizationContractLog extends Entity implements JsonSerializable
 {
     protected ?string $uuid = null;

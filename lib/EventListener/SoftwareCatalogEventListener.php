@@ -24,6 +24,9 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  * @todo     This listener should be moved to the software catalog app
  */
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class SoftwareCatalogEventListener implements IEventListener
 {
     /**

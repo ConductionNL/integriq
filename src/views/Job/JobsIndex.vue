@@ -494,3 +494,28 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+/* Status badge styling */
+.status-enabled {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: white;
+	background: var(--color-success);
+}
+
+.status-disabled {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: white;
+	background: var(--color-error);
+}
+</style>

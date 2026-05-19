@@ -18,6 +18,10 @@ use OCP\AppFramework\Db\Entity;
  * @license AGPL-3.0
  * @version 1.0.0
  * @link https://github.com/OpenConnector/openconnector
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class SourceHandler implements ConfigurationHandlerInterface
 {

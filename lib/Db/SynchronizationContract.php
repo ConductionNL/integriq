@@ -11,6 +11,9 @@ use OCP\AppFramework\Db\Entity;
  *
  * @package OCA\OpenConnector\Db
  */
+/**
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ */
 class SynchronizationContract extends Entity implements JsonSerializable
 {
 	// @todo can be removed when migrations are merged

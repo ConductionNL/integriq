@@ -22,6 +22,9 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  * @todo     remove this temporary listener to the software catalog application
  */
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class ViewUpdatedOrCreatedEventListener implements IEventListener
 {
 	/**

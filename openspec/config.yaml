@@ -1,0 +1,29 @@
+schema: conduction
+
+context: |
+  Project: OpenConnector
+  Repo: ConductionNL/openconnector
+  Type: Nextcloud App (PHP)
+  Description: Integration platform for connecting Nextcloud to external systems (APIs, sources, endpoints)
+  Key components: Sources, Endpoints, Jobs, Mappings, Synchronizations, Webhooks
+  Database: PostgreSQL (own tables via Nextcloud ORM)
+  Mount path: /var/www/html/custom_apps/openconnector
+
+  Shared specs: See ../openspec/specs/ for cross-project conventions
+  Project guidelines: See ../project.md for workspace-wide standards
+
+rules:
+  proposal:
+    - Reference shared nextcloud-app spec for app structure requirements
+    - Consider impact on dependent apps that use OpenConnector for integrations
+    - "ADR-011: Before implementing ANY utility (validation, formatting, parsing), search OpenRegister lib/Formats/, lib/Service/, and lib/Handler/ for existing implementations. Common duplications: BSN validation (BsnFormat.php), date formatting, slug generation, UUID handling. If found, reuse via DI or document why duplication is necessary."
+  specs:
+    - Include API specs for source/endpoint configuration
+    - Document mapping transformation rules where applicable
+  design:
+    - OpenConnector operates independently of OpenRegister (no hard dependency)
+    - If duplicating OpenRegister utilities, add @see reference to canonical source
+    - "ADR-008: Follow Controller -> Service -> Mapper layering pattern"
+  tasks:
+    - Test with external API endpoints to verify connectivity
+    - Verify mapping transformations produce expected output

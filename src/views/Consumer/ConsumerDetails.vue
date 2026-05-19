@@ -108,7 +108,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 /* Styles remain the same */
 .gridContent {
 	display: flex;

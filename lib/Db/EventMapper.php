@@ -13,6 +13,9 @@ use Symfony\Component\Uid\Uuid;
  * Mapper class for Event entities
  *
  * Handles database operations for events including CRUD operations
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class EventMapper extends QBMapper
 {
@@ -67,11 +70,13 @@ class EventMapper extends QBMapper
         foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
 		if (empty($searchConditions) === false) {

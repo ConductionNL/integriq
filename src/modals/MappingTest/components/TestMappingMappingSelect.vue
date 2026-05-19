@@ -540,97 +540,103 @@ export default {
 <style scoped>
 /* close button for notecard */
 .openregister-notecard .notecard {
-    position: relative;
+	position: relative;
 }
+
 .close-button {
-    position: absolute;
-    top: 5px;
-    right: 5px;
+	position: absolute;
+	top: 5px;
+	right: 5px;
 }
+
 .close-button .button-vue--vue-tertiary:hover:not(:disabled) {
-    background-color: rgba(var(--color-info-rgb), 0.1);
+	background-color: rgba(var(--color-info-rgb), 0.1);
 }
 
 .content {
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+	text-align: left;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
 
 .textarea :deep(textarea) {
-    resize: vertical !important;
-    height: 100%;
+	resize: vertical !important;
+	height: 100%;
 }
 
 .mapping-select {
-    display: grid;
+	display: grid;
 	grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+	gap: 12px;
 }
 
 .mapping-select > .v-select {
-    min-width: auto;
+	min-width: auto;
 }
 
 .mapping-select > .button-vue {
-    margin-block-end: 4px !important;
+	margin-block-end: 4px !important;
 }
 
 .install-buttons {
-    display: flex;
-    gap: 0.5rem;
-    margin-block-start: 1rem;
+	display: flex;
+	gap: 0.5rem;
+	margin-block-start: 1rem;
 }
 
 /* Mapping option */
 .mapping-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	overflow: hidden;
 }
+
 .mapping-option > .material-design-icon {
-    margin-block-start: 2px;
+	margin-block-start: 2px;
 }
+
 .mapping-option > h6 {
-    line-height: 0.8;
+	line-height: 0.8;
 }
 /* truncate long labels and summaries */
 .mapping-option > span {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
 }
+
 .mapping-option > span h6,
 .mapping-option > span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
+
 .truncate {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* select style */
 /* remove box-shadow around search input */
 .v-select :deep(.vs__search) {
-    box-shadow: none !important;
+	box-shadow: none !important;
 }
 
 .edit-mapping > h4 {
-    margin-block-start: 2rem !important;
-    margin-block-end: 1rem !important;
+	margin-block-start: 2rem !important;
+	margin-block-end: 1rem !important;
 }
 
 /* modal action buttons layout */
 .modal-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 12px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
 }
 </style>

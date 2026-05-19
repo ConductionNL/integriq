@@ -20,6 +20,8 @@ use OCP\Migration\SimpleMigrationStep;
  * - Adding 1 new column for the table Consumers: reference
  * - Adding 1 new column for the table Jobs: reference
  * - Adding 1 new column for the table Synchronizations: reference
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250107163601 extends SimpleMigrationStep {
 

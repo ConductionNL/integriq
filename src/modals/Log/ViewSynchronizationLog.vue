@@ -104,17 +104,17 @@ export default {
 
 }
 </script>
-<style>
+<style scoped>
 
 .responseHeadersTable {
-    margin-inline-start: 65px;
+	margin-inline-start: 65px;
 }
 
 .responseBody {
-    word-break: break-all;
+	word-break: break-all;
 }
 
 .keyColumn {
-    padding-inline-end: 10px;
+	padding-inline-end: 10px;
 }
 </style>

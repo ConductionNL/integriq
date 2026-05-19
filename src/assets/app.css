@@ -1,0 +1,36 @@
+/**
+ * Global (unscoped) styles for OpenConnector.
+ */
+
+/* List header: search + actions on one row */
+.listHeader {
+	display: flex;
+	align-items: center;
+	padding-block-start: 8px;
+}
+
+.searchField {
+	flex: 1;
+	min-width: 0;
+}
+
+.listHeaderActions {
+	flex-shrink: 0;
+	margin-inline-end: 5px;
+}
+
+.emptyListHeader {
+	margin-top: 20px;
+	margin-left: 20px;
+}
+
+.tabPanel {
+	padding: 15px 0 15px 15px;
+}
+
+.open-register-missing {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-height: 100% !important;
+}

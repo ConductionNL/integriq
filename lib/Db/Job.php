@@ -5,6 +5,7 @@ namespace OCA\OpenConnector\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use RuntimeException;
 
 /**
  * Class Job
@@ -12,12 +13,7 @@ use OCP\AppFramework\Db\Entity;
  * Represents a scheduled job configuration entity that defines automated tasks to be executed.
  *
  * @package OCA\OpenConnector\Db
- * @category Database
- * @author OpenConnector Team
- * @copyright 2024 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class Job extends Entity implements JsonSerializable
 {
@@ -116,7 +112,7 @@ class Job extends Entity implements JsonSerializable
 
 		// Ensure the generated slug is not empty
 		if (empty($generatedSlug)) {
-			throw new \RuntimeException('Unable to generate a valid slug from the name.');
+			throw new RuntimeException('Unable to generate a valid slug from the name.');
 		}
 
 		return $generatedSlug;
