@@ -240,7 +240,7 @@ export default {
 			return ruleSchema()
 		},
 		filteredRules() {
-			return ruleStore.ruleList || []
+			return ruleStore.list || []
 		},
 		paginationData() {
 			const page = this.pagination.page || 1
@@ -261,17 +261,17 @@ export default {
 		async refreshList() {
 			this.loading = true
 			try {
-				await ruleStore.refreshRuleList()
+				await ruleStore.refreshList()
 			} finally {
 				this.loading = false
 			}
 		},
 		onAdd() {
-			ruleStore.setRuleItem(null)
+			ruleStore.setItem(null)
 			navigationStore.setModal('editRule')
 		},
 		editRule(rule) {
-			ruleStore.setRuleItem(rule)
+			ruleStore.setItem(rule)
 			navigationStore.setModal('editRule')
 		},
 		openRule(rule) {
@@ -280,7 +280,7 @@ export default {
 		},
 		async onDelete(id) {
 			try {
-				await ruleStore.deleteRule(id)
+				await ruleStore.deleteOne(id)
 				this.$refs.indexPage.setSingleDeleteResult({ success: true })
 			} catch (e) {
 				this.$refs.indexPage.setSingleDeleteResult({

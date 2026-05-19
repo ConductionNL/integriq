@@ -241,8 +241,8 @@ export default {
 						type: 'string',
 						title: t('openconnector', 'Select rule'),
 						enum: async () => {
-							await ruleStore.refreshRuleList()
-							return (ruleStore.ruleList || [])
+							await ruleStore.refreshList()
+							return (ruleStore.list || [])
 								.filter(r => !existing.includes(String(r.id)))
 								.map(r => ({ id: String(r.id), label: r.name }))
 						},
@@ -257,8 +257,8 @@ export default {
 	methods: {
 		async loadRules() {
 			try {
-				await ruleStore.refreshRuleList()
-				this.rulesList = ruleStore.ruleList
+				await ruleStore.refreshList()
+				this.rulesList = ruleStore.list
 				this.rulesLoaded = true
 			} catch (error) {
 				console.error('Failed to load rules:', error)
@@ -288,7 +288,7 @@ export default {
 		viewRule(ruleId) {
 			const rule = this.rulesList.find(rule => String(rule.id) === String(ruleId))
 			if (rule) {
-				ruleStore.setRuleItem(rule)
+				ruleStore.setItem(rule)
 				this.$router.push(`/rules/${ruleId}`)
 			}
 		},

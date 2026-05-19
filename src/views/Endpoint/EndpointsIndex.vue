@@ -338,8 +338,8 @@ export default {
 						type: 'string',
 						title: t('openconnector', 'Select rule'),
 						enum: async () => {
-							await ruleStore.refreshRuleList()
-							return (ruleStore.ruleList || [])
+							await ruleStore.refreshList()
+							return (ruleStore.list || [])
 								.filter(r => !existing.includes(String(r.id)))
 								.map(r => ({ id: String(r.id), label: r.name }))
 						},

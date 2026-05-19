@@ -444,7 +444,7 @@ export default {
 			]
 		},
 		initialItem() {
-			const item = ruleStore.ruleItem
+			const item = ruleStore.item
 			if (!item) {
 				return {
 					name: '',
@@ -564,7 +564,7 @@ export default {
 	methods: {
 		openLink,
 		onOpen() {
-			const item = ruleStore.ruleItem
+			const item = ruleStore.item
 			const cfg = item?.configuration || {}
 
 			this.selectedType = item?.type || 'error'
@@ -1022,7 +1022,7 @@ export default {
 					user: u.id,
 				}))
 				this.apiKeyUsers = this.usersList.map(u => ({ ...u, name: u.displayName }))
-				const item = ruleStore.ruleItem
+				const item = ruleStore.item
 				const auth = item?.configuration?.authentication
 				if (auth) {
 					this.authUsers = this.usersList.filter(u => (auth.users || []).includes(u.id))
@@ -1053,12 +1053,12 @@ export default {
 					label: g.displayname,
 					value: g.id,
 				}))
-				const item = ruleStore.ruleItem
+				const item = ruleStore.item
 				const auth = item?.configuration?.authentication
 				if (auth) {
 					this.authGroups = this.groupsList.filter(g => (auth.groups || []).includes(g.value))
 				}
-				const item2 = ruleStore.ruleItem
+				const item2 = ruleStore.item
 				const cfg = item2?.configuration || {}
 				if (item2?.type === 'extend_input' && cfg.extend_input) {
 					const props = cfg.extend_input.properties || []
@@ -1147,7 +1147,7 @@ export default {
 				const type = this.meta.type || 'error'
 				const configuration = this.packConfig(type, payload)
 				const rule = new Rule({
-					...(ruleStore.ruleItem || {}),
+					...(ruleStore.item || {}),
 					name: payload.name || '',
 					description: payload.description || '',
 					type,
@@ -1157,7 +1157,7 @@ export default {
 					conditions: payload.conditions || {},
 					configuration,
 				})
-				await ruleStore.saveRule(rule)
+				await ruleStore.save(rule)
 				this.$refs.formDialog.setResult({ success: true })
 			} catch (e) {
 				this.$refs.formDialog.setResult({

@@ -202,7 +202,7 @@ export default {
 				await this.loadByRoute(newId)
 			},
 		},
-		'ruleStore.ruleItem': {
+		'ruleStore.item': {
 			handler(newItem) {
 				if (newItem && String(newItem.id) === String(this.$route.params.id)) {
 					this.rule = newItem
@@ -217,16 +217,15 @@ export default {
 			this.loadError = false
 			if (!id) {
 				this.rule = null
-				ruleStore.setRuleItem(null)
+				ruleStore.setItem(null)
 				this.loading = false
 				return
 			}
 
 			this.loading = true
 			try {
-				const { response, entity } = await ruleStore.fetchRule(String(id))
+				const entity = await ruleStore.getOne(String(id))
 				if (this.activeLoadId !== loadId) return
-				if (!response.ok) throw new Error('not found')
 				this.rule = entity
 			} catch (e) {
 				if (this.activeLoadId !== loadId) return
@@ -237,17 +236,17 @@ export default {
 			}
 		},
 		backToList() {
-			ruleStore.setRuleItem(null)
+			ruleStore.setItem(null)
 			this.loadError = false
 			this.$router.push('/rules')
 		},
 		editRule() {
-			ruleStore.setRuleItem(this.rule)
+			ruleStore.setItem(this.rule)
 			navigationStore.setModal('editRule')
 		},
 		async onDeleteConfirm() {
 			try {
-				await ruleStore.deleteRule(this.rule.id)
+				await ruleStore.deleteOne(this.rule.id)
 				this.$refs.deleteDialog.setResult({ success: true })
 				this.$router.push('/rules')
 			} catch (e) {

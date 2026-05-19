@@ -285,7 +285,7 @@ export default {
 		 * @return {Array} Filtered rules
 		 */
 		filteredRuleList() {
-			return ruleStore.ruleList.filter((rule) => synchronizationStore.synchronizationItem?.actions?.includes(rule.id))
+			return ruleStore.list.filter((rule) => synchronizationStore.synchronizationItem?.actions?.includes(rule.id))
 		},
 		/**
 		 * Get synchronization ID for watching
@@ -301,7 +301,7 @@ export default {
 		},
 	},
 	mounted() {
-		ruleStore.refreshRuleList()
+		ruleStore.refreshList()
 	},
 	methods: {
 		/**
@@ -309,7 +309,7 @@ export default {
 		 */
 		refreshData() {
 			// Only refresh rules, avoid problematic API calls
-			ruleStore.refreshRuleList()
+			ruleStore.refreshList()
 		},
 		/**
 		 * Edit source configuration
@@ -362,7 +362,7 @@ export default {
 		 * @param {object} rule - The rule object
 		 */
 		viewRule(rule) {
-			ruleStore.setRuleItem(rule)
+			ruleStore.setItem(rule)
 			this.$router.push('/rules/' + rule.id)
 		},
 		/**
@@ -370,7 +370,7 @@ export default {
 		 * @param {object} rule - The rule object
 		 */
 		editRule(rule) {
-			ruleStore.setRuleItem(rule)
+			ruleStore.setItem(rule)
 			navigationStore.setModal('editRule')
 		},
 		/**

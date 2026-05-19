@@ -97,9 +97,9 @@ export const useImportExportStore = defineStore(
 								)
 							case 'rule':
 								return (
-									ruleStore.refreshRuleList().then(() => {
-										const rule = ruleStore.ruleList.find(rule => rule.id === response.data.object.id)
-										ruleStore.setRuleItem(rule)
+									ruleStore.refreshList().then(() => {
+										const rule = ruleStore.list.find(rule => rule.id === response.data.object.id)
+										ruleStore.setItem(rule)
 									})
 								)
 							case 'synchronization':

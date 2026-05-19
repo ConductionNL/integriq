@@ -1,5 +1,5 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { useRuleStore } from './rule.js'
+import { useRuleStore } from './rule'
 import { Rule, mockRule } from '../../entities/index.js'
 
 describe('Rule Store', () => {
@@ -7,22 +7,22 @@ describe('Rule Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets rule item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useRuleStore()
-		store.setRuleItem(mockRule()[0])
+		store.setItem(mockRule()[0])
 
-		expect(store.ruleItem).toBeInstanceOf(Rule)
-		expect(store.ruleItem).toEqual(mockRule()[0])
-		expect(store.ruleItem.validate().success).toBe(true)
+		expect(store.item).toBeInstanceOf(Rule)
+		expect(store.item).toEqual(mockRule()[0])
+		expect(store.item.validate().success).toBe(true)
 	})
 
-	it('sets rule list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useRuleStore()
-		store.setRuleList(mockRule())
+		store.setList(mockRule())
 
-		expect(store.ruleList).toHaveLength(mockRule().length)
+		expect(store.list).toHaveLength(mockRule().length)
 
-		store.ruleList.forEach((item, index) => {
+		store.list.forEach((item: Rule, index: number) => {
 			expect(item).toBeInstanceOf(Rule)
 			expect(item).toEqual(mockRule()[index])
 			expect(item.validate().success).toBe(true)

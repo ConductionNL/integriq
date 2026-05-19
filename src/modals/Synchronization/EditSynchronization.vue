@@ -724,9 +724,9 @@ export default {
 		getRules() {
 			this.rulesLoading = true
 
-			ruleStore.refreshRuleList()
+			ruleStore.refreshList()
 				.then(() => {
-					const rules = ruleStore.ruleList
+					const rules = ruleStore.list
 					const activeRule = rules.filter(rule => this.synchronizationItem.actions.includes(rule.id))
 
 					this.ruleOptions = {
