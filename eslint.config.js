@@ -56,6 +56,15 @@ module.exports = defineConfig([
 			'@typescript-eslint/no-explicit-any': 'off',
 			'n/no-missing-import': 'off',
 			'vue/enforce-style-attribute': ['error', { allow: ['scoped'] }],
+			// `import/namespace` + `import/named` walk every named export of
+			// imported modules using node module resolution. Newer
+			// `@nextcloud/vue` (8.x) uses an `exports` map that doesn't expose
+			// `./dist/Directives/Tooltip.js`, so these rules crash the lint run.
+			// Disable them — `no-undef` already catches actually-missing imports.
+			'import/namespace': 'off',
+			'import/named': 'off',
+			'import/default': 'off',
+			'import/no-named-as-default-member': 'off',
 		},
 	},
 ])
