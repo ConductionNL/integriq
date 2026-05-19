@@ -29,9 +29,9 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string $appName The name of the app
-     * @param IRequest $request The request object
-     * @param IAppConfig $config The app configuration object
+     * @param string     $appName The name of the app
+     * @param IRequest   $request The request object
+     * @param IAppConfig $config  The app configuration object
      */
     public function __construct(
         $appName,
@@ -40,10 +40,9 @@ class SourcesController extends Controller
         private readonly SourceMapper $sourceMapper,
         private readonly CallLogMapper $callLogMapper,
         private readonly IL10N $l
-    )
-    {
+    ) {
         parent::__construct($appName, $request);
-    }
+    }//end __construct()
 
     /**
      * Returns the template of the main app's page
@@ -62,7 +61,7 @@ class SourcesController extends Controller
             'index',
             []
         );
-    }
+    }//end page()
 
     /**
      * Retrieves a list of all sources
@@ -76,15 +75,15 @@ class SourcesController extends Controller
      */
     public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
     {
-        $filters = $this->request->getParams();
+        $filters        = $this->request->getParams();
         $fieldsToSearch = ['name', 'description'];
 
-        $searchParams = $searchService->createMySQLSearchParams(filters: $filters);
+        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
         $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
 
         return new JSONResponse(['results' => $this->sourceMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }
+    }//end index()
 
     /**
      * Retrieves a single source by its ID
@@ -94,7 +93,7 @@ class SourcesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to retrieve
+     * @param  string $id The ID of the source to retrieve
      * @return JSONResponse A JSON response containing the source details
      */
     public function show(string $id): JSONResponse
@@ -104,7 +103,7 @@ class SourcesController extends Controller
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
-    }
+    }//end show()
 
     /**
      * Creates a new source
@@ -131,7 +130,7 @@ class SourcesController extends Controller
         }
 
         return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
-    }
+    }//end create()
 
     /**
      * Updates an existing source
@@ -141,7 +140,7 @@ class SourcesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to update
+     * @param  string $id The ID of the source to update
      * @return JSONResponse A JSON response containing the updated source details
      */
     public function update(int $id): JSONResponse
@@ -153,11 +152,13 @@ class SourcesController extends Controller
                 unset($data[$key]);
             }
         }
+
         if (isset($data['id'])) {
             unset($data['id']);
         }
+
         return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
-    }
+    }//end update()
 
     /**
      * Deletes a source
@@ -167,7 +168,7 @@ class SourcesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param string $id The ID of the source to delete
+     * @param  string $id The ID of the source to delete
      * @return JSONResponse An empty JSON response
      */
     public function destroy(int $id): JSONResponse
@@ -175,7 +176,7 @@ class SourcesController extends Controller
         $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
 
         return new JSONResponse([]);
-    }
+    }//end destroy()
 
     /**
      * Retrieves call logs with filtering and pagination support
@@ -202,12 +203,12 @@ class SourcesController extends Controller
     {
         try {
             // Get filters from request
-            $filters = $this->request->getParams();
+            $filters        = $this->request->getParams();
             $specialFilters = [];
 
             // Pagination using _page and _limit
-            $limit = isset($filters['_limit']) ? (int)$filters['_limit'] : 20;
-            $page = isset($filters['_page']) ? (int)$filters['_page'] : 1;
+            $limit  = isset($filters['_limit']) ? (int) $filters['_limit'] : 20;
+            $page   = isset($filters['_page']) ? (int) $filters['_page'] : 1;
             $offset = ($page - 1) * $limit;
             unset($filters['_limit'], $filters['_page']);
 
@@ -216,21 +217,26 @@ class SourcesController extends Controller
                 $specialFilters['date_from'] = $filters['date_from'];
                 unset($filters['date_from']);
             }
+
             if (empty($filters['date_to']) === false) {
                 $specialFilters['date_to'] = $filters['date_to'];
                 unset($filters['date_to']);
             }
+
             if (empty($filters['endpoint']) === false) {
-                $specialFilters['endpoint_like'] = '%' . $filters['endpoint'] . '%';
+                $specialFilters['endpoint_like'] = '%'.$filters['endpoint'].'%';
                 unset($filters['endpoint']);
             }
+
             if (empty($filters['status_code']) === false) {
                 $statusCodes = explode(',', $filters['status_code']);
                 if (count($statusCodes) === 2) {
                     $specialFilters['status_code_range'] = $statusCodes;
                 }
+
                 unset($filters['status_code']);
             }
+
             if (empty($filters['slow_requests']) === false) {
                 $specialFilters['slow_requests'] = 5000; // 5 seconds in milliseconds
                 unset($filters['slow_requests']);
@@ -238,46 +244,46 @@ class SourcesController extends Controller
 
             // Build search conditions and parameters
             $searchConditions = [];
-            $searchParams = [];
+            $searchParams     = [];
 
             if (empty($specialFilters['date_from']) === false) {
                 $searchConditions[] = "created >= ?";
-                $searchParams[] = $specialFilters['date_from'];
+                $searchParams[]     = $specialFilters['date_from'];
             }
 
             if (empty($specialFilters['date_to']) === false) {
                 $searchConditions[] = "created <= ?";
-                $searchParams[] = $specialFilters['date_to'];
+                $searchParams[]     = $specialFilters['date_to'];
             }
 
             if (empty($specialFilters['endpoint_like']) === false) {
                 $searchConditions[] = "endpoint LIKE ?";
-                $searchParams[] = $specialFilters['endpoint_like'];
+                $searchParams[]     = $specialFilters['endpoint_like'];
             }
 
             if (empty($specialFilters['status_code_range']) === false) {
                 $searchConditions[] = "status_code >= ? AND status_code <= ?";
-                $searchParams = array_merge($searchParams, $specialFilters['status_code_range']);
+                $searchParams       = array_merge($searchParams, $specialFilters['status_code_range']);
             }
 
             if (empty($specialFilters['slow_requests']) === false) {
                 $searchConditions[] = "JSON_EXTRACT(response, '$.responseTime') > ?";
-                $searchParams[] = $specialFilters['slow_requests'];
+                $searchParams[]     = $specialFilters['slow_requests'];
             }
 
             $sortFields = [];
             if (empty($filters['_sort']) === false && is_array($filters['_sort']) === true) {
                 // Have some control of what to be sortable
-                $allowedSortFields = ['created', 'status_code', 'endpoint']; 
+                $allowedSortFields = ['created', 'status_code', 'endpoint'];
                 foreach ($filters['_sort'] as $field => $direction) {
                     if (in_array($field, $allowedSortFields, true) === true) {
                         $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                         $sortFields[$field] = $dir;
                     }
                 }
+
                 unset($filters['_sort']);
             }
-
 
             // Remove special query params from filters
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
@@ -293,22 +299,24 @@ class SourcesController extends Controller
             );
 
             // Get total count for pagination
-            $total = $this->callLogMapper->getTotalCount($filters);
-            $pages = $limit > 0 ? ceil($total / $limit) : 1;
+            $total       = $this->callLogMapper->getTotalCount($filters);
+            $pages       = $limit > 0 ? ceil($total / $limit) : 1;
             $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
 
             // Return flattened paginated response
-            return new JSONResponse([
-                'results' => $callLogs,
-                'page' => $currentPage,
-                'pages' => $pages,
-                'results_count' => count($callLogs),
-                'total' => $total
-            ]);
+            return new JSONResponse(
+                    [
+                        'results'       => $callLogs,
+                        'page'          => $currentPage,
+                        'pages'         => $pages,
+                        'results_count' => count($callLogs),
+                        'total'         => $total,
+                    ]
+                    );
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
-        }
-    }
+        }//end try
+    }//end logs()
 
     /**
      * Test a source
@@ -327,10 +335,10 @@ class SourcesController extends Controller
      *   type: (string, one of: json, xml, yaml)
      *   body: (string)
      *
-     * @param int $id The ID of the source to test
+     * @param  int $id The ID of the source to test
      * @return JSONResponse A JSON response containing the test results
      */
-    public function test(CallService $callService,int $id): JSONResponse
+    public function test(CallService $callService, int $id): JSONResponse
     {
         // get the source
         try {
@@ -382,11 +390,10 @@ class SourcesController extends Controller
         }
 
         // fire the call
-
-        $time_start = microtime(true);
-        $callLog = $callService->call($source, $endpoint, $method, $config);
-        $time_end = microtime(true);
+        $timeStart = microtime(true);
+        $callLog   = $callService->call($source, $endpoint, $method, $config);
+        $timeEnd   = microtime(true);
 
         return new JSONResponse($callLog->jsonSerialize());
-    }
-}
+    }//end test()
+}//end class

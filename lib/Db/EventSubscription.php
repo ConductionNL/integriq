@@ -30,20 +30,35 @@ use OCP\AppFramework\Db\Entity;
  */
 class EventSubscription extends Entity implements JsonSerializable
 {
-	protected ?string $uuid = null;
-	protected ?string $reference = null;
-	protected ?string $version = '0.0.0';
+
+    protected ?string $uuid = null;
+
+    protected ?string $reference = null;
+
+    protected ?string $version = '0.0.0';
+
     protected ?string $source = null;
+
     protected ?array $types = [];
+
     protected ?array $config = [];
+
     protected ?array $filters = [];
+
     protected ?string $sink = null;
+
     protected ?string $protocol = null;
+
     protected ?array $protocolSettings = [];
+
     protected ?string $style = 'push';
+
     protected ?string $status = 'active';
+
     protected ?string $userId = null;
+
     protected ?DateTime $created = null;
+
     protected ?DateTime $updated = null;
 
     /**
@@ -54,7 +69,7 @@ class EventSubscription extends Entity implements JsonSerializable
     public function getTypes(): array
     {
         return $this->types ?? [];
-    }
+    }//end getTypes()
 
     /**
      * Get the subscription configuration
@@ -64,7 +79,7 @@ class EventSubscription extends Entity implements JsonSerializable
     public function getConfig(): array
     {
         return $this->config ?? [];
-    }
+    }//end getConfig()
 
     /**
      * Get the subscription filters
@@ -74,7 +89,7 @@ class EventSubscription extends Entity implements JsonSerializable
     public function getFilters(): array
     {
         return $this->filters ?? [];
-    }
+    }//end getFilters()
 
     /**
      * Get the protocol settings
@@ -84,15 +99,16 @@ class EventSubscription extends Entity implements JsonSerializable
     public function getProtocolSettings(): array
     {
         return $this->protocolSettings ?? [];
-    }
+    }//end getProtocolSettings()
 
     /**
      * Constructor to set up data types for properties
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->addType('uuid', 'string');
-		$this->addType(fieldName:'reference', type: 'string');
-		$this->addType(fieldName:'version', type: 'string');
+        $this->addType(fieldName:'reference', type: 'string');
+        $this->addType(fieldName:'version', type: 'string');
         $this->addType('source', 'string');
         $this->addType('types', 'json');
         $this->addType('config', 'json');
@@ -105,7 +121,7 @@ class EventSubscription extends Entity implements JsonSerializable
         $this->addType('userId', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-    }
+    }//end __construct()
 
     /**
      * Get fields that should be JSON encoded
@@ -115,16 +131,19 @@ class EventSubscription extends Entity implements JsonSerializable
     public function getJsonFields(): array
     {
         return array_keys(
-            array_filter($this->getFieldTypes(), function ($field) {
-                return $field === 'json';
-            })
+            array_filter(
+                    $this->getFieldTypes(),
+                    function ($field) {
+                        return $field === 'json';
+                    }
+                    )
         );
-    }
+    }//end getJsonFields()
 
     /**
      * Hydrate the entity from an array of data
      *
-     * @param array<string,mixed> $object Data to hydrate from
+     * @param  array<string,mixed> $object Data to hydrate from
      * @return self Returns the hydrated entity
      */
     public function hydrate(array $object): self
@@ -146,7 +165,7 @@ class EventSubscription extends Entity implements JsonSerializable
         }
 
         return $this;
-    }
+    }//end hydrate()
 
     /**
      * Serialize the entity to JSON
@@ -156,20 +175,20 @@ class EventSubscription extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'source' => $this->source,
-            'types' => $this->types,
-            'config' => $this->config,
-            'filters' => $this->filters,
-            'sink' => $this->sink,
-            'protocol' => $this->protocol,
+            'id'               => $this->id,
+            'uuid'             => $this->uuid,
+            'source'           => $this->source,
+            'types'            => $this->types,
+            'config'           => $this->config,
+            'filters'          => $this->filters,
+            'sink'             => $this->sink,
+            'protocol'         => $this->protocol,
             'protocolSettings' => $this->protocolSettings,
-            'style' => $this->style,
-            'status' => $this->status,
-            'userId' => $this->userId,
-            'created' => isset($this->created) ? $this->created->format('c') : null,
-            'updated' => isset($this->updated) ? $this->updated->format('c') : null
+            'style'            => $this->style,
+            'status'           => $this->status,
+            'userId'           => $this->userId,
+            'created'          => isset($this->created) ? $this->created->format('c') : null,
+            'updated'          => isset($this->updated) ? $this->updated->format('c') : null,
         ];
-    }
-}
+    }//end jsonSerialize()
+}//end class
