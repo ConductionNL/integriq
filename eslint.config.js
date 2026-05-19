@@ -34,7 +34,14 @@ module.exports = defineConfig([
 		settings: {
 			'import/resolver': {
 				alias: {
-					map: [['@', './src']],
+					map: [
+						['@', './src'],
+						// Mirrors the webpack alias in webpack.config.js that
+						// exposes the real @floating-ui/dom under a second
+						// name so the floating-vue compatibility shim can
+						// import it without aliasing itself.
+						['@floating-ui/dom-actual', './node_modules/@floating-ui/dom'],
+					],
 					extensions: ['.js', '.ts', '.vue', '.json'],
 				},
 			},
