@@ -304,10 +304,12 @@ export default {
 	gap: 20px;
 	margin: 20px 0;
 }
+
 .gridContent {
 	display: flex;
 	gap: 10px;
 }
+
 .gridFullWidth {
 	grid-column: 1 / -1;
 }
