@@ -69,6 +69,7 @@ class SynchronizationService
     const EXTRA_DATA_CONFIGS_LOCATION           = 'extraDataConfigs';
     const EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION  = 'dynamicEndpointLocation';
     const EXTRA_DATA_STATIC_ENDPOINT_LOCATION   = 'staticEndpoint';
+    const EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION = 'endpointTemplate';
     const KEY_FOR_EXTRA_DATA_LOCATION           = 'keyToSetExtraData';
     const MERGE_EXTRA_DATA_OBJECT_LOCATION      = 'mergeExtraData';
     const UNSET_CONFIG_KEY_LOCATION             = 'unsetConfigKey';
@@ -143,6 +144,36 @@ class SynchronizationService
 	}
 
     /**
+     * Check if a synchronization should trigger for the given object event type.
+     *
+     * Supported sourceConfig key:
+     * - triggerOnlyOnEvents: array|string of CREATE|UPDATE|DELETE
+     */
+    private function shouldTriggerOnEvent(Synchronization $synchronization, string $eventMutationType): bool
+    {
+        $sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig());
+        if (is_array($sourceConfig) === false || array_key_exists('triggerOnlyOnEvents', $sourceConfig) === false) {
+            return true;
+        }
+
+        $allowedEvents = $sourceConfig['triggerOnlyOnEvents'];
+        if (is_string($allowedEvents)) {
+            $allowedEvents = [$allowedEvents];
+        }
+
+        if (is_array($allowedEvents) === false) {
+            return true;
+        }
+
+        $allowedEvents = array_map(
+            static fn ($event): string => strtoupper(trim((string) $event)),
+            $allowedEvents
+        );
+
+        return in_array(strtoupper($eventMutationType), $allowedEvents, true);
+    }
+
+    /**
      * Handle synchronization for object create/update/delete events.
      *
      * This centralizes event listener behavior:
@@ -171,19 +202,24 @@ class SynchronizationService
 
         $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
         foreach ($directSynchronizations as $synchronization) {
+            if ($this->shouldTriggerOnEvent($synchronization, $eventMutationType) === false) {
+                continue;
+            }
             try {
                 if ($eventMutationType === 'delete') {
+                    $eventObject = $object;
                     $this->synchronize(
                         synchronization: $synchronization,
                         force: true,
-                        object: $object,
+                        object: $eventObject,
                         mutationType: 'delete'
                     );
                 } else {
+                    $eventObjectArray = $objectArray;
                     $this->synchronize(
                         synchronization: $synchronization,
                         force: true,
-                        object: $objectArray
+                        object: $eventObjectArray
                     );
                 }
 
@@ -206,6 +242,9 @@ class SynchronizationService
 
         foreach ($triggeredSynchronizations as $synchronization) {
             if (in_array($synchronization->getId(), $processedSynchronizationIds, true) === true) {
+                continue;
+            }
+            if ($this->shouldTriggerOnEvent($synchronization, $eventMutationType) === false) {
                 continue;
             }
 
@@ -591,10 +630,12 @@ class SynchronizationService
             $stageStartTime = microtime(true);
             $result['objects']['found'] = count($objectList);
 
-            if ($sourceConfig['resultsPosition'] === '_object') {
-                $objectList = [$objectList];
-                $result['objects']['found'] = count($objectList);
-            }
+	            if ($sourceConfig['resultsPosition'] === '_object') {
+	                if (array_is_list($objectList) === false) {
+	                    $objectList = [$objectList];
+	                }
+	                $result['objects']['found'] = count($objectList);
+	            }
 
             $result['timing']['stages']['object_preparation'] = [
                 'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
@@ -967,6 +1008,21 @@ class SynchronizationService
 			}
 		}
 
+		if (isset($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
+			&& is_string($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
+			&& $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION] !== ''
+		) {
+			$endpoint = $this->mappingService->renderTemplateString(
+				template: $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION],
+				context: [
+					'endpoint' => $endpoint ?? null,
+					'object' => $object,
+					'originId' => $originId,
+					'extraDataConfig' => $extraDataConfig,
+				]
+			);
+		}
+
 		if (!$endpoint) {
 			throw new Exception(
 				sprintf(
@@ -1286,7 +1342,7 @@ class SynchronizationService
 
         // Execute mapping if found
 		$objectBeforeMapping = $object;
-        if ($sourceTargetMapping) {
+        if ($sourceTargetMapping && $mutationType !== 'delete') {
             $flowToken->setSyncOutputOriginal($object);
 
             $object = $this->mappingService->executeMapping(mapping: $sourceTargetMapping, input: $object);
@@ -1821,15 +1877,26 @@ class SynchronizationService
 	 */
 	public function getAllObjectsFromApi(Synchronization $synchronization, ?bool $isTest = false, ?array $data = null): array
 	{
+		// Extract source configuration
+		$sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig()); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
 		//@todo this is an nuessesery db call, we should refactor this
 		$source = $this->sourceMapper->find($synchronization->getSourceId());
 
 		// Check rate limit before proceeding
 		$this->checkRateLimit($source);
 
-		// Extract source configuration
-		$sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig()); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
 		$endpoint = $sourceConfig['endpoint'] ?? '';
+		if (is_string($endpoint) === true
+			&& str_contains($endpoint, '{{') === true
+			&& str_contains($endpoint, '}}') === true
+		) {
+			$endpoint = $this->mappingService->renderTemplateString(
+				template: $endpoint,
+				context: [
+					'data' => $data ?? [],
+				]
+			);
+		}
 		$headers = $sourceConfig['headers'] ?? [];
 		$query = $sourceConfig['query'] ?? [];
         $usesPagination = true;
@@ -1879,9 +1946,9 @@ class SynchronizationService
             usesPagination: $usesPagination
 		);
 
-		if (array_is_list($objects) === false) {
-			$objects = [$objects];
-		}
+			if ($sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
+				$objects = [$objects];
+			}
 
 		// Merge additional data into each object if $data is provided
 		if ($data !== null
@@ -1901,6 +1968,7 @@ class SynchronizationService
 
 		return $objects;
 	}
+
 
 	/**
 	 * Recursively fetches all pages of data from the API.
@@ -2923,7 +2991,7 @@ class SynchronizationService
 
 		try {
 			$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-			$objectEntity = $objectService->findByUuid(uuid: $objectId);
+			$objectEntity = $objectService->find(id: $objectId);
 			$file = $fileService->saveFile(
 				objectEntity: $objectEntity,
 				fileName: $filename,
@@ -2951,7 +3019,7 @@ class SynchronizationService
 			if ($shouldPublish && $file !== null) {
 				try {
 					$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-					$objectEntity = $objectService->findByUuid(uuid: $objectId);
+					$objectEntity = $objectService->find(id: $objectId);
 					$fileService->publishFile(object: $objectEntity, file: $filename);
 				} catch (Exception $e) {
 					// Log but don't fail the entire operation
@@ -3432,7 +3500,7 @@ class SynchronizationService
 
         // Get the object entity and file service
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-        $objectEntity = $objectService->findByUuid(uuid: $objectId);
+        $objectEntity = $objectService->find(id: $objectId);
         $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 
         // Check if associative array (multiple files with metadata)
@@ -3734,7 +3802,7 @@ class SynchronizationService
 
 		// Check if object adheres to conditions.
 		// Take note, JsonLogic::apply() returns a range of return types, so checking it with '=== false' or '!== true' does not work properly.
-		
+
 		if ($synchronization->getConditions() !== [] && !JsonLogic::apply($synchronization->getConditions(), $conditionsObject)) {
 			// Increment skipped count in log since object doesn't meet conditions
 			$result['objects']['skipped']++;
@@ -3992,7 +4060,7 @@ class SynchronizationService
 			// Get the object entity
 			$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
 			try {
-				$objectEntity = $objectService->findByUuid(uuid: $objectId);
+				$objectEntity = $objectService->find(id: $objectId);
 			} catch (DoesNotExistException $e) {
 				// It is possible we are trying to delete files for an object id where the object has not been persisted yet (for example a zgw informatieobject can have a beforehand generated uuid)
 				return 0;

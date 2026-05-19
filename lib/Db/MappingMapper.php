@@ -195,7 +195,7 @@ class MappingMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*) as count'))
            ->from('openconnector_mappings');
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $row = $result->fetch();
 
         // Return the total count
