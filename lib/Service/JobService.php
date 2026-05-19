@@ -56,9 +56,10 @@ class JobService
 {
 
     private int $errorRetention;
+
     private int $successRetention;
     private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-    private const DEFAULT_ERROR_LOG_RETENTION = 2592000000;
+    private const DEFAULT_ERROR_LOG_RETENTION   = 2592000000;
 
     /**
      * JobService constructor
@@ -66,13 +67,13 @@ class JobService
      * Initializes the job service with required dependencies for job execution
      * and management operations.
      *
-     * @param IJobList $jobList The job list manager for background jobs
-     * @param JobMapper $jobMapper The job mapper for database operations
-     * @param IDBConnection $connection Database connection for direct queries
-     * @param JobLogMapper $jobLogMapper The job log mapper for logging
+     * @param IJobList           $jobList            The job list manager for background jobs
+     * @param JobMapper          $jobMapper          The job mapper for database operations
+     * @param IDBConnection      $connection         Database connection for direct queries
+     * @param JobLogMapper       $jobLogMapper       The job log mapper for logging
      * @param ContainerInterface $containerInterface Container for dependency injection
-     * @param IUserSession $userSession User session manager
-     * @param IUserManager $userManager User manager for user operations
+     * @param IUserSession       $userSession        User session manager
+     * @param IUserManager       $userManager        User manager for user operations
      *
      * @psalm-param IJobList $jobList
      * @psalm-param JobMapper $jobMapper
@@ -92,19 +93,19 @@ class JobService
         private readonly IUserManager $userManager,
         IAppConfig $appConfig,
     ) {
-        $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
+        $this->errorRetention   = self::DEFAULT_ERROR_LOG_RETENTION;
         $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
-        if($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
-            $this->errorRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['jobLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
+        if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+            $this->errorRetention   = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['jobLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
             $this->successRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
         }
 
-    }
+    }//end __construct()
 
     /**
      * Calculates the used retention for created logs. Consists of the maximum of the retention from the source, and the global retention, unless either of both is 0, in which case retention is indefinite.
      *
-     * @param int[] $retentions The list of retentions in milliseconds to find the maximum duration for.
+     * @param  int[] $retentions The list of retentions in milliseconds to find the maximum duration for.
      * @return \DateTime|null The calculated expiry
      * @throws \DateMalformedStringException
      *
@@ -116,8 +117,8 @@ class JobService
             return null;
         }
 
-        return new \DateTime('now +' .max($retentions).'milliseconds');
-    }
+        return new \DateTime('now +'.max($retentions).'milliseconds');
+    }//end calculateExpires()
 
     /**
      * Truncate message if it exceeds safe database limits
@@ -127,19 +128,19 @@ class JobService
      * While the database column is now TEXT type, very long messages should
      * still be truncated for performance and readability.
      *
-     * @param string $message The original message to truncate
-     * @param int $maxLength Maximum allowed message length (default: 10000 characters)
+     * @param string $message   The original message to truncate
+     * @param int    $maxLength Maximum allowed message length (default: 10000 characters)
      *
      * @return string The truncated message with truncation indicator if needed
      *
-     * @psalm-param string $message
-     * @psalm-param int $maxLength
-     * @psalm-return string
-     * @phpstan-param string $message
-     * @phpstan-param int $maxLength
+     * @psalm-param    string $message
+     * @psalm-param    int $maxLength
+     * @psalm-return   string
+     * @phpstan-param  string $message
+     * @phpstan-param  int $maxLength
      * @phpstan-return string
      */
-    private function truncateMessage(string $message, int $maxLength = 10000): string
+    private function truncateMessage(string $message, int $maxLength=10000): string
     {
         // If message is within limits, return as-is
         if (strlen($message) <= $maxLength) {
@@ -147,11 +148,11 @@ class JobService
         }
 
         // Truncate and add indicator
-        $truncated = substr($message, 0, $maxLength - 50);
-        $truncated .= '... [Message truncated - original length: ' . strlen($message) . ' characters]';
+        $truncated  = substr($message, 0, $maxLength - 50);
+        $truncated .= '... [Message truncated - original length: '.strlen($message).' characters]';
 
         return $truncated;
-    }
+    }//end truncateMessage()
 
     /**
      * Schedule a job for execution
@@ -163,9 +164,9 @@ class JobService
      *
      * @return Job The updated job entity
      *
-     * @psalm-param Job $job
-     * @psalm-return Job
-     * @phpstan-param Job $job
+     * @psalm-param    Job $job
+     * @psalm-return   Job
+     * @phpstan-param  Job $job
      * @phpstan-return Job
      */
     public function scheduleJob(Job $job): Job
@@ -173,8 +174,8 @@ class JobService
         // Let's first check if the job should be disabled
         if ($job->getIsEnabled() === false || $job->getJobListId()) {
             // @todo fix this (call to protected method)
-            //$this->jobList->removeById($job->getJobListId());
-            //$job->setJobListId(null);
+            // $this->jobList->removeById($job->getJobListId());
+            // $job->setJobListId(null);
             return $this->jobMapper->update($job);
         }
 
@@ -184,7 +185,7 @@ class JobService
         }
 
         // Oke this is a new job let's schedule it
-        $arguments = $job->getArguments();
+        $arguments          = $job->getArguments();
         $arguments['jobId'] = $job->getId();
 
         // Schedule the job using the new JobTask class
@@ -201,7 +202,7 @@ class JobService
         $job->setJobListId($this->getJobListId(\OCA\OpenConnector\Cron\JobTask::class));
         // Save the job to the database
         return $this->jobMapper->update($job);
-    }
+    }//end scheduleJob()
 
     /**
      * Get the job list ID of the last job in the list
@@ -216,9 +217,9 @@ class JobService
      *
      * @return int|null The job list ID if found, null otherwise
      *
-     * @psalm-param class-string<IJob>|IJob $job
-     * @psalm-return int|null
-     * @phpstan-param class-string<IJob>|IJob $job
+     * @psalm-param    class-string<IJob>|IJob $job
+     * @psalm-return   int|null
+     * @phpstan-param  class-string<IJob>|IJob $job
      * @phpstan-return int|null
      */
     public function getJobListId(IJob|string $job): int|null
@@ -236,11 +237,11 @@ class JobService
 
         // Execute query and fetch result
         $result = $query->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
         $result->closeCursor();
 
         return $row['id'] ?? null;
-    }
+    }//end getJobListId()
 
     /**
      * Execute a job based on the provided job object and optional forceRun flag
@@ -252,7 +253,7 @@ class JobService
      * - Result processing and logging
      * - Next run scheduling
      *
-     * @param Job $job The job object to be executed
+     * @param Job  $job      The job object to be executed
      * @param bool $forceRun Optional flag to force run the job
      *
      * @return JobLog The job log entry created for this execution
@@ -261,12 +262,12 @@ class JobService
      * @throws ContainerExceptionInterface Container operation exceptions
      * @throws NotFoundExceptionInterface When required services are not found
      *
-     * @psalm-param Job $job
-     * @psalm-return JobLog
-     * @phpstan-param Job $job
+     * @psalm-param    Job $job
+     * @psalm-return   JobLog
+     * @phpstan-param  Job $job
      * @phpstan-return JobLog
      */
-    public function executeJob(Job $job, bool $forceRun = false): ?JobLog
+    public function executeJob(Job $job, bool $forceRun=false): ?JobLog
     {
         // Initialize stack trace for logging
         $stackTrace = [];
@@ -276,10 +277,13 @@ class JobService
 
         // Check if the job is enabled (unless force run is requested)
         if ($forceRun === false && $job->getIsEnabled() === false) {
-            return $this->jobLogMapper->createForJob($job, [
-                'level'			=> 'WARNING',
-                'message'		=> 'This job is disabled'
-            ]);
+            return $this->jobLogMapper->createForJob(
+                    $job,
+                    [
+                        'level'   => 'WARNING',
+                        'message' => 'This job is disabled',
+                    ]
+                    );
         }
 
         // Check if the job is scheduled to run (unless force run is requested)
@@ -295,19 +299,20 @@ class JobService
         }
 
         // Record execution start time for performance tracking
-        $time_start = microtime(true);
+        $timeStart = microtime(true);
 
         // Get the job action class from the container and execute it
-        $action = $this->containerInterface->get($job->getJobClass());
+        $action    = $this->containerInterface->get($job->getJobClass());
         $arguments = $job->getArguments();
         if (is_array($arguments) === false) {
             $arguments = [];
         }
+
         $result = $action->run($arguments);
 
         // Calculate execution time in milliseconds
-        $time_end = microtime(true);
-        $executionTime = ($time_end - $time_start) * 1000;
+        $timeEnd       = microtime(true);
+        $executionTime = ($timeEnd - $timeStart) * 1000;
 
         // Handle single run jobs by disabling them after execution
         if ($forceRun === false && $job->isSingleRun() === true) {
@@ -317,7 +322,7 @@ class JobService
         // Update job with last run time and calculate next run time
         $job->setLastRun(new DateTime());
         if ($forceRun === false) {
-            $nextRun = new DateTime('now + ' . $job->getInterval() . ' seconds');
+            $nextRun = new DateTime('now + '.$job->getInterval().' seconds');
 
             // Handle rate limiting if specified in result
             if (isset($result['nextRun']) === true) {
@@ -326,6 +331,7 @@ class JobService
                 if ($nextRunRateLimit->format('s') !== '00') {
                     $nextRunRateLimit->modify('next minute');
                 }
+
                 if ($nextRunRateLimit > $nextRun) {
                     $nextRun = $nextRunRateLimit;
                 }
@@ -340,12 +346,15 @@ class JobService
         $this->jobMapper->update($job);
 
         // Create initial job log entry with success status
-        $jobLog = $this->jobLogMapper->createForJob($job, [
-            'level'			=> 'SUCCESS',
-            'message'		=> 'Success',
-            'executionTime' => $executionTime,
-            'expires'       => $this->calculateExpires($job->getLogRetention() * 1000, $this->successRetention)
-        ]);
+        $jobLog = $this->jobLogMapper->createForJob(
+                $job,
+                [
+                    'level'         => 'SUCCESS',
+                    'message'       => 'Success',
+                    'executionTime' => $executionTime,
+                    'expires'       => $this->calculateExpires($job->getLogRetention() * 1000, $this->successRetention),
+                ]
+                );
 
         // Process job execution result and update log accordingly
         if (is_array($result) === true) {
@@ -356,11 +365,13 @@ class JobService
                     $jobLog->setExpires($this->calculateExpires($job->getErrorRetention() * 1000, $this->errorRetention));
                 }
             }
+
             if (isset($result['message']) === true) {
                 // Truncate message if it's too long for database safety
                 $message = $this->truncateMessage($result['message']);
                 $jobLog->setMessage($message);
             }
+
             if (isset($result['stackTrace']) === true) {
                 $stackTrace = array_merge($stackTrace, $result['stackTrace']);
             }
@@ -371,19 +382,19 @@ class JobService
         $this->jobLogMapper->update(entity: $jobLog);
 
         return $jobLog;
-    }
+    }//end executeJob()
 
     /**
      * Run all jobs that are scheduled to run (nextRun <= now)
      *
-     * @return JobLog[] Array of job log results
-     * @psalm-return array<JobLog>
+     * @return         JobLog[] Array of job log results
+     * @psalm-return   array<JobLog>
      * @phpstan-return JobLog[]
      */
     public function run(): array
     {
         // Use the mapper to get all runnable jobs
-        $jobs = $this->jobMapper->findRunnable();
+        $jobs    = $this->jobMapper->findRunnable();
         $results = [];
         foreach ($jobs as $job) {
             $log = $this->executeJob($job);
@@ -391,6 +402,7 @@ class JobService
                 $results[] = $log;
             }
         }
+
         return $results;
-    }
-}
+    }//end run()
+}//end class

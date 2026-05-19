@@ -53,12 +53,11 @@ class StUFFieldMapper
      * @var array
      */
     private const DEFAULT_ADDRESS_MAPPING = [
-        'straatnaam'  => 'gor.straatnaam',
-        'huisnummer'  => 'aoa.huisnummer',
-        'postcode'    => 'aoa.postcode',
-        'woonplaats'  => 'wpl.woonplaatsNaam',
+        'straatnaam' => 'gor.straatnaam',
+        'huisnummer' => 'aoa.huisnummer',
+        'postcode'   => 'aoa.postcode',
+        'woonplaats' => 'wpl.woonplaatsNaam',
     ];
-
 
     /**
      * StUFFieldMapper constructor.
@@ -71,7 +70,6 @@ class StUFFieldMapper
 
     }//end __construct()
 
-
     /**
      * Map an OpenRegister person object to StUF-BG field values.
      *
@@ -80,7 +78,7 @@ class StUFFieldMapper
      *
      * @return array Array of StUF field name to value pairs.
      */
-    public function mapPersonToStUF(array $person, ?array $mapping = null): array
+    public function mapPersonToStUF(array $person, ?array $mapping=null): array
     {
         $fieldMapping = $mapping ?? self::DEFAULT_BRP_MAPPING;
         $result       = [];
@@ -107,7 +105,6 @@ class StUFFieldMapper
 
     }//end mapPersonToStUF()
 
-
     /**
      * Map a StUF-BG person response to OpenRegister object properties.
      *
@@ -116,7 +113,7 @@ class StUFFieldMapper
      *
      * @return array Array of OpenRegister property name to value pairs.
      */
-    public function mapStUFToPerson(array $stufData, ?array $mapping = null): array
+    public function mapStUFToPerson(array $stufData, ?array $mapping=null): array
     {
         $fieldMapping = $mapping ?? self::DEFAULT_BRP_MAPPING;
         $reversed     = array_flip($fieldMapping);
@@ -139,7 +136,6 @@ class StUFFieldMapper
 
     }//end mapStUFToPerson()
 
-
     /**
      * Map an OpenRegister address object to StUF-BG address fields.
      *
@@ -148,7 +144,7 @@ class StUFFieldMapper
      *
      * @return array Array of StUF address field name to value pairs.
      */
-    public function mapAddressToStUF(array $address, ?array $mapping = null): array
+    public function mapAddressToStUF(array $address, ?array $mapping=null): array
     {
         $fieldMapping = $mapping ?? self::DEFAULT_ADDRESS_MAPPING;
         $result       = [];
@@ -162,7 +158,6 @@ class StUFFieldMapper
         return $result;
 
     }//end mapAddressToStUF()
-
 
     /**
      * Convert an ISO 8601 date to StUF YYYYMMDD format.
@@ -182,7 +177,6 @@ class StUFFieldMapper
 
     }//end isoDateToStUF()
 
-
     /**
      * Convert a StUF YYYYMMDD date to ISO 8601 format.
      *
@@ -200,6 +194,4 @@ class StUFFieldMapper
         return $date->format('Y-m-d');
 
     }//end stufDateToISO()
-
-
 }//end class

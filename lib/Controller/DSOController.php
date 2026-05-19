@@ -38,8 +38,6 @@ use Psr\Log\LoggerInterface;
  */
 class DSOController extends Controller
 {
-
-
     /**
      * DSOController constructor.
      *
@@ -57,7 +55,6 @@ class DSOController extends Controller
         parent::__construct($appName, $request);
 
     }//end __construct()
-
 
     /**
      * Receive a DSO-verzoek via the STAM koppelvlak.
@@ -120,7 +117,6 @@ class DSOController extends Controller
 
     }//end receiveVerzoek()
 
-
     /**
      * Validate the DSO-LV webhook signature.
      *
@@ -146,6 +142,4 @@ class DSOController extends Controller
         return true;
 
     }//end validateSignature()
-
-
 }//end class
