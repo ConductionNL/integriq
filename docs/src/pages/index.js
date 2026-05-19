@@ -237,7 +237,7 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenConnector"
+      title="OpenConnector, the integration layer for Nextcloud"
       description="The integration layer for Nextcloud. REST, SOAP, GraphQL, file drops, message queues. Pulls data into typed registers without writing glue code."
     >
       <main className="marketing-page">

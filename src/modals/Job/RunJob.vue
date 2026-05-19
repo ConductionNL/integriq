@@ -161,12 +161,14 @@ export default {
 
 .jobRunTable th,
 .jobRunTable td {
-  padding: 4px;
+	padding: 4px;
 }
+
 .jobRunTable th {
-    font-weight: bold
+	font-weight: bold
 }
+
 .jobRunTable ol {
-    margin-left: 1rem;
+	margin-left: 1rem;
 }
 </style>

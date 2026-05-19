@@ -119,6 +119,7 @@ const config = createConfig({
      (colorMode + navbar + footer). Custom prism + mermaid theme
      overrides land alongside. */
   themeConfig: {
+    image: 'img/og-openconnector.png',
     prism: {
       theme: {
         plain: {

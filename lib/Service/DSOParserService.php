@@ -58,7 +58,6 @@ class DSOParserService
         'vooroverleg',
     ];
 
-
     /**
      * DSOParserService constructor.
      *
@@ -69,7 +68,6 @@ class DSOParserService
     ) {
 
     }//end __construct()
-
 
     /**
      * Validate a DSO-verzoek payload against the STAM schema.
@@ -144,7 +142,6 @@ class DSOParserService
 
     }//end validatePayload()
 
-
     /**
      * Parse a DSO-verzoek payload into structured data.
      *
@@ -158,18 +155,18 @@ class DSOParserService
     public function parseVerzoek(array $payload): array
     {
         $verzoek = [
-            'verzoekId'        => $payload['verzoekId'] ?? null,
-            'bronorganisatie'  => $payload['bronorganisatie'] ?? null,
-            'type'             => $payload['type'] ?? null,
-            'indieningsdatum'  => $payload['indieningsdatum'] ?? null,
-            'aanvrager'        => $this->parseAanvrager($payload['aanvrager'] ?? []),
-            'locatie'          => $this->parseLocatie($payload['locatie'] ?? []),
-            'activiteiten'     => $this->parseActiviteiten($payload['activiteiten'] ?? []),
-            'bouwkosten'       => isset($payload['bouwkosten']) === true ? (float) $payload['bouwkosten'] : null,
-            'bijlagen'         => $payload['bijlagen'] ?? [],
-            'status'           => 'ontvangen',
-            'environment'      => $payload['environment'] ?? 'productie',
-            'stamApiVersion'   => $payload['stamApiVersion'] ?? null,
+            'verzoekId'       => $payload['verzoekId'] ?? null,
+            'bronorganisatie' => $payload['bronorganisatie'] ?? null,
+            'type'            => $payload['type'] ?? null,
+            'indieningsdatum' => $payload['indieningsdatum'] ?? null,
+            'aanvrager'       => $this->parseAanvrager($payload['aanvrager'] ?? []),
+            'locatie'         => $this->parseLocatie($payload['locatie'] ?? []),
+            'activiteiten'    => $this->parseActiviteiten($payload['activiteiten'] ?? []),
+            'bouwkosten'      => isset($payload['bouwkosten']) === true ? (float) $payload['bouwkosten'] : null,
+            'bijlagen'        => $payload['bijlagen'] ?? [],
+            'status'          => 'ontvangen',
+            'environment'     => $payload['environment'] ?? 'productie',
+            'stamApiVersion'  => $payload['stamApiVersion'] ?? null,
         ];
 
         if (isset($payload['projectbeschrijving']) === true) {
@@ -179,7 +176,6 @@ class DSOParserService
         return $verzoek;
 
     }//end parseVerzoek()
-
 
     /**
      * Validate a BSN (Burger Service Nummer) using the 11-proef.
@@ -209,7 +205,7 @@ class DSOParserService
         }
 
         // 11-proef: multiply each digit by its weight factor.
-        $sum = 0;
+        $sum     = 0;
         $weights = [9, 8, 7, 6, 5, 4, 3, 2, -1];
 
         for ($i = 0; $i < 9; $i++) {
@@ -219,7 +215,6 @@ class DSOParserService
         return ($sum % 11 === 0 && $sum !== 0);
 
     }//end validateBSN()
-
 
     /**
      * Validate an ISO 8601 date string.
@@ -249,7 +244,6 @@ class DSOParserService
 
     }//end validateISODate()
 
-
     /**
      * Parse the aanvrager (initiatiefnemer) block.
      *
@@ -270,7 +264,6 @@ class DSOParserService
         ];
 
     }//end parseAanvrager()
-
 
     /**
      * Parse the locatie block.
@@ -298,7 +291,6 @@ class DSOParserService
 
     }//end parseLocatie()
 
-
     /**
      * Parse the activiteiten array.
      *
@@ -311,15 +303,14 @@ class DSOParserService
         $parsed = [];
         foreach ($activiteiten as $activiteit) {
             $parsed[] = [
-                'code'          => $activiteit['code'] ?? $activiteit['activiteitCode'] ?? null,
-                'omschrijving'  => $activiteit['omschrijving'] ?? null,
+                'code'         => $activiteit['code'] ?? $activiteit['activiteitCode'] ?? null,
+                'omschrijving' => $activiteit['omschrijving'] ?? null,
             ];
         }
 
         return $parsed;
 
     }//end parseActiviteiten()
-
 
     /**
      * Convert a GML geometry string to GeoJSON.
@@ -345,6 +336,4 @@ class DSOParserService
         return null;
 
     }//end convertGMLToGeoJSON()
-
-
 }//end class

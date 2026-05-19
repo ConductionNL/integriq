@@ -20,46 +20,50 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241218122932 extends SimpleMigrationStep {
+class Version1Date20241218122932 extends SimpleMigrationStep
+{
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end preSchemaChange()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+    /**
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /**
+         * @var ISchemaWrapper $schema
+         */
+        $schema = $schemaClosure();
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
-		 * @var ISchemaWrapper $schema
-		 */
-		$schema = $schemaClosure();
+        if ($schema->hasTable(tableName: 'openconnector_consumers') === true) {
+            $table = $schema->getTable(tableName: 'openconnector_consumers');
+            $table->addColumn('authorization_configuration', Types::JSON);
+            $table->addColumn('user_id', Types::STRING)->setNotnull(false);
+        }
 
-		if ($schema->hasTable(tableName: 'openconnector_consumers') === true) {
-			$table = $schema->getTable(tableName: 'openconnector_consumers');
-			$table->addColumn('authorization_configuration', Types::JSON);
-			$table->addColumn('user_id', Types::STRING)->setNotnull(false);
-		}
-		if ($schema->hasTable(tableName: 'openconnector_endpoints') === true) {
-			$table = $schema->getTable(tableName: 'openconnector_endpoints');
-			$table->addColumn('conditions', Types::JSON);
-		}
+        if ($schema->hasTable(tableName: 'openconnector_endpoints') === true) {
+            $table = $schema->getTable(tableName: 'openconnector_endpoints');
+            $table->addColumn('conditions', Types::JSON);
+        }
 
-		return $schema;
-	}
+        return $schema;
+    }//end changeSchema()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end postSchemaChange()
+}//end class
