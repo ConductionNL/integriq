@@ -16,11 +16,7 @@ jobs:
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
-      # phpcs has thousands of pre-existing style violations in lib/ that need
-      # a dedicated cleanup PR (see openregister #1562 for the pattern). Until
-      # that happens, keep phpcs off to unblock the gate. phpcs.xml is correctly
-      # scoped to `lib/` so the cleanup PR can run `phpcbf` directly.
-      enable-phpcs: false
+      enable-phpcs: true
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true

@@ -22,66 +22,85 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241121160300 extends SimpleMigrationStep {
+class Version1Date20241121160300 extends SimpleMigrationStep
+{
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end preSchemaChange()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+    /**
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /**
+         * @var ISchemaWrapper $schema
+         */
+        $schema = $schemaClosure();
+        // Sources table
+        $table = $schema->getTable('openconnector_sources');
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
-		 * @var ISchemaWrapper $schema
-		 */
-		$schema = $schemaClosure();
-		// Sources table
-		$table = $schema->getTable('openconnector_sources');
+        if ($table->hasColumn('rate_limit_limit') === false) {
+            $table->addColumn(
+            'rate_limit_limit',
+            Types::INTEGER,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
+        }
 
-		if ($table->hasColumn('rate_limit_limit') === false) {
-			$table->addColumn('rate_limit_limit', Types::INTEGER, [
-				'notnull' => false,
-				'default' => null
-			]);
-		}
+        if ($table->hasColumn('rate_limit_remaining') === false) {
+            $table->addColumn(
+            'rate_limit_remaining',
+            Types::INTEGER,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
+        }
 
-		if ($table->hasColumn('rate_limit_remaining') === false) {
-			$table->addColumn('rate_limit_remaining', Types::INTEGER, [
-				'notnull' => false,
-				'default' => null
-			]);
-		}
+        if ($table->hasColumn('rate_limit_reset') === false) {
+            $table->addColumn(
+            'rate_limit_reset',
+            Types::INTEGER,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
+        }
 
-		if ($table->hasColumn('rate_limit_reset') === false) {
-			$table->addColumn('rate_limit_reset', Types::INTEGER, [
-				'notnull' => false,
-				'default' => null
-			]);
-		}
+        if ($table->hasColumn('rate_limit_window') === false) {
+            $table->addColumn(
+            'rate_limit_window',
+            Types::INTEGER,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+            );
+        }
 
-		if ($table->hasColumn('rate_limit_window') === false) {
-			$table->addColumn('rate_limit_window', Types::INTEGER, [
-				'notnull' => false,
-				'default' => null
-			]);
-		}
+        return $schema;
+    }//end changeSchema()
 
-		return $schema;
-	}
-
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end postSchemaChange()
+}//end class
