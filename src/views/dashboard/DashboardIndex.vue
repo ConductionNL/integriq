@@ -10,7 +10,7 @@
 				<CnStatsBlock
 					title="Sources"
 					:count="stats.sources || 0"
-					count-label="sources"
+					:count-label="n('openconnector', 'source', 'sources', stats.sources || 0)"
 					:icon="DatabaseOutline"
 					:loading="isLoading"
 					variant="primary"
@@ -20,7 +20,7 @@
 				<CnStatsBlock
 					title="Mappings"
 					:count="stats.mappings || 0"
-					count-label="mappings"
+					:count-label="n('openconnector', 'mapping', 'mappings', stats.mappings || 0)"
 					:icon="SwapHorizontal"
 					:loading="isLoading"
 					variant="primary"
@@ -30,7 +30,7 @@
 				<CnStatsBlock
 					title="Synchronizations"
 					:count="stats.synchronizations || 0"
-					count-label="syncs"
+					:count-label="n('openconnector', 'sync', 'syncs', stats.synchronizations || 0)"
 					:icon="SyncIcon"
 					:loading="isLoading"
 					variant="primary"
@@ -40,7 +40,7 @@
 				<CnStatsBlock
 					title="Contracts"
 					:count="stats.synchronizationContracts || 0"
-					count-label="contracts"
+					:count-label="n('openconnector', 'contract', 'contracts', stats.synchronizationContracts || 0)"
 					:icon="FileDocumentOutline"
 					:loading="isLoading"
 					variant="primary"
@@ -50,7 +50,7 @@
 				<CnStatsBlock
 					title="Jobs"
 					:count="stats.jobs || 0"
-					count-label="jobs"
+					:count-label="n('openconnector', 'job', 'jobs', stats.jobs || 0)"
 					:icon="CogOutline"
 					:loading="isLoading"
 					variant="primary"
@@ -60,7 +60,7 @@
 				<CnStatsBlock
 					title="Endpoints"
 					:count="stats.endpoints || 0"
-					count-label="endpoints"
+					:count-label="n('openconnector', 'endpoint', 'endpoints', stats.endpoints || 0)"
 					:icon="ConnectionIcon"
 					:loading="isLoading"
 					variant="primary"
@@ -70,7 +70,7 @@
 			<template #widget-date-range>
 				<div class="date-range-selector">
 					<div class="date-picker">
-						<label>{{ t('openconnector', 'From:') }}</label>
+						<label>{{ t('openconnector', 'From') }}:</label>
 						<NcDateTimePicker
 							v-model="dateRange.from"
 							:max-date="dateRange.to"
@@ -79,7 +79,7 @@
 							@change="handleDateChange" />
 					</div>
 					<div class="date-picker">
-						<label>{{ t('openconnector', 'To:') }}</label>
+						<label>{{ t('openconnector', 'To') }}:</label>
 						<NcDateTimePicker
 							v-model="dateRange.to"
 							:min-date="dateRange.from"

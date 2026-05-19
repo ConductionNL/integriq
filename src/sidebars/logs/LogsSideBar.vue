@@ -52,7 +52,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 				</div>
 
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
+					<label>{{ t('openconnector', 'Date range') }}</label>
 					<DateRangeInput
 						:start="filters.dateFrom"
 						:end="filters.dateTo"

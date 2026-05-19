@@ -55,7 +55,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 						@input="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
+					<label>{{ t('openconnector', 'Date range') }}</label>
 					<DateRangeInput
 						:start="dateFrom"
 						:end="dateTo"

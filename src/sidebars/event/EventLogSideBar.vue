@@ -40,7 +40,7 @@ import { eventStore } from '../../store/store.js'
 				<!-- Date Range Filter -->
 				<div class="sidebarFilter">
 					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Date Range') }}
+						{{ t('openconnector', 'Date range') }}
 					</label>
 					<div class="dateRangeContainer">
 						<DateRangeInput
