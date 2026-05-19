@@ -212,99 +212,115 @@ export default {
 	width: auto;
 	box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
+
 .calHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 4px;
 }
+
 .titleBtn {
-    background: transparent;
-    border: none;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
+	background: transparent;
+	border: none;
+	font-weight: 600;
+	font-size: 14px;
+	cursor: pointer;
 }
+
 .navBtn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 2px 6px; }
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 2px 6px; }
+
 .oneCal {
-    width: 100%;
- }
+	width: 100%;
+}
+
 .dow {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    font-size: 11px;
-    color: var(--color-text-lighter);
-    margin-bottom: 2px;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	font-size: 11px;
+	color: var(--color-text-lighter);
+	margin-bottom: 2px;
 }
+
 .dow span {
-    text-align: center;
+	text-align: center;
 }
+
 .grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(36px, 1fr));
-    gap: 2px;
+	display: grid;
+	grid-template-columns: repeat(7, minmax(36px, 1fr));
+	gap: 2px;
 }
+
 .cell {
-    height: 28px;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
+	height: 28px;
+	border-radius: 6px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 12px;
 }
+
 .cell.otherMonth {
-    opacity: 0.5;
+	opacity: 0.5;
 }
+
 .cell.inRange, .cell.today {
-    background: var(--color-background-hover);
+	background: var(--color-background-hover);
 }
+
 .cell.start, .cell.end {
-    background: var(--color-primary);
-    color: #fff;
+	background: var(--color-primary);
+	color: #fff;
 }
+
 .actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 6px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 6px;
+	margin-top: 6px;
 }
+
 .actions .secondary {
-    background: transparent;
-    border: 1px solid var(--color-border);
-    padding: 4px 8px;
-    border-radius: var(--border-radius);
-    font-size: 12px;
+	background: transparent;
+	border: 1px solid var(--color-border);
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	font-size: 12px;
 }
+
 .actions .primary {
-    background: var(--color-primary);
-    color: #fff;
-    border: none;
-    padding: 4px 8px;
-    border-radius: var(--border-radius);
-    font-size: 12px;
+	background: var(--color-primary);
+	color: #fff;
+	border: none;
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	font-size: 12px;
 }
 
 .yearGrid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(48px, 1fr));
-    gap: 6px;
-    width: 100%;
-    padding: 4px 0;
+	display: grid;
+	grid-template-columns: repeat(4, minmax(48px, 1fr));
+	gap: 6px;
+	width: 100%;
+	padding: 4px 0;
 }
+
 .monthCell {
-    border: 1px solid var(--color-border);
-    background: var(--color-background-hover);
-    border-radius: 6px;
-    padding: 6px;
-    font-size: 12px;
-    cursor: pointer;
+	border: 1px solid var(--color-border);
+	background: var(--color-background-hover);
+	border-radius: 6px;
+	padding: 6px;
+	font-size: 12px;
+	cursor: pointer;
 }
+
 .monthCell:hover {
-    background: var(--color-primary);
-    color: #fff;
+	background: var(--color-primary);
+	color: #fff;
 }
 </style>
