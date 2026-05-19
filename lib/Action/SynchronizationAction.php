@@ -76,7 +76,7 @@ class SynchronizationAction
         // Doing the synchronization
         $response['stackTrace'][] = 'Doing the synchronization';
         try {
-            $objects = $this->synchronizationService->synchronize(
+            $objects = $this->syncService->synchronize(
                 synchronization: $synchronization,
                 force: $force
             );
