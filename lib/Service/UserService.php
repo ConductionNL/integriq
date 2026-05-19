@@ -368,7 +368,7 @@ class UserService
                   ->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
                   ->setMaxResults(1);
             
-            $result = $query->execute();
+            $result = $query->executeQuery();
             $row = $result->fetch();
             $result->closeCursor();
             

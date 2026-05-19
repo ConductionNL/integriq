@@ -146,7 +146,7 @@ class ConsumerMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*) as count'))
            ->from('openconnector_consumers');
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $row = $result->fetch();
 
         // Return the total count

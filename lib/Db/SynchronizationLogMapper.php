@@ -200,7 +200,7 @@ class SynchronizationLogMapper extends QBMapper
 			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
-		$result = $qb->execute();
+		$result = $qb->executeQuery();
 		$row = $result->fetch();
 
 		// Return the total count

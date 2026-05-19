@@ -426,7 +426,7 @@ class SynchronizationContractMapper extends QBMapper
         $qb->select($qb->createFunction('COUNT(*) as count'))
            ->from('openconnector_synchronization_contracts');
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $row = $result->fetch();
 
         return (int)$row['count'];

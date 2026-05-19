@@ -68,10 +68,18 @@ class SynchronizationAction
             return $response;
         }
 
+        $force = filter_var($argument['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($force === true) {
+            $response['stackTrace'][] = 'Force enabled for synchronization job';
+        }
+
         // Doing the synchronization
         $response['stackTrace'][] = 'Doing the synchronization';
         try {
-            $objects = $this->syncService->synchronize($synchronization);
+            $objects = $this->synchronizationService->synchronize(
+                synchronization: $synchronization,
+                force: $force
+            );
         } catch (TooManyRequestsHttpException $e) {
 			$response['level'] = 'WARNING';
 			$response['stackTrace'][] = $response['message'] = 'Stopped synchronization: ' . $e->getMessage();

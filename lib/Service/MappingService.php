@@ -115,6 +115,20 @@ class MappingService
     }//end encodeArrayKeys()
 
     /**
+     * Renders a Twig template string using the mapping Twig environment.
+     *
+     * @param string $template The Twig template to render.
+     * @param array $context The context available inside the template.
+     *
+     * @return string The rendered template result.
+     * @throws LoaderError|SyntaxError Twig exceptions
+     */
+    public function renderTemplateString(string $template, array $context = []): string
+    {
+        return html_entity_decode($this->twig->createTemplate($template)->render($context));
+    }
+
+    /**
      * Maps (transforms) an array (input) to a different array (output).
      *
      * Delegates to OpenRegister's MappingService when available, otherwise
@@ -218,7 +232,7 @@ class MappingService
             }
 
             try {
-			    $dotArray->set($key, html_entity_decode($this->twig->createTemplate($value)->render($originalInput)));
+			    $dotArray->set($key, $this->renderTemplateString($value, $originalInput));
             } catch (Throwable $e) {
                 throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
             }
