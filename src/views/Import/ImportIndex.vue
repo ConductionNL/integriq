@@ -1,253 +1,194 @@
-<script setup>
-import { ref } from 'vue'
-import { importExportStore } from '../../store/store.js'
-</script>
-
 <template>
 	<NcAppContent>
-		<div ref="dropZoneRef" class="container">
-			<div class="filesListDragDropNotice" :class="'tabPanelFileUpload'">
-				<NcNoteCard type="info">
-					<p>Allowed extensions are: .json, .yaml, .yml</p>
-				</NcNoteCard>
-				<div v-if="success !== null || error">
-					<NcNoteCard v-if="success" type="success">
-						<p>Successfully imported files</p>
-					</NcNoteCard>
-					<NcNoteCard v-if="error && !success" type="error">
-						<p>Something went wrong while importing</p>
-					</NcNoteCard>
-					<NcNoteCard v-if="error && !success" type="error">
-						<p>{{ error }}</p>
-					</NcNoteCard>
-				</div>
-				<div v-if="validateFileExtension(files)">
-					<NcNoteCard type="error">
-						<p>Please select files with the correct extension</p>
-					</NcNoteCard>
-				</div>
-				<div class="filesListDragDropNoticeWrapper">
-					<div class="filesListDragDropNoticeWrapperIcon">
-						<TrayArrowDown :size="48" />
-						<h3 class="filesListDragDropNoticeTitle">
-							Drag and drop a file or files here
-						</h3>
-					</div>
-
-					<h3 class="filesListDragDropNoticeTitle">
-						Or
-					</h3>
-
-					<div class="filesListDragDropNoticeTitle">
-						<NcButton
-							:disabled="loading"
-							type="primary"
-							@click="openFileUpload()">
-							<template #icon>
-								<Plus :size="20" />
-							</template>
-							Add a file or files
-						</NcButton>
-					</div>
-				</div>
-			</div>
-			<div v-if="!files">
-				No files selected
-			</div>
-			<div v-if="files" class="importButtonContainer">
-				<NcButton
-					:disabled="loading || validateFileExtension(files)"
-					type="primary"
-					@click="importFiles()">
+		<CnDetailPage
+			:title="t('openconnector', 'Import')"
+			:description="t('openconnector', 'Upload JSON or YAML files to import them into openconnector.')"
+			max-width="900px">
+			<div ref="dropZoneRef" class="import-dropzone">
+				<TrayArrowDown :size="48" class="import-dropzone__icon" />
+				<h3 class="import-dropzone__title">
+					{{ t('openconnector', 'Drag and drop files here') }}
+				</h3>
+				<p class="import-dropzone__hint">
+					{{ t('openconnector', 'Allowed: .json, .yaml, .yml') }}
+				</p>
+				<NcButton :disabled="loading"
+					type="secondary"
+					@click="openFileUpload()">
 					<template #icon>
-						<NcLoadingIcon v-if="loading" :size="20" />
-						<FileImportOutline v-if="!loading" :size="20" />
+						<Plus :size="20" />
 					</template>
-					Import
+					{{ t('openconnector', 'Pick files') }}
 				</NcButton>
 			</div>
-			<table v-if="files" class="files-table">
-				<thead>
-					<tr class="files-table-tr">
-						<th>
-							Name
-						</th>
-						<th>
-							Size
-						</th>
-						<th />
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="file of files" :key="file.name" class="files-table-tr">
-						<td class="files-table-td-name" :class="{ 'files-table-name-wrong': !['json', 'yaml', 'yml'].includes(getFileNameAndExtension(file.name).extension) }">
-							<span class="files-table-name">{{ getFileNameAndExtension(file.name).name }}</span>
-							<span class="files-table-extension">.{{ getFileNameAndExtension(file.name).extension }}</span>
-						</td>
-						<td>
-							{{ bytesToSize(file.size) }}
-						</td>
-						<td class="files-table-remove-button">
-							<NcButton
-								:disabled=" loading"
-								type="primary"
-								@click="reset(file.name)">
+
+			<NcEmptyContent v-if="!files || files.length === 0"
+				:name="t('openconnector', 'No files selected')"
+				:description="t('openconnector', 'Drop files above or click Pick files.')" />
+
+			<template v-else>
+				<div class="import-actions">
+					<NcButton :disabled="loading"
+						type="primary"
+						@click="importFiles()">
+						<template #icon>
+							<NcLoadingIcon v-if="loading" :size="20" />
+							<FileImportOutline v-else :size="20" />
+						</template>
+						{{ t('openconnector', 'Import') }}
+					</NcButton>
+				</div>
+				<ul class="import-files">
+					<NcListItem v-for="file of files"
+						:key="file.name"
+						:name="file.name"
+						:details="formatFileSize(file.size)"
+						:bold="false"
+						:force-display-actions="true">
+						<template #icon>
+							<FileDocumentOutline :size="32" />
+						</template>
+						<template #actions>
+							<NcActionButton :disabled="loading" @click="reset(file.name)">
 								<template #icon>
 									<Minus :size="20" />
 								</template>
-								<span>remove</span>
-							</NcButton>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
+								{{ t('openconnector', 'Remove') }}
+							</NcActionButton>
+						</template>
+					</NcListItem>
+				</ul>
+			</template>
+		</CnDetailPage>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcButton, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
-import { useFileSelection } from './../../composables/UseFileSelection.js'
+import { ref, watch } from 'vue'
+import { NcAppContent, NcButton, NcLoadingIcon, NcEmptyContent, NcListItem, NcActionButton } from '@nextcloud/vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
+
+import { importExportStore } from '../../store/store.js'
+import { useFileSelection } from '../../composables/UseFileSelection.js'
 
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
 import FileImportOutline from 'vue-material-design-icons/FileImportOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 
-const dropZoneRef = ref()
-const { openFileUpload, files, reset } = useFileSelection({ allowMultiple: true, dropzone: dropZoneRef, allowedFileTypes: ['.json', '.yaml', '.yml'] })
+const VALID_EXTENSION = /\.(json|ya?ml)$/i
 
 export default {
 	name: 'ImportIndex',
 	components: {
 		NcAppContent,
 		NcButton,
-		NcNoteCard,
 		NcLoadingIcon,
+		NcEmptyContent,
+		NcListItem,
+		NcActionButton,
+		CnDetailPage,
+		TrayArrowDown,
+		Plus,
+		Minus,
+		FileImportOutline,
+		FileDocumentOutline,
+	},
+	setup() {
+		const dropZoneRef = ref()
+		const { openFileUpload, files, reset, setFiles } = useFileSelection({
+			allowMultiple: true,
+			dropzone: dropZoneRef,
+			allowedFileTypes: ['.json', '.yaml', '.yml'],
+		})
+
+		// useFileSelection's drop handler accepts everything (dataTypes: '*'),
+		// and the file-dialog `accept` attribute is only a hint. Reject
+		// disallowed extensions here so they never reach the list.
+		watch(files, (current) => {
+			if (!current || current.length === 0) return
+			const accepted = current.filter(file => VALID_EXTENSION.test(file.name))
+			const rejected = current.filter(file => !VALID_EXTENSION.test(file.name))
+			if (rejected.length === 0) return
+			setFiles(accepted.length > 0 ? accepted : null)
+			OC.Notification.showError(
+				t('openconnector', 'Skipped {files} — only .json, .yaml, .yml files are allowed', {
+					files: rejected.map(f => f.name).join(', '),
+				}),
+			)
+		})
+
+		return { dropZoneRef, openFileUpload, files, reset }
 	},
 	data() {
 		return {
 			loading: false,
-			success: null,
-			error: false,
 		}
 	},
-
 	methods: {
-		bytesToSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
+		formatFileSize(bytes) {
+			if (bytes < 1024) return `${bytes} B`
+			if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+			if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+			return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 		},
-
-		getFileNameAndExtension(fullname) {
-			const lastDot = fullname.lastIndexOf('.')
-			const name = fullname.slice(0, lastDot)
-			const extension = fullname.slice(lastDot + 1)
-			return { name, extension }
-		},
-
-		validateFileExtension(files) {
-			if (!files) return false
-			const wrongFiles = files.filter(file => {
-				return !['json', 'yaml', 'yml'].includes(this.getFileNameAndExtension(file.name).extension)
-			})
-
-			return wrongFiles.length > 0
-		},
-
 		importFiles() {
 			this.loading = true
-			this.error = null
-
-			importExportStore.importFiles(files, reset)
-				.then((response) => {
-					this.success = true
-
-					const self = this
-					setTimeout(function() {
-						self.loading = false
-						self.success = null
-						reset()
-					}, 2000)
-
-				}).catch((err) => {
-					this.error = err.response?.data?.error ?? err
+			importExportStore.importFiles(this.files, this.reset)
+				.then(() => {
+					OC.Notification.showSuccess(t('openconnector', 'Files imported successfully'))
+					this.reset()
+				})
+				.catch((err) => {
+					const message = err.response?.data?.error ?? err.message ?? String(err)
+					OC.Notification.showError(t('openconnector', 'Import failed: {error}', { error: message }))
+				})
+				.finally(() => {
 					this.loading = false
 				})
 		},
 	},
 }
 </script>
+
 <style scoped>
-.importButtonContainer {
+.import-dropzone {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: calc(var(--default-grid-baseline) * 2);
+	padding: calc(var(--default-grid-baseline) * 6) calc(var(--default-grid-baseline) * 4);
+	border: 2px dashed var(--color-border-dark);
+	border-radius: var(--border-radius-large);
+	background-color: var(--color-background-hover);
+	text-align: center;
+}
+
+.import-dropzone__icon {
+	color: var(--color-primary-element);
+}
+
+.import-dropzone__title {
+	margin: 0;
+	font-weight: bold;
+}
+
+.import-dropzone__hint {
+	margin: 0;
+	color: var(--color-text-maxcontrast);
+}
+
+.import-actions {
 	display: flex;
 	justify-content: flex-end;
+	margin-block: calc(var(--default-grid-baseline) * 3);
 }
 
-.container {
-	padding-inline: 25px;
-	margin-block: 50px;
-}
-
-.files-table-name-wrong > span {
-	color: #ff0000 !important;
-}
-
-.files-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.files-table-td-name{
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	max-width: 75ch;
-}
-
-.files-table-td-name span {
-	float: left;
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	max-width: calc(100% - 10%);
-}
-
-.files-table-name {
-	color: var(--color-main-text);
-}
-
-.files-table-extension {
-	color: var(--color-text-maxcontrast);
-}
-
-.files-table-tr {
-	color: var(--color-text-maxcontrast);
-	border-bottom: 1px solid var(--color-border);
-}
-
-.files-table-tr > td {
-	height: 55px;
-}
-
-.files-table-remove-button {
-	text-align: -webkit-right;
-}
-
-.files-list__row-icon {
-	position: relative;
-	display: flex;
-	overflow: visible;
-	align-items: center;
-	flex: 0 0 32px;
-	justify-content: center;
-	width: 32px;
-	height: 100%;
-	margin-right: var(--checkbox-padding);
-	color: var(--color-primary-element);
+.import-files {
+	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 </style>
