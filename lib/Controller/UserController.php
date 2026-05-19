@@ -8,12 +8,12 @@ declare(strict_types=1);
  * This controller handles user-related API endpoints including user information
  * retrieval, updates, and authentication with comprehensive security measures.
  *
- * @category  Controller
- * @package   OpenConnector
- * @author    Conduction <info@conduction.nl>
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   1.0.0
- * @link      https://github.com/ConductionNL/opencatalogi
+ * @category Controller
+ * @package  OpenConnector
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version  1.0.0
+ * @link     https://github.com/ConductionNL/opencatalogi
  */
 
 namespace OCA\OpenConnector\Controller;
@@ -53,6 +53,7 @@ use Psr\Log\LoggerInterface;
  */
 class UserController extends Controller
 {
+
     /**
      * User manager for user operations
      *
@@ -115,25 +116,25 @@ class UserController extends Controller
      * Initializes the controller with required dependencies for user management
      * and authentication operations.
      *
-     * @param string $appName The name of the app
-     * @param IRequest $request The request object for handling HTTP requests
-     * @param IUserManager $userManager The user manager for user operations
-     * @param IUserSession $userSession The user session manager
-     * @param AuthorizationService $authorizationService The authorization service
-     * @param ICacheFactory $cacheFactory The cache factory for rate limiting
-     * @param LoggerInterface $logger The logger for security events
-     * @param UserService $userService The user service for user-related operations
+     * @param string                    $appName                   The name of the app
+     * @param IRequest                  $request                   The request object for handling HTTP requests
+     * @param IUserManager              $userManager               The user manager for user operations
+     * @param IUserSession              $userSession               The user session manager
+     * @param AuthorizationService      $authorizationService      The authorization service
+     * @param ICacheFactory             $cacheFactory              The cache factory for rate limiting
+     * @param LoggerInterface           $logger                    The logger for security events
+     * @param UserService               $userService               The user service for user-related operations
      * @param OrganisationBridgeService $organisationBridgeService The organization bridge service
      *
-     * @psalm-param string $appName
-     * @psalm-param IRequest $request
-     * @psalm-param IUserManager $userManager
-     * @psalm-param IUserSession $userSession
-     * @psalm-param AuthorizationService $authorizationService
-     * @psalm-param ICacheFactory $cacheFactory
-     * @psalm-param LoggerInterface $logger
-     * @psalm-param UserService $userService
-     * @psalm-param OrganisationBridgeService $organisationBridgeService
+     * @psalm-param   string $appName
+     * @psalm-param   IRequest $request
+     * @psalm-param   IUserManager $userManager
+     * @psalm-param   IUserSession $userSession
+     * @psalm-param   AuthorizationService $authorizationService
+     * @psalm-param   ICacheFactory $cacheFactory
+     * @psalm-param   LoggerInterface $logger
+     * @psalm-param   UserService $userService
+     * @psalm-param   OrganisationBridgeService $organisationBridgeService
      * @phpstan-param string $appName
      * @phpstan-param IRequest $request
      * @phpstan-param IUserManager $userManager
@@ -157,15 +158,15 @@ class UserController extends Controller
         IL10N $l
     ) {
         parent::__construct($appName, $request);
-        $this->userManager = $userManager;
-        $this->userSession = $userSession;
+        $this->userManager          = $userManager;
+        $this->userSession          = $userSession;
         $this->authorizationService = $authorizationService;
-        $this->securityService = new SecurityService($cacheFactory, $logger);
-        $this->userService = $userService;
+        $this->securityService      = new SecurityService($cacheFactory, $logger);
+        $this->userService          = $userService;
         $this->organisationBridgeService = $organisationBridgeService;
         $this->logger = $logger;
-        $this->l = $l;
-    }
+        $this->l      = $l;
+    }//end __construct()
 
     /**
      * Get current user information as JSON object
@@ -178,7 +179,7 @@ class UserController extends Controller
      *
      * @return JSONResponse A JSON response containing the current user's information
      *
-     * @psalm-return JSONResponse
+     * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      */
     public function me(): JSONResponse
@@ -208,8 +209,8 @@ class UserController extends Controller
                 statusCode: 500
             );
             return $this->securityService->addSecurityHeaders($response);
-        }
-    }
+        }//end try
+    }//end me()
 
     /**
      * Update current user information from JSON object
@@ -222,7 +223,7 @@ class UserController extends Controller
      *
      * @return JSONResponse A JSON response containing the updated user information
      *
-     * @psalm-return JSONResponse
+     * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      */
     public function updateMe(): JSONResponse
@@ -241,7 +242,7 @@ class UserController extends Controller
             }
 
             // Get and sanitize the request data to prevent XSS
-            $data = $this->request->getParams();
+            $data          = $this->request->getParams();
             $sanitizedData = $this->securityService->sanitizeInput($data);
 
             // Remove system parameters that shouldn't be updated
@@ -272,8 +273,8 @@ class UserController extends Controller
                 statusCode: 500
             );
             return $this->securityService->addSecurityHeaders($response);
-        }
-    }
+        }//end try
+    }//end updateMe()
 
     /**
      * Login a user based on username and password combination
@@ -293,7 +294,7 @@ class UserController extends Controller
      *
      * @return JSONResponse A JSON response containing login result and user information
      *
-     * @psalm-return JSONResponse
+     * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      */
     public function login(): JSONResponse
@@ -301,7 +302,7 @@ class UserController extends Controller
         try {
             // MEMORY MONITORING: Check initial memory usage to prevent OOM
             $initialMemoryUsage = memory_get_usage(true);
-            $memoryLimit = ini_get('memory_limit');
+            $memoryLimit        = ini_get('memory_limit');
 
             // Convert memory limit to bytes for comparison
             $memoryLimitBytes = $this->convertToBytes($memoryLimit);
@@ -332,8 +333,8 @@ class UserController extends Controller
             }
 
             $credentials = $credentialValidation['credentials'];
-            $username = $credentials['username'];
-            $password = $credentials['password'];
+            $username    = $credentials['username'];
+            $password    = $credentials['password'];
 
             // Check rate limiting before attempting authentication
             $rateLimitCheck = $this->securityService->checkLoginRateLimit($username, $clientIp);
@@ -345,9 +346,9 @@ class UserController extends Controller
 
                 $response = new JSONResponse(
                     data: [
-                        'error' => $rateLimitCheck['reason'],
-                        'retry_after' => $rateLimitCheck['delay'] ?? null,
-                        'lockout_until' => $rateLimitCheck['lockout_until'] ?? null
+                        'error'         => $rateLimitCheck['reason'],
+                        'retry_after'   => $rateLimitCheck['delay'] ?? null,
+                        'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
                     ],
                     statusCode: 429 // Too Many Requests
                 );
@@ -392,26 +393,31 @@ class UserController extends Controller
             $userData = $this->userService->buildUserDataArray($user);
 
             // MEMORY MONITORING: Check memory usage after building user data
-            $finalMemoryUsage = memory_get_usage(true);
+            $finalMemoryUsage    = memory_get_usage(true);
             $memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
 
             // Log memory usage for monitoring
             if ($memoryIncreaseBytes > 10 * 1024 * 1024) { // 10MB threshold
-                $this->logger->warning('High memory usage during login', [
-                    'user' => $user->getUID(),
-                    'initial_memory' => $initialMemoryUsage,
-                    'final_memory' => $finalMemoryUsage,
-                    'increase_bytes' => $memoryIncreaseBytes,
-                    'increase_mb' => round($memoryIncreaseBytes / (1024 * 1024), 2)
-                ]);
+                $this->logger->warning(
+                        'High memory usage during login',
+                        [
+                            'user'           => $user->getUID(),
+                            'initial_memory' => $initialMemoryUsage,
+                            'final_memory'   => $finalMemoryUsage,
+                            'increase_bytes' => $memoryIncreaseBytes,
+                            'increase_mb'    => round($memoryIncreaseBytes / (1024 * 1024), 2),
+                        ]
+                        );
             }
 
             // Create successful response with security headers
-            $response = new JSONResponse([
-                'message' => $this->l->t('Login successful'),
-                'user' => $userData,
-                'session_created' => true
-            ]);
+            $response = new JSONResponse(
+                    [
+                        'message'         => $this->l->t('Login successful'),
+                        'user'            => $userData,
+                        'session_created' => true,
+                    ]
+                    );
 
             return $this->securityService->addSecurityHeaders($response);
         } catch (\Exception $e) {
@@ -421,8 +427,8 @@ class UserController extends Controller
                 statusCode: 500
             );
             return $this->securityService->addSecurityHeaders($response);
-        }
-    }
+        }//end try
+    }//end login()
 
     /**
      * Convert PHP memory limit string to bytes
@@ -430,12 +436,12 @@ class UserController extends Controller
      * This helper method converts PHP memory limit strings (like "128M", "1G")
      * to bytes for memory usage comparisons.
      *
-     * @param string $memoryLimit The memory limit string from PHP ini
+     * @param  string $memoryLimit The memory limit string from PHP ini
      * @return int The memory limit in bytes, or 0 if unlimited
      *
-     * @psalm-param string $memoryLimit
-     * @psalm-return int
-     * @phpstan-param string $memoryLimit
+     * @psalm-param    string $memoryLimit
+     * @psalm-return   int
+     * @phpstan-param  string $memoryLimit
      * @phpstan-return int
      */
     private function convertToBytes(string $memoryLimit): int
@@ -447,8 +453,8 @@ class UserController extends Controller
 
         // Convert the memory limit to bytes
         $memoryLimit = trim($memoryLimit);
-        $last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
-        $value = (int) $memoryLimit;
+        $last        = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+        $value       = (int) $memoryLimit;
 
         switch ($last) {
             case 'g':
@@ -462,7 +468,7 @@ class UserController extends Controller
         }
 
         return $value;
-    }
+    }//end convertToBytes()
 
     /**
      * Logs out the user on the active user session
@@ -470,11 +476,12 @@ class UserController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
-     * @return JSONResponse
+     * @return          JSONResponse
      */
-    public function logout(): JSONResponse {
+    public function logout(): JSONResponse
+    {
         $this->userSession->logout();
 
         return new JSONResponse(['logout' => true]);
-    }
-}
+    }//end logout()
+}//end class

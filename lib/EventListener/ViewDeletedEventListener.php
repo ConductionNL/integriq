@@ -29,17 +29,15 @@ use Psr\Log\LoggerInterface;
  */
 class ViewDeletedEventListener implements IEventListener
 {
-
-	public function __construct(
-		private readonly LoggerInterface $logger,
+    public function __construct(
+        private readonly LoggerInterface $logger,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly ObjectService $objectService,
-    )
-	{
-	}
+    ) {
+    }//end __construct()
 
-	/**
+    /**
      * @inheritDoc
      */
     public function handle(Event $event): void
@@ -49,7 +47,6 @@ class ViewDeletedEventListener implements IEventListener
             return;
         }
 
-
         // lets make sure that we have the proper register and schema
         $object = $event->getObject();
         if (($register = $this->registerMapper->find($object->getRegister()))->getSlug() !== 'vng-gemma' || $this->schemaMapper->find($object->getSchema())->getSlug() !== 'view') {
@@ -58,16 +55,15 @@ class ViewDeletedEventListener implements IEventListener
 
         $identifier = $object->jsonSerialize()['identifier'];
 
-
-        $schema = $this->schemaMapper->find('extendview');
+        $schema       = $this->schemaMapper->find('extendview');
         $openregister = $this->objectService->getOpenRegisters();
 
         $extendedViews = $openregister->findAll(['filters' => ['register' => $register->getId(), 'schema' => $schema->getId(), 'identifier' => $identifier]]);
 
-        foreach($extendedViews as $extendedView) {
+        foreach ($extendedViews as $extendedView) {
             $openregister->delete($extendedView);
         }
 
         // Now we can do our update magic by using the SoftwareCatalogueService or it might be called from a rule
-    }
-}
+    }//end handle()
+}//end class
