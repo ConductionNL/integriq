@@ -20,49 +20,53 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241206095007 extends SimpleMigrationStep {
+class Version1Date20241206095007 extends SimpleMigrationStep
+{
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end preSchemaChange()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+    /**
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /**
+         * @var ISchemaWrapper $schema
+         */
+        $schema = $schemaClosure();
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
-		 * @var ISchemaWrapper $schema
-		 */
-		$schema = $schemaClosure();
+        if ($schema->hasTable('openconnector_sources') === true) {
+            $table = $schema->getTable('openconnector_sources');
 
-		if ($schema->hasTable('openconnector_sources') === true) {
-			$table = $schema->getTable('openconnector_sources');
+            if ($table->hasColumn('logRetention') === true) {
+                $table->dropColumn('logRetention');
+                $table->addColumn('log_retention', Types::INTEGER)->setNotnull(false)->setDefault(3600);
+            }
 
-			if ($table->hasColumn('logRetention') === true) {
-				$table->dropColumn('logRetention');
-				$table->addColumn('log_retention', Types::INTEGER)->setNotnull(false)->setDefault(3600);
-			}
-			if ($table->hasColumn('errorRetention') === true) {
-				$table->dropColumn('errorRetention');
-				$table->addColumn('error_retention', Types::INTEGER)->setNotnull(false)->setDefault(86400);
-			}
-		}
+            if ($table->hasColumn('errorRetention') === true) {
+                $table->dropColumn('errorRetention');
+                $table->addColumn('error_retention', Types::INTEGER)->setNotnull(false)->setDefault(86400);
+            }
+        }
 
-		return $schema;
-	}
+        return $schema;
+    }//end changeSchema()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end postSchemaChange()
+}//end class

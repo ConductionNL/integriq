@@ -37,8 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class MetricsController extends Controller
 {
-
-
     /**
      * MetricsController constructor.
      *
@@ -58,7 +56,6 @@ class MetricsController extends Controller
         parent::__construct($appName, $request);
 
     }//end __construct()
-
 
     /**
      * Expose Prometheus metrics.
@@ -111,7 +108,6 @@ class MetricsController extends Controller
 
     }//end index()
 
-
     /**
      * Collect source metrics grouped by type.
      *
@@ -154,7 +150,6 @@ class MetricsController extends Controller
 
     }//end collectSourceMetrics()
 
-
     /**
      * Collect call log metrics grouped by status code.
      *
@@ -192,7 +187,6 @@ class MetricsController extends Controller
 
     }//end collectCallMetrics()
 
-
     /**
      * Collect synchronization metrics grouped by status.
      *
@@ -206,7 +200,7 @@ class MetricsController extends Controller
         $lines[] = '# TYPE openconnector_synchronizations_total gauge';
 
         try {
-            $total = $this->countTable('openconnector_synchronizations');
+            $total   = $this->countTable('openconnector_synchronizations');
             $lines[] = 'openconnector_synchronizations_total '.$total;
         } catch (\Exception $e) {
             $this->logger->warning('Could not count synchronizations for metrics', ['exception' => $e->getMessage()]);
@@ -242,7 +236,6 @@ class MetricsController extends Controller
 
     }//end collectSyncMetrics()
 
-
     /**
      * Collect endpoint metrics.
      *
@@ -266,7 +259,6 @@ class MetricsController extends Controller
         }
 
     }//end collectEndpointMetrics()
-
 
     /**
      * Collect job queue metrics.
@@ -319,7 +311,6 @@ class MetricsController extends Controller
 
     }//end collectJobMetrics()
 
-
     /**
      * Collect mapping and rule metrics.
      *
@@ -356,7 +347,6 @@ class MetricsController extends Controller
 
     }//end collectMappingRuleMetrics()
 
-
     /**
      * Count rows in a given table.
      *
@@ -377,6 +367,4 @@ class MetricsController extends Controller
         return $count;
 
     }//end countTable()
-
-
 }//end class
