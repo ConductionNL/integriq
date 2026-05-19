@@ -87,5 +87,10 @@
     "typescript": "^5.5.4",
     "vue-eslint-parser": "^10.2.0",
     "vue-jest": "^3.0.7"
+  },
+  "overrides": {
+    "@vue/test-utils": {
+      "vue": "$vue"
+    }
   }
 }
