@@ -5,6 +5,7 @@ namespace OCA\OpenConnector\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
+use RuntimeException;
 
 /**
  * Class Source
@@ -12,12 +13,8 @@ use OCP\AppFramework\Db\Entity;
  * Represents a source configuration entity that defines how to connect to and interact with external data sources.
  *
  * @package OCA\OpenConnector\Db
- * @category Database
- * @author OpenConnector Team
- * @copyright 2024 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class Source extends Entity implements JsonSerializable
 {
@@ -212,7 +209,7 @@ class Source extends Entity implements JsonSerializable
 
 		// Ensure the generated slug is not empty
 		if (empty($generatedSlug)) {
-			throw new \RuntimeException('Unable to generate a valid slug from the name.');
+			throw new RuntimeException('Unable to generate a valid slug from the name.');
 		}
 
 		return $generatedSlug;

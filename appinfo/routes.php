@@ -14,6 +14,14 @@ return [
 	],
 	'routes' => [
 		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+
+		// Metrics and health
+		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
+		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+
+		// DSO / Omgevingsloket STAM koppelvlak
+		['name' => 'dso#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+
 		['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
 		['name' => 'dashboard#getCallStats', 'url' => '/api/dashboard/callstats', 'verb' => 'GET'],
 		['name' => 'dashboard#getJobStats', 'url' => '/api/dashboard/jobstats', 'verb' => 'GET'],
@@ -116,5 +124,7 @@ return [
 		['name' => 'ui#cloudEventsEventsId', 'url' => '/cloud-events/events/{id}', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
 		['name' => 'ui#import', 'url' => '/import', 'verb' => 'GET'],
+		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
+		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
 	],
 ];

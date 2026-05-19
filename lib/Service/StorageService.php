@@ -27,6 +27,12 @@ use OCP\IUserSession;
 use OCP\Lock\LockedException;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class StorageService
 {
     private ICache $cache;

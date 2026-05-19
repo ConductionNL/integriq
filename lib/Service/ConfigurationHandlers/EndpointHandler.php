@@ -18,6 +18,10 @@ use OCP\AppFramework\Db\Entity;
  * @license AGPL-3.0
  * @version 1.0.0
  * @link https://github.com/OpenConnector/openconnector
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.MissingImport)
  */
 class EndpointHandler implements ConfigurationHandlerInterface
 {
@@ -62,19 +66,11 @@ class EndpointHandler implements ConfigurationHandlerInterface
                     if (str_contains($endpointArray['targetId'], '/')) {
                         [$registerId, $schemaId] = explode('/', $endpointArray['targetId']);
 
-                        // Map register ID to slug
-                        if (isset($mappings['register']['idToSlug'][$registerId])) {
-                            $registerSlug = $mappings['register']['idToSlug'][$registerId];
-                        } else {
-                            $registerSlug = $registerId; // Fallback to original ID if no mapping found.
-                        }
+                        // Map register ID to slug (fallback to original ID if no mapping found)
+                        $registerSlug = $mappings['register']['idToSlug'][$registerId] ?? $registerId;
 
-                        // Map schema ID to slug
-                        if (isset($mappings['schema']['idToSlug'][$schemaId])) {
-                            $schemaSlug = $mappings['schema']['idToSlug'][$schemaId];
-                        } else {
-                            $schemaSlug = $schemaId; // Fallback to original ID if no mapping found.
-                        }
+                        // Map schema ID to slug (fallback to original ID if no mapping found)
+                        $schemaSlug = $mappings['schema']['idToSlug'][$schemaId] ?? $schemaId;
 
                         // Combine the slugs
                         $endpointArray['targetId'] = $registerSlug . '/' . $schemaSlug;
@@ -131,19 +127,11 @@ class EndpointHandler implements ConfigurationHandlerInterface
                     if (str_contains($data['targetId'], '/')) {
                         [$registerSlug, $schemaSlug] = explode('/', $data['targetId']);
 
-                        // Map register slug to ID
-                        if (isset($mappings['register']['slugToId'][$registerSlug])) {
-                            $registerId = $mappings['register']['slugToId'][$registerSlug];
-                        } else {
-                            $registerId = $registerSlug; // Fallback to original slug if no mapping found.
-                        }
+                        // Map register slug to ID (fallback to original slug if no mapping found)
+                        $registerId = $mappings['register']['slugToId'][$registerSlug] ?? $registerSlug;
 
-                        // Map schema slug to ID
-                        if (isset($mappings['schema']['slugToId'][$schemaSlug])) {
-                            $schemaId = $mappings['schema']['slugToId'][$schemaSlug];
-                        } else {
-                            $schemaId = $schemaSlug; // Fallback to original slug if no mapping found.
-                        }
+                        // Map schema slug to ID (fallback to original slug if no mapping found)
+                        $schemaId = $mappings['schema']['slugToId'][$schemaSlug] ?? $schemaSlug;
 
                         // Combine the IDs.
                         $data['targetId'] = $registerId . '/' . $schemaId;

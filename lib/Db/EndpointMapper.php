@@ -7,11 +7,17 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
 
-	/**
-	 * Mapper class for handling Endpoint database operations
-	 */
+/**
+ * Mapper class for handling Endpoint database operations
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class EndpointMapper extends QBMapper
 {
 	/**
@@ -49,12 +55,14 @@ class EndpointMapper extends QBMapper
 					$qb->expr()->eq('id', $qb->createNamedParameter($id))
 				)
 			);
-		} else {
-			// For numeric values, search in id column
-			$qb->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-			);
+
+			return $this->findEntity(query: $qb);
 		}
+
+		// For numeric values, search in id column
+		$qb->where(
+			$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+		);
 
 		return $this->findEntity(query: $qb);
 	}
@@ -82,6 +90,9 @@ class EndpointMapper extends QBMapper
 	 * @param array<string,mixed> $searchParams Array of parameters for the search conditions
 	 * @param array<string,array<string>> $ids Array of IDs to search for, keyed by type ('id', 'uuid', or 'slug')
 	 * @return array<Endpoint> Array of Endpoint entities
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function findAll(
 		?int $limit = null,
@@ -123,11 +134,13 @@ class EndpointMapper extends QBMapper
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
 		if (empty($searchConditions) === false) {
@@ -150,7 +163,7 @@ class EndpointMapper extends QBMapper
 		// Replace only the LAST occurrence of "(/([^/]+))?#" with "(?:/([^/]+))?$#"
 		$regex = preg_replace_callback(
 			'/\(\/\(\[\^\/\]\+\)\)\?#/',
-			function ($matches) {
+			function () {
 				return '(?:/([^/]+))?$#';
 			},
 			$regex,
@@ -304,7 +317,7 @@ class EndpointMapper extends QBMapper
     {
         // Validate that at least one parameter is provided
         if ($registerId === null && $schemaId === null) {
-            throw new \InvalidArgumentException('Either registerId or schemaId must be provided');
+            throw new InvalidArgumentException('Either registerId or schemaId must be provided');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -321,17 +334,21 @@ class EndpointMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->eq('target_id', $qb->createNamedParameter($registerId . '/' . $schemaId))
             );
-        } elseif ($registerId !== null) {
+            return $this->findEntities($qb);
+        }
+
+        if ($registerId !== null) {
             // Only register is provided - match any schema
             $qb->andWhere(
                 $qb->expr()->like('target_id', $qb->createNamedParameter($registerId . '/%'))
             );
-        } else {
-            // Only schema is provided - match any register
-            $qb->andWhere(
-                $qb->expr()->like('target_id', $qb->createNamedParameter('%/' . $schemaId))
-            );
+            return $this->findEntities($qb);
         }
+
+        // Only schema is provided - match any register
+        $qb->andWhere(
+            $qb->expr()->like('target_id', $qb->createNamedParameter('%/' . $schemaId))
+        );
 
         return $this->findEntities($qb);
     }

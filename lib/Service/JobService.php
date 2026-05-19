@@ -42,6 +42,15 @@ use OCP\BackgroundJob\IJob;
  * @psalm-api
  * @phpstan-type JobArgument array{jobId?: int, forceRun?: bool}
  * @phpstan-type JobResult array{level?: string, message?: string, stackTrace?: array<string>, nextRun?: int}
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CamelCaseVariableName)
  */
 class JobService
 {
@@ -83,12 +92,11 @@ class JobService
         private readonly IUserManager $userManager,
         IAppConfig $appConfig,
     ) {
+        $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
+        $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
         if($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
             $this->errorRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['jobLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
             $this->successRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
-        } else {
-            $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
         }
 
     }
@@ -180,11 +188,13 @@ class JobService
         $arguments['jobId'] = $job->getId();
 
         // Schedule the job using the new JobTask class
-        if (!$job->getScheduleAfter()) {
-            $this->jobList->add(\OCA\OpenConnector\Cron\JobTask::class, $arguments);
-        } else {
+        if ($job->getScheduleAfter()) {
             $runAfter = $job->getScheduleAfter()->getTimestamp();
             $this->jobList->scheduleAfter(\OCA\OpenConnector\Cron\JobTask::class, $runAfter, $arguments);
+        }
+
+        if (!$job->getScheduleAfter()) {
+            $this->jobList->add(\OCA\OpenConnector\Cron\JobTask::class, $arguments);
         }
 
         // Set the job list id

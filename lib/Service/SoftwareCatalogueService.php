@@ -25,6 +25,11 @@ use function React\Promise\all;
  * @license  AGPL-3.0-or-later
  * @author   Conduction b.v.
  * @link     https://github.com/ConductionNL/OpenConnector
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
  */
 class SoftwareCatalogueService
 {
@@ -233,21 +238,22 @@ class SoftwareCatalogueService
                 $node['element'] = $element;
 
                 // Check if the node has nested nodes that need to be extended.
-                if (isset($node['nodes']) && is_array($node['nodes'])) {
-                    // Process nested nodes in parallel.
-                    $nestedPromises = array_map([$this, 'extendNode'], $node['nodes']);
-
-                    all($nestedPromises)
-                        ->then(function (array $extendedNestedNodes) use ($node, $resolve) {
-                            $node['nodes'] = $extendedNestedNodes;
-                            $resolve($node);
-                        })
-                        ->otherwise(function ($error) use ($reject) {
-                            $reject($error);
-                        });
-                } else {
+                if (!isset($node['nodes']) || !is_array($node['nodes'])) {
                     $resolve($node);
+                    return;
                 }
+
+                // Process nested nodes in parallel.
+                $nestedPromises = array_map([$this, 'extendNode'], $node['nodes']);
+
+                all($nestedPromises)
+                    ->then(function (array $extendedNestedNodes) use ($node, $resolve) {
+                        $node['nodes'] = $extendedNestedNodes;
+                        $resolve($node);
+                    })
+                    ->otherwise(function ($error) use ($reject) {
+                        $reject($error);
+                    });
             } catch (\Exception $e) {
                 $this->logger->error('Failed to extend node: ' . $e->getMessage(), [
                     'exception' => $e,

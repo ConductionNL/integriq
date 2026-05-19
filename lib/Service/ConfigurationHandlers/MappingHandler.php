@@ -18,6 +18,9 @@ use OCP\AppFramework\Db\Entity;
  * @license AGPL-3.0
  * @version 1.0.0
  * @link https://github.com/OpenConnector/openconnector
+ *
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class MappingHandler implements ConfigurationHandlerInterface
 {

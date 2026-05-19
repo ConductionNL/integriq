@@ -230,21 +230,23 @@ export default {
 
 <style scoped>
 .content {
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+	text-align: left;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
+
 .result {
-    color: var(--color-main-text);
-    background-color: var(--color-main-background);
-    min-width: 0;
-    border-radius: var(--border-radius-large);
-    box-shadow: 0 0 10px var(--color-box-shadow);
-    height: fit-content;
-    padding: 15px;
-    margin: 20px 0.5rem;
+	color: var(--color-main-text);
+	background-color: var(--color-main-background);
+	min-width: 0;
+	border-radius: var(--border-radius-large);
+	box-shadow: 0 0 10px var(--color-box-shadow);
+	height: fit-content;
+	padding: 15px;
+	margin: 20px 0.5rem;
 }
+
 .result pre {
 	white-space: pre-wrap;
 	word-break: break-word;
@@ -254,50 +256,57 @@ export default {
 .valid {
 	color: var(--color-success);
 }
+
 .invalid {
 	color: var(--color-error);
 }
+
 .validation-errors {
-    margin-block-start: 0.5rem;
-    overflow-x: auto;
-    width: 100%;
+	margin-block-start: 0.5rem;
+	overflow-x: auto;
+	width: 100%;
 }
+
 .validation-errors table {
-    border: 1px solid grey;
-    border-collapse: collapse;
+	border: 1px solid grey;
+	border-collapse: collapse;
 }
+
 .validation-errors th, .validation-errors td {
-    border: 1px solid grey;
-    padding: 8px;
+	border: 1px solid grey;
+	padding: 8px;
 }
 
 .v-select {
-    min-width: auto;
-    width: 100%;
+	min-width: auto;
+	width: 100%;
 }
 
 /* custom select option */
 .custom-select-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
+
 .custom-select-option > .material-design-icon {
-    margin-block-start: 2px;
+	margin-block-start: 2px;
 }
+
 .custom-select-option > h6 {
-    line-height: 0.8;
+	line-height: 0.8;
 }
 /* truncate long option labels/descriptions */
 .custom-select-option > span {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
 }
+
 .custom-select-option > span h6,
 .custom-select-option > span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 </style>

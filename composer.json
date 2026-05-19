@@ -95,12 +95,15 @@
 		"phpunit/phpunit": "^10.5",
 		"roave/security-advisories": "dev-latest",
 		"squizlabs/php_codesniffer": "^3.9",
+		"cyclonedx/cyclonedx-php-composer": "^6.2",
 		"vimeo/psalm": "^5.26"
 	},
 	"config": {
 		"allow-plugins": {
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
+			"cyclonedx/cyclonedx-php-composer": true,
+			"phpro/grumphp": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
 		"optimize-autoloader": true,

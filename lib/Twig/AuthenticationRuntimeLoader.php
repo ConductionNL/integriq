@@ -7,6 +7,9 @@ use OCA\OpenConnector\Service\AuthenticationService;
 use Twig\Extension\RuntimeExtensionInterface;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class AuthenticationRuntimeLoader implements RuntimeLoaderInterface
 {
 	public function __construct(

@@ -25,6 +25,10 @@ use Symfony\Component\Yaml\Yaml;
  * This service enables exporting database entities as files in various formats,
  * determined by the `Accept` header of the request. It retrieves the appropriate
  * data from mappers and generates responses or downloadable files.
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.ExitExpression)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class ExportService
 {
@@ -94,10 +98,8 @@ class ExportService
 	{
 		$objectArray = $object->jsonSerialize();
 
-		if (empty($objectArray['reference']) === false) {
-			$url = $objectArray['reference'];
-		} else {
-			$url = $objectArray['reference'] = $this->urlGenerator->getAbsoluteURL(
+		if (empty($objectArray['reference']) === true) {
+			$objectArray['reference'] = $this->urlGenerator->getAbsoluteURL(
 				url: $this->urlGenerator->linkToRoute(
 					routeName: 'openconnector.'.ucfirst($objectType).'s.show',
 					arguments: ['id' => $object->getId()]
@@ -110,6 +112,8 @@ class ExportService
 			// Make sure we update the reference of this object if it wasn't set yet.
 			$mapper->updateFromArray(id: $object->getId(), object: $objectArray);
 		}
+
+		$url = $objectArray['reference'];
 
 		// Prepare Json-LD default properties.
 		$jsonLdDefault = [

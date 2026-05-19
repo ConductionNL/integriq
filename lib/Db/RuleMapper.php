@@ -15,6 +15,10 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenConnector\Db
  */
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 class RuleMapper extends QBMapper
 {
 	/**
@@ -50,12 +54,14 @@ class RuleMapper extends QBMapper
 					$qb->expr()->eq('id', $qb->createNamedParameter($id))
 				)
 			);
-		} else {
-			// For numeric values, search in id column
-			$qb->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-			);
+
+			return $this->findEntity($qb);
 		}
+
+		// For numeric values, search in id column
+		$qb->where(
+			$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+		);
 
 		return $this->findEntity($qb);
 	}
@@ -89,6 +95,9 @@ class RuleMapper extends QBMapper
 	 * @param array<string,mixed> $searchParams Array of parameters for the search conditions
 	 * @param array<string,array<string>> $ids Array of IDs to search for, keyed by type ('id', 'uuid', or 'slug')
 	 * @return array<Rule> Array of Rule entities
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	public function findAll(
 		?int $limit = null,
@@ -131,11 +140,13 @@ class RuleMapper extends QBMapper
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
 		if (empty($searchConditions) === false) {

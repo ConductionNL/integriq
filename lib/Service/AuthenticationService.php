@@ -28,6 +28,11 @@ use Twig\Loader\ArrayLoader;
  * Service class for handling authentication on other services.
  *
  * @todo We should test the effect of @Authors & @Package(s) in Class doc-blocks. And add them if possible.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UndefinedVariable)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class AuthenticationService
 {

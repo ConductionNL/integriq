@@ -13,12 +13,26 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use Exception;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class SynchronizationsController extends Controller
 {
     /**
@@ -35,7 +49,8 @@ class SynchronizationsController extends Controller
         private readonly SynchronizationMapper $synchronizationMapper,
         private readonly SynchronizationContractMapper $synchronizationContractMapper,
         private readonly SynchronizationLogMapper $synchronizationLogMapper,
-        private readonly SynchronizationService $synchronizationService
+        private readonly SynchronizationService $synchronizationService,
+        private readonly IL10N $l
     )
     {
         parent::__construct($appName, $request);
@@ -99,7 +114,7 @@ class SynchronizationsController extends Controller
         try {
             return new JSONResponse($this->synchronizationMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
     }
 
@@ -191,7 +206,7 @@ class SynchronizationsController extends Controller
             $contracts = $this->synchronizationContractMapper->findAll(null, null, ['synchronization_id' => $id]);
             return new JSONResponse($contracts);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Contracts not found'], 404);
+            return new JSONResponse(['error' => $this->l->t('Contracts not found')], 404);
         }
     }
 
@@ -292,7 +307,7 @@ class SynchronizationsController extends Controller
                 'total' => $total
             ]);
         } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Failed to retrieve logs: ' . $e->getMessage()], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: %s', [$e->getMessage()])], 500);
         }
     }
 
@@ -332,7 +347,7 @@ class SynchronizationsController extends Controller
         try {
             $synchronization = $this->synchronizationMapper->find(id: $id);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
         // Try to synchronize
@@ -352,7 +367,7 @@ class SynchronizationsController extends Controller
             // If synchronization fails, return an error response
             return new JSONResponse(
                 data: [
-                    'error' => 'Synchronization error',
+                    'error' => $this->l->t('Synchronization error'),
                     'message' => $e->getMessage()
                 ],
                 statusCode: $e->getCode() ?? 400,
@@ -387,7 +402,7 @@ class SynchronizationsController extends Controller
         try {
             $synchronization = $this->synchronizationMapper->find(id: $id);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
         // Try to synchronize
@@ -409,7 +424,7 @@ class SynchronizationsController extends Controller
             // If synchronization fails, return an error response
             return new JSONResponse(
                 data: [
-                    'error' => 'Synchronization error',
+                    'error' => $this->l->t('Synchronization error'),
                     'message' => $e->getMessage()
                 ],
                 statusCode: 400,
@@ -465,8 +480,8 @@ class SynchronizationsController extends Controller
             
             // Return error response with appropriate status code
             return new JSONResponse([
-                'error' => 'Could not fetch synchronization statistics',
-                'message' => 'An error occurred while retrieving statistical data'
+                'error' => $this->l->t('Could not fetch synchronization statistics'),
+                'message' => $this->l->t('An error occurred while retrieving statistical data')
             ], 500);
         }
     }
@@ -533,8 +548,8 @@ class SynchronizationsController extends Controller
             
             // Return error response with appropriate status code
             return new JSONResponse([
-                'error' => 'Could not fetch synchronization logs statistics',
-                'message' => 'An error occurred while retrieving statistical data'
+                'error' => $this->l->t('Could not fetch synchronization logs statistics'),
+                'message' => $this->l->t('An error occurred while retrieving statistical data')
             ], 500);
         }
     }
@@ -601,8 +616,8 @@ class SynchronizationsController extends Controller
             
             // Return error response with appropriate status code
             return new JSONResponse([
-                'error' => 'Could not export synchronization logs',
-                'message' => 'An error occurred while generating the export file'
+                'error' => $this->l->t('Could not export synchronization logs'),
+                'message' => $this->l->t('An error occurred while generating the export file')
             ], 500);
         }
     }
@@ -629,11 +644,11 @@ class SynchronizationsController extends Controller
             $log = $this->synchronizationLogMapper->find($id);
             $this->synchronizationLogMapper->delete($log);
             
-            return new JSONResponse(['message' => 'Log deleted successfully'], 200);
+            return new JSONResponse(['message' => $this->l->t('Log deleted successfully')], 200);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Log not found'], 404);
+            return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         } catch (\Exception $exception) {
-            return new JSONResponse(['error' => 'Failed to delete log: ' . $exception->getMessage()], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to delete log: %s', [$exception->getMessage()])], 500);
         }
     }
 

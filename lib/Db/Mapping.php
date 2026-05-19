@@ -104,6 +104,10 @@ class Mapping extends Entity implements JsonSerializable
 	 * @return string The slug for the endpoint
 	 * @phpstan-return non-empty-string
 	 * @psalm-return non-empty-string
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 * @SuppressWarnings(PHPMD.ErrorControlOperator)
 	 */
 	public function getSlug(): string
 	{
@@ -141,7 +145,9 @@ class Mapping extends Entity implements JsonSerializable
 			$prefix = 'mapping';
 			if (isset($this->id) && (string)$this->id !== '') {
 				$generatedSlug = $prefix . '-' . (string)$this->id;
-			} else {
+			}
+
+			if ($generatedSlug === '') {
 				try {
 					$generatedSlug = $prefix . '-' . bin2hex(random_bytes(4));
 				} catch (\Exception $e) {

@@ -9,6 +9,12 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ */
 class SourceMapper extends QBMapper
 {
 	public function __construct(IDBConnection $db)
@@ -41,12 +47,14 @@ class SourceMapper extends QBMapper
 					$qb->expr()->eq('id', $qb->createNamedParameter($id))
 				)
 			);
-		} else {
-			// For numeric values, search in id column
-			$qb->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-			);
+
+			return $this->findEntity(query: $qb);
 		}
+
+		// For numeric values, search in id column
+		$qb->where(
+			$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+		);
 
 		return $this->findEntity(query: $qb);
 	}
@@ -102,11 +110,13 @@ class SourceMapper extends QBMapper
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
 		if (empty($searchConditions) === false) {

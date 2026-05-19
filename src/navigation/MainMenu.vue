@@ -130,6 +130,11 @@
 					<FileImportOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem name="Settings" @click="$emit('open-settings')">
+				<template #icon>
+					<Cog :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
@@ -155,6 +160,7 @@ import MessageTextFastOutline from 'vue-material-design-icons/MessageTextFastOut
 import FileImportOutline from 'vue-material-design-icons/FileImportOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
 
 export default {
 	name: 'MainMenu',
@@ -177,6 +183,7 @@ export default {
 		FileImportOutline,
 		FileDocumentOutline,
 		TextBoxOutline,
+		Cog,
 	},
 	methods: {
 		handleNavigate(path) {

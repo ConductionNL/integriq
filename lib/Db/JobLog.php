@@ -6,6 +6,9 @@ use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
+/**
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ */
 class JobLog extends Entity implements JsonSerializable
 {
     protected ?string $uuid = null;

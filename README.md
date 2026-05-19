@@ -242,6 +242,12 @@ npm run test            # Jest unit tests
 | Data | PostgreSQL, MySQL 8.0+, or SQLite |
 | Quality | PHPCS, PHPMD, phpmetrics, Psalm, PHPStan, ESLint, Stylelint, Jest |
 
+## Support
+
+For support, contact us at [support@conduction.nl](mailto:support@conduction.nl).
+
+For a Service Level Agreement (SLA), contact [sales@conduction.nl](mailto:sales@conduction.nl).
+
 ## Documentation
 
 Full documentation is available at **[conductionnl.github.io/openconnector](https://conductionnl.github.io/openconnector/)**

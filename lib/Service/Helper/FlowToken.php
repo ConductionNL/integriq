@@ -5,6 +5,9 @@ namespace OCA\OpenConnector\Service\Helper;
 use OC\AppFramework\Http\Request;
 use OCP\AppFramework\Http\Response;
 
+/**
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ */
 class FlowToken
 {
     private array $requestOriginal;

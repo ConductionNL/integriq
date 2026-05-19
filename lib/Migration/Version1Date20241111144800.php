@@ -22,6 +22,8 @@ use OCP\IDBConnection;
  * creating the new columns and transferring old data to the new fields.
  * - Removal of old indexes related to sourceId and sourceHash
  * - Addition of new indexes for originId and synchronization_id fields
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241111144800 extends SimpleMigrationStep {
 

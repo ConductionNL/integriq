@@ -23,6 +23,13 @@ use Twig\Extension\RuntimeExtensionInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Uid\UuidV4;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ */
 class MappingRuntime implements RuntimeExtensionInterface
 {
 	public function __construct(
@@ -117,14 +124,20 @@ class MappingRuntime implements RuntimeExtensionInterface
 			$mappingObject->hydrate($mapping);
 
 			$mapping = $mappingObject;
-		} else if (is_string($mapping) === true || is_int($mapping) === true) {
-			if (is_string($mapping) === true && str_starts_with($mapping, 'http')) {
-				$mapping = $this->mappingMapper->findByRef($mapping)[0];
-			} else {
-				// If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
-				// In the future we should be able to find the mapping by uuid (string) as well.
-				$mapping = $this->mappingMapper->find($mapping);
-			}
+		}
+
+		if ((is_string($mapping) === true || is_int($mapping) === true)
+			&& is_string($mapping) === true && str_starts_with($mapping, 'http')
+		) {
+			$mapping = $this->mappingMapper->findByRef($mapping)[0];
+		}
+
+		if ((is_string($mapping) === true || is_int($mapping) === true)
+			&& !(is_string($mapping) === true && str_starts_with($mapping, 'http'))
+		) {
+			// If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
+			// In the future we should be able to find the mapping by uuid (string) as well.
+			$mapping = $this->mappingMapper->find($mapping);
 		}
 
 		return $this->mappingService->executeMapping(

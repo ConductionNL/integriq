@@ -7,6 +7,18 @@ use GuzzleHttp\Promise\Utils;
 use OCP\IURLGenerator;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.IfStatementAssignment)
+ * @SuppressWarnings(PHPMD.UndefinedVariable)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class SearchService
 {
     public $client;
@@ -34,12 +46,10 @@ class SearchService
 
 
 		foreach ($newAggregation as $value) {
+			$newAggregationMapped[$value['_id']] = $value['count'];
 			if (isset ($existingAggregationMapped[$value['_id']]) === true) {
 				$newAggregationMapped[$value['_id']] = $existingAggregationMapped[$value['_id']] + $value['count'];
-			} else {
-				$newAggregationMapped[$value['_id']] = $value['count'];
 			}
-
 		}
 
 
@@ -60,9 +70,10 @@ class SearchService
 		foreach ($newAggregations as $key => $aggregation) {
 			if (isset($existingAggregations[$key]) === false) {
 				$existingAggregations[$key] = $aggregation;
-			} else {
-				$existingAggregations[$key] = $this->mergeFacets($existingAggregations[$key], $aggregation);
+				continue;
 			}
+
+			$existingAggregations[$key] = $this->mergeFacets($existingAggregations[$key], $aggregation);
 		}
 		return $existingAggregations;
 	}
@@ -186,24 +197,26 @@ class SearchService
 	private function recursiveRequestQueryKey(array &$vars, string $name, string $nameKey, string $value): void
 	{
 		$matchesCount = preg_match(pattern: '/(\[[^[\]]*])/', subject: $name, matches:$matches);
-		if ($matchesCount > 0) {
-			$key  = $matches[0];
-			$name = str_replace(search: $key,  replace:'', subject: $name);
-			$key  = trim(string: $key, characters: '[]');
-			if (empty($key) === false) {
-				$vars[$nameKey] = ($vars[$nameKey] ?? []);
-				$this->recursiveRequestQueryKey(
-					vars: $vars[$nameKey],
-					name: $name,
-					nameKey: $key,
-					value: $value
-				);
-			} else {
-				$vars[$nameKey][] = $value;
-			}
-		} else {
+		if ($matchesCount <= 0) {
 			$vars[$nameKey] = $value;
+			return;
 		}
+
+		$key  = $matches[0];
+		$name = str_replace(search: $key,  replace:'', subject: $name);
+		$key  = trim(string: $key, characters: '[]');
+		if (empty($key) === true) {
+			$vars[$nameKey][] = $value;
+			return;
+		}
+
+		$vars[$nameKey] = ($vars[$nameKey] ?? []);
+		$this->recursiveRequestQueryKey(
+			vars: $vars[$nameKey],
+			name: $name,
+			nameKey: $key,
+			value: $value
+		);
 
 	}//end recursiveRequestQueryKey()
 

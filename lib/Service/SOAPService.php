@@ -36,6 +36,12 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
  * This class contains a basic SOAP client for communicating with SOAP Sources using a WSDL
  *
  * It manages the execution of SOAP requests using the Guzzle HTTP client for performing the actual HTTP requests.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class SOAPService
 {
@@ -67,7 +73,9 @@ class SOAPService
     {
         if (is_int($soapVersion) === true && $soapVersion > 0 && $soapVersion < 3) {
             return $soapVersion;
-        } else if (is_int($soapVersion)) {
+        }
+
+        if (is_int($soapVersion)) {
             throw new BadRequestHttpException(
                 message: 'improper configuration, only soap 1.1 and 1.2 are supported'
             );
@@ -162,8 +170,7 @@ class SOAPService
 
 		// 3. OPTIONAL: Validate against schema in the XML itself (or use an external .xsd file)
 		libxml_use_internal_errors(true);
-		if ($dom->schemaValidateSource($xmlString) === true) {
-		} else {
+		if ($dom->schemaValidateSource($xmlString) !== true) {
 			libxml_clear_errors();
 		}
 
@@ -197,12 +204,11 @@ class SOAPService
 	 */
     public function callSoapSource(Source $source, string $soapAction, array $config): Response
     {
+        $body = json_decode(json: $config['body'] ?? '{}', associative: true);
+        unset($config['body']);
         if (isset($config['json'])) {
             $body = $config['json'];
             unset($config['json']);
-        } else {
-            $body = json_decode(json: $config['body'], associative: true);
-            unset($config['body']);
         }
 
 
@@ -218,7 +224,9 @@ class SOAPService
         if (isset($body['edcLk01']['object']['inhoud']) === true) {
             if (is_array($body['edcLk01']['object']['inhoud']) === false) {
                 $body['edcLk01']['object']['inhoud'] = base64_decode($body['edcLk01']['object']['inhoud']);
-            } else if (isset($body['edcLk01']['object']['inhoud']['_']) === true) {
+            }
+
+            if (is_array($body['edcLk01']['object']['inhoud']) === true && isset($body['edcLk01']['object']['inhoud']['_']) === true) {
                 $body['edcLk01']['object']['inhoud']['_'] = base64_decode($body['edcLk01']['object']['inhoud']['_']);
             }
         }

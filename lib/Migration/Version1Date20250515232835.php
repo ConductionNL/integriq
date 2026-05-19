@@ -25,6 +25,8 @@ use OCP\Migration\SimpleMigrationStep;
  * @license AGPL-3.0
  * @version 1.0.0
  * @link https://github.com/OpenConnector/openconnector
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250515232835 extends SimpleMigrationStep {
 
@@ -160,8 +162,10 @@ class Version1Date20250515232835 extends SimpleMigrationStep {
 				// If slug is empty or null, use a default
 				if (empty($originalSlug)) {
 					$newSlug = 'item-' . $row['id'];
-				} else {
-					// Handle duplicate slugs
+				}
+
+				// Handle duplicate slugs
+				if (!empty($originalSlug)) {
 					while (isset($slugs[$newSlug])) {
 						$newSlug = $originalSlug . '-' . $counter;
 						$counter++;

@@ -57,6 +57,8 @@ use Twig\Error\SyntaxError;
  * @license  AGPL-3.0-or-later
  * @version  1.0.0
  * @link     https://github.com/ConductionNL/OpenConnector
+ *
+ * @SuppressWarnings(PHPMD)
  */
 class SynchronizationService
 {

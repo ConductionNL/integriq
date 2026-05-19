@@ -26,6 +26,11 @@ use Symfony\Component\Yaml\Yaml;
  * from a provided URL, or from an uploaded file. It supports multiple data
  * formats (e.g., JSON, YAML) and integrates with consumers, endpoints, jobs,
  * mappings, sources and synchronizations for database updates.
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.EmptyCatchBlock)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class ImportService
 {

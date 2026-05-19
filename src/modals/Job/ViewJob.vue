@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { jobStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -269,10 +270,6 @@ export default {
 
 .job-properties {
 	margin-bottom: 20px;
-}
-
-.tabPanel {
-	padding: 15px 0;
 }
 
 .selectedIcon {

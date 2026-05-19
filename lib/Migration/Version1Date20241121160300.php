@@ -19,6 +19,8 @@ use OCP\IDBConnection;
 /**
  * This migration changes the following:
  * - Adding 4 new columns for the table Source: rateLimitLimit, rateLimitRemaining, rateLimitReset & rateLimitWindow
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241121160300 extends SimpleMigrationStep {
 

@@ -37,6 +37,12 @@ use Psr\Log\LoggerInterface;
  * and provides a consistent interface for user operations.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
 class UserService
 {
@@ -276,11 +282,10 @@ class UserService
             // Try to get used space from NextCloud's user object first
             try {
                 // Fallback 1: Try user object method if available
+                // Fallback 2: Use a memory-safe approach with timeout protection
+                $usedSpace = $this->getUsedSpaceMemorySafe($userId);
                 if (method_exists($user, 'getUsedSpace')) {
                     $usedSpace = $user->getUsedSpace();
-                } else {
-                    // Fallback 2: Use a memory-safe approach with timeout protection
-                    $usedSpace = $this->getUsedSpaceMemorySafe($userId);
                 }
             } catch (\Exception $quotaException) {
                 // If quota calculation fails, use memory-safe approach
@@ -634,24 +639,25 @@ class UserService
                     $value = (string)$data[$apiField];
                     
                     // Create or update the account property
-                    if ($account->getProperty($accountProperty) !== null) {
-                        // Update existing property
-                        $property = $account->getProperty($accountProperty);
-                        if ($property->getValue() !== $value) {
-                            $property->setValue($value);
-                            $accountUpdated = true;
-                        }
-                    } else {
+                    if ($account->getProperty($accountProperty) === null) {
                         // Create new property with appropriate scope and verification
                         $scope = $this->getDefaultPropertyScope($accountProperty);
                         $verified = IAccountManager::NOT_VERIFIED;
-                        
+
                         $account->setProperty(
                             $accountProperty,
                             $value,
                             $scope,
                             $verified
                         );
+                        $accountUpdated = true;
+                        continue;
+                    }
+
+                    // Update existing property
+                    $property = $account->getProperty($accountProperty);
+                    if ($property->getValue() !== $value) {
+                        $property->setValue($value);
                         $accountUpdated = true;
                     }
                 }

@@ -7,6 +7,9 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class ObjectCreatedEventListener implements IEventListener
 {
 

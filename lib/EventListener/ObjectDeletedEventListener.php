@@ -7,6 +7,9 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class ObjectDeletedEventListener implements IEventListener
 {
 

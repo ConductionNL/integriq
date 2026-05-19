@@ -19,12 +19,25 @@ use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
 /**
  * Controller for handling endpoint related operations
+ *
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.CamelCaseVariableName)
+ * @SuppressWarnings(PHPMD.CamelCaseParameterName)
  */
 class EndpointsController extends Controller
 {
@@ -61,6 +74,7 @@ class EndpointsController extends Controller
 	 * @param ObjectService $objectService Service for direct ObjectService operations
 	 * @param EndpointCacheService $endpointCacheService Service for cached endpoint lookups
 	 * @param LoggerInterface $logger Service for logging
+	 * @param IL10N $l The localization service
 	 */
 	public function __construct(
 		$appName,
@@ -72,6 +86,7 @@ class EndpointsController extends Controller
 		private ObjectService $objectService,
 		private EndpointCacheService $endpointCacheService,
 		private LoggerInterface $logger,
+		private IL10N $l,
 //		private EndpointLogMapper $endpointLogMapper,
 		$corsMethods = 'PUT, POST, GET, DELETE, PATCH',
 		$corsAllowedHeaders = 'Authorization, Content-Type, Accept',
@@ -141,7 +156,7 @@ class EndpointsController extends Controller
 		try {
 			return new JSONResponse($this->endpointMapper->find(id: (int)$id));
 		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+			return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
 		}
 	}
 
@@ -248,7 +263,7 @@ class EndpointsController extends Controller
 			// If no matching endpoint found, return 404
 			if ($endpoint === null) {
 				return new JSONResponse(
-					data: ['error' => 'No matching endpoint found for path and method: ' . $_path . ' ' . $this->request->getMethod()],
+					data: ['error' => $this->l->t('No matching endpoint found for path and method: %1$s %2$s', [$_path, $this->request->getMethod()])],
 					statusCode: 404
 				);
 			}
@@ -261,12 +276,9 @@ class EndpointsController extends Controller
 		}
 
 		// OPTIMIZATION: For simple endpoints with no rules/conditions/mappings, bypass EndpointService
-		if ($this->isSimpleEndpoint($endpoint)) {
-			$response = $this->handleSimpleSchemaRequest($endpoint, $_path);
-		} else {
-			// Forward complex requests to the endpoint service
-			$response = $this->endpointService->handleRequest($endpoint, $this->request, $_path);
-		}
+		$response = $this->isSimpleEndpoint($endpoint)
+			? $this->handleSimpleSchemaRequest($endpoint, $_path)
+			: $this->endpointService->handleRequest($endpoint, $this->request, $_path);
 
 		// Check if the Accept header is set to XML
 		$acceptHeader = $this->request->getHeader('Accept');
@@ -292,7 +304,7 @@ class EndpointsController extends Controller
     #[PublicPage]
     public function preflightedCors(): Response {
         // Determine the origin
-        $origin = isset($this->request->server['HTTP_ORIGIN']) === true ? $this->request->server['HTTP_ORIGIN'] : '*';
+        $origin = $this->request->server['HTTP_ORIGIN'] ?? '*';
 
         // Create and configure the response
         $response = new Response();
@@ -414,7 +426,7 @@ class EndpointsController extends Controller
 //                'total' => $total
 //            ]);
 //        } catch (\Exception $e) {
-            return new JSONResponse(['error' => 'Failed to retrieve logs: Endpoint logging is not available at this time'], 500);
+            return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: Endpoint logging is not available at this time')], 500);
 //            return new JSONResponse(['error' => 'Failed to retrieve logs: ' . $e->getMessage()], 500);
 //        }
     }
@@ -452,7 +464,7 @@ class EndpointsController extends Controller
 			$targetId = $endpoint->getTargetId();
 			if (empty($targetId)) {
 				$this->logger->error('Simple endpoint has empty targetId', ['endpoint' => $endpoint->getEndpoint()]);
-				return new JSONResponse(['error' => 'Endpoint misconfigured: empty targetId'], 500);
+				return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: empty targetId')], 500);
 			}
 
 			$target = explode('/', $targetId);
@@ -462,7 +474,7 @@ class EndpointsController extends Controller
 					'targetId' => $targetId,
 					'parsed' => $target
 				]);
-				return new JSONResponse(['error' => 'Endpoint misconfigured: invalid targetId format. Expected "register/schema"'], 500);
+				return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: invalid targetId format. Expected "register/schema"')], 500);
 			}
 
 			$register = (int)$target[0];
@@ -483,7 +495,7 @@ class EndpointsController extends Controller
 					'schema' => $schema,
 					'error' => $e->getMessage()
 				]);
-				return new JSONResponse(['error' => 'Schema or register not found: ' . $e->getMessage()], 404);
+				return new JSONResponse(['error' => $this->l->t('Schema or register not found: %s', [$e->getMessage()])], 404);
 			}
 
 			// Handle different HTTP methods
@@ -537,7 +549,7 @@ class EndpointsController extends Controller
 				case 'PUT':
 					// Full update of existing object
 					if (!isset($pathParams['id'])) {
-						return new JSONResponse(['error' => 'ID required for PUT request'], 400);
+						return new JSONResponse(['error' => $this->l->t('ID required for PUT request')], 400);
 					}
 					$object = $mapper->updateFromArray($pathParams['id'], $parameters, true, false);
 					return new JSONResponse($object->jsonSerialize());
@@ -545,7 +557,7 @@ class EndpointsController extends Controller
 				case 'PATCH':
 					// Partial update of existing object
 					if (!isset($pathParams['id'])) {
-						return new JSONResponse(['error' => 'ID required for PATCH request'], 400);
+						return new JSONResponse(['error' => $this->l->t('ID required for PATCH request')], 400);
 					}
 					$object = $mapper->updateFromArray($pathParams['id'], $parameters, true, true);
 					return new JSONResponse($object->jsonSerialize());
@@ -553,20 +565,20 @@ class EndpointsController extends Controller
 				case 'DELETE':
 					// Delete object
 					if (!isset($pathParams['id'])) {
-						return new JSONResponse(['error' => 'ID required for DELETE request'], 400);
+						return new JSONResponse(['error' => $this->l->t('ID required for DELETE request')], 400);
 					}
 					$success = $mapper->delete(['id' => $pathParams['id']]);
 					if (!$success) {
-						return new JSONResponse(['error' => 'Failed to delete object'], 500);
+						return new JSONResponse(['error' => $this->l->t('Failed to delete object')], 500);
 					}
 					return new JSONResponse([], 204);
 
 				default:
-					return new JSONResponse(['error' => 'Method not supported'], 405);
+					return new JSONResponse(['error' => $this->l->t('Method not supported')], 405);
 			}
 
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => 'Simple endpoint error: ' . $e->getMessage()], 500);
+			return new JSONResponse(['error' => $this->l->t('Simple endpoint error: %s', [$e->getMessage()])], 500);
 		}
 	}
 

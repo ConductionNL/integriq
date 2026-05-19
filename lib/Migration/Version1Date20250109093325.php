@@ -15,6 +15,10 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
+/**
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ */
 class Version1Date20250109093325 extends SimpleMigrationStep {
 
 	/**

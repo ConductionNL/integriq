@@ -14,11 +14,21 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
 class MappingsController extends Controller
 {
     /**
@@ -34,7 +44,8 @@ class MappingsController extends Controller
         private readonly IAppConfig $config,
         private readonly MappingMapper $mappingMapper,
         private readonly MappingService $mappingService,
-        private readonly ObjectService $objectService
+        private readonly ObjectService $objectService,
+        private readonly IL10N $l
     )
     {
         parent::__construct($appName, $request);
@@ -97,7 +108,7 @@ class MappingsController extends Controller
         try {
             return new JSONResponse($this->mappingMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
     }
 
@@ -241,8 +252,8 @@ class MappingsController extends Controller
         if (empty($data['schema']) === false) {
 			if ($openRegisters === null) {
 				return new JSONResponse(data: [
-					'error'   => 'Setup error',
-					'message' => 'OpenRegisters must be installed to validate schema.'
+					'error'   => $this->l->t('Setup error'),
+					'message' => $this->l->t('OpenRegisters must be installed to validate schema.')
 				],statusCode: 412);
 			}
 
@@ -251,8 +262,8 @@ class MappingsController extends Controller
 				$schema = $openRegisters->getMapper('schema')->find($schemaId);
 			} catch (DoesNotExistException $exception) {
 				return new JSONResponse(data: [
-					'error' => 'Not found',
-					'message' => 'The specified schema could not be found.',
+					'error' => $this->l->t('Not found'),
+					'message' => $this->l->t('The specified schema could not be found.'),
 				], statusCode: 404);
 			}
         }
@@ -272,7 +283,7 @@ class MappingsController extends Controller
         } catch (Exception $e) {
             // If mapping fails, return an error response
             return new JSONResponse([
-                'error' => 'Mapping error',
+                'error' => $this->l->t('Mapping error'),
                 'message' => $e->getMessage()
             ], 400);
         }
@@ -342,13 +353,11 @@ class MappingsController extends Controller
         // Check if the OpenRegister service is available
 		$openRegisters = $this->objectService->getOpenRegisters();
         $data = [];
+		$data['openRegisters'] = false;
 		if ($openRegisters !== null) {
 			$data['openRegisters'] = true;
 			$data['availableRegisters'] = $openRegisters->getRegisters();
 		}
-        else {
-            $data['openRegisters'] = false;
-        }
 
         return new JSONResponse($data);
 

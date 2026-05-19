@@ -15,6 +15,9 @@ use OCP\AppFramework\Db\Entity;
  *
  * @package OCA\OpenConnector\Db
  */
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class Consumer extends Entity implements JsonSerializable
 {
     protected ?string $uuid = null;

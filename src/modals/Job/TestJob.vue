@@ -153,7 +153,7 @@ export default {
 	},
 }
 </script>
-<style>
+<style scoped>
 .testJobDetailGrid {
 	display: grid;
 	grid-template-columns: 1fr;
@@ -162,12 +162,14 @@ export default {
 
 .jobTestTable th,
 .jobTestTable td {
-  padding: 4px;
+	padding: 4px;
 }
+
 .jobTestTable th {
-    font-weight: bold
+	font-weight: bold
 }
+
 .jobTestTable ol {
-    margin-left: 1rem;
+	margin-left: 1rem;
 }
 </style>

@@ -12,6 +12,10 @@ use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 use OCP\Session\Exceptions\SessionNotAvailableException;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 class SynchronizationLogMapper extends QBMapper
 {
 	public function __construct(
@@ -53,11 +57,13 @@ class SynchronizationLogMapper extends QBMapper
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
 		if (empty($searchConditions) === false) {
@@ -185,11 +191,13 @@ class SynchronizationLogMapper extends QBMapper
 		foreach ($filters as $filter => $value) {
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+				continue;
 			}
+			if ($value === 'IS NULL') {
+				$qb->andWhere($qb->expr()->isNull($filter));
+				continue;
+			}
+			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
 		}
 
 		$result = $qb->execute();

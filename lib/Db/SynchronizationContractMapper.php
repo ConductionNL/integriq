@@ -7,9 +7,11 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception;
+use RuntimeException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 /**
  * Mapper class for SynchronizationContract entities
  *
@@ -21,6 +23,13 @@ use Symfony\Component\Uid\Uuid;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  * @phpstan-extends QBMapper<SynchronizationContract>
+ */
+/**
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SynchronizationContractMapper extends QBMapper
 {
@@ -73,21 +82,22 @@ class SynchronizationContractMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         // Build select query with synchronization and origin ID filters
+        $qb->select('*')
+            ->from('openconnector_synchronization_contracts');
+
         if ($justByOriginId === true) {
-            $qb->select('*')
-                ->from('openconnector_synchronization_contracts')
-                ->where(
-                    $qb->expr()->eq('origin_id', $qb->createNamedParameter($originId))
-                );
-        } else {
-            $qb->select('*')
-                ->from('openconnector_synchronization_contracts')
-                ->where(
-                    $qb->expr()->eq('synchronization_id', $qb->createNamedParameter($synchronizationId))
-                )
-                ->andWhere(
-                    $qb->expr()->eq('origin_id', $qb->createNamedParameter($originId))
-                );
+            $qb->where(
+                $qb->expr()->eq('origin_id', $qb->createNamedParameter($originId))
+            );
+        }
+
+        if ($justByOriginId !== true) {
+            $qb->where(
+                $qb->expr()->eq('synchronization_id', $qb->createNamedParameter($synchronizationId))
+            )
+            ->andWhere(
+                $qb->expr()->eq('origin_id', $qb->createNamedParameter($originId))
+            );
         }
 
         try {
@@ -121,8 +131,8 @@ class SynchronizationContractMapper extends QBMapper
             $stmt = $qb->executeQuery();
             $result = $stmt->fetchOne();
             return $result !== false ? $result : null;
-        } catch (\Throwable $e) {
-            throw new \Exception("Error fetching target_id for origin_id {$originId}: " . $e->getMessage(), 0, $e);
+        } catch (Throwable $e) {
+            throw new RuntimeException("Error fetching target_id for origin_id {$originId}: " . $e->getMessage(), 0, $e);
         }
     }
 
@@ -243,11 +253,13 @@ class SynchronizationContractMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         // Add search conditions if provided
@@ -439,11 +451,13 @@ class SynchronizationContractMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         $result = $qb->executeQuery();

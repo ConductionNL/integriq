@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { sourceStore, navigationStore, logStore, synchronizationStore } from '../../store/store.js'
 </script>
 
@@ -385,10 +386,6 @@ export default {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-.tabPanel {
-	padding: 15px 0;
 }
 
 .selectedIcon {
