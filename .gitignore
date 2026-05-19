@@ -31,6 +31,10 @@
 /phpqa/
 
 # Nextcloud
+/node_modules/
+/js/
+/docs/node_modules/
+/docs/.docusaurus/
 /custom_apps/
 /custom-apps/
 /config/
@@ -41,3 +45,19 @@ Thumbs.db
 
 # Claude Code
 .claude/worktrees/
+
+# Test/build artifacts
+.docusaurus
+.phpunit.result.cache
+
+# SBOM is published as release asset (see SECURITY.md), not stored in repo
+sbom.cdx.json
+bom-php.cdx.json
+bom-npm.cdx.json
+
+# Playwright (journeydoc / ADR-030)
+/tests/e2e/.auth/
+/tests/e2e/playwright-report/
+/tests/e2e/test-results/
+/test-results/
+/playwright-report/

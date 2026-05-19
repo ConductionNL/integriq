@@ -24,7 +24,7 @@
 
 		<!-- App loaded normally -->
 		<template v-else-if="storesReady && hasOpenRegisters">
-			<MainMenu />
+			<MainMenu @open-settings="settingsOpen = true" />
 			<NcAppContent>
 				<template #default>
 					<router-view />
@@ -33,6 +33,7 @@
 			<router-view name="sidebar" />
 			<Modals />
 			<Dialogs />
+			<UserSettings :open="settingsOpen" @update:open="settingsOpen = $event" />
 		</template>
 
 		<!-- Loading -->
@@ -50,6 +51,7 @@ import { generateUrl, imagePath } from '@nextcloud/router'
 import MainMenu from './navigation/MainMenu.vue'
 import Modals from './modals/Modals.vue'
 import Dialogs from './dialogs/Dialogs.vue'
+import UserSettings from './views/settings/UserSettings.vue'
 import { useSettingsStore } from './store/store.js'
 
 export default {
@@ -63,11 +65,13 @@ export default {
 		MainMenu,
 		Modals,
 		Dialogs,
+		UserSettings,
 	},
 
 	data() {
 		return {
 			storesReady: false,
+			settingsOpen: false,
 		}
 	},
 
