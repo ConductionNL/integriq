@@ -13,7 +13,11 @@ return [
 		'SynchronizationContracts' => ['url' => 'api/synchronization-contracts'],
 	],
 	'routes' => [
-		['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
+		// SPA shell entry (root) — UiController serves the Vue app for all section paths.
+		// The Dashboard data routes (/api/dashboard/{callstats,jobstats,syncstats}) were
+		// deleted in the chain-C OR-cutover: dashboard data now comes from declarative
+		// manifest widgets resolved by CnStatsBlockWidget against OR's aggregate endpoint.
+		// See openspec/changes/openconnector-services-direct-or-usage/proposal.md § 2a.
 
 		// Metrics and health
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
@@ -21,11 +25,6 @@ return [
 
 		// DSO / Omgevingsloket STAM koppelvlak
 		['name' => 'dso#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
-
-		['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
-		['name' => 'dashboard#getCallStats', 'url' => '/api/dashboard/callstats', 'verb' => 'GET'],
-		['name' => 'dashboard#getJobStats', 'url' => '/api/dashboard/jobstats', 'verb' => 'GET'],
-		['name' => 'dashboard#getSyncStats', 'url' => '/api/dashboard/syncstats', 'verb' => 'GET'],
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
@@ -59,8 +58,15 @@ return [
 		['name' => 'endpoints#handlePath', 'postfix' => 'destroy', 'url' => '/api/endpoint/{_path}', 'verb' => 'DELETE', 'requirements' => ['_path' => '.+']],
 
 		// Import & Export
-		['name' => 'import#import', 'url' => '/api/import', 'verb' => 'POST'],
-		['name' => 'export#export', 'url' => '/api/export/{type}/{id}', 'verb' => 'GET'],
+		// Import/Export routes deleted in chain-C OR-cutover. OR provides:
+		//   POST /api/registers/{id}/import
+		//   POST /api/configurations/{id}/import
+		//   POST /api/objects/{register}/{schema}/  (single-object create)
+		//   GET  /api/registers/{id}/export
+		//   GET  /api/objects/{register}/{schema}/export
+		//   GET  /api/objects/{register}/{schema}/{id}  (single-object read)
+		// Slug-translation per ADR-015 is now a thin SlugTranslatorService decorator.
+		// See openspec/changes/openconnector-services-direct-or-usage/proposal.md § 2a.
 
 		// Event messages
 		['name' => 'events#messages', 'url' => '/api/events/{id}/messages', 'verb' => 'GET'],
@@ -125,6 +131,8 @@ return [
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
 		['name' => 'ui#import', 'url' => '/import', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
-		['name' => 'dashboard#page', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
+		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
+		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.
+		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
 	],
 ];
