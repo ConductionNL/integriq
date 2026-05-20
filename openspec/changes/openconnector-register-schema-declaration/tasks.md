@@ -14,8 +14,8 @@
     schema slugs are declared (the 11 mutable + 4 log slugs listed in REQ-002)
   - The OpenAPI `info`, `x-openregister`, `components.registers.openconnector`
     blocks match the file-format contract in `contract.md` line-for-line
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Transcribe each entity into its schema definition
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-002`
@@ -31,8 +31,8 @@
     WHEN inspecting each property type THEN it matches
   - Each schema declares `slug`, `title`, `version: "1.0.0"`, `summary`,
     `description`, `properties`, `required` (where applicable), `icon`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Mark log schemas append-only + immutable, with retention
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-003`
@@ -46,8 +46,8 @@
   - GIVEN each log schema WHEN inspecting `x-openregister-archival` THEN it
     encodes `PT1H` for success-class entries and `P30D` for error-class
     entries (per REQ-004)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Add FK relation annotations to all 6 integer foreign keys
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-005`
@@ -63,8 +63,8 @@
     in REQ-005 (CASCADE / SET NULL per relation)
   - Legacy `*Id` fields are retained as sibling properties with their original
     types (REQ-008)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Document Synchronization.sourceId/targetId overload
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-006`
@@ -75,8 +75,8 @@
   - The `description` field on each MUST enumerate the three valid formats
     (integer PK string, `register/schema` slug pair, uuid) and reference
     `lib/Service/SynchronizationService.php` for resolution logic
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 6: Author the seed data file
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-007`
@@ -92,8 +92,8 @@
     `secret`, `jwt`, `authenticationConfig` THEN values are safe placeholders
     (`"YOUR_API_KEY_HERE"`, `"<placeholder>"`, etc.)
   - Seed entries match the per-schema tables in `design.md` § Seed Data
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 7: Validate descriptor against a dev OpenRegister instance
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-001`
@@ -111,8 +111,8 @@
     `appendOnly` and `immutable` columns are both `true`
   - Validation is documented in the PR description (no automated test wired
     up — this is a manual dev-env check)
-- [ ] Implement
-- [ ] Test
+- [ ] Implement (deferred — requires running OR dev container)
+- [ ] Test (deferred)
 
 ### Task 8: Add a CI guard that re-validates schema↔entity coverage
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-002`
@@ -125,8 +125,8 @@
     `openconnector_register.json`
   - GIVEN a missing/typo'd property WHEN the test runs THEN it fails with a
     diagnostic naming the entity, field, and schema slug
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## Verification
 
