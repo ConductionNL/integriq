@@ -3,22 +3,28 @@
 //
 // Custom-component registry for openconnector's manifest-driven app shell.
 //
-// Every entry here is the "escape hatch" — pages that don't fit one of the
-// manifest's built-in types/widgets. OpenConnector's surfaces are heavily
-// interactive (connection testing, drag-and-drop mapping editors, cron
-// builders, visual rule conditions, CloudEvent subscription management)
-// which exceed what declarative index/detail manifest types can express
-// today. ALL entries below are therefore genuine exceptions rather than
-// deferred migrations.
+// Two flavors of entry live here, per Tier-4 manifest-v2 (ADR-024/036):
+//
+// 1. **Typed-primitive wrappers** (preferred) — thin shims like `LogIndex`
+//    that wrap CnIndexPage / CnDetailPage from @conduction/nextcloud-vue
+//    and drive store + column selection from `page.config`. Manifest pages
+//    still declare `type: "custom"` (the type enum doesn't yet express
+//    "custom-shim-over-primitive"), but the implementation IS the typed
+//    primitive.
+//
+// 2. **Genuine custom views** — pages whose interaction model exceeds what
+//    declarative index/detail manifest types can express today: connection
+//    testing, drag-and-drop mapping editors, cron builders, visual rule
+//    conditions, CloudEvent subscription management. These are flagged with
+//    a `_note` on the manifest entry explaining why.
 //
 // Resolution order at runtime:
 //   1. Built-in page types          (CnIndexPage, CnDetailPage, …)
 //   2. Built-in widget types        (version-info, register-mapping, …)
 //   3. customComponents (this file) ← consumer-injected components
-//
-// See:
-//   - src/manifest.json for the `_note` on each page entry explaining why
-//     custom type was chosen over a built-in type.
+
+// --- Typed-primitive wrappers (thin shims over CnIndexPage / CnDetailPage) ---
+import LogIndex from './views/wrappers/LogIndex.vue'
 
 // --- Main surfaces ---
 import DashboardView from './views/dashboard/DashboardIndex.vue'
@@ -41,6 +47,11 @@ import ImportIndex from './views/Import/ImportIndex.vue'
 import SettingsView from './views/settings/Settings.vue'
 
 export default {
+	// --- Generic typed-primitive wrappers ---
+	// Single component, runtime-discriminated by `config.logType`. Each log
+	// type added here removes one bespoke index view from the bundle.
+	LogIndex,
+
 	// --- Integration definition editors (connection testing + auth UI) ---
 	DashboardView,
 	SourcesIndex,
