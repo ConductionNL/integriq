@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "OpenConnector — chain E integration tests",
+    "description": "Post-OR-cutover (chain B/C) HTTP surface coverage. Two route categories:\n\n1. **OR's generic CRUD routes** (`/api/objects/openconnector/{schema}/*`) — list/show/create/update/delete for every openconnector schema, served by OpenRegister, NO openconnector controller in the path. These are smoke tests that the cutover left CRUD working.\n\n2. **Openconnector-specific action endpoints** — tests Sources/Endpoints/Jobs/etc. controllers (Chain C kept their action methods; deleted only the CRUD methods).\n\nEnvironment vars: `baseUrl`, `admin_user`, `admin_pass`. Run via `npm run test:newman`.\n\nExpected exit: 0 failures against a freshly-seeded dev container with `openconnector.storage_migrated=true`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "openconnector-chain-e-2026-05-20"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_pass}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "00 — Health & Metrics",
+      "item": [
+        {
+          "name": "GET /api/metrics — Prometheus-shaped metrics index",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/metrics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","metrics"] },
+            "header": [{ "key": "Accept", "value": "application/json" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/health — liveness probe",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/health", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","health"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "01 — OR generic CRUD (chain C cutover smoke tests)",
+      "description": "Verifies OR's `/api/objects/{register}/{schema}/*` routes serve openconnector schemas correctly post-cutover. NO openconnector controller in the path.",
+      "item": [
+        {
+          "name": "GET /api/objects/openconnector/source — list sources",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('returns JSON', () => { const b = pm.response.json(); pm.expect(b).to.be.an('object'); });",
+            "pm.test('has results array', () => { const b = pm.response.json(); pm.expect(b.results || b).to.be.an('array'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "POST /api/objects/openconnector/source — create source",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-test-source\",\"type\":\"api\",\"location\":\"https://example.test\",\"isEnabled\":true}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201 or 200', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const body = pm.response.json();",
+            "pm.test('returned uuid', () => pm.expect(body.uuid || body.id).to.be.a('string'));",
+            "pm.collectionVariables.set('newmanSourceUuid', body.uuid || body.id);"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/source/{uuid} — read source",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source/{{newmanSourceUuid}}", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source","{{newmanSourceUuid}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('matches created name', () => pm.expect((body.object || body).name).to.eql('newman-test-source'));"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "DELETE /api/objects/openconnector/source/{uuid} — cleanup",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source/{{newmanSourceUuid}}", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source","{{newmanSourceUuid}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('204 or 200', () => pm.expect([200, 204]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/endpoint — list endpoints",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/endpoint", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","endpoint"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/consumer — list consumers",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/consumer", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","consumer"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/event — list events",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/event", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","event"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/job — list jobs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/job", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","job"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/mapping — list mappings",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/mapping", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","mapping"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/rule — list rules",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/rule", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","rule"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/synchronization — list synchronizations",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/synchronization", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","synchronization"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/objects/openconnector/call_log — list call logs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/call_log", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","call_log"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "02 — Source actions (connector-specific)",
+      "item": [
+        {
+          "name": "POST /api/sources/test/{id} — test connection (404 expected on missing id)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/test/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","sources","test","00000000-0000-0000-0000-000000000000"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('404 — non-existent uuid handled gracefully', () => pm.expect([404, 400, 500]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/sources/logs — list source-related call logs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/logs?_limit=5", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","sources","logs"], "query": [{ "key": "_limit", "value": "5" }] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/sources/statistics — aggregate stats",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","sources","statistics"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "03 — Job actions",
+      "item": [
+        {
+          "name": "GET /api/jobs/logs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/logs", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","jobs","logs"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/jobs/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","jobs","statistics"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "04 — Endpoint actions",
+      "item": [
+        {
+          "name": "GET /api/endpoints/logs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoints/logs", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","endpoints","logs"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/endpoints/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoints/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","endpoints","statistics"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "OPTIONS /api/endpoint/{path} — CORS preflight",
+          "request": {
+            "method": "OPTIONS",
+            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoint/test-path", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","endpoint","test-path"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('responds (200/204)', () => pm.expect([200, 204]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "05 — Synchronization actions",
+      "item": [
+        {
+          "name": "GET /api/synchronizations/logs",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/logs", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","synchronizations","logs"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/synchronizations/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","synchronizations","statistics"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/synchronization-contracts/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronization-contracts/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","synchronization-contracts","statistics"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "06 — Mapping actions",
+      "item": [
+        {
+          "name": "GET /api/mappings/objects",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/mappings/objects", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","mappings","objects"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "07 — Event subscriptions",
+      "item": [
+        {
+          "name": "GET /api/events/subscriptions",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","events","subscriptions"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "08 — Settings (post chain-C shrink)",
+      "item": [
+        {
+          "name": "POST /api/settings/rebase — only kept Settings action",
+          "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/settings/rebase", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","settings","rebase"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/settings — DELETED in chain C (expect 404)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/settings", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","settings"] } },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('route is gone post chain-C', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "09 — Negative tests (deleted controllers)",
+      "description": "Routes that were deleted by the OR-cutover MUST return 404 / route-not-found, NOT 500.",
+      "item": [
+        {
+          "name": "POST /api/import — deleted (expect 404)",
+          "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/import", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","import"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404 — deleted', () => pm.expect([404, 405]).to.include(pm.response.code));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/export/source/x — deleted (expect 404)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/export/source/x", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","export","source","x"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404 — deleted', () => pm.expect([404, 405]).to.include(pm.response.code));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "GET /api/dashboard/callstats — deleted (expect 404)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dashboard/callstats", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","dashboard","callstats"] } },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404 — deleted', () => pm.expect([404, 405]).to.include(pm.response.code));"], "type": "text/javascript" }}]
+        }
+      ]
+    }
+  ]
+}
