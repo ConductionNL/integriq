@@ -38,11 +38,11 @@ namespace OCA\OpenConnector\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\IDBConnection;
-use OCP\Migration\IMigrationStep;
 use OCP\Migration\IOutput;
+use OCP\Migration\SimpleMigrationStep;
 use Psr\Log\LoggerInterface;
 
-class Version2Date20260520000099 implements IMigrationStep
+class Version2Date20260520000099 extends SimpleMigrationStep
 {
 
     /**
@@ -78,12 +78,9 @@ class Version2Date20260520000099 implements IMigrationStep
     ];
 
 
-    public function __construct(
-        private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
-    ) {
-
-    }
+    // Nextcloud's MigrationService::createInstance() uses `new $class()` —
+    // migrations cannot have constructor parameters. Dependencies resolved
+    // via service container inside the methods that need them.
 
 
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
@@ -103,6 +100,9 @@ class Version2Date20260520000099 implements IMigrationStep
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
+        $db     = \OC::$server->get(IDBConnection::class);
+        $logger = \OC::$server->get(LoggerInterface::class);
+
         $dropped = 0;
         $skippedNonEmpty = 0;
         $skippedAbsent = 0;
@@ -113,7 +113,7 @@ class Version2Date20260520000099 implements IMigrationStep
                 continue;
             }
 
-            $rowCount = $this->countRows($tableShort);
+            $rowCount = $this->countRows($db, $logger, $tableShort);
             if ($rowCount > 0) {
                 $output->warning(sprintf(
                     'chain-B/C cleanup: legacy table `oc_%s` has %d row(s) — SKIPPED. '
@@ -122,7 +122,7 @@ class Version2Date20260520000099 implements IMigrationStep
                     $tableShort,
                     $rowCount
                 ));
-                $this->logger->warning(sprintf(
+                $logger->warning(sprintf(
                     'chain-B/C cleanup: skipping non-empty legacy table %s (%d rows)',
                     $tableShort,
                     $rowCount
@@ -161,17 +161,17 @@ class Version2Date20260520000099 implements IMigrationStep
      * Count rows in a legacy table. Returns -1 on query error (treated as
      * "non-empty / unsafe to drop" by the safety gate).
      */
-    private function countRows(string $tableShort): int
+    private function countRows(IDBConnection $db, LoggerInterface $logger, string $tableShort): int
     {
         try {
-            $qb = $this->db->getQueryBuilder();
+            $qb = $db->getQueryBuilder();
             $qb->select($qb->func()->count('*', 'c'))->from($tableShort);
             $result = $qb->executeQuery();
             $row = $result->fetchAssociative();
             $result->closeCursor();
             return (int) ($row['c'] ?? -1);
         } catch (\Throwable $e) {
-            $this->logger->warning(sprintf(
+            $logger->warning(sprintf(
                 'chain-B/C cleanup: failed to count rows in %s — treating as non-empty for safety. %s',
                 $tableShort,
                 $e->getMessage()

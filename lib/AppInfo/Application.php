@@ -42,6 +42,20 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        // Post chain-B/C cutover, openconnector depends on OpenRegister's
+        // ObjectService for all domain-data access. Load the OR app early so
+        // its PSR-4 autoloader is registered before our controllers try to
+        // resolve `\OCA\OpenRegister\Service\ObjectService`. The dependency
+        // is also declared in appinfo/info.xml (<nextcloud-app id="openregister"/>).
+        try {
+            $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+            if ($appManager->isEnabledForUser('openregister') === true || $appManager->isInstalled('openregister') === true) {
+                $appManager->loadApp('openregister');
+            }
+        } catch (\Throwable) {
+            // OR unavailable — let downstream DI failures surface clearly.
+        }
+
         // Register services
         $context->registerService(
           SettingsService::class,

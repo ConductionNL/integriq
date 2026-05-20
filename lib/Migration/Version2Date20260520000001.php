@@ -23,28 +23,20 @@ namespace OCA\OpenConnector\Migration;
 use Closure;
 use OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCP\AppFramework\Services\IAppConfig;
 use OCP\DB\ISchemaWrapper;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
-use OCP\Migration\IMigrationStep;
 use OCP\Migration\IOutput;
+use OCP\Migration\SimpleMigrationStep;
 use Psr\Log\LoggerInterface;
 
-class Version2Date20260520000001 implements IMigrationStep
+class Version2Date20260520000001 extends SimpleMigrationStep
 {
 
-    public function __construct(
-        private readonly IDBConnection $db,
-        private readonly IAppConfig $appConfig,
-        private readonly IConfig $config,
-        private readonly LoggerInterface $logger,
-        private readonly ConfigurationService $configurationService,
-        private readonly LegacyToRegisterMigrator $migrator
-    ) {
-
-    }
-
+    // Nextcloud's MigrationService::createInstance() uses `new $class()` —
+    // migrations cannot have constructor parameters. All dependencies are
+    // resolved via the service container inside postSchemaChange().
 
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -66,8 +58,27 @@ class Version2Date20260520000001 implements IMigrationStep
 
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        if ($this->appConfig->getAppValueString('storage_migrated', '') === 'true') {
+        $container = \OC::$server;
+        $appConfig = $container->get(IAppConfig::class);
+        $logger    = $container->get(LoggerInterface::class);
+
+        if ($appConfig->getValueString('openconnector', 'storage_migrated', '') === 'true') {
             $output->info('chain-B: storage_migrated=true already set — skipping (idempotent).');
+            return;
+        }
+
+        // Guard against OpenRegister being unavailable (would crash the
+        // upgrade with a useless DI error). Defer to next upgrade.
+        if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
+            $output->warning('chain-B: openregister app not enabled or not loaded; skipping descriptor import + migration. Re-run `occ upgrade` after enabling openregister.');
+            return;
+        }
+
+        try {
+            $configurationService = $container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
+            $migrator             = $container->get(LegacyToRegisterMigrator::class);
+        } catch (\Throwable $e) {
+            $output->warning('chain-B: failed to resolve services (' . $e->getMessage() . '); skipping.');
             return;
         }
 
@@ -75,9 +86,9 @@ class Version2Date20260520000001 implements IMigrationStep
         $output->info(sprintf('chain-B: importing register descriptor from %s', $descriptorPath));
 
         $descriptor = json_decode((string) file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
-        $appVersion = (string) $this->appConfig->getAppValueString('installed_version', '1.0.0');
+        $appVersion = $appConfig->getValueString('openconnector', 'installed_version', '1.0.0');
 
-        $this->configurationService->importFromApp(
+        $configurationService->importFromApp(
             appId: 'openconnector',
             data: $descriptor,
             version: $appVersion
@@ -85,7 +96,7 @@ class Version2Date20260520000001 implements IMigrationStep
         $output->info('chain-B: register descriptor imported (idempotent — existing schemas reused).');
 
         $output->info('chain-B: starting legacy → OR row migration via LegacyToRegisterMigrator::migrateAll()');
-        $result = $this->migrator->migrateAll(
+        $result = $migrator->migrateAll(
             dryRun: false,
             entitySlug: null,
             batchSize: 10000
@@ -109,7 +120,7 @@ class Version2Date20260520000001 implements IMigrationStep
         }
 
         if ($allOk === true) {
-            $this->appConfig->setAppValueString('storage_migrated', 'true');
+            $appConfig->setValueString('openconnector', 'storage_migrated', 'true');
             $output->info('chain-B: storage_migrated=true — all 15 entities copied successfully.');
         } else {
             $output->warning('chain-B: storage_migrated flag NOT set — at least one entity reported skips or errors. Use occ openconnector:migrate-storage to retry per-entity.');

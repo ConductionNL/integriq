@@ -134,6 +134,7 @@ return [
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.
-		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '.+'], 'defaults' => ['path' => '']],
+		// MUST exclude /api/* so deleted API routes return 404, not the SPA shell.
+		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).+'], 'defaults' => ['path' => '']],
 	],
 ];
