@@ -79,26 +79,34 @@ THEN the command produces zero matches (no surviving references to deleted entit
 
 ---
 
-### Requirement: The ObjectMapperFacade MUST be deleted
+### Requirement: openconnector data migration MUST run at upgrade time
 
-`lib/Service/Storage/ObjectMapperFacade.php` MUST be deleted — no surviving reference SHALL remain.
-The file was introduced by chain B as a
-transitional abstraction. No file under `lib/` or `tests/` SHALL
-import or instantiate `OCA\OpenConnector\Service\Storage\ObjectMapperFacade`
-after this change ships. The `lib/Service/Storage/` directory SHALL be removed
-entirely if it contains no other files after the deletion.
+The Nextcloud migration class `lib/Migration/Version2Date20260520000001.php` MUST run on `occ upgrade` and MUST: (a) call `\OCA\OpenRegister\Service\ConfigurationService::importFromApp()` to materialise the openconnector register from `lib/Settings/openconnector_register.json`, then (b) call `\OCA\OpenConnector\Service\Migration\LegacyToRegisterMigrator::migrateAll()` to copy every row from each of the 15 `oc_openconnector_*` legacy tables into `oc_openregister_objects`.
 
-#### Scenario: Facade file is absent post-merge
+The migrator MUST be idempotent (the migration class skips when the `openconnector.storage_migrated` IAppConfig flag is `'true'`), MUST preserve uuids byte-for-byte, MUST translate the 6 integer FK columns to OR uuids via a post-INSERT UPDATE pass, MUST branch `Synchronization.sourceId/targetId` across the 3 documented value formats (integer-PK, register/schema slug, uuid), MUST set the `owner` column to null on every migrated row (system-owned), and MUST emit a single summary entry in `oc_openregister_audit_trail` (NOT per-row).
 
-GIVEN the chain C merge commit has been applied
-WHEN a developer runs `find lib/Service/Storage/ -name 'ObjectMapperFacade.php' 2>/dev/null`
-THEN the command produces zero output
+The migrator MUST assert the codebase is in the plaintext-credentials state documented by ADR-007 at startup (no `OCA\OpenConnector\Service\EncryptionService` class present) and MUST abort with a `\LogicException` if that assertion fails.
 
-#### Scenario: No surviving facade references
+On a clean full run, the migrator MUST set `openconnector.storage_migrated` to `'true'`. Until that flag flips, the connector-specific services that use `ObjectService` MUST refuse to start (startup assertion in `Application.php`).
 
-GIVEN the quality gate is active
-WHEN a developer introduces `use OCA\OpenConnector\Service\Storage\ObjectMapperFacade;` in any file
-THEN `composer check:strict` fails with a forbidden-import error
+#### Scenario: Migration runs on upgrade
+
+GIVEN openconnector is upgraded from a pre-chain-C version (legacy tables present, `storage_migrated` unset)
+WHEN `occ upgrade` runs
+THEN `Version2Date20260520000001::postSchemaChange()` MUST call `ConfigurationService::importFromApp()` followed by `LegacyToRegisterMigrator::migrateAll()`
+AND on success MUST set `openconnector.storage_migrated = 'true'`
+
+#### Scenario: Migration is idempotent
+
+GIVEN `openconnector.storage_migrated = 'true'` is already set
+WHEN `occ upgrade` re-runs
+THEN the migration class MUST detect the flag and skip without re-running the migrator (no duplicate rows)
+
+#### Scenario: OCC retry command exists
+
+GIVEN the migration partially failed and `storage_migrated` is NOT `'true'`
+WHEN an admin runs `occ openconnector:migrate-storage --entity source` (single-entity retry)
+THEN the migrator MUST process only the `source` entity AND MUST NOT flip the `storage_migrated` flag (single-entity runs require a subsequent full-run to mark clean)
 
 ---
 
@@ -432,31 +440,29 @@ THEN the command produces zero NEW occurrences outside of the known pre-existing
 
 ---
 
-### Requirement: 15 input DTO classes MUST be introduced for write-side validation
+### Requirement: Per-schema CRUD controllers MUST be deleted; only connector-specific action endpoints remain
 
-Fifteen thin input DTO classes MUST be created under `lib/Db/Dto/`, one for each
-domain resource. Each DTO MUST be a `final` class with typed read-only constructor
-properties, a static `fromArray(array $data): self` factory method that throws
-`\InvalidArgumentException` on missing or invalid input, and a `toArray(): array`
-serialiser. DTOs MUST NOT include `id`, `uuid`, `created`, `updated`, or `owner`
-fields — those are OR-managed. DTOs MUST NOT be used on read paths; only on write
-paths (`POST`, `PUT`) in controllers and, where necessary, in services for input
-validation before calling `ObjectService::saveObject()`.
+Controllers under `lib/Controller/` that exposed only standard CRUD operations over a single openconnector domain entity MUST be deleted. OR's `/api/objects/{register}/{schema}/*` route family already exposes generic CRUD; per-schema duplication in openconnector is redundant. Connector-specific action endpoints (`/api/jobs/{id}/run`, `/api/sources/{id}/test`, `/api/synchronizations/{id}/trigger`, `/api/import`, `/api/export`, `/api/endpoint/{...}` inbound dispatch, etc.) MUST be preserved.
 
-#### Scenario: SourceDto rejects missing required field
+Schema-driven input validation (rejecting missing required fields, type-coercing inputs, etc.) is handled by OR's built-in schema validator when `ObjectService::saveObject()` is called against a register+schema with declared `required` and typed `properties`. The chain A descriptor at `lib/Settings/openconnector_register.json` defines those constraints. **No openconnector-side DTO layer is needed at CRUD boundaries.** Dedicated DTO classes MAY be introduced ONLY at the input boundary of connector-specific actions (e.g. a `SyncTriggerDto` for the body of `POST /api/synchronizations/{id}/trigger`) when the action's input shape doesn't match any single schema.
 
-GIVEN the `SourceDto::fromArray()` method is called
-WHEN the input array omits the required `name` field
-THEN `SourceDto::fromArray()` throws `\InvalidArgumentException` with a message identifying the missing field
+#### Scenario: per-schema CRUD controller is deleted
 
-#### Scenario: SourceDto serialises to an array matching ObjectService input
+GIVEN the chain C cutover is applied
+WHEN `find lib/Controller/ -name '<Resource>sController.php'` is run for each of the 15 schema-CRUD controllers identified during apply
+THEN each named file MUST NOT exist
+AND the corresponding routes in `appinfo/routes.php` MUST be removed
 
-GIVEN a valid `SourceDto` has been constructed
-WHEN `$dto->toArray()` is called
-THEN the returned array contains exactly the user-supplied fields (no `id`, `uuid`, `created`, `updated`) and is safe to pass directly as the `object:` named argument to `$objectService->saveObject(object: $dto->toArray(), register: 'openconnector', schema: 'source')`
+#### Scenario: connector-specific action controller is preserved
 
-#### Scenario: DTO is not returned from any controller response
+GIVEN the chain C cutover is applied
+WHEN inspecting `lib/Controller/CallController.php`, `lib/Controller/ExportController.php`, `lib/Controller/ImportController.php`, `lib/Controller/EndpointController.php` (inbound dispatch — NOT the deleted `EndpointsController` CRUD), and the new `lib/Controller/MigrateStorageController.php`
+THEN each MUST still exist
+AND their action routes MUST still be present in `appinfo/routes.php`
 
-GIVEN the chain C rewrite is complete
-WHEN any controller action that processes a POST or PUT request returns its response
-THEN the response JSON is derived from `ObjectEntity::jsonSerialize()` (not from `$dto->toArray()`)
+#### Scenario: OR CRUD route handles a Source create without an openconnector controller
+
+GIVEN openconnector is post-chain-C
+WHEN a client issues `POST /index.php/apps/openregister/api/objects/openconnector/source` with `{"name":"test","type":"api"}`
+THEN OR's generic CRUD route MUST persist the object via `ObjectService::saveObject(object: ..., register: 'openconnector', schema: 'source')` and return the created `ObjectEntity` JSON
+AND no openconnector-side controller MUST be involved in serving this request

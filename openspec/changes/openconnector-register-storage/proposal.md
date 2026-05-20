@@ -7,6 +7,22 @@ depends_on:
 
 # Proposal: openconnector-register-storage
 
+> **STATUS — MERGED INTO chain C (`openconnector-services-direct-or-usage`) on 2026-05-20.**
+>
+> The OR cutover doesn't ship in two phases; the strangler-fig `ObjectMapperFacade`
+> was over-engineering. Per the architecture pivot of 2026-05-20 (see commit
+> f495d906): OR + nc-vue already deliver per-schema CRUD generically, so the 15
+> mappers + 15 entities + per-schema CRUD controllers are deleted outright rather
+> than preserved through a transitional facade.
+>
+> The remaining scope from this change — the data migration (legacy
+> `oc_openconnector_*` rows → `oc_openregister_objects`) — is absorbed into
+> chain C's proposal under "1. Data migration". The migrator + Version2Date
+> migration class implementing that scope are already on `feature/i18n-complete-translations`
+> at commit 29929d28.
+>
+> This change directory is retained for traceability. New work happens on chain C.
+
 ## Summary
 
 Migrate openconnector's storage layer from 15 hand-rolled `oc_openconnector_*`

@@ -166,33 +166,29 @@ THEN the form fields MUST be driven by the `rule` schema from OpenRegister
 
 ---
 
-### Requirement: All 16 CRUD Pinia stores MUST be migrated to createCrudStore
+### Requirement: All per-schema CRUD Pinia stores MUST be deleted; only connector-action stores remain
 
-All 16 per-resource CRUD store modules MUST be rewritten to use `createCrudStore({apiEndpoint, schemaSlug})` from `@conduction/nextcloud-vue`. Per ADR-001, stores MUST remain per-resource; the migration changes the implementation pattern only, not the store granularity. The 16 modules are: source, endpoints, consumer, contract, event, job, log, mapping, rule, synchronization, and webhooks.
+Per the architecture pivot of 2026-05-20 (chain C proposal § "Delete the per-schema CRUD layer"), OR + nc-vue already deliver per-schema CRUD state generically — `CnIndexPage`/`CnDetailPage` consume OR's `/api/objects/{register}/{schema}/*` directly and manage their own list/detail state. The hand-rolled per-resource Pinia stores under `src/store/modules/` (source.ts, endpoints.ts, consumer.ts, contract.ts, event.ts, job.ts, mapping.ts, rule.ts, synchronization.ts, importExport.js, plus the `webhooks` alias) MUST be deleted.
 
-Domain-specific store actions (e.g. `testSource()`, `runJob()`, `triggerSync()`,
-flow-token-aware `synchronizeContract()`) MUST be preserved as extensions on top of
-the `createCrudStore` base.
+Connector-specific **action** stores MUST be created where a connector action has non-trivial UI state (a multi-step run dialog, a long-running poll, a flow-token correlation tracker). Examples that may need a small dedicated store: `useJobRunner` (for `runJob` modal polling), `useSyncTrigger` (for flow-token-aware trigger UX), `useSourceTester` (for connection-test result panel). These are NOT CRUD stores — each has at most one or two actions and no `list`/`fetchAll` surface. Non-CRUD generic stores (`navigation.js`, `search.ts`, `settings.js`) MAY stay as-is or be subsumed by nc-vue.
 
-#### Scenario: Source store provides createCrudStore base surface
+#### Scenario: per-schema CRUD store file is absent post-merge
 
-GIVEN the source store is imported in a Vue component
-WHEN `sourceStore.list`, `sourceStore.fetchAll()`, `sourceStore.create(data)`,
-`sourceStore.update(id, data)`, and `sourceStore.delete(id)` are called
-THEN each MUST perform the corresponding HTTP operation against
-`/index.php/apps/openconnector/api/sources`
+GIVEN the chain D2 cutover is applied
+WHEN `ls src/store/modules/source.ts src/store/modules/endpoints.ts src/store/modules/consumer.ts src/store/modules/job.ts src/store/modules/mapping.ts src/store/modules/rule.ts src/store/modules/synchronization.ts src/store/modules/event.ts src/store/modules/contract.ts 2>/dev/null` runs
+THEN no file MUST be reported (all 9 + the importExport.js variants are deleted)
 
-#### Scenario: Domain-specific store actions survive migration
+#### Scenario: connector-specific action survives in a dedicated store
 
-GIVEN the source store is migrated to createCrudStore
-WHEN `sourceStore.testSource(id)` is called (domain-specific action)
-THEN it MUST POST to the test endpoint and return the test result without error
+GIVEN a `useJobRunner` store exists under `src/store/actions/` (new directory pattern)
+WHEN a component calls `jobRunnerStore.run(jobId)`
+THEN it MUST POST to `/index.php/apps/openconnector/api/jobs/{jobId}/run` (a connector-specific action endpoint preserved in chain C) and MUST track the run state (`status: 'running' | 'completed' | 'failed'`, `lastResult`)
 
-#### Scenario: Synchronization store preserves flow-token header
+#### Scenario: Synchronization trigger preserves the flow-token
 
-GIVEN the synchronization store is migrated to createCrudStore
-WHEN `syncStore.triggerSync(contractId, flowToken)` is called with a non-null flowToken
-THEN the HTTP request MUST include the `X-Flow-Token` header value per ADR-011
+GIVEN a `useSyncTrigger` store exists
+WHEN `syncTriggerStore.trigger(contractId, flowToken)` is called with a non-null flowToken
+THEN the HTTP request MUST include the `X-Flow-Token` header value per local ADR-011
 
 ---
 
