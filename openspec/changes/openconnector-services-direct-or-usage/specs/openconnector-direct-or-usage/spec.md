@@ -466,3 +466,65 @@ GIVEN openconnector is post-chain-C
 WHEN a client issues `POST /index.php/apps/openregister/api/objects/openconnector/source` with `{"name":"test","type":"api"}`
 THEN OR's generic CRUD route MUST persist the object via `ObjectService::saveObject(object: ..., register: 'openconnector', schema: 'source')` and return the created `ObjectEntity` JSON
 AND no openconnector-side controller MUST be involved in serving this request
+
+---
+
+### Requirement: Import/Export controllers + DashboardController MUST be deleted; OR's HTTP surface + declarative dashboard widgets cover their cases
+
+`lib/Controller/ImportController.php`, `lib/Service/ImportService.php`, `lib/Controller/ExportController.php`, `lib/Service/ExportService.php`, and `lib/Controller/DashboardController.php` MUST all be deleted. The corresponding `appinfo/routes.php` entries MUST be removed. The total deletion is approximately 837 LOC.
+
+- **Import/Export deletions are justified by OR coverage:** OR exposes `POST /api/registers/{id}/import`, `POST /api/configurations/{id}/import`, `POST /api/objects/{register}/{schema}/` (single-object create), `GET /api/registers/{id}/export`, `GET /api/objects/{register}/{schema}/export`, and `GET /api/objects/{register}/{schema}/{id}` (single-object read) routes that cover every use case openconnector's `ImportController`/`ExportController` served. Slug-translation logic (per local ADR-015) is preserved by a thin `SlugTranslatorService` decorator (see separate requirement below).
+- **DashboardController deletion is justified by manifest declarative widgets:** the post-D2 `src/manifest.json` `Dashboard` page uses `type: dashboard` and declares its widgets via `dataSource: { register, schema, filter, aggregate: 'count' }` blocks resolved by `CnStatsBlockWidget` from `@conduction/nextcloud-vue` against OR's generic aggregate endpoint. Decidesk's manifest (`/decidesk/src/manifest.json` Dashboard entry) demonstrates the working pattern with stats-block widgets for review/published/open-items counts — analogous widgets cover openconnector's CallStats, JobStats, SyncStats.
+
+#### Scenario: ImportController + ExportController files are absent post-merge
+
+GIVEN the chain C cutover is applied
+WHEN `find lib/Controller/ -name 'ImportController.php' -o -name 'ExportController.php' -o -name 'DashboardController.php'` is run
+THEN the command produces zero output
+
+#### Scenario: OR export endpoint serves a Source export without an openconnector controller
+
+GIVEN openconnector is post-chain-C with at least one Source object stored in OR
+WHEN a client issues `GET /index.php/apps/openregister/api/objects/openconnector/source/{uuid}` with `Accept: application/json`
+THEN OR's generic objects endpoint MUST return the Source object JSON (no openconnector controller involved in the request path)
+AND if the request includes `X-Slug-Translation: true`, the response JSON MUST have integer FK fields replaced with their portable slug form by the `SlugTranslatorService` decorator (per local ADR-015)
+
+#### Scenario: Dashboard page uses declarative manifest widgets, not the deleted controller
+
+GIVEN openconnector is post-chain-C
+WHEN the user navigates to the Dashboard page
+THEN the page MUST render via `CnDashboardPage` driven by `src/manifest.json` Dashboard entry with `type: "dashboard"`
+AND the page's widgets MUST resolve their counts via `dataSource` blocks pointing at OR's generic aggregate endpoint — NOT via an openconnector-side DashboardController
+
+---
+
+### Requirement: SettingsController MUST shrink to connector-specific actions only
+
+`lib/Controller/SettingsController.php` MUST be reduced from ~200 LOC to ~80 LOC. The methods `stats()`, `getSettings()`, `updateSettings()`, and `rebase()` MUST be deleted — they reimplement OR's `/api/settings/*` surface or are superseded by other chain-C deliverables. The ONLY method preserved on the controller is the openconnector-specific `applyRetention()` action (itself flagged for follow-up replacement per [#822](https://github.com/ConductionNL/openconnector/issues/822) Postgres portability).
+
+#### Scenario: SettingsController only exposes the applyRetention action
+
+GIVEN the chain C cutover is applied
+WHEN `grep -E 'public function (page|stats|getSettings|updateSettings|rebase|applyRetention)' lib/Controller/SettingsController.php` is run
+THEN only `page()` (Nextcloud SPA shell) and `applyRetention()` MUST appear in the output
+
+---
+
+### Requirement: openconnector ConfigurationService MUST be reduced to a slug-translation decorator and renamed
+
+`lib/Service/ConfigurationService.php` (835 LOC) MUST be renamed to `lib/Service/SlugTranslatorService.php` (~150 LOC). The renamed service MUST expose exactly two public methods: `translateOnExport(array $object): array` and `translateOnImport(array $object): array`. The deleted methods (`getEntitiesByConfiguration`, `exportConfiguration`, `exportRegister`, `importConfiguration`) MUST be removed — their use cases are covered by OR's `\OCA\OpenRegister\Service\ConfigurationService` (a different class in a different namespace) consumed via the routes referenced above.
+
+The rename also resolves the namespace ambiguity introduced by having two `ConfigurationService` classes in the dependency graph.
+
+#### Scenario: SlugTranslatorService replaces ConfigurationService
+
+GIVEN the chain C cutover is applied
+WHEN `find lib/Service/ -name 'ConfigurationService.php'` is run
+THEN the command produces zero output (the file MUST have been renamed/replaced by `SlugTranslatorService.php`)
+
+#### Scenario: SlugTranslatorService roundtrip preserves portability
+
+GIVEN an OR Source object with `synchronizationId: 'a1b2c3d4-...-...'` (uuid form)
+WHEN `SlugTranslatorService::translateOnExport($object)` is called
+THEN the returned array MUST have `synchronizationId` replaced with the target Synchronization's slug (or omitted if no slug exists)
+AND `SlugTranslatorService::translateOnImport($result)` MUST translate the slug back to the local-environment uuid

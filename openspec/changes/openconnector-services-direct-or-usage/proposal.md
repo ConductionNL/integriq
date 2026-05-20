@@ -45,11 +45,30 @@ cron jobs, configuration export.
 
 - Delete all 15 `lib/Db/*Mapper.php` files.
 - Delete all 15 `lib/Db/*.php` domain-data entity classes.
-- Delete every per-schema CRUD controller under `lib/Controller/` (e.g. `SourcesController`, `EndpointsController`, `ConsumersController`, `JobsController`, `MappingsController`, `RulesController`, `SynchronizationsController`, `EventsController`, `ConsumersController`, etc.) that exposes only standard CRUD over an entity. Keep controllers that expose connector-specific actions (run-job, test-source, trigger-sync, import/export, etc.).
+- Delete every per-schema CRUD controller under `lib/Controller/` (e.g. `SourcesController`, `EndpointsController`, `ConsumersController`, `JobsController`, `MappingsController`, `RulesController`, `SynchronizationsController`, `EventsController`, etc.) that exposes only standard CRUD over an entity.
 - Delete the corresponding routes from `appinfo/routes.php`.
 - Delete the corresponding per-schema Pinia stores under `src/store/modules/` (chain D2 scope).
 - Delete the corresponding hand-rolled `src/views/*Index.vue` + `src/views/*Detail.vue` files (chain D2 scope).
 - Delete `lib/Service/Storage/` if it ever existed (the prior facade plan was reverted — no facade ships).
+
+### 2a. Delete reinvented-wheel infrastructure that OR + nc-vue already provide
+
+Investigation of 2026-05-20 showed that several openconnector controllers + services reimplement functionality that OR's HTTP surface and nc-vue's widget system already deliver. These ARE also deleted in this change:
+
+- **`lib/Controller/ImportController.php` + `lib/Service/ImportService.php` (433 LOC total)** — replaced by OR's `POST /api/registers/{id}/import`, `POST /api/configurations/{id}/import`, and `POST /api/objects/{register}/{schema}/` endpoints. Openconnector's YAML support, if still needed, is preserved by a small format-shim — NOT by reimplementing the entire import service.
+- **`lib/Controller/ExportController.php` + `lib/Service/ExportService.php` (217 LOC total)** — replaced by OR's `GET /api/registers/{id}/export`, `GET /api/objects/{register}/{schema}/export`, and `GET /api/objects/{register}/{schema}/{id}` endpoints. Slug-translation logic (per local ADR-015) survives as a thin decorator on OR's ConfigurationService (see § 2b below).
+- **`lib/Controller/DashboardController.php` (187 LOC)** — replaced by declarative dashboard widgets in `src/manifest.json` of type `stats-block` / `chart` / `info` with `dataSource: { register, schema, filter, aggregate }` blocks. `CnStatsBlockWidget` (and friends from nc-vue) resolve the dataSource against OR's generic aggregate endpoint. Decidesk's manifest (which references the same nc-vue widget set) demonstrates the pattern.
+- **`lib/Controller/SettingsController.php` shrinks** (~200 LOC → ~80 LOC) — drop `stats()` (replaced by manifest widgets), drop `getSettings()`/`updateSettings()` (replaced by OR's `/api/settings/*` endpoints), drop `rebase()` (replaced by re-running the migrator via the new `MigrateStorageController`). Keep ONLY the openconnector-specific `applyRetention` action — itself deprecated pending [#822](https://github.com/ConductionNL/openconnector/issues/822) Postgres portability fix.
+
+### 2b. Shrink openconnector's ConfigurationService to a slug-translation decorator
+
+`lib/Service/ConfigurationService.php` (835 LOC) currently reimplements export/import with openconnector-specific slug translation (per local ADR-015). Most of this duplicates OR's `\OCA\OpenRegister\Service\ConfigurationService`. The post-chain-C shape:
+
+- Rename to `lib/Service/SlugTranslatorService.php` (~150 LOC) to avoid the namespace collision with OR's class.
+- Keep ONLY the slug-translation methods: `translateOnExport(array $object): array` and `translateOnImport(array $object): array`. These walk an object's payload, find integer FK fields (`sourceId`, `synchronizationId`, etc.) and the relation-named uuid fields, and replace them with portable slug references.
+- Export workflow becomes: client calls OR's export endpoint → OR returns raw object JSON → `SlugTranslatorService::translateOnExport()` decorates the output (only if openconnector is in the request chain — easiest as a custom OR `ObjectIntegration`).
+- Import workflow inverses: `SlugTranslatorService::translateOnImport()` runs before OR's import resolves uuids.
+- Drop `getEntitiesByConfiguration`, `exportConfiguration`, `exportRegister`, `importConfiguration` — all subsumed by OR.
 
 ### 3. Refactor the remaining connector-specific services
 
