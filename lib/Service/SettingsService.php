@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCP\IDBConnection;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -62,6 +63,60 @@ class SettingsService
         $this->appName = 'openconnector';
 
     }//end __construct()
+
+
+    /**
+     * Build a platform-portable SQL expression that adds a microsecond
+     * interval (bound as a `?` placeholder, in microseconds) to a column
+     * value. Returns the expression as a string ready to splice into SQL.
+     *
+     * - MySQL/MariaDB:  `DATE_ADD(<column>, INTERVAL ? MICROSECOND)`
+     * - PostgreSQL:     `<column> + (? || ' microseconds')::interval`
+     *
+     * Fixes GH #822 (Postgres portability of rebase()'s SQL).
+     */
+    private function expiresExpression(string $createdColumn): string
+    {
+        $platform = $this->db->getDatabasePlatform();
+        if ($platform instanceof PostgreSQLPlatform) {
+            return sprintf('%s + (? || \' microseconds\')::interval', $createdColumn);
+        }
+        return sprintf('DATE_ADD(%s, INTERVAL ? MICROSECOND)', $createdColumn);
+    }
+
+
+    /**
+     * Portable replacement for `SHOW COLUMNS FROM <table> LIKE 'X'`.
+     * Returns true when the named column exists on the named table.
+     * Fixes GH #822 (Postgres portability of rebase()'s column probe).
+     */
+    private function columnExists(string $unprefixedTable, string $column): bool
+    {
+        $platform = $this->db->getDatabasePlatform();
+        try {
+            if ($platform instanceof PostgreSQLPlatform) {
+                $stmt = $this->db->prepare(
+                    'SELECT 1 FROM information_schema.columns '
+                    . 'WHERE table_name = ? AND column_name = ? LIMIT 1'
+                );
+                $stmt->execute(['oc_' . $unprefixedTable, $column]);
+            } else {
+                $sql = sprintf(
+                    "SHOW COLUMNS FROM `*PREFIX*%s` LIKE %s",
+                    $unprefixedTable,
+                    $this->db->quote($column)
+                );
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+            }
+            $row = $stmt->fetch();
+            return $row !== false;
+        } catch (\Throwable) {
+            // If the table itself doesn't exist (legacy table dropped post #820),
+            // the column doesn't exist either.
+            return false;
+        }
+    }
 
     /**
      * Get comprehensive statistics for the settings dashboard.
@@ -293,6 +348,12 @@ class SettingsService
             $settings  = $this->getSettings();
             $retention = $settings['retention'] ?? [];
 
+            // Platform-portable `expires = <createdCol> + <microseconds>` SQL fragments.
+            // MySQL uses DATE_ADD; PostgreSQL uses native interval arithmetic.
+            // See {@see expiresExpression()} — fixes GH #822.
+            $expiresExpr         = $this->expiresExpression('created');
+            $expiresExprCoalesce = $this->expiresExpression('COALESCE(created, NOW())');
+
             // **DATABASE-OPTIMIZED REBASE**: Use direct SQL UPDATE queries for maximum performance
             // 0. Update successful logs expiry dates
             if (isset($retention['successLogRetention']) === true && $retention['successLogRetention'] > 0) {
@@ -300,7 +361,7 @@ class SettingsService
                     $retentionMs = $retention['successLogRetention'];
                     $expiryQuery = "
                         UPDATE `*PREFIX*openconnector_call_logs`
-                        SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
+                        SET expires = $expiresExpr
                         WHERE expires IS NULL OR expires = ''
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
@@ -319,7 +380,7 @@ class SettingsService
                     $retentionMs = $retention['callLogRetention'];
                     $expiryQuery = "
                         UPDATE `*PREFIX*openconnector_call_logs`
-                        SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
+                        SET expires = $expiresExpr
                         WHERE expires IS NULL OR expires = ''
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
@@ -336,14 +397,12 @@ class SettingsService
             if (isset($retention['eventMessageRetention']) && $retention['eventMessageRetention'] > 0) {
                 try {
                     $retentionMs = $retention['eventMessageRetention'];
-                    // Check if expires column exists before updating
-                    $checkQuery  = "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'";
-                    $checkResult = $this->db->executeQuery($checkQuery);
+                    // Check if expires column exists before updating (portable per GH #822).
                     $results['retentionResults']['eventMessagesUpdated'] = 'Column expires not found - skipped';
-                    if ($checkResult->fetchColumn() !== false) {
+                    if ($this->columnExists('openconnector_event_messages', 'expires') === true) {
                         $expiryQuery = "
                             UPDATE `*PREFIX*openconnector_event_messages`
-                            SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
+                            SET expires = $expiresExpr
                             WHERE expires IS NULL OR expires = ''
                         ";
                         $stmt        = $this->db->prepare($expiryQuery);
@@ -363,7 +422,7 @@ class SettingsService
                     $retentionMs = $retention['jobLogRetention'];
                     $expiryQuery = "
                         UPDATE `*PREFIX*openconnector_job_logs`
-                        SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
+                        SET expires = $expiresExpr
                         WHERE expires IS NULL OR expires = ''
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
@@ -382,7 +441,7 @@ class SettingsService
                     $retentionMs = $retention['syncContractLogRetention'];
                     $expiryQuery = "
                         UPDATE `*PREFIX*openconnector_synchronization_contract_logs`
-                        SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND)
+                        SET expires = $expiresExprCoalesce
                         WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
@@ -401,7 +460,7 @@ class SettingsService
                     $retentionMs = $retention['syncLogRetention'];
                     $expiryQuery = "
                         UPDATE `*PREFIX*openconnector_synchronization_logs`
-                        SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND)
+                        SET expires = $expiresExprCoalesce
                         WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
