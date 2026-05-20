@@ -9,7 +9,7 @@ use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\EndpointService;
 use OCA\OpenConnector\Service\EndpointCacheService;
-use OCA\OpenConnector\Db\Endpoint;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -207,36 +207,38 @@ class EndpointsController extends Controller
     /**
      * Check if an endpoint is simple (no rules, conditions, mappings, configurations)
      *
-     * @param  Endpoint $endpoint The endpoint to check
+     * @param  ObjectEntity $endpoint The endpoint to check
      * @return bool True if the endpoint is simple and can be optimized
      */
-    private function isSimpleEndpoint(Endpoint $endpoint): bool
+    private function isSimpleEndpoint(ObjectEntity $endpoint): bool
     {
+        $data = $endpoint->getObject();
         // Check if endpoint has no complex processing requirements
         $allowedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-        return empty($endpoint->getRules()) &&
-               empty($endpoint->getConditions()) &&
-               $endpoint->getInputMapping() === null &&
-               $endpoint->getOutputMapping() === null &&
-               empty($endpoint->getConfigurations()) &&
-               $endpoint->getTargetType() === 'register/schema' &&
+        return empty($data['rules']) &&
+               empty($data['conditions']) &&
+               empty($data['inputMapping']) &&
+               empty($data['outputMapping']) &&
+               empty($data['configurations']) &&
+               ($data['targetType'] ?? '') === 'register/schema' &&
                in_array($this->request->getMethod(), $allowedMethods);
     }//end isSimpleEndpoint()
 
     /**
      * Handle simple schema requests directly without EndpointService overhead
      *
-     * @param  Endpoint $endpoint The endpoint configuration
-     * @param  string   $path     The request path
+     * @param  ObjectEntity $endpoint The endpoint configuration
+     * @param  string       $path     The request path
      * @return JSONResponse The direct response from ObjectService
      */
-    private function handleSimpleSchemaRequest(Endpoint $endpoint, string $path): JSONResponse
+    private function handleSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
     {
         try {
+            $endpointData = $endpoint->getObject();
             // Parse target register and schema from targetId (e.g., "20/111")
-            $targetId = $endpoint->getTargetId();
+            $targetId = $endpointData['targetId'] ?? '';
             if (empty($targetId)) {
-                $this->logger->error('Simple endpoint has empty targetId', ['endpoint' => $endpoint->getEndpoint()]);
+                $this->logger->error('Simple endpoint has empty targetId', ['endpoint' => $endpointData['endpoint'] ?? '']);
                 return new JSONResponse(['error' => $this->l->t('Endpoint misconfigured: empty targetId')], 500);
             }
 
@@ -245,7 +247,7 @@ class EndpointsController extends Controller
                 $this->logger->error(
                 'Simple endpoint has invalid targetId format',
                 [
-                    'endpoint' => $endpoint->getEndpoint(),
+                    'endpoint' => $endpointData['endpoint'] ?? '',
                     'targetId' => $targetId,
                     'parsed'   => $target,
                 ]
@@ -257,9 +259,10 @@ class EndpointsController extends Controller
             $schema   = (int) $target[1];
 
             // Get path parameters and request data
-            $pathParams = $this->getPathParameters($endpoint->getEndpointArray(), $path);
-            $parameters = $this->request->getParams();
-            $method     = $this->request->getMethod();
+            $endpointArray = $endpointData['endpointArray'] ?? explode('/', $endpointData['endpoint'] ?? '');
+            $pathParams    = $this->getPathParameters($endpointArray, $path);
+            $parameters    = $this->request->getParams();
+            $method        = $this->request->getMethod();
 
             // Get the ObjectService mapper for this register/schema
             try {
@@ -268,7 +271,7 @@ class EndpointsController extends Controller
                 $this->logger->error(
                 'Failed to get ObjectService mapper',
                 [
-                    'endpoint' => $endpoint->getEndpoint(),
+                    'endpoint' => $endpointData['endpoint'] ?? '',
                     'register' => $register,
                     'schema'   => $schema,
                     'error'    => $e->getMessage(),
@@ -296,10 +299,10 @@ class EndpointsController extends Controller
                     $this->logger->info(
                     'Simple endpoint query',
                     [
-                        'endpoint'     => $endpoint->getEndpoint(),
+                        'endpoint'     => $endpointData['endpoint'] ?? '',
                         'register'     => $register,
                         'schema'       => $schema,
-                        'targetId'     => $endpoint->getTargetId(),
+                        'targetId'     => $targetId,
                         'parameters'   => $parameters,
                         'result_total' => $result['total'] ?? 0,
                     ]
