@@ -2,10 +2,8 @@
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Db\Source;
+use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Db\CallLogMapper;
 use OCP\AppFramework\Controller;
@@ -14,6 +12,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
  * @SuppressWarnings(PHPMD.ShortVariable)
@@ -29,9 +28,12 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string     $appName The name of the app
-     * @param IRequest   $request The request object
-     * @param IAppConfig $config  The app configuration object
+     * @param string         $appName       The name of the app
+     * @param IRequest       $request       The request object
+     * @param IAppConfig     $config        The app configuration object
+     * @param SourceMapper   $sourceMapper  The source mapper (used by action methods)
+     * @param CallLogMapper  $callLogMapper The call log mapper (used by logs action)
+     * @param IL10N          $l             The localization service
      */
     public function __construct(
         $appName,
@@ -62,121 +64,6 @@ class SourcesController extends Controller
             []
         );
     }//end page()
-
-    /**
-     * Retrieves a list of all sources
-     *
-     * This method returns a JSON response containing an array of all sources in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of sources
-     */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
-
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-        return new JSONResponse(['results' => $this->sourceMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }//end index()
-
-    /**
-     * Retrieves a single source by its ID
-     *
-     * This method returns a JSON response containing the details of a specific source.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the source to retrieve
-     * @return JSONResponse A JSON response containing the source details
-     */
-    public function show(string $id): JSONResponse
-    {
-        try {
-            return new JSONResponse($this->sourceMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
-        }
-    }//end show()
-
-    /**
-     * Creates a new source
-     *
-     * This method creates a new source based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created source
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        return new JSONResponse($this->sourceMapper->createFromArray(object: $data));
-    }//end create()
-
-    /**
-     * Updates an existing source
-     *
-     * This method updates an existing source based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the source to update
-     * @return JSONResponse A JSON response containing the updated source details
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        return new JSONResponse($this->sourceMapper->updateFromArray(id: (int) $id, object: $data));
-    }//end update()
-
-    /**
-     * Deletes a source
-     *
-     * This method deletes a source based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the source to delete
-     * @return JSONResponse An empty JSON response
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        $this->sourceMapper->delete($this->sourceMapper->find((int) $id));
-
-        return new JSONResponse([]);
-    }//end destroy()
 
     /**
      * Retrieves call logs with filtering and pagination support
