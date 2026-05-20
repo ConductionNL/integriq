@@ -5,11 +5,9 @@ namespace OCA\OpenConnector\Controller;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenConnector\Db\Mapping;
-use OCA\OpenConnector\Db\MappingMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -35,15 +33,17 @@ class MappingsController extends Controller
     /**
      * Constructor for the MappingsController
      *
-     * @param string     $appName The name of the app
-     * @param IRequest   $request The request object
-     * @param IAppConfig $config  The app configuration object
+     * @param string         $appName        The name of the app
+     * @param IRequest       $request        The request object
+     * @param IAppConfig     $config         The app configuration object
+     * @param MappingService $mappingService The mapping service
+     * @param ObjectService  $objectService  The object service (OC)
+     * @param IL10N          $l              The localization service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly MappingMapper $mappingMapper,
         private readonly MappingService $mappingService,
         private readonly ObjectService $objectService,
         private readonly IL10N $l
@@ -69,122 +69,6 @@ class MappingsController extends Controller
             []
         );
     }//end page()
-
-    /**
-     * Retrieves a list of all mappings
-     *
-     * This method returns a JSON response containing an array of all mappings in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of mappings
-     */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
-
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-        return new JSONResponse(['results' => $this->mappingMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }//end index()
-
-    /**
-     * Retrieves a single mapping by its ID
-     *
-     * This method returns a JSON response containing the details of a specific mapping.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the mapping to retrieve
-     * @return JSONResponse A JSON response containing the mapping details
-     */
-    public function show(string $id): JSONResponse
-    {
-        try {
-            return new JSONResponse($this->mappingMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
-        }
-    }//end show()
-
-    /**
-     * Creates a new mapping
-     *
-     * This method creates a new mapping based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created mapping
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        return new JSONResponse($this->mappingMapper->createFromArray(object: $data));
-    }//end create()
-
-    /**
-     * Updates an existing mapping
-     *
-     * This method updates an existing mapping based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  int $id The ID of the mapping to update
-     * @return JSONResponse A JSON response containing the updated mapping details
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        return new JSONResponse($this->mappingMapper->updateFromArray(id: (int) $id, object: $data));
-    }//end update()
-
-    /**
-     * Deletes a mapping
-     *
-     * This method deletes a mapping based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  int $id The ID of the mapping to delete
-     * @return JSONResponse An empty JSON response
-     * @throws \OCP\DB\Exception
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        $this->mappingMapper->delete($this->mappingMapper->find((int) $id));
-
-        return new JSONResponse([]);
-    }//end destroy()
 
     /**
      * Tests a mapping
