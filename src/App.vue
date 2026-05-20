@@ -1,114 +1,73 @@
+<!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<NcContent app-name="openconnector">
-		<!-- OpenRegister not installed: show empty state -->
-		<NcAppContent v-if="storesReady && !hasOpenRegisters" class="open-register-missing">
-			<NcEmptyContent
-				:name="t('openconnector', 'OpenRegister is required')"
-				:description="t('openconnector', 'OpenConnector needs the OpenRegister app to store and manage data. please install OpenRegister from the app store to get started.')">
-				<template #icon>
-					<img :src="appIcon" class="open-register-icon">
-				</template>
-				<template #action>
-					<NcButton
-						v-if="isAdmin"
-						type="primary"
-						:href="appStoreUrl">
-						{{ t('openconnector', 'Install OpenRegister') }}
-					</NcButton>
-					<p v-else class="open-register-admin-hint">
-						{{ t('openconnector', 'Ask your administrator to install the OpenRegister app.') }}
-					</p>
-				</template>
-			</NcEmptyContent>
-		</NcAppContent>
-
-		<!-- App loaded normally -->
-		<template v-else-if="storesReady && hasOpenRegisters">
-			<MainMenu @open-settings="settingsOpen = true" />
-			<NcAppContent>
-				<template #default>
-					<router-view />
-				</template>
-			</NcAppContent>
-			<router-view name="sidebar" />
-			<Modals />
-			<Dialogs />
-			<UserSettings :open="settingsOpen" @update:open="settingsOpen = $event" />
-		</template>
-
-		<!-- Loading -->
-		<NcAppContent v-else>
-			<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-				<NcLoadingIcon :size="64" />
-			</div>
-		</NcAppContent>
-	</NcContent>
+	<CnAppRoot
+		:manifest="manifest"
+		:custom-components="customComponents"
+		:page-types="pageTypes"
+		app-id="openconnector"
+		:translate="translateForApp"
+		:permissions="permissions" />
 </template>
 
 <script>
-import { NcContent, NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import { generateUrl, imagePath } from '@nextcloud/router'
-import MainMenu from './navigation/MainMenu.vue'
-import Modals from './modals/Modals.vue'
-import Dialogs from './dialogs/Dialogs.vue'
-import UserSettings from './views/settings/UserSettings.vue'
+import { translate as ncT } from '@nextcloud/l10n'
+import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { useSettingsStore } from './store/store.js'
 
 export default {
 	name: 'App',
 	components: {
-		NcContent,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		MainMenu,
-		Modals,
-		Dialogs,
-		UserSettings,
+		CnAppRoot,
 	},
 
-	data() {
-		return {
-			storesReady: false,
-			settingsOpen: false,
-		}
+	props: {
+		manifest: {
+			type: Object,
+			required: true,
+		},
+		customComponents: {
+			type: Object,
+			default: () => ({}),
+		},
+		pageTypes: {
+			type: Object,
+			default: () => ({}),
+		},
 	},
 
 	computed: {
-		hasOpenRegisters() {
-			const settingsStore = useSettingsStore()
-			return settingsStore.hasOpenRegisters
-		},
-		isAdmin() {
-			const settingsStore = useSettingsStore()
-			return settingsStore.getIsAdmin
-		},
-		appIcon() {
-			return imagePath('openconnector', 'app-dark.svg')
-		},
-		appStoreUrl() {
-			return generateUrl('/settings/apps/integration/openregister')
+		permissions() {
+			const base = window.OC?.currentUser?.permissions ?? []
+			// CnAppNav's permission filter is an array-includes check; Nextcloud
+			// does not put the boolean admin flag into the permissions array, so
+			// we inject it here for manifest entries gated on permission: "admin".
+			const isAdmin = typeof window.OC?.isUserAdmin === 'function'
+				? window.OC.isUserAdmin()
+				: false
+			return isAdmin ? [...base, 'admin'] : base
 		},
 	},
 
 	async created() {
+		// Initialise Pinia stores so the existing custom-component views keep
+		// working through the manifest transition. CnAppRoot itself does not
+		// depend on them, but the views in registry.js do.
 		const settingsStore = useSettingsStore()
 		await settingsStore.fetchSettings()
-		this.storesReady = true
+	},
+
+	methods: {
+		/**
+		 * Translate function passed down to CnAppRoot / CnAppNav /
+		 * CnPageRenderer. Closes over the Nextcloud `translate` import so
+		 * the lib never has to know our app id.
+		 *
+		 * @param {string} key Translation key.
+		 * @return {string} Translated string (or the key on miss).
+		 */
+		translateForApp(key) {
+			return ncT('openconnector', key)
+		},
 	},
 }
 </script>
-
-<style scoped>
-.open-register-icon {
-	width: 64px;
-	height: 64px;
-	filter: var(--background-invert-if-dark);
-}
-
-.open-register-admin-hint {
-	color: var(--color-text-maxcontrast);
-	text-align: center;
-}
-</style>

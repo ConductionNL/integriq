@@ -22,60 +22,71 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241210120155 extends SimpleMigrationStep {
+class Version1Date20241210120155 extends SimpleMigrationStep
+{
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end preSchemaChange()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
+    /**
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /**
+         * @var ISchemaWrapper $schema
+         */
+        $schema = $schemaClosure();
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-		/**
-		 * @var ISchemaWrapper $schema
-		 */
-		$schema = $schemaClosure();
+        // Synchronizations table
+        if ($schema->hasTable('openconnector_synchronizations') === true) {
+            $table = $schema->getTable('openconnector_synchronizations');
 
-		// Synchronizations table
-		if ($schema->hasTable('openconnector_synchronizations') === true) {
-			$table = $schema->getTable('openconnector_synchronizations');
+            if ($table->hasColumn('current_page') === false) {
+                $table->addColumn(
+                'current_page',
+                Types::INTEGER,
+                [
+                    'notnull' => false,
+                    'default' => 1,
+                ]
+                );
+            }
+        }
 
-			if ($table->hasColumn('current_page') === false) {
-				$table->addColumn('current_page', Types::INTEGER, [
-					'notnull' => false,
-					'default' => 1
-				]);
-			}
-		}
+        // SynchronizationContractLogs table
+        if ($schema->hasTable('openconnector_synchronization_contract_logs') === true) {
+            $table = $schema->getTable('openconnector_synchronization_contract_logs');
 
-		// SynchronizationContractLogs table
-		if ($schema->hasTable('openconnector_synchronization_contract_logs') === true) {
-			$table = $schema->getTable('openconnector_synchronization_contract_logs');
+            if ($table->hasColumn('message') === false) {
+                $table->addColumn(
+                'message',
+                Types::STRING,
+                [
+                    'length'  => 255,
+                    'notnull' => false,
+                ]
+                )->setDefault(null);
+            }
+        }
 
-			if ($table->hasColumn('message') === false) {
-				$table->addColumn('message', Types::STRING, [
-					'length' => 255,
-					'notnull' => false,
-				])->setDefault(null);
-			}
-		}
+        return $schema;
+    }//end changeSchema()
 
-		return $schema;
-	}
-
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end postSchemaChange()
+}//end class

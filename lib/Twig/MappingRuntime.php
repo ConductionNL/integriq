@@ -32,20 +32,20 @@ use Symfony\Component\Uid\UuidV4;
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {
-	public function __construct(
-		private readonly MappingService $mappingService,
-		private readonly MappingMapper  $mappingMapper,
+    public function __construct(
+        private readonly MappingService $mappingService,
+        private readonly MappingMapper $mappingMapper,
         private readonly CallService $callService,
         private readonly SourceMapper $sourceMapper,
         private readonly FileService $fileService,
         private readonly ObjectService $objectService,
-	) {
-	}
+    ) {
+    }//end __construct()
 
     /**
      * Encodes a string to base64.
      *
-     * @param string $input The unencoded input.
+     * @param  string $input The unencoded input.
      * @return string The encoded output.
      */
     public function b64enc(string $input): string
@@ -57,7 +57,7 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Decodes a base64 encoded string to an unencoded string.
      *
-     * @param string $input The encoded input.
+     * @param  string $input The encoded input.
      * @return string The decoded output.
      */
     public function b64dec(string $input): string
@@ -69,22 +69,22 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Decodes a json encoded string to an unencoded array.
      *
-     * @param string $input The encoded input.
+     * @param  string $input The encoded input.
      * @return array The decoded output.
      */
     public function json_decode(string $input): array
     {
         return json_decode(json: $input, associative: true);
-    }
+    }//end json_decode()
 
     /**
      * Call source of given id or reference and return the result.
      *
-     * @param string $sourceId The source to call
-     * @param string $endpoint The endpoint to call
-     * @param string $method The method to use
-     * @param array $configuration The configuration to use
-     * @param bool $decode Whether or not the output should be decoded (default true)
+     * @param  string $sourceId      The source to call
+     * @param  string $endpoint      The endpoint to call
+     * @param  string $method        The method to use
+     * @param  array  $configuration The configuration to use
+     * @param  bool   $decode        Whether or not the output should be decoded (default true)
      * @return array|string The resulting response.
      *
      * @throws GuzzleException
@@ -106,67 +106,69 @@ class MappingRuntime implements RuntimeExtensionInterface
 
         return $response->getResponse()['body'];
 
-    }//end call()
+    }//end callSource()
 
-	/**
-	 * Execute a mapping with given parameters.
-	 *
-	 * @param Mapping|array|string|int $mapping The mapping to execute
-	 * @param array $input The input to run the mapping on
-	 * @param bool $list Whether the mapping runs on multiple instances of the object.
-	 *
-	 * @return array
-	 */
-	public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list = false): array
-	{
-		if (is_array($mapping) === true) {
-			$mappingObject = new Mapping();
-			$mappingObject->hydrate($mapping);
+    /**
+     * Execute a mapping with given parameters.
+     *
+     * @param Mapping|array|string|int $mapping The mapping to execute
+     * @param array                    $input   The input to run the mapping on
+     * @param bool                     $list    Whether the mapping runs on multiple instances of the object.
+     *
+     * @return array
+     */
+    public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
+    {
+        if (is_array($mapping) === true) {
+            $mappingObject = new Mapping();
+            $mappingObject->hydrate($mapping);
 
-			$mapping = $mappingObject;
-		}
+            $mapping = $mappingObject;
+        }
 
-		if ((is_string($mapping) === true || is_int($mapping) === true)
-			&& is_string($mapping) === true && str_starts_with($mapping, 'http')
-		) {
-			$mapping = $this->mappingMapper->findByRef($mapping)[0];
-		}
+        if ((is_string($mapping) === true || is_int($mapping) === true)
+            && is_string($mapping) === true && str_starts_with($mapping, 'http')
+        ) {
+            $mapping = $this->mappingMapper->findByRef($mapping)[0];
+        }
 
-		if ((is_string($mapping) === true || is_int($mapping) === true)
-			&& !(is_string($mapping) === true && str_starts_with($mapping, 'http'))
-		) {
-			// If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
-			// In the future we should be able to find the mapping by uuid (string) as well.
-			$mapping = $this->mappingMapper->find($mapping);
-		}
+        if ((is_string($mapping) === true || is_int($mapping) === true)
+            && !(is_string($mapping) === true && str_starts_with($mapping, 'http'))
+        ) {
+            // If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
+            // In the future we should be able to find the mapping by uuid (string) as well.
+            $mapping = $this->mappingMapper->find($mapping);
+        }
 
-		return $this->mappingService->executeMapping(
-			mapping: $mapping, input: $input, list: $list
-		);
-	}
+        return $this->mappingService->executeMapping(
+            mapping: $mapping,
+          input: $input,
+          list: $list
+        );
+    }//end executeMapping()
 
-	/**
-	 * Generate a uuid.
-	 *
-	 * @return array
-	 */
+    /**
+     * Generate a uuid.
+     *
+     * @return array
+     */
     public function generateUuid(): UuidV4
     {
         return Uuid::v4();
-    }
+    }//end generateUuid()
 
     /**
      * Fetch the content of a specific file for an object.
      *
-     * @param string|int $fileId The file node ID to fetch.
-     * @param string $objectId The object ID that owns the file.
-     * 
+     * @param string|int $fileId   The file node ID to fetch.
+     * @param string     $objectId The object ID that owns the file.
+     *
      * @return string|null The file contents when found, otherwise null.
      */
     public function getFileContents(string|int $fileId, string $objectId): ?string
     {
         $object = $this->objectService->getMapper('objectEntity')->find($objectId);
-        $files = $this->fileService->getFilesForEntity($object);
+        $files  = $this->fileService->getFilesForEntity($object);
 
         $files = array_filter($files, fn ($file) => $file instanceof File === true && $file->getId() === (int) $fileId);
 
@@ -175,13 +177,13 @@ class MappingRuntime implements RuntimeExtensionInterface
         }
 
         return get_class($file);
-    }
+    }//end getFileContents()
 
     /**
      * Fetch and format all files for an object.
      *
      * @param string $objectId The object ID to fetch files for.
-     * 
+     *
      * @return array The formatted file metadata list.
      */
     public function getFiles(string $objectId): array
@@ -194,7 +196,7 @@ class MappingRuntime implements RuntimeExtensionInterface
         }
 
         return $formattedFiles;
-    }
+    }//end getFiles()
 
     /**
      * Creates a URL-friendly slug from text.
@@ -229,4 +231,4 @@ class MappingRuntime implements RuntimeExtensionInterface
 
         return $slug;
     }//end createSlug()
-}
+}//end class

@@ -11,23 +11,40 @@ use OCP\AppFramework\Db\Entity;
  */
 class JobLog extends Entity implements JsonSerializable
 {
+
     protected ?string $uuid = null;
+
     protected string $level = 'INFO';
+
     protected string $message = 'success';
+
     protected ?string $jobId = null;
+
     protected ?string $jobListId = null;
+
     protected ?string $jobClass = 'OCA\OpenConnector\Action\PingAction';
+
     protected ?array $arguments = [];
+
     protected ?int $executionTime = 3600;
+
     protected ?string $userId = null;
+
     protected ?string $sessionId = null;
+
     protected ?array $stackTrace = [];
+
     protected ?DateTime $expires = null;
+
     protected ?DateTime $lastRun = null;
+
     protected ?DateTime $nextRun = null;
+
     protected ?DateTime $created = null;
-    
-    /** @var int $size Size of this log entry in bytes (calculated from serialized object) */
+
+    /**
+     * @var int $size Size of this log entry in bytes (calculated from serialized object)
+     */
     protected int $size = 4096;
 
     /**
@@ -38,7 +55,7 @@ class JobLog extends Entity implements JsonSerializable
     public function getArguments(): array
     {
         return $this->arguments ?? [];
-    }
+    }//end getArguments()
 
     /**
      * Get the stack trace
@@ -48,7 +65,7 @@ class JobLog extends Entity implements JsonSerializable
     public function getStackTrace(): array
     {
         return $this->stackTrace ?? [];
-    }
+    }//end getStackTrace()
 
     /**
      * JobLog constructor
@@ -59,7 +76,8 @@ class JobLog extends Entity implements JsonSerializable
      * @psalm-api
      * @phpstan-api
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->addType('uuid', 'string');
         $this->addType('level', 'string');
         $this->addType('message', 'string');
@@ -81,19 +99,22 @@ class JobLog extends Entity implements JsonSerializable
         if ($this->expires === null) {
             $this->expires = new DateTime('+1 week');
         }
-        
+
         // Calculate and set object size
         $this->calculateSize();
-    }
+    }//end __construct()
 
     public function getJsonFields(): array
     {
         return array_keys(
-            array_filter($this->getFieldTypes(), function ($field) {
-                return $field === 'json';
-            })
+            array_filter(
+                    $this->getFieldTypes(),
+                    function ($field) {
+                        return $field === 'json';
+                    }
+                    )
         );
-    }
+    }//end getJsonFields()
 
     public function hydrate(array $object): self
     {
@@ -117,7 +138,7 @@ class JobLog extends Entity implements JsonSerializable
         $this->calculateSize();
 
         return $this;
-    }
+    }//end hydrate()
 
     /**
      * Calculate and set the size of this log entry
@@ -127,7 +148,7 @@ class JobLog extends Entity implements JsonSerializable
      *
      * @return void
      *
-     * @psalm-return void
+     * @psalm-return   void
      * @phpstan-return void
      */
     public function calculateSize(): void
@@ -135,25 +156,25 @@ class JobLog extends Entity implements JsonSerializable
         // Serialize the current object to calculate its size
         $serialized = json_encode($this->jsonSerialize());
         $this->size = strlen($serialized);
-        
+
         // Ensure minimum size of 4KB if calculated size is smaller
         if ($this->size < 4096) {
             $this->size = 4096;
         }
-    }
+    }//end calculateSize()
 
     /**
      * Get the size of this log entry in bytes
      *
      * @return int The size in bytes
      *
-     * @psalm-return int
+     * @psalm-return   int
      * @phpstan-return int
      */
     public function getSize(): int
     {
         return $this->size;
-    }
+    }//end getSize()
 
     /**
      * Set the size of this log entry in bytes
@@ -162,36 +183,36 @@ class JobLog extends Entity implements JsonSerializable
      *
      * @return void
      *
-     * @psalm-param int $size
-     * @psalm-return void
-     * @phpstan-param int $size
+     * @psalm-param    int $size
+     * @psalm-return   void
+     * @phpstan-param  int $size
      * @phpstan-return void
      */
     public function setSize(int $size): void
     {
         $this->size = $size;
-    }
+    }//end setSize()
 
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'level' => $this->level,
-            'message' => $this->message,
-            'jobId' => $this->jobId,
-            'jobListId' => $this->jobListId,
-            'jobClass' => $this->jobClass,
-            'arguments' => $this->arguments,
+            'id'            => $this->id,
+            'uuid'          => $this->uuid,
+            'level'         => $this->level,
+            'message'       => $this->message,
+            'jobId'         => $this->jobId,
+            'jobListId'     => $this->jobListId,
+            'jobClass'      => $this->jobClass,
+            'arguments'     => $this->arguments,
             'executionTime' => $this->executionTime,
-            'userId' => $this->userId,
-            'sessionId' => $this->sessionId,
-            'stackTrace' => $this->stackTrace,
-            'expires' => isset($this->expires) ? $this->expires->format('c') : null,
-            'lastRun' => isset($this->lastRun) ? $this->lastRun->format('c') : null,
-            'nextRun' => isset($this->nextRun) ? $this->nextRun->format('c') : null,
-            'created' => isset($this->created) ? $this->created->format('c') : null,
-            'size' => $this->size,
+            'userId'        => $this->userId,
+            'sessionId'     => $this->sessionId,
+            'stackTrace'    => $this->stackTrace,
+            'expires'       => isset($this->expires) ? $this->expires->format('c') : null,
+            'lastRun'       => isset($this->lastRun) ? $this->lastRun->format('c') : null,
+            'nextRun'       => isset($this->nextRun) ? $this->nextRun->format('c') : null,
+            'created'       => isset($this->created) ? $this->created->format('c') : null,
+            'size'          => $this->size,
         ];
-    }
-}
+    }//end jsonSerialize()
+}//end class

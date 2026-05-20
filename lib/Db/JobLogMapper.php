@@ -10,6 +10,7 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -19,10 +20,12 @@ use Symfony\Component\Uid\Uuid;
  */
 class JobLogMapper extends QBMapper
 {
-    public function __construct(IDBConnection $db)
-    {
+    public function __construct(
+        IDBConnection $db,
+        private readonly LoggerInterface $logger,
+    ) {
         parent::__construct($db, 'openconnector_job_logs');
-    }
+    }//end __construct()
 
     public function find(int $id): JobLog
     {
@@ -35,9 +38,9 @@ class JobLogMapper extends QBMapper
             );
 
         return $this->findEntity($qb);
-    }
+    }//end find()
 
-    public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -51,37 +54,39 @@ class JobLogMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($filter));
                 continue;
             }
+
             if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
-		if (empty($searchConditions) === false) {
-            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+        if (empty($searchConditions) === false) {
+            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
         return $this->findEntities($qb);
-    }
+    }//end findAll()
 
-	public function createForJob(Job $job, array $object): JobLog
-	{
-		$jobObject = [
-			'jobId'         => $job->getId(),
-			'jobClass'      => $job->getJobClass(),
-			'jobListId'     => $job->getJobListId(),
-			'arguments'     => $job->getArguments(),
-			'lastRun'       => $job->getLastRun(),
-			'nextRun'       => $job->getNextRun(),
-		];
+    public function createForJob(Job $job, array $object): JobLog
+    {
+        $jobObject = [
+            'jobId'     => $job->getId(),
+            'jobClass'  => $job->getJobClass(),
+            'jobListId' => $job->getJobListId(),
+            'arguments' => $job->getArguments(),
+            'lastRun'   => $job->getLastRun(),
+            'nextRun'   => $job->getNextRun(),
+        ];
 
-		$object = array_merge($jobObject, $object);
+        $object = array_merge($jobObject, $object);
 
-        switch($object['level']) {
+        switch ($object['level']) {
             case 'INFO':
                 $object['expires'] = new DateTime('+1 hour');
                 break;
@@ -93,67 +98,68 @@ class JobLogMapper extends QBMapper
                 $object['expires'] = new DateTime('+30 days');
         }
 
-		return $this->createFromArray($object);
-	}
+        return $this->createFromArray($object);
+    }//end createForJob()
 
     public function createFromArray(array $object): JobLog
     {
-		if (isset($object['executionTime']) === false) {
-			$object['executionTime'] = 0;
-		}
+        if (isset($object['executionTime']) === false) {
+            $object['executionTime'] = 0;
+        }
 
         $obj = new JobLog();
-		$obj->hydrate($object);
-		// Set uuid
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
+        $obj->hydrate($object);
+        // Set uuid
+        if ($obj->getUuid() === null) {
+            $obj->setUuid(Uuid::v4());
+        }
+
         return $this->insert($obj);
-    }
+    }//end createFromArray()
 
     public function updateFromArray(int $id, array $object): JobLog
     {
         $obj = $this->find($id);
-		$obj->hydrate($object);
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
+        $obj->hydrate($object);
+        if ($obj->getUuid() === null) {
+            $obj->setUuid(Uuid::v4());
+        }
 
         return $this->update($obj);
-    }
+    }//end updateFromArray()
 
-	/**
-	 * Get the last call log.
-	 *
-	 * @return CallLog|null The last call log or null if no logs exist.
-	 * @throws MultipleObjectsReturnedException
-	 * @throws Exception
-	 */
+    /**
+     * Get the last call log.
+     *
+     * @return CallLog|null The last call log or null if no logs exist.
+     * @throws MultipleObjectsReturnedException
+     * @throws Exception
+     */
     public function getLastCallLog(): ?JobLog
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
-           ->from('openconnector_job_logs')
-           ->orderBy('created', 'DESC')
-           ->setMaxResults(1);
+            ->from('openconnector_job_logs')
+            ->orderBy('created', 'DESC')
+            ->setMaxResults(1);
 
         try {
             return $this->findEntity($qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return null;
         }
-    }
+    }//end getLastCallLog()
 
-	/**
-	 * Get job statistics grouped by date for a specific date range
-	 *
-	 * @param DateTime $from Start date
-	 * @param DateTime $to End date
-	 *
-	 * @return array Array of daily statistics with counts per log level
-	 * @throws Exception
-	 */
+    /**
+     * Get job statistics grouped by date for a specific date range
+     *
+     * @param DateTime $from Start date
+     * @param DateTime $to   End date
+     *
+     * @return array Array of daily statistics with counts per log level
+     * @throws Exception
+     */
     public function getJobStatsByDateRange(DateTime $from, DateTime $to): array
     {
         $qb = $this->db->getQueryBuilder();
@@ -172,7 +178,7 @@ class JobLogMapper extends QBMapper
             ->orderBy('date', 'ASC');
 
         $result = $qb->executeQuery();
-        $stats = [];
+        $stats  = [];
 
         // Create DatePeriod to iterate through all dates
         $period = new DatePeriod(
@@ -183,43 +189,43 @@ class JobLogMapper extends QBMapper
 
         // Initialize all dates with zero values
         foreach ($period as $date) {
-            $dateStr = $date->format('Y-m-d');
+            $dateStr         = $date->format('Y-m-d');
             $stats[$dateStr] = [
-                'info' => 0,
+                'info'    => 0,
                 'warning' => 0,
-                'error' => 0,
-                'debug' => 0
+                'error'   => 0,
+                'debug'   => 0,
             ];
         }
 
         // Fill in actual values where they exist
         while ($row = $result->fetch()) {
             $stats[$row['date']] = [
-                'info' => (int)$row['info'],
-                'warning' => (int)$row['warning'],
-                'error' => (int)$row['error'],
-                'debug' => (int)$row['debug']
+                'info'    => (int) $row['info'],
+                'warning' => (int) $row['warning'],
+                'error'   => (int) $row['error'],
+                'debug'   => (int) $row['debug'],
             ];
         }
 
         return $stats;
-    }
+    }//end getJobStatsByDateRange()
 
-	/**
-	 * Get job statistics grouped by hour for a specific date range
-	 *
-	 * @param DateTime $from Start date
-	 * @param DateTime $to End date
-	 *
-	 * @return array Array of hourly statistics with counts per log level
-	 * @throws Exception
-	 */
+    /**
+     * Get job statistics grouped by hour for a specific date range
+     *
+     * @param DateTime $from Start date
+     * @param DateTime $to   End date
+     *
+     * @return array Array of hourly statistics with counts per log level
+     * @throws Exception
+     */
     public function getJobStatsByHourRange(DateTime $from, DateTime $to): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                $qb->createFunction('HOUR(created) as hour'),
+                $qb->createFunction('EXTRACT(HOUR FROM created) as hour'),
                 $qb->createFunction('SUM(CASE WHEN level = \'INFO\' THEN 1 ELSE 0 END) as info'),
                 $qb->createFunction('SUM(CASE WHEN level = \'WARNING\' THEN 1 ELSE 0 END) as warning'),
                 $qb->createFunction('SUM(CASE WHEN level = \'ERROR\' THEN 1 ELSE 0 END) as error'),
@@ -232,19 +238,19 @@ class JobLogMapper extends QBMapper
             ->orderBy('hour', 'ASC');
 
         $result = $qb->executeQuery();
-        $stats = [];
+        $stats  = [];
 
         while ($row = $result->fetch()) {
             $stats[$row['hour']] = [
-                'info' => (int)$row['info'],
-                'warning' => (int)$row['warning'],
-                'error' => (int)$row['error'],
-                'debug' => (int)$row['debug']
+                'info'    => (int) $row['info'],
+                'warning' => (int) $row['warning'],
+                'error'   => (int) $row['error'],
+                'debug'   => (int) $row['debug'],
             ];
         }
 
         return $stats;
-    }
+    }//end getJobStatsByHourRange()
 
     /**
      * Clear expired logs from the database
@@ -256,7 +262,7 @@ class JobLogMapper extends QBMapper
      *
      * @throws \Exception Database operation exceptions
      *
-     * @psalm-return bool
+     * @psalm-return   bool
      * @phpstan-return bool
      */
     public function clearLogs(): bool
@@ -267,8 +273,8 @@ class JobLogMapper extends QBMapper
 
             // Build the delete query to remove expired job logs that have the 'expires' column set
             $qb->delete('openconnector_job_logs')
-               ->where($qb->expr()->isNotNull('expires'))
-               ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+                ->where($qb->expr()->isNotNull('expires'))
+                ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
 
             // Execute the query and get the number of affected rows
             $result = $qb->executeStatement();
@@ -277,33 +283,36 @@ class JobLogMapper extends QBMapper
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes
-            \OC::$server->getLogger()->error('Failed to clear expired job logs: ' . $e->getMessage(), [
-                'app' => 'openconnector',
-                'exception' => $e
-            ]);
+            $this->logger->error(
+                    'Failed to clear expired job logs: '.$e->getMessage(),
+                    [
+                        'app'       => 'openconnector',
+                        'exception' => $e,
+                    ]
+                    );
 
             // Re-throw the exception so the caller knows something went wrong
             throw $e;
-        }
-    }
+        }//end try
+    }//end clearLogs()
 
     /**
      * Get the total count of all job logs.
      *
-     * @param array $filters Optional filters to apply
+     * @param  array $filters Optional filters to apply
      * @return int The total number of job logs in the database.
      * @throws \OCP\DB\Exception Database operation exceptions
      *
-     * @psalm-return int
+     * @psalm-return   int
      * @phpstan-return int
      */
-    public function getTotalCount(array $filters = []): int
+    public function getTotalCount(array $filters=[]): int
     {
         $qb = $this->db->getQueryBuilder();
 
         // Select count of all logs
         $qb->select($qb->createFunction('COUNT(*) as count'))
-           ->from('openconnector_job_logs');
+            ->from('openconnector_job_logs');
 
         // Apply filters if provided
         foreach ($filters as $filter => $value) {
@@ -311,17 +320,19 @@ class JobLogMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNotNull($filter));
                 continue;
             }
+
             if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
                 continue;
             }
+
             $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         $result = $qb->executeQuery();
-        $row = $result->fetch();
+        $row    = $result->fetch();
 
         // Return the total count
-        return (int)$row['count'];
-    }
-}
+        return (int) $row['count'];
+    }//end getTotalCount()
+}//end class

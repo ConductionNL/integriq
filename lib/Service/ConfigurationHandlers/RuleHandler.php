@@ -11,13 +11,13 @@ use OCP\AppFramework\Db\Entity;
  *
  * Handler for exporting and importing rule configurations.
  *
- * @package OCA\OpenConnector\Service\ConfigurationHandlers
- * @category Service
- * @author OpenConnector Team
+ * @package   OCA\OpenConnector\Service\ConfigurationHandlers
+ * @category  Service
+ * @author    OpenConnector Team
  * @copyright 2024 OpenConnector
- * @license AGPL-3.0
- * @version 1.0.0
- * @link https://github.com/OpenConnector/openconnector
+ * @license   AGPL-3.0
+ * @version   1.0.0
+ * @link      https://github.com/OpenConnector/openconnector
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.MissingImport)
@@ -30,12 +30,12 @@ class RuleHandler implements ConfigurationHandlerInterface
     public function __construct(
         private readonly RuleMapper $ruleMapper
     ) {
-    }
+    }//end __construct()
 
     /**
      * {@inheritDoc}
      */
-    public function export(Entity $entity, array $mappings, array &$mappingIds = []): array
+    public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
         if (!$entity instanceof Rule) {
             throw new \InvalidArgumentException('Entity must be an instance of Rule');
@@ -43,7 +43,7 @@ class RuleHandler implements ConfigurationHandlerInterface
 
         $ruleArray = $entity->jsonSerialize();
         unset($ruleArray['id'], $ruleArray['uuid']);
-        
+
         // Ensure slug is set
         if (empty($ruleArray['slug'])) {
             $ruleArray['slug'] = $entity->getSlug();
@@ -55,16 +55,16 @@ class RuleHandler implements ConfigurationHandlerInterface
         }
 
         return $ruleArray;
-    }
+    }//end export()
 
     /**
      * Recursively convert IDs to slugs in configuration arrays
      *
-     * @param array $config The configuration array to process
-     * @param array $mappings The mappings array containing idToSlug mappings
+     * @param  array $config   The configuration array to process
+     * @param  array $mappings The mappings array containing idToSlug mappings
      * @return array The processed configuration with IDs converted to slugs
      */
-    private function convertIdsToSlugs(array $config, array $mappings, array &$mappingIds = []): array
+    private function convertIdsToSlugs(array $config, array $mappings, array &$mappingIds=[]): array
     {
         $entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema'];
 
@@ -79,23 +79,26 @@ class RuleHandler implements ConfigurationHandlerInterface
             foreach ($entityTypes as $type) {
                 // Check for exact match (e.g., 'source')
                 if ($key === $type && isset($mappings[$type]['idToSlug'][$value])) {
-                    if($type === 'mapping') {
+                    if ($type === 'mapping') {
                         $mappingIds[] = $value;
                     }
+
                     $config[$key] = $mappings[$type]['idToSlug'][$value];
                 }
+
                 // Check for ID suffix (e.g., 'sourceId')
-                if (str_ends_with($key, $type . 'Id') && isset($mappings[$type]['idToSlug'][$value])) {
-                    if($type === 'mapping') {
+                if (str_ends_with($key, $type.'Id') && isset($mappings[$type]['idToSlug'][$value])) {
+                    if ($type === 'mapping') {
                         $mappingIds[] = $value;
                     }
+
                     $config[$key] = $mappings[$type]['idToSlug'][$value];
                 }
             }
-        }
+        }//end foreach
 
         return $config;
-    }
+    }//end convertIdsToSlugs()
 
     /**
      * {@inheritDoc}
@@ -106,6 +109,7 @@ class RuleHandler implements ConfigurationHandlerInterface
         if (isset($data['source_id']) && isset($mappings['source']['slugToId'][$data['source_id']])) {
             $data['source_id'] = $mappings['source']['slugToId'][$data['source_id']];
         }
+
         if (isset($data['target_id']) && isset($mappings['source']['slugToId'][$data['target_id']])) {
             $data['target_id'] = $mappings['source']['slugToId'][$data['target_id']];
         }
@@ -123,13 +127,13 @@ class RuleHandler implements ConfigurationHandlerInterface
 
         // Create new rule
         return $this->ruleMapper->createFromArray($data);
-    }
+    }//end import()
 
     /**
      * Recursively convert slugs to IDs in configuration arrays
      *
-     * @param array $config The configuration array to process
-     * @param array $mappings The mappings array containing slugToId mappings
+     * @param  array $config   The configuration array to process
+     * @param  array $mappings The mappings array containing slugToId mappings
      * @return array The processed configuration with slugs converted to IDs
      */
     private function convertSlugsToIds(array $config, array $mappings): array
@@ -149,15 +153,16 @@ class RuleHandler implements ConfigurationHandlerInterface
                 if ($key === $type && isset($mappings[$type]['slugToId'][$value])) {
                     $config[$key] = $mappings[$type]['slugToId'][$value];
                 }
+
                 // Check for ID suffix (e.g., 'sourceId')
-                if (str_ends_with($key, $type . 'Id') && isset($mappings[$type]['slugToId'][$value])) {
+                if (str_ends_with($key, $type.'Id') && isset($mappings[$type]['slugToId'][$value])) {
                     $config[$key] = $mappings[$type]['slugToId'][$value];
                 }
             }
         }
 
         return $config;
-    }
+    }//end convertSlugsToIds()
 
     /**
      * {@inheritDoc}
@@ -165,5 +170,5 @@ class RuleHandler implements ConfigurationHandlerInterface
     public function getEntityType(): string
     {
         return 'rule';
-    }
-}
+    }//end getEntityType()
+}//end class
