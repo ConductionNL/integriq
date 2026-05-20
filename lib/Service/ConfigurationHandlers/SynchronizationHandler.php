@@ -2,8 +2,8 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Db\Synchronization;
-use OCA\OpenConnector\Db\SynchronizationMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -32,10 +32,10 @@ use Symfony\Component\Uid\Uuid;
 class SynchronizationHandler implements ConfigurationHandlerInterface
 {
     /**
-     * @param SynchronizationMapper $synchronizationMapper The synchronization mapper
+     * @param OrObjectService $orObjectService The OR object service
      */
     public function __construct(
-        private readonly SynchronizationMapper $synchronizationMapper
+        private readonly OrObjectService $orObjectService
     ) {
     }//end __construct()
 
@@ -44,16 +44,12 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
-        if (!$entity instanceof Synchronization) {
-            throw new \InvalidArgumentException('Entity must be an instance of Synchronization');
-        }
-
-        $syncArray = $entity->jsonSerialize();
+        $syncArray = ($entity instanceof ObjectEntity) ? $entity->getObject() : $entity->jsonSerialize();
         unset($syncArray['id'], $syncArray['uuid']);
 
         // Ensure slug is set
-        if (empty($syncArray['slug'])) {
-            $syncArray['slug'] = $entity->getSlug();
+        if (empty($syncArray['slug']) && $entity instanceof ObjectEntity) {
+            $syncArray['slug'] = $entity->getUuid();
         }
 
         // Handle sourceId based on sourceType.
@@ -260,13 +256,19 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
         }//end foreach
 
         // Check if synchronization with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['synchronization']['slugToId'][$data['slug']])) {
+        $slug = $data['slug'] ?? null;
+        if ($slug !== null && isset($mappings['synchronization']['slugToId'][$slug])) {
             // Update existing synchronization.
-            return $this->synchronizationMapper->updateFromArray($mappings['synchronization']['slugToId'][$data['slug']], $data);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                register: 'openconnector',
+                schema: 'synchronization',
+                uuid: $mappings['synchronization']['slugToId'][$slug]
+            );
         }
 
         // Create new synchronization.
-        return $this->synchronizationMapper->createFromArray($data);
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'synchronization');
     }//end import()
 
     /**
