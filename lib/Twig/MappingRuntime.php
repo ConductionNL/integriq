@@ -4,19 +4,13 @@ namespace OCA\OpenConnector\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
 use OC\Files\Node\File;
-use OCA\OpenConnector\Db\Mapping;
-use OCA\OpenConnector\Db\MappingMapper;
-use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Db\SourceMapper;
-use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\DB\Exception;
-use OCP\Files\IRootFolder;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 use Twig\Extension\RuntimeExtensionInterface;
@@ -34,9 +28,7 @@ class MappingRuntime implements RuntimeExtensionInterface
 {
     public function __construct(
         private readonly MappingService $mappingService,
-        private readonly MappingMapper $mappingMapper,
         private readonly CallService $callService,
-        private readonly SourceMapper $sourceMapper,
         private readonly FileService $fileService,
         private readonly ObjectService $objectService,
     ) {
@@ -96,61 +88,60 @@ class MappingRuntime implements RuntimeExtensionInterface
      */
     public function callSource(string $sourceId, string $endpoint, string $method='GET', array $configuration=[], bool $decode=true): array|string
     {
-        $source = $this->sourceMapper->find(id: $sourceId);
+        $orObjectService = $this->objectService->getOpenRegisters();
+        $source          = $orObjectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+        $sourceData      = $source->getObject();
 
-        if (str_contains(haystack: $endpoint, needle: $source->getLocation()) === true) {
-            $endpoint = substr(string: $endpoint, offset: strlen(string: $source->getLocation()));
+        if (str_contains(haystack: $endpoint, needle: ($sourceData['location'] ?? '')) === true) {
+            $endpoint = substr(string: $endpoint, offset: strlen(string: ($sourceData['location'] ?? '')));
         }
 
-        $response = $this->callService->call(source: $source, endpoint: $endpoint, method: $method, config: $configuration);
+        $response     = $this->callService->call(source: $source, endpoint: $endpoint, method: $method, config: $configuration);
+        $responseData = $response->getObject();
 
-        return $response->getResponse()['body'];
+        return $responseData['response']['body'] ?? '';
 
     }//end callSource()
 
     /**
      * Execute a mapping with given parameters.
      *
-     * @param Mapping|array|string|int $mapping The mapping to execute
-     * @param array                    $input   The input to run the mapping on
-     * @param bool                     $list    Whether the mapping runs on multiple instances of the object.
+     * @param \OCA\OpenRegister\Db\Mapping|array|string|int $mapping The mapping to execute
+     * @param array                                          $input   The input to run the mapping on
+     * @param bool                                           $list    Whether the mapping runs on multiple instances of the object.
      *
      * @return array
      */
-    public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
+    public function executeMapping(\OCA\OpenRegister\Db\Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
         if (is_array($mapping) === true) {
-            $mappingObject = new Mapping();
+            $mappingObject = new \OCA\OpenRegister\Db\Mapping();
             $mappingObject->hydrate($mapping);
 
             $mapping = $mappingObject;
         }
 
-        if ((is_string($mapping) === true || is_int($mapping) === true)
-            && is_string($mapping) === true && str_starts_with($mapping, 'http')
-        ) {
-            $mapping = $this->mappingMapper->findByRef($mapping)[0];
-        }
-
-        if ((is_string($mapping) === true || is_int($mapping) === true)
-            && !(is_string($mapping) === true && str_starts_with($mapping, 'http'))
-        ) {
-            // If the mapping is an int, we assume it's an ID and try to find the mapping by ID.
-            // In the future we should be able to find the mapping by uuid (string) as well.
-            $mapping = $this->mappingMapper->find($mapping);
+        if ((is_string($mapping) === true || is_int($mapping) === true)) {
+            $orObjectService = $this->objectService->getOpenRegisters();
+            $mappingEntity   = $orObjectService->find(id: (string) $mapping, register: 'openconnector', schema: 'mapping');
+            if ($mappingEntity !== null) {
+                $mappingObject = new \OCA\OpenRegister\Db\Mapping();
+                $mappingObject->hydrate($mappingEntity->getObject());
+                $mapping = $mappingObject;
+            }
         }
 
         return $this->mappingService->executeMapping(
             mapping: $mapping,
-          input: $input,
-          list: $list
+            input: $input,
+            list: $list
         );
     }//end executeMapping()
 
     /**
      * Generate a uuid.
      *
-     * @return array
+     * @return UuidV4
      */
     public function generateUuid(): UuidV4
     {
@@ -176,7 +167,7 @@ class MappingRuntime implements RuntimeExtensionInterface
             return $files[0]->getContent();
         }
 
-        return get_class($file);
+        return null;
     }//end getFileContents()
 
     /**
