@@ -16,10 +16,7 @@
 
 namespace OCA\OpenConnector\Cron;
 
-use OCA\OpenConnector\Db\CallLogMapper;
-use OCA\OpenConnector\Db\JobLogMapper;
-use OCA\OpenConnector\Db\SynchronizationContractLogMapper;
-use OCA\OpenConnector\Db\SynchronizationLogMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\BackgroundJob\TimedJob;
 use OCP\BackgroundJob\IJob;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -38,39 +35,21 @@ class LogCleanUpTask extends TimedJob
 {
 
     /**
-     * Call log mapper for database operations
-     */
-    private readonly CallLogMapper $callLogMapper;
-
-    /**
-     * Job log mapper for database operations
-     */
-    private readonly JobLogMapper $jobLogMapper;
-
-    /**
      * LogCleanUpTask constructor
      *
      * Initializes the log cleanup task with required dependencies
      * and configures the background job settings.
      *
-     * @param ITimeFactory  $time          Time factory for job scheduling
-     * @param CallLogMapper $callLogMapper Mapper for call log operations
-     * @param JobLogMapper  $jobLogMapper  Mapper for job log operations
+     * @param ITimeFactory  $time            Time factory for job scheduling
+     * @param OrObjectService $orObjectService OR object service for log operations
      *
      * @psalm-param ITimeFactory $time
-     * @psalm-param CallLogMapper $callLogMapper
-     * @psalm-param JobLogMapper $jobLogMapper
      */
     public function __construct(
         ITimeFactory $time,
-        CallLogMapper $callLogMapper,
-        JobLogMapper $jobLogMapper,
-        private readonly SynchronizationContractLogMapper $syncContractLogMapper,
-        private readonly SynchronizationLogMapper $syncLogMapper
+        private readonly OrObjectService $orObjectService
     ) {
         parent::__construct($time);
-        $this->callLogMapper = $callLogMapper;
-        $this->jobLogMapper  = $jobLogMapper;
 
         // Run every minute @todo change to hour
         $this->setInterval(60);
@@ -83,10 +62,40 @@ class LogCleanUpTask extends TimedJob
     }//end __construct()
 
     /**
+     * Delete expired objects for a given schema in the openconnector register.
+     *
+     * Finds all objects with a non-null `expires` field that is in the past,
+     * then deletes them one by one via OR ObjectService.
+     *
+     * @param string $schema The schema slug to clean up.
+     * @return void
+     */
+    private function cleanupSchema(string $schema): void
+    {
+        $now     = (new \DateTime())->format('Y-m-d H:i:s');
+        $matches = $this->orObjectService->findAll(config: [
+            'filters' => [
+                'register'   => 'openconnector',
+                'schema'     => $schema,
+                'expires[lt]' => $now,
+            ],
+        ]);
+
+        $objects = $matches['results'] ?? $matches;
+        foreach ($objects as $object) {
+            try {
+                $this->orObjectService->deleteObject(uuid: $object->getUuid());
+            } catch (\Exception $e) {
+                // Continue with remaining objects even if one deletion fails.
+            }
+        }
+    }//end cleanupSchema()
+
+    /**
      * Execute the log cleanup task
      *
-     * This method removes expired logs from both call logs and job logs
-     * tables to maintain database performance and prevent storage bloat.
+     * This method removes expired logs from all log schemas
+     * to maintain database performance and prevent storage bloat.
      *
      * @param mixed $argument Task arguments (not used in this implementation)
      *
@@ -97,15 +106,16 @@ class LogCleanUpTask extends TimedJob
      */
     public function run(mixed $argument): void
     {
-        // Clear expired call logs from the database
-        $this->callLogMapper->clearLogs();
+        // Clear expired call logs
+        $this->cleanupSchema('call_log');
 
-        // Clear expired job logs from the database
-        $this->jobLogMapper->clearLogs();
+        // Clear expired job logs
+        $this->cleanupSchema('job_log');
 
         // Clear expired synchronization contract logs
-        $this->syncContractLogMapper->clearLogs();
+        $this->cleanupSchema('synchronization_contract_log');
 
-        $this->syncLogMapper->cleanupExpired();
+        // Clear expired synchronization logs
+        $this->cleanupSchema('synchronization_log');
     }//end run()
 }//end class
