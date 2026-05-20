@@ -16,7 +16,8 @@
     "test-coverage": "jest --silent --coverage",
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
-    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css"
+    "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
+    "check:manifest": "node -e \"const {validateManifestV2}=require('@conduction/nextcloud-vue/dist/utils.cjs.js');const m=require('./src/manifest.json');const r=validateManifestV2(m);if(!r.valid){console.error(JSON.stringify(r.errors,null,2));process.exit(1)}console.log('manifest.json valid')\""
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
