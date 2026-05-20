@@ -19,10 +19,9 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'main.js'),
 		filename: appId + '-main.js',
 	},
-	adminSettings: {
-		import: path.join(__dirname, 'src', 'settings.js'),
-		filename: appId + '-settings.js',
-	},
+	// adminSettings webpack entry removed in chain-C cutover. The
+	// per-app admin-settings UI is now part of the main SPA via the
+	// AppSettings manifest page (type: settings).
 	jobQueueWidget: {
 		import: path.join(__dirname, 'src', 'jobQueueWidget.js'),
 		filename: appId + '-jobQueueWidget.js',
