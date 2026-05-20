@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Db\SynchronizationContractMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
@@ -46,11 +46,11 @@ class SynchronizationContractsController extends Controller
 {
 
     /**
-     * The synchronization contract mapper
+     * The OR object service
      *
-     * @var SynchronizationContractMapper
+     * @var OrObjectService
      */
-    private SynchronizationContractMapper $synchronizationContractMapper;
+    private OrObjectService $orObjectService;
 
     /**
      * The localization service
@@ -62,20 +62,20 @@ class SynchronizationContractsController extends Controller
     /**
      * Constructor for the SynchronizationContractsController
      *
-     * @param string                        $appName                       The application name
-     * @param IRequest                      $request                       The request interface
-     * @param SynchronizationContractMapper $synchronizationContractMapper The synchronization contract mapper
-     * @param IL10N                         $l                             The localization service
+     * @param string          $appName         The application name
+     * @param IRequest        $request         The request interface
+     * @param OrObjectService $orObjectService The OR object service
+     * @param IL10N           $l               The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        SynchronizationContractMapper $synchronizationContractMapper,
+        OrObjectService $orObjectService,
         IL10N $l
     ) {
         parent::__construct($appName, $request);
 
-        $this->synchronizationContractMapper = $synchronizationContractMapper;
+        $this->orObjectService = $orObjectService;
         $this->l = $l;
     }//end __construct()
 
@@ -93,15 +93,14 @@ class SynchronizationContractsController extends Controller
      */
     public function activate(string $id): JSONResponse
     {
-        try {
-            $contract = $this->synchronizationContractMapper->find((int) $id);
-
-            // Set contract as active (implementation depends on your business logic)
-            // For now, we'll just return success
-            return new JSONResponse(['message' => $this->l->t('Contract activated successfully')]);
-        } catch (\Exception $e) {
+        $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+        if ($contract === null) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
         }
+
+        // Set contract as active (implementation depends on your business logic)
+        // For now, we'll just return success
+        return new JSONResponse(['message' => $this->l->t('Contract activated successfully')]);
     }//end activate()
 
     /**
@@ -118,15 +117,14 @@ class SynchronizationContractsController extends Controller
      */
     public function deactivate(string $id): JSONResponse
     {
-        try {
-            $contract = $this->synchronizationContractMapper->find((int) $id);
-
-            // Set contract as inactive (implementation depends on your business logic)
-            // For now, we'll just return success
-            return new JSONResponse(['message' => $this->l->t('Contract deactivated successfully')]);
-        } catch (\Exception $e) {
+        $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+        if ($contract === null) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
         }
+
+        // Set contract as inactive (implementation depends on your business logic)
+        // For now, we'll just return success
+        return new JSONResponse(['message' => $this->l->t('Contract deactivated successfully')]);
     }//end deactivate()
 
     /**
@@ -143,15 +141,14 @@ class SynchronizationContractsController extends Controller
      */
     public function execute(string $id): JSONResponse
     {
-        try {
-            $contract = $this->synchronizationContractMapper->find((int) $id);
-
-            // Execute contract (implementation depends on your business logic)
-            // For now, we'll just return success
-            return new JSONResponse(['message' => $this->l->t('Contract executed successfully')]);
-        } catch (\Exception $e) {
+        $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+        if ($contract === null) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);
         }
+
+        // Execute contract (implementation depends on your business logic)
+        // For now, we'll just return success
+        return new JSONResponse(['message' => $this->l->t('Contract executed successfully')]);
     }//end execute()
 
     /**
@@ -167,11 +164,16 @@ class SynchronizationContractsController extends Controller
     public function statistics(): JSONResponse
     {
         try {
-            // Get basic counts by status (assuming status field exists or calculate from other fields)
-            $totalCount    = $this->synchronizationContractMapper->getTotalCount();
-            $activeCount   = $this->synchronizationContractMapper->getTotalCount(['status' => 'active']);
-            $inactiveCount = $this->synchronizationContractMapper->getTotalCount(['status' => 'inactive']);
-            $errorCount    = $this->synchronizationContractMapper->getTotalCount(['status' => 'error']);
+            // Get basic counts by status via OR ObjectService
+            $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization_contract'];
+            $allMatches      = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
+            $activeMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'active'])]);
+            $inactiveMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'inactive'])]);
+            $errorMatches    = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'error'])]);
+            $totalCount    = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
+            $activeCount   = $activeMatches['total'] ?? count($activeMatches['results'] ?? $activeMatches);
+            $inactiveCount = $inactiveMatches['total'] ?? count($inactiveMatches['results'] ?? $inactiveMatches);
+            $errorCount    = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
 
             return new JSONResponse(
                     [
@@ -278,26 +280,28 @@ class SynchronizationContractsController extends Controller
                 $filters['date_to'] = $dateTo;
             }
 
-            // Get all contracts matching filters (no pagination for export)
-            $contracts = $this->synchronizationContractMapper->findAll(null, null, $filters);
+            // Get all contracts matching filters (no pagination for export) via OR ObjectService
+            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters);
+            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
+            $contracts = $matches['results'] ?? $matches;
 
             // Create CSV content
-            $csvData = "ID,UUID,Synchronization ID,Origin ID,Target ID,Origin Hash,Target Hash,Source Last Synced,Target Last Synced,Created,Updated\n";
+            $csvData = "UUID,Synchronization ID,Origin ID,Target ID,Origin Hash,Target Hash,Source Last Synced,Target Last Synced,Created,Updated\n";
 
             foreach ($contracts as $contract) {
+                $data    = $contract->getObject();
                 $csvData .= sprintf(
-                    "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-                    $contract->getId() ?? '',
+                    "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
                     $contract->getUuid() ?? '',
-                    $contract->getSynchronizationId() ?? '',
-                    $contract->getOriginId() ?? '',
-                    $contract->getTargetId() ?? '',
-                    $contract->getOriginHash() ?? '',
-                    $contract->getTargetHash() ?? '',
-                    $contract->getSourceLastSynced() ? $contract->getSourceLastSynced()->format('Y-m-d H:i:s') : '',
-                    $contract->getTargetLastSynced() ? $contract->getTargetLastSynced()->format('Y-m-d H:i:s') : '',
-                    $contract->getCreated() ? $contract->getCreated()->format('Y-m-d H:i:s') : '',
-                    $contract->getUpdated() ? $contract->getUpdated()->format('Y-m-d H:i:s') : ''
+                    $data['synchronizationId'] ?? '',
+                    $data['originId'] ?? '',
+                    $data['targetId'] ?? '',
+                    $data['originHash'] ?? '',
+                    $data['targetHash'] ?? '',
+                    $data['sourceLastSynced'] ?? '',
+                    $data['targetLastSynced'] ?? '',
+                    $data['created'] ?? '',
+                    $data['updated'] ?? ''
                 );
             }
 
