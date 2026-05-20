@@ -28,16 +28,19 @@ return [
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
-		['name' => 'sources#statistics', 'url' => '/api/sources/statistics', 'verb' => 'GET'],
+		// sources#statistics route removed — controller method was deleted by the
+		// chain-C agent's overreach. Dashboard stats now come from declarative
+		// manifest widgets resolving against OR's aggregate endpoint.
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],
-		['name' => 'jobs#statistics', 'url' => '/api/jobs/statistics', 'verb' => 'GET'],
+		// jobs#statistics route removed — controller method was deleted by the
+		// chain-C agent's overreach. Stats now come from manifest widgets.
 		// Endpoint endpoints
-		['name' => 'endpoints#test', 'url' => '/api/endpoints/test/{id}', 'verb' => 'POST'],
+		// endpoints#test route removed — controller method was deleted by agent.
 		['name' => 'endpoints#logs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
-		['name' => 'endpoints#statistics', 'url' => '/api/endpoints/statistics', 'verb' => 'GET'],
+		// endpoints#statistics route removed — controller method was deleted by agent.
 		// Synchronization endpoints
 		['name' => 'synchronizations#run', 'url' => '/api/synchronizations/{id}/run', 'verb' => 'POST'],
 		['name' => 'synchronizations#test', 'url' => '/api/synchronizations/{id}/test', 'verb' => 'POST'],
@@ -50,7 +53,9 @@ return [
 		['name' => 'mappings#getObjects', 'url' => '/api/mappings/objects', 'verb' => 'GET'],
 
 		// Running endpoints - allow any path after /api/endpoints/
-        ['name' => 'endpoints#preflighted_cors', 'url' => '/api/endpoint/{_path}', 'verb' => 'OPTIONS', 'requirements' => ['path' => '.+']],
+        // endpoints#preflighted_cors removed — agent deleted the CORS preflight method.
+        // If cross-origin clients need preflight on /api/endpoint/*, re-add the
+        // method on EndpointsController and restore this route.
 		['name' => 'endpoints#handlePath', 'postfix' => 'read', 'url' => '/api/endpoint/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
 		['name' => 'endpoints#handlePath', 'postfix' => 'update', 'url' => '/api/endpoint/{_path}', 'verb' => 'PUT', 'requirements' => ['_path' => '.+']],
 		['name' => 'endpoints#handlePath', 'postfix' => 'partialupdate', 'url' => '/api/endpoint/{_path}', 'verb' => 'PATCH', 'requirements' => ['_path' => '.+']],
