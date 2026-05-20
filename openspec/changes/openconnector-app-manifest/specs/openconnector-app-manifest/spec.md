@@ -9,7 +9,7 @@
 
 Declare OpenConnector's frontend shell shape — navigation entries, page routes, runtime
 dependencies, and settings configuration — in a single `src/manifest.json` file
-conforming to the canonical `app-manifest.schema.json` from `@conduction/nextcloud-vue`.
+conforming to the canonical `app-manifest-v2.schema.json` from `@conduction/nextcloud-vue`.
 
 This spec covers the D1 config deliverables: the manifest file itself, the thin-glue
 bootstrap call in `main.js`, and the CI validation gate. It does NOT cover the Vue
@@ -44,12 +44,12 @@ and `src/App.vue`. The file MUST be valid JSON parseable without errors.
 
 The manifest file MUST contain a `$schema` field set to the published URL of the
 canonical schema:
-`"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json"`
+`"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json"`
 
 #### Scenario: $schema field is present and correct
 - GIVEN the manifest file is loaded
 - WHEN inspecting the `$schema` top-level key
-- THEN it MUST equal `"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json"`
+- THEN it MUST equal `"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json"`
 
 ---
 
@@ -89,7 +89,7 @@ apps need to be listed in D1.
 
 ### Requirement: Manifest MUST declare a menu entry for every primary navigation item
 
-The manifest `menu` array MUST contain one entry for each of the 13 navigation items
+The manifest `menu` array MUST contain one entry for each of the 15 navigation items
 currently rendered by `src/navigation/MainMenu.vue` plus the external Documentation
 link. Each entry MUST have: `id` (unique string), `label` (i18n key string), `icon`
 (Nextcloud icon class string), `route` OR `href` (but not both), and `order` (integer).
@@ -113,7 +113,7 @@ Required menu entries (confirmed from `src/navigation/MainMenu.vue`):
 | Documentation | openconnector navigation.documentation | settings | 120 |
 | Settings | openconnector navigation.settings | settings | 130 |
 
-#### Scenario: All 13 menu entries are present
+#### Scenario: All 15 menu entries are present
 - GIVEN the manifest file is loaded
 - WHEN inspecting `manifest.menu`
 - THEN the array MUST contain entries with ids: Dashboard, Sources, Endpoints,
@@ -216,7 +216,7 @@ Required pages (minimum 23 entries):
 ### Requirement: Manifest MUST validate against the canonical schema without errors
 
 The file `src/manifest.json` MUST pass validation against
-`app-manifest.schema.json` (from `@conduction/nextcloud-vue`) with zero errors when
+`app-manifest-v2.schema.json` (from `@conduction/nextcloud-vue`) with zero errors when
 checked by the `validateManifest` utility function.
 
 #### Scenario: validateManifest returns valid
@@ -307,8 +307,8 @@ data file.
 
 - [ ] `src/manifest.json` exists and parses as valid JSON
 - [ ] `validateManifest(manifest)` returns `{ valid: true }` with zero errors
-- [ ] All 13 menu entries are present with correct `section` placement
-- [ ] All 23 page routes from `src/router/index.js` are represented in `pages[]`
+- [ ] All 15 menu entries are present with correct `section` placement (13 in `main` + 2 in `settings`)
+- [ ] All 24 page routes are represented in `pages[]` (#811 shipped manifest-v2 baseline — `src/router/index.js` is deprecated)
   (excluding redirect-only routes)
 - [ ] `src/main.js` contains `import bundledManifest from './manifest.json'` and
   calls `useAppManifest('openconnector', bundledManifest)`

@@ -74,30 +74,76 @@ THEN the command MUST return no results
 
 ---
 
-### Requirement: Each of the 10 resource pages MUST use CnIndexPage
+### Requirement: All 24 manifest pages MUST use a standard page type — `type: "custom"` is reserved for genuine exceptions only
 
-Every resource index page MUST be rendered via `CnIndexPage` from `@conduction/nextcloud-vue`. This covers Sources, Endpoints, Consumers, Mappings, CloudEvents, Synchronizations, SyncContracts, Rules, Import, and Dashboard. Hand-rolled index view components in `src/views/{Resource}/{Resource}sIndex.vue` MUST be replaced. The CnIndexPage MUST receive the `register`, `schema`, `columns`, and `sidebar` configuration from the manifest page `config` object.
+Every manifest page MUST use one of the 11 standard v2 page types (`index`/`detail`/`dashboard`/`logs`/`settings`/`chat`/`files`/`form`/`wiki`/`map`/`custom`) and MUST NOT use `type: "custom"` unless a `_note` field documents a specific capability gap in `@conduction/nextcloud-vue` that prevents using a standard type.
 
-D1's manifest declares 23 pages total. The 10 index pages above use `CnIndexPage`; the remaining 13 pages MUST use the post-D2 component types declared in this table:
+**Baseline reality (2026-05-20):** post-merge with `origin/development`, all 24 entries in `src/manifest.json` currently use `type: "custom"` and are mapped through `src/registry.js`'s customComponents. The registry.js comment frames this as "genuine exceptions, not deferred migrations". **This spec deliberately overrides that framing.** Per the nc-vue capability surface shipped in PRs #254/#257/#258/#259 (manifest-v2 schema + renderer + codemod + CSP-safe validator), the v2 page-type enum (`index`, `detail`, `dashboard`, `logs`, `settings`, `chat`, `files`, `form`, `wiki`, `map`, `custom`) plus the universal widget+slot grid system CAN express every openconnector page — including the "complex interactive surfaces" the dev team flagged (mapping editor, cron builder, rule conditions, CloudEvent management).
 
-| Page id | Manifest `type` | Post-D2 component | Notes |
+Every manifest page MUST use one of the standard v2 page types unless its `_note` field documents a specific capability gap in nc-vue that prevents it. `registry.js` MUST shrink as pages migrate; the long-term target is a registry containing ONLY genuinely-custom widgets registered against specific page slots (NOT entire pages).
+
+#### Type assignment table (24 pages)
+
+| Page id | Current `type` | Required post-D2 `type` | Implementation notes |
 |---|---|---|---|
-| Dashboard | `dashboard` | `CnDashboard` | D1 Thijn #718 (already merged on `feature/nextcloud-vue`) |
-| SourceLogs | `logs` | `CnLogsPage` | filter `sourceId=@route.sourceId` |
-| EndpointDetail | `detail` | `CnDetailPage` | sidebarTabs: overview + audit |
-| EndpointLogs | `logs` | `CnLogsPage` | |
-| ConsumerDetail | `detail` | `CnDetailPage` | sidebarTabs: overview + audit |
-| Webhooks | `index` | `CnIndexPage` | shares `consumer` schema with Consumers; filtered list — distinct page id, same store via filter param |
-| Jobs | `index` | `CnIndexPage` | NOT one of Thijn's 10 PRs; covered by Task 13 (createCrudStore migration of `job.ts` store) |
-| JobLogs | `logs` | `CnLogsPage` | |
-| MappingDetail | `detail` | `CnDetailPage` | |
-| RuleDetail | `detail` | `CnDetailPage` | |
-| SynchronizationLogs | `logs` | `CnLogsPage` | |
-| CloudEventDetail | `detail` | `CnDetailPage` | |
-| CloudEventLogs | `logs` | `CnLogsPage` | |
-| Settings | `settings` | `CnSettingsPage` | covered by Task 15 (settings.js migration) |
+| Dashboard | `custom` | `dashboard` | Built-in `dashboard` type + CnDashboardGrid + widget array; existing customComponents.DashboardView is decomposed into 3 widgets via `widgetKey` references |
+| Sources | `custom` | `index` | CnIndexPage with schema-driven CRUD; `testSource` becomes a row-action widget `widgetKey: "SourceTestActionWidget"` (genuinely custom, registers in customComponents) |
+| SourceDetail | `custom` | `detail` | CnDetailPage with sidebarTabs: overview + audit + connection-test |
+| SourceLogs | `custom` | `logs` | Built-in `logs` type with filter `sourceId=@route.sourceId` |
+| Endpoints | `custom` | `index` | CnIndexPage standard CRUD |
+| EndpointDetail | `custom` | `detail` | CnDetailPage with sidebarTabs: overview + audit + request-tester |
+| EndpointLogs | `custom` | `logs` | Built-in `logs` type |
+| Consumers | `custom` | `index` | CnIndexPage standard CRUD |
+| ConsumerDetail | `custom` | `detail` | CnDetailPage standard |
+| Webhooks | `custom` | `index` | CnIndexPage on `consumer` schema with filter on `type=webhook` |
+| Jobs | `custom` | `index` | CnIndexPage standard CRUD; `runJob` becomes a row-action widget `widgetKey: "JobRunActionWidget"` |
+| JobLogs | `custom` | `logs` | Built-in `logs` type |
+| Mappings | `custom` | `index` | CnIndexPage list; the drag-drop **MappingEditorWidget** is a custom widget registered via `widgetKey` for the detail page's body slot |
+| MappingDetail | `custom` | `detail` | CnDetailPage with body slot widget `widgetKey: "MappingEditorWidget"` (drag-drop UX) |
+| Rules | `custom` | `index` | CnIndexPage list; **RuleConditionsWidget** (visual conditions editor) is a custom widget for the detail page |
+| RuleDetail | `custom` | `detail` | CnDetailPage with body slot widget `widgetKey: "RuleConditionsWidget"` |
+| Synchronizations | `custom` | `index` | CnIndexPage list + sidebar slot CnStatsBlockWidget |
+| SynchronizationContracts | `custom` | `index` | CnIndexPage standard CRUD on contracts |
+| SynchronizationLogs | `custom` | `logs` | Built-in `logs` type |
+| CloudEvents | `custom` | `index` | CnIndexPage on `event` schema |
+| CloudEventDetail | `custom` | `detail` | CnDetailPage with **EventSubscriptionsWidget** in tab: subscriptions slot |
+| CloudEventLogs | `custom` | `logs` | Built-in `logs` type |
+| Import | `custom` | `custom` | **STAYS custom** — multi-step file upload UX exceeds form/wizard built-ins. `_note` field MUST be added: `"Multi-step file-upload + dry-run preview UX exceeds nc-vue v1.x form/wizard capability — revisit after nc-vue ships CnWizardPage."` |
+| AppSettings | `custom` | `settings` | Built-in `settings` type |
 
-`CnIndexPage`, `CnDetailPage`, `CnLogsPage`, `CnSettingsPage`, and `CnDashboard` MUST all be exported by the pinned `@conduction/nextcloud-vue` version (verified in Task 0). If the pin does not export one of these component types, the pin MUST be bumped BEFORE this change ships.
+**Net**: 23 of 24 pages move from `custom` to a standard type. Only `Import` stays custom (with a documented `_note`). Of the 23 standard pages, 6 pages additionally reference **custom widgets** registered in `customComponents` for body/sidebar/tab slots (the "genuinely custom" interactive UX bits). The remaining customComponents page entries are deleted as their pages migrate.
+
+#### Scenario: registry.js shrinks as standard types are adopted
+
+GIVEN the baseline state has `src/registry.js` exporting 18 entries (full hand-rolled custom-page components)
+WHEN this change is applied
+THEN `src/registry.js` MUST contain only widget-component exports (e.g. `MappingEditorWidget`, `RuleConditionsWidget`, `EventSubscriptionsWidget`, `SourceTestActionWidget`, `JobRunActionWidget`, plus the Import multi-step page component)
+AND `src/registry.js` MUST NOT export any entry whose corresponding manifest page entry uses a standard v2 type (`index`/`detail`/`logs`/`dashboard`/`settings`)
+
+#### Scenario: Sources index page renders via CnIndexPage
+
+GIVEN the manifest page `Sources` has `type: "index"` post-migration
+WHEN the user navigates to `/sources`
+THEN CnIndexPage MUST render the sources list from `GET /index.php/apps/openconnector/api/sources` AND the existing hand-rolled `src/views/Source/SourcesIndex.vue` MUST be deleted
+
+#### Scenario: Mapping detail page renders the MappingEditor as a widget
+
+GIVEN the manifest page `MappingDetail` has `type: "detail"` AND `widgets: [{ widgetKey: "MappingEditorWidget", slot: "body", gridX: 0, gridY: 0, gridWidth: 12, gridHeight: 8 }]`
+WHEN the user navigates to `/mappings/:id`
+THEN CnDetailPage MUST render with the MappingEditorWidget filling the body slot
+AND `src/registry.js` MUST export `MappingEditorWidget` (as a widget, NOT a page-component entry)
+
+#### Scenario: Import page retains custom type with documented _note
+
+GIVEN the manifest page `Import` has `type: "custom"` AND `_note: "Multi-step file-upload + dry-run preview UX exceeds nc-vue v1.x form/wizard capability — revisit after nc-vue ships CnWizardPage."`
+WHEN the manifest is validated against `app-manifest-v2.schema.json`
+THEN the validator MUST accept the entry (since `_note` is present)
+
+#### Scenario: customComponents registry size shrinks
+
+GIVEN the baseline export count of `src/registry.js` is 18
+WHEN this change is applied
+THEN the export count MUST be reduced by at least 12 entries (those whose pages moved to standard types) AND the remaining entries MUST all be widget components, not full-page components
 
 #### Scenario: Sources index page renders via CnIndexPage
 

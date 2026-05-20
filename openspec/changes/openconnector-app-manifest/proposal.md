@@ -42,7 +42,7 @@ static JSON import; it does not add an HTTP endpoint or affect the Nextcloud rou
 ## Summary
 
 Adds `src/manifest.json` — OpenConnector's declarative frontend manifest — listing 13
-navigation entries and 23 page definitions (index + detail pairs for all resources,
+navigation entries and 24 page definitions (index + detail + logs sets for all resources,
 plus dashboard, settings, and a documentation external link). Pairs with a
 `check:manifest` CI gate and a single `useAppManifest` bootstrap call in `main.js`.
 The manifest renderer itself lives in `@conduction/nextcloud-vue` (ADR-032: this
@@ -73,13 +73,13 @@ change is `kind: config`, not `kind: code`); chain D2 will wire up `CnAppRoot` a
 ### In Scope
 
 - `src/manifest.json` with `$schema`, `version`, `dependencies`, `menu[]`, and `pages[]`
-  arrays covering all 13 nav entries and 23 pages currently exposed by the Vue router.
+  arrays covering all 15 nav entries and 24 pages (post #811 manifest-v2 baseline).
 - Import and `useAppManifest` bootstrap call in `src/main.js` (1–2 LOC, qualifies as
   thin-glue under ADR-032 §thin-glue exception).
 - `check:manifest` script in `package.json` wired to `validateManifest` from
   `@conduction/nextcloud-vue`.
 - Verification that the manifest validates against the canonical schema
-  (`app-manifest.schema.json`).
+  (`app-manifest-v2.schema.json` — #811 + nc-vue PR #254/#258 shipped the v2 baseline; `manifest-migrate` CLI codemod available for any v1→v2 migration).
 
 ### Out of Scope
 

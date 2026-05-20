@@ -19,13 +19,14 @@
 - **spec_ref**: `openspec/changes/openconnector-app-manifest/specs/openconnector-app-manifest/spec.md`
 - **files**: `src/manifest.json`
 - **acceptance_criteria**:
-  - GIVEN `src/manifest.json` is read WHEN validated against `app-manifest.schema.json`
-    THEN `validateManifest` MUST return `{ valid: true, errors: null }`
-  - All 13 menu entries are present (Dashboard, Sources, Endpoints, Consumers, Webhooks,
-    Mappings, Jobs, CloudEvents, Synchronizations, Rules, Import, Documentation, Settings)
-  - Import, Documentation, Settings have `"section": "settings"`
-  - Documentation has `"href": "https://openconnector.app/docs"` and no `route`
-  - All 23 pages from `src/router/index.js` (minus redirect-only entries) are declared
+  - **Baseline reality (2026-05-20 post-merge):** `src/manifest.json` already exists (shipped via #811). `main.js` already imports `bundledManifest` + `CnPageRenderer` + `defaultPageTypes` + `registerIcons` + `registerTranslations`. `App.vue` already uses `<CnAppRoot>`. The remaining D1 work is verification + the `check:manifest` CI gate + reconciliation with the actual 15-menu/24-page shape.
+  - GIVEN `src/manifest.json` is read WHEN validated against `app-manifest-v2.schema.json`
+    THEN `validateManifestV2` MUST return `{ valid: true, errors: null }` (note: nc-vue PR #254/#258/#259 ships the pre-compiled CSP-safe validator)
+  - All 15 menu entries are present (Dashboard, Sources, SourceLogs, Endpoints, EndpointLogs,
+    Consumers, Webhooks, Jobs, JobLogs, Mappings, Rules, Synchronizations, CloudEvents — 13 in `main` section; Import + Settings — 2 in `settings` section).
+    Note: per the #811 baseline, the previously-planned external Documentation menu entry was dropped; logs entries (`SourceLogs`/`EndpointLogs`/`JobLogs`) were promoted to top-level menu.
+  - Import, Settings have `"section": "settings"`; all others use the default `main` section.
+  - All 24 pages are declared in `pages[]` (post #811 baseline replaces the legacy `src/router/index.js` count).
   - `manifest.version` is `"1.0.0"`
   - `manifest.dependencies` is `["openregister"]`
 
@@ -34,7 +35,7 @@
 
   ```json
   {
-    "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json",
+    "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
     "version": "1.0.0",
     "dependencies": ["openregister"],
     "menu": [
