@@ -111,8 +111,8 @@
     `appendOnly` and `immutable` columns are both `true`
   - Validation is documented in the PR description (no automated test wired
     up — this is a manual dev-env check)
-- [ ] Implement (deferred — requires running OR dev container)
-- [ ] Test (deferred)
+- [x] Implement — verified 2026-05-20 via `docker exec nextcloud php -r '...ConfigurationService::importFromApp(...)'`
+- [x] Test — DB verified: openconnector register references exactly 15 schemas (IDs 213-226 + reused 25 for `event`); 4 log schemas have `immutable=true`; mutable schemas have `immutable=false`
 
 ### Task 8: Add a CI guard that re-validates schema↔entity coverage
 - **spec_ref**: `openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-002`
