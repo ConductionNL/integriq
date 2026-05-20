@@ -1,0 +1,8 @@
+{
+  "spec_slug": "data-infra-connectors",
+  "title": "Infrastructure and domain data source connectors",
+  "app": "openconnector",
+  "repo": "https://github.com/ConductionNL/openconnector",
+  "depends_on": [],
+  "issue": null
+}
