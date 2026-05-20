@@ -3,8 +3,6 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Db\EventMapper;
 use OCA\OpenConnector\Db\EventMessageMapper;
 use OCA\OpenConnector\Db\EventSubscriptionMapper;
@@ -31,9 +29,14 @@ class EventsController extends Controller
     /**
      * Constructor for the EventsController
      *
-     * @param string     $appName The name of the app
-     * @param IRequest   $request The request object
-     * @param IAppConfig $config  The app configuration object
+     * @param string                    $appName             The name of the app
+     * @param IRequest                  $request             The request object
+     * @param IAppConfig                $config              The app configuration object
+     * @param EventMapper               $eventMapper         The event mapper (used by action methods)
+     * @param EventService              $eventService        The event service
+     * @param EventMessageMapper        $messageMapper       The event message mapper
+     * @param EventSubscriptionMapper   $subscriptionMapper  The event subscription mapper
+     * @param IL10N                     $l                   The localization service
      */
     public function __construct(
         $appName,
@@ -67,127 +70,6 @@ class EventsController extends Controller
             []
         );
     }//end page()
-
-    /**
-     * Retrieves a list of all events
-     *
-     * This method returns a JSON response containing an array of all events in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of events
-     */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
-
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch: $fieldsToSearch);
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-        return new JSONResponse(['results' => $this->eventMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }//end index()
-
-    /**
-     * Retrieves a single event by its ID
-     *
-     * This method returns a JSON response containing the details of a specific event.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the event to retrieve
-     * @return JSONResponse A JSON response containing the event details
-     */
-    public function show(string $id): JSONResponse
-    {
-        try {
-            return new JSONResponse($this->eventMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
-        }
-    }//end show()
-
-    /**
-     * Creates a new event
-     *
-     * This method creates a new event based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created event
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        // Create the event
-        $event = $this->eventMapper->createFromArray(object: $data);
-
-        return new JSONResponse($event);
-    }//end create()
-
-    /**
-     * Updates an existing event
-     *
-     * This method updates an existing event based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the event to update
-     * @return JSONResponse A JSON response containing the updated event details
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        // Update the event
-        $event = $this->eventMapper->updateFromArray(id: (int) $id, object: $data);
-
-        return new JSONResponse($event);
-    }//end update()
-
-    /**
-     * Deletes an event
-     *
-     * This method deletes an event based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the event to delete
-     * @return JSONResponse An empty JSON response
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        $this->eventMapper->delete($this->eventMapper->find((int) $id));
-
-        return new JSONResponse([]);
-    }//end destroy()
 
     /**
      * Get all messages generated by an event
