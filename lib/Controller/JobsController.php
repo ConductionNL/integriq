@@ -3,10 +3,9 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Db\JobMapper;
-use OCA\OpenConnector\Db\JobLogMapper;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -30,20 +29,18 @@ class JobsController extends Controller
     /**
      * Constructor for the JobController
      *
-     * @param string       $appName       The name of the app
-     * @param IRequest     $request       The request object
-     * @param IAppConfig   $config        The app configuration object
-     * @param JobMapper    $jobMapper     The job mapper (used by run/test action methods)
-     * @param JobLogMapper $jobLogMapper  The job log mapper (used by logs action)
-     * @param JobService   $jobService    The job service (used by run/test action methods)
-     * @param IL10N        $l             The localization service
+     * @param string          $appName         The name of the app
+     * @param IRequest        $request         The request object
+     * @param IAppConfig      $config          The app configuration object
+     * @param OrObjectService $orObjectService The OR object service
+     * @param JobService      $jobService      The job service (used by run/test action methods)
+     * @param IL10N           $l               The localization service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private IAppConfig $config,
-        private JobMapper $jobMapper,
-        private JobLogMapper $jobLogMapper,
+        private OrObjectService $orObjectService,
         private JobService $jobService,
         private IL10N $l
     ) {
@@ -146,17 +143,11 @@ class JobsController extends Controller
             // Remove special query params from filters
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-            // Get job logs with filters and pagination
-            $jobLogs = $this->jobLogMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams
-            );
-
-            // Get total count for pagination
-            $total       = $this->jobLogMapper->getTotalCount($filters);
+            // Get job logs with filters and pagination via OR ObjectService
+            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
+            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+            $jobLogs     = $matches['results'] ?? $matches;
+            $total       = $matches['total'] ?? count($jobLogs);
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;
             $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
 
@@ -189,10 +180,13 @@ class JobsController extends Controller
      */
     public function run(int $id): JSONResponse
     {
-        try {
-            // Get the job
-            $job = $this->jobMapper->find($id);
+        // Get the job via OR ObjectService
+        $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+        if ($job === null) {
+            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
+        }
 
+        try {
             // Get execution parameters from request
             $parameters = $this->request->getParams();
 
@@ -211,8 +205,6 @@ class JobsController extends Controller
 
             // Return the execution results
             return new JSONResponse($result);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
@@ -232,10 +224,13 @@ class JobsController extends Controller
      */
     public function test(int $id): JSONResponse
     {
-        try {
-            // Get the job
-            $job = $this->jobMapper->find($id);
+        // Get the job via OR ObjectService
+        $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+        if ($job === null) {
+            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
+        }
 
+        try {
             // Get execution parameters from request
             $parameters = $this->request->getParams();
 
@@ -254,8 +249,6 @@ class JobsController extends Controller
 
             // Return the execution results
             return new JSONResponse($result);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
