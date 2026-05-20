@@ -3,9 +3,7 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Db\EventMapper;
-use OCA\OpenConnector\Db\EventMessageMapper;
-use OCA\OpenConnector\Db\EventSubscriptionMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -29,24 +27,19 @@ class EventsController extends Controller
     /**
      * Constructor for the EventsController
      *
-     * @param string                    $appName             The name of the app
-     * @param IRequest                  $request             The request object
-     * @param IAppConfig                $config              The app configuration object
-     * @param EventMapper               $eventMapper         The event mapper (used by action methods)
-     * @param EventService              $eventService        The event service
-     * @param EventMessageMapper        $messageMapper       The event message mapper
-     * @param EventSubscriptionMapper   $subscriptionMapper  The event subscription mapper
-     * @param IL10N                     $l                   The localization service
+     * @param string          $appName         The name of the app
+     * @param IRequest        $request         The request object
+     * @param IAppConfig      $config          The app configuration object
+     * @param OrObjectService $orObjectService The OR object service
+     * @param EventService    $eventService    The event service
+     * @param IL10N           $l               The localization service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly EventMapper $eventMapper,
-        //        private readonly EventLogMapper $eventLogMapper, // @todo
+        private readonly OrObjectService $orObjectService,
         private readonly EventService $eventService,
-        private readonly EventMessageMapper $messageMapper,
-        private readonly EventSubscriptionMapper $subscriptionMapper,
         private readonly IL10N $l
     ) {
         parent::__construct($appName, $request);
@@ -82,26 +75,25 @@ class EventsController extends Controller
      */
     public function messages(int $id): JSONResponse
     {
-        try {
-            // Verify event exists
-            $event = $this->eventMapper->find($id);
-
-            // Get all messages for this event
-            $messages = $this->messageMapper->findAll(
-                filters: ['eventId' => $id],
-                limit: $this->request->getParam('limit', 50),
-                offset: $this->request->getParam('offset', 0)
-            );
-
-            return new JSONResponse(
-                    [
-                        'event'    => $event,
-                        'messages' => $messages,
-                    ]
-                    );
-        } catch (DoesNotExistException $e) {
+        $event = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'event');
+        if ($event === null) {
             return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
         }
+
+        // Get all messages for this event
+        $matches  = $this->orObjectService->findAll(config: [
+            'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'eventId' => (string) $id],
+            'limit'   => (int) $this->request->getParam('limit', 50),
+            'offset'  => (int) $this->request->getParam('offset', 0),
+        ]);
+        $messages = $matches['results'] ?? $matches;
+
+        return new JSONResponse(
+                [
+                    'event'    => $event->getObject(),
+                    'messages' => $messages,
+                ]
+                );
     }//end messages()
 
     /**
@@ -125,9 +117,9 @@ class EventsController extends Controller
             }
 
             // Create subscription
-            $subscription = $this->subscriptionMapper->createFromArray($data);
+            $subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
 
-            return new JSONResponse($subscription);
+            return new JSONResponse($subscription->getObject());
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
@@ -155,9 +147,9 @@ class EventsController extends Controller
             }
 
             // Update subscription
-            $subscription = $this->subscriptionMapper->updateFromArray($subscriptionId, $data);
+            $subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription', uuid: (string) $subscriptionId);
 
-            return new JSONResponse($subscription);
+            return new JSONResponse($subscription->getObject());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         } catch (Exception $e) {
@@ -176,14 +168,13 @@ class EventsController extends Controller
      */
     public function unsubscribe(int $subscriptionId): JSONResponse
     {
-        try {
-            $subscription = $this->subscriptionMapper->find($subscriptionId);
-            $this->subscriptionMapper->delete($subscription);
-
-            return new JSONResponse([]);
-        } catch (DoesNotExistException $e) {
+        $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        if ($subscription === null) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
+
+        $this->orObjectService->deleteObject(uuid: $subscription->getUuid());
+        return new JSONResponse([]);
     }//end unsubscribe()
 
     /**
@@ -205,11 +196,13 @@ class EventsController extends Controller
             }
         }
 
-        $subscriptions = $this->subscriptionMapper->findAll(
-            limit: $this->request->getParam('limit', 50),
-            offset: $this->request->getParam('offset', 0),
-            filters: $filters
-        );
+        $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'event_subscription'], $filters);
+        $matches   = $this->orObjectService->findAll(config: [
+            'filters' => $orFilters,
+            'limit'   => (int) $this->request->getParam('limit', 50),
+            'offset'  => (int) $this->request->getParam('offset', 0),
+        ]);
+        $subscriptions = $matches['results'] ?? $matches;
 
         return new JSONResponse(['results' => $subscriptions]);
     }//end subscriptions()
@@ -225,26 +218,25 @@ class EventsController extends Controller
      */
     public function subscriptionMessages(int $subscriptionId): JSONResponse
     {
-        try {
-            // Verify subscription exists
-            $subscription = $this->subscriptionMapper->find($subscriptionId);
-
-            // Get messages for this subscription
-            $messages = $this->messageMapper->findAll(
-                limit: $this->request->getParam('limit', 50),
-                offset: $this->request->getParam('offset', 0),
-                filters: ['subscriptionId' => $subscriptionId]
-            );
-
-            return new JSONResponse(
-                    [
-                        'subscription' => $subscription,
-                        'messages'     => $messages,
-                    ]
-                    );
-        } catch (DoesNotExistException $e) {
+        $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        if ($subscription === null) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
+
+        // Get messages for this subscription
+        $matches  = $this->orObjectService->findAll(config: [
+            'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscriptionId' => (string) $subscriptionId],
+            'limit'   => (int) $this->request->getParam('limit', 50),
+            'offset'  => (int) $this->request->getParam('offset', 0),
+        ]);
+        $messages = $matches['results'] ?? $matches;
+
+        return new JSONResponse(
+                [
+                    'subscription' => $subscription->getObject(),
+                    'messages'     => $messages,
+                ]
+                );
     }//end subscriptionMessages()
 
     /**
@@ -258,22 +250,22 @@ class EventsController extends Controller
      */
     public function pull(int $subscriptionId): JSONResponse
     {
-        try {
-            $subscription = $this->subscriptionMapper->find($subscriptionId);
-
-            if ($subscription->getStyle() !== 'pull') {
-                return new JSONResponse(['error' => $this->l->t('Subscription is not pull-based')], 400);
-            }
-
-            $result = $this->eventService->pullEvents(
-                subscription: $subscription,
-                limit: $this->request->getParam('limit', 100),
-                cursor: $this->request->getParam('cursor')
-            );
-
-            return new JSONResponse($result);
-        } catch (DoesNotExistException $e) {
+        $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        if ($subscription === null) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
+
+        $subscriptionData = $subscription->getObject();
+        if (($subscriptionData['style'] ?? '') !== 'pull') {
+            return new JSONResponse(['error' => $this->l->t('Subscription is not pull-based')], 400);
+        }
+
+        $result = $this->eventService->pullEvents(
+            subscription: $subscription,
+            limit: $this->request->getParam('limit', 100),
+            cursor: $this->request->getParam('cursor')
+        );
+
+        return new JSONResponse($result);
     }//end pull()
 }//end class
