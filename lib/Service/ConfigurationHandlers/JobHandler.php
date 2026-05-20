@@ -2,8 +2,8 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Db\Job;
-use OCA\OpenConnector\Db\JobMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -25,10 +25,10 @@ use OCP\AppFramework\Db\Entity;
 class JobHandler implements ConfigurationHandlerInterface
 {
     /**
-     * @param JobMapper $jobMapper The job mapper
+     * @param OrObjectService $orObjectService The OR object service
      */
     public function __construct(
-        private readonly JobMapper $jobMapper
+        private readonly OrObjectService $orObjectService
     ) {
     }//end __construct()
 
@@ -37,16 +37,12 @@ class JobHandler implements ConfigurationHandlerInterface
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
-        if (!$entity instanceof Job) {
-            throw new \InvalidArgumentException('Entity must be an instance of Job');
-        }
-
-        $jobArray = $entity->jsonSerialize();
+        $jobArray = ($entity instanceof ObjectEntity) ? $entity->getObject() : $entity->jsonSerialize();
         unset($jobArray['id'], $jobArray['uuid']);
 
         // Ensure slug is set
-        if (empty($jobArray['slug'])) {
-            $jobArray['slug'] = $entity->getSlug();
+        if (empty($jobArray['slug']) && $entity instanceof ObjectEntity) {
+            $jobArray['slug'] = $entity->getUuid();
         }
 
         // Replace IDs with slugs in arguments
@@ -83,6 +79,8 @@ class JobHandler implements ConfigurationHandlerInterface
         if (isset($data['arguments'])) {
             if (is_array($data['arguments']) === false) {
                 $arguments = json_decode($data['arguments'], true);
+            } else {
+                $arguments = $data['arguments'];
             }
 
             if (is_array($arguments)) {
@@ -98,18 +96,24 @@ class JobHandler implements ConfigurationHandlerInterface
                     $arguments['sourceId'] = $mappings['source']['slugToId'][$arguments['sourceId']];
                 }
 
-                $data['arguments'] = json_encode($arguments);
+                $data['arguments'] = $arguments;
             }
         }//end if
 
         // Check if job with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['job']['slugToId'][$data['slug']])) {
+        $slug = $data['slug'] ?? null;
+        if ($slug !== null && isset($mappings['job']['slugToId'][$slug])) {
             // Update existing job.
-            return $this->jobMapper->updateFromArray($mappings['job']['slugToId'][$data['slug']], $data);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                register: 'openconnector',
+                schema: 'job',
+                uuid: $mappings['job']['slugToId'][$slug]
+            );
         }
 
         // Create new job.
-        return $this->jobMapper->createFromArray($data);
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'job');
     }//end import()
 
     /**
