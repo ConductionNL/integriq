@@ -101,9 +101,10 @@ return [
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
 		// Settings endpoints
-		['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
-		['name' => 'settings#getSettings', 'url' => '/api/settings', 'verb' => 'GET'],
-		['name' => 'settings#updateSettings', 'url' => '/api/settings', 'verb' => 'PUT'],
+		// Settings routes shrunk in chain-C OR-cutover:
+		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
+		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
+		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
 		// UI page routes for SPA deep links
