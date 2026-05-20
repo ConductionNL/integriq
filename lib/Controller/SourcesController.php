@@ -4,8 +4,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Db\SourceMapper;
-use OCA\OpenConnector\Db\CallLogMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -28,19 +27,17 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController
      *
-     * @param string         $appName       The name of the app
-     * @param IRequest       $request       The request object
-     * @param IAppConfig     $config        The app configuration object
-     * @param SourceMapper   $sourceMapper  The source mapper (used by action methods)
-     * @param CallLogMapper  $callLogMapper The call log mapper (used by logs action)
-     * @param IL10N          $l             The localization service
+     * @param string          $appName         The name of the app
+     * @param IRequest        $request         The request object
+     * @param IAppConfig      $config          The app configuration object
+     * @param OrObjectService $orObjectService The OR object service
+     * @param IL10N           $l               The localization service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SourceMapper $sourceMapper,
-        private readonly CallLogMapper $callLogMapper,
+        private readonly OrObjectService $orObjectService,
         private readonly IL10N $l
     ) {
         parent::__construct($appName, $request);
@@ -175,18 +172,16 @@ class SourcesController extends Controller
             // Remove special query params from filters
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-            // Get call logs with filters and pagination
-            $callLogs = $this->callLogMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams,
-                sortFields: $sortFields
-            );
+            // Get call logs with filters and pagination via OR ObjectService
+            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'call_log'], $filters);
+            $matches   = $this->orObjectService->findAll(config: [
+                'filters' => $orFilters,
+                'limit'   => $limit,
+                'offset'  => $offset,
+            ]);
+            $callLogs = $matches['results'] ?? $matches;
+            $total    = $matches['total'] ?? count($callLogs);
 
-            // Get total count for pagination
-            $total       = $this->callLogMapper->getTotalCount($filters);
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;
             $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
 
@@ -228,9 +223,8 @@ class SourcesController extends Controller
     public function test(CallService $callService, int $id): JSONResponse
     {
         // get the source
-        try {
-            $source = $this->sourceMapper->find(id: (int) $id);
-        } catch (DoesNotExistException $exception) {
+        $source = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'source');
+        if ($source === null) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
@@ -281,6 +275,6 @@ class SourcesController extends Controller
         $callLog   = $callService->call($source, $endpoint, $method, $config);
         $timeEnd   = microtime(true);
 
-        return new JSONResponse($callLog->jsonSerialize());
+        return new JSONResponse($callLog->getObject());
     }//end test()
 }//end class
