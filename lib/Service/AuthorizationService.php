@@ -22,6 +22,7 @@ use Jose\Component\Signature\JWSTokenSupport;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCP\AppFramework\Http\Attribute\CORS;
@@ -34,8 +35,6 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use OCA\OAuth2\Db\AccessTokenMapper;
 use OCA\OAuth2\Db\Client;
-use OCA\OpenConnector\Db\Consumer;
-use OCA\OpenConnector\Db\ConsumerMapper;
 use OCA\OpenConnector\Exception\AuthenticationException;
 
 /**
@@ -52,14 +51,14 @@ class AuthorizationService
     const PSS_ALGORITHMS   = ['PS256', 'PS384', 'PS512'];
 
     /**
-     * @param IUserManager   $userManager
-     * @param IUserSession   $userSession
-     * @param ConsumerMapper $consumerMapper
+     * @param IUserManager                       $userManager
+     * @param IUserSession                       $userSession
+     * @param \OCA\OpenRegister\Service\ObjectService $orObjectService
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
-        private readonly ConsumerMapper $consumerMapper,
+        private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
         private readonly IGroupManager $groupManager,
         private readonly IProvider $tokenProvider,
     ) {
@@ -69,12 +68,13 @@ class AuthorizationService
      * Find the issuer (consumer) for the request.
      *
      * @param  string $issuer The issuer from the JWT token.
-     * @return Consumer The consumer for the JWT token.
+     * @return ObjectEntity The consumer for the JWT token.
      * @throws AuthenticationException Thrown if no issuer was found.
      */
-    private function findIssuer(string $issuer): Consumer
+    private function findIssuer(string $issuer): ObjectEntity
     {
-        $consumers = $this->consumerMapper->findAll(filters: ['name' => $issuer]);
+        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'consumer', 'name' => $issuer]]);
+        $consumers = $matches['results'] ?? $matches;
 
         if (count($consumers) === 0) {
             throw new AuthenticationException(message: 'The issuer was not found', details: ['iss' => $issuer]);
@@ -210,10 +210,12 @@ class AuthorizationService
             throw new AuthenticationException(message: 'The token could not be validated', details: ['reason' => 'No issuer mentioned']);
         }
 
-        $issuer = $this->findIssuer(issuer: $payload['iss']);
+        $issuer     = $this->findIssuer(issuer: $payload['iss']);
+        $issuerData = $issuer->getObject();
 
-        $publicKey = $issuer->getAuthorizationConfiguration()['publicKey'];
-        $algorithm = $issuer->getAuthorizationConfiguration()['algorithm'];
+        $authConfig = $issuerData['authorizationConfiguration'] ?? [];
+        $publicKey  = $authConfig['publicKey'] ?? '';
+        $algorithm  = $authConfig['algorithm'] ?? '';
 
         $jwkSet = $this->getJWK(publicKey: $publicKey, algorithm: $algorithm);
 
@@ -223,7 +225,7 @@ class AuthorizationService
 
         $this->validatePayload($payload);
 
-        $this->userSession->setUser($this->userManager->get($issuer->getUserId()));
+        $this->userSession->setUser($this->userManager->get($issuerData['userId'] ?? ''));
     }//end authorizeJwt()
 
     /**
