@@ -23,9 +23,9 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec  GH issue #824
- * @ref   Local ADR-005 (Source/Sync/Contract triad)
- * @ref   Local ADR-015 (Configuration export/import — slug translation)
+ * @spec GH issue #824
+ * @ref  Local ADR-005 (Source/Sync/Contract triad)
+ * @ref  Local ADR-015 (Configuration export/import — slug translation)
  */
 
 declare(strict_types=1);
@@ -44,50 +44,42 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
 
     private const SCHEMA_SLUG = 'synchronization_contract';
 
-
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly IAppConfig $appConfig,
         private readonly IL10N $l10n
     ) {
-    }
-
+    }//end __construct()
 
     public function getId(): string
     {
         return 'sync-contract';
-    }
-
+    }//end getId()
 
     public function getLabel(): string
     {
         return $this->l10n->t('Synced from');
-    }
-
+    }//end getLabel()
 
     public function getIcon(): string
     {
         return 'SyncOutline';
-    }
-
+    }//end getIcon()
 
     public function getGroup(): ?string
     {
         return 'workflow';
-    }
-
+    }//end getGroup()
 
     public function getRequiredApp(): ?string
     {
         return 'openconnector';
-    }
-
+    }//end getRequiredApp()
 
     public function getStorageStrategy(): string
     {
         return 'query-time';
-    }
-
+    }//end getStorageStrategy()
 
     /**
      * List SyncContract leaves for an OR object.
@@ -95,21 +87,23 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Finds every SyncContract whose `targetId === $objectId` and
      * returns a lightweight summary for sidebar display.
      */
-    public function list(string $register, string $schema, string $objectId, array $filters = []): array
+    public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         if ($this->isEnabled() === false) {
             return [];
         }
 
-        $matches = $this->objectService->findAll(config: [
-            'filters' => [
-                'register' => self::REGISTER_SLUG,
-                'schema'   => self::SCHEMA_SLUG,
-                'targetId' => $objectId,
-            ],
-            'limit'  => isset($filters['_limit']) ? (int) $filters['_limit'] : 50,
-            'offset' => isset($filters['_page']) ? ((int) $filters['_page'] - 1) * 50 : 0,
-        ]);
+        $matches = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => self::REGISTER_SLUG,
+                        'schema'   => self::SCHEMA_SLUG,
+                        'targetId' => $objectId,
+                    ],
+                    'limit'   => isset($filters['_limit']) ? (int) $filters['_limit'] : 50,
+                    'offset'  => isset($filters['_page']) ? ((int) $filters['_page'] - 1) * 50 : 0,
+                ]
+                );
 
         $rows = $matches['results'] ?? $matches;
         if (is_array($rows) === false) {
@@ -118,12 +112,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
 
         return array_map(
             function ($contract): array {
-                $body = is_object($contract) && method_exists($contract, 'getObject')
-                    ? $contract->getObject()
-                    : (array) ($contract['object'] ?? $contract);
-                $uuid = is_object($contract) && method_exists($contract, 'getUuid')
-                    ? $contract->getUuid()
-                    : ($contract['uuid'] ?? '');
+                $body = is_object($contract) && method_exists($contract, 'getObject') ? $contract->getObject() : (array) ($contract['object'] ?? $contract);
+                $uuid = is_object($contract) && method_exists($contract, 'getUuid') ? $contract->getUuid() : ($contract['uuid'] ?? '');
 
                 return [
                     'id'                => $uuid,
@@ -137,8 +127,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
             },
             $rows
         );
-    }
-
+    }//end list()
 
     /**
      * Health descriptor. The provider needs the chain-B/C OR-cutover to
@@ -151,8 +140,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
                 'status'     => 'unavailable',
                 'authStatus' => 'configured',
                 'message'    => $this->l10n->t(
-                    'OpenConnector storage migration has not yet run on this instance. '
-                    .'Sync contract leaves will appear after `occ upgrade` runs the chain-C cutover.'
+                    'OpenConnector storage migration has not yet run on this instance. Sync contract leaves will appear after `occ upgrade` runs the chain-C cutover.'
                 ),
             ];
         }
@@ -162,8 +150,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
             'authStatus' => 'configured',
             'message'    => null,
         ];
-    }
-
+    }//end health()
 
     /**
      * The provider is available once the openconnector chain-C cutover
@@ -174,7 +161,5 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
     public function isEnabled(): bool
     {
         return $this->appConfig->getAppValueString('storage_migrated', 'false') === 'true';
-    }
-
-
-}
+    }//end isEnabled()
+}//end class

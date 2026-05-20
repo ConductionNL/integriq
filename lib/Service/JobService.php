@@ -375,9 +375,7 @@ class JobService
             'level'         => 'SUCCESS',
             'message'       => 'Success',
             'executionTime' => $executionTime,
-            'expires'       => $this->calculateExpires($logRetention * 1000, $this->successRetention) !== null
-                ? $this->calculateExpires($logRetention * 1000, $this->successRetention)->format('c')
-                : null,
+            'expires'       => $this->calculateExpires($logRetention * 1000, $this->successRetention) !== null ? $this->calculateExpires($logRetention * 1000, $this->successRetention)->format('c') : null,
         ];
 
         // Process job execution result and update log accordingly
@@ -386,7 +384,7 @@ class JobService
                 $logData['level'] = $result['level'];
 
                 if ($result['level'] !== 'SUCCESS') {
-                    $expiresDate = $this->calculateExpires($errorRetention * 1000, $this->errorRetention);
+                    $expiresDate        = $this->calculateExpires($errorRetention * 1000, $this->errorRetention);
                     $logData['expires'] = $expiresDate !== null ? $expiresDate->format('c') : null;
                 }
             }
@@ -463,14 +461,16 @@ class JobService
     public function run(): array
     {
         // Fetch all jobs that are enabled and whose nextRun is in the past or null
-        $now = (new DateTime())->format('c');
-        $matches = $this->objectService->findAll(config: [
-            'filters' => [
-                'register'  => 'openconnector',
-                'schema'    => 'job',
-                'isEnabled' => true,
-            ],
-        ]);
+        $now     = (new DateTime())->format('c');
+        $matches = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register'  => 'openconnector',
+                        'schema'    => 'job',
+                        'isEnabled' => true,
+                    ],
+                ]
+                );
         $jobs    = $matches['results'] ?? $matches;
         $results = [];
 

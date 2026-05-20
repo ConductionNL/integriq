@@ -64,7 +64,6 @@ class SettingsService
 
     }//end __construct()
 
-
     /**
      * Build a platform-portable SQL expression that adds a microsecond
      * interval (bound as a `?` placeholder, in microseconds) to a column
@@ -81,9 +80,9 @@ class SettingsService
         if ($platform instanceof PostgreSQLPlatform) {
             return sprintf('%s + (? || \' microseconds\')::interval', $createdColumn);
         }
-        return sprintf('DATE_ADD(%s, INTERVAL ? MICROSECOND)', $createdColumn);
-    }
 
+        return sprintf('DATE_ADD(%s, INTERVAL ? MICROSECOND)', $createdColumn);
+    }//end expiresExpression()
 
     /**
      * Portable replacement for `SHOW COLUMNS FROM <table> LIKE 'X'`.
@@ -96,12 +95,11 @@ class SettingsService
         try {
             if ($platform instanceof PostgreSQLPlatform) {
                 $stmt = $this->db->prepare(
-                    'SELECT 1 FROM information_schema.columns '
-                    . 'WHERE table_name = ? AND column_name = ? LIMIT 1'
+                    'SELECT 1 FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1'
                 );
-                $stmt->execute(['oc_' . $unprefixedTable, $column]);
+                $stmt->execute(['oc_'.$unprefixedTable, $column]);
             } else {
-                $sql = sprintf(
+                $sql  = sprintf(
                     "SHOW COLUMNS FROM `*PREFIX*%s` LIKE %s",
                     $unprefixedTable,
                     $this->db->quote($column)
@@ -109,14 +107,15 @@ class SettingsService
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute();
             }
+
             $row = $stmt->fetch();
             return $row !== false;
         } catch (\Throwable) {
             // If the table itself doesn't exist (legacy table dropped post #820),
             // the column doesn't exist either.
             return false;
-        }
-    }
+        }//end try
+    }//end columnExists()
 
     /**
      * Get comprehensive statistics for the settings dashboard.

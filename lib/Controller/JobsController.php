@@ -144,8 +144,8 @@ class JobsController extends Controller
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
             // Get job logs with filters and pagination via OR ObjectService
-            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
-            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+            $orFilters   = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
+            $matches     = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
             $jobLogs     = $matches['results'] ?? $matches;
             $total       = $matches['total'] ?? count($jobLogs);
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;

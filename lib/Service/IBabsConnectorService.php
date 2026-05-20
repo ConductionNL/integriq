@@ -107,7 +107,7 @@ class IBabsConnectorService
      * a vergaderstuk linked to the specified vergadering.
      *
      * @param ObjectEntity $source   The iBabs source configuration.
-     * @param array  $voorstel The voorstel data including document path and metadata.
+     * @param array        $voorstel The voorstel data including document path and metadata.
      *
      * @return array Result with 'success' boolean and 'vergaderstukId'.
      */

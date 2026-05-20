@@ -172,8 +172,8 @@ class SynchronizationsController extends Controller
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
             // Get synchronization logs with filters and pagination via OR ObjectService
-            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
-            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+            $orFilters   = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+            $matches     = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
             $syncLogs    = $matches['results'] ?? $matches;
             $total       = $matches['total'] ?? count($syncLogs);
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;
@@ -337,9 +337,9 @@ class SynchronizationsController extends Controller
             $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization'];
             $allMatches     = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
             $enabledMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['isEnabled' => true])]);
-            $totalCount    = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
-            $enabledCount  = $enabledMatches['total'] ?? count($enabledMatches['results'] ?? $enabledMatches);
-            $disabledCount = $totalCount - $enabledCount;
+            $totalCount     = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
+            $enabledCount   = $enabledMatches['total'] ?? count($enabledMatches['results'] ?? $enabledMatches);
+            $disabledCount  = $totalCount - $enabledCount;
 
             // Calculate distribution
             $statusDistribution = [
@@ -402,12 +402,12 @@ class SynchronizationsController extends Controller
             $warningMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'warning'])]);
             $infoMatches    = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'info'])]);
             $debugMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'debug'])]);
-            $totalCount   = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
-            $successCount = $successMatches['total'] ?? count($successMatches['results'] ?? $successMatches);
-            $errorCount   = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
-            $warningCount = $warningMatches['total'] ?? count($warningMatches['results'] ?? $warningMatches);
-            $infoCount    = $infoMatches['total'] ?? count($infoMatches['results'] ?? $infoMatches);
-            $debugCount   = $debugMatches['total'] ?? count($debugMatches['results'] ?? $debugMatches);
+            $totalCount     = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
+            $successCount   = $successMatches['total'] ?? count($successMatches['results'] ?? $successMatches);
+            $errorCount     = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
+            $warningCount   = $warningMatches['total'] ?? count($warningMatches['results'] ?? $warningMatches);
+            $infoCount      = $infoMatches['total'] ?? count($infoMatches['results'] ?? $infoMatches);
+            $debugCount     = $debugMatches['total'] ?? count($debugMatches['results'] ?? $debugMatches);
 
             // Calculate status distribution for charts and visualizations
             $statusDistribution = [

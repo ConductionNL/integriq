@@ -243,7 +243,6 @@ class EndpointCacheService
         }
     }//end clearCache()
 
-
     /**
      * Create endpoint regex pattern from endpoint path
      *
@@ -277,7 +276,6 @@ class EndpointCacheService
 
         return $regex;
     }//end createEndpointRegex()
-
 
     /**
      * Get cache statistics for monitoring

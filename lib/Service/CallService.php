@@ -338,8 +338,8 @@ class CallService
     ): ObjectEntity {
         $sourceData = $source->getObject();
 
-        $errorRetention   = (int) ($sourceData['errorRetention'] ?? 0);
-        $logRetention     = (int) ($sourceData['logRetention'] ?? 0);
+        $errorRetention = (int) ($sourceData['errorRetention'] ?? 0);
+        $logRetention   = (int) ($sourceData['logRetention'] ?? 0);
         $errorExpires   = $this->calculateExpires($errorRetention * 1000, $this->errorRetention);
         $successExpires = $this->calculateExpires($logRetention * 1000, $this->successRetention);
 
@@ -539,7 +539,7 @@ class CallService
         $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
 
         // Build call log data
-        $statusCode = $data['response']['statusCode'];
+        $statusCode   = $data['response']['statusCode'];
         $responseData = $data['response'];
         // Only persist response body for 4xx/5xx errors
         if ($statusCode < 400 || $statusCode >= 600) {
@@ -555,9 +555,7 @@ class CallService
             'request'       => $data['request'],
             'response'      => $responseData,
             'created'       => (new \DateTime())->format('c'),
-            'expires'       => ($statusCode < 400 ? $successExpires : $errorExpires) !== null
-                ? ($statusCode < 400 ? $successExpires : $errorExpires)->format('c')
-                : null,
+            'expires'       => ($statusCode < 400 ? $successExpires : $errorExpires) !== null ? ($statusCode < 400 ? $successExpires : $errorExpires)->format('c') : null,
         ];
 
         $callLog = $this->objectService->saveObject(
@@ -612,21 +610,21 @@ class CallService
             // Set new RateLimit-Reset time on the source.
             $sourceData['rateLimitReset'] = time() + $rateLimitWindow;
             $rateLimitReset = $sourceData['rateLimitReset'];
-            $changed = true;
+            $changed        = true;
         }
 
         // Check if RateLimit-Limit is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Limit']) === true) {
             $sourceData['rateLimitLimit'] = $headers['X-RateLimit-Limit'];
             $rateLimitLimit = $sourceData['rateLimitLimit'];
-            $changed = true;
+            $changed        = true;
         }
 
         // Check if RateLimit-Remaining is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Remaining']) === true) {
             $sourceData['rateLimitRemaining'] = $headers['X-RateLimit-Remaining'];
             $rateLimitRemaining = $sourceData['rateLimitRemaining'];
-            $changed = true;
+            $changed            = true;
         }
 
         // If RateLimit-Remaining not in headers and source->RateLimit-Limit is set, update source->RateLimit-Remaining.
@@ -638,7 +636,7 @@ class CallService
 
             $sourceData['rateLimitRemaining'] = $rateLimitRemaining - 1;
             $rateLimitRemaining = $sourceData['rateLimitRemaining'];
-            $changed = true;
+            $changed            = true;
         }
 
         if ($changed === true) {

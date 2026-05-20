@@ -82,8 +82,8 @@
 		"react/promise": "^3.2",
 		"symfony/console": "^5.4",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4",
-		"twig/twig": "^3.14",
+		"symfony/yaml": "^6.4.40",
+		"twig/twig": "^3.26",
 		"web-token/jwt-framework": "^3"
 	},
 	"require-dev": {

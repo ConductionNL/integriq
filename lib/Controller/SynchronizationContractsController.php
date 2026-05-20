@@ -165,15 +165,15 @@ class SynchronizationContractsController extends Controller
     {
         try {
             // Get basic counts by status via OR ObjectService
-            $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization_contract'];
+            $baseFilters     = ['register' => 'openconnector', 'schema' => 'synchronization_contract'];
             $allMatches      = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
             $activeMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'active'])]);
             $inactiveMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'inactive'])]);
             $errorMatches    = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'error'])]);
-            $totalCount    = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
-            $activeCount   = $activeMatches['total'] ?? count($activeMatches['results'] ?? $activeMatches);
-            $inactiveCount = $inactiveMatches['total'] ?? count($inactiveMatches['results'] ?? $inactiveMatches);
-            $errorCount    = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
+            $totalCount      = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
+            $activeCount     = $activeMatches['total'] ?? count($activeMatches['results'] ?? $activeMatches);
+            $inactiveCount   = $inactiveMatches['total'] ?? count($inactiveMatches['results'] ?? $inactiveMatches);
+            $errorCount      = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
 
             return new JSONResponse(
                     [
@@ -185,7 +185,7 @@ class SynchronizationContractsController extends Controller
                     );
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Could not fetch statistics')], 500);
-        }
+        }//end try
     }//end statistics()
 
     /**
@@ -289,7 +289,7 @@ class SynchronizationContractsController extends Controller
             $csvData = "UUID,Synchronization ID,Origin ID,Target ID,Origin Hash,Target Hash,Source Last Synced,Target Last Synced,Created,Updated\n";
 
             foreach ($contracts as $contract) {
-                $data    = $contract->getObject();
+                $data     = $contract->getObject();
                 $csvData .= sprintf(
                     "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
                     $contract->getUuid() ?? '',

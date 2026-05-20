@@ -174,13 +174,15 @@ class SourcesController extends Controller
 
             // Get call logs with filters and pagination via OR ObjectService
             $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'call_log'], $filters);
-            $matches   = $this->orObjectService->findAll(config: [
-                'filters' => $orFilters,
-                'limit'   => $limit,
-                'offset'  => $offset,
-            ]);
-            $callLogs = $matches['results'] ?? $matches;
-            $total    = $matches['total'] ?? count($callLogs);
+            $matches   = $this->orObjectService->findAll(
+                    config: [
+                        'filters' => $orFilters,
+                        'limit'   => $limit,
+                        'offset'  => $offset,
+                    ]
+                    );
+            $callLogs  = $matches['results'] ?? $matches;
+            $total     = $matches['total'] ?? count($callLogs);
 
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;
             $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;

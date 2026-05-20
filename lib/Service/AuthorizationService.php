@@ -51,8 +51,8 @@ class AuthorizationService
     const PSS_ALGORITHMS   = ['PS256', 'PS384', 'PS512'];
 
     /**
-     * @param IUserManager                       $userManager
-     * @param IUserSession                       $userSession
+     * @param IUserManager                            $userManager
+     * @param IUserSession                            $userSession
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService
      */
     public function __construct(

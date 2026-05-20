@@ -130,8 +130,8 @@ class LogsController extends Controller
         // Get logs with pagination via OR ObjectService
         $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
         $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-        $logs  = $matches['results'] ?? $matches;
-        $total = $matches['total'] ?? count($logs);
+        $logs      = $matches['results'] ?? $matches;
+        $total     = $matches['total'] ?? count($logs);
 
         // Calculate pagination info
         $pages       = $limit > 0 ? ceil($total / $limit) : 1;
@@ -210,17 +210,17 @@ class LogsController extends Controller
     {
         try {
             // Get basic counts by level via OR ObjectService
-            $baseFilters  = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
+            $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
             $errorMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'error'])]);
             $warningMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'warning'])]);
             $infoMatches    = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'info'])]);
             $successMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'success'])]);
             $debugMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'debug'])]);
-            $errorCount   = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
-            $warningCount = $warningMatches['total'] ?? count($warningMatches['results'] ?? $warningMatches);
-            $infoCount    = $infoMatches['total'] ?? count($infoMatches['results'] ?? $infoMatches);
-            $successCount = $successMatches['total'] ?? count($successMatches['results'] ?? $successMatches);
-            $debugCount   = $debugMatches['total'] ?? count($debugMatches['results'] ?? $debugMatches);
+            $errorCount     = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
+            $warningCount   = $warningMatches['total'] ?? count($warningMatches['results'] ?? $warningMatches);
+            $infoCount      = $infoMatches['total'] ?? count($infoMatches['results'] ?? $infoMatches);
+            $successCount   = $successMatches['total'] ?? count($successMatches['results'] ?? $successMatches);
+            $debugCount     = $debugMatches['total'] ?? count($debugMatches['results'] ?? $debugMatches);
 
             // Calculate level distribution
             $levelDistribution = [
@@ -302,9 +302,9 @@ class LogsController extends Controller
             $csvData = "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
 
             foreach ($logs as $log) {
-                $data    = $log->getObject();
-                $created = isset($data['created']) ? $data['created'] : '';
-                $expires = isset($data['expires']) ? $data['expires'] : '';
+                $data     = $log->getObject();
+                $created  = isset($data['created']) ? $data['created'] : '';
+                $expires  = isset($data['expires']) ? $data['expires'] : '';
                 $csvData .= sprintf(
                     "%s,%s,%s,%s,%s,%s,%s,%s\n",
                     $log->getUuid() ?? '',

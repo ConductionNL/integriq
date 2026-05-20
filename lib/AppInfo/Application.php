@@ -84,7 +84,6 @@ class Application extends App implements IBootstrap
         $this->registerIntegrationProviders(context: $context);
     }//end boot()
 
-
     /**
      * Register openconnector-side IntegrationProviders with OR's
      * IntegrationRegistry. Per OR's pluggable-integration-registry spec
@@ -116,13 +115,12 @@ class Application extends App implements IBootstrap
                 $context->getServerContainer()
                     ->get('Psr\Log\LoggerInterface')
                     ->warning(
-                        'openconnector: failed to register IntegrationProviders with OR — '
-                        . $e->getMessage(),
+                        'openconnector: failed to register IntegrationProviders with OR — '.$e->getMessage(),
                         ['exception' => $e]
                     );
             } catch (\Throwable) {
                 // Logger unavailable, ignore.
             }
         }
-    }
+    }//end registerIntegrationProviders()
 }//end class

@@ -81,14 +81,11 @@ class Version2Date20260520000099 extends SimpleMigrationStep
     // Nextcloud's MigrationService::createInstance() uses `new $class()` —
     // migrations cannot have constructor parameters. Dependencies resolved
     // via service container inside the methods that need them.
-
-
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No-op. Row-count checks happen in changeSchema so the safety
         // gate runs against the live (committed) data.
-    }
-
+    }//end preSchemaChange()
 
     /**
      * Drop each legacy table when (a) it exists and (b) it has zero rows.
@@ -97,15 +94,17 @@ class Version2Date20260520000099 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /**
+ * @var ISchemaWrapper $schema
+*/
         $schema = $schemaClosure();
 
         $db     = \OC::$server->get(IDBConnection::class);
         $logger = \OC::$server->get(LoggerInterface::class);
 
-        $dropped = 0;
+        $dropped         = 0;
         $skippedNonEmpty = 0;
-        $skippedAbsent = 0;
+        $skippedAbsent   = 0;
 
         foreach (self::LEGACY_TABLES as $tableShort) {
             if ($schema->hasTable($tableShort) === false) {
@@ -115,18 +114,20 @@ class Version2Date20260520000099 extends SimpleMigrationStep
 
             $rowCount = $this->countRows($db, $logger, $tableShort);
             if ($rowCount > 0) {
-                $output->warning(sprintf(
-                    'chain-B/C cleanup: legacy table `oc_%s` has %d row(s) — SKIPPED. '
-                    . 'Verify the chain-C cutover migrated all rows into OR storage, then '
-                    . 'TRUNCATE the table manually and re-run `occ upgrade`.',
+                $output->warning(
+                        sprintf(
+                    'chain-B/C cleanup: legacy table `oc_%s` has %d row(s) — SKIPPED. Verify the chain-C cutover migrated all rows into OR storage, then TRUNCATE the table manually and re-run `occ upgrade`.',
                     $tableShort,
                     $rowCount
-                ));
-                $logger->warning(sprintf(
+                )
+                        );
+                $logger->warning(
+                        sprintf(
                     'chain-B/C cleanup: skipping non-empty legacy table %s (%d rows)',
                     $tableShort,
                     $rowCount
-                ));
+                )
+                        );
                 $skippedNonEmpty++;
                 continue;
             }
@@ -134,19 +135,20 @@ class Version2Date20260520000099 extends SimpleMigrationStep
             $schema->dropTable($tableShort);
             $output->info(sprintf('chain-B/C cleanup: dropped empty legacy table `oc_%s`', $tableShort));
             $dropped++;
-        }
+        }//end foreach
 
-        $output->info(sprintf(
+        $output->info(
+                sprintf(
             'chain-B/C cleanup summary: %d dropped, %d skipped-non-empty, %d already-absent (of %d legacy tables)',
             $dropped,
             $skippedNonEmpty,
             $skippedAbsent,
             count(self::LEGACY_TABLES)
-        ));
+        )
+                );
 
         return $schema;
-    }
-
+    }//end changeSchema()
 
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -154,8 +156,7 @@ class Version2Date20260520000099 extends SimpleMigrationStep
         // 'true'. It still serves as a marker that the cutover ran (read by
         // SynchronizationContractProvider::isEnabled() among others).
         // Deleting it would be backwards-incompatible.
-    }
-
+    }//end postSchemaChange()
 
     /**
      * Count rows in a legacy table. Returns -1 on query error (treated as
@@ -167,18 +168,18 @@ class Version2Date20260520000099 extends SimpleMigrationStep
             $qb = $db->getQueryBuilder();
             $qb->select($qb->func()->count('*', 'c'))->from($tableShort);
             $result = $qb->executeQuery();
-            $row = $result->fetchAssociative();
+            $row    = $result->fetchAssociative();
             $result->closeCursor();
             return (int) ($row['c'] ?? -1);
         } catch (\Throwable $e) {
-            $logger->warning(sprintf(
+            $logger->warning(
+                    sprintf(
                 'chain-B/C cleanup: failed to count rows in %s — treating as non-empty for safety. %s',
                 $tableShort,
                 $e->getMessage()
-            ));
+            )
+                    );
             return -1;
         }
-    }
-
-
-}
+    }//end countRows()
+}//end class

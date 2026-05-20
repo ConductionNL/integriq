@@ -54,13 +54,13 @@ class MappingService
     /**
      * Setting up the base class with required services.
      *
-     * @param ArrayLoader        $loader        The ArrayLoader for Twig.
-     * @param CallService        $callService   The call service.
-     * @param FileService        $fileService   The file service.
-     * @param ObjectService      $objectService The OpenConnector object service.
+     * @param ArrayLoader        $loader          The ArrayLoader for Twig.
+     * @param CallService        $callService     The call service.
+     * @param FileService        $fileService     The file service.
+     * @param ObjectService      $objectService   The OpenConnector object service.
      * @param ORObjectService    $orObjectService The OpenRegister object service.
-     * @param ContainerInterface $container     The PSR container (injected; replaces \OC::$server for service lookup).
-     * @param LoggerInterface    $logger        The logger (injected; replaces \OC::$server->getLogger()).
+     * @param ContainerInterface $container       The PSR container (injected; replaces \OC::$server for service lookup).
+     * @param LoggerInterface    $logger          The logger (injected; replaces \OC::$server->getLogger()).
      */
     public function __construct(
         ArrayLoader $loader,
@@ -124,8 +124,8 @@ class MappingService
      * uses the local implementation.
      *
      * @param \OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping The mapping object that forms the recipe for the mapping
-     * @param array                                      $input   The array that need to be mapped (transformed) otherwise known as input
-     * @param bool                                       $list    Whether we want a list instead of a single item
+     * @param array                                     $input   The array that need to be mapped (transformed) otherwise known as input
+     * @param bool                                      $list    Whether we want a list instead of a single item
      *
      * @return array The result (output) of the mapping process
      * @throws LoaderError|SyntaxError Twig Exceptions

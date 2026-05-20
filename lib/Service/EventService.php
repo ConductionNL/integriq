@@ -42,13 +42,15 @@ class EventService
     {
         try {
             // Find all active subscriptions
-            $matches = $this->objectService->findAll(config: [
-                'filters' => [
-                    'register' => 'openconnector',
-                    'schema'   => 'event_subscription',
-                    'status'   => 'active',
-                ],
-            ]);
+            $matches       = $this->objectService->findAll(
+                    config: [
+                        'filters' => [
+                            'register' => 'openconnector',
+                            'schema'   => 'event_subscription',
+                            'status'   => 'active',
+                        ],
+                    ]
+                    );
             $subscriptions = $matches['results'] ?? $matches;
             $messages      = [];
 
@@ -202,7 +204,7 @@ class EventService
     public function deliverMessage(ObjectEntity $message): bool
     {
         try {
-            $messageData = $message->getObject();
+            $messageData    = $message->getObject();
             $subscriptionId = $messageData['subscriptionId'] ?? null;
 
             if ($subscriptionId === null) {
@@ -239,8 +241,8 @@ class EventService
                     );
 
             if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-                $messageData['status']      = 'delivered';
-                $messageData['deliveredAt'] = (new DateTime())->format('c');
+                $messageData['status']           = 'delivered';
+                $messageData['deliveredAt']      = (new DateTime())->format('c');
                 $messageData['deliveryResponse'] = [
                     'statusCode' => $response->getStatusCode(),
                     'body'       => $response->getBody(),
@@ -264,7 +266,7 @@ class EventService
                     ]
                     );
 
-            $messageDataFail = $message->getObject();
+            $messageDataFail           = $message->getObject();
             $messageDataFail['status'] = 'failed';
             $messageDataFail['error']  = $e->getMessage();
             $this->objectService->saveObject(
@@ -286,19 +288,21 @@ class EventService
      */
     public function processRetries(int $maxRetries=5): int
     {
-        $matches  = $this->objectService->findAll(config: [
-            'filters' => [
-                'register' => 'openconnector',
-                'schema'   => 'event_message',
-                'status'   => 'pending',
-            ],
-        ]);
+        $matches      = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => 'openconnector',
+                        'schema'   => 'event_message',
+                        'status'   => 'pending',
+                    ],
+                ]
+                );
         $messages     = $matches['results'] ?? $matches;
         $successCount = 0;
 
         foreach ($messages as $message) {
-            $messageData    = $message->getObject();
-            $retryCount     = (int) ($messageData['retryCount'] ?? 0);
+            $messageData = $message->getObject();
+            $retryCount  = (int) ($messageData['retryCount'] ?? 0);
             if ($retryCount < $maxRetries && $this->deliverMessage($message)) {
                 $successCount++;
             }
@@ -328,10 +332,12 @@ class EventService
             $filters['id'] = ['>' => $cursor];
         }
 
-        $matches  = $this->objectService->findAll(config: [
-            'filters' => $filters,
-            'limit'   => $limit ?? 100,
-        ]);
+        $matches    = $this->objectService->findAll(
+                config: [
+                    'filters' => $filters,
+                    'limit'   => $limit ?? 100,
+                ]
+                );
         $messages   = $matches['results'] ?? $matches;
         $lastCursor = count($messages) > 0 ? end($messages)->getUuid() : null;
 
@@ -352,7 +358,7 @@ class EventService
     public function handleObjectCreated(ObjectEntity $object): array
     {
         $objectData = $object->getObject();
-        $event = $this->objectService->saveObject(
+        $event      = $this->objectService->saveObject(
             object: [
                 'source'  => '/objects/'.($objectData['type'] ?? ''),
                 'type'    => 'com.nextcloud.openregister.object.created',

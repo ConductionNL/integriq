@@ -206,9 +206,11 @@ class ConfigurationService
      */
     private function fetchBySchema(string $schema, array $filters=[]): array
     {
-        $result = $this->orObjectService->findAll(config: [
-            'filters' => array_merge(['register' => 'openconnector', 'schema' => $schema], $filters),
-        ]);
+        $result = $this->orObjectService->findAll(
+                config: [
+                    'filters' => array_merge(['register' => 'openconnector', 'schema' => $schema], $filters),
+                ]
+                );
         $items  = $result['results'] ?? $result;
         return array_filter(
             $items,
@@ -305,11 +307,11 @@ class ConfigurationService
         $this->resetMappings();
 
         // Get raw entities via OR
-        $sources          = $this->findByConfiguration('source', $configurationId);
-        $endpoints        = $this->findByConfiguration('endpoint', $configurationId);
-        $mappings         = $this->findByConfiguration('mapping', $configurationId);
-        $rules            = $this->findByConfiguration('rule', $configurationId);
-        $jobs             = $this->findByConfiguration('job', $configurationId);
+        $sources   = $this->findByConfiguration('source', $configurationId);
+        $endpoints = $this->findByConfiguration('endpoint', $configurationId);
+        $mappings  = $this->findByConfiguration('mapping', $configurationId);
+        $rules     = $this->findByConfiguration('rule', $configurationId);
+        $jobs      = $this->findByConfiguration('job', $configurationId);
         $synchronizations = $this->findByConfiguration('synchronization', $configurationId);
 
         // Collect register and schema IDs from entities that reference them
@@ -790,7 +792,7 @@ class ConfigurationService
                 searchTarget: $searchTarget
             );
             foreach ($synchronizations as $synchronization) {
-                $data                 = $synchronization->getObject();
+                $data = $synchronization->getObject();
                 $synchronizationIds[] = $synchronization->getUuid();
 
                 // Collect related IDs
@@ -883,7 +885,7 @@ class ConfigurationService
 
         // Batch fetch and export related entities
         if (!empty($mappingIds)) {
-            $mappings        = $this->findByUuids('mapping', $mappingIds);
+            $mappings = $this->findByUuids('mapping', $mappingIds);
             $additionalMappingIds = [];
             foreach ($mappings as $mapping) {
                 $data = $mapping->getObject();
@@ -892,9 +894,9 @@ class ConfigurationService
             }
 
             while (empty($additionalMappingIds) === false) {
-                $additionalMappingIds      = array_values(array_filter(array_unique($additionalMappingIds)));
-                $additionalMappings        = $this->findByUuids('mapping', $additionalMappingIds);
-                $additionalMappingIds      = [];
+                $additionalMappingIds = array_values(array_filter(array_unique($additionalMappingIds)));
+                $additionalMappings   = $this->findByUuids('mapping', $additionalMappingIds);
+                $additionalMappingIds = [];
                 foreach ($additionalMappings as $mapping) {
                     $data = $mapping->getObject();
                     $slug = $data['slug'] ?? $mapping->getUuid();

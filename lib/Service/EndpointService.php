@@ -599,18 +599,18 @@ class EndpointService
                 continue;
             }
 
-            $parsedPath    = parse_url($parameters[$rewriteParameter], PHP_URL_PATH);
-            $parsedPath    = substr($parsedPath, 33);
-            $epMatches     = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint', 'endpointRegex' => $parsedPath, 'method' => 'GET']]);
-            $epEntities    = $epMatches['results'] ?? $epMatches;
+            $parsedPath = parse_url($parameters[$rewriteParameter], PHP_URL_PATH);
+            $parsedPath = substr($parsedPath, 33);
+            $epMatches  = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint', 'endpointRegex' => $parsedPath, 'method' => 'GET']]);
+            $epEntities = $epMatches['results'] ?? $epMatches;
 
             if (count($epEntities) < 1) {
                 continue;
             }
 
-            $epEntity    = array_shift($epEntities);
-            $epData      = $epEntity->getObject();
-            $pathArray   = $this->getPathParameters(endpointArray: ($epData['endpointArray'] ?? []), path: $parsedPath);
+            $epEntity  = array_shift($epEntities);
+            $epData    = $epEntity->getObject();
+            $pathArray = $this->getPathParameters(endpointArray: ($epData['endpointArray'] ?? []), path: $parsedPath);
             $parameters[$rewriteParameter] = [$parameters[$rewriteParameter], end($pathArray)];
         }//end foreach
 
@@ -1009,9 +1009,9 @@ class EndpointService
             $schema   = $object->getSchema();
         }
 
-        $target     = "$register/$schema";
-        $epMatches  = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint', 'targetId' => $target, 'method' => 'GET']]);
-        $endpoints  = $epMatches['results'] ?? $epMatches;
+        $target    = "$register/$schema";
+        $epMatches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint', 'targetId' => $target, 'method' => 'GET']]);
+        $endpoints = $epMatches['results'] ?? $epMatches;
 
         if (count($endpoints) === 0) {
             return $id;

@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsController extends Controller
 {
-
     public function __construct(
         string $appName,
         IRequest $request,
@@ -48,8 +47,7 @@ class SettingsController extends Controller
         private readonly IL10N $l
     ) {
         parent::__construct($appName, $request);
-    }
-
+    }//end __construct()
 
     /**
      * Rebase all logs with current retention settings.
@@ -67,22 +65,29 @@ class SettingsController extends Controller
         try {
             $this->logger->info('Rebase endpoint called', ['endpoint' => '/api/settings/rebase']);
             $result = $this->settingsService->rebase();
-            $this->logger->info('Rebase operation completed', [
-                'success'  => $result['success'] ?? false,
-                'duration' => $result['duration'] ?? 'unknown',
-                'errors'   => count($result['errors'] ?? []),
-            ]);
+            $this->logger->info(
+                    'Rebase operation completed',
+                    [
+                        'success'  => $result['success'] ?? false,
+                        'duration' => $result['duration'] ?? 'unknown',
+                        'errors'   => count($result['errors'] ?? []),
+                    ]
+                    );
             return new JSONResponse($result);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to perform rebase operation', [
-                'exception' => $e->getMessage(),
-            ]);
-            return new JSONResponse([
-                'error'   => $this->l->t('Failed to perform rebase operation'),
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
-}
+            $this->logger->error(
+                    'Failed to perform rebase operation',
+                    [
+                        'exception' => $e->getMessage(),
+                    ]
+                    );
+            return new JSONResponse(
+                    [
+                        'error'   => $this->l->t('Failed to perform rebase operation'),
+                        'message' => $e->getMessage(),
+                    ],
+                    500
+                    );
+        }//end try
+    }//end rebase()
+}//end class

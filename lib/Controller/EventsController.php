@@ -81,11 +81,13 @@ class EventsController extends Controller
         }
 
         // Get all messages for this event
-        $matches  = $this->orObjectService->findAll(config: [
-            'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'eventId' => (string) $id],
-            'limit'   => (int) $this->request->getParam('limit', 50),
-            'offset'  => (int) $this->request->getParam('offset', 0),
-        ]);
+        $matches  = $this->orObjectService->findAll(
+                config: [
+                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'eventId' => (string) $id],
+                    'limit'   => (int) $this->request->getParam('limit', 50),
+                    'offset'  => (int) $this->request->getParam('offset', 0),
+                ]
+                );
         $messages = $matches['results'] ?? $matches;
 
         return new JSONResponse(
@@ -196,12 +198,14 @@ class EventsController extends Controller
             }
         }
 
-        $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'event_subscription'], $filters);
-        $matches   = $this->orObjectService->findAll(config: [
-            'filters' => $orFilters,
-            'limit'   => (int) $this->request->getParam('limit', 50),
-            'offset'  => (int) $this->request->getParam('offset', 0),
-        ]);
+        $orFilters     = array_merge(['register' => 'openconnector', 'schema' => 'event_subscription'], $filters);
+        $matches       = $this->orObjectService->findAll(
+                config: [
+                    'filters' => $orFilters,
+                    'limit'   => (int) $this->request->getParam('limit', 50),
+                    'offset'  => (int) $this->request->getParam('offset', 0),
+                ]
+                );
         $subscriptions = $matches['results'] ?? $matches;
 
         return new JSONResponse(['results' => $subscriptions]);
@@ -224,11 +228,13 @@ class EventsController extends Controller
         }
 
         // Get messages for this subscription
-        $matches  = $this->orObjectService->findAll(config: [
-            'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscriptionId' => (string) $subscriptionId],
-            'limit'   => (int) $this->request->getParam('limit', 50),
-            'offset'  => (int) $this->request->getParam('offset', 0),
-        ]);
+        $matches  = $this->orObjectService->findAll(
+                config: [
+                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscriptionId' => (string) $subscriptionId],
+                    'limit'   => (int) $this->request->getParam('limit', 50),
+                    'offset'  => (int) $this->request->getParam('offset', 0),
+                ]
+                );
         $messages = $matches['results'] ?? $matches;
 
         return new JSONResponse(

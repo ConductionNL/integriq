@@ -37,13 +37,11 @@ class Version2Date20260520000001 extends SimpleMigrationStep
     // Nextcloud's MigrationService::createInstance() uses `new $class()` —
     // migrations cannot have constructor parameters. All dependencies are
     // resolved via the service container inside postSchemaChange().
-
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No-op. All work happens in postSchemaChange so OR's schemas exist
         // before we attempt to import the descriptor.
-    }
-
+    }//end preSchemaChange()
 
     /**
      * No schema diff for chain B — the OR tables already exist from the
@@ -53,8 +51,7 @@ class Version2Date20260520000001 extends SimpleMigrationStep
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         return null;
-    }
-
+    }//end changeSchema()
 
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
@@ -76,13 +73,13 @@ class Version2Date20260520000001 extends SimpleMigrationStep
 
         try {
             $configurationService = $container->get('OCA\\OpenRegister\\Service\\ConfigurationService');
-            $migrator             = $container->get(LegacyToRegisterMigrator::class);
+            $migrator = $container->get(LegacyToRegisterMigrator::class);
         } catch (\Throwable $e) {
-            $output->warning('chain-B: failed to resolve services (' . $e->getMessage() . '); skipping.');
+            $output->warning('chain-B: failed to resolve services ('.$e->getMessage().'); skipping.');
             return;
         }
 
-        $descriptorPath = __DIR__ . '/../Settings/openconnector_register.json';
+        $descriptorPath = __DIR__.'/../Settings/openconnector_register.json';
         $output->info(sprintf('chain-B: importing register descriptor from %s', $descriptorPath));
 
         $descriptor = json_decode((string) file_get_contents($descriptorPath), true, flags: JSON_THROW_ON_ERROR);
@@ -105,7 +102,8 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         $allOk = true;
         foreach ($result as $perEntity) {
             $skipped = (int) ($perEntity['skipped'] ?? 0);
-            $output->info(sprintf(
+            $output->info(
+                    sprintf(
                 '  %s: legacy=%d migrated=%d skipped=%d fkRewrites=%d (%dms)',
                 $perEntity['slug'] ?? '?',
                 (int) ($perEntity['legacyCount'] ?? 0),
@@ -113,7 +111,8 @@ class Version2Date20260520000001 extends SimpleMigrationStep
                 $skipped,
                 (int) ($perEntity['fkRewrites'] ?? 0),
                 (int) ($perEntity['elapsedMs'] ?? 0)
-            ));
+            )
+                    );
             if ($skipped > 0 || !empty($perEntity['error'])) {
                 $allOk = false;
             }
@@ -125,7 +124,5 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         } else {
             $output->warning('chain-B: storage_migrated flag NOT set — at least one entity reported skips or errors. Use occ openconnector:migrate-storage to retry per-entity.');
         }
-    }
-
-
-}
+    }//end postSchemaChange()
+}//end class

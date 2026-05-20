@@ -860,9 +860,9 @@ class RuleService
         } else {
             $source = $this->orObjectService->saveObject(
                 object: [
-                    'location' => $url,
-                    'name'     => basename($url),
-                    'type'     => 'api',
+                    'location'  => $url,
+                    'name'      => basename($url),
+                    'type'      => 'api',
                     'isEnabled' => true,
                 ],
                 register: 'openconnector',

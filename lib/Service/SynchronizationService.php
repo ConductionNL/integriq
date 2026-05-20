@@ -446,8 +446,8 @@ class SynchronizationService
         $synchronizationContract = null;
         // Get the synchronization contract for this object
         if ($originId !== null) {
-            $matches                 = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid(), 'originId' => $originId]]);
-            $contracts               = $matches['results'] ?? $matches;
+            $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid(), 'originId' => $originId]]);
+            $contracts = $matches['results'] ?? $matches;
             $synchronizationContract = count($contracts) > 0 ? $contracts[0] : null;
         }
 
@@ -534,9 +534,9 @@ class SynchronizationService
         $rateLimitException = null;
 
         // Initialize timing data in result
-        $logData            = $log->getObject();
-        $result             = $logData['result'] ?? [];
-        $result['timing']   = [
+        $logData          = $log->getObject();
+        $result           = $logData['result'] ?? [];
+        $result['timing'] = [
             'stages'   => [],
             'total_ms' => 0,
         ];
@@ -554,9 +554,10 @@ class SynchronizationService
             } else {
                 $sourceEntity = $this->orObjectService->saveObject(object: ['location' => $source, 'name' => basename($source), 'type' => 'api', 'isEnabled' => true], register: 'openconnector', schema: 'source');
             }
+
             $syncData['sourceId'] = $sourceEntity->getUuid();
             $synchronization      = $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
-            $syncData             = $synchronization->getObject();
+            $syncData = $synchronization->getObject();
         }
 
         if (empty($syncData['sourceId'] ?? null) === true && $source === null) {
@@ -678,7 +679,7 @@ class SynchronizationService
         // Stage 6: Follow-up synchronizations
         $stageStartTime = microtime(true);
         $followUpCount  = 0;
-        $syncData = $synchronization->getObject();
+        $syncData       = $synchronization->getObject();
         foreach ($syncData['followUps'] ?? [] as $followUp) {
             $followUpSynchronization = $this->orObjectService->find(id: $followUp, register: 'openconnector', schema: 'synchronization');
             if ($followUpSynchronization !== null) {
@@ -827,10 +828,10 @@ class SynchronizationService
 
         // Finalize log
         $executionTime = round((microtime(true) - $startTime) * 1000);
-        $logData                    = $log->getObject();
-        $logData['executionTime']   = $executionTime;
-        $logData['message']         = 'Success';
-        $logData['expires']         = $this->calculateExpires($this->successRetention, $this->successRetention)?->format('c');
+        $logData       = $log->getObject();
+        $logData['executionTime'] = $executionTime;
+        $logData['message']       = 'Success';
+        $logData['expires']       = $this->calculateExpires($this->successRetention, $this->successRetention)?->format('c');
         $log = $this->orObjectService->saveObject(object: $logData, register: 'openconnector', schema: 'synchronization_log', uuid: $log->getUuid());
 
         return $log->getObject();
@@ -1113,7 +1114,7 @@ class SynchronizationService
     {
         $deletedObjectsCount = 0;
         $syncData            = $synchronization->getObject();
-        $type                = $syncData['targetType'] ?? '';
+        $type = $syncData['targetType'] ?? '';
 
         switch ($type) {
             case 'register/schema':
@@ -1230,9 +1231,9 @@ class SynchronizationService
         ?ObjectEntity $log=null,
         ?string $mutationType=null
     ): ObjectEntity|Exception|array {
-        $contractLog     = null;
-        $contractData    = $synchronizationContract->getObject();
-        $syncData        = $synchronization !== null ? $synchronization->getObject() : [];
+        $contractLog  = null;
+        $contractData = $synchronizationContract->getObject();
+        $syncData     = $synchronization !== null ? $synchronization->getObject() : [];
 
         // We are doing something so lets log it
         if (isset($contractData['uuid']) === true && $contractData['uuid'] !== null) {
@@ -1244,13 +1245,13 @@ class SynchronizationService
                 'force'                     => $force,
                 'expiry'                    => $this->calculateExpires($this->errorContractRetention)?->format('c'),
             ];
-            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log');
+            $contractLog     = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log');
         }
 
         if ($contractLog !== null && $log !== null) {
-            $contractLogData                      = $contractLog->getObject();
+            $contractLogData = $contractLog->getObject();
             $contractLogData['synchronizationLogId'] = $log->getUuid();
-            $contractLog                          = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
         }
 
         $flowToken->setSyncInputOriginal($object);
@@ -1287,10 +1288,10 @@ class SynchronizationService
         // 3. If source target mapping exists, check it hasn't been updated since last check
         // 4. If target ID and hash exist (object hasn't been removed from target)
         // 5. Force parameter is false (otherwise always continue with update)
-        $contractUpdated         = $contractData['updated'] ?? null;
+        $contractUpdated           = $contractData['updated'] ?? null;
         $contractSourceLastChecked = $contractData['sourceLastChecked'] ?? null;
-        $syncUpdated             = $syncData['updated'] ?? null;
-        $mappingUpdated          = $sourceTargetMapping !== null ? ($sourceTargetMapping->getObject()['updated'] ?? null) : null;
+        $syncUpdated    = $syncData['updated'] ?? null;
+        $mappingUpdated = $sourceTargetMapping !== null ? ($sourceTargetMapping->getObject()['updated'] ?? null) : null;
         if ($force === false
             && $originHash === ($contractData['originHash'] ?? null)
             && $syncUpdated < $contractSourceLastChecked
@@ -1305,7 +1306,7 @@ class SynchronizationService
             if ($contractLog !== null) {
                 $contractLogData           = $contractLog->getObject();
                 $contractLogData['expiry'] = $this->calculateExpires($this->successRetention)?->format('c');
-                $contractLog               = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+                $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
             }
 
             return [
@@ -1320,7 +1321,7 @@ class SynchronizationService
         $contractData['sourceLastChanged'] = (new DateTime())->format('c');
         $contractData['sourceLastChecked'] = (new DateTime())->format('c');
         $synchronizationContract           = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
-        $contractData                      = $synchronizationContract->getObject();
+        $contractData = $synchronizationContract->getObject();
 
         // Execute mapping if found
         $objectBeforeMapping = $object;
@@ -1334,7 +1335,7 @@ class SynchronizationService
         if ($contractLog !== null) {
             $contractLogData           = $contractLog->getObject();
             $contractLogData['target'] = $object;
-            $contractLog               = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
         }
 
         $object = $this->replaceRelatedOriginIds(object: $object, config: $sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [], replaceIdWithTargetId: true);
@@ -1353,16 +1354,16 @@ class SynchronizationService
         $contractData['targetLastSynced']  = (new DateTime())->format('c');
         $contractData['sourceLastSynced']  = (new DateTime())->format('c');
         $synchronizationContract           = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
-        $contractData                      = $synchronizationContract->getObject();
+        $contractData = $synchronizationContract->getObject();
 
         // Handle synchronization based on test mode
         if ($isTest === true) {
             // Return test data without updating target
             if ($contractLog !== null) {
-                $contractLogData                   = $contractLog->getObject();
-                $contractLogData['targetResult']   = 'test';
-                $contractLogData['expiry']         = $this->calculateExpires($this->successRetention)?->format('c');
-                $contractLog                       = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+                $contractLogData = $contractLog->getObject();
+                $contractLogData['targetResult'] = 'test';
+                $contractLogData['expiry']       = $this->calculateExpires($this->successRetention)?->format('c');
+                $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
             }
 
             return [
@@ -1378,7 +1379,7 @@ class SynchronizationService
             targetObject: $object,
             mutationType: $mutationType
         );
-        $contractData = $synchronizationContract->getObject();
+        $contractData            = $synchronizationContract->getObject();
 
         $targetType = $syncData['targetType'] ?? '';
         $sourceType = $syncData['sourceType'] ?? '';
@@ -1392,10 +1393,10 @@ class SynchronizationService
 
         // Create log entry for the synchronization
         if ($contractLog !== null) {
-            $contractLogData                   = $contractLog->getObject();
-            $contractLogData['targetResult']   = $contractData['targetLastAction'] ?? null;
-            $contractLogData['expiry']         = $this->calculateExpires($this->successRetention)?->format('c');
-            $contractLog                       = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+            $contractLogData = $contractLog->getObject();
+            $contractLogData['targetResult'] = $contractData['targetLastAction'] ?? null;
+            $contractLogData['expiry']       = $this->calculateExpires($this->successRetention)?->format('c');
+            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
         }
 
         $synchronizationContract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
@@ -1578,7 +1579,7 @@ class SynchronizationService
      */
     private function findTargetIdByOriginId(string $originId): ?string
     {
-        $matches  = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $originId]]);
+        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $originId]]);
         $contracts = $matches['results'] ?? $matches;
         if (empty($contracts) === false) {
             $contractData = $contracts[0]->getObject();
@@ -1647,9 +1648,9 @@ class SynchronizationService
      */
     private function processSyncContract(string $synchronizationId, array $subObjectData): void
     {
-        $id           = $subObjectData['id']['id']['id']['id'] ?? $subObjectData['id']['id']['id'] ?? $subObjectData['id']['id'] ?? $subObjectData['id'];
-        $originId     = $subObjectData['originId'] ?? null;
-        $subContract  = null;
+        $id          = $subObjectData['id']['id']['id']['id'] ?? $subObjectData['id']['id']['id'] ?? $subObjectData['id']['id'] ?? $subObjectData['id'];
+        $originId    = $subObjectData['originId'] ?? null;
+        $subContract = null;
         if ($originId !== null) {
             $contractMatches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $originId]]);
             $contractList    = $contractMatches['results'] ?? $contractMatches;
@@ -1669,7 +1670,7 @@ class SynchronizationService
         if ($subContract === null) {
             $subContract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract');
         } else {
-            $existing    = $subContract->getObject();
+            $existing     = $subContract->getObject();
             $contractData = array_merge($existing, $contractData);
             $subContract  = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $subContract->getUuid());
         }//end if
@@ -2055,7 +2056,7 @@ class SynchronizationService
             // Update synchronization current page
             $syncData['currentPage'] = $currentPage;
             $synchronization         = $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
-            $syncData                = $synchronization->getObject();
+            $syncData = $synchronization->getObject();
         }//end for
 
         return $allObjects;
@@ -2531,7 +2532,7 @@ class SynchronizationService
 
             $contractData['targetHash'] = md5(serialize($response['body'] ?? ''));
             $contractData['targetId']   = null;
-            $contract                   = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $contract->getUuid());
+            $contract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $contract->getUuid());
 
             return $contract;
         }//end if
@@ -2563,7 +2564,7 @@ class SynchronizationService
             }
 
             $contractData['targetId'] = $targetId;
-            $contract                 = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $contract->getUuid());
+            $contract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $contract->getUuid());
             return $contract;
         }//end if
 
@@ -2582,7 +2583,7 @@ class SynchronizationService
         }
 
         if (isset($targetConfig['updateMapping']) === true) {
-            $mapping              = $this->mappingService->getMapping($targetConfig['updateMapping']);
+            $mapping = $this->mappingService->getMapping($targetConfig['updateMapping']);
             $targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
         }
 
@@ -2797,11 +2798,14 @@ class SynchronizationService
             );
 
             // Sort rules by order
-            usort($ruleEntities, function ($a, $b) {
-                $aOrder = $a->getObject()['order'] ?? 0;
-                $bOrder = $b->getObject()['order'] ?? 0;
-                return $aOrder - $bOrder;
-            });
+            usort(
+                    $ruleEntities,
+                    function ($a, $b) {
+                        $aOrder = $a->getObject()['order'] ?? 0;
+                        $bOrder = $b->getObject()['order'] ?? 0;
+                        return $aOrder - $bOrder;
+                    }
+                    );
 
             $syncName = $syncData['name'] ?? $synchronization->getUuid();
 
@@ -2942,14 +2946,14 @@ class SynchronizationService
 
         $config['sourceConfiguration'] = $sourceConfig;
 
-        $result      = $this->callService->call(
+        $result     = $this->callService->call(
             source: $source,
             endpoint: $endpoint,
             method: $config['method'] ?? 'GET',
             config: $config['sourceConfiguration'] ?? []
         );
-        $resultData  = $result->getObject();
-        $response    = $resultData['response'] ?? null;
+        $resultData = $result->getObject();
+        $response   = $resultData['response'] ?? null;
 
         $body = $response['body'] ?? '';
 

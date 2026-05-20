@@ -107,8 +107,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      * Execute a mapping with given parameters.
      *
      * @param \OCA\OpenRegister\Db\Mapping|array|string|int $mapping The mapping to execute
-     * @param array                                          $input   The input to run the mapping on
-     * @param bool                                           $list    Whether the mapping runs on multiple instances of the object.
+     * @param array                                         $input   The input to run the mapping on
+     * @param bool                                          $list    Whether the mapping runs on multiple instances of the object.
      *
      * @return array
      */

@@ -33,14 +33,13 @@ use OCP\AppFramework\Utility\ITimeFactory;
  */
 class LogCleanUpTask extends TimedJob
 {
-
     /**
      * LogCleanUpTask constructor
      *
      * Initializes the log cleanup task with required dependencies
      * and configures the background job settings.
      *
-     * @param ITimeFactory  $time            Time factory for job scheduling
+     * @param ITimeFactory    $time            Time factory for job scheduling
      * @param OrObjectService $orObjectService OR object service for log operations
      *
      * @psalm-param ITimeFactory $time
@@ -67,19 +66,21 @@ class LogCleanUpTask extends TimedJob
      * Finds all objects with a non-null `expires` field that is in the past,
      * then deletes them one by one via OR ObjectService.
      *
-     * @param string $schema The schema slug to clean up.
+     * @param  string $schema The schema slug to clean up.
      * @return void
      */
     private function cleanupSchema(string $schema): void
     {
         $now     = (new \DateTime())->format('Y-m-d H:i:s');
-        $matches = $this->orObjectService->findAll(config: [
-            'filters' => [
-                'register'   => 'openconnector',
-                'schema'     => $schema,
-                'expires[lt]' => $now,
-            ],
-        ]);
+        $matches = $this->orObjectService->findAll(
+                config: [
+                    'filters' => [
+                        'register'    => 'openconnector',
+                        'schema'      => $schema,
+                        'expires[lt]' => $now,
+                    ],
+                ]
+                );
 
         $objects = $matches['results'] ?? $matches;
         foreach ($objects as $object) {
