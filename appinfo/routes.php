@@ -1,17 +1,11 @@
 <?php
 
+// Resource block intentionally omitted: chain-C deleted every
+// index/show/create/update/destroy from the per-schema controllers. CRUD now
+// lives at OR's `/api/objects/openconnector/{schema}/*`. Re-adding a
+// `resources` entry here without restoring the controller methods produces
+// auto-routes that 500 on hit — `composer check:routes` enforces this.
 return [
-	'resources' => [
-		'Endpoints' => ['url' => 'api/endpoints'],
-		'Sources' => ['url' => 'api/sources'],
-		'Mappings' => ['url' => 'api/mappings'],
-		'Jobs' => ['url' => 'api/jobs'],
-		'Synchronizations' => ['url' => 'api/synchronizations'],
-		'Consumers' => ['url' => 'api/consumers'],
-		'Rules' => ['url' => 'api/rules'],
-		'Events' => ['url' => 'api/events'],
-		'SynchronizationContracts' => ['url' => 'api/synchronization-contracts'],
-	],
 	'routes' => [
 		// SPA shell entry (root) — UiController serves the Vue app for all section paths.
 		// The Dashboard data routes (/api/dashboard/{callstats,jobstats,syncstats}) were

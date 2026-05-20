@@ -24,8 +24,41 @@ if (!file_exists($routesFile)) {
 
 $config = require $routesFile;
 $routes = $config['routes'] ?? [];
+$resources = $config['resources'] ?? [];
 
 $missing = [];
+
+// Resource auto-routes: Nextcloud expands each `resources` entry into 5
+// CRUD routes (index/show/create/update/destroy) on the named controller.
+// If any of those methods are missing, the auto-generated route 500s on
+// hit — which is exactly the trap chain-C fell into.
+$resourceActions = ['index', 'show', 'create', 'update', 'destroy'];
+foreach ($resources as $name => $_def) {
+    $candidates = array_unique([
+        $name . 'Controller.php',
+        ucfirst($name) . 'Controller.php',
+        strtoupper($name) . 'Controller.php',
+    ]);
+    $class = null;
+    foreach ($candidates as $candidate) {
+        $candidatePath = __DIR__ . '/../../lib/Controller/' . $candidate;
+        if (file_exists($candidatePath)) {
+            $class = $candidatePath;
+            break;
+        }
+    }
+    if ($class === null) {
+        $missing[] = "resource '$name' → tried " . implode(' / ', $candidates) . ' (none exists)';
+        continue;
+    }
+    $src = file_get_contents($class);
+    foreach ($resourceActions as $action) {
+        if (!preg_match('/public function ' . $action . '\b/', $src)) {
+            $missing[] = "resource '$name' → method " . basename($class, '.php') . "::$action() does not exist";
+        }
+    }
+}
+
 foreach ($routes as $route) {
     if (!isset($route['name'])) {
         continue;

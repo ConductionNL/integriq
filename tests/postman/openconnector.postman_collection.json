@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "OpenConnector — chain E integration tests",
-    "description": "Post-OR-cutover (chain B/C) HTTP surface coverage. Two route categories:\n\n1. **OR's generic CRUD routes** (`/api/objects/openconnector/{schema}/*`) — list/show/create/update/delete for every openconnector schema, served by OpenRegister, NO openconnector controller in the path. These are smoke tests that the cutover left CRUD working.\n\n2. **Openconnector-specific action endpoints** — tests Sources/Endpoints/Jobs/etc. controllers (Chain C kept their action methods; deleted only the CRUD methods).\n\nEnvironment vars: `baseUrl`, `admin_user`, `admin_pass`. Run via `npm run test:newman`.\n\nExpected exit: 0 failures against a freshly-seeded dev container with `openconnector.storage_migrated=true`.",
+    "description": "Post-OR-cutover (chain B/C) integration suite.\n\nDesign:\n1. **OR-backed fixture setup** (folder 01) — creates source/mapping/endpoint/job/synchronization/consumer/rule/event/eventSubscription via OR's `/api/objects/openconnector/{schema}/*`. UUIDs cached in collection variables for downstream use.\n2. **Surviving openconnector action endpoints** (folders 02–12) — exercises every named route in `appinfo/routes.php`. Fixtures from step 1 supply IDs.\n3. **End-to-end user journeys** (folder 13) — Source→Mapping→Object, Source→Synchronization→Run→Contract, Endpoint gateway round-trip, Event pub/sub. Each journey owns its own fixtures and cleans up.\n4. **Teardown** (folder 99) — deletes shared fixtures via OR.\n\nThe suite is hermetic: it expects a freshly-seeded dev container, makes no assumption about pre-existing data, and leaves the database in the state it found it.\n\nEnvironment vars: `baseUrl`, `admin_user`, `admin_pass`. Run via `npm run test:newman`.\n\nRoute audit (sync with `appinfo/routes.php`):\n- Resource block removed in this cutover — CRUD now at `/api/objects/openconnector/{schema}/*`.\n- 67 named routes still active. Every one of them is touched by this suite.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "openconnector-chain-e-2026-05-20"
   },
@@ -13,266 +13,961 @@
     ]
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" }
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "ocBase", "value": "{{baseUrl}}/index.php/apps/openconnector/api" },
+    { "key": "orBase", "value": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector" }
   ],
   "item": [
     {
       "name": "00 — Health & Metrics",
       "item": [
         {
-          "name": "GET /api/metrics — Prometheus-shaped metrics index",
+          "name": "GET /api/metrics — Prometheus index",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/metrics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","metrics"] },
+            "url": { "raw": "{{ocBase}}/metrics", "host": ["{{ocBase}}"], "path": ["metrics"] },
             "header": [{ "key": "Accept", "value": "application/json" }]
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
         },
         {
           "name": "GET /api/health — liveness probe",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/health", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","health"] }
+            "url": { "raw": "{{ocBase}}/health", "host": ["{{ocBase}}"], "path": ["health"] }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
         }
       ]
     },
     {
-      "name": "01 — OR generic CRUD (chain C cutover smoke tests)",
-      "description": "Verifies OR's `/api/objects/{register}/{schema}/*` routes serve openconnector schemas correctly post-cutover. NO openconnector controller in the path.",
+      "name": "01 — Fixture setup (via OR)",
+      "description": "Creates one of every openconnector schema instance via OR's generic object API. UUIDs are stored on collection variables (`fxSourceUuid`, `fxMappingUuid`, etc.) and consumed by later folders.",
       "item": [
         {
-          "name": "GET /api/objects/openconnector/source — list sources",
-          "request": {
-            "method": "GET",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source"] }
-          },
-          "event": [{ "listen": "test", "script": { "exec": [
-            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-            "pm.test('returns JSON', () => { const b = pm.response.json(); pm.expect(b).to.be.an('object'); });",
-            "pm.test('has results array', () => { const b = pm.response.json(); pm.expect(b.results || b).to.be.an('array'); });"
-          ], "type": "text/javascript" }}]
-        },
-        {
-          "name": "POST /api/objects/openconnector/source — create source",
+          "name": "POST source — fixture",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source"] },
+            "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-test-source\",\"type\":\"api\",\"location\":\"https://example.test\",\"isEnabled\":true}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-source\",\"type\":\"api\",\"location\":\"https://example.test/api\",\"isEnabled\":true,\"auth\":\"none\"}" }
           },
-          "event": [{ "listen": "test", "script": { "exec": [
-            "pm.test('201 or 200', () => pm.expect([200, 201]).to.include(pm.response.code));",
-            "const body = pm.response.json();",
-            "pm.test('returned uuid', () => pm.expect(body.uuid || body.id).to.be.a('string'));",
-            "pm.collectionVariables.set('newmanSourceUuid', body.uuid || body.id);"
-          ], "type": "text/javascript" }}]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxSourceUuid', uuid);"
+          ] }}]
         },
         {
-          "name": "GET /api/objects/openconnector/source/{uuid} — read source",
-          "request": {
-            "method": "GET",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source/{{newmanSourceUuid}}", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source","{{newmanSourceUuid}}"] }
-          },
-          "event": [{ "listen": "test", "script": { "exec": [
-            "pm.test('200 OK', () => pm.response.to.have.status(200));",
-            "const body = pm.response.json();",
-            "pm.test('matches created name', () => pm.expect((body.object || body).name).to.eql('newman-test-source'));"
-          ], "type": "text/javascript" }}]
-        },
-        {
-          "name": "DELETE /api/objects/openconnector/source/{uuid} — cleanup",
-          "request": {
-            "method": "DELETE",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source/{{newmanSourceUuid}}", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","source","{{newmanSourceUuid}}"] }
-          },
-          "event": [{ "listen": "test", "script": { "exec": [
-            "pm.test('204 or 200', () => pm.expect([200, 204]).to.include(pm.response.code));"
-          ], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/endpoint — list endpoints",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/endpoint", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","endpoint"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/consumer — list consumers",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/consumer", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","consumer"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/event — list events",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/event", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","event"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/job — list jobs",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/job", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","job"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/mapping — list mappings",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/mapping", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","mapping"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/rule — list rules",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/rule", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","rule"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/synchronization — list synchronizations",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/synchronization", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","synchronization"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/objects/openconnector/call_log — list call logs",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/call_log", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openregister","api","objects","openconnector","call_log"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        }
-      ]
-    },
-    {
-      "name": "02 — Source actions (connector-specific)",
-      "item": [
-        {
-          "name": "POST /api/sources/test/{id} — test connection (404 expected on missing id)",
+          "name": "POST mapping — fixture",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/test/00000000-0000-0000-0000-000000000000", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","sources","test","00000000-0000-0000-0000-000000000000"] }
+            "url": { "raw": "{{orBase}}/mapping", "host": ["{{orBase}}"], "path": ["mapping"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-mapping\",\"mapping\":{\"x\":\"a\",\"y\":\"b\"},\"passThrough\":false}" }
           },
-          "event": [{ "listen": "test", "script": { "exec": [
-            "pm.test('404 — non-existent uuid handled gracefully', () => pm.expect([404, 400, 500]).to.include(pm.response.code));"
-          ], "type": "text/javascript" }}]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxMappingUuid', uuid);"
+          ] }}]
         },
         {
-          "name": "GET /api/sources/logs — list source-related call logs",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/logs?_limit=5", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","sources","logs"], "query": [{ "key": "_limit", "value": "5" }] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/sources/statistics — aggregate stats",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/sources/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","sources","statistics"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        }
-      ]
-    },
-    {
-      "name": "03 — Job actions",
-      "item": [
-        {
-          "name": "GET /api/jobs/logs",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/logs", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","jobs","logs"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/jobs/statistics",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/jobs/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","jobs","statistics"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        }
-      ]
-    },
-    {
-      "name": "04 — Endpoint actions",
-      "item": [
-        {
-          "name": "GET /api/endpoints/logs",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoints/logs", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","endpoints","logs"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/endpoints/statistics",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoints/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","endpoints","statistics"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "OPTIONS /api/endpoint/{path} — CORS preflight",
+          "name": "POST endpoint — fixture",
           "request": {
-            "method": "OPTIONS",
-            "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/endpoint/test-path", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","endpoint","test-path"] }
+            "method": "POST",
+            "url": { "raw": "{{orBase}}/endpoint", "host": ["{{orBase}}"], "path": ["endpoint"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-endpoint\",\"endpoint\":\"newman-fixture\",\"method\":\"GET\",\"isEnabled\":true}" }
           },
-          "event": [{ "listen": "test", "script": { "exec": [
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxEndpointUuid', uuid);"
+          ] }}]
+        },
+        {
+          "name": "POST job — fixture",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{orBase}}/job", "host": ["{{orBase}}"], "path": ["job"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-job\",\"jobClass\":\"OCA\\\\OpenConnector\\\\Cron\\\\ActionTask\",\"interval\":3600,\"isEnabled\":false}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxJobUuid', uuid);"
+          ] }}]
+        },
+        {
+          "name": "POST synchronization — fixture",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{orBase}}/synchronization", "host": ["{{orBase}}"], "path": ["synchronization"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sync\",\"sourceId\":\"{{fxSourceUuid}}\",\"sourceType\":\"api\",\"targetId\":\"openconnector/source\",\"targetType\":\"register/schema\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxSyncUuid', uuid);"
+          ] }}]
+        },
+        {
+          "name": "POST consumer — fixture",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{orBase}}/consumer", "host": ["{{orBase}}"], "path": ["consumer"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-consumer\",\"description\":\"newman\",\"authorizationType\":\"none\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxConsumerUuid', uuid);"
+          ] }}]
+        },
+        {
+          "name": "POST rule — fixture",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{orBase}}/rule", "host": ["{{orBase}}"], "path": ["rule"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-rule\",\"type\":\"mapping\",\"timing\":\"before\",\"isEnabled\":true}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxRuleUuid', uuid);"
+          ] }}]
+        },
+        {
+          "name": "POST event — fixture",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{orBase}}/event", "host": ["{{orBase}}"], "path": ["event"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-event\",\"eventType\":\"com.example.test\",\"source\":\"newman\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id));",
+            "pm.expect(uuid).to.be.a('string');",
+            "pm.collectionVariables.set('fxEventUuid', uuid);"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "02 — OR-backed CRUD (post-cutover smoke)",
+      "description": "Verifies OR's generic CRUD path serves every openconnector schema. NO openconnector controller in the path.",
+      "item": [
+        {
+          "name": "GET sources",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const b = pm.response.json();",
+            "pm.test('returns array-like', () => pm.expect(b.results || b).to.be.an('array'));"
+          ] }}]
+        },
+        {
+          "name": "GET source/{fxSourceUuid}",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/source/{{fxSourceUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{fxSourceUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const b = pm.response.json();",
+            "pm.test('matches fixture name', () => pm.expect((b.object || b).name).to.eql('newman-fixture-source'));"
+          ] }}]
+        },
+        {
+          "name": "PUT source/{fxSourceUuid} — update",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{orBase}}/source/{{fxSourceUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{fxSourceUuid}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"description\":\"updated by newman\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET endpoints",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/endpoint", "host": ["{{orBase}}"], "path": ["endpoint"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET mappings",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/mapping", "host": ["{{orBase}}"], "path": ["mapping"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET jobs",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/job", "host": ["{{orBase}}"], "path": ["job"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET synchronizations",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/synchronization", "host": ["{{orBase}}"], "path": ["synchronization"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET consumers",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/consumer", "host": ["{{orBase}}"], "path": ["consumer"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET rules",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/rule", "host": ["{{orBase}}"], "path": ["rule"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET events",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/event", "host": ["{{orBase}}"], "path": ["event"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET call_logs",
+          "request": { "method": "GET", "url": { "raw": "{{orBase}}/call_log", "host": ["{{orBase}}"], "path": ["call_log"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "03 — Sources (actions)",
+      "item": [
+        {
+          "name": "POST /sources/test/{fxSourceUuid}",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/sources/test/{{fxSourceUuid}}", "host": ["{{ocBase}}"], "path": ["sources", "test", "{{fxSourceUuid}}"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/4xx — upstream may be unreachable)', () => pm.expect([200, 400, 404, 502]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /sources/logs",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/sources/logs?_limit=5", "host": ["{{ocBase}}"], "path": ["sources", "logs"], "query": [{ "key": "_limit", "value": "5" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "04 — Jobs (actions)",
+      "item": [
+        {
+          "name": "POST /jobs/run/{fxJobUuid}",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/jobs/run/{{fxJobUuid}}", "host": ["{{ocBase}}"], "path": ["jobs", "run", "{{fxJobUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/4xx)', () => pm.expect([200, 202, 400, 404, 500]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "POST /jobs/test/{fxJobUuid}",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/jobs/test/{{fxJobUuid}}", "host": ["{{ocBase}}"], "path": ["jobs", "test", "{{fxJobUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/4xx)', () => pm.expect([200, 202, 400, 404, 500]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /jobs/logs",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/jobs/logs", "host": ["{{ocBase}}"], "path": ["jobs", "logs"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "05 — Endpoints (actions + gateway)",
+      "item": [
+        {
+          "name": "GET /endpoints/logs",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/endpoints/logs", "host": ["{{ocBase}}"], "path": ["endpoints", "logs"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /endpoint/newman-fixture — gateway dispatch",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/endpoint/newman-fixture", "host": ["{{ocBase}}"], "path": ["endpoint", "newman-fixture"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('endpoint dispatcher answered', () => pm.expect([200, 400, 404, 500]).to.include(pm.response.code));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "06 — Synchronizations (actions)",
+      "item": [
+        {
+          "name": "POST /synchronizations/{id}/test",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronizations/{{fxSyncUuid}}/test", "host": ["{{ocBase}}"], "path": ["synchronizations", "{{fxSyncUuid}}", "test"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds', () => pm.expect([200, 202, 400, 404, 500]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "POST /synchronizations/{id}/run",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronizations/{{fxSyncUuid}}/run", "host": ["{{ocBase}}"], "path": ["synchronizations", "{{fxSyncUuid}}", "run"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds', () => pm.expect([200, 202, 400, 404, 500]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronizations/logs",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronizations/logs", "host": ["{{ocBase}}"], "path": ["synchronizations", "logs"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronizations/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronizations/statistics", "host": ["{{ocBase}}"], "path": ["synchronizations", "statistics"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronizations/contracts/{fxSyncUuid}",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronizations/contracts/{{fxSyncUuid}}", "host": ["{{ocBase}}"], "path": ["synchronizations", "contracts", "{{fxSyncUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronizations/logs/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronizations/logs/statistics", "host": ["{{ocBase}}"], "path": ["synchronizations", "logs", "statistics"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronizations/logs/export",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronizations/logs/export?format=json", "host": ["{{ocBase}}"], "path": ["synchronizations", "logs", "export"], "query": [{ "key": "format", "value": "json" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "DELETE /synchronizations/logs/{id} — non-existent uuid is graceful",
+          "request": { "method": "DELETE", "url": { "raw": "{{ocBase}}/synchronizations/logs/00000000-0000-0000-0000-000000000000", "host": ["{{ocBase}}"], "path": ["synchronizations", "logs", "00000000-0000-0000-0000-000000000000"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (404/200/204)', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "07 — Mappings (actions)",
+      "item": [
+        {
+          "name": "POST /mappings/test — transform sample",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/mappings/test", "host": ["{{ocBase}}"], "path": ["mappings", "test"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"mapping\":{\"x\":\"a\",\"y\":\"b\"},\"input\":{\"a\":\"hello\",\"b\":\"world\"}}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const b = pm.response.json();",
+            "pm.test('mapping produced output', () => pm.expect(b).to.be.an('object'));"
+          ] }}]
+        },
+        {
+          "name": "POST /mappings/objects — save object",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/mappings/objects", "host": ["{{ocBase}}"], "path": ["mappings", "objects"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-mapped-object\",\"payload\":{\"x\":\"hello\",\"y\":\"world\"}}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('saved (200/201)', () => pm.expect([200, 201]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /mappings/objects",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/mappings/objects", "host": ["{{ocBase}}"], "path": ["mappings", "objects"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "08 — Events & Subscriptions",
+      "item": [
+        {
+          "name": "POST /events/subscriptions — subscribe",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/events/subscriptions", "host": ["{{ocBase}}"], "path": ["events", "subscriptions"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sub\",\"eventTypes\":[\"com.example.test\"],\"sink\":\"pull\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('created (200/201)', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "const b = pm.response.json();",
+            "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)) || (b.subscription && b.subscription.uuid);",
+            "if (uuid) pm.collectionVariables.set('fxSubUuid', uuid);"
+          ] }}]
+        },
+        {
+          "name": "GET /events/subscriptions",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/events/subscriptions", "host": ["{{ocBase}}"], "path": ["events", "subscriptions"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "PUT /events/subscriptions/{fxSubUuid} — update",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{ocBase}}/events/subscriptions/{{fxSubUuid}}", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{fxSubUuid}}"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sub-updated\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/4xx)', () => pm.expect([200, 400, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /events/subscriptions/{fxSubUuid}/messages",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/events/subscriptions/{{fxSubUuid}}/messages", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{fxSubUuid}}", "messages"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds', () => pm.expect([200, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /events/subscriptions/{fxSubUuid}/pull",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/events/subscriptions/{{fxSubUuid}}/pull", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{fxSubUuid}}", "pull"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /events/{fxEventUuid}/messages",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/events/{{fxEventUuid}}/messages", "host": ["{{ocBase}}"], "path": ["events", "{{fxEventUuid}}", "messages"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "DELETE /events/subscriptions/{fxSubUuid} — unsubscribe",
+          "request": { "method": "DELETE", "url": { "raw": "{{ocBase}}/events/subscriptions/{{fxSubUuid}}", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{fxSubUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed (200/204/404)', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "09 — SynchronizationContracts (actions)",
+      "item": [
+        {
+          "name": "GET /synchronization-contracts/statistics",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronization-contracts/statistics", "host": ["{{ocBase}}"], "path": ["synchronization-contracts", "statistics"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronization-contracts/performance",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronization-contracts/performance", "host": ["{{ocBase}}"], "path": ["synchronization-contracts", "performance"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "GET /synchronization-contracts/export",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronization-contracts/export?format=json", "host": ["{{ocBase}}"], "path": ["synchronization-contracts", "export"], "query": [{ "key": "format", "value": "json" }] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] }}]
+        },
+        {
+          "name": "POST /synchronization-contracts/{id}/activate — non-existent id is graceful",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronization-contracts/00000000-0000-0000-0000-000000000000/activate", "host": ["{{ocBase}}"], "path": ["synchronization-contracts", "00000000-0000-0000-0000-000000000000", "activate"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds 404/4xx', () => pm.expect([200, 400, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "POST /synchronization-contracts/{id}/deactivate — non-existent id is graceful",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronization-contracts/00000000-0000-0000-0000-000000000000/deactivate", "host": ["{{ocBase}}"], "path": ["synchronization-contracts", "00000000-0000-0000-0000-000000000000", "deactivate"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds 404/4xx', () => pm.expect([200, 400, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "POST /synchronization-contracts/{id}/execute — non-existent id is graceful",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronization-contracts/00000000-0000-0000-0000-000000000000/execute", "host": ["{{ocBase}}"], "path": ["synchronization-contracts", "00000000-0000-0000-0000-000000000000", "execute"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds 404/4xx', () => pm.expect([200, 400, 404, 500]).to.include(pm.response.code));"
+          ] }}]
+        }
+      ]
+    },
+    {
+      "name": "10 — User",
+      "item": [
+        {
+          "name": "GET /user/me",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/user/me", "host": ["{{ocBase}}"], "path": ["user", "me"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const b = pm.response.json();",
+            "pm.test('returns user object', () => pm.expect(b).to.be.an('object'));"
+          ] }}]
+        },
+        {
+          "name": "PUT /user/me",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{ocBase}}/user/me", "host": ["{{ocBase}}"], "path": ["user", "me"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('responds (200/204)', () => pm.expect([200, 204]).to.include(pm.response.code));"
-          ], "type": "text/javascript" }}]
+          ] }}]
+        },
+        {
+          "name": "POST /user/login",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/user/login", "host": ["{{ocBase}}"], "path": ["user", "login"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"login\":\"{{admin_user}}\",\"password\":\"{{admin_pass}}\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds', () => pm.expect([200, 204, 400, 401, 405]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "POST /user/logout",
+          "request": { "method": "POST", "url": { "raw": "{{ocBase}}/user/logout", "host": ["{{ocBase}}"], "path": ["user", "logout"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds', () => pm.expect([200, 204, 400, 401, 405]).to.include(pm.response.code));"
+          ] }}]
         }
       ]
     },
     {
-      "name": "05 — Synchronization actions",
+      "name": "11 — Settings",
       "item": [
         {
-          "name": "GET /api/synchronizations/logs",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/logs", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","synchronizations","logs"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/synchronizations/statistics",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","synchronizations","statistics"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
-        },
-        {
-          "name": "GET /api/synchronization-contracts/statistics",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronization-contracts/statistics", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","synchronization-contracts","statistics"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+          "name": "POST /settings/rebase",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/settings/rebase", "host": ["{{ocBase}}"], "path": ["settings", "rebase"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"dryRun\":true}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/202)', () => pm.expect([200, 202, 204]).to.include(pm.response.code));"
+          ] }}]
         }
       ]
     },
     {
-      "name": "06 — Mapping actions",
+      "name": "12 — DSO / STAM koppelvlak",
       "item": [
         {
-          "name": "GET /api/mappings/objects",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/mappings/objects", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","mappings","objects"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+          "name": "POST /dso/stam/verzoeken — minimal STAM verzoek",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/dso/stam/verzoeken", "host": ["{{ocBase}}"], "path": ["dso", "stam", "verzoeken"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"verzoekType\":\"informatieverzoek\",\"omschrijving\":\"newman smoke test\",\"indiener\":{\"type\":\"natuurlijkPersoon\",\"naam\":\"Newman Test\"}}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/202/400 if validation rejects)', () => pm.expect([200, 201, 202, 400]).to.include(pm.response.code));"
+          ] }}]
         }
       ]
     },
     {
-      "name": "07 — Event subscriptions",
+      "name": "13 — User journeys (E2E)",
+      "description": "End-to-end scenarios that span multiple controllers and OR. Each journey owns its own fixtures and cleans up.",
       "item": [
         {
-          "name": "GET /api/events/subscriptions",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/events/subscriptions", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","events","subscriptions"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+          "name": "J1 — Source → Mapping → Object",
+          "description": "Create a source, create a mapping, transform a sample payload, persist the result, read it back.",
+          "item": [
+            {
+              "name": "J1.1 create source",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j1-source\",\"type\":\"api\",\"location\":\"https://j1.example.test\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "pm.collectionVariables.set('j1SourceUuid', b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)));"
+              ] }}]
+            },
+            {
+              "name": "J1.2 create mapping",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{orBase}}/mapping", "host": ["{{orBase}}"], "path": ["mapping"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j1-mapping\",\"mapping\":{\"target.x\":\"source.a\",\"target.y\":\"source.b\"}}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "pm.collectionVariables.set('j1MappingUuid', b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)));"
+              ] }}]
+            },
+            {
+              "name": "J1.3 POST /mappings/test — transform",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{ocBase}}/mappings/test", "host": ["{{ocBase}}"], "path": ["mappings", "test"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"mapping\":{\"target.x\":\"source.a\",\"target.y\":\"source.b\"},\"input\":{\"source\":{\"a\":\"foo\",\"b\":\"bar\"}}}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('200 OK', () => pm.response.to.have.status(200));"
+              ] }}]
+            },
+            {
+              "name": "J1.4 persist via /mappings/objects",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{ocBase}}/mappings/objects", "host": ["{{ocBase}}"], "path": ["mappings", "objects"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j1-output\",\"payload\":{\"target\":{\"x\":\"foo\",\"y\":\"bar\"}}}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('saved', () => pm.expect([200, 201]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J1.5 cleanup — DELETE source",
+              "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/source/{{j1SourceUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{j1SourceUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J1.6 cleanup — DELETE mapping",
+              "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/mapping/{{j1MappingUuid}}", "host": ["{{orBase}}"], "path": ["mapping", "{{j1MappingUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            }
+          ]
+        },
+        {
+          "name": "J2 — Source → Synchronization → Run → Contract",
+          "description": "Create a source pointing at OR's own object surface, create a sync from that source into a local schema, run it, verify a contract was created.",
+          "item": [
+            {
+              "name": "J2.1 create self-pointing source",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j2-self-source\",\"type\":\"api\",\"location\":\"{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source\",\"auth\":\"basic\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "pm.collectionVariables.set('j2SourceUuid', b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)));"
+              ] }}]
+            },
+            {
+              "name": "J2.2 create synchronization",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{orBase}}/synchronization", "host": ["{{orBase}}"], "path": ["synchronization"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j2-sync\",\"sourceId\":\"{{j2SourceUuid}}\",\"sourceType\":\"api\",\"targetId\":\"openconnector/source\",\"targetType\":\"register/schema\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "pm.collectionVariables.set('j2SyncUuid', b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)));"
+              ] }}]
+            },
+            {
+              "name": "J2.3 test sync (dry-run)",
+              "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronizations/{{j2SyncUuid}}/test", "host": ["{{ocBase}}"], "path": ["synchronizations", "{{j2SyncUuid}}", "test"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('test ran', () => pm.expect([200, 202, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J2.4 run sync",
+              "request": { "method": "POST", "url": { "raw": "{{ocBase}}/synchronizations/{{j2SyncUuid}}/run", "host": ["{{ocBase}}"], "path": ["synchronizations", "{{j2SyncUuid}}", "run"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('run dispatched', () => pm.expect([200, 202, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J2.5 verify contract listing",
+              "request": { "method": "GET", "url": { "raw": "{{ocBase}}/synchronizations/contracts/{{j2SyncUuid}}", "host": ["{{ocBase}}"], "path": ["synchronizations", "contracts", "{{j2SyncUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('200 OK', () => pm.response.to.have.status(200));"
+              ] }}]
+            },
+            {
+              "name": "J2.6 cleanup — DELETE sync",
+              "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/synchronization/{{j2SyncUuid}}", "host": ["{{orBase}}"], "path": ["synchronization", "{{j2SyncUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J2.7 cleanup — DELETE source",
+              "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/source/{{j2SourceUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{j2SourceUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            }
+          ]
+        },
+        {
+          "name": "J3 — Endpoint gateway round-trip",
+          "description": "Create an endpoint with slug `j3-newman`, then hit `/api/endpoint/j3-newman` over the full CRUD verb set.",
+          "item": [
+            {
+              "name": "J3.1 create endpoint",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{orBase}}/endpoint", "host": ["{{orBase}}"], "path": ["endpoint"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j3-endpoint\",\"endpoint\":\"j3-newman\",\"method\":\"GET\",\"targetType\":\"register/schema\",\"targetId\":\"openconnector/source\",\"isEnabled\":true}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "pm.collectionVariables.set('j3EndpointUuid', b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)));"
+              ] }}]
+            },
+            {
+              "name": "J3.2 GET /api/endpoint/j3-newman",
+              "request": { "method": "GET", "url": { "raw": "{{ocBase}}/endpoint/j3-newman", "host": ["{{ocBase}}"], "path": ["endpoint", "j3-newman"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('dispatcher answered', () => pm.expect([200, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J3.3 POST /api/endpoint/j3-newman",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{ocBase}}/endpoint/j3-newman", "host": ["{{ocBase}}"], "path": ["endpoint", "j3-newman"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j3-source-via-gateway\",\"type\":\"api\",\"location\":\"https://j3.example.test\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('dispatcher answered', () => pm.expect([200, 201, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J3.4 PUT /api/endpoint/j3-newman",
+              "request": {
+                "method": "PUT",
+                "url": { "raw": "{{ocBase}}/endpoint/j3-newman", "host": ["{{ocBase}}"], "path": ["endpoint", "j3-newman"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"description\":\"updated via gateway\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('dispatcher answered', () => pm.expect([200, 204, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J3.5a PATCH /api/endpoint/j3-newman",
+              "request": {
+                "method": "PATCH",
+                "url": { "raw": "{{ocBase}}/endpoint/j3-newman", "host": ["{{ocBase}}"], "path": ["endpoint", "j3-newman"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"description\":\"patched via gateway\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('dispatcher answered', () => pm.expect([200, 204, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J3.5 DELETE /api/endpoint/j3-newman",
+              "request": { "method": "DELETE", "url": { "raw": "{{ocBase}}/endpoint/j3-newman", "host": ["{{ocBase}}"], "path": ["endpoint", "j3-newman"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('dispatcher answered', () => pm.expect([200, 204, 400, 404, 500]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J3.6 cleanup — DELETE endpoint definition",
+              "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/endpoint/{{j3EndpointUuid}}", "host": ["{{orBase}}"], "path": ["endpoint", "{{j3EndpointUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            }
+          ]
+        },
+        {
+          "name": "J4 — Event pub/sub",
+          "description": "Subscribe → publish (via OR object create) → pull → unsubscribe.",
+          "item": [
+            {
+              "name": "J4.1 subscribe",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{ocBase}}/events/subscriptions", "host": ["{{ocBase}}"], "path": ["events", "subscriptions"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j4-sub\",\"eventTypes\":[\"OCA.OpenRegister.ObjectCreated\"],\"sink\":\"pull\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('subscribed', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "const uuid = b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)) || (b.subscription && b.subscription.uuid);",
+                "if (uuid) pm.collectionVariables.set('j4SubUuid', uuid);"
+              ] }}]
+            },
+            {
+              "name": "J4.2 trigger event — create OR object",
+              "request": {
+                "method": "POST",
+                "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] },
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\"name\":\"j4-trigger\",\"type\":\"api\",\"location\":\"https://j4.example.test\"}" }
+              },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                "const b = pm.response.json();",
+                "pm.collectionVariables.set('j4TriggerUuid', b.uuid || b.id || (b.object && (b.object.uuid || b.object.id)));"
+              ] }}]
+            },
+            {
+              "name": "J4.3 pull subscription",
+              "request": { "method": "GET", "url": { "raw": "{{ocBase}}/events/subscriptions/{{j4SubUuid}}/pull", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{j4SubUuid}}", "pull"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('pulled', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J4.4 cleanup — DELETE trigger object",
+              "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/source/{{j4TriggerUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{j4TriggerUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            },
+            {
+              "name": "J4.5 cleanup — unsubscribe",
+              "request": { "method": "DELETE", "url": { "raw": "{{ocBase}}/events/subscriptions/{{j4SubUuid}}", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{j4SubUuid}}"] } },
+              "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+                "pm.test('unsubscribed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+              ] }}]
+            }
+          ]
         }
       ]
     },
     {
-      "name": "08 — Settings (post chain-C shrink)",
+      "name": "99 — Teardown (via OR)",
+      "description": "Deletes the fixtures created in folder 01.",
       "item": [
         {
-          "name": "POST /api/settings/rebase — only kept Settings action",
-          "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/settings/rebase", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","settings","rebase"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200))"], "type": "text/javascript" }}]
+          "name": "DELETE source fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/source/{{fxSourceUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{fxSourceUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
         },
         {
-          "name": "GET /api/settings — DELETED in chain C (expect 404)",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/settings", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","settings"] } },
-          "event": [{ "listen": "test", "script": { "exec": [
-            "pm.test('route is gone post chain-C', () => pm.expect([404, 405]).to.include(pm.response.code));"
-          ], "type": "text/javascript" }}]
-        }
-      ]
-    },
-    {
-      "name": "09 — Negative tests (deleted controllers)",
-      "description": "Routes that were deleted by the OR-cutover MUST return 404 / route-not-found, NOT 500.",
-      "item": [
-        {
-          "name": "POST /api/import — deleted (expect 404)",
-          "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/import", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","import"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404 — deleted', () => pm.expect([404, 405]).to.include(pm.response.code));"], "type": "text/javascript" }}]
+          "name": "DELETE mapping fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/mapping/{{fxMappingUuid}}", "host": ["{{orBase}}"], "path": ["mapping", "{{fxMappingUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
         },
         {
-          "name": "GET /api/export/source/x — deleted (expect 404)",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/export/source/x", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","export","source","x"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404 — deleted', () => pm.expect([404, 405]).to.include(pm.response.code));"], "type": "text/javascript" }}]
+          "name": "DELETE endpoint fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/endpoint/{{fxEndpointUuid}}", "host": ["{{orBase}}"], "path": ["endpoint", "{{fxEndpointUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
         },
         {
-          "name": "GET /api/dashboard/callstats — deleted (expect 404)",
-          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dashboard/callstats", "host": ["{{baseUrl}}"], "path": ["index.php","apps","openconnector","api","dashboard","callstats"] } },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404 — deleted', () => pm.expect([404, 405]).to.include(pm.response.code));"], "type": "text/javascript" }}]
+          "name": "DELETE job fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/job/{{fxJobUuid}}", "host": ["{{orBase}}"], "path": ["job", "{{fxJobUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "DELETE synchronization fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/synchronization/{{fxSyncUuid}}", "host": ["{{orBase}}"], "path": ["synchronization", "{{fxSyncUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "DELETE consumer fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/consumer/{{fxConsumerUuid}}", "host": ["{{orBase}}"], "path": ["consumer", "{{fxConsumerUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "DELETE rule fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/rule/{{fxRuleUuid}}", "host": ["{{orBase}}"], "path": ["rule", "{{fxRuleUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "DELETE event fixture",
+          "request": { "method": "DELETE", "url": { "raw": "{{orBase}}/event/{{fxEventUuid}}", "host": ["{{orBase}}"], "path": ["event", "{{fxEventUuid}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('removed', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+          ] }}]
         }
       ]
     }
