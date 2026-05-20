@@ -9,11 +9,13 @@ use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
 use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
 use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener; // @todo: remove this temporary listener to the software catalog application
+use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\SettingsService;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -64,5 +66,48 @@ class Application extends App implements IBootstrap
 
     public function boot(IBootContext $context): void
     {
+        $this->registerIntegrationProviders(context: $context);
     }//end boot()
+
+
+    /**
+     * Register openconnector-side IntegrationProviders with OR's
+     * IntegrationRegistry. Per OR's pluggable-integration-registry spec
+     * (AD-1), apps register their providers at boot — OR's registry is
+     * a shared per-request service so all apps see the same instance.
+     *
+     * Currently registered:
+     *   - SynchronizationContractProvider — surfaces SyncContract leaves
+     *     on the OR objects they synchronise (GH #824).
+     *
+     * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
+     * openconnector is loaded but openregister isn't enabled yet) so
+     * boot doesn't crash on a stale install.
+     */
+    private function registerIntegrationProviders(IBootContext $context): void
+    {
+        if (class_exists(IntegrationRegistry::class) === false) {
+            return;
+        }
+
+        try {
+            $container = $context->getServerContainer();
+            $registry  = $container->get(IntegrationRegistry::class);
+            $registry->addProvider($container->get(SynchronizationContractProvider::class));
+        } catch (\Throwable $e) {
+            // Don't crash boot — log and continue. The provider just won't appear
+            // in object sidebars on this instance until the registry resolves.
+            try {
+                $context->getServerContainer()
+                    ->get('Psr\Log\LoggerInterface')
+                    ->warning(
+                        'openconnector: failed to register IntegrationProviders with OR — '
+                        . $e->getMessage(),
+                        ['exception' => $e]
+                    );
+            } catch (\Throwable) {
+                // Logger unavailable, ignore.
+            }
+        }
+    }
 }//end class
