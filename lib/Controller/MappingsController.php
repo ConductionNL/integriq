@@ -7,7 +7,7 @@ use InvalidArgumentException;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenConnector\Db\Mapping;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -164,9 +164,9 @@ class MappingsController extends Controller
             $validation = $data['validation'];
         }
 
-        // Create a new Mapping object and hydrate it with the provided mapping
-        $mappingObject = new Mapping();
-        $mappingObject->hydrate($mapping);
+        // Create a new ObjectEntity representing the mapping configuration
+        $mappingObject = new ObjectEntity();
+        $mappingObject->hydrate(is_array($mapping) ? $mapping : ['mapping' => $mapping]);
 
         // Perform the mapping operation
         try {
