@@ -205,14 +205,16 @@ class EndpointsController extends Controller
         // Returning an empty paginated result (instead of 500) lets clients
         // poll without breaking; once the migration lands this returns a
         // real result set.
-        return new JSONResponse([
-            'results' => [],
-            'total'   => 0,
-            'page'    => 1,
-            'pages'   => 1,
-            'limit'   => (int) $this->request->getParam('_limit', 20),
-            'offset'  => 0,
-        ]);
+        return new JSONResponse(
+                [
+                    'results' => [],
+                    'total'   => 0,
+                    'page'    => 1,
+                    'pages'   => 1,
+                    'limit'   => (int) $this->request->getParam('_limit', 20),
+                    'offset'  => 0,
+                ]
+                );
     }//end logs()
 
     /**
