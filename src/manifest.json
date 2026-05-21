@@ -97,14 +97,6 @@
       "order": 100
     },
     {
-      "id": "Import",
-      "label": "Import",
-      "icon": "icon-upload",
-      "route": "Import",
-      "section": "settings",
-      "order": 10
-    },
-    {
       "id": "Settings",
       "label": "Settings",
       "icon": "icon-settings",
@@ -329,14 +321,6 @@
         "register": "openconnector",
         "schema": "call_log"
       }
-    },
-    {
-      "id": "Import",
-      "route": "/import",
-      "type": "custom",
-      "title": "Import",
-      "component": "ImportIndex",
-      "_note": "Multi-step file-upload + dry-run preview UX exceeds nc-vue v2 form/wizard capability. Revisit after nc-vue ships CnWizardPage."
     },
     {
       "id": "AppSettings",
