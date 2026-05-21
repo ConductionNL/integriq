@@ -138,6 +138,20 @@ test.beforeEach(async ({ page }) => {
 })
 
 // ---------------------------------------------------------------------------
+// CI guard — this is a screenshot-capture suite, not a regression test. It
+// runs against `docs-capture` project only when explicitly opted into via
+// `RUN_DOCS_CAPTURE=true` (or invoking `--project docs-capture` locally,
+// which still respects this gate). `npx playwright test` without that env
+// var will enumerate the project but skip all describes, so PR CI doesn't
+// re-shoot tutorial screenshots on every push.
+// ---------------------------------------------------------------------------
+
+test.skip(
+	!process.env.RUN_DOCS_CAPTURE,
+	'docs-capture is opt-in — set RUN_DOCS_CAPTURE=true to refresh tutorial screenshots',
+)
+
+// ---------------------------------------------------------------------------
 // USER TRACK — see docs/tutorials/user/
 // ---------------------------------------------------------------------------
 
