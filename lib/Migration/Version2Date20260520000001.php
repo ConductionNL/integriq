@@ -67,11 +67,35 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         // `occ app:enable openconnector` runs migrations with openconnector's
         // PSR-4 paths loaded but NOT openregister's, so the class_exists
         // probe below would return false even when OR is enabled and
-        // upgraded. Pre-load OR here so its autoloader is registered before
-        // the probe — scoped to migration time only (we tried doing it from
-        // Application::register() and got a recursive DI loop, b421b9c8).
+        // upgraded. We tried doing the load via `Application::register()` —
+        // got a recursive DI loop (b421b9c8). We tried `IAppManager::loadApp`
+        // — silently no-ops on fresh CI `occ app:enable` (the target app's
+        // migrations run before NC's per-command app-loading walk fires).
+        //
+        // Final approach: require OR's composer autoload directly. That
+        // registers OR's PSR-4 paths unconditionally, idempotently, and
+        // independent of NC's per-command app-loading order. Scoped to the
+        // migration step only (no side effects on web requests).
+        $appManager = $container->get(\OCP\App\IAppManager::class);
         try {
-            $container->get(\OCP\App\IAppManager::class)->loadApp('openregister');
+            $orAppPath = $appManager->getAppPath('openregister');
+            $orAutoload = $orAppPath . '/vendor/autoload.php';
+            if (file_exists($orAutoload)) {
+                require_once $orAutoload;
+                $output->info('chain-B: required openregister autoload from '.$orAutoload);
+            } else {
+                $output->warning('chain-B: openregister vendor/autoload.php not found at '.$orAutoload.' — register import will skip');
+            }
+        } catch (\Throwable $e) {
+            $output->warning('chain-B: could not resolve openregister app path ('.$e->getMessage().') — register import will skip');
+            $logger->warning('chain-B: getAppPath(openregister) failed: '.$e->getMessage(), ['exception' => $e]);
+        }
+
+        // Belt-and-braces: ALSO call loadApp so OR's Application::register/boot
+        // fire (some services may rely on `register()` side effects, not just
+        // the autoloader). Same try/catch as before.
+        try {
+            $appManager->loadApp('openregister');
         } catch (\Throwable $e) {
             $logger->info('chain-B: loadApp(openregister) skipped: '.$e->getMessage());
         }
