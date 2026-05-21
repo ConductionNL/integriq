@@ -201,6 +201,95 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string) {
 	).toHaveCount(0, { timeout: 10_000 })
 }
 
+/**
+ * Drive the row-level Edit flow:
+ *   - find the row by name, open its actions overflow menu
+ *   - click "Edit" — CnFormDialog opens populated with the row's data
+ *   - mutate the description, Tab to commit, click Save
+ *   - assert OR PUT settles 200, dialog closes, description visible
+ *
+ * Exercises `CnIndexPage.onFormConfirm` with `this.editItem != null`
+ * (the PUT path), which sits in the same nc-vue self-fetch save
+ * branch as the create path but routes through `saveObject` with an
+ * `id` in `formData`.
+ */
+async function editViaUi(page: Page, schemaSlug: string, name: string, newDescription: string) {
+	const row = page.getByRole('row', { name: new RegExp(name) }).first()
+	await expect(row, `target row "${name}" must exist for edit`).toBeVisible({ timeout: 10_000 })
+	// CnRowActions renders an NcActions menu per row with accessible name "Actions".
+	await row.getByRole('button', { name: /Actions/i }).first().click()
+	const editItem = page.getByRole('menuitem', { name: /^Edit$/ })
+	await expect(editItem, 'Edit menu item visible').toBeVisible({ timeout: 5_000 })
+	await editItem.click()
+
+	const dialog = page.getByRole('dialog').first()
+	await expect(dialog, 'CnFormDialog opened in edit mode').toBeVisible()
+	const descField = dialog.getByLabel(/^\s*description\s*\*?\s*$/i)
+	await expect(descField, 'description field present').toBeVisible({ timeout: 10_000 })
+	await descField.click()
+	// fill() clears existing value before typing; for edit we want to replace
+	// the description rather than append, so use fill() then blur via Tab.
+	await descField.fill(newDescription)
+	await descField.press('Tab')
+
+	// CnFormDialog's primary button is "Save" in edit mode (matches the
+	// `confirmLabel` default from CnFormDialog:554).
+	const saveBtn = dialog.getByRole('button', { name: /^Save$/ })
+	await expect(saveBtn, 'Save button enabled in edit dialog').toBeEnabled({ timeout: 10_000 })
+
+	const [response] = await Promise.all([
+		page.waitForResponse(r => {
+			const u = r.url()
+			return u.includes(`/api/objects/openconnector/${schemaSlug}`)
+				&& r.request().method() === 'PUT'
+				&& r.status() < 400
+		}, { timeout: 20_000 }),
+		saveBtn.click(),
+	])
+	expect([200, 201], `OR PUT for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+
+	await expect(dialog).toBeHidden({ timeout: 10_000 })
+	await expect(
+		page.getByText(newDescription).first(),
+		`edited description "${newDescription}" must appear in the refreshed index`,
+	).toBeVisible({ timeout: 10_000 })
+}
+
+/**
+ * Drive the row-level (single) Delete flow — opens the per-row Actions
+ * menu, clicks Delete, confirms in CnDeleteDialog.
+ *
+ * Exercises `CnIndexPage.onSingleDeleteConfirm` — the second of the
+ * three handlers wired in the self-fetch hotfix.
+ */
+async function singleDeleteViaUi(page: Page, schemaSlug: string, name: string) {
+	const row = page.getByRole('row', { name: new RegExp(name) }).first()
+	await expect(row, `target row "${name}" must exist for single delete`).toBeVisible({ timeout: 10_000 })
+	await row.getByRole('button', { name: /Actions/i }).first().click()
+	const deleteItem = page.getByRole('menuitem', { name: /^Delete$/ })
+	await expect(deleteItem, 'Delete row menu item visible').toBeVisible({ timeout: 5_000 })
+	await deleteItem.click()
+
+	const confirmDialog = page.getByRole('dialog').filter({ hasText: /Delete/i }).first()
+	await expect(confirmDialog, 'CnDeleteDialog opened').toBeVisible()
+	const confirmBtn = confirmDialog.getByRole('button', { name: /^Delete$/ })
+
+	const [response] = await Promise.all([
+		page.waitForResponse(r =>
+			r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
+			r.request().method() === 'DELETE'
+		, { timeout: 15_000 }),
+		confirmBtn.click(),
+	])
+	expect([200, 202, 204], `OR DELETE for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
+
+	await expect(confirmDialog).toBeHidden({ timeout: 10_000 })
+	await expect(
+		page.getByText(name),
+		`row "${name}" must be gone after single-delete`,
+	).toHaveCount(0, { timeout: 10_000 })
+}
+
 /*
  * UI journeys J1–J4 — full UI-driven create+delete loop, end-to-end
  * against the manifest-v2 pipeline.
@@ -271,6 +360,31 @@ test.describe('UI journey J4 — visually create + delete an Endpoint', () => {
 			method: 'GET',
 		})
 		await deleteViaUi(page, 'endpoint', name)
+	})
+})
+
+test.describe('UI journey J5 — edit a Source via row Actions → Edit', () => {
+	const name = `pw-j5-source-${Date.now()}`
+	const newDescription = `edited via J5 at ${Date.now()}`
+
+	test('create row → edit description via Actions → Save → description visible', async ({ page }) => {
+		const base = await resolveAppBase(page)
+		await page.goto(`${base}/sources`)
+		await createViaUi(page, 'source', 'Source', name)
+		await editViaUi(page, 'source', name, newDescription)
+		// Clean up — mass-delete the row so the suite stays hermetic.
+		await deleteViaUi(page, 'source', name)
+	})
+})
+
+test.describe('UI journey J6 — single-delete a Source via row Actions → Delete', () => {
+	const name = `pw-j6-source-${Date.now()}`
+
+	test('create row → single-delete via Actions → row gone', async ({ page }) => {
+		const base = await resolveAppBase(page)
+		await page.goto(`${base}/sources`)
+		await createViaUi(page, 'source', 'Source', name)
+		await singleDeleteViaUi(page, 'source', name)
 	})
 })
 
