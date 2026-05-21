@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
 use React\Promise\Timer;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
+use Throwable;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 
@@ -1119,8 +1120,20 @@ class SynchronizationService
         switch ($type) {
             case 'register/schema':
 
-                $targetIdsToDelete       = [];
-                [$registerId, $schemaId] = explode(separator: '/', string: ($syncData['targetId'] ?? '/'));
+                $targetIdsToDelete = [];
+                $rawTargetId       = $syncData['targetId'] ?? null;
+                if (is_string($rawTargetId) === false || str_contains($rawTargetId, '/') === false) {
+                    $this->logger->warning(
+                        'deleteInvalidObjects: targetId not in register/schema format; skipping cleanup',
+                        [
+                            'synchronizationId' => $synchronization->getUuid(),
+                            'targetId'          => $rawTargetId,
+                        ]
+                    );
+                    break;
+                }
+
+                [$registerId, $schemaId] = explode(separator: '/', string: $rawTargetId, limit: 2);
                 $contractMatches         = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid()]]);
                 $allContracts            = $contractMatches['results'] ?? $contractMatches;
                 $allContractTargetIds    = [];
@@ -1152,18 +1165,76 @@ class SynchronizationService
                 }
 
                 foreach ($targetIdsToDelete as $targetIdToDelete) {
-                    $contractSearch = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid(), 'targetId' => $targetIdToDelete]]);
-                    $contractList   = $contractSearch['results'] ?? $contractSearch;
-                    if (empty($contractList) === true) {
+                    // Scope-check the cleanup candidate before deleting it. `updateTargetOpenRegister`'s
+                    // `delete` branch calls `$objectService->delete(['id' => $uuid])` with no
+                    // register/schema scope, so a contract whose `targetId` UUID accidentally
+                    // collides with an object living in a foreign register/schema would otherwise
+                    // delete that foreign object. We verify here that the object actually lives in
+                    // this sync's register/schema before invoking the unscoped delete path.
+                    //
+                    // _rbac / _multitenancy are off because the previous SQL-level guard this
+                    // replaces (the JOIN against `openregister_objects` in the pre-cutover code)
+                    // did not apply RBAC either — the safety property being restored is scope, not
+                    // permission. Ported from #733 (author @rjzondervan).
+                    try {
+                        $existingObject = $this->orObjectService->find(
+                            id: $targetIdToDelete,
+                            register: $registerId,
+                            schema: $schemaId,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                    } catch (DoesNotExistException $e) {
+                        // Expected scope-miss: target lives outside this register/schema or is gone.
+                        continue;
+                    } catch (Throwable $e) {
+                        $this->logger->warning(
+                            'Scope check failed for sync cleanup candidate; skipping',
+                            [
+                                'synchronizationId' => $synchronization->getUuid(),
+                                'targetId'          => $targetIdToDelete,
+                                'class'             => get_class($e),
+                                'error'             => $e->getMessage(),
+                            ]
+                        );
+                        continue;
+                    }//end try
+
+                    if ($existingObject === null) {
                         continue;
                     }
 
-                    $synchronizationContract = $contractList[0];
-                    $synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
-                    $contractData            = $synchronizationContract->getObject();
-                    $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
-                    $deletedObjectsCount++;
-                }
+                    try {
+                        $contractSearch = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid(), 'targetId' => $targetIdToDelete]]);
+                        $contractList   = $contractSearch['results'] ?? $contractSearch;
+                        if (empty($contractList) === true) {
+                            $this->logger->warning(
+                                'Contract not found on second lookup during sync cleanup; continuing',
+                                [
+                                    'synchronizationId' => $synchronization->getUuid(),
+                                    'targetId'          => $targetIdToDelete,
+                                ]
+                            );
+                            continue;
+                        }
+
+                        $synchronizationContract = $contractList[0];
+                        $synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
+                        $contractData            = $synchronizationContract->getObject();
+                        $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+                        $deletedObjectsCount++;
+                    } catch (Throwable $e) {
+                        $this->logger->warning(
+                            'Sync cleanup failed for candidate; continuing',
+                            [
+                                'synchronizationId' => $synchronization->getUuid(),
+                                'targetId'          => $targetIdToDelete,
+                                'class'             => get_class($e),
+                                'error'             => $e->getMessage(),
+                            ]
+                        );
+                    }//end try
+                }//end foreach
                 break;
         }//end switch
 
