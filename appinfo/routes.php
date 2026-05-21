@@ -136,6 +136,10 @@ return [
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.
 		// MUST exclude /api/* so deleted API routes return 404, not the SPA shell.
-		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).+'], 'defaults' => ['path' => '']],
+		// Regex is `.*` (not `.+`) so the empty-path case (`/apps/openconnector/`) also
+		// resolves to the Dashboard — the duplicate `ui#dashboard` controller#method name
+		// with the line-112 `/` route triggers NC's last-wins binding, which means the
+		// catch-all is the one that actually serves `/` at runtime.
+		['name' => 'ui#dashboard', 'url' => '/{path}', 'verb' => 'GET', 'requirements' => ['path' => '(?!api(/|$)).*'], 'defaults' => ['path' => '']],
 	],
 ];
