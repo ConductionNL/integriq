@@ -250,9 +250,9 @@ class ConfigurationService
 
         $id = (string) $id;
 
-        $this->mappings[$entityType]['idToSlug'][$id] = $slug;
+        $this->mappings[$entityType]['idToSlug'][$id]   = $slug;
         $this->mappings[$entityType]['slugToId'][$slug] = $id;
-    }
+    }//end registerImportedEntityMapping()
 
     /**
      * Ensure imported component payloads always carry their component-key slug.
@@ -273,7 +273,7 @@ class ConfigurationService
         }
 
         return $data;
-    }
+    }//end withComponentSlug()
 
     /**
      * Re-run import handlers for entity types whose dependencies are imported later
@@ -285,7 +285,7 @@ class ConfigurationService
      *
      * Each handler is idempotent (upsert by slug), so re-running it is safe.
      *
-     * @param array<string,mixed>               $components Original imported components
+     * @param array<string,mixed>                $components Original imported components
      * @param array<string,array<string,Entity>> $result     Imported entity result map
      *
      * @return void
@@ -305,7 +305,7 @@ class ConfigurationService
                 $result['endpoints'][$endpointSlug] = $this->handlers['endpoint']->import($endpointData, $this->mappings);
             }
         }
-    }
+    }//end reconcileImportedReferences()
 
     /**
      * Get all entities associated with a specific configuration ID, indexed by their slug.
@@ -874,7 +874,7 @@ class ConfigurationService
         if (isset($components['sources'])) {
             foreach ($components['sources'] as $sourceSlug => $sourceData) {
                 $sourceData = $this->withComponentSlug($sourceData, $sourceSlug);
-                $source = $this->handlers['source']->import($sourceData, $this->mappings);
+                $source     = $this->handlers['source']->import($sourceData, $this->mappings);
                 $result['sources'][$sourceSlug] = $source;
                 $this->registerImportedEntityMapping('source', $source);
             }
@@ -884,7 +884,7 @@ class ConfigurationService
         if (isset($components['mappings'])) {
             foreach ($components['mappings'] as $mappingSlug => $mappingData) {
                 $mappingData = $this->withComponentSlug($mappingData, $mappingSlug);
-                $mapping = $this->handlers['mapping']->import($mappingData, $this->mappings);
+                $mapping     = $this->handlers['mapping']->import($mappingData, $this->mappings);
                 $result['mappings'][$mappingSlug] = $mapping;
                 $this->registerImportedEntityMapping('mapping', $mapping);
             }
@@ -894,7 +894,7 @@ class ConfigurationService
         if (isset($components['rules'])) {
             foreach ($components['rules'] as $ruleSlug => $ruleData) {
                 $ruleData = $this->withComponentSlug($ruleData, $ruleSlug);
-                $rule = $this->handlers['rule']->import($ruleData, $this->mappings);
+                $rule     = $this->handlers['rule']->import($ruleData, $this->mappings);
                 $result['rules'][$ruleSlug] = $rule;
                 $this->registerImportedEntityMapping('rule', $rule);
             }
@@ -904,7 +904,7 @@ class ConfigurationService
         if (isset($components['endpoints'])) {
             foreach ($components['endpoints'] as $endpointSlug => $endpointData) {
                 $endpointData = $this->withComponentSlug($endpointData, $endpointSlug);
-                $endpoint = $this->handlers['endpoint']->import($endpointData, $this->mappings);
+                $endpoint     = $this->handlers['endpoint']->import($endpointData, $this->mappings);
                 $result['endpoints'][$endpointSlug] = $endpoint;
                 $this->registerImportedEntityMapping('endpoint', $endpoint);
             }
@@ -913,7 +913,7 @@ class ConfigurationService
         // 5. Import synchronizations (depends on sources, mappings, and endpoints).
         if (isset($components['synchronizations'])) {
             foreach ($components['synchronizations'] as $syncSlug => $syncData) {
-                $syncData = $this->withComponentSlug($syncData, $syncSlug);
+                $syncData        = $this->withComponentSlug($syncData, $syncSlug);
                 $synchronization = $this->handlers['synchronization']->import($syncData, $this->mappings);
                 $result['synchronizations'][$syncSlug] = $synchronization;
                 $this->registerImportedEntityMapping('synchronization', $synchronization);
@@ -924,7 +924,7 @@ class ConfigurationService
         if (isset($components['jobs'])) {
             foreach ($components['jobs'] as $jobSlug => $jobData) {
                 $jobData = $this->withComponentSlug($jobData, $jobSlug);
-                $job = $this->handlers['job']->import($jobData, $this->mappings);
+                $job     = $this->handlers['job']->import($jobData, $this->mappings);
                 $result['jobs'][$jobSlug] = $job;
                 $this->registerImportedEntityMapping('job', $job);
             }

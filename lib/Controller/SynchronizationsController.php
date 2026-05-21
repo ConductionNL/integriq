@@ -260,7 +260,8 @@ class SynchronizationsController extends Controller
             }
 
             if (!empty($filters['slow_syncs'])) {
-                $specialFilters['slow_syncs'] = 5000; // 5 seconds in milliseconds
+                $specialFilters['slow_syncs'] = 5000;
+                // 5 seconds in milliseconds
             }
 
             // Build search conditions and parameters
@@ -608,7 +609,8 @@ class SynchronizationsController extends Controller
                     $log->getId() ?? '',
                     $log->getUuid() ?? '',
                     $log->getStatus() ?? '',
-                    str_replace('"', '""', $log->getMessage() ?? ''), // Escape quotes in message
+                    str_replace('"', '""', $log->getMessage() ?? ''),
+                // Escape quotes in message
                     $log->getSynchronizationId() ?? '',
                     $log->getSourceId() ?? '',
                     $log->getTargetId() ?? '',

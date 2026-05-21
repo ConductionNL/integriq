@@ -15,7 +15,7 @@ class CallLog extends Entity implements JsonSerializable
     protected ?string $uuid = null;
 
     /**
-     * @var int|null $statusCode HTTP status code returned from the API call
+     * @var integer|null $statusCode HTTP status code returned from the API call
      */
     protected ?int $statusCode = null;
 
@@ -35,17 +35,17 @@ class CallLog extends Entity implements JsonSerializable
     protected ?array $response = null;
 
     /**
-     * @var int|null $sourceId Reference to the source/endpoint that was called
+     * @var integer|null $sourceId Reference to the source/endpoint that was called
      */
     protected ?int $sourceId = null;
 
     /**
-     * @var int|null $actionId Reference to the action that triggered this call
+     * @var integer|null $actionId Reference to the action that triggered this call
      */
     protected ?int $actionId = null;
 
     /**
-     * @var int|null $synchronizationId Reference to the synchronization process if this call is part of one
+     * @var integer|null $synchronizationId Reference to the synchronization process if this call is part of one
      */
     protected ?int $synchronizationId = null;
 
@@ -70,7 +70,7 @@ class CallLog extends Entity implements JsonSerializable
     protected ?DateTime $created = null;
 
     /**
-     * @var int $size Size of this log entry in bytes (calculated from serialized object)
+     * @var integer $size Size of this log entry in bytes (calculated from serialized object)
      */
     protected int $size = 4096;
 

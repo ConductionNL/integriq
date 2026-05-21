@@ -114,7 +114,7 @@ class ObjectService
 
         // @todo Fix mongodb sort
         // if (empty($sort) === false) {
-        //     $object['filter'][] = ['$sort' => $sort];
+        // $object['filter'][] = ['$sort' => $sort];
         // }
         $returnData = $client->post(
             uri: 'action/find',

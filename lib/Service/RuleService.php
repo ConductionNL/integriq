@@ -302,34 +302,34 @@ class RuleService
 
         // // Add organisaties (leveranciers) to response data
         // foreach ($organisaties as $organisatie) {
-        //     $organisatie = $organisatie->jsonSerialize();
-        //     $newUuid = Uuid::v4();
-        //     $elementId = "id-{$newUuid}";
-        //     $data['body']['elements'][] = [
-        //         'identifier' => $elementId,
-        //         'name' => $organisatie['naam'],
-        //         'name-lang' => 'nl',
-        //         'documentation' => $organisatie['beschrijving'],
-        //         'documentation-lang' => 'nl',
-        //         'type' => 'BusinessActor',
-        //         'properties' => [
-        //             0 => [
-        //                 'propertyDefinitionRef' => 'id-c3355444b6cb8fb34b62e241dd073043', // SWC type
-        //                 'value' => 'Leverancier',
-        //             ],
-        //             1 => [
-        //                 'propertyDefinitionRef' => 'propid-2', // Object ID
-        //                 'value' => $newUuid,
-        //             ],
-        //             2 => [
-        //                 'propertyDefinitionRef' => 'propid-39', // URL
-        //                 'value' => '',
-        //             ],
-        //         ],
-        //     ];
+        // $organisatie = $organisatie->jsonSerialize();
+        // $newUuid = Uuid::v4();
+        // $elementId = "id-{$newUuid}";
+        // $data['body']['elements'][] = [
+        // 'identifier' => $elementId,
+        // 'name' => $organisatie['naam'],
+        // 'name-lang' => 'nl',
+        // 'documentation' => $organisatie['beschrijving'],
+        // 'documentation-lang' => 'nl',
+        // 'type' => 'BusinessActor',
+        // 'properties' => [
+        // 0 => [
+        // 'propertyDefinitionRef' => 'id-c3355444b6cb8fb34b62e241dd073043', // SWC type
+        // 'value' => 'Leverancier',
+        // ],
+        // 1 => [
+        // 'propertyDefinitionRef' => 'propid-2', // Object ID
+        // 'value' => $newUuid,
+        // ],
+        // 2 => [
+        // 'propertyDefinitionRef' => 'propid-39', // URL
+        // 'value' => '',
+        // ],
+        // ],
+        // ];
         // }
         // foreach ($voorzieningAanbod as $voorzieningAanbod) {
-        //     $voorzieningAanbod = $voorzieningAanbod->jsonSerialize();
+        // $voorzieningAanbod = $voorzieningAanbod->jsonSerialize();
         // }
         return $data;
     }//end processSoftwareCatalogusRule()
@@ -402,7 +402,8 @@ class RuleService
         // Add datum export
         $datumExport = new DateTime();
         $data['body']['properties'][] = [
-            'propertyDefinitionRef' => self::PROP_DATUM_EXPORT, // Datum export
+            'propertyDefinitionRef' => self::PROP_DATUM_EXPORT,
+        // Datum export
             'value'                 => $datumExport->format('Y-m-d H:i:s'),
             'value-lang'            => 'nl',
         ];
@@ -459,7 +460,8 @@ class RuleService
         }
 
         // Add the Applicaties / Pakketten (Softwarecatalogus) folder
-        $applicationFolderCount = count($data['body']['organizations'][$applicationFolderKey]['item']); // Index for adding to this organization/folder later on.
+        $applicationFolderCount = count($data['body']['organizations'][$applicationFolderKey]['item']);
+        // Index for adding to this organization/folder later on.
         $data['body']['organizations'][$applicationFolderKey]['item'][] = [
             'identifier' => "id-29ec7061-0aba-c9eb-25fd-7c9232e4f0",
             'label'      => "Applicaties (Softwarecatalogus)",
@@ -467,7 +469,8 @@ class RuleService
         ];
 
         // Add the Relaties (Softwarecatalogus) folder
-        $relationsFolderCount = count($data['body']['organizations'][$relationsFolderKey]['item']); // Index for adding to this organization/folder later on.
+        $relationsFolderCount = count($data['body']['organizations'][$relationsFolderKey]['item']);
+        // Index for adding to this organization/folder later on.
         $data['body']['organizations'][$relationsFolderKey]['item'][] = [
             'identifier' => "id-8e7d5c3b-6a2f-9d4e-1b3c-7a9e2d5f8c0b",
             'label'      => "Relaties (Softwarecatalogus)",
@@ -541,27 +544,33 @@ class RuleService
                 'type'               => 'ApplicationComponent',
                 'properties'         => [
                     [
-                        'propertyDefinitionRef' => self::PROP_SWC_TYPE, // SWC type
+                        'propertyDefinitionRef' => self::PROP_SWC_TYPE,
+            // SWC type
                         'value'                 => 'Pakket',
                     ],
                     [
-                        'propertyDefinitionRef' => self::PROP_OBJECT_ID, // Object ID
+                        'propertyDefinitionRef' => self::PROP_OBJECT_ID,
+                    // Object ID
                         'value'                 => $voorziening['id'],
                     ],
                     [
-                        'propertyDefinitionRef' => 'propid-39', // URL
+                        'propertyDefinitionRef' => 'propid-39',
+                    // URL
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => self::PROP_EXTERN_PAKKET, // Extern Pakket
+                        'propertyDefinitionRef' => self::PROP_EXTERN_PAKKET,
+                    // Extern Pakket
                         'value'                 => 'n',
                     ],
                     [
-                        'propertyDefinitionRef' => self::PROP_OMSCHRIJVING, // Omschrijving gebruik
+                        'propertyDefinitionRef' => self::PROP_OMSCHRIJVING,
+                    // Omschrijving gebruik
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => self::BRON, // Omschrijving gebruik
+                        'propertyDefinitionRef' => self::BRON,
+                    // Omschrijving gebruik
                         'value'                 => 'Softwarecatalogus',
                     ],
                 ],
@@ -685,7 +694,8 @@ class RuleService
                 // Available width = (parent width - left/right padding - spacing between children) / number of children
                 $childWidth = min(
                     ($parentWidth - ($childSpacing * ($totalChildren - 1))) / $totalChildren,
-                    120 // Maximum width of 120px
+                    120
+                // Maximum width of 120px
                 );
 
                 // Child height at least 30px and no more than 100px
@@ -800,7 +810,8 @@ class RuleService
             'type'       => $relationType,
             'properties' => [
                 [
-                    'propertyDefinitionRef' => self::PROP_OBJECT_ID, // Object ID
+                    'propertyDefinitionRef' => self::PROP_OBJECT_ID,
+        // Object ID
                     'value'                 => $relationUuid,
                 ],
                 [

@@ -20,61 +20,89 @@ class Synchronization extends Entity implements JsonSerializable
 
     protected ?string $uuid = null;
 
-    protected ?string $name = null;    // The name of the synchronization
+    protected ?string $name = null;
 
-    protected ?string $description = null;    // The description of the synchronization
+    // The name of the synchronization
+    protected ?string $description = null;
 
-    protected ?string $reference = null; // The reference of the endpoint
+    // The description of the synchronization
+    protected ?string $reference = null;
 
-    protected ?string $version = '0.0.0';    // The version of the synchronization
+    // The reference of the endpoint
+    protected ?string $version = '0.0.0';
+
+    // The version of the synchronization
     // Source
-    protected ?string $sourceId = null;    // The id of the source object
+    protected ?string $sourceId = null;
 
-    protected ?string $sourceType = null;    // The type of the source object (e.g. api, database, register/schema.)
+    // The id of the source object
+    protected ?string $sourceType = null;
 
-    protected ?string $sourceHash = null;    // The hash of the source object when it was last synced.
+    // The type of the source object (e.g. api, database, register/schema.)
+    protected ?string $sourceHash = null;
 
-    protected ?string $sourceHashMapping = null;    // The mapping id of the mapping that we map the object to for hashing.
+    // The hash of the source object when it was last synced.
+    protected ?string $sourceHashMapping = null;
 
-    protected ?string $sourceTargetMapping = null;    // The mapping of the source object to the target object
+    // The mapping id of the mapping that we map the object to for hashing.
+    protected ?string $sourceTargetMapping = null;
 
-    protected ?array $sourceConfig = []; // The configuration of the object in the source
+    // The mapping of the source object to the target object
+    protected ?array $sourceConfig = [];
 
-    protected ?DateTime $sourceLastChanged = null;    // The last changed date of the source object
+    // The configuration of the object in the source
+    protected ?DateTime $sourceLastChanged = null;
 
-    protected ?DateTime $sourceLastChecked = null;    // The last checked date of the source object
+    // The last changed date of the source object
+    protected ?DateTime $sourceLastChecked = null;
 
-    protected ?DateTime $sourceLastSynced = null;    // The last synced date of the source object
+    // The last checked date of the source object
+    protected ?DateTime $sourceLastSynced = null;
 
-    protected ?int $currentPage = 1; // The last page synced. Used for keeping track where to continue syncing after Rate Limit has been exceeded on source with pagination.
+    // The last synced date of the source object
+    protected ?int $currentPage = 1;
+
+    // The last page synced. Used for keeping track where to continue syncing after Rate Limit has been exceeded on source with pagination.
     // Target
-    protected ?string $targetId = null;    // The id of the target object
+    protected ?string $targetId = null;
 
-    protected ?string $targetType = null;    // The type of the target object (e.g. api, database, register/schema.)
+    // The id of the target object
+    protected ?string $targetType = null;
 
-    protected ?string $targetHash = null;    // The hash of the target object
+    // The type of the target object (e.g. api, database, register/schema.)
+    protected ?string $targetHash = null;
 
-    protected ?string $targetSourceMapping = null;    // The mapping of the target object to the source object
+    // The hash of the target object
+    protected ?string $targetSourceMapping = null;
 
-    protected ?array $targetConfig = []; // The configuration of the object in the target
+    // The mapping of the target object to the source object
+    protected ?array $targetConfig = [];
 
-    protected ?DateTime $targetLastChanged = null;    // The last changed date of the target object
+    // The configuration of the object in the target
+    protected ?DateTime $targetLastChanged = null;
 
-    protected ?DateTime $targetLastChecked = null;    // The last checked date of the target object
+    // The last changed date of the target object
+    protected ?DateTime $targetLastChecked = null;
 
-    protected ?DateTime $targetLastSynced = null;    // The last synced date of the target object
+    // The last checked date of the target object
+    protected ?DateTime $targetLastSynced = null;
+
+    // The last synced date of the target object
     // General
-    protected ?DateTime $created = null;    // The date and time the synchronization was created
+    protected ?DateTime $created = null;
 
-    protected ?DateTime $updated = null;    // The date and time the synchronization was updated
+    // The date and time the synchronization was created
+    protected ?DateTime $updated = null;
 
+    // The date and time the synchronization was updated
     protected array $conditions = [];
 
     protected array $followUps = [];
 
     protected array $actions = [];
 
-    protected ?array $configurations = []; // Array of configuration IDs that this synchronization belongs to
+    protected ?array $configurations = [];
+    // Array of configuration IDs that this synchronization belongs to
 
     /**
      * @var string|null The status of the synchronization

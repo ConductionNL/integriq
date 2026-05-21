@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * UserController
  *
  * This controller handles user-related API endpoints including user information
@@ -311,7 +311,8 @@ class UserController extends Controller
             if ($memoryLimitBytes > 0 && $initialMemoryUsage > ($memoryLimitBytes * 0.8)) {
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('Server memory usage too high, please try again later')],
-                    statusCode: 503 // Service Unavailable
+                    statusCode: 503
+                // Service Unavailable
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
@@ -350,7 +351,8 @@ class UserController extends Controller
                         'retry_after'   => $rateLimitCheck['delay'] ?? null,
                         'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
                     ],
-                    statusCode: 429 // Too Many Requests
+                    statusCode: 429
+                    // Too Many Requests
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
@@ -397,7 +399,8 @@ class UserController extends Controller
             $memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
 
             // Log memory usage for monitoring
-            if ($memoryIncreaseBytes > 10 * 1024 * 1024) { // 10MB threshold
+            if ($memoryIncreaseBytes > 10 * 1024 * 1024) {
+                // 10MB threshold
                 $this->logger->warning(
                         'High memory usage during login',
                         [

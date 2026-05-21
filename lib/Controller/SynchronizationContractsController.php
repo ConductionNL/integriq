@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SynchronizationContractsController
  *
  * Controller for managing synchronization contracts

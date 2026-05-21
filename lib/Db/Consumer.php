@@ -23,22 +23,30 @@ class Consumer extends Entity implements JsonSerializable
 
     protected ?string $uuid = null;
 
-    protected ?string $name = null; // The name of the consumer
+    protected ?string $name = null;
 
-    protected ?string $description = null; // The description of the consumer
+    // The name of the consumer
+    protected ?string $description = null;
 
-    protected ?array $domains = []; // The domains the consumer is allowed to run from
+    // The description of the consumer
+    protected ?array $domains = [];
 
-    protected ?array $ips = []; // The ips the consumer is allowed to run from
+    // The domains the consumer is allowed to run from
+    protected ?array $ips = [];
 
-    protected ?string $authorizationType = null; // The authorization type of the consumer, should be one of the following: 'none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt'. Keep in mind that the consumer needs to be able to handle the authorization type.
+    // The ips the consumer is allowed to run from
+    protected ?string $authorizationType = null;
 
-    protected ?array $authorizationConfiguration = []; // The authorization configuration of the consumer
+    // The authorization type of the consumer, should be one of the following: 'none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt'. Keep in mind that the consumer needs to be able to handle the authorization type.
+    protected ?array $authorizationConfiguration = [];
 
-    protected ?DateTime $created = null; // the date and time the consumer was created
+    // The authorization configuration of the consumer
+    protected ?DateTime $created = null;
 
-    protected ?DateTime $updated = null; // the date and time the consumer was updated
+    // the date and time the consumer was created
+    protected ?DateTime $updated = null;
 
+    // the date and time the consumer was updated
     protected ?string $userId = null;
 
     /**
@@ -126,7 +134,7 @@ class Consumer extends Entity implements JsonSerializable
             try {
                 $this->$method($value);
             } catch (\Exception $exception) {
-                //                ("Error writing $key");
+                // ("Error writing $key");
             }
         }
 

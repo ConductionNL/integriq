@@ -36,7 +36,8 @@ class OpenConnectorAdmin implements ISettings
 
     public function getSection()
     {
-        return 'openconnector'; // Name of the previously created section.
+        return 'openconnector';
+        // Name of the previously created section.
     }//end getSection()
 
     /**

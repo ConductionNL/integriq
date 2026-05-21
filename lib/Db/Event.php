@@ -16,35 +16,49 @@ class Event extends Entity implements JsonSerializable
 {
 
     // Required CloudEvent attributes
-    protected ?string $uuid = null; // Unique UUID identifier for the event
+    protected ?string $uuid = null;
 
-    protected ?string $source = null; // URI identifying the context where event happened
+    // Unique UUID identifier for the event
+    protected ?string $source = null;
 
-    protected ?string $type = null; // Event type identifier
+    // URI identifying the context where event happened
+    protected ?string $type = null;
 
-    protected ?string $specversion = '1.0'; // CloudEvents specification version
+    // Event type identifier
+    protected ?string $specversion = '1.0';
 
-    protected ?DateTime $time = null; // Timestamp of when the event occurred
+    // CloudEvents specification version
+    protected ?DateTime $time = null;
 
+    // Timestamp of when the event occurred
     // Optional CloudEvent attributes
-    protected ?string $datacontenttype = 'application/json'; // Content type of data
+    protected ?string $datacontenttype = 'application/json';
 
-    protected ?string $dataschema = null; // URI to the schema that data adheres to
+    // Content type of data
+    protected ?string $dataschema = null;
 
-    protected ?string $subject = null; // Subject of the event
+    // URI to the schema that data adheres to
+    protected ?string $subject = null;
 
-    protected ?array $data = []; // Event payload
+    // Subject of the event
+    protected ?array $data = [];
 
+    // Event payload
     // Additional tracking fields
-    protected ?string $userId = null; // User who triggered the event
+    protected ?string $userId = null;
 
-    protected ?DateTime $created = null; // When the event was created in our system
+    // User who triggered the event
+    protected ?DateTime $created = null;
 
-    protected ?DateTime $updated = null; // When the event was last updated
+    // When the event was created in our system
+    protected ?DateTime $updated = null;
 
-    protected ?DateTime $processed = null; // When the event was processed
+    // When the event was last updated
+    protected ?DateTime $processed = null;
 
-    protected ?string $status = 'pending'; // Event processing status
+    // When the event was processed
+    protected ?string $status = 'pending';
+    // Event processing status
 
     /**
      * Get the event data payload

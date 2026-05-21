@@ -28,28 +28,39 @@ class Endpoint extends Entity implements JsonSerializable
 
     protected ?string $uuid = null;
 
-    protected ?string $name = null; // The name of the endpoint
+    protected ?string $name = null;
 
-    protected ?string $description = null; // The description of the endpoint
+    // The name of the endpoint
+    protected ?string $description = null;
 
-    protected ?string $reference = null; // The reference of the endpoint
+    // The description of the endpoint
+    protected ?string $reference = null;
 
-    protected ?string $version = '0.0.0'; // The version of the endpoint
+    // The reference of the endpoint
+    protected ?string $version = '0.0.0';
 
-    protected ?string $endpoint = null; // The actual endpoint e.g /api/buildings/{{id}}. An endpoint may contain parameters e.g {{id}}
+    // The version of the endpoint
+    protected ?string $endpoint = null;
 
-    protected ?array $endpointArray = []; // An array representation of the endpoint. Automatically generated
+    // The actual endpoint e.g /api/buildings/{{id}}. An endpoint may contain parameters e.g {{id}}
+    protected ?array $endpointArray = [];
 
-    protected ?string $endpointRegex = null; // A regex representation of the endpoint. Automatically generated
+    // An array representation of the endpoint. Automatically generated
+    protected ?string $endpointRegex = null;
 
-    protected ?string $method = null; // One of GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD. method and endpoint combination should be unique
+    // A regex representation of the endpoint. Automatically generated
+    protected ?string $method = null;
 
-    protected ?string $targetType = null; // The target to attach this endpoint to, should be one of source (to create a proxy endpoint) or register/schema (to create an object endpoint) or job (to fire an event) or synchronization (to create a synchronization endpoint)
+    // One of GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD. method and endpoint combination should be unique
+    protected ?string $targetType = null;
 
-    protected ?string $targetId = null; // The target id to attach this endpoint to
+    // The target to attach this endpoint to, should be one of source (to create a proxy endpoint) or register/schema (to create an object endpoint) or job (to fire an event) or synchronization (to create a synchronization endpoint)
+    protected ?string $targetId = null;
 
-    protected ?array $conditions = []; // Array of conditions to be applied
+    // The target id to attach this endpoint to
+    protected ?array $conditions = [];
 
+    // Array of conditions to be applied
     protected ?DateTime $created = null;
 
     protected ?DateTime $updated = null;
@@ -58,10 +69,12 @@ class Endpoint extends Entity implements JsonSerializable
 
     protected ?string $outputMapping = null;
 
-    protected ?array $rules = []; // Array of rules to be applied
+    protected ?array $rules = [];
 
-    protected ?array $configurations = []; // Array of configuration IDs that this endpoint belongs to
+    // Array of rules to be applied
+    protected ?array $configurations = [];
 
+    // Array of configuration IDs that this endpoint belongs to
     protected ?string $slug = null;
 
     /**

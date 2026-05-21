@@ -126,12 +126,12 @@ class ConsumerMapper extends QBMapper
         $obj->hydrate($object);
 
         // @todo: does Consumer need a version? $version field does currently not exist.
-        //        if (isset($object['version']) === false) {
-        //            // Set or update the version
-        //            $version = explode('.', $obj->getVersion());
-        //            $version[2] = (int)$version[2] + 1;
-        //            $obj->setVersion(implode('.', $version));
-        //        }
+        // if (isset($object['version']) === false) {
+        // Set or update the version
+        // $version = explode('.', $obj->getVersion());
+        // $version[2] = (int)$version[2] + 1;
+        // $obj->setVersion(implode('.', $version));
+        // }
         return $this->update($obj);
     }//end updateFromArray()
 

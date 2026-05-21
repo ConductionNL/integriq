@@ -94,6 +94,12 @@ class ExportService
         $dataString = $this->encode(objectArray: $objectArray, type: $accept);
 
         $this->download(dataString: $dataString, filename: $filename, type: $type);
+
+        // $this->download() is annotated #[NoReturn] and exits via the streamed
+        // file response; this return is unreachable but required by PHPStan
+        // since the JetBrains attribute is not natively understood.
+        // @phpstan-ignore-next-line
+        return new JSONResponse();
     }//end export()
 
     /**
@@ -211,6 +217,7 @@ class ExportService
 
         // Clean up: delete the temporary file
         unlink(filename: $filePath);
-        exit; // Ensure no further script execution
+        exit;
+        // Ensure no further script execution
     }//end download()
 }//end class

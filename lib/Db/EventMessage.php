@@ -17,29 +17,41 @@ use OCP\AppFramework\Db\Entity;
 class EventMessage extends Entity implements JsonSerializable
 {
 
-    protected ?string $uuid = null; // Unique identifier for the message
+    protected ?string $uuid = null;
 
-    protected ?int $eventId = null; // Reference to the original event
+    // Unique identifier for the message
+    protected ?int $eventId = null;
 
-    protected ?int $consumerId = null; // Reference to the consumer
+    // Reference to the original event
+    protected ?int $consumerId = null;
 
-    protected ?int $subscriptionId = null; // Reference to the subscription
+    // Reference to the consumer
+    protected ?int $subscriptionId = null;
 
-    protected ?string $status = 'pending'; // Current status of the message (pending, delivered, failed)
+    // Reference to the subscription
+    protected ?string $status = 'pending';
 
-    protected ?array $payload = null; // The actual message payload to be delivered
+    // Current status of the message (pending, delivered, failed)
+    protected ?array $payload = null;
 
-    protected ?array $lastResponse = null; // The last response received from the consumer
+    // The actual message payload to be delivered
+    protected ?array $lastResponse = null;
 
-    protected int $retryCount = 0; // Number of delivery attempts
+    // The last response received from the consumer
+    protected int $retryCount = 0;
 
-    protected ?DateTime $lastAttempt = null; // Timestamp of the last delivery attempt
+    // Number of delivery attempts
+    protected ?DateTime $lastAttempt = null;
 
-    protected ?DateTime $nextAttempt = null; // Scheduled time for next attempt
+    // Timestamp of the last delivery attempt
+    protected ?DateTime $nextAttempt = null;
 
-    protected ?DateTime $created = null; // Creation timestamp
+    // Scheduled time for next attempt
+    protected ?DateTime $created = null;
 
-    protected ?DateTime $updated = null; // Last update timestamp
+    // Creation timestamp
+    protected ?DateTime $updated = null;
+    // Last update timestamp
 
     /**
      * Get the message payload

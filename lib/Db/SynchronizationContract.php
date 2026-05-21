@@ -18,43 +18,60 @@ class SynchronizationContract extends Entity implements JsonSerializable
 {
 
     // @todo can be removed when migrations are merged
-    protected ?string $sourceId = null; // OLD The id of the object in the source
+    protected ?string $sourceId = null;
 
-    protected ?string $sourceHash = null; // OLD The hash of the object in the source
+    // OLD The id of the object in the source
+    protected ?string $sourceHash = null;
 
+    // OLD The hash of the object in the source
     protected ?string $uuid = null;
 
     protected ?string $version = null;
 
-    protected ?string $synchronizationId = null; // The synchronization that this contract belongs to
+    protected ?string $synchronizationId = null;
+
+    // The synchronization that this contract belongs to
     // Source
-    protected ?string $originId = null; // The id of the object in the source
+    protected ?string $originId = null;
 
-    protected ?string $originHash = null; // The hash of the object in the source
+    // The id of the object in the source
+    protected ?string $originHash = null;
 
-    protected ?DateTime $sourceLastChanged = null; // The last changed date of the object in the source
+    // The hash of the object in the source
+    protected ?DateTime $sourceLastChanged = null;
 
-    protected ?DateTime $sourceLastChecked = null; // The last checked date of the object in the source
+    // The last changed date of the object in the source
+    protected ?DateTime $sourceLastChecked = null;
 
-    protected ?DateTime $sourceLastSynced = null; // The last synced date of the object in the source
+    // The last checked date of the object in the source
+    protected ?DateTime $sourceLastSynced = null;
+
+    // The last synced date of the object in the source
     // Target
-    protected ?string $targetId = null; // The id of the object in the target
+    protected ?string $targetId = null;
 
-    protected ?string $targetHash = null; // The hash of the object in the target
+    // The id of the object in the target
+    protected ?string $targetHash = null;
 
-    protected ?DateTime $targetLastChanged = null; // The last changed date of the object in the target
+    // The hash of the object in the target
+    protected ?DateTime $targetLastChanged = null;
 
-    protected ?DateTime $targetLastChecked = null; // The last checked date of the object in the target
+    // The last changed date of the object in the target
+    protected ?DateTime $targetLastChecked = null;
 
-    protected ?DateTime $targetLastSynced = null; // The last synced date of the object in the target
+    // The last checked date of the object in the target
+    protected ?DateTime $targetLastSynced = null;
 
-    protected ?string $targetLastAction = null; // The last CRUD action performed on the target (create, read, update, delete)
+    // The last synced date of the object in the target
+    protected ?string $targetLastAction = null;
+
+    // The last CRUD action performed on the target (create, read, update, delete)
     // General
-    protected ?DateTime $created = null; // the date and time the synchronization was created
+    protected ?DateTime $created = null;
 
-    protected ?DateTime $updated = null; // the date and time the synchronization was updated
-
-
+    // the date and time the synchronization was created
+    protected ?DateTime $updated = null;
+    // the date and time the synchronization was updated
     public function __construct()
     {
         $this->addType('uuid', 'string');

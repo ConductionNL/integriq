@@ -195,29 +195,29 @@ class EndpointService
         try {
             $flowToken = new FlowToken(requestOriginal: $request, path: $path);
 
-            //            // Process initial data
-            //            $responseBody = $this->parseContent(
-            //                request: $request,
+            // Process initial data
+            // $responseBody = $this->parseContent(
+            // request: $request,
             //
-            //            );
+            // );
             //
-            //            if ($responseBody == '') {
-            //                $responseBody = [];
-            //            }
+            // if ($responseBody == '') {
+            // $responseBody = [];
+            // }
             //
             $currentDate = (new DateTime())->format('c');
             //
-            //            // This is double becuase mapping needs it in body but other rules seek directly in data.
+            // This is double becuase mapping needs it in body but other rules seek directly in data.
             //
-            //            $incomingMethod = $request->getMethod();
-            //            $incomingHeaders = $this->getHeaders($request->server, true);
-            //            $incomingParams = array_merge($request->getParams(), $responseBody);
+            // $incomingMethod = $request->getMethod();
+            // $incomingHeaders = $this->getHeaders($request->server, true);
+            // $incomingParams = array_merge($request->getParams(), $responseBody);
             //
-            //            $incomingData = [
-            //                'method' => $incomingMethod,
-            //                'headers' => $incomingHeaders,
-            //                'params' => $incomingParams
-            //            ];
+            // $incomingData = [
+            // 'method' => $incomingMethod,
+            // 'headers' => $incomingHeaders,
+            // 'params' => $incomingParams
+            // ];
             // @todo: This should eventually be merged into the flow tokens
             $data = [
                 'utility'    => [
@@ -406,9 +406,9 @@ class EndpointService
 
         $uses = (new Dot($object->jsonSerialize()))->flatten();
         //
-        //        if(isset($serializedObject) === true && !empty($serializedObject['@self']['relations'])) {
-        //            $uses = $serializedObject['@self']['relations'];
-        //        }
+        // if(isset($serializedObject) === true && !empty($serializedObject['@self']['relations'])) {
+        // $uses = $serializedObject['@self']['relations'];
+        // }
         $useUrls = [];
 
         $uuidToUrlMap = [];
@@ -463,7 +463,7 @@ class EndpointService
 
         // @TODO: correct rewriting self url. This has to be fixed with issue CONNECTOR-314
         // Add self object URI mapping
-        //        $uuidToUrlMap[$object->getUuid()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
+        // $uuidToUrlMap[$object->getUuid()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
         $uuidToUrlMap[$object->getUri()] = $this->generateEndpointUrl(id: $object->getUuid(), schemaMapper: $schemaMapper);
 
         // @TODO: temporary fix for download endpoints. This has to be fixed with issue CONNECTOR-314
@@ -511,7 +511,8 @@ class EndpointService
 
         $dot = new Dot([], parse: true);
         foreach ($reducedKeys as $path) {
-            $dot->set($path, true); // true is a safe placeholder for Dot to serialize
+            $dot->set($path, true);
+            // true is a safe placeholder for Dot to serialize
         }
 
         return $dot->jsonSerialize();
@@ -1124,10 +1125,10 @@ class EndpointService
 
             // Process each rule in order
             foreach ($ruleEntities as $rule) {
-                //                // Skip if rule action doesn't match request method
-                //                if (strtolower($rule->getAction()) !== strtolower($request->getMethod())) {
-                //                    continue;
-                //                }
+                // Skip if rule action doesn't match request method
+                // if (strtolower($rule->getAction()) !== strtolower($request->getMethod())) {
+                // continue;
+                // }
                 $logicResult = null;
 
                 $data['flowToken'] = $flowToken->__serialize();
@@ -1583,7 +1584,7 @@ class EndpointService
 
                     $tags = array_merge($config['tags'] ?? [], ["object:$objectId"]);
                     if ($file instanceof \OCP\Files\File === true) {
-                        //                        $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+                        // $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
                     }
 
                     $result[$key] = $file->getPath();
@@ -1605,7 +1606,7 @@ class EndpointService
 
                 $tags = array_merge($config['tags'] ?? [], ["object:$objectId"]);
                 if ($file instanceof File === true) {
-                    //                    $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
+                    // $this->attachTagsToFile(fileId: $file->getId(), tags: $tags);
                 }
 
                 $dataDot[$config['filePath']] = $file->getPath();
@@ -1790,7 +1791,7 @@ class EndpointService
         $openRegister->setSchema($superSchemaId);
 
         $object = $openRegister->find(id: $objectId);
-        //        $location = $object->getFolder();
+        // $location = $object->getFolder();
         $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
         $location    = $fileService->getObjectFolder($object)->getPath();
 
@@ -1937,7 +1938,7 @@ class EndpointService
     {
         $config = $rule->getConfiguration();
 
-        /**
+        /*
          * @var ObjectEntity $object
          */
         $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find(identifier: $objectId);
@@ -1969,20 +1970,20 @@ class EndpointService
         }
 
         if (isset($data['parameters']['version']) === true) {
-            /**
- * @var File $file
-*/
+            /*
+             * @var File $file
+             */
              $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
         } else if (isset($data['parameters']['versie']) === true) {
             // @TODO: This can be nicer by mapping, but let's first get something sure
-            /**
- * @var File $file
-*/
+            /*
+             * @var File $file
+             */
              $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
         } else {
-            /**
- * @var File $file
-*/
+            /*
+             * @var File $file
+             */
             $file = $fileService->getFile(object: $object, file: $filename);
         }
 
@@ -2033,7 +2034,8 @@ class EndpointService
 
         $flowToken->setRequestAmended($requestAmended);
 
-        return $flowToken; // Return the overridden request
+        return $flowToken;
+        // Return the overridden request
     }//end updateRequestWithRuleData()
 
     /**
