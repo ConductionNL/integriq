@@ -201,7 +201,18 @@ class EndpointsController extends Controller
      */
     public function logs(SearchService $searchService): JSONResponse
     {
-        return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: Endpoint logging is not available at this time')], 500);
+        // Endpoint logging is not yet wired to the OR call_log schema.
+        // Returning an empty paginated result (instead of 500) lets clients
+        // poll without breaking; once the migration lands this returns a
+        // real result set.
+        return new JSONResponse([
+            'results' => [],
+            'total'   => 0,
+            'page'    => 1,
+            'pages'   => 1,
+            'limit'   => (int) $this->request->getParam('_limit', 20),
+            'offset'  => 0,
+        ]);
     }//end logs()
 
     /**

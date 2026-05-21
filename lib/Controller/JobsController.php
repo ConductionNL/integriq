@@ -7,12 +7,12 @@ use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
  * @SuppressWarnings(PHPMD.ShortVariable)
@@ -180,9 +180,9 @@ class JobsController extends Controller
      */
     public function run(int $id): JSONResponse
     {
-        // Get the job via OR ObjectService
-        $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
-        if ($job === null) {
+        try {
+            $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         }
 
@@ -224,9 +224,9 @@ class JobsController extends Controller
      */
     public function test(int $id): JSONResponse
     {
-        // Get the job via OR ObjectService
-        $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
-        if ($job === null) {
+        try {
+            $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         }
 

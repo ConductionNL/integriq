@@ -17,8 +17,10 @@ return [
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
-		// DSO / Omgevingsloket STAM koppelvlak
-		['name' => 'dso#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// DSO / Omgevingsloket STAM koppelvlak — route disabled, controller
+		// hasn't been ported to the post-OR-cutover surface yet. Re-enable
+		// once DsoController lands (see GH backlog).
+		// ['name' => 'dso#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],

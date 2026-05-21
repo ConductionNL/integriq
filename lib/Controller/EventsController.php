@@ -5,13 +5,13 @@ namespace OCA\OpenConnector\Controller;
 use Exception;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCA\OpenConnector\Service\EventService;
-use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
  * Controller for managing events and their subscriptions
@@ -75,8 +75,9 @@ class EventsController extends Controller
      */
     public function messages(int $id): JSONResponse
     {
-        $event = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'event');
-        if ($event === null) {
+        try {
+            $event = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'event');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
         }
 
@@ -133,10 +134,10 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $subscriptionId Subscription ID
+     * @param  string $subscriptionId Subscription ID
      * @return JSONResponse The updated subscription
      */
-    public function updateSubscription(int $subscriptionId): JSONResponse
+    public function updateSubscription(string $subscriptionId): JSONResponse
     {
         try {
             $data = $this->request->getParams();
@@ -165,13 +166,14 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $subscriptionId Subscription ID
+     * @param  string $subscriptionId Subscription ID
      * @return JSONResponse Empty response
      */
-    public function unsubscribe(int $subscriptionId): JSONResponse
+    public function unsubscribe(string $subscriptionId): JSONResponse
     {
-        $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
-        if ($subscription === null) {
+        try {
+            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
 
@@ -217,13 +219,14 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $subscriptionId Subscription ID
+     * @param  string $subscriptionId Subscription ID
      * @return JSONResponse List of messages
      */
-    public function subscriptionMessages(int $subscriptionId): JSONResponse
+    public function subscriptionMessages(string $subscriptionId): JSONResponse
     {
-        $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
-        if ($subscription === null) {
+        try {
+            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
 
@@ -251,13 +254,14 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $subscriptionId Subscription ID
+     * @param  string $subscriptionId Subscription ID
      * @return JSONResponse List of pending messages
      */
-    public function pull(int $subscriptionId): JSONResponse
+    public function pull(string $subscriptionId): JSONResponse
     {
-        $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
-        if ($subscription === null) {
+        try {
+            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
 

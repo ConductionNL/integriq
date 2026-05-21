@@ -20,6 +20,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
 use OCP\IL10N;
@@ -93,8 +94,9 @@ class SynchronizationContractsController extends Controller
      */
     public function activate(string $id): JSONResponse
     {
-        $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
-        if ($contract === null) {
+        try {
+            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
         }
 
@@ -117,8 +119,9 @@ class SynchronizationContractsController extends Controller
      */
     public function deactivate(string $id): JSONResponse
     {
-        $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
-        if ($contract === null) {
+        try {
+            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
         }
 
@@ -141,8 +144,9 @@ class SynchronizationContractsController extends Controller
      */
     public function execute(string $id): JSONResponse
     {
-        $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
-        if ($contract === null) {
+        try {
+            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);
         }
 

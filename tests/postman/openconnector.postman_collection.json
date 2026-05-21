@@ -150,7 +150,7 @@
             "method": "POST",
             "url": { "raw": "{{orBase}}/rule", "host": ["{{orBase}}"], "path": ["rule"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-rule\",\"type\":\"mapping\",\"timing\":\"before\",\"isEnabled\":true}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-rule\",\"type\":\"mapping\",\"action\":\"create\",\"order\":1,\"timing\":\"before\",\"isEnabled\":true}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
@@ -166,7 +166,7 @@
             "method": "POST",
             "url": { "raw": "{{orBase}}/event", "host": ["{{orBase}}"], "path": ["event"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-event\",\"eventType\":\"com.example.test\",\"source\":\"newman\"}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-event\",\"type\":\"com.example.test\",\"source\":\"newman\"}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
@@ -206,7 +206,7 @@
             "method": "PUT",
             "url": { "raw": "{{orBase}}/source/{{fxSourceUuid}}", "host": ["{{orBase}}"], "path": ["source", "{{fxSourceUuid}}"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"description\":\"updated by newman\"}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-source\",\"type\":\"api\",\"location\":\"https://example.test/api\",\"isEnabled\":true,\"auth\":\"none\",\"description\":\"updated by newman\"}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('200 OK', () => pm.response.to.have.status(200));"
@@ -407,7 +407,7 @@
             "method": "POST",
             "url": { "raw": "{{ocBase}}/mappings/test", "host": ["{{ocBase}}"], "path": ["mappings", "test"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"mapping\":{\"x\":\"a\",\"y\":\"b\"},\"input\":{\"a\":\"hello\",\"b\":\"world\"}}" }
+            "body": { "mode": "raw", "raw": "{\"mapping\":{\"mapping\":{\"x\":\"a\",\"y\":\"b\"}},\"inputObject\":{\"a\":\"hello\",\"b\":\"world\"}}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('200 OK', () => pm.response.to.have.status(200));",
@@ -421,7 +421,7 @@
             "method": "POST",
             "url": { "raw": "{{ocBase}}/mappings/objects", "host": ["{{ocBase}}"], "path": ["mappings", "objects"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-mapped-object\",\"payload\":{\"x\":\"hello\",\"y\":\"world\"}}" }
+            "body": { "mode": "raw", "raw": "{\"register\":\"openconnector\",\"schema\":\"mapping\",\"object\":{\"name\":\"newman-mapped-object\",\"x\":\"hello\",\"y\":\"world\"}}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('saved (200/201)', () => pm.expect([200, 201]).to.include(pm.response.code));"
@@ -445,7 +445,7 @@
             "method": "POST",
             "url": { "raw": "{{ocBase}}/events/subscriptions", "host": ["{{ocBase}}"], "path": ["events", "subscriptions"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sub\",\"eventTypes\":[\"com.example.test\"],\"sink\":\"pull\"}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sub\",\"types\":[\"com.example.test\"],\"style\":\"pull\",\"protocol\":\"HTTP\"}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('created (200/201)', () => pm.expect([200, 201]).to.include(pm.response.code));",
@@ -467,7 +467,7 @@
             "method": "PUT",
             "url": { "raw": "{{ocBase}}/events/subscriptions/{{fxSubUuid}}", "host": ["{{ocBase}}"], "path": ["events", "subscriptions", "{{fxSubUuid}}"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sub-updated\"}" }
+            "body": { "mode": "raw", "raw": "{\"name\":\"newman-fixture-sub-updated\",\"types\":[\"com.example.test\"],\"style\":\"pull\",\"protocol\":\"HTTP\"}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('responds (200/4xx)', () => pm.expect([200, 400, 404]).to.include(pm.response.code));"
@@ -613,23 +613,6 @@
       ]
     },
     {
-      "name": "12 — DSO / STAM koppelvlak",
-      "item": [
-        {
-          "name": "POST /dso/stam/verzoeken — minimal STAM verzoek",
-          "request": {
-            "method": "POST",
-            "url": { "raw": "{{ocBase}}/dso/stam/verzoeken", "host": ["{{ocBase}}"], "path": ["dso", "stam", "verzoeken"] },
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"verzoekType\":\"informatieverzoek\",\"omschrijving\":\"newman smoke test\",\"indiener\":{\"type\":\"natuurlijkPersoon\",\"naam\":\"Newman Test\"}}" }
-          },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('responds (200/202/400 if validation rejects)', () => pm.expect([200, 201, 202, 400]).to.include(pm.response.code));"
-          ] }}]
-        }
-      ]
-    },
-    {
       "name": "13 — User journeys (E2E)",
       "description": "End-to-end scenarios that span multiple controllers and OR. Each journey owns its own fixtures and cleans up.",
       "item": [
@@ -671,7 +654,7 @@
                 "method": "POST",
                 "url": { "raw": "{{ocBase}}/mappings/test", "host": ["{{ocBase}}"], "path": ["mappings", "test"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"mapping\":{\"target.x\":\"source.a\",\"target.y\":\"source.b\"},\"input\":{\"source\":{\"a\":\"foo\",\"b\":\"bar\"}}}" }
+                "body": { "mode": "raw", "raw": "{\"mapping\":{\"mapping\":{\"target.x\":\"source.a\",\"target.y\":\"source.b\"}},\"inputObject\":{\"source\":{\"a\":\"foo\",\"b\":\"bar\"}}}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('200 OK', () => pm.response.to.have.status(200));"
@@ -683,7 +666,7 @@
                 "method": "POST",
                 "url": { "raw": "{{ocBase}}/mappings/objects", "host": ["{{ocBase}}"], "path": ["mappings", "objects"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"name\":\"j1-output\",\"payload\":{\"target\":{\"x\":\"foo\",\"y\":\"bar\"}}}" }
+                "body": { "mode": "raw", "raw": "{\"register\":\"openconnector\",\"schema\":\"mapping\",\"object\":{\"name\":\"j1-output\",\"target\":{\"x\":\"foo\",\"y\":\"bar\"}}}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('saved', () => pm.expect([200, 201]).to.include(pm.response.code));"
@@ -861,7 +844,7 @@
                 "method": "POST",
                 "url": { "raw": "{{ocBase}}/events/subscriptions", "host": ["{{ocBase}}"], "path": ["events", "subscriptions"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"name\":\"j4-sub\",\"eventTypes\":[\"OCA.OpenRegister.ObjectCreated\"],\"sink\":\"pull\"}" }
+                "body": { "mode": "raw", "raw": "{\"name\":\"j4-sub\",\"types\":[\"OCA.OpenRegister.ObjectCreated\"],\"style\":\"pull\",\"protocol\":\"HTTP\"}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('subscribed', () => pm.expect([200, 201]).to.include(pm.response.code));",

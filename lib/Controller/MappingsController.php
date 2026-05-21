@@ -224,12 +224,25 @@ class MappingsController extends Controller
     {
         // Check if the OpenRegister service is available
         $openRegisters = $this->objectService->getOpenRegisters();
-        if ($openRegisters !== null) {
-            $data = $this->request->getParams();
-            return new JSONResponse($openRegisters->saveObject($data['register'], $data['schema'], $data['object']));
+        if ($openRegisters === null) {
+            return new JSONResponse(['error' => $this->l->t('OpenRegister is not installed')], 412);
         }
 
-        return null;
+        $data = $this->request->getParams();
+        if (isset($data['object']) === false) {
+            return new JSONResponse(['error' => $this->l->t('Missing required `object` field')], 400);
+        }
+
+        // OR's ObjectService::saveObject signature is `(object, register?,
+        // schema?)`. Prior code passed the register slug as the first arg
+        // — a TypeError under the new signature, which surfaced as 500.
+        $saved = $openRegisters->saveObject(
+            object:   $data['object'],
+            register: $data['register'] ?? 'openconnector',
+            schema:   $data['schema'] ?? 'mapping'
+        );
+
+        return new JSONResponse($saved->getObject());
     }//end saveObject()
 
     /**

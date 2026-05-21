@@ -7,13 +7,13 @@ use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use Exception;
-use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
@@ -227,8 +227,9 @@ class SynchronizationsController extends Controller
      */
     public function test(int $id, ?bool $force=false): JSONResponse
     {
-        $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
-        if ($synchronization === null) {
+        try {
+            $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
@@ -281,8 +282,9 @@ class SynchronizationsController extends Controller
         $source     = $parameters['source'] ?? null;
         $data       = $parameters['data'] ?? [];
 
-        $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
-        if ($synchronization === null) {
+        try {
+            $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
@@ -548,8 +550,9 @@ class SynchronizationsController extends Controller
      */
     public function deleteLog(int $id): JSONResponse
     {
-        $log = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization_log');
-        if ($log === null) {
+        try {
+            $log = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization_log');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         }
 
