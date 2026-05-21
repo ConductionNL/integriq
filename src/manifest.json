@@ -115,6 +115,7 @@
       "config": {
         "register": "openconnector",
         "schema": "source",
+        "columns": ["name", "type", "status", "isEnabled", "lastSync", "dateModified"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SourceLogs" }
@@ -149,6 +150,7 @@
       "config": {
         "register": "openconnector",
         "schema": "endpoint",
+        "columns": ["name", "method", "endpoint", "targetType", "updated"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "EndpointLogs" }
@@ -183,6 +185,7 @@
       "config": {
         "register": "openconnector",
         "schema": "consumer",
+        "columns": ["name", "authorizationType", "domains", "updated"],
         "sidebar": { "enabled": true, "showMetadata": true }
       }
     },
@@ -204,6 +207,7 @@
       "config": {
         "register": "openconnector",
         "schema": "consumer",
+        "columns": ["name", "authorizationType", "domains", "updated"],
         "sidebar": { "enabled": true, "showMetadata": true }
       }
     },
@@ -215,6 +219,7 @@
       "config": {
         "register": "openconnector",
         "schema": "job",
+        "columns": ["name", "jobClass", "interval", "isEnabled", "lastRun", "status"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "JobLogs" }
@@ -239,6 +244,7 @@
       "config": {
         "register": "openconnector",
         "schema": "mapping",
+        "columns": ["name", "description", "passThrough", "dateModified"],
         "sidebar": { "enabled": true, "showMetadata": true }
       }
     },
@@ -260,6 +266,7 @@
       "config": {
         "register": "openconnector",
         "schema": "rule",
+        "columns": ["name", "action", "timing", "type", "order"],
         "sidebar": { "enabled": true, "showMetadata": true }
       }
     },
@@ -281,6 +288,7 @@
       "config": {
         "register": "openconnector",
         "schema": "synchronization",
+        "columns": ["name", "sourceType", "targetType", "status", "sourceLastSynced"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SynchronizationLogs" },
@@ -296,6 +304,7 @@
       "config": {
         "register": "openconnector",
         "schema": "synchronization_contract",
+        "columns": ["synchronization", "originId", "targetId", "sourceLastSynced", "updated"],
         "sidebar": { "enabled": true, "showMetadata": true }
       }
     },
@@ -317,6 +326,7 @@
       "config": {
         "register": "openconnector",
         "schema": "event",
+        "columns": ["source", "type", "subject", "status", "time"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "CloudEventLogs" }
