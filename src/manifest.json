@@ -107,23 +107,37 @@
       "type": "dashboard",
       "title": "Dashboard",
       "config": {
+        "dateRange": { "enabled": true, "persistKey": "openconnector-dashboard" },
         "widgets": [
           { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "props": { "route": { "name": "Sources" } },                  "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" } },
           { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "props": { "route": { "name": "Mappings" } },                 "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" } },
           { "id": "kpi-synchronizations", "title": "Synchronizations", "type": "stats-block", "props": { "route": { "name": "Synchronizations" } },         "dataSource": { "register": "openconnector", "schema": "synchronization",          "aggregate": "count" } },
           { "id": "kpi-contracts",        "title": "Contracts",        "type": "stats-block", "props": { "route": { "name": "SynchronizationContracts" } }, "dataSource": { "register": "openconnector", "schema": "synchronization_contract", "aggregate": "count" } },
           { "id": "kpi-jobs",             "title": "Jobs",             "type": "stats-block", "props": { "route": { "name": "Jobs" } },                     "dataSource": { "register": "openconnector", "schema": "job",                      "aggregate": "count" } },
-          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "props": { "route": { "name": "Endpoints" } },                "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" } }
+          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "props": { "route": { "name": "Endpoints" } },                "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" } },
+
+          { "id": "calls-daily",  "title": "Outgoing calls — daily",        "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "call_log",         "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
+          { "id": "calls-hourly", "title": "Outgoing calls — by hour",      "type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "call_log",         "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } },
+          { "id": "jobs-daily",   "title": "Job executions — daily",        "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "job_log",          "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
+          { "id": "jobs-hourly",  "title": "Job executions — by hour",      "type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "job_log",          "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } },
+          { "id": "sync-daily",   "title": "Synchronization runs — daily",  "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "synchronization_log", "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
+          { "id": "sync-hourly",  "title": "Synchronization runs — by hour","type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "synchronization_log", "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } }
         ],
         "layout": [
-          { "id": "L1", "widgetId": "kpi-sources",          "gridX": 0,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L2", "widgetId": "kpi-mappings",         "gridX": 2,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L3", "widgetId": "kpi-synchronizations", "gridX": 4,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L4", "widgetId": "kpi-contracts",        "gridX": 6,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L5", "widgetId": "kpi-jobs",             "gridX": 8,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L6", "widgetId": "kpi-endpoints",        "gridX": 10, "gridY": 0, "gridWidth": 2, "gridHeight": 2 }
-        ],
-        "_note": "KPI tiles only for now. The 6 daily/hourly charts (Calls, Jobs, Sync) ship in a follow-up once @conduction/nextcloud-vue's CnChartWidget.dataSource.bucket shorthand + CnDashboardPage date-range header land (unblocked by ConductionNL/openregister#1611)."
+          { "id": "L1",  "widgetId": "kpi-sources",          "gridX": 0,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L2",  "widgetId": "kpi-mappings",         "gridX": 2,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L3",  "widgetId": "kpi-synchronizations", "gridX": 4,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L4",  "widgetId": "kpi-contracts",        "gridX": 6,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L5",  "widgetId": "kpi-jobs",             "gridX": 8,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L6",  "widgetId": "kpi-endpoints",        "gridX": 10, "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+
+          { "id": "L7",  "widgetId": "calls-daily",          "gridX": 0,  "gridY": 2,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L8",  "widgetId": "calls-hourly",         "gridX": 6,  "gridY": 2,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L9",  "widgetId": "jobs-daily",           "gridX": 0,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L10", "widgetId": "jobs-hourly",          "gridX": 6,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L11", "widgetId": "sync-daily",           "gridX": 0,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L12", "widgetId": "sync-hourly",          "gridX": 6,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 }
+        ]
       }
     },
     {
