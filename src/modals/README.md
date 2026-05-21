@@ -1,0 +1,39 @@
+# Legacy modals — extraction reference
+
+The 16 SFCs under this tree are **dead at runtime** — `src/modals/Modals.vue`
+(the dispatcher that imported all 47 pre-chain-C modals) was deleted along
+with the 30+ modal files whose UX is covered by nc-vue primitives
+(`CnFormDialog`, `CnDeleteDialog`, `CnDetailPage`, `CnMassDeleteDialog`).
+
+What remains here is the set of modals flagged by the chain-C src/ audit as
+needing **bespoke extraction** rather than blanket deletion. Their existing
+imports against deleted per-schema stores (`sourceStore`, `mappingStore`,
+…) and the deleted `src/entities/` tree are intentionally broken; they only
+serve as a template / UX spec for the upcoming PR series that re-implements
+each modal as a CnIndexPage `#form-dialog` slot component wired to
+`useObjectStore` (nc-vue) + the OR `/api/objects/openconnector/{schema}/*`
+endpoints.
+
+ESLint and webpack ignore this directory. Once a modal is reborn as a
+fresh bespoke component, the legacy file gets removed in the same PR.
+
+## Files preserved
+
+| File | LoC | Replacement plan |
+|---|---|---|
+| `Mapping/EditMapping.vue` | 1537 | Bespoke create/edit modal (CnIndexPage `#form-dialog`) — strip `dateCreated`/`passThrough`/`slug` legacy/system fields |
+| `Synchronization/EditSynchronization.vue` | 1076 | Bespoke create/edit modal — strip legacy/system fields |
+| `Rule/EditRule.vue` | 1888 | Bespoke rule-builder modal (visual condition/action editor) |
+| `Endpoint/AddEndpointRule.vue` | 172 | Bespoke endpoint-rule relation picker |
+| `Endpoint/EditEndpoint.vue` | 451 | Bespoke endpoint create/edit modal |
+| `Job/RunJob.vue` | 175 | Action-surface modal (run-job confirm) |
+| `Job/TestJob.vue` | 176 | Action-surface modal (test-job dry run) |
+| `Synchronization/RunSynchronization.vue` | 345 | Action-surface modal (run-sync confirm) |
+| `Synchronization/TestSynchronization.vue` | 222 | Action-surface modal (test-sync dry run) |
+| `MappingTest/TestMapping.vue` | 142 | Action-surface modal (test-mapping with input picker + result preview) |
+| `MappingTest/components/TestMappingInputObject.vue` | 78 | Sub-widget of TestMapping |
+| `MappingTest/components/TestMappingMappingSelect.vue` | 643 | Sub-widget of TestMapping (JSON-path picker) |
+| `MappingTest/components/TestMappingResult.vue` | 313 | Sub-widget of TestMapping (result viewer) |
+| `Mapping/mappingItem/EditMappingItem.vue` | 271 | Sub-record edit modal (mapping item inside EditMapping) |
+| `Mapping/mappingItem/DeleteMappingItem.vue` | 186 | Sub-record delete confirm |
+| `TestSource/TestSource.vue` | 193 | Action-surface modal (test-source connection) |
