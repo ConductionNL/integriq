@@ -41,6 +41,34 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 const OR = '/index.php/apps/openregister/api/objects/openconnector'
 
 /**
+ * Compute the openconnector URL base for the current Nextcloud install.
+ *
+ * Apache + mod_rewrite (local dev container): NC's `generateUrl` returns
+ * `/apps/openconnector` — htaccess maps that to `/index.php/apps/openconnector`
+ * server-side, but the SPA sees the unprefixed form, so Vue Router's
+ * `base` is `/apps/openconnector`. Any URL starting with `/index.php/...`
+ * is then outside the router base and no route matches.
+ *
+ * PHP built-in server (CI): no `.htaccess` processing, so `generateUrl`
+ * returns `/index.php/apps/openconnector` and routes must include the
+ * `/index.php/` prefix.
+ *
+ * Probing once per test file keeps the spec portable between both
+ * environments without having to thread the base through every helper.
+ */
+async function resolveAppBase(page: Page): Promise<string> {
+	const candidates = ['/apps/openconnector', '/index.php/apps/openconnector']
+	for (const base of candidates) {
+		const probe = await page.request.get(`${base}/sources`, { failOnStatusCode: false })
+		const body = await probe.text()
+		if (probe.ok() && body.includes('openconnector-main.js')) {
+			return base
+		}
+	}
+	throw new Error('Could not determine openconnector URL base — neither /apps nor /index.php form returns the SPA shell')
+}
+
+/**
  * Drive a CnIndexPage create flow:
  *   - click the "Add {schema}" primary button
  *   - fill in the name field of the CnFormDialog
@@ -61,28 +89,44 @@ async function createViaUi(page: Page, schemaSlug: string, schemaTitle: string, 
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
 	// Every openconnector schema exposes a top-level `name` field as the
-	// title — the form renders it via NcTextField with label "Name".
-	// Falling back to the first text input gives us a safety net if the
-	// label text shifts.
-	const nameField = dialog.getByLabel(/^Name/i).first()
-	if (await nameField.count() > 0) {
-		await nameField.fill(name)
-	} else {
-		await dialog.locator('input[type="text"]').first().fill(name)
-	}
+	// title — CnFormDialog renders it via NcTextField with the schema
+	// property name (`name *` for required) and a `{title} name`
+	// placeholder ("Source name", "Mapping name"…). The placeholder is
+	// the most stable selector since the visible label is the raw
+	// property name and getByLabel(/Name/i) matches several fields that
+	// happen to contain "name" in their description.
+	const nameField = dialog.getByPlaceholder(
+		new RegExp(`${schemaTitle}\\s+name`, 'i'),
+	).first()
+	await expect(
+		nameField,
+		`Name input for ${schemaTitle} must be present in CnFormDialog`,
+	).toBeVisible({ timeout: 10_000 })
+	// Use pressSequentially + Tab to fire the same keyboard / blur events
+	// the user does — Vue's reactive form validation marks the field as
+	// touched on blur, which is what flips the disabled Create button to
+	// enabled. A bare `.fill()` triggers `input` but not `blur`, so
+	// CnFormDialog keeps Create disabled. (Observed on Mapping schema —
+	// `name *` field is required + the dialog's submit gate is touched-and-valid.)
+	await nameField.click()
+	await nameField.pressSequentially(name, { delay: 5 })
+	await nameField.press('Tab')
 
 	// Click the primary action — "Create" in create-mode (resolved by
 	// CnFormDialog when there's no item to edit).
 	const createBtn = dialog.getByRole('button', { name: /^Create$/ })
-	await expect(createBtn, 'Create button must be visible in form dialog').toBeVisible()
+	await expect(createBtn, 'Create button must be enabled in form dialog').toBeEnabled({ timeout: 10_000 })
 
 	// Wait for the OR POST to settle while we click. This is the bridge
-	// from UI click → nc-vue store → OR backend.
+	// from UI click → nc-vue store → OR backend. Accept any 2xx POST to
+	// `/api/objects/openconnector/{schemaSlug}` (with or without trailing
+	// segments) so the matcher tolerates the SPA's URL shape variations.
 	const [response] = await Promise.all([
-		page.waitForResponse(r =>
-			r.url().includes(`/api/objects/openconnector/${schemaSlug}`) &&
-			r.request().method() === 'POST'
-		, { timeout: 15_000 }),
+		page.waitForResponse(r => {
+			const u = r.url()
+			const isObjects = u.includes(`/api/objects/openconnector/${schemaSlug}`)
+			return isObjects && r.request().method() === 'POST' && r.status() < 400
+		}, { timeout: 20_000 }),
 		createBtn.click(),
 	])
 	expect([200, 201], `OR POST for ${schemaSlug} returned ${response.status()}`).toContain(response.status())
@@ -152,7 +196,8 @@ test.describe('UI journey J1 — visually create + delete a Source', () => {
 	const name = `pw-j1-source-${Date.now()}`
 
 	test('Add Source → Create → row appears → mass-delete → row gone', async ({ page }) => {
-		await page.goto('/index.php/apps/openconnector/sources')
+		const base = await resolveAppBase(page)
+		await page.goto(`${base}/sources`)
 		await createViaUi(page, 'source', 'Source', name)
 		await deleteViaUi(page, 'source', name)
 	})
@@ -162,7 +207,8 @@ test.describe('UI journey J2 — visually create + delete a Mapping', () => {
 	const name = `pw-j2-mapping-${Date.now()}`
 
 	test('Add Mapping → Create → row appears → mass-delete → row gone', async ({ page }) => {
-		await page.goto('/index.php/apps/openconnector/mappings')
+		const base = await resolveAppBase(page)
+		await page.goto(`${base}/mappings`)
 		await createViaUi(page, 'mapping', 'Mapping', name)
 		await deleteViaUi(page, 'mapping', name)
 	})
@@ -172,7 +218,8 @@ test.describe('UI journey J3 — visually create + delete a Synchronization', ()
 	const name = `pw-j3-sync-${Date.now()}`
 
 	test('Add Synchronization → Create → row appears → mass-delete → row gone', async ({ page }) => {
-		await page.goto('/index.php/apps/openconnector/synchronizations')
+		const base = await resolveAppBase(page)
+		await page.goto(`${base}/synchronizations`)
 		await createViaUi(page, 'synchronization', 'Synchronization', name)
 		await deleteViaUi(page, 'synchronization', name)
 	})
@@ -182,7 +229,8 @@ test.describe('UI journey J4 — visually create + delete an Endpoint', () => {
 	const name = `pw-j4-endpoint-${Date.now()}`
 
 	test('Add Endpoint → Create → row appears → mass-delete → row gone', async ({ page }) => {
-		await page.goto('/index.php/apps/openconnector/endpoints')
+		const base = await resolveAppBase(page)
+		await page.goto(`${base}/endpoints`)
 		await createViaUi(page, 'endpoint', 'Endpoint', name)
 		await deleteViaUi(page, 'endpoint', name)
 	})
@@ -191,7 +239,8 @@ test.describe('UI journey J4 — visually create + delete an Endpoint', () => {
 test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => {
 	for (const route of ['/', '/sources', '/endpoints', '/jobs', '/mappings', '/synchronizations', '/rules', '/cloud-events/events']) {
 		test(`GET ${route} serves the Vue app`, async ({ page }) => {
-			const res = await page.goto(`/index.php/apps/openconnector${route}`)
+			const base = await resolveAppBase(page)
+			const res = await page.goto(`${base}${route}`)
 			expect(res?.status(), `${route} returned ${res?.status()}`).toBe(200)
 			const html = await page.content()
 			expect(html.toLowerCase()).toContain('openconnector')

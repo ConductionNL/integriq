@@ -9,13 +9,13 @@
     "type": "basic",
     "basic": [
       { "key": "username", "value": "{{admin_user}}", "type": "string" },
-      { "key": "password", "value": "{{admin_pass}}", "type": "string" }
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
     ]
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "ocBase", "value": "{{baseUrl}}/index.php/apps/openconnector/api" },
-    { "key": "orBase", "value": "{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector" }
+    { "key": "ocBase", "value": "{{base_url}}/index.php/apps/openconnector/api" },
+    { "key": "orBase", "value": "{{base_url}}/index.php/apps/openregister/api/objects/openconnector" }
   ],
   "item": [
     {
@@ -580,7 +580,7 @@
             "method": "POST",
             "url": { "raw": "{{ocBase}}/user/login", "host": ["{{ocBase}}"], "path": ["user", "login"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"login\":\"{{admin_user}}\",\"password\":\"{{admin_pass}}\"}" }
+            "body": { "mode": "raw", "raw": "{\"login\":\"{{admin_user}}\",\"password\":\"{{admin_password}}\"}" }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('responds', () => pm.expect([200, 204, 400, 401, 405]).to.include(pm.response.code));"
@@ -715,7 +715,7 @@
                 "method": "POST",
                 "url": { "raw": "{{orBase}}/source", "host": ["{{orBase}}"], "path": ["source"] },
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\"name\":\"j2-self-source\",\"type\":\"api\",\"location\":\"{{baseUrl}}/index.php/apps/openregister/api/objects/openconnector/source\",\"auth\":\"basic\"}" }
+                "body": { "mode": "raw", "raw": "{\"name\":\"j2-self-source\",\"type\":\"api\",\"location\":\"{{base_url}}/index.php/apps/openregister/api/objects/openconnector/source\",\"auth\":\"basic\"}" }
               },
               "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
                 "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",

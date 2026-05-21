@@ -121,8 +121,8 @@ test.describe('manifest pages — schema-driven render', () => {
 test.describe('manifest schema validation', () => {
 
 	test('src/manifest.json validates against v2 schema', async () => {
-		const manifest = await import('../../../src/manifest.json')
-		const m = (manifest as any).default ?? manifest
+		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
+		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
 
 		expect(m.$schema, 'manifest declares a $schema URL').toMatch(/app-manifest(-v2)?\.schema\.json$/)
 		expect(m.version, 'manifest has a semver version').toMatch(/^\d+\.\d+\.\d+$/)
@@ -133,8 +133,8 @@ test.describe('manifest schema validation', () => {
 	})
 
 	test('all 24 pages use a standard type or have a _note justifying custom', async () => {
-		const manifest = await import('../../../src/manifest.json')
-		const m = (manifest as any).default ?? manifest
+		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
+		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
 		const STANDARD = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'wiki', 'map'])
 		for (const p of m.pages) {
 			if (p.type === 'custom') {
@@ -146,8 +146,8 @@ test.describe('manifest schema validation', () => {
 	})
 
 	test('every index/detail/logs page has config.register and config.schema', async () => {
-		const manifest = await import('../../../src/manifest.json')
-		const m = (manifest as any).default ?? manifest
+		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
+		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
 		for (const p of m.pages) {
 			if (['index', 'detail', 'logs'].includes(p.type)) {
 				expect(p.config?.register, `${p.id} (type:${p.type}) is missing config.register`).toBe('openconnector')

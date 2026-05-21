@@ -82,6 +82,7 @@
     "@babel/eslint-parser": "^7.24.5",
     "@vue/eslint-config-typescript": "^13.0.0",
     "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-jsdoc": "^46.10.1",
