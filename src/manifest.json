@@ -20,25 +20,11 @@
       "order": 20
     },
     {
-      "id": "SourceLogs",
-      "label": "Source logs",
-      "icon": "icon-history",
-      "route": "SourceLogs",
-      "order": 25
-    },
-    {
       "id": "Endpoints",
       "label": "Endpoints",
       "icon": "icon-category-integration",
       "route": "Endpoints",
       "order": 30
-    },
-    {
-      "id": "EndpointLogs",
-      "label": "Endpoint logs",
-      "icon": "icon-history",
-      "route": "EndpointLogs",
-      "order": 35
     },
     {
       "id": "Consumers",
@@ -60,13 +46,6 @@
       "icon": "icon-category-workflow",
       "route": "Jobs",
       "order": 60
-    },
-    {
-      "id": "JobLogs",
-      "label": "Job logs",
-      "icon": "icon-history",
-      "route": "JobLogs",
-      "order": 65
     },
     {
       "id": "Mappings",
@@ -136,7 +115,10 @@
       "config": {
         "register": "openconnector",
         "schema": "source",
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SourceLogs" }
+        ]
       }
     },
     {
@@ -167,7 +149,10 @@
       "config": {
         "register": "openconnector",
         "schema": "endpoint",
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "EndpointLogs" }
+        ]
       }
     },
     {
@@ -230,7 +215,10 @@
       "config": {
         "register": "openconnector",
         "schema": "job",
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "JobLogs" }
+        ]
       }
     },
     {
@@ -293,7 +281,11 @@
       "config": {
         "register": "openconnector",
         "schema": "synchronization",
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SynchronizationLogs" },
+          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
+        ]
       }
     },
     {
@@ -325,7 +317,10 @@
       "config": {
         "register": "openconnector",
         "schema": "event",
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "CloudEventLogs" }
+        ]
       }
     },
     {
