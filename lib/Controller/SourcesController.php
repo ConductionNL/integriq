@@ -219,15 +219,15 @@ class SourcesController extends Controller
      *   type: (string, one of: json, xml, yaml)
      *   body: (string)
      *
-     * @param  int $id The ID of the source to test
+     * @param  string $id The UUID of the source to test (post chain-B/C: OR IDs are UUIDs, not ints)
      * @return JSONResponse A JSON response containing the test results
      */
-    public function test(CallService $callService, int $id): JSONResponse
+    public function test(CallService $callService, string $id): JSONResponse
     {
         // ObjectService::find() throws DoesNotExistException on a missing
         // UUID — catch it so the response is a clean 404 instead of 500.
         try {
-            $source = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'source');
+            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source');
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }

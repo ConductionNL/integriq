@@ -175,13 +175,13 @@ class JobsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $id The ID of the job to execute
+     * @param  string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints)
      * @return JSONResponse A JSON response containing the execution results
      */
-    public function run(int $id): JSONResponse
+    public function run(string $id): JSONResponse
     {
         try {
-            $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+            $job = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'job');
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         }
@@ -219,13 +219,13 @@ class JobsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @param  int $id The ID of the job to execute
+     * @param  string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints)
      * @return JSONResponse A JSON response containing the execution results
      */
-    public function test(int $id): JSONResponse
+    public function test(string $id): JSONResponse
     {
         try {
-            $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+            $job = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'job');
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         }
