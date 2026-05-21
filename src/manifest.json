@@ -119,6 +119,7 @@
         "includeFields": ["name", "description", "type", "isEnabled"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
+          { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SourceLogs" }
         ]
       }
@@ -227,6 +228,8 @@
         "includeFields": ["name", "description", "jobClass", "interval", "isEnabled"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
+          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
+          { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "JobLogs" }
         ]
       }
@@ -299,6 +302,8 @@
         "includeFields": ["name", "description", "sourceType", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
+          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
+          { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SynchronizationLogs" },
           { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
         ]
