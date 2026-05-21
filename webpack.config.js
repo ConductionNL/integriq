@@ -96,36 +96,4 @@ webpackConfig.plugins = [
 	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
 ]
 
-// Share Vue + @nextcloud/vue + pinia + @conduction/nextcloud-vue
-// across every entry-point so each widget bundle no longer inlines its own
-// framework copy. Stable filenames mean each widget's `Util::addScript` PHP
-// call can reference the chunk directly without a manifest.
-webpackConfig.optimization = {
-	...(webpackConfig.optimization || {}),
-	splitChunks: {
-		...(webpackConfig.optimization?.splitChunks || {}),
-		chunks: 'all',
-		cacheGroups: {
-			default: false,
-			defaultVendors: false,
-			ncVue: {
-				name: appId + '-shared-nc-vue',
-				test: /[\\/]node_modules[\\/](@nextcloud[\\/]vue|@conduction[\\/]nextcloud-vue)[\\/]|[\\/]nextcloud-vue[\\/]src[\\/]/,
-				priority: 30,
-				reuseExistingChunk: true,
-				enforce: true,
-				filename: appId + '-shared-nc-vue.js',
-			},
-			vendor: {
-				name: appId + '-shared-vendor',
-				test: /[\\/]node_modules[\\/](vue|pinia|vue-material-design-icons|@vueuse|core-js)[\\/]/,
-				priority: 20,
-				reuseExistingChunk: true,
-				enforce: true,
-				filename: appId + '-shared-vendor.js',
-			},
-		},
-	},
-}
-
 module.exports = webpackConfig
