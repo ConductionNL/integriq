@@ -247,7 +247,8 @@ class JobsController extends Controller
             }
 
             if (!empty($filters['slow_executions'])) {
-                $specialFilters['slow_executions'] = 5000; // 5 seconds in milliseconds
+                $specialFilters['slow_executions'] = 5000;
+                // 5 seconds in milliseconds
             }
 
             // Build search conditions and parameters

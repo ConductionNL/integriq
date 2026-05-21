@@ -40,7 +40,7 @@ class EventsController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly EventMapper $eventMapper,
-        //        private readonly EventLogMapper $eventLogMapper, // @todo
+        // private readonly EventLogMapper $eventLogMapper, // @todo
         private readonly EventService $eventService,
         private readonly EventMessageMapper $messageMapper,
         private readonly EventSubscriptionMapper $subscriptionMapper,

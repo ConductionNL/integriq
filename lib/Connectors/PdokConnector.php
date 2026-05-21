@@ -133,24 +133,22 @@ class PdokConnector
 
     }//end __construct()
 
-
     /**
      * Suggest addresses for an autocomplete query.
      *
-     * @param string $q Search query (must be non-empty).
+     * @param string $query Search query (must be non-empty).
      *
      * @return array Normalised suggestion documents.
      */
-    public function suggest(string $q): array
+    public function suggest(string $query): array
     {
-        if (trim($q) === '') {
+        if (trim($query) === '') {
             return ['docs' => [], 'numFound' => 0];
         }
 
-        return $this->fetch('suggest', ['q' => $q, 'rows' => 10], self::TTL_QUERY, false);
+        return $this->fetch('suggest', ['q' => $query, 'rows' => 10], self::TTL_QUERY, false);
 
     }//end suggest()
-
 
     /**
      * Look up a single PDOK document by id.
@@ -169,28 +167,26 @@ class PdokConnector
 
     }//end lookup()
 
-
     /**
      * Free-text search.
      *
-     * @param string $q     Search query.
+     * @param string $query Search query.
      * @param int    $rows  Page size (default 10).
      * @param int    $start Page offset (default 0).
      *
      * @return array Normalised free-search documents.
      */
-    public function free(string $q, int $rows = 10, int $start = 0): array
+    public function free(string $query, int $rows=10, int $start=0): array
     {
-        if (trim($q) === '') {
+        if (trim($query) === '') {
             return ['docs' => [], 'numFound' => 0];
         }
 
-        $params = ['q' => $q, 'rows' => $rows, 'start' => $start];
+        $params = ['q' => $query, 'rows' => $rows, 'start' => $start];
 
         return $this->fetch('free', $params, self::TTL_QUERY, false);
 
     }//end free()
-
 
     /**
      * Reverse-geocode coordinates.
@@ -207,7 +203,6 @@ class PdokConnector
         return $this->fetch('reverse', $params, self::TTL_RESOLVED, true);
 
     }//end reverse()
-
 
     /**
      * Internal: fetch a normalised PDOK response with cache + write-through.
@@ -278,7 +273,6 @@ class PdokConnector
 
     }//end fetch()
 
-
     /**
      * Issue the HTTP GET to PDOK with retry on 429 and circuit-breaker bookkeeping.
      *
@@ -320,15 +314,14 @@ class PdokConnector
                     "PDOK upstream call failed: ".$e->getMessage(),
                     503
                 );
-            }
-        }
+            }//end try
+        }//end while
 
         // 429 retries exhausted.
         $this->circuitOnFailure();
         throw new PdokUpstreamException('PDOK rate limit retries exhausted', 503);
 
     }//end callPdok()
-
 
     /**
      * Decode the JSON body from a PDOK HTTP response.
@@ -350,7 +343,6 @@ class PdokConnector
         return $json;
 
     }//end decodePdokBody()
-
 
     /**
      * Normalise an entire PDOK response into `{docs[], numFound}`.
@@ -374,7 +366,6 @@ class PdokConnector
 
     }//end normaliseResponse()
 
-
     /**
      * Map a single PDOK document to the canonical PostalAddress shape.
      *
@@ -387,9 +378,9 @@ class PdokConnector
      */
     public function normalize(array $pdokDoc): array
     {
-        $huisnummer        = ($pdokDoc['huisnummer'] ?? null);
-        $huisletter        = ($pdokDoc['huisletter'] ?? null);
-        $houseNumber       = null;
+        $huisnummer  = ($pdokDoc['huisnummer'] ?? null);
+        $huisletter  = ($pdokDoc['huisletter'] ?? null);
+        $houseNumber = null;
         if ($huisnummer !== null) {
             $houseNumber = (string) $huisnummer;
             if ($huisletter !== null && $huisletter !== '') {
@@ -415,7 +406,6 @@ class PdokConnector
         ];
 
     }//end normalize()
-
 
     /**
      * Parse a WKT POINT into a GeoJSON Point geometry.
@@ -444,7 +434,6 @@ class PdokConnector
 
     }//end parseWkt()
 
-
     /**
      * Compute the APCu cache key for a normalised query.
      *
@@ -460,7 +449,6 @@ class PdokConnector
         return self::CACHE_PREFIX.'::'.$endpoint.'::'.$hash;
 
     }//end cacheKey()
-
 
     /**
      * Fetch a previously-cached normalised response.
@@ -479,7 +467,6 @@ class PdokConnector
         return (is_array($value) === true ? $value : null);
 
     }//end cacheGet()
-
 
     /**
      * Store a normalised response in the cache.
@@ -500,7 +487,6 @@ class PdokConnector
 
     }//end cacheSet()
 
-
     /**
      * Look up an existing OR addresses record by query (lookup-by-id or reverse).
      *
@@ -511,25 +497,29 @@ class PdokConnector
      */
     private function orLookup(string $endpoint, array $params): ?array
     {
-        $or = $this->getOpenRegisterObjectService();
-        if ($or === null) {
+        $objectService = $this->getOpenRegisterObjectService();
+        if ($objectService === null) {
             return null;
         }
 
         try {
             if ($endpoint === 'lookup' && isset($params['id']) === true) {
-                $docs = $or->getMapper(register: 'openconnector', schema: 'addresses')->findAll([
-                    'limit'  => 1,
-                    'filter' => ['pdokId' => $params['id']],
-                ]);
+                $docs = $objectService->getMapper(register: 'openconnector', schema: 'addresses')->findAll(
+                        [
+                            'limit'  => 1,
+                            'filter' => ['pdokId' => $params['id']],
+                        ]
+                        );
             } else if ($endpoint === 'reverse' && isset($params['lat'], $params['lon']) === true) {
-                $docs = $or->getMapper(register: 'openconnector', schema: 'addresses')->findAll([
-                    'limit'  => 1,
-                    'geo'    => [
-                        'near'   => [(float) $params['lat'], (float) $params['lon']],
-                        'radius' => 10,
-                    ],
-                ]);
+                $docs = $objectService->getMapper(register: 'openconnector', schema: 'addresses')->findAll(
+                        [
+                            'limit' => 1,
+                            'geo'   => [
+                                'near'   => [(float) $params['lat'], (float) $params['lon']],
+                                'radius' => 10,
+                            ],
+                        ]
+                        );
             } else {
                 return null;
             }
@@ -539,7 +529,7 @@ class PdokConnector
                 ['endpoint' => $endpoint, 'exception' => $e->getMessage()]
             );
             return null;
-        }
+        }//end try
 
         if (empty($docs) === true) {
             return null;
@@ -554,7 +544,6 @@ class PdokConnector
 
     }//end orLookup()
 
-
     /**
      * Persist a normalised PDOK document into OR's `addresses` register.
      *
@@ -564,13 +553,13 @@ class PdokConnector
      */
     public function writeThrough(array $doc): void
     {
-        $or = $this->getOpenRegisterObjectService();
-        if ($or === null || ($doc['pdokId'] ?? null) === null) {
+        $objectService = $this->getOpenRegisterObjectService();
+        if ($objectService === null || ($doc['pdokId'] ?? null) === null) {
             return;
         }
 
         try {
-            $or->saveObject(
+            $objectService->saveObject(
                 register: 'openconnector',
                 schema: 'addresses',
                 object: $doc,
@@ -584,7 +573,6 @@ class PdokConnector
         }
 
     }//end writeThrough()
-
 
     /**
      * Read the current breaker state from the cache.
@@ -615,7 +603,6 @@ class PdokConnector
 
     }//end circuitState()
 
-
     /**
      * Record a successful upstream call: close breaker, reset failure count.
      *
@@ -633,7 +620,6 @@ class PdokConnector
         );
 
     }//end circuitOnSuccess()
-
 
     /**
      * Record a failed upstream call; open the breaker after threshold.
@@ -667,7 +653,6 @@ class PdokConnector
 
     }//end circuitOnFailure()
 
-
     /**
      * Sleep for the configured backoff before the next 429 retry.
      *
@@ -690,7 +675,6 @@ class PdokConnector
 
     }//end sleepBackoff()
 
-
     /**
      * Resolve OR's ObjectService if installed; null otherwise.
      *
@@ -706,17 +690,16 @@ class PdokConnector
 
     }//end getOpenRegisterObjectService()
 
-
     /**
      * Emit a single structured observability log entry per upstream call.
      *
-     * @param string   $endpoint           PDOK endpoint name.
-     * @param bool     $cacheHit           True when APCu served the call.
-     * @param bool     $orHit              True when OR served the call.
-     * @param int|null $upstreamLatencyMs  Upstream call latency (null on cache/OR hits).
-     * @param int|null $httpStatus         HTTP status code from upstream (null on cache/OR hits).
-     * @param string   $circuitState       Current breaker state.
-     * @param bool     $writeThrough       True when this call wrote to OR.
+     * @param string   $endpoint          PDOK endpoint name.
+     * @param bool     $cacheHit          True when APCu served the call.
+     * @param bool     $orHit             True when OR served the call.
+     * @param int|null $upstreamLatencyMs Upstream call latency (null on cache/OR hits).
+     * @param int|null $httpStatus        HTTP status code from upstream (null on cache/OR hits).
+     * @param string   $circuitState      Current breaker state.
+     * @param bool     $writeThrough      True when this call wrote to OR.
      *
      * @return void
      */
@@ -755,6 +738,4 @@ class PdokConnector
         }
 
     }//end logCall()
-
-
 }//end class

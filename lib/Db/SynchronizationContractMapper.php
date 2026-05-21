@@ -125,8 +125,8 @@ class SynchronizationContractMapper extends QBMapper
             ->where(
                 $qb->expr()->eq('origin_id', $qb->createNamedParameter($originId))
             )
-            ->setMaxResults(1); // Just in case
-
+            ->setMaxResults(1);
+        // Just in case
         try {
             $stmt   = $qb->executeQuery();
             $result = $stmt->fetchOne();
@@ -348,12 +348,14 @@ class SynchronizationContractMapper extends QBMapper
             ->where(
                 $qb->expr()->eq('origin_id', $qb->createNamedParameter($originId))
             )
-            ->setMaxResults(1); // Ensure only one result is returned
-
+            ->setMaxResults(1);
+        // Ensure only one result is returned
         try {
-            return $this->findEntity($qb); // Use findEntity to return a single result
+            return $this->findEntity($qb);
+            // Use findEntity to return a single result
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null; // Return null if no match is found
+            return null;
+            // Return null if no match is found
         }
     }//end findByOriginId()
 
@@ -374,12 +376,14 @@ class SynchronizationContractMapper extends QBMapper
             ->from('openconnector_synchronization_contracts')
             ->where(
                 $qb->expr()->eq('target_id', $qb->createNamedParameter($targetId))
-            ); // Ensure only one result is returned
-
+            );
+        // Ensure only one result is returned
         try {
-            return $this->findEntities($qb); // Use findEntity to return a single result
+            return $this->findEntities($qb);
+            // Use findEntity to return a single result
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return []; // Return null if no match is found
+            return [];
+            // Return null if no match is found
         }
     }//end findByTargetId()
 

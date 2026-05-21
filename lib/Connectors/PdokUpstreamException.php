@@ -33,7 +33,6 @@ use RuntimeException;
  */
 class PdokUpstreamException extends RuntimeException
 {
-
     /**
      * Constructor.
      *
@@ -48,7 +47,6 @@ class PdokUpstreamException extends RuntimeException
 
     }//end __construct()
 
-
     /**
      * Get the upstream HTTP status code attached to this exception.
      *
@@ -59,6 +57,4 @@ class PdokUpstreamException extends RuntimeException
         return $this->statusCode;
 
     }//end getStatusCode()
-
-
 }//end class

@@ -35,7 +35,7 @@ class SynchronizationLog extends Entity implements JsonSerializable
     protected ?DateTime $expires = null;
 
     /**
-     * @var int $size Size of this log entry in bytes (calculated from serialized object)
+     * @var integer $size Size of this log entry in bytes (calculated from serialized object)
      */
     protected int $size = 4096;
 

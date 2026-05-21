@@ -238,7 +238,8 @@ class SourcesController extends Controller
             }
 
             if (empty($filters['slow_requests']) === false) {
-                $specialFilters['slow_requests'] = 5000; // 5 seconds in milliseconds
+                $specialFilters['slow_requests'] = 5000;
+                // 5 seconds in milliseconds
                 unset($filters['slow_requests']);
             }
 

@@ -27,20 +27,27 @@ class Rule extends Entity implements JsonSerializable
 
     protected ?string $version = '0.0.0';
 
-    protected ?string $action = null; // create, read, update, delete
+    protected ?string $action = null;
 
-    protected ?string $timing = 'before'; // before or after
+    // create, read, update, delete
+    protected ?string $timing = 'before';
 
-    protected ?array $conditions = []; // JSON Logic format conditions
+    // before or after
+    protected ?array $conditions = [];
 
-    protected ?string $type = null; // mapping, error, script, synchronization
+    // JSON Logic format conditions
+    protected ?string $type = null;
 
-    protected ?array $configuration = []; // Type-specific configuration
+    // mapping, error, script, synchronization
+    protected ?array $configuration = [];
 
-    protected int $order = 0; // Order in which the rule should be applied
+    // Type-specific configuration
+    protected int $order = 0;
 
-    protected ?array $configurations = []; // Array of configuration IDs that this rule belongs to
+    // Order in which the rule should be applied
+    protected ?array $configurations = [];
 
+    // Array of configuration IDs that this rule belongs to
     // Additional tracking fields
     protected ?DateTime $created = null;
 

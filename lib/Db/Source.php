@@ -77,22 +77,28 @@ class Source extends Entity implements JsonSerializable
 
     protected ?string $status = null;
 
-    protected ?int $logRetention = 3600; // seconds to save all logs
+    protected ?int $logRetention = 3600;
 
-    protected ?int $errorRetention = 86400; // seconds to save error logs
+    // seconds to save all logs
+    protected ?int $errorRetention = 86400;
 
+    // seconds to save error logs
     protected ?int $objectCount = null;
 
     protected ?bool $test = null;
 
-    protected ?int $rateLimitLimit = null; // Indicates the total number of allowed requests within a specific time period.
+    protected ?int $rateLimitLimit = null;
 
-    protected ?int $rateLimitRemaining = null; // Specifies how many requests are still allowed within the current limit.
+    // Indicates the total number of allowed requests within a specific time period.
+    protected ?int $rateLimitRemaining = null;
 
-    protected ?int $rateLimitReset = null; // A Unix Time Stamp that indicates when the rate limit will be reset.
+    // Specifies how many requests are still allowed within the current limit.
+    protected ?int $rateLimitReset = null;
 
-    protected ?int $rateLimitWindow = null; // Indicates how many seconds the client must wait before making new requests.
+    // A Unix Time Stamp that indicates when the rate limit will be reset.
+    protected ?int $rateLimitWindow = null;
 
+    // Indicates how many seconds the client must wait before making new requests.
     protected ?DateTime $lastCall = null;
 
     protected ?DateTime $lastSync = null;
@@ -101,9 +107,11 @@ class Source extends Entity implements JsonSerializable
 
     protected ?DateTime $dateModified = null;
 
-    protected ?array $configurations = []; // Array of configuration IDs that this source belongs to
+    protected ?array $configurations = [];
 
-    protected ?string $slug = null; // URL-friendly identifier for the source
+    // Array of configuration IDs that this source belongs to
+    protected ?string $slug = null;
+    // URL-friendly identifier for the source
 
     /**
      * Get the authentication configuration

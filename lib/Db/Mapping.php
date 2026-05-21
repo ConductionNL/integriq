@@ -44,8 +44,9 @@ class Mapping extends Entity implements JsonSerializable
 
     protected ?DateTime $dateModified = null;
 
-    protected ?array $configurations = []; // Array of configuration IDs that this mapping belongs to
+    protected ?array $configurations = [];
 
+    // Array of configuration IDs that this mapping belongs to
     protected ?string $slug = null;
 
     /**
@@ -189,7 +190,7 @@ class Mapping extends Entity implements JsonSerializable
             try {
                 $this->$method($value);
             } catch (\Exception $exception) {
-                //                ("Error writing $key");
+                // ("Error writing $key");
             }
         }
 

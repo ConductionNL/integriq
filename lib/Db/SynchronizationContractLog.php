@@ -31,8 +31,9 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
 
     protected ?array $target = [];
 
-    protected ?string $targetResult = null; // CRUD action taken on target (create/read/update/delete)
+    protected ?string $targetResult = null;
 
+    // CRUD action taken on target (create/read/update/delete)
     protected ?string $userId = null;
 
     protected ?string $sessionId = null;
@@ -46,7 +47,7 @@ class SynchronizationContractLog extends Entity implements JsonSerializable
     protected ?DateTime $created = null;
 
     /**
-     * @var int $size Size of this log entry in bytes (calculated from serialized object)
+     * @var integer $size Size of this log entry in bytes (calculated from serialized object)
      */
     protected int $size = 4096;
 

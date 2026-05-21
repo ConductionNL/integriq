@@ -40,8 +40,6 @@ use OCP\IRequest;
  */
 class PdokController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -58,7 +56,6 @@ class PdokController extends Controller
 
     }//end __construct()
 
-
     /**
      * Address autocomplete (PDOK Locatieserver `/suggest`).
      *
@@ -68,7 +65,7 @@ class PdokController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function suggestAction(string $q = ''): JSONResponse
+    public function suggestAction(string $q=''): JSONResponse
     {
         if (trim($q) === '') {
             return new JSONResponse(
@@ -81,7 +78,6 @@ class PdokController extends Controller
 
     }//end suggestAction()
 
-
     /**
      * Look up a PDOK document by id.
      *
@@ -91,7 +87,7 @@ class PdokController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function lookupAction(string $id = ''): JSONResponse
+    public function lookupAction(string $id=''): JSONResponse
     {
         if (trim($id) === '') {
             return new JSONResponse(
@@ -119,7 +115,6 @@ class PdokController extends Controller
 
     }//end lookupAction()
 
-
     /**
      * Free-text search.
      *
@@ -131,7 +126,7 @@ class PdokController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function freeAction(string $q = '', int $rows = 10, int $start = 0): JSONResponse
+    public function freeAction(string $q='', int $rows=10, int $start=0): JSONResponse
     {
         if (trim($q) === '') {
             return new JSONResponse(
@@ -144,7 +139,6 @@ class PdokController extends Controller
 
     }//end freeAction()
 
-
     /**
      * Reverse geocode coordinates.
      *
@@ -155,7 +149,7 @@ class PdokController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function reverseAction(?float $lat = null, ?float $lng = null): JSONResponse
+    public function reverseAction(?float $lat=null, ?float $lng=null): JSONResponse
     {
         if ($lat === null || $lng === null) {
             return new JSONResponse(
@@ -182,6 +176,4 @@ class PdokController extends Controller
         return new JSONResponse($payload);
 
     }//end reverseAction()
-
-
 }//end class

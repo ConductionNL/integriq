@@ -101,7 +101,7 @@ class SearchService
 
         $directory = $this->directoryService->listDirectory(limit: 1000);
 
-        //        $directory = $this->objectService->findObjects(filters: ['_schema' => 'directory'], config: $dbConfig);
+        // $directory = $this->objectService->findObjects(filters: ['_schema' => 'directory'], config: $dbConfig);
         if (count($directory) === 0) {
             $pages = (int) ceil($totalResults / $limit);
             return [

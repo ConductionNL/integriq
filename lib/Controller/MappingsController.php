@@ -367,7 +367,7 @@ class MappingsController extends Controller
         $data          = [];
         $data['openRegisters'] = false;
         if ($openRegisters !== null) {
-            $data['openRegisters']      = true;
+            $data['openRegisters'] = true;
             // OpenRegister's ObjectService no longer exposes getRegisters();
             // fetch the register list via the mapper directly.
             try {

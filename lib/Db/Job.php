@@ -24,46 +24,64 @@ class Job extends Entity implements JsonSerializable
 
     protected ?string $description = null;
 
-    protected ?string $reference = null; // The reference of the Job
+    protected ?string $reference = null;
 
-    protected ?string $version = '0.0.0'; // The version of the Job
+    // The reference of the Job
+    protected ?string $version = '0.0.0';
 
+    // The version of the Job
     protected ?string $jobClass = 'OCA\OpenConnector\Action\PingAction';
 
     protected ?array $arguments = null;
 
-    protected ?int $interval = 3600; // seconds in an hour
+    protected ?int $interval = 3600;
 
-    protected ?int $executionTime = 3600; // maximum execution time in seconds
+    // seconds in an hour
+    protected ?int $executionTime = 3600;
 
-    protected ?bool $timeSensitive = true; // if the job is time sensitive and should be executed even if the server is under heavy load
+    // maximum execution time in seconds
+    protected ?bool $timeSensitive = true;
 
-    protected ?bool $allowParallelRuns = false; // if the job can be executed in parallel
+    // if the job is time sensitive and should be executed even if the server is under heavy load
+    protected ?bool $allowParallelRuns = false;
 
-    protected ?bool $isEnabled = true; // if the job is enabled
+    // if the job can be executed in parallel
+    protected ?bool $isEnabled = true;
 
-    protected ?bool $singleRun = false; // if set, the job will only run once and then disable itself
+    // if the job is enabled
+    protected ?bool $singleRun = false;
 
-    protected ?DateTime $scheduleAfter = null; // if the job should be executed after a certain date and time
+    // if set, the job will only run once and then disable itself
+    protected ?DateTime $scheduleAfter = null;
 
-    protected ?string $userId = null; // the user which the job is running for security reasons
+    // if the job should be executed after a certain date and time
+    protected ?string $userId = null;
 
-    protected ?string $jobListId = null; // the id of the job in the job list
+    // the user which the job is running for security reasons
+    protected ?string $jobListId = null;
 
-    protected ?int $logRetention = 3600; // seconds to save all logs
+    // the id of the job in the job list
+    protected ?int $logRetention = 3600;
 
-    protected ?int $errorRetention = 86400; // seconds to save error logs
+    // seconds to save all logs
+    protected ?int $errorRetention = 86400;
 
-    protected ?DateTime $lastRun = null; // the last time the job was run
+    // seconds to save error logs
+    protected ?DateTime $lastRun = null;
 
-    protected ?DateTime $nextRun = null; // the next time the job will be run
+    // the last time the job was run
+    protected ?DateTime $nextRun = null;
 
-    protected ?DateTime $created = null; // the date and time the job was created
+    // the next time the job will be run
+    protected ?DateTime $created = null;
 
-    protected ?DateTime $updated = null; // the date and time the job was updated
+    // the date and time the job was created
+    protected ?DateTime $updated = null;
 
-    protected ?array $configurations = []; // Array of configuration IDs that this job belongs to
+    // the date and time the job was updated
+    protected ?array $configurations = [];
 
+    // Array of configuration IDs that this job belongs to
     protected ?string $status = null;
 
     protected ?string $slug = null;
@@ -160,7 +178,7 @@ class Job extends Entity implements JsonSerializable
             try {
                 $this->$method($value);
             } catch (\Exception $exception) {
-                //                ("Error writing $key");
+                // ("Error writing $key");
             }
         }
 

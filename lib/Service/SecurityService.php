@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SecurityService
  *
  * Service for handling security measures including rate limiting and XSS protection
@@ -59,11 +59,16 @@ class SecurityService
     /**
      * Rate limiting configuration constants
      */
-    private const RATE_LIMIT_ATTEMPTS    = 5; // Max attempts per time window
-    private const RATE_LIMIT_WINDOW      = 900; // 15 minutes in seconds
-    private const LOCKOUT_DURATION       = 3600; // 1 hour in seconds
-    private const PROGRESSIVE_DELAY_BASE = 2; // Base delay in seconds
-    private const MAX_PROGRESSIVE_DELAY  = 60; // Maximum delay in seconds
+    private const RATE_LIMIT_ATTEMPTS = 5;
+    // Max attempts per time window
+    private const RATE_LIMIT_WINDOW = 900;
+    // 15 minutes in seconds
+    private const LOCKOUT_DURATION = 3600;
+    // 1 hour in seconds
+    private const PROGRESSIVE_DELAY_BASE = 2;
+    // Base delay in seconds
+    private const MAX_PROGRESSIVE_DELAY = 60;
+    // Maximum delay in seconds
 
     /**
      * Cache key prefixes for different security features
@@ -342,13 +347,20 @@ class SecurityService
 
         // Remove potentially dangerous patterns
         $dangerousPatterns = [
-            '/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', // Script tags
-            '/javascript:/i', // JavaScript protocol
-            '/vbscript:/i', // VBScript protocol
-            '/onload\s*=/i', // onload events
-            '/onerror\s*=/i', // onerror events
-            '/onclick\s*=/i', // onclick events
-            '/onmouseover\s*=/i', // onmouseover events
+            '/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi',
+        // Script tags
+            '/javascript:/i',
+        // JavaScript protocol
+            '/vbscript:/i',
+        // VBScript protocol
+            '/onload\s*=/i',
+        // onload events
+            '/onerror\s*=/i',
+        // onerror events
+            '/onclick\s*=/i',
+        // onclick events
+            '/onmouseover\s*=/i',
+        // onmouseover events
         ];
 
         foreach ($dangerousPatterns as $pattern) {
@@ -378,8 +390,8 @@ class SecurityService
         }
 
         // Sanitize username (but preserve original for authentication)
-        $sanitizedUsername = $this->sanitizeInput($credentials['username'], 320); // Max email length
-
+        $sanitizedUsername = $this->sanitizeInput($credentials['username'], 320);
+        // Max email length
         // Validate username format (basic checks)
         if (strlen($sanitizedUsername) < 2) {
             return [
@@ -398,7 +410,8 @@ class SecurityService
 
         // Password validation
         $password = $credentials['password'];
-        if (strlen($password) > 1000) { // Prevent extremely long passwords
+        if (strlen($password) > 1000) {
+            // Prevent extremely long passwords
             return [
                 'valid' => false,
                 'error' => 'Password is too long',
@@ -409,7 +422,8 @@ class SecurityService
             'valid'       => true,
             'credentials' => [
                 'username' => $sanitizedUsername,
-                'password' => $password,// Don't sanitize password as it might change the actual value
+                'password' => $password,
+        // Don't sanitize password as it might change the actual value
             ],
         ];
     }//end validateLoginCredentials()
@@ -464,12 +478,18 @@ class SecurityService
 
         // Check for forwarded IP headers (in order of preference)
         $forwardedHeaders = [
-            'HTTP_CF_CONNECTING_IP', // Cloudflare
-            'HTTP_X_FORWARDED_FOR', // Standard proxy header
-            'HTTP_X_REAL_IP', // Nginx
-            'HTTP_X_FORWARDED', // Alternative
-            'HTTP_FORWARDED_FOR', // Alternative
-            'HTTP_FORWARDED', // RFC 7239
+            'HTTP_CF_CONNECTING_IP',
+        // Cloudflare
+            'HTTP_X_FORWARDED_FOR',
+        // Standard proxy header
+            'HTTP_X_REAL_IP',
+        // Nginx
+            'HTTP_X_FORWARDED',
+        // Alternative
+            'HTTP_FORWARDED_FOR',
+        // Alternative
+            'HTTP_FORWARDED',
+        // RFC 7239
         ];
 
         foreach ($forwardedHeaders as $header) {

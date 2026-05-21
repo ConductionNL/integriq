@@ -59,7 +59,7 @@ class EndpointsController extends Controller
     /**
      * CORS max age
      *
-     * @var int
+     * @var integer
      */
     private int $corsMaxAge;
 
@@ -88,7 +88,7 @@ class EndpointsController extends Controller
         private EndpointCacheService $endpointCacheService,
         private LoggerInterface $logger,
         private IL10N $l,
-        //        private EndpointLogMapper $endpointLogMapper,
+        // private EndpointLogMapper $endpointLogMapper,
         $corsMethods='PUT, POST, GET, DELETE, PATCH',
         $corsAllowedHeaders='Authorization, Content-Type, Accept',
         $corsMaxAge=1728000
@@ -340,95 +340,95 @@ class EndpointsController extends Controller
      */
     public function logs(SearchService $searchService): JSONResponse
     {
-        //        try {
-        //            // Get filters from request
-        //            $filters = $this->request->getParams();
-        //            $specialFilters = [];
+        // try {
+        // Get filters from request
+        // $filters = $this->request->getParams();
+        // $specialFilters = [];
         //
-        //            // Pagination using _page and _limit
-        //            $limit = isset($filters['_limit']) ? (int)$filters['_limit'] : 20;
-        //            $page = isset($filters['_page']) ? (int)$filters['_page'] : 1;
-        //            $offset = ($page - 1) * $limit;
-        //            unset($filters['_limit'], $filters['_page']);
+        // Pagination using _page and _limit
+        // $limit = isset($filters['_limit']) ? (int)$filters['_limit'] : 20;
+        // $page = isset($filters['_page']) ? (int)$filters['_page'] : 1;
+        // $offset = ($page - 1) * $limit;
+        // unset($filters['_limit'], $filters['_page']);
         //
-        //            // Handle special filters
-        //            if (!empty($filters['date_from'])) {
-        //                $specialFilters['date_from'] = $filters['date_from'];
-        //            }
-        //            if (!empty($filters['date_to'])) {
-        //                $specialFilters['date_to'] = $filters['date_to'];
-        //            }
-        //            if (!empty($filters['method'])) {
-        //                $specialFilters['method'] = $filters['method'];
-        //            }
-        //            if (!empty($filters['status_code'])) {
-        //                $statusCodes = explode(',', $filters['status_code']);
-        //                if (count($statusCodes) === 2) {
-        //                    $specialFilters['status_code_range'] = $statusCodes;
-        //                }
-        //            }
-        //            if (!empty($filters['slow_requests'])) {
-        //                $specialFilters['slow_requests'] = 5000; // 5 seconds in milliseconds
-        //            }
+        // Handle special filters
+        // if (!empty($filters['date_from'])) {
+        // $specialFilters['date_from'] = $filters['date_from'];
+        // }
+        // if (!empty($filters['date_to'])) {
+        // $specialFilters['date_to'] = $filters['date_to'];
+        // }
+        // if (!empty($filters['method'])) {
+        // $specialFilters['method'] = $filters['method'];
+        // }
+        // if (!empty($filters['status_code'])) {
+        // $statusCodes = explode(',', $filters['status_code']);
+        // if (count($statusCodes) === 2) {
+        // $specialFilters['status_code_range'] = $statusCodes;
+        // }
+        // }
+        // if (!empty($filters['slow_requests'])) {
+        // $specialFilters['slow_requests'] = 5000; // 5 seconds in milliseconds
+        // }
         //
-        //            // Build search conditions and parameters
-        //            $searchConditions = [];
-        //            $searchParams = [];
+        // Build search conditions and parameters
+        // $searchConditions = [];
+        // $searchParams = [];
         //
-        //            if (!empty($specialFilters['date_from'])) {
-        //                $searchConditions[] = "created >= ?";
-        //                $searchParams[] = $specialFilters['date_from'];
-        //            }
+        // if (!empty($specialFilters['date_from'])) {
+        // $searchConditions[] = "created >= ?";
+        // $searchParams[] = $specialFilters['date_from'];
+        // }
         //
-        //            if (!empty($specialFilters['date_to'])) {
-        //                $searchConditions[] = "created <= ?";
-        //                $searchParams[] = $specialFilters['date_to'];
-        //            }
+        // if (!empty($specialFilters['date_to'])) {
+        // $searchConditions[] = "created <= ?";
+        // $searchParams[] = $specialFilters['date_to'];
+        // }
         //
-        //            if (!empty($specialFilters['method'])) {
-        //                $searchConditions[] = "method = ?";
-        //                $searchParams[] = $specialFilters['method'];
-        //            }
+        // if (!empty($specialFilters['method'])) {
+        // $searchConditions[] = "method = ?";
+        // $searchParams[] = $specialFilters['method'];
+        // }
         //
-        //            if (!empty($specialFilters['status_code_range'])) {
-        //                $searchConditions[] = "status_code >= ? AND status_code <= ?";
-        //                $searchParams = array_merge($searchParams, $specialFilters['status_code_range']);
-        //            }
+        // if (!empty($specialFilters['status_code_range'])) {
+        // $searchConditions[] = "status_code >= ? AND status_code <= ?";
+        // $searchParams = array_merge($searchParams, $specialFilters['status_code_range']);
+        // }
         //
-        //            if (!empty($specialFilters['slow_requests'])) {
-        //                $searchConditions[] = "JSON_EXTRACT(response, '$.responseTime') > ?";
-        //                $searchParams[] = $specialFilters['slow_requests'];
-        //            }
+        // if (!empty($specialFilters['slow_requests'])) {
+        // $searchConditions[] = "JSON_EXTRACT(response, '$.responseTime') > ?";
+        // $searchParams[] = $specialFilters['slow_requests'];
+        // }
         //
-        //            // Remove special query params from filters
-        //            $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
+        // Remove special query params from filters
+        // $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
         //
-        //            // Get endpoint logs with filters and pagination
-        //            $endpointLogs = $this->endpointLogMapper->findAll(
-        //                limit: $limit,
-        //                offset: $offset,
-        //                filters: $filters,
-        //                searchConditions: $searchConditions,
-        //                searchParams: $searchParams
-        //            );
+        // Get endpoint logs with filters and pagination
+        // $endpointLogs = $this->endpointLogMapper->findAll(
+        // limit: $limit,
+        // offset: $offset,
+        // filters: $filters,
+        // searchConditions: $searchConditions,
+        // searchParams: $searchParams
+        // );
         //
-        //            // Get total count for pagination
-        //            $total = $this->endpointLogMapper->getTotalCount($filters);
-        //            $pages = $limit > 0 ? ceil($total / $limit) : 1;
-        //            $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
+        // Get total count for pagination
+        // $total = $this->endpointLogMapper->getTotalCount($filters);
+        // $pages = $limit > 0 ? ceil($total / $limit) : 1;
+        // $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
         //
-        //            // Return flattened paginated response
-        //            return new JSONResponse([
-        //                'results' => $endpointLogs,
-        //                'page' => $currentPage,
-        //                'pages' => $pages,
-        //                'results_count' => count($endpointLogs),
-        //                'total' => $total
-        //            ]);
-        //        } catch (\Exception $e) {
+        // Return flattened paginated response
+        // return new JSONResponse([
+        // 'results' => $endpointLogs,
+        // 'page' => $currentPage,
+        // 'pages' => $pages,
+        // 'results_count' => count($endpointLogs),
+        // 'total' => $total
+        // ]);
+        // } catch (\Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to retrieve logs: Endpoint logging is not available at this time')], 500);
-        //            return new JSONResponse(['error' => 'Failed to retrieve logs: ' . $e->getMessage()], 500);
-        //        }
+        // return new JSONResponse(['error' => 'Failed to retrieve logs: ' . $e->getMessage()], 500);
+        // }
     }//end logs()
 
     /**
@@ -536,8 +536,8 @@ class EndpointsController extends Controller
                     $returnArray            = $result;
                     $returnArray['count']   = $result['total'];
                     $returnArray['results'] = array_map(fn($obj) => $obj->jsonSerialize(), $result['results']);
-                    unset($returnArray['total']); // Remove 'total' since we renamed it to 'count'
-
+                    unset($returnArray['total']);
+                    // Remove 'total' since we renamed it to 'count'
                     // Add pagination links if needed
                     if ($result['page'] < $result['pages']) {
                         $parameters['page']  = $result['page'] + 1;

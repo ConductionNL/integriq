@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OrganisationBridgeService
  *
  * This service acts as a bridge to access the OrganisationService from the OpenRegister app.
