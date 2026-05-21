@@ -84,6 +84,7 @@
     "eslint": "^8.57.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-exports": "^1.0.0-beta.5",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-jsdoc": "^46.10.1",
     "eslint-plugin-n": "^16.6.2",
@@ -105,7 +106,7 @@
     "ts-jest": "^29.2.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.5.4",
-    "vue-eslint-parser": "^10.2.0",
+    "vue-eslint-parser": "^9.4.3",
     "vue-jest": "^3.0.7",
     "webpack": "^5.88.2",
     "webpack-cli": "^6.0.1"

@@ -27,7 +27,26 @@
 
 import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
-const ROOT = '/index.php/apps/openconnector'
+// In Nextcloud installs with `htaccess.RewriteBase => '/'` (the
+// default for the apache-served dev container) `generateUrl` returns
+// `/apps/openconnector` and the Vue Router's `base` is set to that —
+// any URL prefixed with `/index.php/` then sits outside the router
+// base, so no route matches and the page renders empty. In CI's php -S
+// install (no htaccess processing) the inverse is true and only the
+// `/index.php/...` form works. Resolve at runtime via a HEAD probe.
+const ROOT_CANDIDATES = ['/apps/openconnector', '/index.php/apps/openconnector']
+let _root: string | null = null
+async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
+	if (_root) return _root
+	for (const candidate of ROOT_CANDIDATES) {
+		const res = await page.request.get(`${candidate}/sources`, { failOnStatusCode: false })
+		if (res.ok() && (await res.text()).includes('openconnector-main.js')) {
+			_root = candidate
+			return candidate
+		}
+	}
+	throw new Error('Neither /apps nor /index.php form serves the openconnector SPA shell')
+}
 
 /**
  * 24 manifest pages from src/manifest.json (a9d43736), grouped by route
@@ -98,7 +117,13 @@ test.describe('manifest pages — schema-driven render', () => {
 		test(`[${pg.type}] ${pg.id} mounts at ${pg.route}`, async ({ page }) => {
 			const { errors } = attachConsoleSpy(page)
 
-			await page.goto(`${ROOT}${pg.route}`, { waitUntil: 'networkidle', timeout: 15_000 })
+			const root = await rootUrl(page)
+			// Use `domcontentloaded` rather than `networkidle` — NC's
+			// notification poll keeps the network busy indefinitely, so
+			// `networkidle` always times out. The SPA mounts after DOM
+			// ready, and the `#app-content` + content-length assertions
+			// below verify the mount completed.
+			await page.goto(`${root}${pg.route}`, { waitUntil: 'domcontentloaded', timeout: 15_000 })
 
 			// The Nextcloud SPA shell mounts inside #app-content.
 			await expect(page.locator('#app-content, [data-cy=app-content], .app-content').first()).toBeVisible({ timeout: 10_000 })
