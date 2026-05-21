@@ -22,18 +22,12 @@ webpackConfig.entry = {
 	// adminSettings webpack entry removed in chain-C cutover. The
 	// per-app admin-settings UI is now part of the main SPA via the
 	// AppSettings manifest page (type: settings).
-	jobQueueWidget: {
-		import: path.join(__dirname, 'src', 'jobQueueWidget.js'),
-		filename: appId + '-jobQueueWidget.js',
-	},
-	recentCallsWidget: {
-		import: path.join(__dirname, 'src', 'recentCallsWidget.js'),
-		filename: appId + '-recentCallsWidget.js',
-	},
-	sourceSyncWidget: {
-		import: path.join(__dirname, 'src', 'sourceSyncWidget.js'),
-		filename: appId + '-sourceSyncWidget.js',
-	},
+	// NC-core Dashboard API widget entries (jobQueueWidget / recentCallsWidget
+	// / sourceSyncWidget) removed alongside lib/Dashboard/*Widget.php: the
+	// widgets were never registered in appinfo/info.xml or Application.php,
+	// so NC never loaded them. The manifest-driven CnDashboardPage replaces
+	// them; the time-series widgets are blocked on the OR groupBy primitive
+	// (opsx-driven) and will land via the manifest's dashboard page.
 }
 
 // Use local source when available (monorepo dev), otherwise fall back to npm package
