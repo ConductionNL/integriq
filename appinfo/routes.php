@@ -22,6 +22,12 @@ return [
 		// DSO / Omgevingsloket STAM koppelvlak
 		['name' => 'dso#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
+		// PDOK Locatieserver proxy — see lib/Connectors/PdokConnector.php
+		['name' => 'pdok#suggestAction', 'url' => '/api/pdok/suggest', 'verb' => 'GET'],
+		['name' => 'pdok#lookupAction', 'url' => '/api/pdok/lookup', 'verb' => 'GET'],
+		['name' => 'pdok#freeAction', 'url' => '/api/pdok/free', 'verb' => 'GET'],
+		['name' => 'pdok#reverseAction', 'url' => '/api/pdok/reverse', 'verb' => 'GET'],
+
 		['name' => 'dashboard#index', 'url' => '/api/dashboard', 'verb' => 'GET'],
 		['name' => 'dashboard#getCallStats', 'url' => '/api/dashboard/callstats', 'verb' => 'GET'],
 		['name' => 'dashboard#getJobStats', 'url' => '/api/dashboard/jobstats', 'verb' => 'GET'],
