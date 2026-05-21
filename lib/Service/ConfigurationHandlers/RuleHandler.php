@@ -66,7 +66,7 @@ class RuleHandler implements ConfigurationHandlerInterface
      */
     private function convertIdsToSlugs(array $config, array $mappings, array &$mappingIds=[]): array
     {
-        $entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema'];
+        $entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema', 'synchronization'];
 
         foreach ($config as $key => $value) {
             if (is_array($value)) {
@@ -138,7 +138,7 @@ class RuleHandler implements ConfigurationHandlerInterface
      */
     private function convertSlugsToIds(array $config, array $mappings): array
     {
-        $entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema'];
+        $entityTypes = ['source', 'job', 'endpoint', 'mapping', 'register', 'schema', 'synchronization'];
 
         foreach ($config as $key => $value) {
             if (is_array($value)) {
