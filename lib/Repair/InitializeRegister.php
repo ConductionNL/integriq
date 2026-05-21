@@ -15,15 +15,14 @@
  * @category Repair
  * @package  OCA\OpenConnector\Repair
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.OpenConnector.nl
  */
 
 // SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>.
 // SPDX-License-Identifier: EUPL-1.2.
-
 declare(strict_types=1);
 
 namespace OCA\OpenConnector\Repair;
@@ -49,7 +48,6 @@ use Psr\Log\LoggerInterface;
  */
 class InitializeRegister implements IRepairStep
 {
-
     /**
      * @param ContainerInterface $container Server DI container (used to
      *                                      resolve OR's ConfigurationService
@@ -71,7 +69,6 @@ class InitializeRegister implements IRepairStep
 
     }//end __construct()
 
-
     /**
      * Human-readable name surfaced by `occ` during install / upgrade.
      *
@@ -82,7 +79,6 @@ class InitializeRegister implements IRepairStep
         return 'Initialize OpenConnector register and 15 schemas via ConfigurationService';
 
     }//end getName()
-
 
     /**
      * Import openconnector_register.json into OpenRegister.
@@ -149,6 +145,4 @@ class InitializeRegister implements IRepairStep
         }
 
     }//end run()
-
-
 }//end class
