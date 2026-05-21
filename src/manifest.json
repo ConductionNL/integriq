@@ -1,6 +1,6 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json",
-	"version": "1.0.0",
+	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "2.0.0",
 	"dependencies": ["openregister"],
 	"menu": [
 		{ "id": "Dashboard",      "label": "Dashboard",      "icon": "icon-category-dashboard",  "route": "Dashboard",      "order": 10 },
@@ -49,8 +49,9 @@
 			"route": "/sources/logs",
 			"type": "custom",
 			"title": "Source logs",
-			"component": "SourceLogIndex",
-			"_note": "Filterable call-log table scoped to a source; pairs with a log-detail sidebar."
+			"component": "LogIndex",
+			"config": { "logType": "source" },
+			"_note": "Tier-4 wrapper: thin shim over CnIndexPage driven by config.logType. The bespoke SourceLogIndex view is retained in the registry until the wrapper covers the legacy log-detail sidebar interaction; falls back via npm bundle for unreferenced backup."
 		},
 		{
 			"id": "Endpoints",
