@@ -29,52 +29,100 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 
 /**
- * Build a handler that POSTs to `url` and shows a toast on success/error.
+ * Extract a stable id from a row. OR returns rows with `id` set; legacy
+ * call-sites sometimes only carry `uuid`. Prefer `id`, fall back to `uuid`.
  *
- * @param {(item: object) => string} buildUrl Resolves the target URL from the row.
- * @param {string} successMessage              i18n key (in the openconnector domain).
- * @param {string} errorMessage                i18n key (in the openconnector domain).
- * @return {(ctx: {actionId: string, item: object}) => Promise<void>}
+ * @param {object} item Row payload from the index page.
+ * @return {string|number}
  */
-function makePostHandler(buildUrl, successMessage, errorMessage) {
-	return async ({ item }) => {
-		const url = generateUrl(buildUrl(item))
-		try {
-			await axios.post(url)
-			showSuccess(t('openconnector', successMessage))
-		} catch (err) {
-			const detail = err?.response?.data?.message || err?.message || ''
-			showError(t('openconnector', errorMessage) + (detail ? `: ${detail}` : ''))
-		}
+function rowId(item) {
+	return item.id || item.uuid
+}
+
+/**
+ * Build the toast detail suffix from an axios error. Surfaces the server's
+ * `message` when available so the user gets actionable feedback rather than
+ * a bare "request failed".
+ *
+ * @param {unknown} err Axios error or anything throwable.
+ * @return {string} Empty when nothing useful to show.
+ */
+function errorDetail(err) {
+	const detail = err?.response?.data?.message || err?.message || ''
+	return detail ? `: ${detail}` : ''
+}
+
+// Each handler keeps the t() argument a literal string so the
+// translation extractor picks it up. A `makePostHandler` factory
+// would lose that — at the cost of ~5 lines per handler, this stays
+// extractable.
+
+/**
+ * Test a source's connection by POSTing to /api/sources/test/{id}.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function testSourceHandler({ item }) {
+	try {
+		await axios.post(generateUrl(`/apps/openconnector/api/sources/test/${rowId(item)}`))
+		showSuccess(t('openconnector', 'Source connection test triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Source connection test failed') + errorDetail(err))
 	}
 }
 
-export const testSourceHandler = makePostHandler(
-	(item) => `/apps/openconnector/api/sources/test/${item.id || item.uuid}`,
-	'Source connection test triggered',
-	'Source connection test failed',
-)
+/**
+ * Trigger a job to run now via POST /api/jobs/run/{id}.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function runJobHandler({ item }) {
+	try {
+		await axios.post(generateUrl(`/apps/openconnector/api/jobs/run/${rowId(item)}`))
+		showSuccess(t('openconnector', 'Job run triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Job run failed') + errorDetail(err))
+	}
+}
 
-export const runJobHandler = makePostHandler(
-	(item) => `/apps/openconnector/api/jobs/run/${item.id || item.uuid}`,
-	'Job run triggered',
-	'Job run failed',
-)
+/**
+ * Test a job (dry run) via POST /api/jobs/test/{id}.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function testJobHandler({ item }) {
+	try {
+		await axios.post(generateUrl(`/apps/openconnector/api/jobs/test/${rowId(item)}`))
+		showSuccess(t('openconnector', 'Job test (dry run) triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Job test failed') + errorDetail(err))
+	}
+}
 
-export const testJobHandler = makePostHandler(
-	(item) => `/apps/openconnector/api/jobs/test/${item.id || item.uuid}`,
-	'Job test (dry run) triggered',
-	'Job test failed',
-)
+/**
+ * Trigger a synchronization run via POST /api/synchronizations/{id}/run.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function runSynchronizationHandler({ item }) {
+	try {
+		await axios.post(generateUrl(`/apps/openconnector/api/synchronizations/${rowId(item)}/run`))
+		showSuccess(t('openconnector', 'Synchronization run triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Synchronization run failed') + errorDetail(err))
+	}
+}
 
-export const runSynchronizationHandler = makePostHandler(
-	(item) => `/apps/openconnector/api/synchronizations/${item.id || item.uuid}/run`,
-	'Synchronization run triggered',
-	'Synchronization run failed',
-)
-
-export const testSynchronizationHandler = makePostHandler(
-	(item) => `/apps/openconnector/api/synchronizations/${item.id || item.uuid}/test`,
-	'Synchronization test (dry run) triggered',
-	'Synchronization test failed',
-)
+/**
+ * Test a synchronization (dry run) via POST /api/synchronizations/{id}/test.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function testSynchronizationHandler({ item }) {
+	try {
+		await axios.post(generateUrl(`/apps/openconnector/api/synchronizations/${rowId(item)}/test`))
+		showSuccess(t('openconnector', 'Synchronization test (dry run) triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Synchronization test failed') + errorDetail(err))
+	}
+}
