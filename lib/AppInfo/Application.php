@@ -42,21 +42,6 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        // Post chain-B/C cutover, openconnector controllers inject OR's
-        // ObjectService via DI. Nextcloud resolves controller constructor
-        // deps via PHP reflection, which requires the class to be autoloaded
-        // BEFORE the controller is built. loadApp('openregister') registers
-        // OR's PSR-4 paths. MUST be in register() (per-request) — boot() is
-        // too late for controller-resolution paths.
-        try {
-            $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
-            if ($appManager->isInstalled('openregister') === true) {
-                $appManager->loadApp('openregister');
-            }
-        } catch (\Throwable) {
-            // OR unavailable — let downstream DI failures surface clearly.
-        }
-
         // Register services
         $context->registerService(
           SettingsService::class,
