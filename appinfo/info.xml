@@ -56,4 +56,13 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
 		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
 	</settings>
+
+	<repair-steps>
+		<install>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+		</install>
+		<post-migration>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+		</post-migration>
+	</repair-steps>
 </info>
