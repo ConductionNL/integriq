@@ -76,7 +76,13 @@ async function resolveAppBase(page: Page): Promise<string> {
  *   - wait for the OR POST to return success
  *   - assert the new row text appears in the page
  */
-async function createViaUi(page: Page, schemaSlug: string, schemaTitle: string, name: string) {
+async function createViaUi(
+	page: Page,
+	schemaSlug: string,
+	schemaTitle: string,
+	name: string,
+	extraFields: Record<string, string> = {},
+) {
 	// Locate and click the Add button. CnActionsBar renders the primary
 	// action as `<NcButton type="primary">Add {schemaTitle}</NcButton>`
 	// (label derived from schema.title).
@@ -88,29 +94,32 @@ async function createViaUi(page: Page, schemaSlug: string, schemaTitle: string, 
 	const dialog = page.getByRole('dialog').first()
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
-	// Every openconnector schema exposes a top-level `name` field as the
-	// title. CnFormDialog renders one NcTextField per schema property
-	// with the label slot rendering ` <property> <required-marker> ` —
-	// NcTextField surrounds the property name with whitespace and
-	// appends `*` for required fields, so the actual label text reads
-	// ` name * `. Match it via regex (start-of-string + required marker
-	// + end-of-string) so we don't pick up other fields like
-	// `authorizationHeader` or `lastSync` that contain "name" as a
-	// substring of their description.
-	const nameField = dialog.getByLabel(/^\s*name\s*\*?\s*$/i)
-	await expect(
-		nameField,
-		`Name input for ${schemaTitle} must be present in CnFormDialog`,
-	).toBeVisible({ timeout: 10_000 })
-	// Use pressSequentially + Tab to fire the same keyboard / blur events
-	// the user does — Vue's reactive form validation marks the field as
-	// touched on blur, which is what flips the disabled Create button to
-	// enabled. A bare `.fill()` triggers `input` but not `blur`, so
-	// CnFormDialog keeps Create disabled. (Observed on Mapping schema —
-	// `name *` field is required + the dialog's submit gate is touched-and-valid.)
-	await nameField.click()
-	await nameField.pressSequentially(name, { delay: 5 })
-	await nameField.press('Tab')
+	// Fill `name` first; every openconnector schema exposes a top-level
+	// `name` field as the title. CnFormDialog renders one NcTextField per
+	// schema property with the label slot rendering ` <property> <required-marker> `
+	// — NcTextField surrounds the property name with whitespace and appends
+	// `*` for required fields, so the actual label text reads ` name * `.
+	// Match via regex (start-of-string + required marker + end-of-string)
+	// so we don't pick up other fields like `authorizationHeader` or
+	// `lastSync` that contain "name" as a substring of their description.
+	const fields: Record<string, string> = { name, ...extraFields }
+	for (const [propName, value] of Object.entries(fields)) {
+		// Required marker may or may not be there depending on the schema.
+		const labelRegex = new RegExp(`^\\s*${propName}\\s*\\*?\\s*$`, 'i')
+		const field = dialog.getByLabel(labelRegex)
+		await expect(
+			field,
+			`${propName} input for ${schemaTitle} must be present in CnFormDialog`,
+		).toBeVisible({ timeout: 10_000 })
+		// pressSequentially + Tab fires the same keyboard / blur events
+		// the user does — Vue's reactive form validation marks the field
+		// as touched on blur, which flips the disabled Create button to
+		// enabled. A bare `.fill()` triggers `input` but not `blur`, so
+		// CnFormDialog keeps Create disabled.
+		await field.click()
+		await field.pressSequentially(value, { delay: 5 })
+		await field.press('Tab')
+	}
 
 	// Click the primary action — "Create" in create-mode (resolved by
 	// CnFormDialog when there's no item to edit).
@@ -193,28 +202,28 @@ async function deleteViaUi(page: Page, schemaSlug: string, name: string) {
 }
 
 /*
- * UI journeys J1–J4 are skip-pending until @conduction/nextcloud-vue
- * wires the CnFormDialog `@confirm` event through CnPageRenderer to a
- * store that POSTs to OR.
+ * UI journeys J1–J4 — full UI-driven create+delete loop, end-to-end
+ * against the manifest-v2 pipeline.
  *
- * Current behaviour (nc-vue@^1.0.0-beta.65): clicking Create in the
- * dialog fires `executeConfirm()` → `this.$emit('confirm', formData)`.
- * CnIndexPage listens with `onFormConfirm` (CnIndexPage.vue:146) which
- * only saves when an injected `this.store` is present — otherwise it
- * re-emits `@create` upward. The v2 manifest-driven pipeline mounts
- * CnIndexPage via CnPageRenderer with no store binding, so the click
- * is a silent no-op (no POST fires, dialog stays open).
+ * What's exercised: page.goto(/sources, /mappings, …) → CnIndexPage
+ * mounts (self-fetch via the register+schema in `config`) → click
+ * "Add {Title}" → CnFormDialog opens → fill `name` → click Create →
+ * the dialog's `$emit('confirm')` arrives at CnIndexPage.onFormConfirm
+ * which calls `selfObjectStore.saveObject(selfObjectType, formData)`
+ * — that POSTs to `/api/objects/openconnector/{schema}` on OR and
+ * triggers a `list.refresh()` on success → assert the new row appears
+ * → tick its checkbox → CnActionsBar Actions menu → "Delete selected"
+ * → CnMassDeleteDialog confirm → DELETE round-trip + list.refresh().
  *
- * This is a real architecture gap. The selectors below (Add button,
- * dialog open, name label regex, Create button click, OR POST wait,
- * mass-delete confirm) were validated end-to-end via interactive
- * probes — once nc-vue's CnPageRenderer wires `store.saveObject` (or
- * forwards `@create` to a default OR adapter), unskip these by
- * removing `test.skip` from each describe and the suite should pass.
- *
- * Tracked: nc-vue follow-up to f2b9939a (v2 manifest support gaps).
+ * The self-fetch save/delete wiring was added to nc-vue's CnIndexPage
+ * after beta.65 (hoist `selfObjectStore` + `selfObjectType` out of
+ * setup's `if (isSelfFetch)` block, then route onFormConfirm /
+ * onMassDeleteConfirm / onSingleDeleteConfirm through them when no
+ * explicit `store` prop is given). Without that change the click was
+ * a silent no-op (no POST fired, dialog stayed open) because
+ * CnPageRenderer forwards props but not event listeners.
  */
-test.describe.skip('UI journey J1 — visually create + delete a Source', () => {
+test.describe('UI journey J1 — visually create + delete a Source', () => {
 	const name = `pw-j1-source-${Date.now()}`
 
 	test('Add Source → Create → row appears → mass-delete → row gone', async ({ page }) => {
@@ -225,7 +234,7 @@ test.describe.skip('UI journey J1 — visually create + delete a Source', () => 
 	})
 })
 
-test.describe.skip('UI journey J2 — visually create + delete a Mapping', () => {
+test.describe('UI journey J2 — visually create + delete a Mapping', () => {
 	const name = `pw-j2-mapping-${Date.now()}`
 
 	test('Add Mapping → Create → row appears → mass-delete → row gone', async ({ page }) => {
@@ -236,7 +245,7 @@ test.describe.skip('UI journey J2 — visually create + delete a Mapping', () =>
 	})
 })
 
-test.describe.skip('UI journey J3 — visually create + delete a Synchronization', () => {
+test.describe('UI journey J3 — visually create + delete a Synchronization', () => {
 	const name = `pw-j3-sync-${Date.now()}`
 
 	test('Add Synchronization → Create → row appears → mass-delete → row gone', async ({ page }) => {
@@ -247,13 +256,20 @@ test.describe.skip('UI journey J3 — visually create + delete a Synchronization
 	})
 })
 
-test.describe.skip('UI journey J4 — visually create + delete an Endpoint', () => {
+test.describe('UI journey J4 — visually create + delete an Endpoint', () => {
 	const name = `pw-j4-endpoint-${Date.now()}`
 
 	test('Add Endpoint → Create → row appears → mass-delete → row gone', async ({ page }) => {
 		const base = await resolveAppBase(page)
 		await page.goto(`${base}/endpoints`)
-		await createViaUi(page, 'endpoint', 'Endpoint', name)
+		// Endpoint schema's `required` list is ['name', 'endpoint',
+		// 'method'] — CnFormDialog keeps Create disabled until each
+		// required field is touched-and-valid. The other three journeys
+		// only require `name`, so they slip through with the default.
+		await createViaUi(page, 'endpoint', 'Endpoint', name, {
+			endpoint: '/pw-j4-endpoint',
+			method: 'GET',
+		})
 		await deleteViaUi(page, 'endpoint', name)
 	})
 })

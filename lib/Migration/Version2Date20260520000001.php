@@ -64,6 +64,18 @@ class Version2Date20260520000001 extends SimpleMigrationStep
             return;
         }
 
+        // `occ app:enable openconnector` runs migrations with openconnector's
+        // PSR-4 paths loaded but NOT openregister's, so the class_exists
+        // probe below would return false even when OR is enabled and
+        // upgraded. Pre-load OR here so its autoloader is registered before
+        // the probe — scoped to migration time only (we tried doing it from
+        // Application::register() and got a recursive DI loop, b421b9c8).
+        try {
+            $container->get(\OCP\App\IAppManager::class)->loadApp('openregister');
+        } catch (\Throwable $e) {
+            $logger->info('chain-B: loadApp(openregister) skipped: '.$e->getMessage());
+        }
+
         // Guard against OpenRegister being unavailable (would crash the
         // upgrade with a useless DI error). Defer to next upgrade.
         if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
