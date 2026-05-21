@@ -78,10 +78,10 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         // migration step only (no side effects on web requests).
         $appManager = $container->get(\OCP\App\IAppManager::class);
         try {
-            $orAppPath = $appManager->getAppPath('openregister');
-            $orAutoload = $orAppPath . '/vendor/autoload.php';
+            $orAppPath  = $appManager->getAppPath('openregister');
+            $orAutoload = $orAppPath.'/vendor/autoload.php';
             if (file_exists($orAutoload)) {
-                require_once $orAutoload;
+                include_once $orAutoload;
                 $output->info('chain-B: required openregister autoload from '.$orAutoload);
             } else {
                 $output->warning('chain-B: openregister vendor/autoload.php not found at '.$orAutoload.' — register import will skip');
