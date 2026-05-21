@@ -108,12 +108,12 @@
       "title": "Dashboard",
       "config": {
         "widgets": [
-          { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "iconClass": "icon-link",                   "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" }, "linkRoute": "Sources" },
-          { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "iconClass": "icon-category-customization", "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" }, "linkRoute": "Mappings" },
-          { "id": "kpi-synchronizations", "title": "Synchronizations", "type": "stats-block", "iconClass": "icon-history",                "dataSource": { "register": "openconnector", "schema": "synchronization",          "aggregate": "count" }, "linkRoute": "Synchronizations" },
-          { "id": "kpi-contracts",        "title": "Contracts",        "type": "stats-block", "iconClass": "icon-file",                   "dataSource": { "register": "openconnector", "schema": "synchronization_contract", "aggregate": "count" }, "linkRoute": "SynchronizationContracts" },
-          { "id": "kpi-jobs",             "title": "Jobs",             "type": "stats-block", "iconClass": "icon-category-workflow",      "dataSource": { "register": "openconnector", "schema": "job",                      "aggregate": "count" }, "linkRoute": "Jobs" },
-          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "iconClass": "icon-category-integration",   "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" }, "linkRoute": "Endpoints" }
+          { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "props": { "route": { "name": "Sources" } },                  "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" } },
+          { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "props": { "route": { "name": "Mappings" } },                 "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" } },
+          { "id": "kpi-synchronizations", "title": "Synchronizations", "type": "stats-block", "props": { "route": { "name": "Synchronizations" } },         "dataSource": { "register": "openconnector", "schema": "synchronization",          "aggregate": "count" } },
+          { "id": "kpi-contracts",        "title": "Contracts",        "type": "stats-block", "props": { "route": { "name": "SynchronizationContracts" } }, "dataSource": { "register": "openconnector", "schema": "synchronization_contract", "aggregate": "count" } },
+          { "id": "kpi-jobs",             "title": "Jobs",             "type": "stats-block", "props": { "route": { "name": "Jobs" } },                     "dataSource": { "register": "openconnector", "schema": "job",                      "aggregate": "count" } },
+          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "props": { "route": { "name": "Endpoints" } },                "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" } }
         ],
         "layout": [
           { "id": "L1", "widgetId": "kpi-sources",          "gridX": 0,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
