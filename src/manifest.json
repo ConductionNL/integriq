@@ -105,7 +105,26 @@
       "id": "Dashboard",
       "route": "/",
       "type": "dashboard",
-      "title": "Dashboard"
+      "title": "Dashboard",
+      "config": {
+        "widgets": [
+          { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "iconClass": "icon-link",                   "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" }, "linkRoute": "Sources" },
+          { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "iconClass": "icon-category-customization", "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" }, "linkRoute": "Mappings" },
+          { "id": "kpi-synchronizations", "title": "Synchronizations", "type": "stats-block", "iconClass": "icon-history",                "dataSource": { "register": "openconnector", "schema": "synchronization",          "aggregate": "count" }, "linkRoute": "Synchronizations" },
+          { "id": "kpi-contracts",        "title": "Contracts",        "type": "stats-block", "iconClass": "icon-file",                   "dataSource": { "register": "openconnector", "schema": "synchronization_contract", "aggregate": "count" }, "linkRoute": "SynchronizationContracts" },
+          { "id": "kpi-jobs",             "title": "Jobs",             "type": "stats-block", "iconClass": "icon-category-workflow",      "dataSource": { "register": "openconnector", "schema": "job",                      "aggregate": "count" }, "linkRoute": "Jobs" },
+          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "iconClass": "icon-category-integration",   "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" }, "linkRoute": "Endpoints" }
+        ],
+        "layout": [
+          { "id": "L1", "widgetId": "kpi-sources",          "gridX": 0,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L2", "widgetId": "kpi-mappings",         "gridX": 2,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L3", "widgetId": "kpi-synchronizations", "gridX": 4,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L4", "widgetId": "kpi-contracts",        "gridX": 6,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L5", "widgetId": "kpi-jobs",             "gridX": 8,  "gridY": 0, "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L6", "widgetId": "kpi-endpoints",        "gridX": 10, "gridY": 0, "gridWidth": 2, "gridHeight": 2 }
+        ],
+        "_note": "KPI tiles only for now. The 6 daily/hourly charts (Calls, Jobs, Sync) ship in a follow-up once @conduction/nextcloud-vue's CnChartWidget.dataSource.bucket shorthand + CnDashboardPage date-range header land (unblocked by ConductionNL/openregister#1611)."
+      }
     },
     {
       "id": "Sources",
