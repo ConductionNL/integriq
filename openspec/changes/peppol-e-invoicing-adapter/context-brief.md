@@ -3,6 +3,17 @@ status: draft
 ---
 # Peppol E-Invoicing Adapter
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** Adapters > Adapter-catalogus (E-facturatie) / Adapters
+
+**Rationale:** Adapter type  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 Deliver a production-grade OpenConnector adapter for sending and receiving electronic invoices over the Peppol network using the Peppol BIS Billing 3.0 specification, so any Conduction app — primarily shillinq (accounts payable/receivable) but also pipelinq (POS/billing), procest (overheidsfacturen) and scholiq (ouderbijdragen) — can comply with the EU and Dutch mandates that take full effect in 2025/2026.
