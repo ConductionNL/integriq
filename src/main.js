@@ -16,6 +16,7 @@ import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
 import customComponents from './registry.js'
+import { setRouter } from './handlers/routerRef.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
 import '@conduction/nextcloud-vue/css/index.css'
@@ -88,6 +89,14 @@ const router = new VueRouter({
 	base: generateUrl('/apps/openconnector'),
 	routes: routesFromManifest(bundledManifest),
 })
+
+// Expose the router instance to registry-resolved row-action handlers
+// (CnIndexPage invokes those with `{ actionId, item }` — no Vue
+// component context, so `this.$router` is not available). See #837 /
+// nc-vue#330 — the `viewLogsHandler` reads it for query-aware navigation
+// until nc-vue gains a `queryParam` field on the built-in `navigate`
+// handler.
+setRouter(router)
 
 tryLoadTranslations()
 
