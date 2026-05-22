@@ -1,23 +1,34 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<CnAppRoot
-		:manifest="manifest"
-		:custom-components="customComponents"
-		:page-types="pageTypes"
-		app-id="openconnector"
-		:translate="translateForApp"
-		:permissions="permissions" />
+	<div class="openconnector-app-root">
+		<CnAppRoot
+			:manifest="manifest"
+			:custom-components="customComponents"
+			:page-types="pageTypes"
+			app-id="openconnector"
+			:translate="translateForApp"
+			:permissions="permissions" />
+		<!--
+		  ModalHost lives outside CnAppRoot so a route swap mid-modal
+		  cannot unmount the modal from under the user. It listens on the
+		  shared modalBus and renders #835 (Test mapping) and #836 (Add
+		  endpoint rule) modals when their row-action handlers fire.
+		-->
+		<ModalHost />
+	</div>
 </template>
 
 <script>
 import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { useSettingsStore } from './store/store.js'
+import ModalHost from './modals/v2/ModalHost.vue'
 
 export default {
 	name: 'App',
 	components: {
 		CnAppRoot,
+		ModalHost,
 	},
 
 	props: {

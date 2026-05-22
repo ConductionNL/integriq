@@ -27,6 +27,11 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import {
+	modalBus,
+	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_ADD_ENDPOINT_RULE,
+} from './modalBus.js'
 
 /**
  * Extract a stable id from a row. OR returns rows with `id` set; legacy
@@ -125,4 +130,27 @@ export async function testSynchronizationHandler({ item }) {
 	} catch (err) {
 		showError(t('openconnector', 'Synchronization test failed') + errorDetail(err))
 	}
+}
+
+// Modal-opening handlers — see src/modals/v2/ModalHost.vue. These do NOT
+// hit the backend directly; they emit on the shared modalBus so the host
+// component can mount the corresponding modal. The modal itself owns the
+// API call (POST /api/mappings/test for #835, OR PATCH for #836).
+
+/**
+ * Open the Test mapping modal for the clicked mapping row.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function testMappingModalHandler({ item }) {
+	modalBus.$emit(EVENT_OPEN_TEST_MAPPING, { mapping: item })
+}
+
+/**
+ * Open the Add-rule-to-endpoint modal for the clicked endpoint row.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function addEndpointRuleHandler({ item }) {
+	modalBus.$emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
 }

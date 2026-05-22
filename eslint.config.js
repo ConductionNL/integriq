@@ -23,7 +23,12 @@ module.exports = defineConfig([{
 	// Once a modal is extracted into a fresh bespoke component wired to
 	// nc-vue + useObjectStore, the legacy file is removed in the same
 	// PR. See src/modals/README.md.
-	ignores: ['src/modals/**'],
+	//
+	// `src/modals/v2/` is the post-extraction home for chain-C+ modals
+	// (Test mapping #835, Add endpoint rule #836, Job form fields #847)
+	// and must lint cleanly — explicitly un-ignored here so the global
+	// `src/modals/**` glob doesn't swallow it.
+	ignores: ['src/modals/**', '!src/modals/v2/**'],
 }, {
 	extends: compat.extends('@nextcloud'),
 
