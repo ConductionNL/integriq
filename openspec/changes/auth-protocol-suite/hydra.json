@@ -1,0 +1,8 @@
+{
+  "spec_slug": "auth-protocol-suite",
+  "title": "Authentication Protocol Suite",
+  "app": "openconnector",
+  "repo": "https://github.com/ConductionNL/openconnector",
+  "depends_on": [],
+  "issue": null
+}
