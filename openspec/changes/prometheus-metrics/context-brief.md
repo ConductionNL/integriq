@@ -4,6 +4,17 @@ status: implemented
 
 # Prometheus Metrics Endpoint
 
+## Placement & Information Architecture
+
+**Placement type:** `SETTING` — Setting under the app's Beheer/Admin/Configuration surface. Lives in the existing settings UI; no top-level menu entry.
+
+**Lives at:** Beheer > Prometheus / Beheer
+
+**Rationale:** Ops endpoint  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 Expose application metrics in Prometheus text exposition format at `GET /api/metrics` for monitoring, alerting, and operational dashboards. Provide a health check endpoint at `GET /api/health` for liveness/readiness probes in container orchestration environments.
