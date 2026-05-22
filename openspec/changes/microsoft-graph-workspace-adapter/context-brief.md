@@ -10,6 +10,17 @@ depends_on:
 
 # Microsoft Graph + Google Workspace Adapter
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** Adapters > Adapter-catalogus (Productiviteit) / Adapters
+
+**Rationale:** Adapter type  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 Most Dutch and European organisations run their productivity stack on either Microsoft 365 (via Microsoft Graph) or Google Workspace (via the Workspace Admin SDK and individual product APIs — Gmail, Calendar, Drive, Directory, Meet). Integration projects routinely need the same handful of operations against either platform: list users in a tenant, create or update a calendar event, send an email, list inbox items, list files in a drive, and download a file. Today these flows are implemented twice — once per provider — with subtly different error handling, pagination semantics, throttling behaviour, and authentication models. End users then need different openconnector configurations and different downstream workflows depending on which provider their tenant uses, and adapter maintenance cost doubles for every new operation added.
