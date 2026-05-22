@@ -43,6 +43,8 @@ import {
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
+import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
+import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -65,10 +67,11 @@ export default {
 	JobFormFields,
 
 	// Custom-page components — referenced by manifest `pages[].component`
-	// when `pages[].type === 'custom'`. MappingDetail was upgraded from
-	// the standard `type: 'detail'` page to a bespoke editor that adds
-	// a 3-tab transformation-rules pane (mapping / cast / unset) on top
-	// of CnDetailPage. The legacy 1537-LoC EditMapping modal is preserved
-	// in git history as the extraction reference. Closes #832.
+	// when `pages[].type === 'custom'`. The 3 bespoke editors below
+	// (Mapping #832, Rule #833, Synchronization #834) wrap CnDetailPage
+	// with surfaces too rich for schema-driven detail pages — see each
+	// component's JSDoc for the per-section rationale.
 	MappingDetailPage,
+	RuleDetailPage,
+	SynchronizationDetailPage,
 }

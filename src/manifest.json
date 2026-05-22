@@ -319,7 +319,8 @@
     {
       "id": "RuleDetail",
       "route": "/rules/:id",
-      "type": "detail",
+      "type": "custom",
+      "component": "RuleDetailPage",
       "title": "Rule",
       "config": {
         "register": "openconnector",
@@ -337,7 +338,9 @@
         "columns": ["name", "sourceType", "targetType", "status", "sourceLastSynced"],
         "includeFields": ["name", "description", "sourceType", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
         "actions": [
+          { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SynchronizationLogs" },
@@ -365,6 +368,17 @@
       "config": {
         "register": "openconnector",
         "schema": "synchronization_log"
+      }
+    },
+    {
+      "id": "SynchronizationDetail",
+      "route": "/synchronizations/:id",
+      "type": "custom",
+      "title": "Synchronization",
+      "component": "SynchronizationDetailPage",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization"
       }
     },
     {
