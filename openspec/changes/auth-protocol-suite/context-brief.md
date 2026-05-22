@@ -9,6 +9,17 @@ depends_on:
 
 # Authentication Protocol Suite
 
+## Placement & Information Architecture
+
+**Placement type:** `SETTING` — Setting under the app's Beheer/Admin/Configuration surface. Lives in the existing settings UI; no top-level menu entry.
+
+**Lives at:** Beheer > Authenticatie / Beheer
+
+**Rationale:** Cross-cutting auth foundation (OAuth/OIDC/SAML/mTLS/JWT)  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 The Authentication Protocol Suite gives openconnector a single, uniform authentication layer that every adapter, source, and synchronization can plug into without reinventing the wheel for each external system. Today, integration code routinely re-implements OAuth2 token flows, certificate handling, or SAML assertions per adapter, leading to inconsistent error handling, scattered secrets, brittle refresh logic, and inconsistent observability. Token errors get caught generically and logged as "auth failed" with no actionable detail; certificate expiries are discovered only when downstream calls start failing in production; refresh-token rotation is implemented inconsistently, sometimes leaking long-lived secrets and sometimes failing silently when an issuer changes its rotation policy. This spec consolidates all supported protocols — OAuth2 (client_credentials, authorization_code with PKCE, refresh_token), JWT (signed and encrypted), mTLS, SAML2, and OIDC — behind a single AuthProfile abstraction that adapter authors declare once and configure per environment.
