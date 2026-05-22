@@ -225,10 +225,10 @@ class SynchronizationsController extends Controller
      *     "validationErrors": []
      * }
      */
-    public function test(int $id, ?bool $force=false): JSONResponse
+    public function test(string $id, ?bool $force=false): JSONResponse
     {
         try {
-            $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+            $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization');
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
@@ -267,14 +267,14 @@ class SynchronizationsController extends Controller
      *
      * Endpoint: /api/synchronizations-run/{id}
      *
-     * @param int $id The ID of the synchronization to run
+     * @param string $id The UUID of the synchronization to run (post chain-B/C: OR IDs are UUIDs, not ints)
      *
      * @return JSONResponse A JSON response containing the run results
      * @throws GuzzleException
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
-    public function run(int $id): JSONResponse
+    public function run(string $id): JSONResponse
     {
         $parameters = $this->request->getParams();
         $test       = filter_var($parameters['test'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -283,7 +283,7 @@ class SynchronizationsController extends Controller
         $data       = $parameters['data'] ?? [];
 
         try {
-            $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+            $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization');
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }

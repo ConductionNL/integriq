@@ -349,7 +349,7 @@ class CallService
         if (($sourceData['isEnabled'] ?? null) === null || ($sourceData['isEnabled'] ?? false) === false) {
             return $this->objectService->saveObject(
                 object: [
-                    'sourceId'      => $source->getUuid(),
+                    'source'        => $source->getUuid(),
                     'statusCode'    => 409,
                     'statusMessage' => 'This source is not enabled',
                     'created'       => (new \DateTime())->format('c'),
@@ -363,7 +363,7 @@ class CallService
         if (empty($sourceData['location'] ?? '') === true) {
             return $this->objectService->saveObject(
                 object: [
-                    'sourceId'      => $source->getUuid(),
+                    'source'        => $source->getUuid(),
                     'statusCode'    => 409,
                     'statusMessage' => 'This source has no location',
                     'created'       => (new \DateTime())->format('c'),
@@ -401,7 +401,7 @@ class CallService
         if ($rateLimitRemaining !== null && $rateLimitRemaining <= 0) {
             return $this->objectService->saveObject(
                 object: [
-                    'sourceId'      => $source->getUuid(),
+                    'source'        => $source->getUuid(),
                     'statusCode'    => 429,
                     'statusMessage' => 'The rate limit for this source has been exceeded. Try again later.',
                     'created'       => (new \DateTime())->format('c'),
@@ -549,7 +549,7 @@ class CallService
         }
 
         $callLogData = [
-            'sourceId'      => $source->getUuid(),
+            'source'        => $source->getUuid(),
             'statusCode'    => $statusCode,
             'statusMessage' => $data['response']['statusMessage'],
             'request'       => $data['request'],
