@@ -128,7 +128,7 @@ class UserController extends Controller
     /**
      * CORS max age
      *
-     * @var int
+     * @var integer
      */
     private int $corsMaxAge;
 

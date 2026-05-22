@@ -56,7 +56,7 @@ class EndpointsController extends Controller
     /**
      * CORS max age
      *
-     * @var int
+     * @var integer
      */
     private int $corsMaxAge;
 
@@ -325,8 +325,8 @@ class EndpointsController extends Controller
                     $returnArray            = $result;
                     $returnArray['count']   = $result['total'];
                     $returnArray['results'] = array_map(fn($obj) => $obj->jsonSerialize(), $result['results']);
-                    unset($returnArray['total']); // Remove 'total' since we renamed it to 'count'
-
+                    unset($returnArray['total']);
+                    // Remove 'total' since we renamed it to 'count'
                     // Add pagination links if needed
                     if ($result['page'] < $result['pages']) {
                         $parameters['page']  = $result['page'] + 1;
