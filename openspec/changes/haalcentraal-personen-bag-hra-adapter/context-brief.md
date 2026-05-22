@@ -3,6 +3,17 @@ status: draft
 ---
 # HaalCentraal Personen/BAG/HR/KvK unified adapter
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** Adapters > Adapter-catalogus (Overheid-NL) / Adapters
+
+**Rationale:** Unified data-source adapter  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 HaalCentraal is the umbrella programme run by VNG Realisatie that exposes the Dutch national basisregistraties as modern REST/JSON APIs, replacing the legacy StUF-BG SOAP/XML stack that has dominated Dutch government integration for two decades. Four of those APIs cover almost every lookup a Conduction app ever has to make: BRP Persoonsgegevens (citizens), BAG (addresses and buildings), Handelsregister-HR (chamber-of-commerce data including non-public information), and the KvK Public API (the subset of HR data that needs no autorisatie). Today every Conduction app that needs to validate an address, look up a citizen by BSN, or check whether a KvK number is still active, ends up reinventing HTTP clients, OAuth2 token rotation, mTLS certificate handling, cache invalidation, doelbinding logging, and response-shape normalisation. This spec captures a single adapter — exposed through OpenConnector — that wraps all four APIs behind one configuration surface with shared caching, shared throttling, shared audit, and a consistent response shape so consuming apps can switch between them without touching their domain code.
