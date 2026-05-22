@@ -14,6 +14,11 @@
 			"OCA\\OpenConnector\\": "lib/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"OCA\\OpenConnector\\Tests\\": "tests/"
+		}
+	},
 	"scripts": {
 		"post-install-cmd": [
 			"@composer bin all install --ansi"
