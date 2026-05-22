@@ -1,13 +1,14 @@
 <script setup>
 import { logStore, navigationStore } from '../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
 	<NcModal v-if="navigationStore.modal === 'editLog'" ref="modalRef" @close="closeModal">
 		<div class="modalContent">
-			<h2>Log {{ logStore.logItem.id ? 'Aanpassen' : 'Aanmaken' }}</h2>
+			<h2>{{ logStore.logItem.id ? t('openconnector', 'Edit Log') : t('openconnector', 'Create Log') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Log succesvol toegevoegd</p>
+				<p>{{ t('openconnector', 'Log saved successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -15,15 +16,15 @@ import { logStore, navigationStore } from '../../store/store.js'
 
 			<form v-if="!success" @submit.prevent="handleSubmit">
 				<div class="form-group">
-					<label for="title">Title:</label>
+					<label for="title">{{ t('openconnector', 'Title') }}:</label>
 					<input id="title" v-model="logStore.logItem.title" required>
 				</div>
 				<div class="form-group">
-					<label for="description">Description:</label>
+					<label for="description">{{ t('openconnector', 'Description') }}:</label>
 					<textarea id="description" v-model="logStore.logItem.description" />
 				</div>
 				<div class="form-group">
-					<label for="date">Date:</label>
+					<label for="date">{{ t('openconnector', 'Date') }}:</label>
 					<input id="date"
 						v-model="logStore.logItem.date"
 						type="date"
@@ -40,7 +41,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<ContentSaveOutline v-if="!loading" :size="20" />
 				</template>
-				Opslaan
+				{{ t('openconnector', 'Save') }}
 			</NcButton>
 		</div>
 	</NcModal>

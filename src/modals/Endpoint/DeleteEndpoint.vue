@@ -1,18 +1,19 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { endpointStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'deleteEndpoint'"
-		name="Delete endpoint"
+		:name="t('openconnector', 'Delete endpoint')"
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Do you want to delete <b>{{ endpointStore.endpointItem?.name }}</b>? This action cannot be undone.
+			{{ t('openconnector', 'Do you want to delete') }} <b>{{ endpointStore.endpointItem?.name }}</b>? {{ t('openconnector', 'This action cannot be undone.') }}
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Successfully deleted endpoint</p>
+			<p>{{ t('openconnector', 'Successfully deleted endpoint') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -24,7 +25,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Close' : 'Cancel' }}
+				{{ success ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="!success"
@@ -35,7 +36,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ t('openconnector', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

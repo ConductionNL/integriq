@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { logStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -9,10 +10,10 @@ import { logStore, navigationStore } from '../../store/store.js'
 		@close="closeModal">
 		<div class="logModalContent">
 			<div class="logModalContentHeader">
-				<h2>View Synchronization Contract</h2>
+				<h2>{{ t('openconnector', 'View Synchronization Contract') }}</h2>
 			</div>
 
-			<strong>Standard</strong>
+			<strong>{{ t('openconnector', 'Standard') }}</strong>
 			<table class="table">
 				<tr v-for="(value, key) in standardItems" :key="key">
 					<td class="keyColumn">

@@ -2,8 +2,8 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Db\Endpoint;
-use OCA\OpenConnector\Db\EndpointMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -26,10 +26,10 @@ use OCP\AppFramework\Db\Entity;
 class EndpointHandler implements ConfigurationHandlerInterface
 {
     /**
-     * @param EndpointMapper $endpointMapper The endpoint mapper
+     * @param OrObjectService $orObjectService The OR object service
      */
     public function __construct(
-        private readonly EndpointMapper $endpointMapper
+        private readonly OrObjectService $orObjectService
     ) {
     }//end __construct()
 
@@ -38,16 +38,12 @@ class EndpointHandler implements ConfigurationHandlerInterface
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
-        if (!$entity instanceof Endpoint) {
-            throw new \InvalidArgumentException('Entity must be an instance of Endpoint');
-        }
-
-        $endpointArray = $entity->jsonSerialize();
+        $endpointArray = ($entity instanceof ObjectEntity) ? $entity->getObject() : $entity->jsonSerialize();
         unset($endpointArray['id'], $endpointArray['uuid']);
 
         // Ensure slug is set
-        if (empty($endpointArray['slug'])) {
-            $endpointArray['slug'] = $entity->getSlug();
+        if (empty($endpointArray['slug']) && $entity instanceof ObjectEntity) {
+            $endpointArray['slug'] = $entity->getUuid();
         }
 
         // Handle targetId based on targetType.
@@ -172,13 +168,19 @@ class EndpointHandler implements ConfigurationHandlerInterface
           );
 
         // Check if endpoint with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['endpoint']['slugToId'][$data['slug']])) {
+        $slug = $data['slug'] ?? null;
+        if ($slug !== null && isset($mappings['endpoint']['slugToId'][$slug])) {
             // Update existing endpoint.
-            return $this->endpointMapper->updateFromArray($mappings['endpoint']['slugToId'][$data['slug']], $data);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                register: 'openconnector',
+                schema: 'endpoint',
+                uuid: $mappings['endpoint']['slugToId'][$slug]
+            );
         }
 
         // Create new endpoint.
-        return $this->endpointMapper->createFromArray($data);
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'endpoint');
     }//end import()
 
     /**

@@ -1,6 +1,7 @@
 <script setup>
 import { jobStore, navigationStore } from '../../store/store.js'
 import { Job } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,9 +10,9 @@ import { Job } from '../../entities/index.js'
 		label-id="editJobArgument"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ isEdit ? 'Edit' : 'Add' }} Job Argument</h2>
+			<h2>{{ isEdit ? t('openconnector', 'Edit Job Argument') : t('openconnector', 'Add Job Argument') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Job Argument successfully added</p>
+				<p>{{ t('openconnector', 'Job argument saved successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -21,14 +22,14 @@ import { Job } from '../../entities/index.js'
 				<div class="form-group">
 					<NcTextField
 						id="key"
-						label="Key*"
+						:label="t('openconnector', 'Key*')"
 						required
 						:error="checkIfKeyIsUnique(argumentItem.key)"
-						:helper-text="checkIfKeyIsUnique(argumentItem.key) ? 'This key is already in use. Please choose a different key name.' : ''"
+						:helper-text="checkIfKeyIsUnique(argumentItem.key) ? t('openconnector', 'This key is already in use. Please choose a different key name.') : ''"
 						:value.sync="argumentItem.key" />
 					<NcTextField
 						id="value"
-						label="Value"
+						:label="t('openconnector', 'Value')"
 						:value.sync="argumentItem.value" />
 				</div>
 			</form>
@@ -39,7 +40,7 @@ import { Job } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -50,7 +51,7 @@ import { Job } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

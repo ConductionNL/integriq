@@ -6,7 +6,7 @@ import { synchronizationStore, navigationStore, ruleStore } from '../../store/st
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewSynchronization'"
 		ref="modalRef"
-		:name="synchronizationStore.synchronizationItem?.name || t('openconnector', 'Synchronization Details')"
+		:name="synchronizationStore.synchronizationItem?.name || t('openconnector', 'Synchronization details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
 			<p v-if="synchronizationStore.synchronizationItem?.description" class="synchronization-description">
@@ -40,12 +40,12 @@ import { synchronizationStore, navigationStore, ruleStore } from '../../store/st
 							<td>{{ synchronizationStore.synchronizationItem?.targetHash || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Last Synced') }}</td>
+							<td>{{ t('openconnector', 'Last synced') }}</td>
 							<td>{{ synchronizationStore.synchronizationItem?.sourceLastSynced ? new Date(synchronizationStore.synchronizationItem.sourceLastSynced).toLocaleDateString() + ', ' + new Date(synchronizationStore.synchronizationItem.sourceLastSynced).toLocaleTimeString() : '-' }}</td>
 							<td>{{ synchronizationStore.synchronizationItem?.targetLastSynced ? new Date(synchronizationStore.synchronizationItem.targetLastSynced).toLocaleDateString() + ', ' + new Date(synchronizationStore.synchronizationItem.targetLastSynced).toLocaleTimeString() : '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Last Checked') }}</td>
+							<td>{{ t('openconnector', 'Last checked') }}</td>
 							<td>{{ synchronizationStore.synchronizationItem?.sourceLastChecked ? new Date(synchronizationStore.synchronizationItem.sourceLastChecked).toLocaleDateString() + ', ' + new Date(synchronizationStore.synchronizationItem.sourceLastChecked).toLocaleTimeString() : '-' }}</td>
 							<td>{{ synchronizationStore.synchronizationItem?.targetLastChecked ? new Date(synchronizationStore.synchronizationItem.targetLastChecked).toLocaleDateString() + ', ' + new Date(synchronizationStore.synchronizationItem.targetLastChecked).toLocaleTimeString() : '-' }}</td>
 						</tr>
@@ -112,7 +112,7 @@ import { synchronizationStore, navigationStore, ruleStore } from '../../store/st
 								</template>
 								<template #action>
 									<NcButton @click="addSourceConfig">
-										{{ t('openconnector', 'Add Source Config') }}
+										{{ t('openconnector', 'Add source config') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>
@@ -156,7 +156,7 @@ import { synchronizationStore, navigationStore, ruleStore } from '../../store/st
 								</template>
 								<template #action>
 									<NcButton @click="addTargetConfig">
-										{{ t('openconnector', 'Add Target Config') }}
+										{{ t('openconnector', 'Add target config') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>

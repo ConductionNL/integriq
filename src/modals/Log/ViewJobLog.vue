@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { logStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -9,11 +10,11 @@ import { logStore, navigationStore } from '../../store/store.js'
 		@close="closeModal">
 		<div class="logModalContent ViewJobLog">
 			<div class="logModalContentHeader">
-				<h2>View Job Log</h2>
+				<h2>{{ t('openconnector', 'View Job Log') }}</h2>
 			</div>
 
 			<div class="dataTable">
-				<strong class="tableTitle">Standard</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Standard') }}</strong>
 				<table>
 					<tr v-for="(value, key) in standardItems"
 
@@ -32,7 +33,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<div class="dataTable">
-				<strong class="tableTitle">Arguments</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Arguments') }}</strong>
 				<table>
 					<tr v-for="(value, key) in argumentsItems"
 						:key="key">
@@ -45,7 +46,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<div class="dataTable">
-				<strong class="tableTitle">Stack Trace</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Stack Trace') }}</strong>
 				<table>
 					<tr v-for="(value, key) in stackTraceItems"
 						:key="key">

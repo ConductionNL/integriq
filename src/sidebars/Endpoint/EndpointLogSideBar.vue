@@ -5,7 +5,7 @@ import { navigationStore } from '../../store/store.js'
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		:name="t('openconnector', 'Endpoint Log Management')"
+		:name="t('openconnector', 'Endpoint log management')"
 		:subtitle="t('openconnector', 'Filter and manage endpoint logs')"
 		:subname="t('openconnector', 'Export, view, or delete logs')"
 		:open="navigationStore.sidebarState.endpointLogs"

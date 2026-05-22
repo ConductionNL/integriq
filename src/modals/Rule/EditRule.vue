@@ -2,6 +2,7 @@
 import { ruleStore, navigationStore, mappingStore, synchronizationStore, sourceStore } from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 import { Rule } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,38 +10,38 @@ import { Rule } from '../../entities/index.js'
 		label-id="editRule"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ ruleItem.id ? 'Edit' : 'Add' }} Rule</h2>
+			<h2>{{ ruleItem.id ? t('openconnector', 'Edit') : t('openconnector', 'Add') }} {{ t('openconnector', 'Rule') }}</h2>
 
 			<div v-if="!openRegister.isInstalled && !closeAlert" class="openregister-notecard">
 				<NcNoteCard
 					:type="openRegister.isAvailable ? 'info' : 'error'"
-					:heading="openRegister.isAvailable ? 'Open Register is not installed' : 'Failed to install Open Register'">
+					:heading="openRegister.isAvailable ? t('openconnector', 'Open register is not installed') : t('openconnector', 'Failed to install open register')">
 					<p>
 						{{ openRegister.isAvailable
-							? 'Some features require Open Register to be installed'
-							: 'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password' }}
+							? t('openconnector', 'Some features require open register to be installed')
+							: t('openconnector', 'This either means that you do not have sufficient rights to install Open Register or that Open Register is not available on this server or you need to confirm your password') }}
 					</p>
 
 					<div class="install-buttons">
 						<NcButton v-if="openRegister.isAvailable"
-							aria-label="Install OpenRegister"
+							:aria-label="t('openconnector', 'Install OpenRegister')"
 							size="small"
 							type="primary"
 							@click="installOpenRegister">
 							<template #icon>
 								<CloudDownload :size="20" />
 							</template>
-							Install OpenRegister
+							{{ t('openconnector', 'Install OpenRegister') }}
 						</NcButton>
 						<NcButton
-							aria-label="Install OpenRegister Manually"
+							:aria-label="t('openconnector', 'Install OpenRegister manually')"
 							size="small"
 							type="secondary"
 							@click="openLink('/index.php/settings/apps/organization/openregister', '_blank')">
 							<template #icon>
 								<OpenInNew :size="20" />
 							</template>
-							Install OpenRegister Manually
+							{{ t('openconnector', 'Install OpenRegister manually') }}
 						</NcButton>
 					</div>
 					<div class="close-button">
@@ -49,7 +50,7 @@ import { Rule } from '../../entities/index.js'
 								<template #icon>
 									<Close :size="20" />
 								</template>
-								Close
+								{{ t('openconnector', 'Close') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -61,7 +62,7 @@ import { Rule } from '../../entities/index.js'
 			<!-- ====================== -->
 			<div v-if="success || error || warning">
 				<NcNoteCard v-if="success" type="success">
-					<p>Rule successfully saved</p>
+					<p>{{ t('openconnector', 'Rule saved successfully') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error || 'An error occurred' }}</p>
@@ -76,16 +77,16 @@ import { Rule } from '../../entities/index.js'
 			<!-- ====================== -->
 			<form v-if="!success" @submit.prevent="handleSubmit">
 				<NcTextField :value.sync="ruleItem.name"
-					label="Name"
+					:label="t('openconnector', 'Name')"
 					required />
 
 				<NcTextArea
 					resize="vertical"
 					:value.sync="ruleItem.description"
-					label="Description" />
+					:label="t('openconnector', 'Description')" />
 
 				<div class="json-editor">
-					<label>Conditions (JSON Logic)</label>
+					<label>{{ t('openconnector', 'Conditions (JSON logic)') }}</label>
 					<div :class="`codeMirrorContainer ${getTheme()}`">
 						<CodeMirror v-model="ruleItem.conditions"
 							:basic="true"
@@ -99,11 +100,11 @@ import { Rule } from '../../entities/index.js'
 							type="secondary"
 							size="small"
 							@click="formatJSONCondictions">
-							Format JSON
+							{{ t('openconnector', 'Format JSON') }}
 						</NcButton>
 					</div>
 					<span v-if="!isValidJson(ruleItem.conditions)" class="error-message">
-						Invalid JSON format
+						{{ t('openconnector', 'Invalid JSON format') }}
 					</span>
 				</div>
 
@@ -112,29 +113,29 @@ import { Rule } from '../../entities/index.js'
 						v-bind="timingOptions"
 						v-model="timingOptions.value"
 						:clearable="false"
-						input-label="Timing" />
+						:input-label="t('openconnector', 'Timing')" />
 				</div>
 
 				<NcTextField :value.sync="ruleItem.order"
-					label="Order"
+					:label="t('openconnector', 'Order')"
 					type="number" />
 
 				<NcSelect v-bind="actionOptions"
 					v-model="actionOptions.value"
 					:clearable="false"
-					input-label="Action" />
+					:input-label="t('openconnector', 'Action')" />
 
 				<NcSelect v-bind="typeOptions"
 					v-model="typeOptions.value"
 					:selectable="(option) => option.label === 'Fileparts Create' || option.label === 'Filepart Upload' ? openRegister?.isInstalled : true"
-					input-label="Type" />
+					:input-label="t('openconnector', 'Type')" />
 
 				<!-- Add mapping select -->
 				<NcSelect v-if="typeOptions.value?.id === 'mapping' || typeOptions.value?.id === 'save_object'"
 					v-bind="mappingOptions"
 					v-model="mappingOptions.value"
 					:loading="mappingOptions.loading"
-					input-label="Select Mapping"
+					:input-label="t('openconnector', 'Select Mapping')"
 					:multiple="false"
 					:clearable="false" />
 
@@ -144,15 +145,15 @@ import { Rule } from '../../entities/index.js'
 						v-bind="syncOptions"
 						v-model="syncOptions.value"
 						:loading="syncOptions.loading"
-						input-label="Select Synchronization"
+						:input-label="t('openconnector', 'Select Synchronization')"
 						:multiple="false"
 						:clearable="false" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
-						label="Retain response"
+						:label="t('openconnector', 'Retain response')"
 						:checked.sync="ruleItem.configuration.synchronization.retainResponse">
-						Retain original response
+						{{ t('openconnector', 'Retain original response') }}
 					</NcCheckboxRadioSwitch>
 				</template>
 
@@ -160,30 +161,30 @@ import { Rule } from '../../entities/index.js'
 				<template v-if="typeOptions.value?.id === 'error'">
 					<NcInputField
 						type="number"
-						label="Error Code"
+						:label="t('openconnector', 'Error Code')"
 						:min="100"
 						:max="999"
 						:value.sync="ruleItem.configuration.error.code"
 						placeholder="500" />
 
 					<NcTextField
-						label="Error Title"
+						:label="t('openconnector', 'Error Title')"
 						maxlength="255"
 						:value.sync="ruleItem.configuration.error.name"
-						placeholder="Something went wrong" />
+						:placeholder="t('openconnector', 'Something went wrong')" />
 
 					<NcTextArea
-						label="Error Message"
+						:label="t('openconnector', 'Error Message')"
 						resize="vertical"
 						maxlength="2550"
 						:value.sync="ruleItem.configuration.error.message"
-						placeholder="We encountered an unexpected problem" />
+						:placeholder="t('openconnector', 'We encountered an unexpected problem')" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
-						label="Include JSON Logic results in errors array"
+						:label="t('openconnector', 'Include JSON Logic results in errors array')"
 						:checked.sync="ruleItem.configuration.error.includeJsonLogicResult">
-						Include JSON Logic results in errors array
+						{{ t('openconnector', 'Include JSON Logic results in errors array') }}
 					</NcCheckboxRadioSwitch>
 				</template>
 
@@ -191,10 +192,10 @@ import { Rule } from '../../entities/index.js'
 				<template v-if="typeOptions.value?.id === 'javascript'">
 					<NcTextArea
 						resize="vertical"
-						label="JavaScript Code"
+						:label="t('openconnector', 'JavaScript Code')"
 						:value.sync="ruleItem.configuration.javascript"
 						class="code-editor"
-						placeholder="Enter your JavaScript code here..."
+						:placeholder="t('openconnector', 'Enter your JavaScript code here...')"
 						rows="10" />
 				</template>
 
@@ -203,7 +204,7 @@ import { Rule } from '../../entities/index.js'
 					<NcSelect
 						v-model="authenticationTypeOptions.value"
 						:options="authenticationTypeOptions.options"
-						input-label="Authentication Type" />
+						:input-label="t('openconnector', 'Authentication Type')" />
 					<template v-if="authenticationTypeOptions.value.value === 'api-key'">
 						<VueDraggable v-model="apiKeys" easing="ease-in-out" draggable="div:not(:last-child)">
 							<div v-for="(item, index) in apiKeys" :key="index" class="draggable-item-container">
@@ -212,16 +213,16 @@ import { Rule } from '../../entities/index.js'
 									<NcTextArea
 										:value.sync="item.apiKey"
 										:disabled="loading"
-										label="Api-key"
+										:label="t('openconnector', 'Api-key')"
 										resize="none"
 										class="apiKeyTextArea" />
 									<NcSelect
 										v-model="item.user"
 										v-bind="usersList"
-										aria-label-combobox="Select allowed user"
+										:aria-label-combobox="t('openconnector', 'Select allowed user')"
 										:user-select="true"
 										:clearable="true"
-										placeholder="Select allowed user"
+										:placeholder="t('openconnector', 'Select allowed user')"
 										class="apiKeyUserSelect" />
 								</div>
 							</div>
@@ -232,20 +233,20 @@ import { Rule } from '../../entities/index.js'
 						<NcSelect
 							v-model="ruleItem.configuration.authentication.users"
 							v-bind="usersList"
-							input-label="Allowed Users"
+							:input-label="t('openconnector', 'Allowed Users')"
 							:user-select="true"
 							:multiple="true"
 							:clearable="true"
-							placeholder="Select users who can access" />
+							:placeholder="t('openconnector', 'Select users who can access')" />
 
 						<!-- Groups Multi-Select -->
 						<NcSelect
 							v-model="ruleItem.configuration.authentication.groups"
 							v-bind="groupsList"
-							input-label="Allowed Groups"
+							:input-label="t('openconnector', 'Allowed Groups')"
 							:multiple="true"
 							:clearable="true"
-							placeholder="Select groups who can access" />
+							:placeholder="t('openconnector', 'Select groups who can access')" />
 					</template>
 				</template>
 
@@ -254,13 +255,13 @@ import { Rule } from '../../entities/index.js'
 					<div class="extendList">
 						<div v-for="(item, idx) in ruleItem.configuration.extend_input.items" :key="idx" class="extendItem">
 							<div class="extendItemProperty">
-								<label>Property (dot path)</label>
+								<label>{{ t('openconnector', 'Property (dot path)') }}</label>
 								<NcTextField
 									:value.sync="item.property"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
-								<label>Extends (dot array)</label>
+								<label>{{ t('openconnector', 'Extends (dot array)') }}</label>
 								<NcSelect
 									v-model="item.extends"
 									:taggable="true"
@@ -268,7 +269,7 @@ import { Rule } from '../../entities/index.js'
 									:clearable="true"
 									:options="[]">
 									<template #no-options>
-										type to add path to extend
+										{{ t('openconnector', 'type to add path to extend') }}
 									</template>
 								</NcSelect>
 							</div>
@@ -289,21 +290,21 @@ import { Rule } from '../../entities/index.js'
 				<template v-if="typeOptions.value?.id === 'extend_external_input'">
 					<NcCheckboxRadioSwitch
 						type="checkbox"
-						label="Validate fetched object with schema"
+						:label="t('openconnector', 'Validate fetched object with schema')"
 						:checked.sync="ruleItem.configuration.extend_external_input.validate">
-						Validate fetched object with schema
+						{{ t('openconnector', 'Validate fetched object with schema') }}
 					</NcCheckboxRadioSwitch>
 
 					<div class="extendList">
 						<div v-for="(item, idx) in ruleItem.configuration.extend_external_input.properties" :key="idx" class="extendItem">
 							<div class="extendItemProperty">
-								<label>Property</label>
+								<label>{{ t('openconnector', 'Property') }}</label>
 								<NcTextField
 									:value.sync="item.property"
 									placeholder="path.to.url" />
 							</div>
 							<div class="extendItemProperty">
-								<label>Schema ID</label>
+								<label>{{ t('openconnector', 'Schema ID') }}</label>
 								<NcTextField
 									:value.sync="item.schema"
 									placeholder="schemaId" />

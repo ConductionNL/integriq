@@ -1,6 +1,7 @@
 <script setup>
 import { sourceStore, navigationStore } from '../../store/store.js'
 import { Source } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,9 +10,9 @@ import { Source } from '../../entities/index.js'
 		label-id="editSourceConfiguration"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ isEdit ? 'Edit' : 'Add' }} Configuration</h2>
+			<h2>{{ isEdit ? t('openconnector', 'Edit') : t('openconnector', 'Add') }} {{ t('openconnector', 'Configuration') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Configuration successfully added</p>
+				<p>{{ t('openconnector', 'Configuration added successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -21,14 +22,14 @@ import { Source } from '../../entities/index.js'
 				<div class="form-group">
 					<NcTextField
 						id="key"
-						label="Key*"
+						:label="t('openconnector', 'Key*')"
 						required
 						:error="checkIfKeyIsUnique(configurationItem.key)"
-						:helper-text="checkIfKeyIsUnique(configurationItem.key) ? 'This key is already in use. Please choose a different key name.' : ''"
+						:helper-text="checkIfKeyIsUnique(configurationItem.key) ? t('openconnector', 'This key is already in use. Please choose a different key name.') : ''"
 						:value.sync="configurationItem.key" />
 					<NcTextField
 						id="value"
-						label="Value"
+						:label="t('openconnector', 'Value')"
 						:value.sync="configurationItem.value" />
 				</div>
 			</form>
@@ -40,7 +41,7 @@ import { Source } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -51,7 +52,7 @@ import { Source } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

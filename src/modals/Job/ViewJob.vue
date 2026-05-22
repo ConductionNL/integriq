@@ -6,7 +6,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewJob'"
 		ref="modalRef"
-		:name="jobStore.jobItem?.name || t('openconnector', 'Job Details')"
+		:name="jobStore.jobItem?.name || t('openconnector', 'Job details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
 			<p v-if="jobStore.jobItem?.description" class="job-description">
@@ -36,7 +36,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 							<td>{{ jobStore.jobItem?.version || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Job Class') }}</td>
+							<td>{{ t('openconnector', 'Job class') }}</td>
 							<td>{{ jobStore.jobItem?.jobClass || '-' }}</td>
 						</tr>
 						<tr>
@@ -44,27 +44,27 @@ import { jobStore, navigationStore } from '../../store/store.js'
 							<td>{{ jobStore.jobItem?.interval || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Execution Time') }}</td>
+							<td>{{ t('openconnector', 'Execution time') }}</td>
 							<td>{{ jobStore.jobItem?.executionTime || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Time Sensitive') }}</td>
+							<td>{{ t('openconnector', 'Time sensitive') }}</td>
 							<td>{{ jobStore.jobItem?.timeSensitive || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Allow Parallel Runs') }}</td>
+							<td>{{ t('openconnector', 'Allow parallel runs') }}</td>
 							<td>{{ jobStore.jobItem?.allowParallelRuns || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Single Run') }}</td>
+							<td>{{ t('openconnector', 'Single run') }}</td>
 							<td>{{ jobStore.jobItem?.singleRun || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Next Run') }}</td>
+							<td>{{ t('openconnector', 'Next run') }}</td>
 							<td>{{ getValidISOstring(jobStore.jobItem?.nextRun) ? new Date(jobStore.jobItem.nextRun).toLocaleString() : 'N/A' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Last Run') }}</td>
+							<td>{{ t('openconnector', 'Last run') }}</td>
 							<td>{{ getValidISOstring(jobStore.jobItem?.lastRun) ? new Date(jobStore.jobItem.lastRun).toLocaleString() : 'N/A' }}</td>
 						</tr>
 					</tbody>
@@ -114,7 +114,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 								</template>
 								<template #action>
 									<NcButton @click="addJobArgument">
-										{{ t('openconnector', 'Add Argument') }}
+										{{ t('openconnector', 'Add argument') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>

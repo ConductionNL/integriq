@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { sourceStore, navigationStore } from '../../store/store.js'
 import { Source } from '../../entities/index.js'
 </script>
@@ -9,9 +10,9 @@ import { Source } from '../../entities/index.js'
 		label-id="editSource"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ sourceItem?.id ? 'Edit' : 'Add' }} Source</h2>
+			<h2>{{ sourceItem?.id ? t('openconnector', 'Edit Source') : t('openconnector', 'Add Source') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Source successfully added</p>
+				<p>{{ t('openconnector', 'Source successfully added') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -21,13 +22,13 @@ import { Source } from '../../entities/index.js'
 				<div class="form-group">
 					<NcTextField
 						id="name"
-						label="Name*"
+						:label="t('openconnector', 'Name') + '*'"
 						:value.sync="sourceItem.name" />
 
 					<NcTextArea
 						id="description"
 						resize="vertical"
-						label="Description"
+						:label="t('openconnector', 'Description')"
 						:value.sync="sourceItem.description" />
 
 					<NcSelect
@@ -37,9 +38,9 @@ import { Source } from '../../entities/index.js'
 
 					<NcTextField
 						id="location"
-						label="location*"
+						:label="t('openconnector', 'Location') + '*'"
 						:value.sync="sourceItem.location"
-						:helper-text="`The location of the source will never end on a /. If a / is added it will be removed on saving.`" />
+						:helper-text="t('openconnector', 'The location of the source will never end on a /. If a / is added it will be removed on saving.')" />
 				</div>
 			</form>
 			<div class="modal-actions">
@@ -49,7 +50,7 @@ import { Source } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -60,7 +61,7 @@ import { Source } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

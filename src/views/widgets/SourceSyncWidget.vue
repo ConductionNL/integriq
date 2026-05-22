@@ -4,7 +4,7 @@
 		:item-menu="itemMenu"
 		@show="onShow">
 		<template #empty-content>
-			<NcEmptyContent :title="t('openconnector', 'Geen bronnen gevonden')">
+			<NcEmptyContent :title="t('openconnector', 'No sources found')">
 				<template #icon>
 					<DatabaseIcon />
 				</template>
@@ -38,7 +38,7 @@ export default {
 			sources: [],
 			itemMenu: {
 				show: {
-					text: t('openconnector', 'Bekijk bron'),
+					text: t('openconnector', 'View source'),
 					icon: 'icon-link',
 				},
 			},
@@ -49,14 +49,14 @@ export default {
 			return this.sources.map((source) => {
 				const lastSync = source.lastSync || source.dateModified || null
 				const lastSyncText = lastSync
-					? t('openconnector', 'Laatst gesynchroniseerd: {date}', { date: this.formatDate(lastSync) })
-					: t('openconnector', 'Nog niet gesynchroniseerd')
+					? t('openconnector', 'Last synced: {date}', { date: this.formatDate(lastSync) })
+					: t('openconnector', 'Not yet synchronized')
 				const status = source.status || 'unknown'
 				const statusText = this.getStatusText(status)
 
 				return {
 					id: source.id,
-					mainText: source.name || t('openconnector', 'Naamloze bron'),
+					mainText: source.name || t('openconnector', 'Unnamed source'),
 					subText: lastSyncText + ' - ' + statusText,
 					avatarUrl: '',
 				}
@@ -94,10 +94,10 @@ export default {
 		 */
 		getStatusText(status) {
 			const statusMap = {
-				active: t('openconnector', 'Actief'),
-				inactive: t('openconnector', 'Inactief'),
-				error: t('openconnector', 'Fout'),
-				unknown: t('openconnector', 'Onbekend'),
+				active: t('openconnector', 'Active'),
+				inactive: t('openconnector', 'Inactive'),
+				error: t('openconnector', 'Error'),
+				unknown: t('openconnector', 'Unknown'),
 			}
 			return statusMap[status] || status
 		},

@@ -3,23 +3,16 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
-use OCA\OpenConnector\Db\Job;
-use OCA\OpenConnector\Db\JobMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\BackgroundJob\IJobList;
-use OCA\OpenConnector\Db\JobLogMapper;
-use OCA\OpenConnector\Service\JobService;
-use OCP\AppFramework\Db\DoesNotExistException;
-
-use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Db\SynchronizationMapper;
 
 /**
  * @SuppressWarnings(PHPMD.ShortVariable)
@@ -36,24 +29,22 @@ class JobsController extends Controller
     /**
      * Constructor for the JobController
      *
-     * @param string     $appName The name of the app
-     * @param IRequest   $request The request object
-     * @param IAppConfig $config  The app configuration object
+     * @param string          $appName         The name of the app
+     * @param IRequest        $request         The request object
+     * @param IAppConfig      $config          The app configuration object
+     * @param OrObjectService $orObjectService The OR object service
+     * @param JobService      $jobService      The job service (used by run/test action methods)
+     * @param IL10N           $l               The localization service
      */
     public function __construct(
         $appName,
         IRequest $request,
         private IAppConfig $config,
-        private JobMapper $jobMapper,
-        private JobLogMapper $jobLogMapper,
+        private OrObjectService $orObjectService,
         private JobService $jobService,
-        private IJobList $jobList,
-        private SynchronizationService $synchronizationService,
-        private SynchronizationMapper $synchronizationMapper,
         private IL10N $l
     ) {
         parent::__construct($appName, $request);
-        $this->jobList = $jobList;
     }//end __construct()
 
     /**
@@ -74,131 +65,6 @@ class JobsController extends Controller
             []
         );
     }//end page()
-
-    /**
-     * Retrieves a list of all jobs
-     *
-     * This method returns a JSON response containing an array of all jobs in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of jobs
-     */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
-
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-        return new JSONResponse(['results' => $this->jobMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }//end index()
-
-    /**
-     * Retrieves a single job by its ID
-     *
-     * This method returns a JSON response containing the details of a specific job.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the job to retrieve
-     * @return JSONResponse A JSON response containing the job details
-     */
-    public function show(string $id): JSONResponse
-    {
-        try {
-            return new JSONResponse($this->jobMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
-        }
-    }//end show()
-
-    /**
-     * Creates a new job
-     *
-     * This method creates a new job based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created job
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        // Create the job
-        $job = $this->jobMapper->createFromArray(object: $data);
-        // Let's schedule the job
-        $job = $this->jobService->scheduleJob($job);
-
-        return new JSONResponse($job);
-    }//end create()
-
-    /**
-     * Updates an existing job
-     *
-     * This method updates an existing job based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the job to update
-     * @return JSONResponse A JSON response containing the updated job details
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        // Create the job
-        $job = $this->jobMapper->updateFromArray(id: (int) $id, object: $data);
-        // Let's schedule the job
-        $job = $this->jobService->scheduleJob($job);
-
-        return new JSONResponse($job);
-    }//end update()
-
-    /**
-     * Deletes a job
-     *
-     * This method deletes a job based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the job to delete
-     * @return JSONResponse An empty JSON response
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        $this->jobMapper->delete($this->jobMapper->find((int) $id));
-
-        return new JSONResponse([]);
-    }//end destroy()
 
     /**
      * Retrieves job logs with filtering and pagination support
@@ -278,17 +144,11 @@ class JobsController extends Controller
             // Remove special query params from filters
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-            // Get job logs with filters and pagination
-            $jobLogs = $this->jobLogMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams
-            );
-
-            // Get total count for pagination
-            $total       = $this->jobLogMapper->getTotalCount($filters);
+            // Get job logs with filters and pagination via OR ObjectService
+            $orFilters   = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
+            $matches     = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+            $jobLogs     = $matches['results'] ?? $matches;
+            $total       = $matches['total'] ?? count($jobLogs);
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;
             $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
 
@@ -322,9 +182,12 @@ class JobsController extends Controller
     public function run(int $id): JSONResponse
     {
         try {
-            // Get the job
-            $job = $this->jobMapper->find($id);
+            $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
+        }
 
+        try {
             // Get execution parameters from request
             $parameters = $this->request->getParams();
 
@@ -343,8 +206,6 @@ class JobsController extends Controller
 
             // Return the execution results
             return new JSONResponse($result);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
@@ -365,9 +226,12 @@ class JobsController extends Controller
     public function test(int $id): JSONResponse
     {
         try {
-            // Get the job
-            $job = $this->jobMapper->find($id);
+            $job = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'job');
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
+        }
 
+        try {
             // Get execution parameters from request
             $parameters = $this->request->getParams();
 
@@ -386,8 +250,6 @@ class JobsController extends Controller
 
             // Return the execution results
             return new JSONResponse($result);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try

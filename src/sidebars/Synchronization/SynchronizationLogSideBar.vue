@@ -5,7 +5,7 @@ import { navigationStore, synchronizationStore, contractStore } from '../../stor
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		:name="t('openconnector', 'Synchronization Log Management')"
+		:name="t('openconnector', 'Synchronization log management')"
 		:subtitle="t('openconnector', 'Filter and manage synchronization logs')"
 		:subname="t('openconnector', 'Export, view, or delete logs')"
 		:open="navigationStore.sidebarState.logs"
@@ -17,7 +17,7 @@ import { navigationStore, synchronizationStore, contractStore } from '../../stor
 
 			<!-- Filter Section -->
 			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Logs') }}</h3>
+				<h3>{{ t('openconnector', 'Filter logs') }}</h3>
 				<div class="filterGroup">
 					<label>{{ t('openconnector', 'Level') }}</label>
 					<NcSelect
@@ -49,7 +49,7 @@ import { navigationStore, synchronizationStore, contractStore } from '../../stor
 						@input="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
+					<label>{{ t('openconnector', 'Date range') }}</label>
 					<DateRangeInput
 						:start="filters.dateFrom"
 						:end="filters.dateTo"
@@ -72,7 +72,7 @@ import { navigationStore, synchronizationStore, contractStore } from '../../stor
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
 		</NcAppSidebarTab>
@@ -82,13 +82,13 @@ import { navigationStore, synchronizationStore, contractStore } from '../../stor
 				<ChartLine :size="20" />
 			</template>
 			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Log Statistics') }}</h3>
+				<h3>{{ t('openconnector', 'Log statistics') }}</h3>
 				<div class="statCard">
 					<div class="statNumber">
 						{{ filteredCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Total Logs') }}
+						{{ t('openconnector', 'Total logs') }}
 					</div>
 				</div>
 			</div>

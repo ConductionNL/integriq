@@ -1,6 +1,7 @@
 <script setup>
 import { synchronizationStore, navigationStore } from '../../store/store.js'
 import { Synchronization } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -8,9 +9,9 @@ import { Synchronization } from '../../entities/index.js'
 		label-id="editTargetConfig"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ synchronizationStore.synchronizationTargetConfigKey ? 'Edit' : 'Add' }} Target Config</h2>
+			<h2>{{ synchronizationStore.synchronizationTargetConfigKey ? t('openconnector', 'Edit') : t('openconnector', 'Add') }} {{ t('openconnector', 'Target Config') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Target Config successfully added</p>
+				<p>{{ t('openconnector', 'Target config added successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -20,14 +21,14 @@ import { Synchronization } from '../../entities/index.js'
 				<div class="form-group">
 					<NcTextField
 						id="targetConfigKey"
-						label="Target Config Key*"
+						:label="t('openconnector', 'Target Config Key*')"
 						required
 						:error="isTaken(targetConfig.key)"
-						:helper-text="isTaken(targetConfig.key) ? 'This target config key is already in use. Please choose a different key name.' : ''"
+						:helper-text="isTaken(targetConfig.key) ? t('openconnector', 'This target config key is already in use. Please choose a different key name.') : ''"
 						:value.sync="targetConfig.key" />
 					<NcTextField
 						id="targetConfigValue"
-						label="Target Config Value*"
+						:label="t('openconnector', 'Target Config Value*')"
 						required
 						:value.sync="targetConfig.value" />
 				</div>
@@ -39,7 +40,7 @@ import { Synchronization } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton v-if="!success"
 					:disabled="loading
@@ -55,7 +56,7 @@ import { Synchronization } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

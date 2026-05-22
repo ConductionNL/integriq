@@ -7,10 +7,10 @@ use Exception;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
-use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Db\Source;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -18,8 +18,6 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Db\CallLog;
-use OCA\OpenConnector\Db\CallLogMapper;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCP\IAppConfig;
@@ -72,14 +70,12 @@ class CallService
     /**
      * The constructor sets al needed variables.
      *
-     * @param CallLogMapper         $callLogMapper
-     * @param SourceMapper          $sourceMapper
+     * @param ORObjectService       $objectService
      * @param ArrayLoader           $loader
      * @param AuthenticationService $authenticationService
      */
     public function __construct(
-        private readonly CallLogMapper $callLogMapper,
-        private readonly SourceMapper $sourceMapper,
+        private readonly ORObjectService $objectService,
         ArrayLoader $loader,
         AuthenticationService $authenticationService,
         IAppConfig $appConfig,
@@ -120,30 +116,30 @@ class CallService
      * Renders a value using Twig templating if the value contains template syntax.
      * If the value is an array, recursively renders each element.
      *
-     * @param array|string $value  The value to render, which can be a string or an array.
-     * @param Source       $source The source object used as context for rendering templates.
+     * @param array|string $value      The value to render, which can be a string or an array.
+     * @param array        $sourceData The source data array used as context for rendering templates.
      *
      * @return array|string The rendered value, either as a processed string or an array.
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      */
-    private function renderValue(array|string $value, Source $source): array|string
+    private function renderValue(array|string $value, array $sourceData): array|string
     {
         if (is_array($value) === false
             && str_contains(haystack: $value, needle: "{{") === true
             && str_contains(haystack: $value, needle: "}}") === true
         ) {
-            return $this->twig->createTemplate(template: $value, name: "sourceConfig")->render(context: ['source' => $source]);
+            return $this->twig->createTemplate(template: $value, name: "sourceConfig")->render(context: ['source' => $sourceData]);
         }
 
         if (is_array($value) === true) {
             $value = array_map(
-            function ($value) use ($source) {
+            function ($value) use ($sourceData) {
                 if (is_string($value) === false && is_array($value) === false) {
                     return $value;
                 }
 
-                    return $this->renderValue($value, $source);
+                    return $this->renderValue($value, $sourceData);
             },
                 $value
             );
@@ -156,19 +152,19 @@ class CallService
      * Renders configuration values using Twig templating, applying the provided source as context.
      * Recursively processes all values in the configuration array.
      *
-     * @param array  $configuration The configuration array to render.
-     * @param Source $source        The source object used as context for rendering templates.
+     * @param array $configuration The configuration array to render.
+     * @param array $sourceData    The source data array used as context for rendering templates.
      *
      * @return array The rendered configuration array.
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      */
-    private function renderConfiguration(array $configuration, Source $source): array
+    private function renderConfiguration(array $configuration, array $sourceData): array
     {
         return array_map(
-          function ($value) use ($source) {
+          function ($value) use ($sourceData) {
             if (is_string($value) === true || is_array($value) === true) {
-                return $this->renderValue($value, $source);
+                return $this->renderValue($value, $sourceData);
             }
 
             return $value;
@@ -315,22 +311,22 @@ class CallService
     /**
      * Calls a source according to given configuration.
      *
-     * @param Source $source             The source to call.
-     * @param string $endpoint           The endpoint on the source to call.
-     * @param string $method             The method on which to call the source.
-     * @param array  $config             The additional configuration to call the source.
-     * @param bool   $asynchronous       Whether to call the source asynchronously.
-     * @param bool   $createCertificates Whether to create certificates for this source.
-     * @param bool   $overruleAuth       ???
+     * @param ObjectEntity $source             The source ObjectEntity to call.
+     * @param string       $endpoint           The endpoint on the source to call.
+     * @param string       $method             The method on which to call the source.
+     * @param array        $config             The additional configuration to call the source.
+     * @param bool         $asynchronous       Whether to call the source asynchronously.
+     * @param bool         $createCertificates Whether to create certificates for this source.
+     * @param bool         $overruleAuth       ???
      *
-     * @return CallLog
+     * @return ObjectEntity
      * @throws GuzzleException
      * @throws LoaderError
      * @throws SyntaxError
      * @throws \OCP\DB\Exception
      */
     public function call(
-        Source $source,
+        ObjectEntity $source,
         string $endpoint='',
         string $method='GET',
         array $config=[],
@@ -339,75 +335,86 @@ class CallService
         bool $overruleAuth=false,
         bool $read=false,
         bool $runningSupportRequest=false,
-    ): CallLog {
-        $this->source = $source;
+    ): ObjectEntity {
+        $sourceData = $source->getObject();
 
-        $errorExpires   = $this->calculateExpires($source->getErrorRetention() * 1000, $this->errorRetention);
-        $successExpires = $this->calculateExpires($source->getLogRetention() * 1000, $this->successRetention);
+        $errorRetention = (int) ($sourceData['errorRetention'] ?? 0);
+        $logRetention   = (int) ($sourceData['logRetention'] ?? 0);
+        $errorExpires   = $this->calculateExpires($errorRetention * 1000, $this->errorRetention);
+        $successExpires = $this->calculateExpires($logRetention * 1000, $this->successRetention);
 
         $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
         unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
-        if ($this->source->getIsEnabled() === null || $this->source->getIsEnabled() === false) {
-            // Create and save the CallLog
-            $callLog = new CallLog();
-            $callLog->setUuid(Uuid::v4());
-            $callLog->setSourceId($this->source->getId());
-            $callLog->setStatusCode(409);
-            $callLog->setStatusMessage("This source is not enabled");
-            $callLog->setCreated(new \DateTime());
-            $callLog->setExpires($errorExpires);
-
-            $this->callLogMapper->insert($callLog);
-
-            return $callLog;
+        if (($sourceData['isEnabled'] ?? null) === null || ($sourceData['isEnabled'] ?? false) === false) {
+            return $this->objectService->saveObject(
+                object: [
+                    'sourceId'      => $source->getUuid(),
+                    'statusCode'    => 409,
+                    'statusMessage' => 'This source is not enabled',
+                    'created'       => (new \DateTime())->format('c'),
+                    'expires'       => $errorExpires !== null ? $errorExpires->format('c') : null,
+                ],
+                register: 'openconnector',
+                schema: 'call_log'
+            );
         }
 
-        if (empty($this->source->getLocation()) === true) {
-            // Create and save the CallLog
-            $callLog = new CallLog();
-            $callLog->setUuid(Uuid::v4());
-            $callLog->setSourceId($this->source->getId());
-            $callLog->setStatusCode(409);
-            $callLog->setStatusMessage("This source has no location");
-            $callLog->setCreated(new \DateTime());
-            $callLog->setExpires($errorExpires);
-
-            $this->callLogMapper->insert($callLog);
-
-            return $callLog;
+        if (empty($sourceData['location'] ?? '') === true) {
+            return $this->objectService->saveObject(
+                object: [
+                    'sourceId'      => $source->getUuid(),
+                    'statusCode'    => 409,
+                    'statusMessage' => 'This source has no location',
+                    'created'       => (new \DateTime())->format('c'),
+                    'expires'       => $errorExpires !== null ? $errorExpires->format('c') : null,
+                ],
+                register: 'openconnector',
+                schema: 'call_log'
+            );
         }
 
         // Check if Source has a RateLimit and if we need to reset RateLimit-Reset and RateLimit-Remaining.
-        if ($this->source->getRateLimitReset() !== null
-            && $this->source->getRateLimitRemaining() !== null
-            && $this->source->getRateLimitReset() <= time()
-        ) {
-            $this->source->setRateLimitReset(null);
-            $this->source->setRateLimitRemaining(null);
+        $rateLimitReset     = $sourceData['rateLimitReset'] ?? null;
+        $rateLimitRemaining = $sourceData['rateLimitRemaining'] ?? null;
+        $rateLimitWindow    = $sourceData['rateLimitWindow'] ?? null;
+        $rateLimitLimit     = $sourceData['rateLimitLimit'] ?? null;
 
-            $this->sourceMapper->update($source);
+        if ($rateLimitReset !== null
+            && $rateLimitRemaining !== null
+            && $rateLimitReset <= time()
+        ) {
+            $sourceData['rateLimitReset']     = null;
+            $sourceData['rateLimitRemaining'] = null;
+            $rateLimitReset     = null;
+            $rateLimitRemaining = null;
+
+            $this->objectService->saveObject(
+                object: $sourceData,
+                register: 'openconnector',
+                schema: 'source',
+                uuid: $source->getUuid()
+            );
         }
 
         // Check if RateLimit-Remaining is set on this source and if limit has been reached.
-        if ($this->source->getRateLimitRemaining() !== null && $this->source->getRateLimitRemaining() <= 0) {
-            // Create and save the CallLog
-            $callLog = new CallLog();
-            $callLog->setUuid(Uuid::v4());
-            $callLog->setSourceId($this->source->getId());
-            $callLog->setStatusCode(429);
-            $callLog->setStatusMessage("The rate limit for this source has been exceeded. Try again later.");
-            $callLog->setCreated(new \DateTime());
-            $callLog->setExpires($errorExpires);
-
-            $this->callLogMapper->insert($callLog);
-
-            return $callLog;
+        if ($rateLimitRemaining !== null && $rateLimitRemaining <= 0) {
+            return $this->objectService->saveObject(
+                object: [
+                    'sourceId'      => $source->getUuid(),
+                    'statusCode'    => 429,
+                    'statusMessage' => 'The rate limit for this source has been exceeded. Try again later.',
+                    'created'       => (new \DateTime())->format('c'),
+                    'expires'       => $errorExpires !== null ? $errorExpires->format('c') : null,
+                ],
+                register: 'openconnector',
+                schema: 'call_log'
+            );
         }
 
         // Check if the source has a configuration and merge it with the given config
-        if (empty($this->source->getConfiguration()) === false) {
-            $config = array_merge_recursive($config, $this->applyConfigDot($this->source->getConfiguration()));
+        if (empty($sourceData['configuration'] ?? []) === false) {
+            $config = array_merge_recursive($config, $this->applyConfigDot($sourceData['configuration']));
         }
 
         if (isset($config['preRequest']) === true && $runningSupportRequest === false) {
@@ -445,10 +452,10 @@ class CallService
             unset($config['pagination']);
         }
 
-        $config = $this->renderConfiguration(configuration: $config, source: $source);
+        $config = $this->renderConfiguration(configuration: $config, sourceData: $sourceData);
 
         // Set the URL to call and add an endpoint if needed
-        $url = $this->source->getLocation().$endpoint;
+        $url = ($sourceData['location'] ?? '').$endpoint;
 
         // Set authentication if needed.
         $this->getCertificate($config);
@@ -469,12 +476,14 @@ class CallService
         $config['http_errors'] = false;
 
         // Let's log the call.
-        $this->source->setLastCall(new \DateTime());
+        $sourceData['lastCall'] = (new \DateTime())->format('c');
         // @todo: save the source
         // Let's make the call.
         $timeStart = microtime(true);
 
-        if ($source->getType() === 'soap') {
+        $sourceType = $sourceData['type'] ?? null;
+
+        if ($sourceType === 'soap') {
             // If the source type is SOAP, use the soap service.
             // Warning: This functionality requires ext-soap and ext-xsd.
             $soapService = new SOAPService($this->cookieJar);
@@ -482,7 +491,7 @@ class CallService
             $response = $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
         }
 
-        if ($source->getType() !== 'soap') {
+        if ($sourceType !== 'soap') {
             try {
                 if ($asynchronous === false) {
                     $response = $this->client->request($method, $url, $config);
@@ -527,32 +536,38 @@ class CallService
         ];
 
         // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
-        $data['response']['headers'] = $this->sourceRateLimit($source, $data['response']['headers']);
+        $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
 
-        // Create and save the CallLog
-        $callLog = new CallLog();
-        $callLog->setUuid(Uuid::v4());
-        $callLog->setSourceId($this->source->getId());
-        $callLog->setStatusCode($data['response']['statusCode']);
-        $callLog->setStatusMessage($data['response']['statusMessage']);
-        $callLog->setRequest($data['request']);
-        $callLog->setCreated(new \DateTime());
-        $callLog->setExpires($data['response']['statusCode'] < 400 ? $successExpires : $errorExpires);
-
-        // Only persist response body if we get bad requests or server errors.
+        // Build call log data
+        $statusCode   = $data['response']['statusCode'];
         $responseData = $data['response'];
-        if ($callLog->getStatusCode() < 400 || $callLog->getStatusCode() >= 600) {
+        // Only persist response body for 4xx/5xx errors
+        if ($statusCode < 400 || $statusCode >= 600) {
             if ($logBody !== true) {
                 unset($responseData['body']);
             }
         }
 
-        $callLog->setResponse($responseData);
+        $callLogData = [
+            'sourceId'      => $source->getUuid(),
+            'statusCode'    => $statusCode,
+            'statusMessage' => $data['response']['statusMessage'],
+            'request'       => $data['request'],
+            'response'      => $responseData,
+            'created'       => (new \DateTime())->format('c'),
+            'expires'       => ($statusCode < 400 ? $successExpires : $errorExpires) !== null ? ($statusCode < 400 ? $successExpires : $errorExpires)->format('c') : null,
+        ];
 
-        $this->callLogMapper->insert($callLog);
+        $callLog = $this->objectService->saveObject(
+            object: $callLogData,
+            register: 'openconnector',
+            schema: 'call_log'
+        );
 
-        // Set response after persist so we can process the response body.
-        $callLog->setResponse($data['response']);
+        // Set full response (with body) on the returned entity for processing
+        $callLogFullData = $callLog->getObject();
+        $callLogFullData['response'] = $data['response'];
+        $callLog->setObject($callLogFullData);
 
         if (isset($postRequest) === true && $runningSupportRequest === false) {
             $this->call(source: $source, endpoint: $postRequest['endpoint'], config: $postRequest['config'], runningSupportRequest: true);
@@ -565,61 +580,83 @@ class CallService
      * Update the source with rate limit info if any of the rate limit headers are found. Else checks if config on the
      * source has been set for Rate Limit. And update the response headers with this Rate Limit info.
      *
-     * @param Source $source  The source to update.
-     * @param array  $headers The response headers to check for Rate Limit headers.
+     * @param ObjectEntity $source     The source ObjectEntity to update.
+     * @param array        $sourceData The mutable source data array.
+     * @param array        $headers    The response headers to check for Rate Limit headers.
      *
      * @return array The updated response headers.
      * @throws \OCP\DB\Exception
      */
-    private function sourceRateLimit(Source $source, array $headers): array
+    private function sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers): array
     {
+        $changed = false;
+
         // Check if RateLimit-Reset is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Reset']) === true) {
-            $source->setRateLimitReset($headers['X-RateLimit-Reset']);
+            $sourceData['rateLimitReset'] = $headers['X-RateLimit-Reset'];
+            $changed = true;
         }
+
+        $rateLimitReset     = $sourceData['rateLimitReset'] ?? null;
+        $rateLimitWindow    = $sourceData['rateLimitWindow'] ?? null;
+        $rateLimitLimit     = $sourceData['rateLimitLimit'] ?? null;
+        $rateLimitRemaining = $sourceData['rateLimitRemaining'] ?? null;
 
         // If RateLimit-Reset not in headers and source->RateLimit-Reset === null. But source->RateLimit-Window is set.
         if (isset($headers['X-RateLimit-Reset']) === false
-            && $source->getRateLimitReset() === null
-            && $source->getRateLimitWindow() !== null
+            && $rateLimitReset === null
+            && $rateLimitWindow !== null
         ) {
             // Set new RateLimit-Reset time on the source.
-            $rateLimitReset = time() + $source->getRateLimitWindow();
-            $source->setRateLimitReset($rateLimitReset);
+            $sourceData['rateLimitReset'] = time() + $rateLimitWindow;
+            $rateLimitReset = $sourceData['rateLimitReset'];
+            $changed        = true;
         }
 
         // Check if RateLimit-Limit is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Limit']) === true) {
-            $source->setRateLimitLimit($headers['X-RateLimit-Limit']);
+            $sourceData['rateLimitLimit'] = $headers['X-RateLimit-Limit'];
+            $rateLimitLimit = $sourceData['rateLimitLimit'];
+            $changed        = true;
         }
 
         // Check if RateLimit-Remaining is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Remaining']) === true) {
-            $source->setRateLimitRemaining($headers['X-RateLimit-Remaining']);
+            $sourceData['rateLimitRemaining'] = $headers['X-RateLimit-Remaining'];
+            $rateLimitRemaining = $sourceData['rateLimitRemaining'];
+            $changed            = true;
         }
 
         // If RateLimit-Remaining not in headers and source->RateLimit-Limit is set, update source->RateLimit-Remaining.
-        if (isset($headers['X-RateLimit-Remaining']) === false && $source->getRateLimitLimit() !== null) {
-            $rateLimitRemaining = $source->getRateLimitRemaining();
+        if (isset($headers['X-RateLimit-Remaining']) === false && $rateLimitLimit !== null) {
             if ($rateLimitRemaining === null) {
                 // Re-set the RateLimit-Remaining on the source.
-                $rateLimitRemaining = $source->getRateLimitLimit();
+                $rateLimitRemaining = $rateLimitLimit;
             }
 
-            $source->setRateLimitRemaining($rateLimitRemaining - 1);
+            $sourceData['rateLimitRemaining'] = $rateLimitRemaining - 1;
+            $rateLimitRemaining = $sourceData['rateLimitRemaining'];
+            $changed            = true;
         }
 
-        $this->sourceMapper->update($source);
+        if ($changed === true) {
+            $this->objectService->saveObject(
+                object: $sourceData,
+                register: 'openconnector',
+                schema: 'source',
+                uuid: $source->getUuid()
+            );
+        }
 
-        if ($source->getRateLimitLimit() !== null || $source->getRateLimitWindow() !== null) {
+        if ($rateLimitLimit !== null || $rateLimitWindow !== null) {
             $headers = array_merge(
             $headers,
             [
-                'X-RateLimit-Limit'     => [(string) $source->getRateLimitLimit()],
-                'X-RateLimit-Remaining' => [(string) $source->getRateLimitRemaining()],
-                'X-RateLimit-Reset'     => [(string) $source->getRateLimitReset()],
+                'X-RateLimit-Limit'     => [(string) $rateLimitLimit],
+                'X-RateLimit-Remaining' => [(string) $rateLimitRemaining],
+                'X-RateLimit-Reset'     => [(string) $rateLimitReset],
                 'X-RateLimit-Used'      => ["1"],
-                'X-RateLimit-Window'    => [(string) $source->getRateLimitWindow()],
+                'X-RateLimit-Window'    => [(string) $rateLimitWindow],
             ]
             );
             ksort($headers);

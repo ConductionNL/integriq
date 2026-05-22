@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { jobStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -8,7 +9,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 		label-id="testJob"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>Test job</h2>
+			<h2>{{ t('openconnector', 'Test job') }}</h2>
 
 			<div class="modal-actions">
 				<NcButton v-if="!success"
@@ -16,7 +17,7 @@ import { jobStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					:disabled="loading"
@@ -26,46 +27,46 @@ import { jobStore, navigationStore } from '../../store/store.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<Sync v-if="!loading" :size="20" />
 					</template>
-					Test job
+					{{ t('openconnector', 'Test job') }}
 				</NcButton>
 			</div>
 			<div v-if="jobStore.jobTest">
 				<NcNoteCard v-if="jobStore.jobTest?.level === 'INFO'" type="success">
-					<p>The job test was successful. {{ jobStore.jobTest?.message }}</p>
+					<p>{{ t('openconnector', 'The job test was successful.') }} {{ jobStore.jobTest?.message }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="(jobStore.jobTest?.level !== 'INFO') || error" type="error">
-					<p>An error occurred while testing the job test: {{ jobStore.jobTest ? jobStore.jobTest.message : error }}</p>
+					<p>{{ t('openconnector', 'An error occurred while testing the job:') }} {{ jobStore.jobTest ? jobStore.jobTest.message : error }}</p>
 				</NcNoteCard>
 			</div>
 
 			<div v-if="jobStore.jobTest" class="jobTestTable">
 				<table>
 					<tr>
-						<th>UUID</th>
+						<th>{{ t('openconnector', 'UUID') }}</th>
 						<td>{{ jobStore.jobTest.uuid }}</td>
 					</tr>
 					<tr>
-						<th>Level</th>
+						<th>{{ t('openconnector', 'Level') }}</th>
 						<td>{{ jobStore.jobTest.level }}</td>
 					</tr>
 					<tr>
-						<th>Message</th>
+						<th>{{ t('openconnector', 'Message') }}</th>
 						<td>{{ jobStore.jobTest.message }}</td>
 					</tr>
 					<tr>
-						<th>Job ID</th>
+						<th>{{ t('openconnector', 'Job ID') }}</th>
 						<td>{{ jobStore.jobTest.jobId }}</td>
 					</tr>
 					<tr>
-						<th>Job List ID</th>
+						<th>{{ t('openconnector', 'Job List ID') }}</th>
 						<td>{{ jobStore.jobTest.jobListId }}</td>
 					</tr>
 					<tr>
-						<th>Job Class</th>
-						<td>{{ jobStore.jobTest.jobClass || 'N/A' }}</td>
+						<th>{{ t('openconnector', 'Job class') }}</th>
+						<td>{{ jobStore.jobTest.jobClass || t('openconnector', 'N/A') }}</td>
 					</tr>
 					<tr>
-						<th>Arguments</th>
+						<th>{{ t('openconnector', 'Arguments') }}</th>
 						<td>
 							<ul>
 								<li v-for="(value, key) in jobStore.jobTest.arguments" :key="key">
@@ -75,19 +76,19 @@ import { jobStore, navigationStore } from '../../store/store.js'
 						</td>
 					</tr>
 					<tr>
-						<th>Execution Time</th>
+						<th>{{ t('openconnector', 'Execution time') }}</th>
 						<td>{{ jobStore.jobTest.executionTime }} ms</td>
 					</tr>
 					<tr>
-						<th>User ID</th>
-						<td>{{ jobStore.jobTest.userId || 'N/A' }}</td>
+						<th>{{ t('openconnector', 'User ID') }}</th>
+						<td>{{ jobStore.jobTest.userId || t('openconnector', 'N/A') }}</td>
 					</tr>
 					<tr>
-						<th>Session ID</th>
-						<td>{{ jobStore.jobTest.sessionId || 'N/A' }}</td>
+						<th>{{ t('openconnector', 'Session ID') }}</th>
+						<td>{{ jobStore.jobTest.sessionId || t('openconnector', 'N/A') }}</td>
 					</tr>
 					<tr>
-						<th>Stack Trace</th>
+						<th>{{ t('openconnector', 'Stack Trace') }}</th>
 						<td>
 							<ol>
 								<li v-for="(step, index) in jobStore.jobTest.stackTrace" :key="index">

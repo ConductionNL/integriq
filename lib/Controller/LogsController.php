@@ -18,9 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Db\SynchronizationLog;
-use OCA\OpenConnector\Db\SynchronizationLogMapper;
 use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
@@ -44,18 +43,11 @@ class LogsController extends Controller
 {
 
     /**
-     * The synchronization log mapper
+     * The OR object service
      *
-     * @var SynchronizationLogMapper
+     * @var OrObjectService
      */
-    private SynchronizationLogMapper $synchronizationLogMapper;
-
-    /**
-     * The object service
-     *
-     * @var ObjectService
-     */
-    private ObjectService $objectService;
+    private OrObjectService $orObjectService;
 
     /**
      * The localization service
@@ -67,23 +59,20 @@ class LogsController extends Controller
     /**
      * Constructor for the LogsController
      *
-     * @param string                   $appName                  The application name
-     * @param IRequest                 $request                  The request interface
-     * @param SynchronizationLogMapper $synchronizationLogMapper The synchronization log mapper
-     * @param ObjectService            $objectService            The object service
-     * @param IL10N                    $l                        The localization service
+     * @param string          $appName         The application name
+     * @param IRequest        $request         The request interface
+     * @param OrObjectService $orObjectService The OR object service
+     * @param IL10N           $l               The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        SynchronizationLogMapper $synchronizationLogMapper,
-        ObjectService $objectService,
+        OrObjectService $orObjectService,
         IL10N $l
     ) {
         parent::__construct($appName, $request);
 
-        $this->synchronizationLogMapper = $synchronizationLogMapper;
-        $this->objectService            = $objectService;
+        $this->orObjectService = $orObjectService;
         $this->l = $l;
     }//end __construct()
 
@@ -138,9 +127,11 @@ class LogsController extends Controller
             $filters['date_to'] = $dateTo;
         }
 
-        // Get logs with pagination
-        $logs  = $this->synchronizationLogMapper->findAll($limit, $offset, $filters);
-        $total = $this->synchronizationLogMapper->getTotalCount($filters);
+        // Get logs with pagination via OR ObjectService
+        $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+        $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+        $logs      = $matches['results'] ?? $matches;
+        $total     = $matches['total'] ?? count($logs);
 
         // Calculate pagination info
         $pages       = $limit > 0 ? ceil($total / $limit) : 1;
@@ -174,12 +165,12 @@ class LogsController extends Controller
      */
     public function show(string $id): JSONResponse
     {
-        try {
-            $log = $this->synchronizationLogMapper->find((int) $id);
-            return new JSONResponse($log);
-        } catch (\Exception $e) {
+        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log');
+        if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         }
+
+        return new JSONResponse($log->getObject());
     }//end show()
 
     /**
@@ -196,14 +187,13 @@ class LogsController extends Controller
      */
     public function destroy(string $id): JSONResponse
     {
-        try {
-            $log = $this->synchronizationLogMapper->find((int) $id);
-            $this->synchronizationLogMapper->delete($log);
-
-            return new JSONResponse(['message' => $this->l->t('Log deleted successfully')]);
-        } catch (\Exception $e) {
+        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log');
+        if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
         }
+
+        $this->orObjectService->deleteObject(uuid: $log->getUuid());
+        return new JSONResponse(['message' => $this->l->t('Log deleted successfully')]);
     }//end destroy()
 
     /**
@@ -219,12 +209,18 @@ class LogsController extends Controller
     public function statistics(): JSONResponse
     {
         try {
-            // Get basic counts by level
-            $errorCount   = $this->synchronizationLogMapper->getTotalCount(['level' => 'error']);
-            $warningCount = $this->synchronizationLogMapper->getTotalCount(['level' => 'warning']);
-            $infoCount    = $this->synchronizationLogMapper->getTotalCount(['level' => 'info']);
-            $successCount = $this->synchronizationLogMapper->getTotalCount(['level' => 'success']);
-            $debugCount   = $this->synchronizationLogMapper->getTotalCount(['level' => 'debug']);
+            // Get basic counts by level via OR ObjectService
+            $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
+            $errorMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'error'])]);
+            $warningMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'warning'])]);
+            $infoMatches    = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'info'])]);
+            $successMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'success'])]);
+            $debugMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['level' => 'debug'])]);
+            $errorCount     = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
+            $warningCount   = $warningMatches['total'] ?? count($warningMatches['results'] ?? $warningMatches);
+            $infoCount      = $infoMatches['total'] ?? count($infoMatches['results'] ?? $infoMatches);
+            $successCount   = $successMatches['total'] ?? count($successMatches['results'] ?? $successMatches);
+            $debugCount     = $debugMatches['total'] ?? count($debugMatches['results'] ?? $debugMatches);
 
             // Calculate level distribution
             $levelDistribution = [
@@ -298,23 +294,27 @@ class LogsController extends Controller
             }
 
             // Get all logs matching filters (no pagination for export)
-            $logs = $this->synchronizationLogMapper->findAll(null, null, $filters);
+            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
+            $logs      = $matches['results'] ?? $matches;
 
             // Create CSV content
-            $csvData = "ID,UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
+            $csvData = "UUID,Level,Message,Synchronization ID,User ID,Session ID,Created,Expires\n";
 
             foreach ($logs as $log) {
+                $data     = $log->getObject();
+                $created  = isset($data['created']) ? $data['created'] : '';
+                $expires  = isset($data['expires']) ? $data['expires'] : '';
                 $csvData .= sprintf(
-                    "%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-                    $log->getId() ?? '',
+                    "%s,%s,%s,%s,%s,%s,%s,%s\n",
                     $log->getUuid() ?? '',
-                    $log->getLevel() ?? '',
-                    '"'.str_replace('"', '""', $log->getMessage() ?? '').'"',
-                    $log->getSynchronizationId() ?? '',
-                    $log->getUserId() ?? '',
-                    $log->getSessionId() ?? '',
-                    $log->getCreated() ? $log->getCreated()->format('Y-m-d H:i:s') : '',
-                    $log->getExpires() ? $log->getExpires()->format('Y-m-d H:i:s') : ''
+                    $data['level'] ?? '',
+                    '"'.str_replace('"', '""', $data['message'] ?? '').'"',
+                    $data['synchronizationId'] ?? '',
+                    $data['userId'] ?? '',
+                    $data['sessionId'] ?? '',
+                    $created,
+                    $expires
                 );
             }
 

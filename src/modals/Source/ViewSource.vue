@@ -6,7 +6,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewSource'"
 		ref="modalRef"
-		:name="sourceStore.sourceItem?.name || t('openconnector', 'Source Details')"
+		:name="sourceStore.sourceItem?.name || t('openconnector', 'Source details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
 			<p v-if="sourceStore.sourceItem?.description" class="source-description">
@@ -47,11 +47,11 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 						</tr>
 
 						<tr v-if="sourceStore.sourceItem?.lastCall">
-							<td>{{ t('openconnector', 'Last Call') }}</td>
+							<td>{{ t('openconnector', 'Last call') }}</td>
 							<td>{{ new Date(sourceStore.sourceItem.lastCall).toLocaleDateString() + ', ' + new Date(sourceStore.sourceItem.lastCall).toLocaleTimeString() }}</td>
 						</tr>
 						<tr v-if="sourceStore.sourceItem?.lastSync">
-							<td>{{ t('openconnector', 'Last Sync') }}</td>
+							<td>{{ t('openconnector', 'Last sync') }}</td>
 							<td>{{ new Date(sourceStore.sourceItem.lastSync).toLocaleDateString() + ', ' + new Date(sourceStore.sourceItem.lastSync).toLocaleTimeString() }}</td>
 						</tr>
 						<tr>
@@ -109,7 +109,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 								</template>
 								<template #action>
 									<NcButton @click="addSourceConfiguration">
-										{{ t('openconnector', 'Add Configuration') }}
+										{{ t('openconnector', 'Add configuration') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>
@@ -154,7 +154,7 @@ import { sourceStore, navigationStore, logStore, synchronizationStore } from '..
 								</template>
 								<template #action>
 									<NcButton @click="addSourceAuthentication">
-										{{ t('openconnector', 'Add Authentication') }}
+										{{ t('openconnector', 'Add authentication') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>

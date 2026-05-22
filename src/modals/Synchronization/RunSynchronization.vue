@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { synchronizationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -7,31 +8,31 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 		label-id="runSynchronization"
 		@close="closeModal">
 		<div class="modalContent runSynchronization">
-			<h2>Run synchronization</h2>
+			<h2>{{ t('openconnector', 'Run synchronization') }}</h2>
 
 			<div v-if="response === null" class="runOptions">
 				<div class="optionsGrid">
 					<NcNoteCard type="info">
 						<p>
-							Test mode will run all the synchronization code and logic without saving or updating the contract or updating the target system. This allows you to verify the mapping and configuration before running a real synchronization by doing a 'dry run'.
+							{{ t('openconnector', "Test mode will run all the synchronization code and logic without saving or updating the contract or updating the target system. This allows you to verify the mapping and configuration before running a real synchronization by doing a 'dry run'.") }}
 						</p>
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
 						:checked="testMode"
 						type="switch"
 						@update:checked="testMode = $event">
-						Test mode
+						{{ t('openconnector', 'Test mode') }}
 					</NcCheckboxRadioSwitch>
 					<NcNoteCard type="info">
 						<p>
-							Forcing the synchronization will make the synchronization service update the contract even if no update was deemed necessary (see docs). The resulting updated contract can still be withheld from saving by activating test mode.
+							{{ t('openconnector', 'Forcing the synchronization will make the synchronization service update the contract even if no update was deemed necessary (see docs). The resulting updated contract can still be withheld from saving by activating test mode.') }}
 						</p>
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
 						:checked="forceSync"
 						type="switch"
 						@update:checked="forceSync = $event">
-						Force synchronization
+						{{ t('openconnector', 'Force synchronization') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 
@@ -40,30 +41,30 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Play :size="20" />
 						</template>
-						{{ testMode ? 'Test' : 'Run' }}
+						{{ testMode ? t('openconnector', 'Test') : t('openconnector', 'Run') }}
 					</NcButton>
 				</div>
 			</div>
 
 			<div v-if="loading">
-				<NcLoadingIcon :size="64" name="Running synchronization" />
+				<NcLoadingIcon :size="64" :name="t('openconnector', 'Running synchronization')" />
 			</div>
 
 			<NcNoteCard v-if="success === false" type="error">
-				<p>An error occurred while running the synchronization.</p>
+				<p>{{ t('openconnector', 'An error occurred while running the synchronization.') }}</p>
 			</NcNoteCard>
 
 			<div v-if="success !== null">
 				<div v-if="success" class="SuccessMarker">
-					Success Marker to expand the modal
+					{{ t('openconnector', 'Success Marker to expand the modal') }}
 				</div>
 
 				<NcNoteCard v-if="response?.ok" type="success">
-					<p>The synchronization was run successfully.</p>
+					<p>{{ t('openconnector', 'The synchronization was run successfully.') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="!response?.ok || error" type="error">
 					<p>
-						An error occurred while running the synchronization: {{
+						{{ t('openconnector', 'An error occurred while running the synchronization:') }} {{
 							synchronizationStore.synchronizationRun
 								? synchronizationStore.synchronizationRun.message
 									? synchronizationStore.synchronizationRun.message
@@ -78,51 +79,51 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 				<div v-if="response" class="detailTable">
 					<table>
 						<tr>
-							<td><b>Message:</b></td>
+							<td><b>{{ t('openconnector', 'Message') }}:</b></td>
 							<td>{{ responseBody?.message }} (ms)</td>
 						</tr>
 						<tr>
-							<td><b>Execution Time:</b></td>
+							<td><b>{{ t('openconnector', 'Execution time') }}:</b></td>
 							<td>{{ responseBody?.executionTime }}</td>
 						</tr>
 						<tr>
-							<td><b>ID:</b></td>
+							<td><b>{{ t('openconnector', 'ID') }}:</b></td>
 							<td>{{ responseBody?.id }}</td>
 						</tr>
 						<tr>
-							<td><b>UUID:</b></td>
+							<td><b>{{ t('openconnector', 'UUID') }}:</b></td>
 							<td>{{ responseBody?.uuid }}</td>
 						</tr>
 						<tr>
-							<td><b>Synchronization ID:</b></td>
+							<td><b>{{ t('openconnector', 'Synchronization ID') }}:</b></td>
 							<td>{{ responseBody?.synchronizationId }}</td>
 						</tr>
 						<tr>
-							<td><b>Objects Found:</b></td>
+							<td><b>{{ t('openconnector', 'Objects Found') }}:</b></td>
 							<td>{{ responseBody?.result?.objects?.found }}</td>
 						</tr>
 						<tr>
-							<td><b>Objects Skipped:</b></td>
+							<td><b>{{ t('openconnector', 'Objects Skipped') }}:</b></td>
 							<td>{{ responseBody?.result?.objects?.skipped }}</td>
 						</tr>
 						<tr>
-							<td><b>Objects Created:</b></td>
+							<td><b>{{ t('openconnector', 'Objects Created') }}:</b></td>
 							<td>{{ responseBody?.result?.objects?.created }}</td>
 						</tr>
 						<tr>
-							<td><b>Objects Updated:</b></td>
+							<td><b>{{ t('openconnector', 'Objects Updated') }}:</b></td>
 							<td>{{ responseBody?.result?.objects?.updated }}</td>
 						</tr>
 						<tr>
-							<td><b>Objects Deleted:</b></td>
+							<td><b>{{ t('openconnector', 'Objects Deleted') }}:</b></td>
 							<td>{{ responseBody?.result?.objects?.deleted }}</td>
 						</tr>
 						<tr>
-							<td><b>Objects Invalid:</b></td>
+							<td><b>{{ t('openconnector', 'Objects Invalid') }}:</b></td>
 							<td>{{ responseBody?.result?.objects?.invalid }}</td>
 						</tr>
 						<tr>
-							<td><b>Contracts:</b></td>
+							<td><b>{{ t('openconnector', 'Contracts') }}:</b></td>
 							<td>
 								<div v-for="(contract, index) in responseBody?.result?.contracts" :key="index">
 									{{ contract }}
@@ -130,7 +131,7 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 							</td>
 						</tr>
 						<tr>
-							<td><b>Logs:</b></td>
+							<td><b>{{ t('openconnector', 'Logs') }}:</b></td>
 							<td>
 								<div v-for="(log, index) in responseBody?.result?.logs" :key="index">
 									{{ log }}
@@ -138,27 +139,27 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 							</td>
 						</tr>
 						<tr>
-							<td><b>User ID:</b></td>
+							<td><b>{{ t('openconnector', 'User ID') }}:</b></td>
 							<td>{{ responseBody?.userId }}</td>
 						</tr>
 						<tr>
-							<td><b>Session ID:</b></td>
+							<td><b>{{ t('openconnector', 'Session ID') }}:</b></td>
 							<td>{{ responseBody?.sessionId }}</td>
 						</tr>
 						<tr>
-							<td><b>Test Mode:</b></td>
+							<td><b>{{ t('openconnector', 'Test Mode') }}:</b></td>
 							<td>{{ responseBody?.test }}</td>
 						</tr>
 						<tr>
-							<td><b>Force Mode:</b></td>
+							<td><b>{{ t('openconnector', 'Force Mode') }}:</b></td>
 							<td>{{ responseBody?.force }}</td>
 						</tr>
 						<tr>
-							<td><b>Created:</b></td>
+							<td><b>{{ t('openconnector', 'Created') }}:</b></td>
 							<td>{{ responseBody?.created }}</td>
 						</tr>
 						<tr>
-							<td><b>Expires:</b></td>
+							<td><b>{{ t('openconnector', 'Expires') }}:</b></td>
 							<td>{{ responseBody?.expires }}</td>
 						</tr>
 					</table>

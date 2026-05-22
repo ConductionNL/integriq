@@ -4,7 +4,7 @@
 		:item-menu="itemMenu"
 		@show="onShow">
 		<template #empty-content>
-			<NcEmptyContent :title="t('openconnector', 'Geen recente calls gevonden')">
+			<NcEmptyContent :title="t('openconnector', 'No recent calls found')">
 				<template #icon>
 					<PhoneIcon />
 				</template>
@@ -38,7 +38,7 @@ export default {
 			callLogs: [],
 			itemMenu: {
 				show: {
-					text: t('openconnector', 'Bekijk logs'),
+					text: t('openconnector', 'View logs'),
 					icon: 'icon-link',
 				},
 			},
@@ -49,7 +49,7 @@ export default {
 			return this.callLogs.map((log) => {
 				const statusCode = log.statusCode || log.status_code || 0
 				const method = (log.method || 'GET').toUpperCase()
-				const endpoint = log.url || log.endpoint || t('openconnector', 'Onbekend endpoint')
+				const endpoint = log.url || log.endpoint || t('openconnector', 'Unknown endpoint')
 				const isSuccess = statusCode >= 200 && statusCode < 300
 				const statusLabel = isSuccess ? '✓' : '✗'
 				const dateText = log.dateCreated || log.created || ''

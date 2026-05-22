@@ -18,7 +18,7 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Filter Section -->
 			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Contracts') }}</h3>
+				<h3>{{ t('openconnector', 'Filter contracts') }}</h3>
 				<div class="filterGroup">
 					<label>{{ t('openconnector', 'Synchronization') }}</label>
 					<NcSelect
@@ -31,18 +31,18 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 				</div>
 
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Sync Status') }}</label>
+					<label>{{ t('openconnector', 'Sync status') }}</label>
 					<NcSelect
 						v-model="filters.syncStatus"
 						:options="syncStatusOptions"
 						:placeholder="t('openconnector', 'All sync statuses')"
-						:input-label="t('openconnector', 'Sync Status')"
+						:input-label="t('openconnector', 'Sync status')"
 						:clearable="true"
 						@input="applyFilters" />
 				</div>
 
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Last Synced') }}</label>
+					<label>{{ t('openconnector', 'Last synced') }}</label>
 					<DateRangeInput
 						:start="filters.dateFrom"
 						:end="filters.dateTo"
@@ -55,13 +55,13 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 
 			<div class="actionGroup">
 				<NcButton v-if="hasActiveFilters" @click="clearFilters">
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
 
 			<!-- Bulk Actions Section -->
 			<div v-if="selectedCount > 0" class="filterSection">
-				<h3>{{ t('openconnector', 'Bulk Actions') }}</h3>
+				<h3>{{ t('openconnector', 'Bulk actions') }}</h3>
 				<p class="selection-info">
 					{{ t('openconnector', '{count} contracts selected', { count: selectedCount }) }}
 				</p>
@@ -70,7 +70,7 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Delete :size="20" />
 						</template>
-						{{ t('openconnector', 'Delete Selected') }}
+						{{ t('openconnector', 'Delete selected') }}
 					</NcButton>
 				</div>
 			</div>
@@ -83,7 +83,7 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						<template #icon>
 							<Download :size="20" />
 						</template>
-						{{ t('openconnector', 'Export Filtered Contracts') }}
+						{{ t('openconnector', 'Export filtered contracts') }}
 					</NcButton>
 				</div>
 			</div>
@@ -95,13 +95,13 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 			</template>
 
 			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Contracts Statistics') }}</h3>
+				<h3>{{ t('openconnector', 'Contracts statistics') }}</h3>
 				<div class="statCard">
 					<div class="statNumber">
 						{{ filteredCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Total Contracts') }}
+						{{ t('openconnector', 'Total contracts') }}
 					</div>
 				</div>
 			</div>

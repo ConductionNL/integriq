@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { synchronizationStore, navigationStore } from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 </script>
@@ -8,23 +9,23 @@ import { getTheme } from '../../services/getTheme.js'
 		label-id="testSynchronization"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>Test synchronization</h2>
+			<h2>{{ t('openconnector', 'Test synchronization') }}</h2>
 
 			<div v-if="loading">
-				<NcLoadingIcon :size="64" name="Running synchronization test" />
+				<NcLoadingIcon :size="64" :name="t('openconnector', 'Running synchronization test')" />
 			</div>
 
 			<NcNoteCard v-if="success === false" type="error">
-				<p>An error occurred while testing the synchronization.</p>
+				<p>{{ t('openconnector', 'An error occurred while testing the synchronization.') }}</p>
 			</NcNoteCard>
 
 			<div v-if="success !== null">
 				<NcNoteCard v-if="response?.ok" type="success">
-					<p>The connection to the synchronization was successful.</p>
+					<p>{{ t('openconnector', 'The connection to the synchronization was successful.') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="!response?.ok || error" type="error">
 					<p>
-						An error occurred while testing the connection: {{
+						{{ t('openconnector', 'An error occurred while testing the connection:') }} {{
 							synchronizationStore.synchronizationTest
 								? synchronizationStore.synchronizationTest.message
 									? synchronizationStore.synchronizationTest.message
@@ -39,23 +40,23 @@ import { getTheme } from '../../services/getTheme.js'
 				<div v-if="response" class="detailTable">
 					<table>
 						<tr>
-							<td><b>Status:</b></td>
+							<td><b>{{ t('openconnector', 'Status') }}:</b></td>
 							<td>{{ response?.statusText }} ({{ response?.status }})</td>
 						</tr>
 						<tr>
-							<td><b>Response time:</b></td>
-							<td>{{ response?.responseTime ?? 'Onbekend' }} (Milliseconds)</td>
+							<td><b>{{ t('openconnector', 'Response time') }}:</b></td>
+							<td>{{ response?.responseTime ?? t('openconnector', 'Unknown') }} ({{ t('openconnector', 'Milliseconds') }})</td>
 						</tr>
 						<tr>
-							<td><b>Size:</b></td>
-							<td>{{ response?.size ?? 'Onbekend' }} (Bytes)</td>
+							<td><b>{{ t('openconnector', 'Size') }}:</b></td>
+							<td>{{ response?.size ?? t('openconnector', 'Unknown') }} ({{ t('openconnector', 'Bytes') }})</td>
 						</tr>
 						<tr>
-							<td><b>Remote IP:</b></td>
-							<td>{{ response?.remoteIp ?? 'Onbekend' }}</td>
+							<td><b>{{ t('openconnector', 'Remote IP') }}:</b></td>
+							<td>{{ response?.remoteIp ?? t('openconnector', 'Unknown') }}</td>
 						</tr>
 						<tr>
-							<td><b>Headers:</b></td>
+							<td><b>{{ t('openconnector', 'Headers') }}:</b></td>
 							<td>
 								<table>
 									<tr v-for="(header, index) in response?.headers" :key="index">
@@ -66,7 +67,7 @@ import { getTheme } from '../../services/getTheme.js'
 							</td>
 						</tr>
 						<tr>
-							<td><b>Body:</b></td>
+							<td><b>{{ t('openconnector', 'Body') }}:</b></td>
 							<td :class="`codeMirrorContainer ${getTheme()}`">
 								<CodeMirror v-model="responseBody"
 									:basic="true"

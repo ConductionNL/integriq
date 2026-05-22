@@ -6,7 +6,7 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewEndpoint'"
 		ref="modalRef"
-		:name="endpointStore.endpointItem?.name || t('openconnector', 'Endpoint Details')"
+		:name="endpointStore.endpointItem?.name || t('openconnector', 'Endpoint details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
 			<p v-if="endpointStore.endpointItem?.description" class="endpoint-description">
@@ -40,11 +40,11 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 							<td>{{ endpointStore.endpointItem?.endpoint || '-' }}</td>
 						</tr>
 						<tr v-if="endpointStore.endpointItem?.endpointArray?.length">
-							<td>{{ t('openconnector', 'Endpoint Array') }}</td>
+							<td>{{ t('openconnector', 'Endpoint array') }}</td>
 							<td>{{ endpointStore.endpointItem.endpointArray.join(', ') || '-' }}</td>
 						</tr>
 						<tr v-if="endpointStore.endpointItem?.endpointRegex">
-							<td>{{ t('openconnector', 'Endpoint Regex') }}</td>
+							<td>{{ t('openconnector', 'Endpoint regex') }}</td>
 							<td>{{ endpointStore.endpointItem.endpointRegex }}</td>
 						</tr>
 						<tr>
@@ -52,7 +52,7 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 							<td>{{ endpointStore.endpointItem?.method || '-' }}</td>
 						</tr>
 						<tr>
-							<td>{{ t('openconnector', 'Target Type') }}</td>
+							<td>{{ t('openconnector', 'Target type') }}</td>
 							<td>{{ endpointStore.endpointItem?.targetType || '-' }}</td>
 						</tr>
 						<tr>
@@ -114,7 +114,7 @@ import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 								</template>
 								<template #action>
 									<NcButton @click="addRule">
-										{{ t('openconnector', 'Add Rule') }}
+										{{ t('openconnector', 'Add rule') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>

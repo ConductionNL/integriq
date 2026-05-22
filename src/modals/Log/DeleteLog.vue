@@ -1,18 +1,19 @@
 <script setup>
 import { logStore, navigationStore } from '../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'deleteLog'"
-		name="Log verwijderen"
+		:name="t('openconnector', 'Delete Log')"
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Wil je <b>{{ logStore.logItem.name }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			{{ t('openconnector', 'Do you want to permanently delete') }} <b>{{ logStore.logItem.name }}</b>? {{ t('openconnector', 'This action cannot be undone.') }}
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
-			<p>Log succesvol verwijderd</p>
+			<p>{{ t('openconnector', 'Log deleted successfully') }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -24,7 +25,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
+				{{ success ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="!success"
@@ -35,7 +36,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<TrashCanOutline v-if="!loading" :size="20" />
 				</template>
-				Verwijderen
+				{{ t('openconnector', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

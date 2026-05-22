@@ -2,8 +2,8 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Db\Mapping;
-use OCA\OpenConnector\Db\MappingMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -25,10 +25,10 @@ use OCP\AppFramework\Db\Entity;
 class MappingHandler implements ConfigurationHandlerInterface
 {
     /**
-     * @param MappingMapper $mappingMapper The mapping mapper
+     * @param OrObjectService $orObjectService The OR object service
      */
     public function __construct(
-        private readonly MappingMapper $mappingMapper
+        private readonly OrObjectService $orObjectService
     ) {
     }//end __construct()
 
@@ -37,16 +37,12 @@ class MappingHandler implements ConfigurationHandlerInterface
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
-        if (!$entity instanceof Mapping) {
-            throw new \InvalidArgumentException('Entity must be an instance of Mapping');
-        }
-
-        $mappingArray = $entity->jsonSerialize();
+        $mappingArray = ($entity instanceof ObjectEntity) ? $entity->getObject() : $entity->jsonSerialize();
         unset($mappingArray['id'], $mappingArray['uuid']);
 
         // Ensure slug is set
-        if (empty($mappingArray['slug'])) {
-            $mappingArray['slug'] = $entity->getSlug();
+        if (empty($mappingArray['slug']) && $entity instanceof ObjectEntity) {
+            $mappingArray['slug'] = $entity->getUuid();
         }
 
         // Replace IDs with slugs where applicable.
@@ -109,13 +105,19 @@ class MappingHandler implements ConfigurationHandlerInterface
         }
 
         // Check if mapping with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['mapping']['slugToId'][$data['slug']])) {
+        $slug = $data['slug'] ?? null;
+        if ($slug !== null && isset($mappings['mapping']['slugToId'][$slug])) {
             // Update existing mapping.
-            return $this->mappingMapper->updateFromArray($mappings['mapping']['slugToId'][$data['slug']], $data);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                register: 'openconnector',
+                schema: 'mapping',
+                uuid: $mappings['mapping']['slugToId'][$slug]
+            );
         }
 
         // Create new mapping.
-        return $this->mappingMapper->createFromArray($data);
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'mapping');
     }//end import()
 
     /**

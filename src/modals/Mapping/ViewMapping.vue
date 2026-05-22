@@ -6,7 +6,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcModal v-if="navigationStore.modal === 'viewMapping'"
 		ref="modalRef"
-		:name="mappingStore.mappingItem?.name || t('openconnector', 'Mapping Details')"
+		:name="mappingStore.mappingItem?.name || t('openconnector', 'Mapping details')"
 		@close="navigationStore.setModal(false)">
 		<div class="modal-content">
 			<p v-if="mappingStore.mappingItem?.description" class="mapping-description">
@@ -86,7 +86,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 								</template>
 								<template #action>
 									<NcButton @click="addMappingMapping">
-										{{ t('openconnector', 'Add Mapping') }}
+										{{ t('openconnector', 'Add mapping') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>
@@ -132,7 +132,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 								</template>
 								<template #action>
 									<NcButton @click="addMappingCast">
-										{{ t('openconnector', 'Add Cast') }}
+										{{ t('openconnector', 'Add cast') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>
@@ -173,7 +173,7 @@ import { mappingStore, navigationStore } from '../../store/store.js'
 								</template>
 								<template #action>
 									<NcButton @click="addMappingUnset">
-										{{ t('openconnector', 'Add Unset') }}
+										{{ t('openconnector', 'Add unset') }}
 									</NcButton>
 								</template>
 							</NcEmptyContent>

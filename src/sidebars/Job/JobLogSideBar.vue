@@ -6,7 +6,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		:name="t('openconnector', 'Job Log Management')"
+		:name="t('openconnector', 'Job log management')"
 		:subtitle="t('openconnector', 'Filter and manage job execution logs')"
 		:subname="t('openconnector', 'Export, view, or delete job logs')"
 		:open="navigationStore.sidebarState.jobLogs"
@@ -18,7 +18,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 
 			<!-- Filter Section -->
 			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Job Logs') }}</h3>
+				<h3>{{ t('openconnector', 'Filter job logs') }}</h3>
 				<div class="filterGroup">
 					<label for="jobSelect">{{ t('openconnector', 'Job') }}</label>
 					<NcSelect
@@ -30,19 +30,19 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 						@input="onJobSelected" />
 				</div>
 				<div class="filterGroup">
-					<label for="levelSelect">{{ t('openconnector', 'Log Levels') }}</label>
+					<label for="levelSelect">{{ t('openconnector', 'Log levels') }}</label>
 					<NcSelect
 						id="levelSelect"
 						v-model="selectedLevels"
 						:options="levelOptions"
 						:placeholder="t('openconnector', 'All levels')"
-						:input-label="t('openconnector', 'Log Levels')"
+						:input-label="t('openconnector', 'Log levels')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
+					<label>{{ t('openconnector', 'Date range') }}</label>
 					<DateRangeInput
 						:start="dateFrom"
 						:end="dateTo"
@@ -81,7 +81,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
 
@@ -97,13 +97,13 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 
 			<!-- Statistics Section -->
 			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Job Log Statistics') }}</h3>
+				<h3>{{ t('openconnector', 'Job log statistics') }}</h3>
 				<div class="statCard">
 					<div class="statNumber">
 						{{ totalLogs }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Total Job Logs') }}
+						{{ t('openconnector', 'Total job logs') }}
 					</div>
 				</div>
 				<div class="statCard success">
@@ -111,7 +111,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 						{{ successCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Successful Executions') }}
+						{{ t('openconnector', 'Successful executions') }}
 					</div>
 				</div>
 				<div class="statCard error">
@@ -119,7 +119,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 						{{ errorCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Failed Executions') }}
+						{{ t('openconnector', 'Failed executions') }}
 					</div>
 				</div>
 				<div class="statCard">
@@ -127,14 +127,14 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 						{{ averageExecutionTime }}s
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Average Execution Time') }}
+						{{ t('openconnector', 'Average execution time') }}
 					</div>
 				</div>
 			</div>
 
 			<!-- Log Level Distribution -->
 			<div class="levelDistribution">
-				<h4>{{ t('openconnector', 'Log Level Distribution') }}</h4>
+				<h4>{{ t('openconnector', 'Log level distribution') }}</h4>
 				<NcListItem v-for="(level, index) in levelDistribution"
 					:key="index"
 					:name="level.name"
@@ -153,7 +153,7 @@ import { logStore, navigationStore, jobStore } from '../../store/store.js'
 
 			<!-- Top Jobs -->
 			<div class="topJobs">
-				<h4>{{ t('openconnector', 'Most Active Jobs') }}</h4>
+				<h4>{{ t('openconnector', 'Most active jobs') }}</h4>
 				<NcListItem v-for="(job, index) in topJobs"
 					:key="index"
 					:name="job.name"

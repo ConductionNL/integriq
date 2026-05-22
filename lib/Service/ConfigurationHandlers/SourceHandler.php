@@ -2,8 +2,8 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Db\SourceMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -26,10 +26,10 @@ use OCP\AppFramework\Db\Entity;
 class SourceHandler implements ConfigurationHandlerInterface
 {
     /**
-     * @param SourceMapper $sourceMapper The source mapper
+     * @param OrObjectService $orObjectService The OR object service
      */
     public function __construct(
-        private readonly SourceMapper $sourceMapper
+        private readonly OrObjectService $orObjectService
     ) {
     }//end __construct()
 
@@ -38,15 +38,11 @@ class SourceHandler implements ConfigurationHandlerInterface
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
-        if (!$entity instanceof Source) {
-            throw new \InvalidArgumentException('Entity must be an instance of Source');
-        }
-
-        $sourceArray = $entity->jsonSerialize();
+        $sourceArray = ($entity instanceof ObjectEntity) ? $entity->getObject() : $entity->jsonSerialize();
 
         // Ensure slug is set
-        if (empty($sourceArray['slug'])) {
-            $sourceArray['slug'] = $entity->getSlug();
+        if (empty($sourceArray['slug']) && $entity instanceof ObjectEntity) {
+            $sourceArray['slug'] = $entity->getUuid();
         }
 
         // Remove sensitive data
@@ -88,13 +84,19 @@ class SourceHandler implements ConfigurationHandlerInterface
     public function import(array $data, array $mappings): Entity
     {
         // Check if source with this slug already exists.
-        if (isset($data['slug']) && isset($mappings['source']['slugToId'][$data['slug']])) {
+        $slug = $data['slug'] ?? null;
+        if ($slug !== null && isset($mappings['source']['slugToId'][$slug])) {
             // Update existing source
-            return $this->sourceMapper->updateFromArray($mappings['source']['slugToId'][$data['slug']], $data);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                register: 'openconnector',
+                schema: 'source',
+                uuid: $mappings['source']['slugToId'][$slug]
+            );
         }
 
         // Create new source.
-        return $this->sourceMapper->createFromArray($data);
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'source');
     }//end import()
 
     /**

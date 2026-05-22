@@ -2,14 +2,13 @@
 
 namespace OCA\OpenConnector\Service;
 
-use OCA\OpenConnector\Db\Mapping;
-use OCA\OpenConnector\Db\MappingMapper;
-use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenConnector\Twig\MappingExtension;
 use OCA\OpenConnector\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Adbar\Dot;
 use Twig\Environment;
 use Twig\Error\LoaderError;
@@ -55,28 +54,26 @@ class MappingService
     /**
      * Setting up the base class with required services.
      *
-     * @param ArrayLoader        $loader        The ArrayLoader for Twig.
-     * @param MappingMapper      $mappingMapper The mapping mapper.
-     * @param CallService        $callService   The call service.
-     * @param SourceMapper       $sourceMapper  The source mapper.
-     * @param FileService        $fileService   The file service.
-     * @param ObjectService      $objectService The object service.
-     * @param ContainerInterface $container     The PSR container (injected; replaces \OC::$server for service lookup).
-     * @param LoggerInterface    $logger        The logger (injected; replaces \OC::$server->getLogger()).
+     * @param ArrayLoader        $loader          The ArrayLoader for Twig.
+     * @param CallService        $callService     The call service.
+     * @param FileService        $fileService     The file service.
+     * @param ObjectService      $objectService   The OpenConnector object service.
+     * @param ORObjectService    $orObjectService The OpenRegister object service.
+     * @param ContainerInterface $container       The PSR container (injected; replaces \OC::$server for service lookup).
+     * @param LoggerInterface    $logger          The logger (injected; replaces \OC::$server->getLogger()).
      */
     public function __construct(
         ArrayLoader $loader,
-        private readonly MappingMapper $mappingMapper,
         CallService $callService,
-        SourceMapper $sourceMapper,
         FileService $fileService,
         ObjectService $objectService,
+        private readonly ORObjectService $orObjectService,
         ContainerInterface $container,
         private readonly LoggerInterface $logger,
     ) {
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new MappingExtension());
-        $this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper, callService: $callService, sourceMapper: $sourceMapper, fileService: $fileService, objectService: $objectService->getOpenRegisters()));
+        $this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, callService: $callService, fileService: $fileService, objectService: $objectService));
 
         // Try to load OpenRegister's MappingService for delegation.
         try {
@@ -126,30 +123,26 @@ class MappingService
      * Delegates to OpenRegister's MappingService when available, otherwise
      * uses the local implementation.
      *
-     * @param Mapping $mapping The mapping object that forms the recipe for the mapping
-     * @param array   $input   The array that need to be mapped (transformed) otherwise known as input
-     * @param bool    $list    Whether we want a list instead of a single item
+     * @param \OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping The mapping object that forms the recipe for the mapping
+     * @param array                                     $input   The array that need to be mapped (transformed) otherwise known as input
+     * @param bool                                      $list    Whether we want a list instead of a single item
      *
      * @return array The result (output) of the mapping process
      * @throws LoaderError|SyntaxError Twig Exceptions
      */
-    public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
+    public function executeMapping(\OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping, array $input, bool $list=false): array
     {
+        // Normalise: if we received an ObjectEntity, hydrate an OR Mapping from it.
+        if ($mapping instanceof ObjectEntity) {
+            $orMapping = new \OCA\OpenRegister\Db\Mapping();
+            $orMapping->hydrate($mapping->getObject());
+            $mapping = $orMapping;
+        }
+
         // Delegate to OpenRegister's MappingService if available.
         if ($this->openRegisterMappingService !== null) {
-            $orMapping = new \OCA\OpenRegister\Db\Mapping();
-            $orMapping->hydrate(
-                    [
-                        'name'        => $mapping->getName(),
-                        'mapping'     => $mapping->getMapping(),
-                        'unset'       => ($mapping->getUnset() ?? []),
-                        'cast'        => ($mapping->getCast() ?? []),
-                        'passThrough' => $mapping->getPassThrough(),
-                    ]
-                    );
-
             return $this->openRegisterMappingService->executeMapping(
-                mapping: $orMapping,
+                mapping: $mapping,
                 input: $input,
                 list: $list
             );
@@ -161,9 +154,9 @@ class MappingService
     /**
      * Local mapping execution (fallback when OpenRegister is not available).
      *
-     * @param Mapping $mapping The mapping object
-     * @param array   $input   The input array
-     * @param bool    $list    Whether to process as list
+     * @param \OCA\OpenRegister\Db\Mapping $mapping The mapping object
+     * @param array                        $input   The input array
+     * @param bool                         $list    Whether to process as list
      *
      * @return array The mapped output
      *
@@ -171,7 +164,7 @@ class MappingService
      *
      * @SuppressWarnings(PHPMD.ElseExpression)
      */
-    private function executeMappingLocal(Mapping $mapping, array $input, bool $list=false): array
+    private function executeMappingLocal(\OCA\OpenRegister\Db\Mapping $mapping, array $input, bool $list=false): array
     {
         // Check for list
         if ($list === true) {
@@ -529,36 +522,32 @@ class MappingService
     /**
      * Retrieves a single mapping by its ID.
      *
-     * This is a wrapper function that provides controlled access to the mapping mapper.
+     * This is a wrapper function that provides controlled access to the mapping data.
      * We use this wrapper pattern to ensure other Nextcloud apps can only interact with
-     * mappings through this service layer, rather than accessing the mapper directly.
+     * mappings through this service layer, rather than accessing the storage directly.
      * This maintains proper encapsulation and separation of concerns.
      *
      * @param  string $mappingId The unique identifier of the mapping to retrieve
-     * @return Mapping The requested mapping entity
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If mapping is not found
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple mappings found
+     * @return ObjectEntity The requested mapping entity
      */
-    public function getMapping(string $mappingId): Mapping
+    public function getMapping(string $mappingId): ObjectEntity
     {
-        // Forward the find request to the mapper while maintaining encapsulation
-        return $this->mappingMapper->find($mappingId);
+        return $this->orObjectService->find(id: $mappingId, register: 'openconnector', schema: 'mapping');
     }//end getMapping()
 
     /**
      * Retrieves all available mappings.
      *
-     * This is a wrapper function that provides controlled access to the mapping mapper.
+     * This is a wrapper function that provides controlled access to the mapping data.
      * We use this wrapper pattern to ensure other Nextcloud apps can only interact with
-     * mappings through this service layer, rather than accessing the mapper directly.
+     * mappings through this service layer, rather than accessing the storage directly.
      * This maintains proper encapsulation and separation of concerns.
      *
-     * @return array<Mapping> An array containing all mapping entities
+     * @return array<ObjectEntity> An array containing all mapping entities
      */
     public function getMappings(): array
     {
-        // Forward the findAll request to the mapper while maintaining encapsulation
-        // @todo: add filtering options
-        return $this->mappingMapper->findAll();
+        $result = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'mapping']]);
+        return $result['results'] ?? $result;
     }//end getMappings()
 }//end class

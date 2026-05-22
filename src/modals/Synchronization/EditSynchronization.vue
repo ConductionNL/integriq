@@ -1,6 +1,7 @@
 <script setup>
 import { synchronizationStore, navigationStore, sourceStore, mappingStore, ruleStore } from '../../store/store.js'
 import { Synchronization } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,7 +10,7 @@ import { Synchronization } from '../../entities/index.js'
 		size="large"
 		:can-close="true"
 		:width="1200"
-		:name="synchronizationItem.id ? 'Edit Synchronization' : 'Create New Synchronization'"
+		:name="synchronizationItem.id ? t('openconnector', 'Edit synchronization') : t('openconnector', 'Create new synchronization')"
 		@close="closeModal">
 		<div class="modalContent">
 			<!-- ====================== -->
@@ -18,16 +19,16 @@ import { Synchronization } from '../../entities/index.js'
 			<div v-if="!openRegisterInstalled && !openRegisterCloseAlert" class="openregister-notecard">
 				<NcNoteCard
 					:type="openRegisterIsAvailable ? 'info' : 'error'"
-					:heading="openRegisterIsAvailable ? 'Open Register is not installed' : 'Failed to install Open Register'">
+					:heading="openRegisterIsAvailable ? t('openconnector', 'Open register is not installed') : t('openconnector', 'Failed to install open register')">
 					<p>
 						{{ openRegisterIsAvailable
-							? 'Some features require Open Register to be installed'
-							: 'This either means that Open Register is not available on this server or you need to confirm your password' }}
+							? t('openconnector', 'Some features require open register to be installed')
+							: t('openconnector', 'This either means that open register is not available on this server or you need to confirm your password') }}
 					</p>
 
 					<div class="install-buttons">
 						<NcButton v-if="openRegisterIsAvailable"
-							aria-label="Install OpenRegister"
+							:aria-label="t('openconnector', 'Install OpenRegister')"
 							size="small"
 							type="primary"
 							:loading="openRegisterLoading"
@@ -35,17 +36,17 @@ import { Synchronization } from '../../entities/index.js'
 							<template #icon>
 								<CloudDownload :size="20" />
 							</template>
-							Install OpenRegister
+							{{ t('openconnector', 'Install OpenRegister') }}
 						</NcButton>
 						<NcButton
-							aria-label="Install OpenRegister Manually"
+							:aria-label="t('openconnector', 'Install OpenRegister manually')"
 							size="small"
 							type="secondary"
 							@click="openLink('/index.php/settings/apps/organization/openregister', '_blank')">
 							<template #icon>
 								<OpenInNew :size="20" />
 							</template>
-							Install OpenRegister Manually
+							{{ t('openconnector', 'Install OpenRegister manually') }}
 						</NcButton>
 					</div>
 					<div class="close-button">
@@ -54,7 +55,7 @@ import { Synchronization } from '../../entities/index.js'
 								<template #icon>
 									<Close :size="20" />
 								</template>
-								Close
+								{{ t('openconnector', 'Close') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -66,10 +67,10 @@ import { Synchronization } from '../../entities/index.js'
 			<!-- ====================== -->
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
-					<p>Synchronization successfully {{ synchronizationItem.id ? 'updated' : 'created' }}</p>
+					<p>{{ synchronizationItem.id ? t('openconnector', 'Synchronization successfully updated') : t('openconnector', 'Synchronization successfully created') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
-					<p>{{ error || 'An error occurred' }}</p>
+					<p>{{ error || t('openconnector', 'An error occurred') }}</p>
 				</NcNoteCard>
 			</div>
 
@@ -81,12 +82,12 @@ import { Synchronization } from '../../entities/index.js'
 				<div class="sync-section source-section">
 					<div class="section-header">
 						<DatabaseArrowRightOutline :size="24" />
-						<h3>Source</h3>
+						<h3>{{ t('openconnector', 'Source') }}</h3>
 					</div>
 					<div class="section-content">
 						<div class="info-card">
 							<p class="section-description">
-								Configure where data comes from
+								{{ t('openconnector', 'Configure where data comes from') }}
 							</p>
 						</div>
 
@@ -97,7 +98,7 @@ import { Synchronization } from '../../entities/index.js'
 								:selectable="(option) => {
 									return option.id === 'register/schema' ? openRegisterInstalled : true
 								}"
-								input-label="Source Type" />
+								:input-label="t('openconnector', 'Source type')" />
 						</div>
 
 						<!-- Source ID -->
@@ -107,40 +108,40 @@ import { Synchronization } from '../../entities/index.js'
 								v-model="sourceOptions.sourceValue"
 								required
 								:loading="sourcesLoading"
-								input-label="Source ID" />
+								:input-label="t('openconnector', 'Source ID')" />
 
 							<div v-if="typeOptions.value?.id === 'register/schema'">
 								<NcSelect v-bind="registerOptions"
 									v-model="registerOptions.sourceValue"
 									:disabled="!openRegisterInstalled"
-									input-label="Register" />
+									:input-label="t('openconnector', 'Register')" />
 
 								<NcSelect v-bind="selectedRegisterSourceValueSchemas"
 									v-model="schemaOptions.sourceValue"
 									:disabled="!openRegisterInstalled"
-									input-label="Schema" />
+									:input-label="t('openconnector', 'Schema')" />
 							</div>
 						</div>
 
 						<!-- Source Configuration -->
 						<div class="subsection">
-							<h4>Source Configuration</h4>
+							<h4>{{ t('openconnector', 'Source configuration') }}</h4>
 							<div class="form-group">
 								<NcTextField :value.sync="synchronizationItem.sourceConfig.idPosition"
-									label="ID Position"
-									placeholder="Position of id in source object" />
+									:label="t('openconnector', 'ID position')"
+									:placeholder="t('openconnector', 'Position of id in source object')" />
 
 								<NcTextField :value.sync="synchronizationItem.sourceConfig.resultsPosition"
-									label="Results Position"
-									placeholder="Position of results in source object" />
+									:label="t('openconnector', 'Results position')"
+									:placeholder="t('openconnector', 'Position of results in source object')" />
 
 								<NcTextField :value.sync="synchronizationItem.sourceConfig.endpoint"
-									label="Endpoint"
-									placeholder="Endpoint on which to fetch data" />
+									:label="t('openconnector', 'Endpoint')"
+									:placeholder="t('openconnector', 'Endpoint on which to fetch data')" />
 
 								<NcTextField :value.sync="synchronizationItem.sourceHashPosition"
-									label="Source Hash Position"
-									placeholder="Position of hash in source object" />
+									:label="t('openconnector', 'Source hash position')"
+									:placeholder="t('openconnector', 'Position of hash in source object')" />
 							</div>
 						</div>
 					</div>
@@ -152,21 +153,21 @@ import { Synchronization } from '../../entities/index.js'
 					<div class="center-card">
 						<div class="section-header">
 							<CogOutline :size="24" />
-							<h3>General</h3>
+							<h3>{{ t('openconnector', 'General') }}</h3>
 						</div>
 						<div class="section-content">
 							<form @submit.prevent="handleSubmit">
 								<div class="form-group">
 									<NcTextField :value.sync="synchronizationItem.name"
-										label="Name"
-										placeholder="Enter synchronization name"
+										:label="t('openconnector', 'Name')"
+										:placeholder="t('openconnector', 'Enter synchronization name')"
 										required />
 
 									<NcTextArea
 										resize="vertical"
 										:value.sync="synchronizationItem.description"
-										label="Description"
-										placeholder="Describe what this synchronization does" />
+										:label="t('openconnector', 'Description')"
+										:placeholder="t('openconnector', 'Describe what this synchronization does')" />
 								</div>
 							</form>
 						</div>
@@ -176,17 +177,17 @@ import { Synchronization } from '../../entities/index.js'
 					<div class="data-flow">
 						<div class="flow-step">
 							<DatabaseArrowRightOutline :size="20" />
-							<span>Source</span>
+							<span>{{ t('openconnector', 'Source') }}</span>
 						</div>
 						<ArrowRight :size="20" class="flow-arrow" />
 						<div class="flow-step">
 							<SwapHorizontal :size="20" />
-							<span>Transform</span>
+							<span>{{ t('openconnector', 'Transform') }}</span>
 						</div>
 						<ArrowRight :size="20" class="flow-arrow" />
 						<div class="flow-step">
 							<DatabaseArrowLeftOutline :size="20" />
-							<span>Target</span>
+							<span>{{ t('openconnector', 'Target') }}</span>
 						</div>
 					</div>
 
@@ -194,41 +195,41 @@ import { Synchronization } from '../../entities/index.js'
 					<div class="center-card">
 						<div class="section-header">
 							<SwapHorizontal :size="24" />
-							<h3>Transform</h3>
+							<h3>{{ t('openconnector', 'Transform') }}</h3>
 						</div>
 						<div class="section-content">
 							<div class="form-group">
 								<NcTextArea
 									resize="vertical"
 									:value.sync="synchronizationItem.conditions"
-									label="Conditions (JSON Logic)"
-									placeholder="Enter JSON logic conditions" />
+									:label="t('openconnector', 'Conditions (JSON logic)')"
+									:placeholder="t('openconnector', 'Enter JSON logic conditions')" />
 
 								<NcSelect v-bind="ruleOptions"
 									v-model="ruleOptions.value"
 									multiple
 									:loading="rulesLoading"
-									input-label="Rules" />
+									:input-label="t('openconnector', 'Rules')" />
 							</div>
 
 							<!-- Mappings -->
 							<div class="subsection">
-								<h4>Mappings</h4>
+								<h4>{{ t('openconnector', 'Mappings') }}</h4>
 								<div class="form-group">
 									<NcSelect v-bind="sourceTargetMappingOptions"
 										v-model="sourceTargetMappingOptions.sourceValue"
 										:loading="sourceTargetMappingLoading"
-										input-label="Source → Target Mapping" />
+										:input-label="t('openconnector', 'Source → target mapping')" />
 
 									<NcSelect v-bind="sourceTargetMappingOptions"
 										v-model="sourceTargetMappingOptions.targetValue"
 										:loading="sourceTargetMappingLoading"
-										input-label="Target → Source Mapping" />
+										:input-label="t('openconnector', 'Target → source mapping')" />
 
 									<NcSelect v-bind="sourceTargetMappingOptions"
 										v-model="sourceTargetMappingOptions.hashValue"
 										:loading="sourceTargetMappingLoading"
-										input-label="Source → Hash Mapping" />
+										:input-label="t('openconnector', 'Source → hash mapping')" />
 								</div>
 							</div>
 						</div>
@@ -239,12 +240,12 @@ import { Synchronization } from '../../entities/index.js'
 				<div class="sync-section target-section">
 					<div class="section-header">
 						<DatabaseArrowLeftOutline :size="24" />
-						<h3>Target</h3>
+						<h3>{{ t('openconnector', 'Target') }}</h3>
 					</div>
 					<div class="section-content">
 						<div class="info-card">
 							<p class="section-description">
-								Configure where data is written to
+								{{ t('openconnector', 'Configure where data is written to') }}
 							</p>
 						</div>
 
@@ -255,7 +256,7 @@ import { Synchronization } from '../../entities/index.js'
 								:selectable="(option) => {
 									return option.id === 'register/schema' ? openRegisterInstalled : true
 								}"
-								input-label="Target Type" />
+								:input-label="t('openconnector', 'Target type')" />
 						</div>
 
 						<!-- Target ID -->
@@ -264,18 +265,18 @@ import { Synchronization } from '../../entities/index.js'
 								v-bind="sourceOptions"
 								v-model="sourceOptions.targetValue"
 								:loading="sourcesLoading"
-								input-label="Target ID" />
+								:input-label="t('openconnector', 'Target ID')" />
 
 							<div v-if="targetTypeOptions.value?.id === 'register/schema'">
 								<NcSelect v-bind="registerOptions"
 									v-model="registerOptions.value"
 									:disabled="!openRegisterInstalled"
-									input-label="Register" />
+									:input-label="t('openconnector', 'Register')" />
 
 								<NcSelect v-bind="selectedRegisterValueSchemas"
 									v-model="schemaOptions.value"
 									:disabled="!openRegisterInstalled"
-									input-label="Schema" />
+									:input-label="t('openconnector', 'Schema')" />
 							</div>
 						</div>
 					</div>
@@ -289,13 +290,13 @@ import { Synchronization } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton type="secondary" @click="testSynchronization">
 					<template #icon>
 						<PlayCircleOutline :size="20" />
 					</template>
-					Test
+					{{ t('openconnector', 'Test') }}
 				</NcButton>
 				<NcButton :disabled="loading
 						|| !synchronizationItem.name
@@ -310,7 +311,7 @@ import { Synchronization } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -862,7 +863,7 @@ export default {
 				})
 				.catch(error => {
 					this.success = false
-					this.error = error.message || 'Er is een fout opgetreden bij het opslaan van de synchronisatie'
+					this.error = error.message || t('openconnector', 'An error occurred while saving the synchronization')
 				})
 				.finally(() => {
 					this.loading = false

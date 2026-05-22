@@ -1,33 +1,34 @@
 <script setup>
 import { navigationStore, jobStore } from '../../store/store.js'
 import { Job } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'deleteJobArgument'"
-		name="Delete Job Argument"
+		:name="t('openconnector', 'Delete Job Argument')"
 		:can-close="false">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
-				<p>Successfully deleted job argument</p>
+				<p>{{ t('openconnector', 'Job argument deleted successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>Something went wrong deleting the job argument</p>
+				<p>{{ t('openconnector', 'Something went wrong deleting the job argument') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
 			</NcNoteCard>
 		</div>
 		<p v-if="success === null">
-			Do you want to delete <b>{{ jobStore.jobArgumentKey }}</b>? This action cannot be undone.
+			{{ t('openconnector', 'Do you want to delete') }} <b>{{ jobStore.jobArgumentKey }}</b>? {{ t('openconnector', 'This action cannot be undone.') }}
 		</p>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{ success !== null ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -39,7 +40,7 @@ import { Job } from '../../entities/index.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ t('openconnector', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

@@ -1,16 +1,17 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
 	<NcAppNavigation>
 		<NcAppNavigationList>
-			<NcAppNavigationItem :active="$route.path === '/'" name="Dashboard" @click="handleNavigate('/')">
+			<NcAppNavigationItem :active="$route.path === '/'" :name="t('openconnector', 'Dashboard')" @click="handleNavigate('/')">
 				<template #icon>
 					<Finance :size="20" />
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path === '/sources'"
-				name="Sources"
+				:name="t('openconnector', 'Sources')"
 				:allow-collapse="true"
 				:open="true"
 				@click="handleNavigate('/sources')">
@@ -20,7 +21,7 @@
 				<!-- This is correct according to the documentation, thats why there is a disable comment -->
 				<!-- eslint-disable-next-line vue/no-lone-template -->
 				<template>
-					<NcAppNavigationItem :active="$route.path === '/sources/logs'" name="Logs" @click="handleNavigate('/sources/logs')">
+					<NcAppNavigationItem :active="$route.path === '/sources/logs'" :name="t('openconnector', 'Logs')" @click="handleNavigate('/sources/logs')">
 						<template #icon>
 							<TextBoxOutline :size="20" />
 						</template>
@@ -28,7 +29,7 @@
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.matched[0].path === '/endpoints' || $route.matched[0].path === '/endpoints/:id'"
-				name="Endpoints"
+				:name="t('openconnector', 'Endpoints')"
 				:allow-collapse="true"
 				:open="true"
 				@click="handleNavigate('/endpoints')">
@@ -38,25 +39,25 @@
 				<!-- This is correct according to the documentation, thats why there is a disable comment -->
 				<!-- eslint-disable-next-line vue/no-lone-template -->
 				<template>
-					<NcAppNavigationItem :active="$route.matched[0].path === '/endpoints/logs'" name="Logs" @click="handleNavigate('/endpoints/logs')">
+					<NcAppNavigationItem :active="$route.matched[0].path === '/endpoints/logs'" :name="t('openconnector', 'Logs')" @click="handleNavigate('/endpoints/logs')">
 						<template #icon>
 							<TextBoxOutline :size="20" />
 						</template>
 					</NcAppNavigationItem>
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/consumers')" name="Consumers" @click="handleNavigate('/consumers')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/consumers')" :name="t('openconnector', 'Consumers')" @click="handleNavigate('/consumers')">
 				<template #icon>
 					<Webhook :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/mappings')" name="Mappings" @click="handleNavigate('/mappings')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/mappings')" :name="t('openconnector', 'Mappings')" @click="handleNavigate('/mappings')">
 				<template #icon>
 					<SitemapOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path === '/jobs'"
-				name="Jobs"
+				:name="t('openconnector', 'Jobs')"
 				:allow-collapse="true"
 				:open="true"
 				@click="handleNavigate('/jobs')">
@@ -66,7 +67,7 @@
 				<!-- This is correct according to the documentation, thats why there is a disable comment -->
 				<!-- eslint-disable-next-line vue/no-lone-template -->
 				<template>
-					<NcAppNavigationItem :active="$route.path === '/jobs/logs'" name="Logs" @click="handleNavigate('/jobs/logs')">
+					<NcAppNavigationItem :active="$route.path === '/jobs/logs'" :name="t('openconnector', 'Logs')" @click="handleNavigate('/jobs/logs')">
 						<template #icon>
 							<TextBoxOutline :size="20" />
 						</template>
@@ -74,7 +75,7 @@
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem
-				name="Cloud Events"
+				:name="t('openconnector', 'Cloud Events')"
 				:allow-collapse="true"
 				:open="true">
 				<template #icon>
@@ -83,12 +84,12 @@
 				<!-- This is correct according to the documentation, thats why there is a disable comment -->
 				<!-- eslint-disable-next-line vue/no-lone-template -->
 				<template>
-					<NcAppNavigationItem :active="$route.path.startsWith('/cloud-events/events')" name="Events" @click="handleNavigate('/cloud-events/events')">
+					<NcAppNavigationItem :active="$route.path.startsWith('/cloud-events/events')" :name="t('openconnector', 'Events')" @click="handleNavigate('/cloud-events/events')">
 						<template #icon>
 							<MessageTextFastOutline :size="20" />
 						</template>
 					</NcAppNavigationItem>
-					<NcAppNavigationItem :active="$route.path === '/cloud-events/logs'" name="Logs" @click="handleNavigate('/cloud-events/logs')">
+					<NcAppNavigationItem :active="$route.path === '/cloud-events/logs'" :name="t('openconnector', 'Logs')" @click="handleNavigate('/cloud-events/logs')">
 						<template #icon>
 							<TextBoxOutline :size="20" />
 						</template>
@@ -96,7 +97,7 @@
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path === '/synchronizations'"
-				name="Synchronization"
+				:name="t('openconnector', 'Synchronization')"
 				:allow-collapse="true"
 				:open="true"
 				@click="handleNavigate('/synchronizations')">
@@ -106,31 +107,31 @@
 				<!-- This is correct according to the documentation, thats why there is a disable comment -->
 				<!-- eslint-disable-next-line vue/no-lone-template -->
 				<template>
-					<NcAppNavigationItem :active="$route.path === '/synchronizations/contracts'" name="Contracts" @click="handleNavigate('/synchronizations/contracts')">
+					<NcAppNavigationItem :active="$route.path === '/synchronizations/contracts'" :name="t('openconnector', 'Contracts')" @click="handleNavigate('/synchronizations/contracts')">
 						<template #icon>
 							<FileDocumentOutline :size="20" />
 						</template>
 					</NcAppNavigationItem>
-					<NcAppNavigationItem :active="$route.path === '/synchronizations/logs'" name="Logs" @click="handleNavigate('/synchronizations/logs')">
+					<NcAppNavigationItem :active="$route.path === '/synchronizations/logs'" :name="t('openconnector', 'Logs')" @click="handleNavigate('/synchronizations/logs')">
 						<template #icon>
 							<TextBoxOutline :size="20" />
 						</template>
 					</NcAppNavigationItem>
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem :active="$route.path.startsWith('/rules')" name="Rules" @click="handleNavigate('/rules')">
+			<NcAppNavigationItem :active="$route.path.startsWith('/rules')" :name="t('openconnector', 'Rules')" @click="handleNavigate('/rules')">
 				<template #icon>
 					<SitemapOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
 		</NcAppNavigationList>
 		<NcAppNavigationSettings>
-			<NcAppNavigationItem :active="$route.path === '/import'" name="Import" @click="handleNavigate('/import')">
+			<NcAppNavigationItem :active="$route.path === '/import'" :name="t('openconnector', 'Import')" @click="handleNavigate('/import')">
 				<template #icon>
 					<FileImportOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
-			<NcAppNavigationItem name="Settings" @click="$emit('open-settings')">
+			<NcAppNavigationItem :name="t('openconnector', 'Settings')" @click="$emit('open-settings')">
 				<template #icon>
 					<Cog :size="20" />
 				</template>

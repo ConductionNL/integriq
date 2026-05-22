@@ -8,7 +8,7 @@ import { eventStore } from '../../store/store.js'
 			<!-- Filter Section -->
 			<div class="sidebarSection">
 				<h2 class="sidebarSectionTitle">
-					{{ t('openconnector', 'Filter Logs') }}
+					{{ t('openconnector', 'Filter logs') }}
 				</h2>
 
 				<!-- Event Filter -->
@@ -27,7 +27,7 @@ import { eventStore } from '../../store/store.js'
 				<!-- Log Level Filter -->
 				<div class="sidebarFilter">
 					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Log Level') }}
+						{{ t('openconnector', 'Log level') }}
 					</label>
 					<NcSelect
 						v-model="filters.level"
@@ -40,7 +40,7 @@ import { eventStore } from '../../store/store.js'
 				<!-- Date Range Filter -->
 				<div class="sidebarFilter">
 					<label class="sidebarFilterLabel">
-						{{ t('openconnector', 'Date Range') }}
+						{{ t('openconnector', 'Date range') }}
 					</label>
 					<div class="dateRangeContainer">
 						<DateRangeInput
@@ -95,7 +95,7 @@ import { eventStore } from '../../store/store.js'
 					<template #icon>
 						<Close :size="20" />
 					</template>
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
 
@@ -108,7 +108,7 @@ import { eventStore } from '../../store/store.js'
 				<div class="statisticsGrid">
 					<div class="statisticCard">
 						<span class="statisticLabel">
-							{{ t('openconnector', 'Total Logs') }}
+							{{ t('openconnector', 'Total logs') }}
 						</span>
 						<span class="statisticValue">
 							{{ statistics.totalLogs }}
@@ -132,7 +132,7 @@ import { eventStore } from '../../store/store.js'
 					</div>
 					<div class="statisticCard">
 						<span class="statisticLabel">
-							{{ t('openconnector', 'Avg. Execution Time') }}
+							{{ t('openconnector', 'Avg. execution time') }}
 						</span>
 						<span class="statisticValue">
 							{{ formatExecutionTime(statistics.averageExecutionTime) }}
@@ -148,9 +148,9 @@ import { eventStore } from '../../store/store.js'
 						<InformationOutline :size="20" />
 					</template>
 					<template #title>
-						{{ t('openconnector', 'About Event Logs') }}
+						{{ t('openconnector', 'About event logs') }}
 					</template>
-					{{ t('openconnector', 'Event logs track the execution of events in the system. Use the filters above to find specific logs or analyze patterns in event execution.') }}
+					{{ t('openconnector', 'Event logs track the execution of events in the system. use the filters above to find specific logs or analyze patterns in event execution.') }}
 				</NcNoteCard>
 			</div>
 		</div>

@@ -4,7 +4,7 @@
 		:item-menu="itemMenu"
 		@show="onShow">
 		<template #empty-content>
-			<NcEmptyContent :title="t('openconnector', 'Geen taken gevonden')">
+			<NcEmptyContent :title="t('openconnector', 'No jobs found')">
 				<template #icon>
 					<ClockIcon />
 				</template>
@@ -38,7 +38,7 @@ export default {
 			jobs: [],
 			itemMenu: {
 				show: {
-					text: t('openconnector', 'Bekijk taken'),
+					text: t('openconnector', 'View jobs'),
 					icon: 'icon-link',
 				},
 			},
@@ -49,16 +49,16 @@ export default {
 			return this.jobs.map((job) => {
 				const isEnabled = job.isEnabled !== false && job.enabled !== false
 				const statusText = isEnabled
-					? t('openconnector', 'Ingeschakeld')
-					: t('openconnector', 'Uitgeschakeld')
+					? t('openconnector', 'Enabled')
+					: t('openconnector', 'Disabled')
 				const lastRun = job.lastRun || job.dateModified || null
 				const lastRunText = lastRun
-					? t('openconnector', 'Laatst uitgevoerd: {date}', { date: this.formatDate(lastRun) })
-					: t('openconnector', 'Nog niet uitgevoerd')
+					? t('openconnector', 'Last run: {date}', { date: this.formatDate(lastRun) })
+					: t('openconnector', 'Not yet executed')
 
 				return {
 					id: job.id,
-					mainText: job.name || t('openconnector', 'Naamloze taak'),
+					mainText: job.name || t('openconnector', 'Unnamed job'),
 					subText: statusText + ' - ' + lastRunText,
 					avatarUrl: '',
 				}

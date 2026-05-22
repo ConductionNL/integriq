@@ -4,8 +4,7 @@ namespace OCA\OpenConnector\Action;
 
 use Exception;
 use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Db\SynchronizationMapper;
-use OCA\OpenConnector\Db\SynchronizationContractMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 /**
@@ -18,18 +17,14 @@ class SynchronizationAction
 
     private SynchronizationService $syncService;
 
-    private SynchronizationMapper $syncMapper;
-
-    private SynchronizationContractMapper $contractMapper;
+    private OrObjectService $orObjectService;
 
     public function __construct(
         SynchronizationService $syncService,
-        SynchronizationMapper $syncMapper,
-        SynchronizationContractMapper $contractMapper,
+        OrObjectService $orObjectService,
     ) {
-        $this->syncService    = $syncService;
-        $this->syncMapper     = $syncMapper;
-        $this->contractMapper = $contractMapper;
+        $this->syncService     = $syncService;
+        $this->orObjectService = $orObjectService;
     }//end __construct()
 
     /**
@@ -62,9 +57,14 @@ class SynchronizationAction
             return $response;
         }
 
-        // Let's find a synchronysation
+        // Let's find a synchronization
         $response['stackTrace'][] = 'Getting synchronization: '.$argument['synchronizationId'];
-        $synchronization          = $this->syncMapper->find((int) $argument['synchronizationId']);
+        $synchronization          = $this->orObjectService->find(
+            id: (string) $argument['synchronizationId'],
+            register: 'openconnector',
+            schema: 'synchronization'
+        );
+
         if ($synchronization === null) {
             $response['level']        = 'WARNING';
             $response['stackTrace'][] = $response['message'] = 'Synchronization not found: '.$argument['synchronizationId'];

@@ -3,20 +3,17 @@
 namespace OCA\OpenConnector\Controller;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenConnector\Db\SynchronizationMapper;
-use OCA\OpenConnector\Db\SynchronizationContractMapper;
-use OCA\OpenConnector\Db\SynchronizationLogMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use Exception;
-use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
@@ -39,17 +36,19 @@ class SynchronizationsController extends Controller
     /**
      * Constructor for the SynchronizationsController
      *
-     * @param string     $appName The name of the app
-     * @param IRequest   $request The request object
-     * @param IAppConfig $config  The app configuration object
+     * @param string                 $appName                The name of the app
+     * @param IRequest               $request                The request object
+     * @param IAppConfig             $config                 The app configuration object
+     * @param OrObjectService        $orObjectService        The OR object service
+     * @param SynchronizationService $synchronizationService The synchronization service
+     * @param IL10N                  $l                      The localization service
+     * @param LoggerInterface        $logger                 The logger
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SynchronizationMapper $synchronizationMapper,
-        private readonly SynchronizationContractMapper $synchronizationContractMapper,
-        private readonly SynchronizationLogMapper $synchronizationLogMapper,
+        private readonly OrObjectService $orObjectService,
         private readonly SynchronizationService $synchronizationService,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger
@@ -78,121 +77,6 @@ class SynchronizationsController extends Controller
     }//end page()
 
     /**
-     * Retrieves a list of all synchronizations
-     *
-     * This method returns a JSON response containing an array of all synchronizations in the system.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the list of synchronizations
-     */
-    public function index(ObjectService $objectService, SearchService $searchService): JSONResponse
-    {
-        $filters        = $this->request->getParams();
-        $fieldsToSearch = ['name', 'description'];
-
-        $searchParams     = $searchService->createMySQLSearchParams(filters: $filters);
-        $searchConditions = $searchService->createMySQLSearchConditions(filters: $filters, fieldsToSearch:  $fieldsToSearch);
-        $filters          = $searchService->unsetSpecialQueryParams(filters: $filters);
-
-        return new JSONResponse(['results' => $this->synchronizationMapper->findAll(limit: null, offset: null, filters: $filters, searchConditions: $searchConditions, searchParams: $searchParams)]);
-    }//end index()
-
-    /**
-     * Retrieves a single synchronization by its ID
-     *
-     * This method returns a JSON response containing the details of a specific synchronization.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the synchronization to retrieve
-     * @return JSONResponse A JSON response containing the synchronization details
-     */
-    public function show(string $id): JSONResponse
-    {
-        try {
-            return new JSONResponse($this->synchronizationMapper->find(id: (int) $id));
-        } catch (DoesNotExistException $exception) {
-            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
-        }
-    }//end show()
-
-    /**
-     * Creates a new synchronization
-     *
-     * This method creates a new synchronization based on POST data.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the created synchronization
-     */
-    public function create(): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        return new JSONResponse($this->synchronizationMapper->createFromArray(object: $data));
-    }//end create()
-
-    /**
-     * Updates an existing synchronization
-     *
-     * This method updates an existing synchronization based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the synchronization to update
-     * @return JSONResponse A JSON response containing the updated synchronization details
-     */
-    public function update(int $id): JSONResponse
-    {
-        $data = $this->request->getParams();
-
-        foreach ($data as $key => $value) {
-            if (str_starts_with($key, '_')) {
-                unset($data[$key]);
-            }
-        }
-
-        if (isset($data['id'])) {
-            unset($data['id']);
-        }
-
-        return new JSONResponse($this->synchronizationMapper->updateFromArray(id: (int) $id, object: $data));
-    }//end update()
-
-    /**
-     * Deletes a synchronization
-     *
-     * This method deletes a synchronization based on its ID.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @param  string $id The ID of the synchronization to delete
-     * @return JSONResponse An empty JSON response
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        $this->synchronizationMapper->delete($this->synchronizationMapper->find((int) $id));
-
-        return new JSONResponse([]);
-    }//end destroy()
-
-    /**
      * Retrieves call logs for a job
      *
      * This method returns all the call logs associated with a source based on its ID.
@@ -205,12 +89,9 @@ class SynchronizationsController extends Controller
      */
     public function contracts(int $id): JSONResponse
     {
-        try {
-            $contracts = $this->synchronizationContractMapper->findAll(null, null, ['synchronization_id' => $id]);
-            return new JSONResponse($contracts);
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Contracts not found')], 404);
-        }
+        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => (string) $id]]);
+        $contracts = $matches['results'] ?? $matches;
+        return new JSONResponse($contracts);
     }//end contracts()
 
     /**
@@ -260,8 +141,7 @@ class SynchronizationsController extends Controller
             }
 
             if (!empty($filters['slow_syncs'])) {
-                $specialFilters['slow_syncs'] = 5000;
-                // 5 seconds in milliseconds
+                $specialFilters['slow_syncs'] = 5000; // 5 seconds in milliseconds
             }
 
             // Build search conditions and parameters
@@ -291,17 +171,11 @@ class SynchronizationsController extends Controller
             // Remove special query params from filters
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-            // Get synchronization logs with filters and pagination
-            $syncLogs = $this->synchronizationLogMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                searchConditions: $searchConditions,
-                searchParams: $searchParams
-            );
-
-            // Get total count for pagination
-            $total       = $this->synchronizationLogMapper->getTotalCount($filters);
+            // Get synchronization logs with filters and pagination via OR ObjectService
+            $orFilters   = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+            $matches     = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+            $syncLogs    = $matches['results'] ?? $matches;
+            $total       = $matches['total'] ?? count($syncLogs);
             $pages       = $limit > 0 ? ceil($total / $limit) : 1;
             $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
 
@@ -354,8 +228,8 @@ class SynchronizationsController extends Controller
     public function test(int $id, ?bool $force=false): JSONResponse
     {
         try {
-            $synchronization = $this->synchronizationMapper->find(id: $id);
-        } catch (DoesNotExistException $exception) {
+            $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
@@ -409,8 +283,8 @@ class SynchronizationsController extends Controller
         $data       = $parameters['data'] ?? [];
 
         try {
-            $synchronization = $this->synchronizationMapper->find(id: $id);
-        } catch (DoesNotExistException $exception) {
+            $synchronization = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
@@ -461,10 +335,13 @@ class SynchronizationsController extends Controller
     public function statistics(): JSONResponse
     {
         try {
-            // Get basic counts
-            $totalCount    = $this->synchronizationMapper->getTotalCount();
-            $enabledCount  = $this->synchronizationMapper->getTotalCount(['isEnabled' => true]);
-            $disabledCount = $this->synchronizationMapper->getTotalCount(['isEnabled' => false]);
+            // Get basic counts via OR ObjectService
+            $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization'];
+            $allMatches     = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
+            $enabledMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['isEnabled' => true])]);
+            $totalCount     = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
+            $enabledCount   = $enabledMatches['total'] ?? count($enabledMatches['results'] ?? $enabledMatches);
+            $disabledCount  = $totalCount - $enabledCount;
 
             // Calculate distribution
             $statusDistribution = [
@@ -519,13 +396,20 @@ class SynchronizationsController extends Controller
     public function logsStatistics(): JSONResponse
     {
         try {
-            // Get basic counts by status/level
-            $totalCount   = $this->synchronizationLogMapper->getTotalCount();
-            $successCount = $this->synchronizationLogMapper->getTotalCount(['status' => 'success']);
-            $errorCount   = $this->synchronizationLogMapper->getTotalCount(['status' => 'error']);
-            $warningCount = $this->synchronizationLogMapper->getTotalCount(['status' => 'warning']);
-            $infoCount    = $this->synchronizationLogMapper->getTotalCount(['status' => 'info']);
-            $debugCount   = $this->synchronizationLogMapper->getTotalCount(['status' => 'debug']);
+            // Get basic counts by status/level via OR ObjectService
+            $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
+            $allMatches     = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
+            $successMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'success'])]);
+            $errorMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'error'])]);
+            $warningMatches = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'warning'])]);
+            $infoMatches    = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'info'])]);
+            $debugMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'debug'])]);
+            $totalCount     = $allMatches['total'] ?? count($allMatches['results'] ?? $allMatches);
+            $successCount   = $successMatches['total'] ?? count($successMatches['results'] ?? $successMatches);
+            $errorCount     = $errorMatches['total'] ?? count($errorMatches['results'] ?? $errorMatches);
+            $warningCount   = $warningMatches['total'] ?? count($warningMatches['results'] ?? $warningMatches);
+            $infoCount      = $infoMatches['total'] ?? count($infoMatches['results'] ?? $infoMatches);
+            $debugCount     = $debugMatches['total'] ?? count($debugMatches['results'] ?? $debugMatches);
 
             // Calculate status distribution for charts and visualizations
             $statusDistribution = [
@@ -596,27 +480,28 @@ class SynchronizationsController extends Controller
             // Remove pagination and other non-filter parameters
             unset($filters['_limit'], $filters['_page'], $filters['_sort'], $filters['_order']);
 
-            // Get all logs matching filters (no pagination for export)
-            $logs = $this->synchronizationLogMapper->findAll(null, null, $filters);
+            // Get all logs matching filters (no pagination for export) via OR ObjectService
+            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_log'], $filters);
+            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
+            $logs      = $matches['results'] ?? $matches;
 
             // Create CSV content with headers
-            $csvData = "ID,UUID,Status,Message,Synchronization ID,Source ID,Target ID,User ID,Created,Execution Time\n";
+            $csvData = "UUID,Status,Message,Synchronization ID,Source ID,Target ID,User ID,Created,Execution Time\n";
 
             foreach ($logs as $log) {
+                $data = $log->getObject();
                 // Escape CSV values to prevent injection and handle commas
                 $csvData .= sprintf(
-                    '%s,%s,%s,"%s",%s,%s,%s,%s,%s,%s'."\n",
-                    $log->getId() ?? '',
+                    '%s,%s,"%s",%s,%s,%s,%s,%s,%s'."\n",
                     $log->getUuid() ?? '',
-                    $log->getStatus() ?? '',
-                    str_replace('"', '""', $log->getMessage() ?? ''),
-                // Escape quotes in message
-                    $log->getSynchronizationId() ?? '',
-                    $log->getSourceId() ?? '',
-                    $log->getTargetId() ?? '',
-                    $log->getUserId() ?? '',
-                    $log->getCreated() ? $log->getCreated()->format('Y-m-d H:i:s') : '',
-                    $log->getSyncTime() ?? ''
+                    $data['status'] ?? '',
+                    str_replace('"', '""', $data['message'] ?? ''), // Escape quotes in message
+                    $data['synchronizationId'] ?? '',
+                    $data['sourceId'] ?? '',
+                    $data['targetId'] ?? '',
+                    $data['userId'] ?? '',
+                    $data['created'] ?? '',
+                    $data['syncTime'] ?? ''
                 );
             }
 
@@ -666,12 +551,14 @@ class SynchronizationsController extends Controller
     public function deleteLog(int $id): JSONResponse
     {
         try {
-            $log = $this->synchronizationLogMapper->find($id);
-            $this->synchronizationLogMapper->delete($log);
-
-            return new JSONResponse(['message' => $this->l->t('Log deleted successfully')], 200);
-        } catch (DoesNotExistException $exception) {
+            $log = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization_log');
+        } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
+        }
+
+        try {
+            $this->orObjectService->deleteObject(uuid: $log->getUuid());
+            return new JSONResponse(['message' => $this->l->t('Log deleted successfully')], 200);
         } catch (\Exception $exception) {
             return new JSONResponse(['error' => $this->l->t('Failed to delete log: %s', [$exception->getMessage()])], 500);
         }

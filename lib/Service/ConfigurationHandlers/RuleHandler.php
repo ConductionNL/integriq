@@ -2,8 +2,8 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
-use OCA\OpenConnector\Db\Rule;
-use OCA\OpenConnector\Db\RuleMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -25,10 +25,10 @@ use OCP\AppFramework\Db\Entity;
 class RuleHandler implements ConfigurationHandlerInterface
 {
     /**
-     * @param RuleMapper $ruleMapper The rule mapper
+     * @param OrObjectService $orObjectService The OR object service
      */
     public function __construct(
-        private readonly RuleMapper $ruleMapper
+        private readonly OrObjectService $orObjectService
     ) {
     }//end __construct()
 
@@ -37,16 +37,12 @@ class RuleHandler implements ConfigurationHandlerInterface
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
-        if (!$entity instanceof Rule) {
-            throw new \InvalidArgumentException('Entity must be an instance of Rule');
-        }
-
-        $ruleArray = $entity->jsonSerialize();
+        $ruleArray = ($entity instanceof ObjectEntity) ? $entity->getObject() : $entity->jsonSerialize();
         unset($ruleArray['id'], $ruleArray['uuid']);
 
         // Ensure slug is set
-        if (empty($ruleArray['slug'])) {
-            $ruleArray['slug'] = $entity->getSlug();
+        if (empty($ruleArray['slug']) && $entity instanceof ObjectEntity) {
+            $ruleArray['slug'] = $entity->getUuid();
         }
 
         // Handle nested configuration structures
@@ -120,13 +116,19 @@ class RuleHandler implements ConfigurationHandlerInterface
         }
 
         // Check if rule with this slug already exists
-        if (isset($data['slug']) && isset($mappings['rule']['slugToId'][$data['slug']])) {
+        $slug = $data['slug'] ?? null;
+        if ($slug !== null && isset($mappings['rule']['slugToId'][$slug])) {
             // Update existing rule
-            return $this->ruleMapper->updateFromArray($mappings['rule']['slugToId'][$data['slug']], $data);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                register: 'openconnector',
+                schema: 'rule',
+                uuid: $mappings['rule']['slugToId'][$slug]
+            );
         }
 
         // Create new rule
-        return $this->ruleMapper->createFromArray($data);
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'rule');
     }//end import()
 
     /**

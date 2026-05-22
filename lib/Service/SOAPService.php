@@ -10,7 +10,7 @@ use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Response;
-use OCA\OpenConnector\Db\Source;
+use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
@@ -106,16 +106,16 @@ class SOAPService
     /**
      * Setup an SOAP engine for a source.
      *
-     * @param Source $source       The source to call.
-     * @param array  $passedConfig The config to setup the HTTP client with.
+     * @param ObjectEntity $source       The source ObjectEntity.
+     * @param array        $passedConfig The config to setup the HTTP client with.
      *
      * @return Engine The resulting soap engine.
      * @throws \SoapFault
      */
-    public function setupEngine(Source $source, array $passedConfig): Engine
+    public function setupEngine(ObjectEntity $source, array $passedConfig): Engine
     {
-
-        $config = $source->getConfiguration();
+        $sourceData = $source->getObject();
+        $config     = $sourceData['configuration'] ?? [];
 
         if (isset($config['wsdl']) === false) {
             throw new Exception('No wsdl provided');
@@ -138,7 +138,7 @@ class SOAPService
                                 [
                                     'cache_wsdl'   => WSDL_CACHE_NONE,
                                     'trace'        => true,
-                                    'location'     => $source->getLocation(),
+                                    'location'     => $sourceData['location'] ?? '',
                                     'soap_version' => $this->getSoapVersion($soapVersion),
                                 ]
                                 )
@@ -207,14 +207,14 @@ class SOAPService
     /**
      * Call a soap source with provided configuration.
      *
-     * @param Source $source     The SOAP source to call.
-     * @param string $soapAction The SOAPAction to call (most comparable to an endpoint in REST).
-     * @param array  $config     The configuration to use when calling the source.
+     * @param ObjectEntity $source     The SOAP source ObjectEntity.
+     * @param string       $soapAction The SOAPAction to call (most comparable to an endpoint in REST).
+     * @param array        $config     The configuration to use when calling the source.
      *
      * @return Response The resulting response.
      * @throws \SoapFault
      */
-    public function callSoapSource(Source $source, string $soapAction, array $config): Response
+    public function callSoapSource(ObjectEntity $source, string $soapAction, array $config): Response
     {
         $body = json_decode(json: $config['body'] ?? '{}', associative: true);
         unset($config['body']);

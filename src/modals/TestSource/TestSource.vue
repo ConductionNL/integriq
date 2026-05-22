@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { sourceStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -8,7 +9,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		label-id="testSource"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>Test source</h2>
+			<h2>{{ t('openconnector', 'Test source') }}</h2>
 
 			<form @submit.prevent="handleSubmit">
 				<div class="form-group">
@@ -25,13 +26,13 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 						<NcTextField
 							id="endpoint"
-							label="Endpoint"
+							:label="t('openconnector', 'Endpoint')"
 							:value.sync="testSourceItem.endpoint" />
 					</div>
 					<NcTextArea
 						id="body"
 						resize="vertical"
-						label="Body"
+						:label="t('openconnector', 'Body')"
 						:value.sync="testSourceItem.body" />
 				</div>
 			</form>
@@ -42,7 +43,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					:disabled="loading"
@@ -52,24 +53,24 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<Sync v-if="!loading" :size="20" />
 					</template>
-					Test connection
+					{{ t('openconnector', 'Test connection') }}
 				</NcButton>
 			</div>
 			<NcNoteCard v-if="sourceStore.sourceTest && sourceStore.sourceTest.response.statusCode.toString().startsWith('2')" type="success">
-				<p>The connection to the source was successful.</p>
+				<p>{{ t('openconnector', 'The connection to the source was successful.') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="(sourceStore.sourceTest && !sourceStore.sourceTest.response.statusCode.toString().startsWith('2')) || error" type="error">
-				<p>An error occurred while testing the connection: {{ sourceStore.sourceTest ? sourceStore.sourceTest.response.statusMessage : error }}</p>
+				<p>{{ t('openconnector', 'An error occurred while testing the connection:') }} {{ sourceStore.sourceTest ? sourceStore.sourceTest.response.statusMessage : error }}</p>
 			</NcNoteCard>
 
 			<div v-if="sourceStore.sourceTest">
-				<p><b>Status:</b> {{ sourceStore.sourceTest.response.statusMessage }} ({{ sourceStore.sourceTest.response.statusCode }})</p>
-				<p><b>Response time:</b> {{ sourceStore.sourceTest.response.responseTime }} (Milliseconds)</p>
-				<p><b>Size:</b> {{ sourceStore.sourceTest.response.size }} (Bytes)</p>
-				<p><b>Remote IP:</b> {{ sourceStore.sourceTest.response.remoteIp }}</p>
-				<p><b>Headers:</b> {{ sourceStore.sourceTest.response.headers }}</p>
+				<p><b>{{ t('openconnector', 'Status') }}:</b> {{ sourceStore.sourceTest.response.statusMessage }} ({{ sourceStore.sourceTest.response.statusCode }})</p>
+				<p><b>{{ t('openconnector', 'Response time') }}:</b> {{ sourceStore.sourceTest.response.responseTime }} ({{ t('openconnector', 'Milliseconds') }})</p>
+				<p><b>{{ t('openconnector', 'Size') }}:</b> {{ sourceStore.sourceTest.response.size }} ({{ t('openconnector', 'Bytes') }})</p>
+				<p><b>{{ t('openconnector', 'Remote IP') }}:</b> {{ sourceStore.sourceTest.response.remoteIp }}</p>
+				<p><b>{{ t('openconnector', 'Headers') }}:</b> {{ sourceStore.sourceTest.response.headers }}</p>
 				<div class="responseBody">
-					<b>Body:</b> <pre>{{ prettifyJson(sourceStore.sourceTest.response.body) }}</pre>
+					<b>{{ t('openconnector', 'Body') }}:</b> <pre>{{ prettifyJson(sourceStore.sourceTest.response.body) }}</pre>
 				</div>
 			</div>
 		</div>

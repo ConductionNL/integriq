@@ -1,5 +1,6 @@
 <script setup>
 import { navigationStore } from '../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -8,7 +9,7 @@ import { navigationStore } from '../../store/store.js'
 		@close="closeModal">
 		<!-- Do not remove this seemingly useless class "TestMappingMainModal" -->
 		<div class="modalContent TestMappingMainModal">
-			<h2>Mapping test</h2>
+			<h2>{{ t('openconnector', 'Mapping test') }}</h2>
 
 			<div class="content">
 				<TestMappingInputObject ref="inputObjectRef"

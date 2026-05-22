@@ -4,12 +4,11 @@ namespace OCA\OpenConnector\Service;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenConnector\Db\Rule;
-use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -146,27 +145,28 @@ class RuleService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly CallService $callService,
-        private readonly SourceMapper $sourceMapper,
+        private readonly ORObjectService $orObjectService,
     ) {
     }//end __construct()
 
     /**
      * Process a custom rule
      *
-     * @param Rule  $rule The rule to process
-     * @param array $data The data to process
+     * @param ObjectEntity $rule The rule to process
+     * @param array        $data The data to process
      *
      * @return array The updated data array.
      */
-    public function processCustomRule(Rule $rule, array $data): array|JSONResponse
+    public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
-        $type = $rule->getConfiguration()['type'];
+        $ruleData = $rule->getObject();
+        $type     = $ruleData['configuration']['type'] ?? '';
 
         // Process custom rule based on type
         $data = match ($type) {
             'softwareCatalogus' => $this->processSoftwareCatalogusRule($rule, $data),
             'connectRelations' => $this->processCustomConnectionsRule($rule, $data),
-            default => throw new Exception('Unsupported custom rule type: '.$rule->getType()),
+            default => throw new Exception('Unsupported custom rule type: '.($ruleData['type'] ?? '')),
         };
 
         return $data;
@@ -175,14 +175,15 @@ class RuleService
     /**
      * Process a Software Catalogus rule
      *
-     * @param Rule  $rule The rule to process
-     * @param array $data The data to process
+     * @param ObjectEntity $rule The rule to process
+     * @param array        $data The data to process
      *
      * @return array The updated data array
      */
-    private function processSoftwareCatalogusRule(Rule $rule, array $data): array
+    private function processSoftwareCatalogusRule(ObjectEntity $rule, array $data): array
     {
-        $config = $rule->getConfiguration()['configuration'];
+        $ruleData = $rule->getObject();
+        $config   = $ruleData['configuration']['configuration'] ?? [];
 
         // Get register ID and schema IDs
         $registerId          = $config['register'];
@@ -827,7 +828,7 @@ class RuleService
         return $relationId;
     }//end createRelation()
 
-    private function processCustomConnectionsRule(Rule $rule, array $data): array|JSONResponse
+    private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $explodedPath = explode(separator: '/', string: $data['path']);
 
@@ -861,18 +862,33 @@ class RuleService
      */
     private function getExternalObject(string $url, array $configuration, string|int $schemaId): array
     {
-        $source = $this->sourceMapper->findOrCreateByLocation($url);
+        // Find an existing source by location, or create one if not found.
+        $matches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $url]]);
+        $sources = $matches['results'] ?? $matches;
 
-        // @TODO The previous line returns an incomplete source, by fetching it again from the database we receive a working source
-        $source = $this->sourceMapper->find($source->getId());
+        if (count($sources) > 0) {
+            $source = $sources[0];
+        } else {
+            $source = $this->orObjectService->saveObject(
+                object: [
+                    'location'  => $url,
+                    'name'      => basename($url),
+                    'type'      => 'api',
+                    'isEnabled' => true,
+                ],
+                register: 'openconnector',
+                schema: 'source',
+            );
+        }
 
-        $result = $this->callService->call($source);
+        $result     = $this->callService->call($source);
+        $resultData = $result->getObject();
 
-        if ($result->getStatusCode() !== 200) {
+        if (($resultData['statusCode'] ?? 0) !== 200) {
             throw new Exception(message: "The object on $url could not be fetched");
         }
 
-        $object = json_decode(json: $result->getResponse()['body'], associative: true, flags: JSON_THROW_ON_ERROR);
+        $object = json_decode(json: ($resultData['response']['body'] ?? '{}'), associative: true, flags: JSON_THROW_ON_ERROR);
 
         if ($configuration['extend_external_input']['validate'] === false) {
             return $object;
@@ -893,16 +909,17 @@ class RuleService
     /**
      * Extend an object with an external url
      *
-     * @param  Rule  $rule The rule to execute.
-     * @param  array $data The data to extend.
+     * @param  ObjectEntity $rule The rule to execute.
+     * @param  array        $data The data to extend.
      * @return array|JSONResponse
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    public function extendExternalUrl(Rule $rule, array $data): array|JSONResponse
+    public function extendExternalUrl(ObjectEntity $rule, array $data): array|JSONResponse
     {
-        $config = $rule->getConfiguration();
+        $ruleData = $rule->getObject();
+        $config   = $ruleData['configuration'] ?? [];
 
         $dataDot            = new Dot($data);
         $extendedParameters = new Dot();

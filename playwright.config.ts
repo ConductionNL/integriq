@@ -58,8 +58,19 @@ export default defineConfig({
 		// PR pipelines don't reshoot screenshots on every push.
 		{
 			name: 'chromium',
-			testIgnore: ['**/docs-screenshots.spec.ts'],
+			testIgnore: ['**/docs-screenshots.spec.ts', '**/regression/**'],
 			use: { ...devices['Desktop Chrome'] },
+		},
+		// Chain-E regression project — schema-driven page smoke tests for the
+		// 24 manifest pages post OR-cutover. Opt-in:
+		//   npm run test:regression  (or: npx playwright test --project regression)
+		// 4 parallel workers per chain-E spec requirement.
+		{
+			name: 'regression',
+			testMatch: /regression\/.*\.spec\.ts$/,
+			use: { ...devices['Desktop Chrome'] },
+			fullyParallel: true,
+			retries: process.env.CI ? 2 : 0,
 		},
 		// Documentation capture project (ADR-030 / journeydoc). Opt-in:
 		//   npx playwright test --project docs-capture

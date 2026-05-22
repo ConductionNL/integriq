@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { consumerStore, navigationStore } from '../../store/store.js'
 import { Consumer } from '../../entities/index.js'
 import { getTheme } from '../../services/getTheme.js'
@@ -11,11 +12,11 @@ import { getTheme } from '../../services/getTheme.js'
 		label-id="editConsumer"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ consumerItem.id ? 'Edit' : 'Add' }} Consumer</h2>
+			<h2>{{ consumerItem.id ? t('openconnector', 'Edit Consumer') : t('openconnector', 'Add Consumer') }}</h2>
 
 			<div v-if="success !== null">
 				<NcNoteCard v-if="success" type="success">
-					<p>Consumer successfully {{ consumerItem.id ? 'updated' : 'added' }}</p>
+					<p>{{ consumerItem.id ? t('openconnector', 'Consumer successfully updated') : t('openconnector', 'Consumer successfully added') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error }}</p>
@@ -24,43 +25,43 @@ import { getTheme } from '../../services/getTheme.js'
 
 			<form v-if="success === null">
 				<div class="form-group editConsumerForm">
-					<NcTextField label="Name*" :value.sync="consumerItem.name" />
+					<NcTextField :label="t('openconnector', 'Name') + '*'" :value.sync="consumerItem.name" />
 
 					<NcTextArea
 						resize="vertical"
-						label="Description"
+						:label="t('openconnector', 'Description')"
 						:value.sync="consumerItem.description" />
 
 					<NcTextArea
 						resize="vertical"
-						label="Domains"
+						:label="t('openconnector', 'Domains')"
 						:value.sync="consumerItem.domains"
-						helper-text="Enter domains separated by commas (e.g. example.com, example.org)." />
+						:helper-text="t('openconnector', 'Enter domains separated by commas (e.g. example.com, example.org).')" />
 
 					<NcTextArea
-						label="IPs"
+						:label="t('openconnector', 'IPs')"
 						:value.sync="consumerItem.ips"
-						helper-text="Enter IP's separated by commas (e.g. 127.0.0.1, 1.1.1.1)."
+						:helper-text="t('openconnector', 'Enter IP\'s separated by commas (e.g. 127.0.0.1, 1.1.1.1).')"
 						resize="none" />
 
 					<NcSelect
 						v-bind="authorizationTypeOptions"
 						v-model="authorizationTypeOptions.value" />
 					<div :class="`codeMirrorContainer ${getTheme()}`">
-						<span>Authorization Configuration</span>
+						<span>{{ t('openconnector', 'Authorization Configuration') }}</span>
 						<CodeMirror
 							v-model="authConfig"
 							:basic="true"
 							:dark="getTheme() === 'dark'"
 							:lang="json()"
 							:linter="jsonParseLinter()"
-							placeholder="Enter authorization configuration in JSON format..." />
+							:placeholder="t('openconnector', 'Enter authorization configuration in JSON format...')" />
 					</div>
 					<NcButton class="prettifyButton" @click="prettifyJson">
 						<template #icon>
 							<AutoFix :size="20" />
 						</template>
-						Prettify
+						{{ t('openconnector', 'Prettify') }}
 					</NcButton>
 				</div>
 			</form>
@@ -70,7 +71,7 @@ import { getTheme } from '../../services/getTheme.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="success === null"
@@ -81,7 +82,7 @@ import { getTheme } from '../../services/getTheme.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-else :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

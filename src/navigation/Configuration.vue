@@ -1,41 +1,41 @@
 <template>
 	<div>
-		<NcAppNavigationItem name="Configuratie" @click="settingsOpen = true">
+		<NcAppNavigationItem :name="t('openconnector', 'Configuration')" @click="settingsOpen = true">
 			<template #icon>
 				<CogOutline :size="20" />
 			</template>
 		</NcAppNavigationItem>
-		<NcAppSettingsDialog :open.sync="settingsOpen" :show-navigation="true" name="Applicatie instellingen">
-			<NcAppSettingsSection id="federation" name="Federatief stelsel" doc-url="https://conduction.gitbook.io/opencatalogi-nextcloud/beheerders/directory">
+		<NcAppSettingsDialog :open.sync="settingsOpen" :show-navigation="true" :name="t('openconnector', 'Application settings')">
+			<NcAppSettingsSection id="federation" :name="t('openconnector', 'Federation')" doc-url="https://conduction.gitbook.io/opencatalogi-nextcloud/beheerders/directory">
 				<template #icon>
 					<LanConnect :size="20" />
 				</template>
 				<NcCheckboxRadioSwitch :checked.sync="configuration.federationActive" type="switch">
-					{{ t('forms', 'Maak automatisch verbinding met federatief stelsel.') }}
+					{{ t('openconnector', 'Automatically connect to federation.') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch :checked.sync="configuration.federationActive" type="switch">
-					{{ t('forms', 'Werk catalogi automatisch bij.') }}
+					{{ t('openconnector', 'Automatically update catalogs.') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch :checked.sync="configuration.federationListed" type="switch">
-					{{ t('forms', 'Maak deze installatie vindbaar binnen het federatief stelsel.') }}
+					{{ t('openconnector', 'Make this installation discoverable within the federation.') }}
 				</NcCheckboxRadioSwitch>
 				<NcTextField id="federationLocation"
-					label="Internet locatie (url) van deze installatie"
+					:label="t('openconnector', 'Internet location (url) of this installation')"
 					placeholder="https://" />
 			</NcAppSettingsSection>
-			<NcAppSettingsSection id="storadge" name="Opslag" doc-url="zaakafhandel.app">
+			<NcAppSettingsSection id="storadge" :name="t('openconnector', 'Storage')" doc-url="zaakafhandel.app">
 				<template #icon>
 					<Database :size="20" />
 				</template>
 
 				<p>
-					Hier kunt u de details instellen voor verschillende verbindingen.
+					{{ t('openconnector', 'Here you can set the details for various connections.') }}
 				</p>
 				<NcCheckboxRadioSwitch :checked.sync="configuration.mongoStorage" type="switch">
-					{{ t('forms', 'Gebruik externe opslag (bijv. MongoDb) in plaats van de interne opslag van Next Cloud.') }}
+					{{ t('openconnector', 'Use external storage (e.g. mongodb) instead of the internal Nextcloud storage.') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch :checked.sync="configuration.cloudStorage" type="switch">
-					{{ t('forms', 'Gebruik VNG API\'s in plaats van MongoDB.') }}
+					{{ t('openconnector', 'Use VNG apis instead of mongodb.') }}
 				</NcCheckboxRadioSwitch>
 				<p>
 					<table>
@@ -44,14 +44,14 @@
 								<td class="row-name">
 									DRC
 								</td>
-								<td>Locatie</td>
+								<td>{{ t('openconnector', 'Location') }}</td>
 								<td>
 									<NcTextField id="drcLocation"
 										:value.sync="configuration.drcLocation"
 										:label-outside="true"
 										placeholder="https://" />
 								</td>
-								<td>Sleutel</td>
+								<td>{{ t('openconnector', 'Key') }}</td>
 								<td>
 									<NcTextField id="drcKey"
 										:value.sync="configuration.drcKey"
@@ -63,14 +63,14 @@
 								<td class="row-name">
 									ORC
 								</td>
-								<td>Locatie</td>
+								<td>{{ t('openconnector', 'Location') }}</td>
 								<td>
 									<NcTextField id="orcLocation"
 										:value.sync="configuration.orcLocation"
 										:label-outside="true"
 										placeholder="https://" />
 								</td>
-								<td>Sleutel</td>
+								<td>{{ t('openconnector', 'Key') }}</td>
 								<td>
 									<NcTextField id="orcKey"
 										:value.sync="configuration.orcKey"
@@ -82,21 +82,21 @@
 								<td class="row-name">
 									Elastic
 								</td>
-								<td>Locatie</td>
+								<td>{{ t('openconnector', 'Location') }}</td>
 								<td>
 									<NcTextField id="elasticLocation"
 										:value.sync="configuration.elasticLocation"
 										:label-outside="true"
 										placeholder="https://" />
 								</td>
-								<td>Sleutel</td>
+								<td>{{ t('openconnector', 'Key') }}</td>
 								<td>
 									<NcTextField id="elasticKey"
 										:value.sync="configuration.elasticKey"
 										:label-outside="true"
 										placeholder="***" />
 								</td>
-								<td>Index</td>
+								<td>{{ t('openconnector', 'Index') }}</td>
 								<td>
 									<NcTextField id="elasticIndex"
 										:value.sync="configuration.elasticIndex"
@@ -108,21 +108,21 @@
 								<td class="row-name">
 									Mongo DB
 								</td>
-								<td>Locatie</td>
+								<td>{{ t('openconnector', 'Location') }}</td>
 								<td>
 									<NcTextField id="mongodbLocation"
 										:value.sync="configuration.mongodbLocation"
 										:label-outside="true"
 										placeholder="https://" />
 								</td>
-								<td>Sleutel</td>
+								<td>{{ t('openconnector', 'Key') }}</td>
 								<td>
 									<NcTextField id="mongodbKey"
 										:value.sync="configuration.mongodbKey"
 										:label-outside="true"
 										placeholder="***" />
 								</td>
-								<td>Cluster naam</td>
+								<td>{{ t('openconnector', 'Cluster name') }}</td>
 								<td>
 									<NcTextField id="mongodbCluster"
 										:value.sync="configuration.mongodbCluster"
@@ -133,33 +133,33 @@
 						</tbody>
 					</table>
 				</p>
-				<NcButton aria-label="Opslaan"
+				<NcButton :aria-label="t('openconnector', 'Save')"
 					type="primary"
 					wide
 					@click="saveConfig(); feedbackPosition = 'top'">
 					<template #icon>
 						<ContentSave :size="20" />
 					</template>
-					Opslaan
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 				<div v-if="feedbackPosition === 'top' && configurationSuccess !== -1">
 					<NcNoteCard :type="configurationSuccess ? 'success' : 'error'">
 						<p>
 							{{ configurationSuccess ?
-								'Configuratie succesvol opgeslagen.' :
-								'Opslaan van configuratie mislukt.'
+								t('openconnector', 'Configuration saved successfully.') :
+								t('openconnector', 'Failed to save configuration.')
 							}}
 						</p>
 					</NcNoteCard>
 				</div>
 			</NcAppSettingsSection>
-			<NcAppSettingsSection id="organisation" name="Rolen en Rechten" doc-url="zaakafhandel.app">
+			<NcAppSettingsSection id="organisation" :name="t('openconnector', 'Roles and permissions')" doc-url="zaakafhandel.app">
 				<template #icon>
 					<AccountLockOpenOutline :size="20" />
 				</template>
 
 				<p>
-					Hier kunt u de details voor uw organisatie instellen.
+					{{ t('openconnector', 'Here you can set the details for your organisation.') }}
 				</p>
 
 				<NcTextField id="organisationName" :value.sync="configuration.organisationName" />
@@ -169,21 +169,21 @@
 					:value.sync="configuration.organisationPki"
 					resize="vertical" />
 
-				<NcButton aria-label="Opslaan"
+				<NcButton :aria-label="t('openconnector', 'Save')"
 					type="primary"
 					wide
 					@click="saveConfig(); feedbackPosition = 'bottom'">
 					<template #icon>
 						<ContentSave :size="20" />
 					</template>
-					Opslaan
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 				<div v-if="feedbackPosition === 'bottom' && configurationSuccess !== -1">
 					<NcNoteCard :type="configurationSuccess ? 'success' : 'error'">
 						<p>
 							{{ configurationSuccess ?
-								'Configuratie succesvol opgeslagen.' :
-								'Opslaan van configuratie mislukt.'
+								t('openconnector', 'Configuration saved successfully.') :
+								t('openconnector', 'Failed to save configuration.')
 							}}
 						</p>
 					</NcNoteCard>
@@ -202,6 +202,7 @@ import {
 	NcTextField,
 	NcTextArea,
 	NcButton,
+	NcNoteCard,
 } from '@nextcloud/vue'
 
 import Database from 'vue-material-design-icons/Database.vue'
@@ -220,6 +221,7 @@ export default {
 		NcTextField,
 		NcTextArea,
 		NcButton,
+		NcNoteCard,
 		// icons
 		CogOutline,
 		Database,

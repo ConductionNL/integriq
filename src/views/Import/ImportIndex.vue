@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { translate as t } from '@nextcloud/l10n'
 import { importExportStore } from '../../store/store.js'
 </script>
 
@@ -8,14 +9,14 @@ import { importExportStore } from '../../store/store.js'
 		<div ref="dropZoneRef" class="container">
 			<div class="filesListDragDropNotice" :class="'tabPanelFileUpload'">
 				<NcNoteCard type="info">
-					<p>Allowed extensions are: .json, .yaml, .yml</p>
+					<p>{{ t('openconnector', 'Allowed extensions are: .json, .yaml, .yml') }}</p>
 				</NcNoteCard>
 				<div v-if="success !== null || error">
 					<NcNoteCard v-if="success" type="success">
-						<p>Successfully imported files</p>
+						<p>{{ t('openconnector', 'Successfully imported files') }}</p>
 					</NcNoteCard>
 					<NcNoteCard v-if="error && !success" type="error">
-						<p>Something went wrong while importing</p>
+						<p>{{ t('openconnector', 'Something went wrong while importing') }}</p>
 					</NcNoteCard>
 					<NcNoteCard v-if="error && !success" type="error">
 						<p>{{ error }}</p>
@@ -23,19 +24,19 @@ import { importExportStore } from '../../store/store.js'
 				</div>
 				<div v-if="validateFileExtension(files)">
 					<NcNoteCard type="error">
-						<p>Please select files with the correct extension</p>
+						<p>{{ t('openconnector', 'Please select files with the correct extension') }}</p>
 					</NcNoteCard>
 				</div>
 				<div class="filesListDragDropNoticeWrapper">
 					<div class="filesListDragDropNoticeWrapperIcon">
 						<TrayArrowDown :size="48" />
 						<h3 class="filesListDragDropNoticeTitle">
-							Drag and drop a file or files here
+							{{ t('openconnector', 'Drag and drop a file or files here') }}
 						</h3>
 					</div>
 
 					<h3 class="filesListDragDropNoticeTitle">
-						Or
+						{{ t('openconnector', 'Or') }}
 					</h3>
 
 					<div class="filesListDragDropNoticeTitle">
@@ -46,13 +47,13 @@ import { importExportStore } from '../../store/store.js'
 							<template #icon>
 								<Plus :size="20" />
 							</template>
-							Add a file or files
+							{{ t('openconnector', 'Add a file or files') }}
 						</NcButton>
 					</div>
 				</div>
 			</div>
 			<div v-if="!files">
-				No files selected
+				{{ t('openconnector', 'No files selected') }}
 			</div>
 			<div v-if="files" class="importButtonContainer">
 				<NcButton
@@ -63,17 +64,17 @@ import { importExportStore } from '../../store/store.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<FileImportOutline v-if="!loading" :size="20" />
 					</template>
-					Import
+					{{ t('openconnector', 'Import') }}
 				</NcButton>
 			</div>
 			<table v-if="files" class="files-table">
 				<thead>
 					<tr class="files-table-tr">
 						<th>
-							Name
+							{{ t('openconnector', 'Name') }}
 						</th>
 						<th>
-							Size
+							{{ t('openconnector', 'Size') }}
 						</th>
 						<th />
 					</tr>
@@ -95,7 +96,7 @@ import { importExportStore } from '../../store/store.js'
 								<template #icon>
 									<Minus :size="20" />
 								</template>
-								<span>remove</span>
+								<span>{{ t('openconnector', 'Remove') }}</span>
 							</NcButton>
 						</td>
 					</tr>

@@ -16,13 +16,11 @@
 
 namespace OCA\OpenConnector\Service;
 
-use OCA\OpenConnector\Db\Job;
-use OCA\OpenConnector\Db\JobMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
-use OCA\OpenConnector\Db\JobLog;
-use OCA\OpenConnector\Db\JobLogMapper;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
@@ -40,7 +38,7 @@ use OCP\BackgroundJob\IJob;
  * that was previously in the JobTask cron job.
  *
  * @psalm-api
- * @phpstan-type JobArgument array{jobId?: int, forceRun?: bool}
+ * @phpstan-type JobArgument array{jobId?: string, forceRun?: bool}
  * @phpstan-type JobResult array{level?: string, message?: string, stackTrace?: array<string>, nextRun?: int}
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -68,26 +66,23 @@ class JobService
      * and management operations.
      *
      * @param IJobList           $jobList            The job list manager for background jobs
-     * @param JobMapper          $jobMapper          The job mapper for database operations
+     * @param ORObjectService    $objectService      The OR ObjectService for data access
      * @param IDBConnection      $connection         Database connection for direct queries
-     * @param JobLogMapper       $jobLogMapper       The job log mapper for logging
      * @param ContainerInterface $containerInterface Container for dependency injection
      * @param IUserSession       $userSession        User session manager
      * @param IUserManager       $userManager        User manager for user operations
      *
      * @psalm-param IJobList $jobList
-     * @psalm-param JobMapper $jobMapper
+     * @psalm-param ORObjectService $objectService
      * @psalm-param IDBConnection $connection
-     * @psalm-param JobLogMapper $jobLogMapper
      * @psalm-param ContainerInterface $containerInterface
      * @psalm-param IUserSession $userSession
      * @psalm-param IUserManager $userManager
      */
     public function __construct(
         private readonly IJobList $jobList,
-        private readonly JobMapper $jobMapper,
+        private readonly ORObjectService $objectService,
         private readonly IDBConnection $connection,
-        private readonly JobLogMapper $jobLogMapper,
         private readonly ContainerInterface $containerInterface,
         private readonly IUserSession $userSession,
         private readonly IUserManager $userManager,
@@ -160,48 +155,61 @@ class JobService
      * This method handles the scheduling of jobs in the background job list.
      * It checks if the job should be enabled/disabled and schedules it accordingly.
      *
-     * @param Job $job The job entity to schedule
+     * @param ObjectEntity $job The job ObjectEntity to schedule
      *
-     * @return Job The updated job entity
+     * @return ObjectEntity The updated job ObjectEntity
      *
-     * @psalm-param    Job $job
-     * @psalm-return   Job
-     * @phpstan-param  Job $job
-     * @phpstan-return Job
+     * @psalm-param    ObjectEntity $job
+     * @psalm-return   ObjectEntity
+     * @phpstan-param  ObjectEntity $job
+     * @phpstan-return ObjectEntity
      */
-    public function scheduleJob(Job $job): Job
+    public function scheduleJob(ObjectEntity $job): ObjectEntity
     {
+        $jobData = $job->getObject();
+
         // Let's first check if the job should be disabled
-        if ($job->getIsEnabled() === false || $job->getJobListId()) {
+        if (($jobData['isEnabled'] ?? true) === false || ($jobData['jobListId'] ?? null)) {
             // @todo fix this (call to protected method)
-            // $this->jobList->removeById($job->getJobListId());
-            // $job->setJobListId(null);
-            return $this->jobMapper->update($job);
+            // $this->jobList->removeById($jobData['jobListId']);
+            $jobData['jobListId'] = null;
+            return $this->objectService->saveObject(
+                object: $jobData,
+                register: 'openconnector',
+                schema: 'job',
+                uuid: $job->getUuid()
+            );
         }
 
         // Let's not update the job if it's already scheduled @todo we should
-        if ($job->getJobListId()) {
+        if ($jobData['jobListId'] ?? null) {
             return $job;
         }
 
         // Oke this is a new job let's schedule it
-        $arguments          = $job->getArguments();
-        $arguments['jobId'] = $job->getId();
+        $arguments          = $jobData['arguments'] ?? [];
+        $arguments['jobId'] = $job->getUuid();
 
         // Schedule the job using the new JobTask class
-        if ($job->getScheduleAfter()) {
-            $runAfter = $job->getScheduleAfter()->getTimestamp();
+        $scheduleAfter = $jobData['scheduleAfter'] ?? null;
+        if ($scheduleAfter !== null) {
+            $runAfter = (new DateTime($scheduleAfter))->getTimestamp();
             $this->jobList->scheduleAfter(\OCA\OpenConnector\Cron\JobTask::class, $runAfter, $arguments);
         }
 
-        if (!$job->getScheduleAfter()) {
+        if ($scheduleAfter === null) {
             $this->jobList->add(\OCA\OpenConnector\Cron\JobTask::class, $arguments);
         }
 
         // Set the job list id
-        $job->setJobListId($this->getJobListId(\OCA\OpenConnector\Cron\JobTask::class));
+        $jobData['jobListId'] = $this->getJobListId(\OCA\OpenConnector\Cron\JobTask::class);
         // Save the job to the database
-        return $this->jobMapper->update($job);
+        return $this->objectService->saveObject(
+            object: $jobData,
+            register: 'openconnector',
+            schema: 'job',
+            uuid: $job->getUuid()
+        );
     }//end scheduleJob()
 
     /**
@@ -244,7 +252,7 @@ class JobService
     }//end getJobListId()
 
     /**
-     * Execute a job based on the provided job object and optional forceRun flag
+     * Execute a job based on the provided job ObjectEntity and optional forceRun flag
      *
      * This method handles the complete job execution process including:
      * - Job validation and retrieval
@@ -253,22 +261,24 @@ class JobService
      * - Result processing and logging
      * - Next run scheduling
      *
-     * @param Job  $job      The job object to be executed
-     * @param bool $forceRun Optional flag to force run the job
+     * @param ObjectEntity $job      The job ObjectEntity to be executed
+     * @param bool         $forceRun Optional flag to force run the job
      *
-     * @return JobLog The job log entry created for this execution
+     * @return ObjectEntity|null The job log entry created for this execution
      *
      * @throws \OCP\DB\Exception Database operation exceptions
      * @throws ContainerExceptionInterface Container operation exceptions
      * @throws NotFoundExceptionInterface When required services are not found
      *
-     * @psalm-param    Job $job
-     * @psalm-return   JobLog
-     * @phpstan-param  Job $job
-     * @phpstan-return JobLog
+     * @psalm-param    ObjectEntity $job
+     * @psalm-return   ObjectEntity|null
+     * @phpstan-param  ObjectEntity $job
+     * @phpstan-return ObjectEntity|null
      */
-    public function executeJob(Job $job, bool $forceRun=false): ?JobLog
+    public function executeJob(ObjectEntity $job, bool $forceRun=false): ?ObjectEntity
     {
+        $jobData = $job->getObject();
+
         // Initialize stack trace for logging
         $stackTrace = [];
         if ($forceRun === true) {
@@ -276,25 +286,31 @@ class JobService
         }
 
         // Check if the job is enabled (unless force run is requested)
-        if ($forceRun === false && $job->getIsEnabled() === false) {
-            return $this->jobLogMapper->createForJob(
-                    $job,
-                    [
-                        'level'   => 'WARNING',
-                        'message' => 'This job is disabled',
-                    ]
-                    );
+        if ($forceRun === false && ($jobData['isEnabled'] ?? true) === false) {
+            return $this->saveJobLog(
+                job: $job,
+                jobData: $jobData,
+                logData: [
+                    'level'   => 'WARNING',
+                    'message' => 'This job is disabled',
+                ]
+            );
         }
 
         // Check if the job is scheduled to run (unless force run is requested)
-        if ($forceRun === false && $job->getNextRun() !== null && $job->getNextRun() > new DateTime()) {
-            // Do not log, just skip execution
-            return null;
+        $nextRunStr = $jobData['nextRun'] ?? null;
+        if ($forceRun === false && $nextRunStr !== null) {
+            $nextRun = new DateTime($nextRunStr);
+            if ($nextRun > new DateTime()) {
+                // Do not log, just skip execution
+                return null;
+            }
         }
 
         // Set user session if job has a specific user configured
-        if (empty($job->getUserId()) === false && $this->userSession->getUser() === null) {
-            $user = $this->userManager->get($job->getUserId());
+        $userId = $jobData['userId'] ?? null;
+        if (empty($userId) === false && $this->userSession->getUser() === null) {
+            $user = $this->userManager->get($userId);
             $this->userSession->setUser($user);
         }
 
@@ -302,8 +318,8 @@ class JobService
         $timeStart = microtime(true);
 
         // Get the job action class from the container and execute it
-        $action    = $this->containerInterface->get($job->getJobClass());
-        $arguments = $job->getArguments();
+        $action    = $this->containerInterface->get($jobData['jobClass']);
+        $arguments = $jobData['arguments'] ?? [];
         if (is_array($arguments) === false) {
             $arguments = [];
         }
@@ -315,14 +331,15 @@ class JobService
         $executionTime = ($timeEnd - $timeStart) * 1000;
 
         // Handle single run jobs by disabling them after execution
-        if ($forceRun === false && $job->isSingleRun() === true) {
-            $job->setIsEnabled(false);
+        $isSingleRun = $jobData['isSingleRun'] ?? false;
+        if ($forceRun === false && $isSingleRun === true) {
+            $jobData['isEnabled'] = false;
         }
 
         // Update job with last run time and calculate next run time
-        $job->setLastRun(new DateTime());
+        $jobData['lastRun'] = (new DateTime())->format('c');
         if ($forceRun === false) {
-            $nextRun = new DateTime('now + '.$job->getInterval().' seconds');
+            $nextRun = new DateTime('now + '.($jobData['interval'] ?? 0).' seconds');
 
             // Handle rate limiting if specified in result
             if (isset($result['nextRun']) === true) {
@@ -339,37 +356,42 @@ class JobService
 
             // Set time to the current hour and minute (remove seconds)
             $nextRun->setTime(hour: $nextRun->format('H'), minute: $nextRun->format('i'));
-            $job->setNextRun($nextRun);
+            $jobData['nextRun'] = $nextRun->format('c');
         }
 
         // Persist job updates to database
-        $this->jobMapper->update($job);
+        $this->objectService->saveObject(
+            object: $jobData,
+            register: 'openconnector',
+            schema: 'job',
+            uuid: $job->getUuid()
+        );
 
-        // Create initial job log entry with success status
-        $jobLog = $this->jobLogMapper->createForJob(
-                $job,
-                [
-                    'level'         => 'SUCCESS',
-                    'message'       => 'Success',
-                    'executionTime' => $executionTime,
-                    'expires'       => $this->calculateExpires($job->getLogRetention() * 1000, $this->successRetention),
-                ]
-                );
+        $logRetention   = (int) ($jobData['logRetention'] ?? 0);
+        $errorRetention = (int) ($jobData['errorRetention'] ?? 0);
+
+        // Build initial job log data with success status
+        $logData = [
+            'level'         => 'SUCCESS',
+            'message'       => 'Success',
+            'executionTime' => $executionTime,
+            'expires'       => $this->calculateExpires($logRetention * 1000, $this->successRetention) !== null ? $this->calculateExpires($logRetention * 1000, $this->successRetention)->format('c') : null,
+        ];
 
         // Process job execution result and update log accordingly
         if (is_array($result) === true) {
             if (isset($result['level']) === true) {
-                $jobLog->setLevel($result['level']);
+                $logData['level'] = $result['level'];
 
                 if ($result['level'] !== 'SUCCESS') {
-                    $jobLog->setExpires($this->calculateExpires($job->getErrorRetention() * 1000, $this->errorRetention));
+                    $expiresDate        = $this->calculateExpires($errorRetention * 1000, $this->errorRetention);
+                    $logData['expires'] = $expiresDate !== null ? $expiresDate->format('c') : null;
                 }
             }
 
             if (isset($result['message']) === true) {
                 // Truncate message if it's too long for database safety
-                $message = $this->truncateMessage($result['message']);
-                $jobLog->setMessage($message);
+                $logData['message'] = $this->truncateMessage($result['message']);
             }
 
             if (isset($result['stackTrace']) === true) {
@@ -377,26 +399,90 @@ class JobService
             }
         }
 
-        // Set final stack trace and persist log entry
-        $jobLog->setStackTrace($stackTrace);
-        $this->jobLogMapper->update(entity: $jobLog);
+        $logData['stackTrace'] = $stackTrace;
 
-        return $jobLog;
+        return $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
     }//end executeJob()
+
+    /**
+     * Save a job log entry via ObjectService.
+     *
+     * @param ObjectEntity $job     The job ObjectEntity.
+     * @param array        $jobData The job data array.
+     * @param array        $logData The log fields to store.
+     *
+     * @return ObjectEntity The saved job_log ObjectEntity.
+     * @throws \OCP\DB\Exception
+     */
+    private function saveJobLog(ObjectEntity $job, array $jobData, array $logData): ObjectEntity
+    {
+        $logObject = array_merge(
+            [
+                'jobId'     => $job->getUuid(),
+                'jobClass'  => $jobData['jobClass'] ?? null,
+                'jobListId' => $jobData['jobListId'] ?? null,
+                'arguments' => $jobData['arguments'] ?? [],
+                'lastRun'   => $jobData['lastRun'] ?? null,
+                'nextRun'   => $jobData['nextRun'] ?? null,
+                'created'   => (new DateTime())->format('c'),
+            ],
+            $logData
+        );
+
+        // Default expiry per level if not already set
+        if (isset($logObject['expires']) === false) {
+            switch ($logObject['level'] ?? '') {
+                case 'INFO':
+                    $logObject['expires'] = (new DateTime('+1 hour'))->format('c');
+                    break;
+                case 'WARNING':
+                case 'ERROR':
+                    $logObject['expires'] = (new DateTime('+3 days'))->format('c');
+                    break;
+                default:
+                    $logObject['expires'] = (new DateTime('+30 days'))->format('c');
+            }
+        }
+
+        return $this->objectService->saveObject(
+            object: $logObject,
+            register: 'openconnector',
+            schema: 'job_log'
+        );
+    }//end saveJobLog()
 
     /**
      * Run all jobs that are scheduled to run (nextRun <= now)
      *
-     * @return         JobLog[] Array of job log results
-     * @psalm-return   array<JobLog>
-     * @phpstan-return JobLog[]
+     * @return         ObjectEntity[] Array of job log results
+     * @psalm-return   array<ObjectEntity>
+     * @phpstan-return ObjectEntity[]
      */
     public function run(): array
     {
-        // Use the mapper to get all runnable jobs
-        $jobs    = $this->jobMapper->findRunnable();
+        // Fetch all jobs that are enabled and whose nextRun is in the past or null
+        $now     = (new DateTime())->format('c');
+        $matches = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register'  => 'openconnector',
+                        'schema'    => 'job',
+                        'isEnabled' => true,
+                    ],
+                ]
+                );
+        $jobs    = $matches['results'] ?? $matches;
         $results = [];
+
         foreach ($jobs as $job) {
+            $jobData = $job->getObject();
+            $nextRun = $jobData['nextRun'] ?? null;
+
+            // Skip jobs that are not yet due
+            if ($nextRun !== null && (new DateTime($nextRun)) > new DateTime()) {
+                continue;
+            }
+
             $log = $this->executeJob($job);
             if ($log !== null) {
                 $results[] = $log;

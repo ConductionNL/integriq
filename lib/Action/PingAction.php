@@ -3,7 +3,7 @@
 namespace OCA\OpenConnector\Action;
 
 use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Db\SourceMapper;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 
 /**
  * This class is used to run the action tasks for the OpenConnector app. It hooks into the cron job list and runs the classes that are set as the job class in the job.
@@ -15,14 +15,14 @@ class PingAction
 
     private CallService $callService;
 
-    private SourceMapper $sourceMapper;
+    private OrObjectService $orObjectService;
 
     public function __construct(
         CallService $callService,
-        SourceMapper $sourceMapper,
+        OrObjectService $orObjectService,
     ) {
-        $this->callService  = $callService;
-        $this->sourceMapper = $sourceMapper;
+        $this->callService     = $callService;
+        $this->orObjectService = $orObjectService;
     }//end __construct()
 
     /**
@@ -42,23 +42,26 @@ class PingAction
         $response['stackTrace'][] = 'Running PingAction';
 
         // For now we only have one action, so this is a bit overkill, but it's a good starting point
-        $sourceId = 1;
-        if (isset($arguments['sourceId']) === false || is_int((int) $arguments['sourceId']) === false) {
+        $sourceId = null;
+        if (isset($arguments['sourceId']) === false || empty($arguments['sourceId'])) {
             // @todo log and / or not default to just using the first source
-            $response['stackTrace'][] = "No sourceId in arguments, default to sourceId = 1";
+            $response['stackTrace'][] = "No sourceId in arguments, skipping ping";
+            return $response;
         }
 
-        if (isset($arguments['sourceId']) && is_int((int) $arguments['sourceId'])) {
-            $sourceId = (int) $arguments['sourceId'];
-            $response['stackTrace'][] = "Found sourceId {$sourceId} in arguments";
-        }
+        $sourceId = (string) $arguments['sourceId'];
+        $response['stackTrace'][] = "Found sourceId {$sourceId} in arguments";
 
-        $source = $this->sourceMapper->find($sourceId);
+        $source = $this->orObjectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+        if ($source === null) {
+            $response['stackTrace'][] = "Source not found for id: {$sourceId}";
+            return $response;
+        }
 
         $response['stackTrace'][] = "Calling callService...";
         $callLog = $this->callService->call($source);
 
-        $response['stackTrace'][] = "Created callLog with id: ".$callLog->getId();
+        $response['stackTrace'][] = "Created callLog with uuid: ".$callLog->getUuid();
 
         // Let's report back about what we have just done
         return $response;

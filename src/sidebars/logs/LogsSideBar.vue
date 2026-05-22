@@ -17,7 +17,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 			</template>
 
 			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Logs') }}</h3>
+				<h3>{{ t('openconnector', 'Filter logs') }}</h3>
 				<div class="filterGroup">
 					<label>{{ t('openconnector', 'Level') }}</label>
 					<NcSelect
@@ -52,7 +52,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 				</div>
 
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
+					<label>{{ t('openconnector', 'Date range') }}</label>
 					<DateRangeInput
 						:start="filters.dateFrom"
 						:end="filters.dateTo"
@@ -76,12 +76,12 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
 
 			<div v-if="selectedCount > 0" class="filterSection">
-				<h3>{{ t('openconnector', 'Bulk Actions') }}</h3>
+				<h3>{{ t('openconnector', 'Bulk actions') }}</h3>
 				<p class="selection-info">
 					{{ t('openconnector', '{count} logs selected', { count: selectedCount }) }}
 				</p>
@@ -90,7 +90,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 						<template #icon>
 							<Delete :size="20" />
 						</template>
-						{{ t('openconnector', 'Delete Selected') }}
+						{{ t('openconnector', 'Delete selected') }}
 					</NcButton>
 				</div>
 			</div>
@@ -102,7 +102,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 						<template #icon>
 							<Download :size="20" />
 						</template>
-						{{ t('openconnector', 'Export Filtered Logs') }}
+						{{ t('openconnector', 'Export filtered logs') }}
 					</NcButton>
 				</div>
 			</div>
@@ -120,14 +120,14 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 						{{ filteredCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Total Logs') }}
+						{{ t('openconnector', 'Total logs') }}
 					</div>
 				</div>
 
 				<div class="statRow">
 					<div class="statItem">
 						<div class="statLabel">
-							{{ t('openconnector', 'Error Logs') }}
+							{{ t('openconnector', 'Error logs') }}
 						</div>
 						<div class="statValue error">
 							{{ statistics.errorCount || 0 }}
@@ -135,7 +135,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 					</div>
 					<div class="statItem">
 						<div class="statLabel">
-							{{ t('openconnector', 'Warning Logs') }}
+							{{ t('openconnector', 'Warning logs') }}
 						</div>
 						<div class="statValue warning">
 							{{ statistics.warningCount || 0 }}
@@ -143,7 +143,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 					</div>
 					<div class="statItem">
 						<div class="statLabel">
-							{{ t('openconnector', 'Info Logs') }}
+							{{ t('openconnector', 'Info logs') }}
 						</div>
 						<div class="statValue success">
 							{{ statistics.infoCount || 0 }}
@@ -157,7 +157,7 @@ import { logStore, contractStore, synchronizationStore, navigationStore } from '
 
 				<div v-if="statistics.levelDistribution" class="chart-container">
 					<h4 class="subTitle">
-						{{ t('openconnector', 'Level Distribution') }}
+						{{ t('openconnector', 'Level distribution') }}
 					</h4>
 					<div class="level-chart">
 						<div v-for="(count, level) in statistics.levelDistribution"

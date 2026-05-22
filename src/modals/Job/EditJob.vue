@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { jobStore, navigationStore } from '../../store/store.js'
 import { Job } from '../../entities/index.js'
 </script>
@@ -9,9 +10,9 @@ import { Job } from '../../entities/index.js'
 		label-id="editJob"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ jobItem?.id ? 'Edit' : 'Add' }} job</h2>
+			<h2>{{ jobItem?.id ? t('openconnector', 'Edit job') : t('openconnector', 'Add job') }}</h2>
 			<NcNoteCard v-if="success" type="success">
-				<p>Successfully added job</p>
+				<p>{{ t('openconnector', 'Successfully added job') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -20,79 +21,79 @@ import { Job } from '../../entities/index.js'
 			<form v-if="!success" @submit.prevent="handleSubmit">
 				<div class="form-group">
 					<NcTextField
-						label="Name"
+						:label="t('openconnector', 'Name')"
 						maxlength="255"
 						:value.sync="jobItem.name"
 						required />
 
 					<NcTextArea
 						resize="vertical"
-						label="Description"
+						:label="t('openconnector', 'Description')"
 						:value.sync="jobItem.description" />
 
 					<NcSelect v-bind="classOptions"
 						v-model="classOptions.value"
 						class="jobClassSelect"
-						input-label="Job Class"
+						:input-label="t('openconnector', 'Job class')"
 						:multiple="false"
 						:clearable="false" />
 
 					<NcInputField
 						type="number"
-						label="Interval"
+						:label="t('openconnector', 'Interval')"
 						:value.sync="jobItem.interval" />
 
 					<NcInputField
 						type="number"
-						label="Execution Time"
+						:label="t('openconnector', 'Execution time')"
 						:value.sync="jobItem.executionTime" />
 
 					<div class="jobCheckboxContainerGrid">
 						<NcCheckboxRadioSwitch
 							:disabled="loading"
 							:checked.sync="jobItem.timeSensitive">
-							Time Sensitive
+							{{ t('openconnector', 'Time sensitive') }}
 						</NcCheckboxRadioSwitch>
 
 						<NcCheckboxRadioSwitch
 							:disabled="loading"
 							:checked.sync="jobItem.allowParallelRuns">
-							Allow Parallel Runs
+							{{ t('openconnector', 'Allow parallel runs') }}
 						</NcCheckboxRadioSwitch>
 
 						<NcCheckboxRadioSwitch
 							:disabled="loading"
 							:checked.sync="jobItem.isEnabled">
-							Enabled
+							{{ t('openconnector', 'Enabled') }}
 						</NcCheckboxRadioSwitch>
 
 						<NcCheckboxRadioSwitch
 							:disabled="loading"
 							:checked.sync="jobItem.singleRun">
-							Single Run
+							{{ t('openconnector', 'Single run') }}
 						</NcCheckboxRadioSwitch>
 					</div>
 					<div>
 						<span>
-							<p>Schedule After</p>
+							<p>{{ t('openconnector', 'Schedule After') }}</p>
 							<NcDateTimePicker v-model="jobItem.scheduleAfter"
 								:disabled="loading"
-								label="Schedule After" />
+								:label="t('openconnector', 'Schedule After')" />
 						</span>
 					</div>
 					<NcTextField
-						label="User ID"
+						:label="t('openconnector', 'User ID')"
 						maxlength="255"
 						:value.sync="jobItem.userId" />
 
 					<NcInputField
 						type="number"
-						label="Log Retention"
+						:label="t('openconnector', 'Log Retention')"
 						:value.sync="jobItem.logRetention" />
 
 					<NcInputField
 						type="number"
-						label="Error Retention"
+						:label="t('openconnector', 'Error Retention')"
 						:value.sync="jobItem.errorRetention" />
 				</div>
 			</form>
@@ -103,7 +104,7 @@ import { Job } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -114,7 +115,7 @@ import { Job } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

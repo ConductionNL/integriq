@@ -1,5 +1,6 @@
 <script setup>
 import { logStore, navigationStore } from '../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,10 +10,10 @@ import { logStore, navigationStore } from '../../store/store.js'
 		@close="closeModal">
 		<div class="logModalContent ViewSourceLog">
 			<div class="logModalContentHeader">
-				<h2>View Source Log</h2>
+				<h2>{{ t('openconnector', 'View Source Log') }}</h2>
 			</div>
 			<div class="dataTable">
-				<strong class="tableTitle">Standard</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Standard') }}</strong>
 				<table>
 					<tr v-for="(value, key) in standardItems"
 
@@ -30,7 +31,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 				</table>
 			</div>
 			<div class="dataTable">
-				<strong class="tableTitle">Request</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Request') }}</strong>
 				<table>
 					<tr v-for="(value, key) in requestItems"
 						:key="key">
@@ -42,7 +43,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 				</table>
 			</div>
 			<div class="dataTable">
-				<strong class="tableTitle">Response</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Response') }}</strong>
 				<table>
 					<tr v-for="(value, key) in responseItems"
 						:key="key">
@@ -56,7 +57,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 				</table>
 			</div>
 			<div class="dataTable">
-				<strong class="tableTitle">Headers</strong>
+				<strong class="tableTitle">{{ t('openconnector', 'Headers') }}</strong>
 				<table>
 					<tr v-for="(value, key) in headersItems"
 						:key="key">
@@ -77,7 +78,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 				</table>
 			</div>
 			<div class="responseBody">
-				<strong class="responseBodyLabel">Body</strong>
+				<strong class="responseBodyLabel">{{ t('openconnector', 'Body') }}</strong>
 				<div class="responseBodyContent">
 					<div v-if="!responseItems.body || responseItems.body === 'Not Found'" class="notFoundText">
 						{{ responseItems.body }}
@@ -88,11 +89,11 @@ import { logStore, navigationStore } from '../../store/store.js'
 								<template #icon>
 									<ContentCopy :size="20" />
 								</template>
-								Copy to clipboard
+								{{ t('openconnector', 'Copy to clipboard') }}
 							</NcActionButton>
 						</NcActions>
 						<div class="responseBody">
-							<span class="responseBodyLabel">body</span>
+							<span class="responseBodyLabel">{{ t('openconnector', 'Body') }}</span>
 							<div class="responseBodyContent">
 								<div v-if="isValidJson(responseItems.body)" class="responseBodyJson">
 									<NcActions class="responseBodyJsonActions">
@@ -100,7 +101,7 @@ import { logStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<ContentCopy :size="20" />
 											</template>
-											Copy to clipboard
+											{{ t('openconnector', 'Copy to clipboard') }}
 										</NcActionButton>
 									</NcActions>
 

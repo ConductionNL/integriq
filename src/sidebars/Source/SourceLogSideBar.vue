@@ -6,7 +6,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 	<NcAppSidebar
 		ref="sidebar"
 		v-model="activeTab"
-		:name="t('openconnector', 'Source Log Management')"
+		:name="t('openconnector', 'Source log management')"
 		:subtitle="t('openconnector', 'Filter and manage source call logs')"
 		:subname="t('openconnector', 'Export, view, or delete call logs')"
 		:open="navigationStore.sidebarState.sourceLogs"
@@ -18,7 +18,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 
 			<!-- Filter Section -->
 			<div class="filterSection">
-				<h3>{{ t('openconnector', 'Filter Call Logs') }}</h3>
+				<h3>{{ t('openconnector', 'Filter call logs') }}</h3>
 				<div class="filterGroup">
 					<label for="sourceSelect">{{ t('openconnector', 'Source') }}</label>
 					<NcSelect
@@ -31,31 +31,31 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 						@input="handleSourceChange" />
 				</div>
 				<div class="filterGroup">
-					<label for="statusSelect">{{ t('openconnector', 'Status Codes') }}</label>
+					<label for="statusSelect">{{ t('openconnector', 'Status codes') }}</label>
 					<NcSelect
 						id="statusSelect"
 						v-model="selectedStatusCodes"
 						:options="statusCodeOptions"
 						:placeholder="t('openconnector', 'All status codes')"
-						:input-label="t('openconnector', 'Status Codes')"
+						:input-label="t('openconnector', 'Status codes')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label for="methodSelect">{{ t('openconnector', 'HTTP Methods') }}</label>
+					<label for="methodSelect">{{ t('openconnector', 'HTTP methods') }}</label>
 					<NcSelect
 						id="methodSelect"
 						v-model="selectedMethods"
 						:options="methodOptions"
 						:placeholder="t('openconnector', 'All methods')"
-						:input-label="t('openconnector', 'HTTP Methods')"
+						:input-label="t('openconnector', 'HTTP methods')"
 						:multiple="true"
 						:clearable="true"
 						@input="applyFilters" />
 				</div>
 				<div class="filterGroup">
-					<label>{{ t('openconnector', 'Date Range') }}</label>
+					<label>{{ t('openconnector', 'Date range') }}</label>
 					<DateRangeInput
 						:start="dateFrom"
 						:end="dateTo"
@@ -94,7 +94,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openconnector', 'Clear Filters') }}
+					{{ t('openconnector', 'Clear filters') }}
 				</NcButton>
 			</div>
 
@@ -110,13 +110,13 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 
 			<!-- Statistics Section -->
 			<div class="statsSection">
-				<h3>{{ t('openconnector', 'Call Log Statistics') }}</h3>
+				<h3>{{ t('openconnector', 'Call log statistics') }}</h3>
 				<div class="statCard">
 					<div class="statNumber">
 						{{ totalLogs }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Total Call Logs') }}
+						{{ t('openconnector', 'Total call logs') }}
 					</div>
 				</div>
 				<div class="statCard success">
@@ -124,7 +124,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 						{{ successCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Successful Calls (2xx)') }}
+						{{ t('openconnector', 'Successful calls (2xx)') }}
 					</div>
 				</div>
 				<div class="statCard error">
@@ -132,7 +132,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 						{{ errorCount }}
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Failed Calls (4xx, 5xx)') }}
+						{{ t('openconnector', 'Failed calls (4xx, 5xx)') }}
 					</div>
 				</div>
 				<div class="statCard">
@@ -140,14 +140,14 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 						{{ averageResponseTime }}s
 					</div>
 					<div class="statLabel">
-						{{ t('openconnector', 'Average Response Time') }}
+						{{ t('openconnector', 'Average response time') }}
 					</div>
 				</div>
 			</div>
 
 			<!-- Status Code Distribution -->
 			<div class="statusDistribution">
-				<h4>{{ t('openconnector', 'Status Code Distribution') }}</h4>
+				<h4>{{ t('openconnector', 'Status code distribution') }}</h4>
 				<NcListItem v-for="(status, index) in statusDistribution"
 					:key="index"
 					:name="`${status.code} - ${status.message}`"
@@ -166,7 +166,7 @@ import { logStore, navigationStore, sourceStore } from '../../store/store.js'
 
 			<!-- Top Sources -->
 			<div class="topSources">
-				<h4>{{ t('openconnector', 'Most Active Sources') }}</h4>
+				<h4>{{ t('openconnector', 'Most active sources') }}</h4>
 				<NcListItem v-for="(source, index) in topSources"
 					:key="index"
 					:name="source.name"

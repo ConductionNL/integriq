@@ -61,3 +61,6 @@ bom-npm.cdx.json
 /tests/e2e/test-results/
 /test-results/
 /playwright-report/
+
+# Newman run artifacts
+/tests/postman/newman-report.json

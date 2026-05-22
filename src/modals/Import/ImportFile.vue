@@ -1,5 +1,6 @@
 <script setup>
 import { navigationStore, importExportStore } from '../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -8,14 +9,14 @@ import { navigationStore, importExportStore } from '../../store/store.js'
 		label-id="ImportFileModal"
 		@close="closeModal()">
 		<div class="modalContent">
-			<h2>Import {{ importExportStore.importFileName }}</h2>
+			<h2>{{ t('openconnector', 'Import') }} {{ importExportStore.importFileName }}</h2>
 
 			<div v-if="success !== null || error">
 				<NcNoteCard v-if="success" type="success">
-					<p>Successfully imported file</p>
+					<p>{{ t('openconnector', 'Successfully imported file') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="!success" type="error">
-					<p>Something went wrong while importing</p>
+					<p>{{ t('openconnector', 'Something went wrong while importing') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error && !success" type="error">
 					<p>{{ error }}</p>
@@ -28,12 +29,12 @@ import { navigationStore, importExportStore } from '../../store/store.js'
 							<div class="filesListDragDropNoticeWrapperIcon">
 								<TrayArrowDown :size="48" />
 								<h3 class="filesListDragDropNoticeTitle">
-									Drag and drop a file here
+									{{ t('openconnector', 'Drag and drop a file here') }}
 								</h3>
 							</div>
 
 							<h3 class="filesListDragDropNoticeTitle">
-								Or
+								{{ t('openconnector', 'Or') }}
 							</h3>
 
 							<div class="filesListDragDropNoticeTitle">
@@ -44,7 +45,7 @@ import { navigationStore, importExportStore } from '../../store/store.js'
 									<template #icon>
 										<Plus :size="20" />
 									</template>
-									Add file
+									{{ t('openconnector', 'Add file') }}
 								</NcButton>
 
 								<div v-if="success === null && files && files.length"
@@ -79,7 +80,7 @@ import { navigationStore, importExportStore } from '../../store/store.js'
 						<template #icon>
 							<CancelIcon size="20" />
 						</template>
-						Cancel
+						{{ t('openconnector', 'Cancel') }}
 					</NcButton>
 					<NcButton v-if="success === null"
 						type="primary"
@@ -89,7 +90,7 @@ import { navigationStore, importExportStore } from '../../store/store.js'
 							<NcLoadingIcon v-if="loading" :size="20" />
 							<FileImportOutline v-if="!loading" :size="20" />
 						</template>
-						Import
+						{{ t('openconnector', 'Import') }}
 					</NcButton>
 				</div>
 			</div>

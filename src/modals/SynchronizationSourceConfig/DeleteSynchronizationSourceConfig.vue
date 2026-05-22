@@ -1,31 +1,32 @@
 <script setup>
 import { navigationStore, synchronizationStore } from '../../store/store.js'
 import { Synchronization } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
-	<NcDialog name="Delete Source Config"
+	<NcDialog :name="t('openconnector', 'Delete Source Config')"
 		:can-close="false">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
-				<p>Successfully deleted source config</p>
+				<p>{{ t('openconnector', 'Source config deleted successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>Something went wrong deleting the source config</p>
+				<p>{{ t('openconnector', 'Something went wrong deleting the source config') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
 			</NcNoteCard>
 		</div>
 		<p v-if="success === null">
-			Do you want to delete <b>{{ synchronizationStore.synchronizationSourceConfigKey }}</b>?
+			{{ t('openconnector', 'Do you want to delete') }} <b>{{ synchronizationStore.synchronizationSourceConfigKey }}</b>?
 		</p>
 		<template #actions>
 			<NcButton :disabled="loading" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{ success !== null ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -37,7 +38,7 @@ import { Synchronization } from '../../entities/index.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ t('openconnector', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

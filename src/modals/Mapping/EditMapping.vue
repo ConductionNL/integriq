@@ -1,6 +1,7 @@
 <script setup>
 import { mappingStore, navigationStore } from '../../store/store.js'
 import { Mapping } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -11,7 +12,7 @@ import { Mapping } from '../../entities/index.js'
 		size="large"
 		:can-close="true"
 		:width="1200"
-		:name="mappingStore.mappingItem?.id ? 'Edit Mapping' : 'Create New Mapping'"
+		:name="mappingStore.mappingItem?.id ? t('openconnector', 'Edit Mapping') : t('openconnector', 'Create New Mapping')"
 		@close="closeModal">
 		<div class="modalContent">
 			<!-- ====================== -->
@@ -20,16 +21,16 @@ import { Mapping } from '../../entities/index.js'
 			<div v-if="!openRegisterInstalled && !openRegisterCloseAlert" class="openregister-notecard">
 				<NcNoteCard
 					:type="openRegisterIsAvailable ? 'info' : 'error'"
-					:heading="openRegisterIsAvailable ? 'Open Register is not installed' : 'Failed to install Open Register'">
+					:heading="openRegisterIsAvailable ? t('openconnector', 'Open register is not installed') : t('openconnector', 'Failed to install open register')">
 					<p>
 						{{ openRegisterIsAvailable
-							? 'Some features require Open Register to be installed'
-							: 'This either means that Open Register is not available on this server or you need to confirm your password' }}
+							? t('openconnector', 'Some features require open register to be installed')
+							: t('openconnector', 'This either means that open register is not available on this server or you need to confirm your password') }}
 					</p>
 
 					<div class="install-buttons">
 						<NcButton v-if="openRegisterIsAvailable"
-							aria-label="Install OpenRegister"
+							:aria-label="t('openconnector', 'Install OpenRegister')"
 							size="small"
 							type="primary"
 							:loading="openRegisterLoading"
@@ -37,17 +38,17 @@ import { Mapping } from '../../entities/index.js'
 							<template #icon>
 								<CloudDownload :size="20" />
 							</template>
-							Install OpenRegister
+							{{ t('openconnector', 'Install OpenRegister') }}
 						</NcButton>
 						<NcButton
-							aria-label="Install OpenRegister Manually"
+							:aria-label="t('openconnector', 'Install OpenRegister manually')"
 							size="small"
 							type="secondary"
 							@click="openLink('/index.php/settings/apps/organization/openregister', '_blank')">
 							<template #icon>
 								<OpenInNew :size="20" />
 							</template>
-							Install OpenRegister Manually
+							{{ t('openconnector', 'Install OpenRegister manually') }}
 						</NcButton>
 					</div>
 					<div class="close-button">
@@ -56,7 +57,7 @@ import { Mapping } from '../../entities/index.js'
 								<template #icon>
 									<Close :size="20" />
 								</template>
-								Close
+								{{ t('openconnector', 'Close') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -68,10 +69,10 @@ import { Mapping } from '../../entities/index.js'
 			<!-- ====================== -->
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
-					<p>Mapping successfully {{ mappingStore.mappingItem?.id ? 'updated' : 'created' }}</p>
+					<p>{{ mappingStore.mappingItem?.id ? t('openconnector', 'Mapping updated successfully') : t('openconnector', 'Mapping created successfully') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
-					<p>{{ error || 'An error occurred' }}</p>
+					<p>{{ error || t('openconnector', 'An error occurred') }}</p>
 				</NcNoteCard>
 			</div>
 
@@ -83,26 +84,26 @@ import { Mapping } from '../../entities/index.js'
 				<div class="mapping-section input-section">
 					<div class="section-header">
 						<DatabaseArrowRightOutline :size="24" />
-						<h3>Input</h3>
+						<h3>{{ t('openconnector', 'Input') }}</h3>
 					</div>
 					<div class="section-content">
 						<div class="info-card">
 							<p class="section-description">
-								Configure test input data for mapping validation
+								{{ t('openconnector', 'Configure test input data for mapping validation') }}
 							</p>
 						</div>
 
 						<!-- Test Input -->
 						<div class="subsection">
-							<h4>Test Input Object</h4>
+							<h4>{{ t('openconnector', 'Test Input Object') }}</h4>
 							<div class="form-group">
 								<NcTextArea
 									:value.sync="inputObject.value"
 									resize="vertical"
-									label="Test Input (JSON)"
-									placeholder="Enter JSON object to test mapping"
+									:label="t('openconnector', 'Test Input (JSON)')"
+									:placeholder="t('openconnector', 'Enter JSON object to test mapping')"
 									:error="!validJson(inputObject.value)"
-									:helper-text="!validJson(inputObject.value) ? 'Invalid JSON' : ''"
+									:helper-text="!validJson(inputObject.value) ? t('openconnector', 'Invalid JSON') : ''"
 									@input="updateInputObject" />
 							</div>
 						</div>
@@ -115,24 +116,24 @@ import { Mapping } from '../../entities/index.js'
 					<div class="center-card">
 						<div class="section-header">
 							<CogOutline :size="24" />
-							<h3>General</h3>
+							<h3>{{ t('openconnector', 'General') }}</h3>
 						</div>
 						<div class="section-content">
 							<form @submit.prevent="handleSubmit">
 								<div class="form-group">
 									<NcTextField
 										:value.sync="mappingItem.name"
-										label="Name"
-										placeholder="Enter mapping name"
+										:label="t('openconnector', 'Name')"
+										:placeholder="t('openconnector', 'Enter mapping name')"
 										:error="!isValidName"
-										:helper-text="!isValidName ? 'Name must contain at least one letter or number' : ''"
+										:helper-text="!isValidName ? t('openconnector', 'Name must contain at least one letter or number') : ''"
 										required />
 
 									<NcTextArea
 										resize="vertical"
 										:value.sync="mappingItem.description"
-										label="Description"
-										placeholder="Describe what this mapping does" />
+										:label="t('openconnector', 'Description')"
+										:placeholder="t('openconnector', 'Describe what this mapping does')" />
 								</div>
 							</form>
 						</div>
@@ -142,17 +143,17 @@ import { Mapping } from '../../entities/index.js'
 					<div class="data-flow">
 						<div class="flow-step">
 							<DatabaseArrowRightOutline :size="20" />
-							<span>Input</span>
+							<span>{{ t('openconnector', 'Input') }}</span>
 						</div>
 						<ArrowRight :size="20" class="flow-arrow" />
 						<div class="flow-step">
 							<SwapHorizontal :size="20" />
-							<span>Transform</span>
+							<span>{{ t('openconnector', 'Transform') }}</span>
 						</div>
 						<ArrowRight :size="20" class="flow-arrow" />
 						<div class="flow-step">
 							<DatabaseArrowLeftOutline :size="20" />
-							<span>Output</span>
+							<span>{{ t('openconnector', 'Output') }}</span>
 						</div>
 					</div>
 
@@ -160,20 +161,20 @@ import { Mapping } from '../../entities/index.js'
 					<div class="center-card">
 						<div class="section-header">
 							<SwapHorizontal :size="24" />
-							<h3>Transform</h3>
+							<h3>{{ t('openconnector', 'Transform') }}</h3>
 						</div>
 						<div class="section-content">
 							<BTabs content-class="transform-tab-content"
 								justified
 								class="transform-tabs">
 								<!-- Mapping Tab -->
-								<BTab title="Mapping">
+								<BTab :title="t('openconnector', 'Mapping')">
 									<div class="table-container mapping-property-table">
 										<table v-if="Object.keys(mappingRules).length" class="statisticsTable">
 											<thead>
 												<tr>
-													<th>Target</th>
-													<th>Source</th>
+													<th>{{ t('openconnector', 'Target') }}</th>
+													<th>{{ t('openconnector', 'Source') }}</th>
 													<th />
 												</tr>
 											</thead>
@@ -191,13 +192,13 @@ import { Mapping } from '../../entities/index.js'
 																<template #icon>
 																	<Pencil :size="20" />
 																</template>
-																Edit
+																{{ t('openconnector', 'Edit') }}
 															</NcActionButton>
 															<NcActionButton close-after-click @click="openDeleteMappingItemDialog('mapping', property)">
 																<template #icon>
 																	<Delete :size="20" />
 																</template>
-																Delete
+																{{ t('openconnector', 'Delete') }}
 															</NcActionButton>
 														</NcActions>
 													</td>
@@ -208,19 +209,19 @@ import { Mapping } from '../../entities/index.js'
 											<template #icon>
 												<Plus :size="20" />
 											</template>
-											Add Mapping Rule
+											{{ t('openconnector', 'Add mapping') }}
 										</NcButton>
 									</div>
 								</BTab>
 
 								<!-- Cast Tab -->
-								<BTab title="Cast">
+								<BTab :title="t('openconnector', 'Cast')">
 									<div class="table-container mapping-property-table">
 										<table v-if="Object.keys(castRules).length" class="statisticsTable">
 											<thead>
 												<tr>
-													<th>Property</th>
-													<th>Cast Type</th>
+													<th>{{ t('openconnector', 'Property') }}</th>
+													<th>{{ t('openconnector', 'Cast Type') }}</th>
 													<th />
 												</tr>
 											</thead>
@@ -238,13 +239,13 @@ import { Mapping } from '../../entities/index.js'
 																<template #icon>
 																	<Pencil :size="20" />
 																</template>
-																Edit
+																{{ t('openconnector', 'Edit') }}
 															</NcActionButton>
 															<NcActionButton close-after-click @click="openDeleteMappingItemDialog('cast', property)">
 																<template #icon>
 																	<Delete :size="20" />
 																</template>
-																Delete
+																{{ t('openconnector', 'Delete') }}
 															</NcActionButton>
 														</NcActions>
 													</td>
@@ -255,13 +256,13 @@ import { Mapping } from '../../entities/index.js'
 											<template #icon>
 												<Plus :size="20" />
 											</template>
-											Add Cast Rule
+											{{ t('openconnector', 'Add Cast Rule') }}
 										</NcButton>
 									</div>
 								</BTab>
 
 								<!-- Unset Tab -->
-								<BTab title="Unset">
+								<BTab :title="t('openconnector', 'Unset')">
 									<div class="table-container mapping-property-table">
 										<table v-if="unsetRules.length" class="statisticsTable">
 											<thead>
@@ -281,13 +282,13 @@ import { Mapping } from '../../entities/index.js'
 																<template #icon>
 																	<Pencil :size="20" />
 																</template>
-																Edit
+																{{ t('openconnector', 'Edit') }}
 															</NcActionButton>
 															<NcActionButton close-after-click @click="openDeleteMappingItemDialog('unset', property)">
 																<template #icon>
 																	<Delete :size="20" />
 																</template>
-																Delete
+																{{ t('openconnector', 'Delete') }}
 															</NcActionButton>
 														</NcActions>
 													</td>
@@ -300,23 +301,23 @@ import { Mapping } from '../../entities/index.js'
 											<template #icon>
 												<Plus :size="20" />
 											</template>
-											Add Unset Property
+											{{ t('openconnector', 'Add Unset Property') }}
 										</NcButton>
 										<p v-if="!mappingItem.passThrough" class="unset-disabled-note">
-											Unset properties can only be configured when Pass Through is enabled.
+											{{ t('openconnector', 'Unset properties can only be configured when Pass Through is enabled.') }}
 										</p>
 									</div>
 								</BTab>
 
 								<!-- Options Tab -->
-								<BTab title="Options">
+								<BTab :title="t('openconnector', 'Options')">
 									<div class="options-container">
 										<div class="form-group">
 											<span class="flex-container">
 												<NcCheckboxRadioSwitch
 													:checked="passThroughLocal"
 													@update:checked="onPassThroughChange">
-													Pass Through
+													{{ t('openconnector', 'Pass Through') }}
 												</NcCheckboxRadioSwitch>
 												<a v-tooltip="'When turning passThrough on, all data from the original object is copied to the new object (passed through the mapper)'"
 													href="https://commongateway.github.io/CoreBundle/pages/Features/Mappings"
@@ -333,29 +334,29 @@ import { Mapping } from '../../entities/index.js'
 
 					<!-- Mapping Rule Dialog -->
 					<NcModal v-if="showMappingDialog"
-						:name="editingMappingRule ? 'Edit Mapping Rule' : 'Add Mapping Rule'"
+						:name="editingMappingRule ? t('openconnector', 'Edit Mapping Rule') : t('openconnector', 'Add Mapping Rule')"
 						@close="closeMappingDialog">
 						<div class="dialog-content">
-							<h3>{{ editingMappingRule ? 'Edit Mapping Rule' : 'Add Mapping Rule' }}</h3>
+							<h3>{{ editingMappingRule ? t('openconnector', 'Edit Mapping Rule') : t('openconnector', 'Add Mapping Rule') }}</h3>
 							<div class="form-group">
 								<NcTextField
 									:value.sync="mappingDialogData.property"
-									label="Target Property"
-									placeholder="Enter target property name"
+									:label="t('openconnector', 'Target Property')"
+									:placeholder="t('openconnector', 'Enter target property name')"
 									required />
 								<NcTextArea
 									:value.sync="mappingDialogData.template"
-									label="Source Property/Template"
-									placeholder="Enter Twig template (e.g., values['source.field'] )"
+									:label="t('openconnector', 'Source Property/Template')"
+									:placeholder="t('openconnector', 'Enter Twig template')"
 									resize="vertical"
 									required />
 							</div>
 							<div class="dialog-actions">
 								<NcButton type="secondary" @click="closeMappingDialog">
-									Cancel
+									{{ t('openconnector', 'Cancel') }}
 								</NcButton>
 								<NcButton type="primary" @click="saveMappingRule">
-									Save
+									{{ t('openconnector', 'Save') }}
 								</NcButton>
 							</div>
 						</div>
@@ -363,20 +364,20 @@ import { Mapping } from '../../entities/index.js'
 
 					<!-- Cast Rule Dialog -->
 					<NcModal v-if="showCastDialog"
-						:name="editingCastRule ? 'Edit Cast Rule' : 'Add Cast Rule'"
+						:name="editingCastRule ? t('openconnector', 'Edit Cast Rule') : t('openconnector', 'Add Cast Rule')"
 						@close="closeCastDialog">
 						<div class="dialog-content">
-							<h3>{{ editingCastRule ? 'Edit Cast Rule' : 'Add Cast Rule' }}</h3>
+							<h3>{{ editingCastRule ? t('openconnector', 'Edit Cast Rule') : t('openconnector', 'Add Cast Rule') }}</h3>
 							<div class="form-group">
 								<NcTextField
 									:value.sync="castDialogData.property"
-									label="Property"
-									placeholder="Enter property name"
+									:label="t('openconnector', 'Property')"
+									:placeholder="t('openconnector', 'Enter property name')"
 									required />
 								<NcSelect
 									:value.sync="castDialogData.castType"
 									:options="castTypeOptions"
-									label="Cast Type"
+									:label="t('openconnector', 'Cast Type')"
 									required />
 							</div>
 							<div class="dialog-actions">
@@ -392,15 +393,15 @@ import { Mapping } from '../../entities/index.js'
 
 					<!-- Unset Rule Dialog -->
 					<NcModal v-if="showUnsetDialog"
-						:name="editingUnsetRule !== null ? 'Edit Unset Property' : 'Add Unset Property'"
+						:name="editingUnsetRule !== null ? t('openconnector', 'Edit Unset Property') : t('openconnector', 'Add Unset Property')"
 						@close="closeUnsetDialog">
 						<div class="dialog-content">
-							<h3>{{ editingUnsetRule !== null ? 'Edit Unset Property' : 'Add Unset Property' }}</h3>
+							<h3>{{ editingUnsetRule !== null ? t('openconnector', 'Edit Unset Property') : t('openconnector', 'Add Unset Property') }}</h3>
 							<div class="form-group">
 								<NcTextField
 									:value.sync="unsetDialogData.property"
-									label="Property"
-									placeholder="Enter property name to unset"
+									:label="t('openconnector', 'Property')"
+									:placeholder="t('openconnector', 'Enter property name to unset')"
 									required />
 							</div>
 							<div class="dialog-actions">
@@ -419,30 +420,30 @@ import { Mapping } from '../../entities/index.js'
 				<div class="mapping-section output-section">
 					<div class="section-header">
 						<DatabaseArrowLeftOutline :size="24" />
-						<h3>Output</h3>
+						<h3>{{ t('openconnector', 'Output') }}</h3>
 					</div>
 					<div class="section-content">
 						<div class="info-card">
 							<p class="section-description">
-								View mapping test results and validation status
+								{{ t('openconnector', 'View mapping test results and validation status') }}
 							</p>
 						</div>
 
 						<!-- Schema Selection -->
 						<div class="subsection">
-							<h4>Validation Schema</h4>
+							<h4>{{ t('openconnector', 'Validation Schema') }}</h4>
 							<div class="form-group">
 								<NcSelect v-bind="schemaOptions"
 									v-model="schemaOptions.value"
-									input-label="Schema (Optional)"
+									:input-label="t('openconnector', 'Schema (Optional)')"
 									:loading="schemasLoading"
 									:disabled="!openRegisterInstalled">
 									<template #no-options="{ loading: isLoading }">
 										<p v-if="isLoading">
-											Loading...
+											{{ t('openconnector', 'Loading...') }}
 										</p>
 										<p v-else-if="!schemaOptions.options?.length">
-											No schemas available
+											{{ t('openconnector', 'schemas available') }}
 										</p>
 									</template>
 									<template #option="{ label, fullSchema }">
@@ -450,7 +451,7 @@ import { Mapping } from '../../entities/index.js'
 											<FileTreeOutline :size="25" />
 											<span>
 												<h6>{{ label }}</h6>
-												{{ fullSchema.summary || 'No description' }}
+												{{ fullSchema.summary || t('openconnector', 'No description') }}
 											</span>
 										</div>
 									</template>
@@ -461,10 +462,10 @@ import { Mapping } from '../../entities/index.js'
 						<!-- Test Status -->
 						<div v-if="testResult.success !== null" class="test-status">
 							<NcNoteCard v-if="testResult.success" type="success">
-								<p>Mapping test completed successfully</p>
+								<p>{{ t('openconnector', 'Mapping test completed successfully') }}</p>
 							</NcNoteCard>
 							<NcNoteCard v-if="testResult.success === false" type="error">
-								<p>Mapping test failed</p>
+								<p>{{ t('openconnector', 'Mapping test failed') }}</p>
 							</NcNoteCard>
 							<NcNoteCard v-if="testResult.error" type="error">
 								<p>{{ testResult.error }}</p>
@@ -475,22 +476,22 @@ import { Mapping } from '../../entities/index.js'
 						<div v-if="testResult.result?.isValid !== undefined" class="validation-status">
 							<p v-if="testResult.result.isValid" class="valid">
 								<NcIconSvgWrapper inline :path="mdiCheckCircle" />
-								Result is valid
+								{{ t('openconnector', 'Result is valid') }}
 							</p>
 							<p v-if="!testResult.result.isValid" class="invalid">
 								<NcIconSvgWrapper inline :path="mdiCloseCircle" />
-								Result is invalid
+								{{ t('openconnector', 'Result is invalid') }}
 							</p>
 						</div>
 
 						<!-- Validation Errors -->
 						<div v-if="Object.keys(testResult.result?.validationErrors || {}).length" class="validation-errors">
-							<h4>Validation Errors</h4>
+							<h4>{{ t('openconnector', 'Validation Errors') }}</h4>
 							<table>
 								<thead>
 									<tr>
-										<th>Field</th>
-										<th>Errors</th>
+										<th>{{ t('openconnector', 'Field') }}</th>
+										<th>{{ t('openconnector', 'Errors') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -510,7 +511,7 @@ import { Mapping } from '../../entities/index.js'
 
 						<!-- Result Output -->
 						<div v-if="testResult.result?.resultObject" class="result-output">
-							<h4>Mapped Result</h4>
+							<h4>{{ t('openconnector', 'Mapped Result') }}</h4>
 							<div class="result-container">
 								<pre>{{ JSON.stringify(testResult.result.resultObject, null, 2) }}</pre>
 							</div>
@@ -518,11 +519,11 @@ import { Mapping } from '../../entities/index.js'
 
 						<!-- Save Object Section -->
 						<div v-if="testResult.result?.resultObject && !Object.keys(testResult.result?.validationErrors || {}).length" class="save-object">
-							<h4>Save Result</h4>
+							<h4>{{ t('openconnector', 'Save Result') }}</h4>
 							<div class="form-group">
 								<NcSelect v-bind="registerOptions"
 									v-model="registerOptions.value"
-									input-label="Register"
+									:input-label="t('openconnector', 'Register')"
 									:loading="registersLoading"
 									:disabled="!openRegisterInstalled || saveObjectLoading">
 									<template #no-options="{ loading: isLoading }">
@@ -538,7 +539,7 @@ import { Mapping } from '../../entities/index.js'
 											<DatabaseOutline :size="25" />
 											<span>
 												<h6>{{ label }}</h6>
-												{{ fullRegister.description || 'No description' }}
+												{{ fullRegister.description || t('openconnector', 'No description') }}
 											</span>
 										</div>
 									</template>
@@ -551,16 +552,16 @@ import { Mapping } from '../../entities/index.js'
 										<NcLoadingIcon v-if="saveObjectLoading" :size="20" />
 										<ContentSaveOutline v-if="!saveObjectLoading" :size="20" />
 									</template>
-									Save to Register
+									{{ t('openconnector', 'Save to Register') }}
 								</NcButton>
 							</div>
 
 							<div v-if="saveObjectResult.success !== null" class="save-status">
 								<NcNoteCard v-if="saveObjectResult.success" type="success">
-									<p>Object saved successfully to register</p>
+									<p>{{ t('openconnector', 'Object saved successfully to register') }}</p>
 								</NcNoteCard>
 								<NcNoteCard v-if="saveObjectResult.success === false" type="error">
-									<p>{{ saveObjectResult.error || 'Failed to save object' }}</p>
+									<p>{{ saveObjectResult.error || t('openconnector', 'Failed to save object') }}</p>
 								</NcNoteCard>
 							</div>
 						</div>
@@ -575,7 +576,7 @@ import { Mapping } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon :size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton :disabled="testLoading || !isValidName || !validJson(inputObject.value) || !validJson(mappingItem.mapping) || !validJson(mappingItem.cast, true)"
 					type="secondary"
@@ -584,7 +585,7 @@ import { Mapping } from '../../entities/index.js'
 						<NcLoadingIcon v-if="testLoading" :size="20" />
 						<TestTube v-if="!testLoading" :size="20" />
 					</template>
-					Test
+					{{ t('openconnector', 'Test') }}
 				</NcButton>
 				<NcButton :disabled="loading || !isValidName || !validJson(mappingItem.mapping) || !validJson(mappingItem.cast, true)"
 					type="primary"
@@ -593,7 +594,7 @@ import { Mapping } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

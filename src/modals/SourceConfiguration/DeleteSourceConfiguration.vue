@@ -1,33 +1,34 @@
 <script setup>
 import { navigationStore, sourceStore } from '../../store/store.js'
 import { Source } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'deleteSourceConfiguration'"
-		name="Delete Source Configuration"
+		:name="t('openconnector', 'Delete Source Configuration')"
 		:can-close="false">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
-				<p>Successfully deleted source configuration</p>
+				<p>{{ t('openconnector', 'Source configuration deleted successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>Something went wrong deleting the source configuration</p>
+				<p>{{ t('openconnector', 'Something went wrong deleting the source configuration') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
 			</NcNoteCard>
 		</div>
 		<p v-if="success === null">
-			Do you want to delete <b>{{ sourceStore.sourceConfigurationKey }}</b>? This action cannot be undone.
+			{{ t('openconnector', 'Do you want to delete') }} <b>{{ sourceStore.sourceConfigurationKey }}</b>? {{ t('openconnector', 'This action cannot be undone.') }}
 		</p>
 		<template #actions>
 			<NcButton :disabled="loading" icon="" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ success !== null ? 'Close' : 'Cancel' }}
+				{{ success !== null ? t('openconnector', 'Close') : t('openconnector', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="success === null"
@@ -39,7 +40,7 @@ import { Source } from '../../entities/index.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Delete v-if="!loading" :size="20" />
 				</template>
-				Delete
+				{{ t('openconnector', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

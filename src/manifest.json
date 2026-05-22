@@ -1,217 +1,348 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
-	"version": "2.0.0",
-	"dependencies": ["openregister"],
-	"menu": [
-		{ "id": "Dashboard",      "label": "Dashboard",      "icon": "icon-category-dashboard",  "route": "Dashboard",      "order": 10 },
-		{ "id": "Sources",        "label": "Sources",        "icon": "icon-server",               "route": "Sources",        "order": 20 },
-		{ "id": "SourceLogs",     "label": "Source logs",    "icon": "icon-history",              "route": "SourceLogs",     "order": 25 },
-		{ "id": "Endpoints",      "label": "Endpoints",      "icon": "icon-category-integration", "route": "Endpoints",      "order": 30 },
-		{ "id": "EndpointLogs",   "label": "Endpoint logs",  "icon": "icon-history",              "route": "EndpointLogs",   "order": 35 },
-		{ "id": "Consumers",      "label": "Consumers",      "icon": "icon-group",                "route": "Consumers",      "order": 40 },
-		{ "id": "Webhooks",       "label": "Webhooks",       "icon": "icon-category-social",      "route": "Webhooks",       "order": 50 },
-		{ "id": "Jobs",           "label": "Jobs",           "icon": "icon-category-workflow",    "route": "Jobs",           "order": 60 },
-		{ "id": "JobLogs",        "label": "Job logs",       "icon": "icon-history",              "route": "JobLogs",        "order": 65 },
-		{ "id": "Mappings",       "label": "Mappings",       "icon": "icon-category-customization","route": "Mappings",      "order": 70 },
-		{ "id": "Rules",          "label": "Rules",          "icon": "icon-toggle",               "route": "Rules",          "order": 80 },
-		{ "id": "Synchronizations","label": "Synchronizations","icon": "icon-shared",             "route": "Synchronizations","order": 90 },
-		{ "id": "CloudEvents",    "label": "Cloud events",   "icon": "icon-category-monitoring",  "route": "CloudEvents",    "order": 100 },
-		{ "id": "Import",         "label": "Import",         "icon": "icon-upload",               "route": "Import",         "section": "settings", "order": 10 },
-		{ "id": "Settings",       "label": "Settings",       "icon": "icon-settings",             "route": "AppSettings",    "section": "settings", "order": 20 }
-	],
-	"pages": [
-		{
-			"id": "Dashboard",
-			"route": "/",
-			"type": "custom",
-			"title": "Dashboard",
-			"component": "DashboardView",
-			"_note": "OpenConnector dashboard shows real-time stats of sources, active jobs, recent call logs and synchronization health — bespoke chart/widget layout that has no equivalent built-in manifest type."
-		},
-		{
-			"id": "Sources",
-			"route": "/sources",
-			"type": "custom",
-			"title": "Sources",
-			"component": "SourcesIndex",
-			"_note": "Sources list + inline detail panel with connection testing, authentication editor, and call-log preview. Complex sidebar interaction that exceeds the standard index/detail split."
-		},
-		{
-			"id": "SourceDetail",
-			"route": "/sources/:id",
-			"type": "custom",
-			"title": "Source",
-			"component": "SourcesIndex",
-			"_note": "Source detail is embedded inside the Sources list view via the existing router pattern."
-		},
-		{
-			"id": "SourceLogs",
-			"route": "/sources/logs",
-			"type": "custom",
-			"title": "Source logs",
-			"component": "LogIndex",
-			"config": { "logType": "source" },
-			"_note": "Tier-4 wrapper: thin shim over CnIndexPage driven by config.logType. The bespoke SourceLogIndex view is retained in the registry until the wrapper covers the legacy log-detail sidebar interaction; falls back via npm bundle for unreferenced backup."
-		},
-		{
-			"id": "Endpoints",
-			"route": "/endpoints",
-			"type": "custom",
-			"title": "Endpoints",
-			"component": "EndpointsIndex",
-			"_note": "Endpoints list + inline detail for request/response schema configuration and live testing."
-		},
-		{
-			"id": "EndpointDetail",
-			"route": "/endpoints/:id",
-			"type": "custom",
-			"title": "Endpoint",
-			"component": "EndpointsIndex",
-			"_note": "Endpoint detail is embedded inside the Endpoints list view."
-		},
-		{
-			"id": "EndpointLogs",
-			"route": "/endpoints/logs",
-			"type": "custom",
-			"title": "Endpoint logs",
-			"component": "EndpointLogIndex",
-			"_note": "Filterable call-log table scoped to an endpoint."
-		},
-		{
-			"id": "Consumers",
-			"route": "/consumers",
-			"type": "custom",
-			"title": "Consumers",
-			"component": "ConsumersIndex",
-			"_note": "Consumer list with inline auth/scope editor sidebar."
-		},
-		{
-			"id": "ConsumerDetail",
-			"route": "/consumers/:id",
-			"type": "custom",
-			"title": "Consumer",
-			"component": "ConsumersIndex",
-			"_note": "Consumer detail embedded inside Consumers list."
-		},
-		{
-			"id": "Webhooks",
-			"route": "/webhooks",
-			"type": "custom",
-			"title": "Webhooks",
-			"component": "WebhooksIndex",
-			"_note": "Webhook list with event-type selector and delivery-log sidebar."
-		},
-		{
-			"id": "Jobs",
-			"route": "/jobs",
-			"type": "custom",
-			"title": "Jobs",
-			"component": "JobsIndex",
-			"_note": "Scheduled-job list with cron-expression editor and last-run status sidebar."
-		},
-		{
-			"id": "JobLogs",
-			"route": "/jobs/logs",
-			"type": "custom",
-			"title": "Job logs",
-			"component": "JobLogIndex",
-			"_note": "Filterable job execution log with run-detail sidebar."
-		},
-		{
-			"id": "Mappings",
-			"route": "/mappings",
-			"type": "custom",
-			"title": "Mappings",
-			"component": "MappingsIndex",
-			"_note": "Mapping list with a visual drag-and-drop field-translation editor — no built-in manifest type covers this editor surface."
-		},
-		{
-			"id": "MappingDetail",
-			"route": "/mappings/:id",
-			"type": "custom",
-			"title": "Mapping",
-			"component": "MappingsIndex",
-			"_note": "Mapping editor embedded inside the Mappings list view."
-		},
-		{
-			"id": "Rules",
-			"route": "/rules",
-			"type": "custom",
-			"title": "Rules",
-			"component": "RuleIndex",
-			"_note": "Rule list with condition/action builder sidebar — bespoke logical expression builder."
-		},
-		{
-			"id": "RuleDetail",
-			"route": "/rules/:id",
-			"type": "custom",
-			"title": "Rule",
-			"component": "RuleIndex",
-			"_note": "Rule detail embedded inside Rules list."
-		},
-		{
-			"id": "Synchronizations",
-			"route": "/synchronizations",
-			"type": "custom",
-			"title": "Synchronizations",
-			"component": "SynchronizationsIndex",
-			"_note": "Synchronization list with field-mapping config and source/target selection sidebar."
-		},
-		{
-			"id": "SynchronizationContracts",
-			"route": "/synchronizations/contracts",
-			"type": "custom",
-			"title": "Contracts",
-			"component": "ContractsIndex",
-			"_note": "Contracts log scoped to synchronizations — shows accepted/rejected object transfers."
-		},
-		{
-			"id": "SynchronizationLogs",
-			"route": "/synchronizations/logs",
-			"type": "custom",
-			"title": "Synchronization logs",
-			"component": "SynchronizationLogIndex",
-			"_note": "Filterable synchronization run-log with run-detail sidebar."
-		},
-		{
-			"id": "CloudEvents",
-			"route": "/cloud-events/events",
-			"type": "custom",
-			"title": "Cloud events",
-			"component": "EventIndex",
-			"_note": "CloudEvents list with subscription editor and delivery-log sidebar."
-		},
-		{
-			"id": "CloudEventDetail",
-			"route": "/cloud-events/events/:id",
-			"type": "custom",
-			"title": "Cloud event",
-			"component": "EventIndex",
-			"_note": "Cloud event detail embedded inside events list."
-		},
-		{
-			"id": "CloudEventLogs",
-			"route": "/cloud-events/logs",
-			"type": "custom",
-			"title": "Cloud event logs",
-			"component": "EventLogIndex",
-			"_note": "Filterable CloudEvent dispatch log."
-		},
-		{
-			"id": "Import",
-			"route": "/import",
-			"type": "custom",
-			"title": "Import",
-			"component": "ImportIndex",
-			"_note": "Bulk-import wizard for sources/mappings/synchronizations via JSON/YAML upload."
-		},
-		{
-			"id": "AppSettings",
-			"route": "/settings",
-			"type": "custom",
-			"title": "Settings",
-			"component": "SettingsView",
-			"_note": "App-level settings (caching, log retention, OpenRegister connection)."
-		}
-	]
+  "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+  "version": "2.0.0",
+  "dependencies": [
+    "openregister"
+  ],
+  "menu": [
+    {
+      "id": "Dashboard",
+      "label": "Dashboard",
+      "icon": "icon-category-dashboard",
+      "route": "Dashboard",
+      "order": 10
+    },
+    {
+      "id": "Sources",
+      "label": "Sources",
+      "icon": "icon-server",
+      "route": "Sources",
+      "order": 20
+    },
+    {
+      "id": "SourceLogs",
+      "label": "Source logs",
+      "icon": "icon-history",
+      "route": "SourceLogs",
+      "order": 25
+    },
+    {
+      "id": "Endpoints",
+      "label": "Endpoints",
+      "icon": "icon-category-integration",
+      "route": "Endpoints",
+      "order": 30
+    },
+    {
+      "id": "EndpointLogs",
+      "label": "Endpoint logs",
+      "icon": "icon-history",
+      "route": "EndpointLogs",
+      "order": 35
+    },
+    {
+      "id": "Consumers",
+      "label": "Consumers",
+      "icon": "icon-group",
+      "route": "Consumers",
+      "order": 40
+    },
+    {
+      "id": "Webhooks",
+      "label": "Webhooks",
+      "icon": "icon-category-social",
+      "route": "Webhooks",
+      "order": 50
+    },
+    {
+      "id": "Jobs",
+      "label": "Jobs",
+      "icon": "icon-category-workflow",
+      "route": "Jobs",
+      "order": 60
+    },
+    {
+      "id": "JobLogs",
+      "label": "Job logs",
+      "icon": "icon-history",
+      "route": "JobLogs",
+      "order": 65
+    },
+    {
+      "id": "Mappings",
+      "label": "Mappings",
+      "icon": "icon-category-customization",
+      "route": "Mappings",
+      "order": 70
+    },
+    {
+      "id": "Rules",
+      "label": "Rules",
+      "icon": "icon-toggle",
+      "route": "Rules",
+      "order": 80
+    },
+    {
+      "id": "Synchronizations",
+      "label": "Synchronizations",
+      "icon": "icon-shared",
+      "route": "Synchronizations",
+      "order": 90
+    },
+    {
+      "id": "CloudEvents",
+      "label": "Cloud events",
+      "icon": "icon-category-monitoring",
+      "route": "CloudEvents",
+      "order": 100
+    },
+    {
+      "id": "Import",
+      "label": "Import",
+      "icon": "icon-upload",
+      "route": "Import",
+      "section": "settings",
+      "order": 10
+    },
+    {
+      "id": "Settings",
+      "label": "Settings",
+      "icon": "icon-settings",
+      "route": "AppSettings",
+      "section": "settings",
+      "order": 20
+    }
+  ],
+  "pages": [
+    {
+      "id": "Dashboard",
+      "route": "/",
+      "type": "dashboard",
+      "title": "Dashboard"
+    },
+    {
+      "id": "Sources",
+      "route": "/sources",
+      "type": "index",
+      "title": "Sources",
+      "config": {
+        "register": "openconnector",
+        "schema": "source"
+      }
+    },
+    {
+      "id": "SourceDetail",
+      "route": "/sources/:id",
+      "type": "detail",
+      "title": "Source",
+      "config": {
+        "register": "openconnector",
+        "schema": "source"
+      }
+    },
+    {
+      "id": "SourceLogs",
+      "route": "/sources/logs",
+      "type": "logs",
+      "title": "Source logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "call_log"
+      }
+    },
+    {
+      "id": "Endpoints",
+      "route": "/endpoints",
+      "type": "index",
+      "title": "Endpoints",
+      "config": {
+        "register": "openconnector",
+        "schema": "endpoint"
+      }
+    },
+    {
+      "id": "EndpointDetail",
+      "route": "/endpoints/:id",
+      "type": "detail",
+      "title": "Endpoint",
+      "config": {
+        "register": "openconnector",
+        "schema": "endpoint"
+      }
+    },
+    {
+      "id": "EndpointLogs",
+      "route": "/endpoints/logs",
+      "type": "logs",
+      "title": "Endpoint logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "call_log"
+      }
+    },
+    {
+      "id": "Consumers",
+      "route": "/consumers",
+      "type": "index",
+      "title": "Consumers",
+      "config": {
+        "register": "openconnector",
+        "schema": "consumer"
+      }
+    },
+    {
+      "id": "ConsumerDetail",
+      "route": "/consumers/:id",
+      "type": "detail",
+      "title": "Consumer",
+      "config": {
+        "register": "openconnector",
+        "schema": "consumer"
+      }
+    },
+    {
+      "id": "Webhooks",
+      "route": "/webhooks",
+      "type": "index",
+      "title": "Webhooks",
+      "config": {
+        "register": "openconnector",
+        "schema": "consumer"
+      }
+    },
+    {
+      "id": "Jobs",
+      "route": "/jobs",
+      "type": "index",
+      "title": "Jobs",
+      "config": {
+        "register": "openconnector",
+        "schema": "job"
+      }
+    },
+    {
+      "id": "JobLogs",
+      "route": "/jobs/logs",
+      "type": "logs",
+      "title": "Job logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "job_log"
+      }
+    },
+    {
+      "id": "Mappings",
+      "route": "/mappings",
+      "type": "index",
+      "title": "Mappings",
+      "config": {
+        "register": "openconnector",
+        "schema": "mapping"
+      }
+    },
+    {
+      "id": "MappingDetail",
+      "route": "/mappings/:id",
+      "type": "detail",
+      "title": "Mapping",
+      "config": {
+        "register": "openconnector",
+        "schema": "mapping"
+      }
+    },
+    {
+      "id": "Rules",
+      "route": "/rules",
+      "type": "index",
+      "title": "Rules",
+      "config": {
+        "register": "openconnector",
+        "schema": "rule"
+      }
+    },
+    {
+      "id": "RuleDetail",
+      "route": "/rules/:id",
+      "type": "detail",
+      "title": "Rule",
+      "config": {
+        "register": "openconnector",
+        "schema": "rule"
+      }
+    },
+    {
+      "id": "Synchronizations",
+      "route": "/synchronizations",
+      "type": "index",
+      "title": "Synchronizations",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization"
+      }
+    },
+    {
+      "id": "SynchronizationContracts",
+      "route": "/synchronizations/contracts",
+      "type": "index",
+      "title": "Contracts",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization_contract"
+      }
+    },
+    {
+      "id": "SynchronizationLogs",
+      "route": "/synchronizations/logs",
+      "type": "logs",
+      "title": "Synchronization logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization_log"
+      }
+    },
+    {
+      "id": "CloudEvents",
+      "route": "/cloud-events/events",
+      "type": "index",
+      "title": "Cloud events",
+      "config": {
+        "register": "openconnector",
+        "schema": "event"
+      }
+    },
+    {
+      "id": "CloudEventDetail",
+      "route": "/cloud-events/events/:id",
+      "type": "detail",
+      "title": "Cloud event",
+      "config": {
+        "register": "openconnector",
+        "schema": "event"
+      }
+    },
+    {
+      "id": "CloudEventLogs",
+      "route": "/cloud-events/logs",
+      "type": "logs",
+      "title": "Cloud event logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "call_log"
+      }
+    },
+    {
+      "id": "Import",
+      "route": "/import",
+      "type": "custom",
+      "title": "Import",
+      "component": "ImportIndex",
+      "_note": "Multi-step file-upload + dry-run preview UX exceeds nc-vue v2 form/wizard capability. Revisit after nc-vue ships CnWizardPage."
+    },
+    {
+      "id": "AppSettings",
+      "route": "/settings",
+      "type": "settings",
+      "title": "Settings"
+    }
+  ]
 }

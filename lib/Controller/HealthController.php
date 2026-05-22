@@ -78,18 +78,26 @@ class HealthController extends Controller
             $this->logger->error('Health check: database failed', ['exception' => $e->getMessage()]);
         }
 
-        // Source table check.
+        // OR-cutover: the legacy `oc_openconnector_sources` table was
+        // dropped by Version2Date20260520000099. Sources now live as OR
+        // objects. A targeted aggregate over `oc_openregister_objects`
+        // filtered to `register='openconnector', schema='source'` is the
+        // post-cutover equivalent of the old table-existence probe.
         try {
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->createFunction('COUNT(*) AS cnt'))
-                ->from('openconnector_sources');
+                ->from('openregister_objects', 'o')
+                ->innerJoin('o', 'openregister_registers', 'r', $qb->expr()->eq('o.register', 'r.id'))
+                ->innerJoin('o', 'openregister_schemas',   's', $qb->expr()->eq('o.schema', 's.id'))
+                ->where($qb->expr()->eq('r.slug', $qb->createNamedParameter('openconnector')))
+                ->andWhere($qb->expr()->eq('s.slug', $qb->createNamedParameter('source')));
             $result = $qb->executeQuery();
             $result->closeCursor();
             $checks['sources_table'] = 'ok';
         } catch (\Exception $e) {
             $checks['sources_table'] = 'error';
             $status = 'degraded';
-            $this->logger->warning('Health check: sources table not accessible', ['exception' => $e->getMessage()]);
+            $this->logger->warning('Health check: sources store not accessible', ['exception' => $e->getMessage()]);
         }
 
         return new JSONResponse(

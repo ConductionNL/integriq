@@ -21,8 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
-use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Db\SourceMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,13 +35,11 @@ class IBabsConnectorService
     /**
      * IBabsConnectorService constructor.
      *
-     * @param CallService     $callService  The call service for API requests
-     * @param SourceMapper    $sourceMapper The source mapper for source lookup
-     * @param LoggerInterface $logger       Logger for error handling
+     * @param CallService     $callService The call service for API requests
+     * @param LoggerInterface $logger      Logger for error handling
      */
     public function __construct(
         private readonly CallService $callService,
-        private readonly SourceMapper $sourceMapper,
         private readonly LoggerInterface $logger
     ) {
 
@@ -53,11 +50,11 @@ class IBabsConnectorService
      *
      * Makes a lightweight GET request to list vergaderingen to verify connectivity.
      *
-     * @param Source $source The iBabs source configuration.
+     * @param ObjectEntity $source The iBabs source configuration.
      *
      * @return array Result with 'success' boolean and 'message' string.
      */
-    public function testConnection(Source $source): array
+    public function testConnection(ObjectEntity $source): array
     {
         try {
             $config = $source->getConfiguration();
@@ -109,16 +106,17 @@ class IBabsConnectorService
      * Uploads the document (PDF) and its bijlagen to iBabs and creates
      * a vergaderstuk linked to the specified vergadering.
      *
-     * @param Source $source   The iBabs source configuration.
-     * @param array  $voorstel The voorstel data including document path and metadata.
+     * @param ObjectEntity $source   The iBabs source configuration.
+     * @param array        $voorstel The voorstel data including document path and metadata.
      *
      * @return array Result with 'success' boolean and 'vergaderstukId'.
      */
-    public function pushVoorstel(Source $source, array $voorstel): array
+    public function pushVoorstel(ObjectEntity $source, array $voorstel): array
     {
-        $config = $source->getConfiguration();
+        $sourceData = $source->getObject();
+        $config     = $sourceData['configuration'] ?? [];
         if (is_string($config) === true) {
-            $config = json_decode($config, true);
+            $config = json_decode($config, true) ?? [];
         }
 
         // NOTE: $config['organisatieId'] will be used by the real CallService
@@ -147,11 +145,11 @@ class IBabsConnectorService
      * Queries the iBabs API for besluiten related to previously pushed
      * voorstellen and returns an array of besluit data with status mappings.
      *
-     * @param Source $source The iBabs source configuration.
+     * @param ObjectEntity $source The iBabs source configuration.
      *
      * @return array Array of besluit records with zaak references and status.
      */
-    public function pollBesluiten(Source $source): array
+    public function pollBesluiten(ObjectEntity $source): array
     {
         $this->logger->info('iBabs: Polling for besluiten');
 
