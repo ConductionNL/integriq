@@ -10,6 +10,17 @@ depends_on:
 
 # StUF BG/ZKN Koppelvlak
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** Adapters > Adapter-catalogus (Overheid-NL) + used in Verbindingen wizard / Adapters
+
+**Rationale:** Adapter type, surfaces in catalogue + new-connection picker  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 StUF (Standaard Uitwisselings Formaat) remains the dominant SOAP-based exchange standard between Dutch municipal back-offices, despite the steady migration to REST-based Haal Centraal and ZGW APIs. Every municipality in the Netherlands still operates one or more StUF-based connections — typically to the BRP (basisregistratie personen) via StUF-BG, to the zaaksysteem via StUF-ZKN, and to e-formulier engines via StUF-EF. Suppliers that cannot speak StUF cannot reach the installed base, and even municipalities migrating to ZGW-REST keep StUF running in parallel for years during transition. Procurement scoring documents from VNG Realisatie still treat StUF-BG 0310 and StUF-ZKN 0310 conformance as hard pass/fail criteria for any system claiming municipal-back-office integration.
