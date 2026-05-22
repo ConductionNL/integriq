@@ -313,16 +313,4 @@ class UiController extends Controller
     {
         return $this->makeSpaResponse();
     }//end cloudEventsLogs()
-
-    /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
-     */
-    public function import(): TemplateResponse
-    {
-        return $this->makeSpaResponse();
-    }//end import()
 }//end class

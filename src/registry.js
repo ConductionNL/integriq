@@ -3,34 +3,22 @@
 //
 // Custom-component registry for openconnector's manifest-driven app shell.
 //
-// Post chain-C cutover: the 16 per-schema index/detail/log views previously
-// registered here have been deleted in favour of nc-vue's built-in
-// CnIndexPage / CnDetailPage / CnLogsPage / CnDashboardPage / CnSettingsPage
-// types, configured declaratively via src/manifest.json. The 23 of 24
-// manifest entries now use a standard type and resolve their CRUD against
-// OR's `/api/objects/openconnector/{schema}/*` routes.
+// Post chain-C cutover + post chain-E custom-Import drop: the registry is
+// now empty. All 23 of 23 manifest pages use a standard nc-vue type
+// (CnIndexPage / CnDetailPage / CnLogsPage / CnDashboardPage / CnSettingsPage)
+// and resolve their CRUD against OR's `/api/objects/openconnector/{schema}/*`
+// routes. Bulk import is now per-schema via CnIndexPage's built-in
+// CnMassImportDialog action (Actions → Import on each index page) —
+// the chain-E custom Import page was deleted because its backend
+// `POST /api/import` endpoint had already been removed in chain-C,
+// leaving the Vue page broken anyway.
 //
-// What's left here:
-//   1. ImportIndex — the multi-step file-upload + dry-run preview UX
-//      exceeds nc-vue v2 form/wizard capability; revisit when CnWizardPage
-//      ships. The Import manifest page carries `type: "custom"` + `_note`
-//      documenting this gap.
-//   2. (future) Custom **widgets** for the genuinely-custom interactive
-//      surfaces: MappingEditorWidget (drag-drop transformation),
-//      RuleConditionsWidget (visual condition builder), CronBuilderWidget
-//      (job-interval editor), EventSubscriptionsManagerWidget,
-//      SourceTesterWidget (connection-test result panel), JobRunnerWidget
-//      (run-job modal poll). These will register as v2 widget slots on
-//      standard-type pages, NOT as entire custom pages.
-//
-// Resolution order at runtime:
-//   1. Built-in page types          (CnIndexPage, CnDetailPage, …) — WIN for 23 pages
-//   2. Built-in widget types        (version-info, register-mapping, …)
-//   3. customComponents (this file) — escape hatch for Import + future widgets
+// (Future) Custom **widgets** for the genuinely-custom interactive
+// surfaces — MappingEditorWidget (drag-drop transformation),
+// RuleConditionsWidget (visual condition builder), CronBuilderWidget
+// (job-interval editor), EventSubscriptionsManagerWidget, SourceTesterWidget
+// (connection-test result panel), JobRunnerWidget (run-job modal poll) —
+// will register here as v2 widget slots on standard-type pages, NOT as
+// entire custom pages.
 
-import ImportIndex from './views/Import/ImportIndex.vue'
-
-export default {
-	// Multi-step file-upload + dry-run preview UX (manifest page id: "Import"; type: "custom").
-	ImportIndex,
-}
+export default {}

@@ -15,6 +15,16 @@ const compat = new FlatCompat({
 })
 
 module.exports = defineConfig([{
+	// src/modals/ holds 16 pre-chain-C modal SFCs preserved as
+	// extraction reference for the upcoming bespoke-modal PRs
+	// (EditMapping / EditSynchronization / EditRule + action surfaces).
+	// They have intentionally broken imports against deleted stores and
+	// entity classes — lint would spam errors that wouldn't get fixed.
+	// Once a modal is extracted into a fresh bespoke component wired to
+	// nc-vue + useObjectStore, the legacy file is removed in the same
+	// PR. See src/modals/README.md.
+	ignores: ['src/modals/**'],
+}, {
 	extends: compat.extends('@nextcloud'),
 
 	settings: {
