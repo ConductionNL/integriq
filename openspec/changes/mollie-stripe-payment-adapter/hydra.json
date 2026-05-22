@@ -1,0 +1,8 @@
+{
+  "spec_slug": "mollie-stripe-payment-adapter",
+  "title": "Mollie + Stripe Payment Adapter",
+  "app": "openconnector",
+  "repo": "https://github.com/ConductionNL/openconnector",
+  "depends_on": [],
+  "issue": null
+}
