@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -379,7 +379,8 @@ class LegacyToRegisterMigrator
             'legacyCount'   => $count,
             'migratedCount' => $migrated,
             'skipped'       => $skipped,
-            'fkRewrites'    => 0, // populated by FK rewrite pass
+            'fkRewrites'    => 0,
+        // populated by FK rewrite pass
             'branching'     => $hasSyncBranching ? $syncBranchCounts : null,
         ];
     }//end migrateEntity()

@@ -49,7 +49,7 @@ class EndpointCacheService
     /**
      * Whether the in-memory cache is considered stale (set to true after a write).
      *
-     * @var bool
+     * @var boolean
      */
     private bool $cacheDirty = false;
 

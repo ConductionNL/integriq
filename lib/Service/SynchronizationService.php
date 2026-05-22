@@ -71,9 +71,8 @@ class SynchronizationService
     const EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT = 'extendInputFetchObjectBeforeConditions';
     const FILE_TAG_TYPE        = 'files';
     const VALID_MUTATION_TYPES = ['create', 'update', 'delete'];
-    const DEFAULT_MAX_PAGES    = 50; // Safety limit to prevent infinite page requesting loop
-
-
+    const DEFAULT_MAX_PAGES    = 50;
+    // Safety limit to prevent infinite page requesting loop
     private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
     private const DEFAULT_ERROR_LOG_RETENTION   = 259200000;
 
@@ -627,7 +626,8 @@ class SynchronizationService
                 $objectList = $this->getAllObjectsFromSource($synchronization, $isTest, $data);
             } catch (TooManyRequestsHttpException $e) {
                 $rateLimitException = $e;
-                $objectList         = []; // Ensure it's defined
+                $objectList         = [];
+                // Ensure it's defined
             }
 
             $fetchDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
@@ -1527,7 +1527,8 @@ class SynchronizationService
         return [
             'log'          => $contractLog !== null ? $contractLog->getObject() : [],
             'contract'     => $synchronizationContract->getObject(),
-            'resultAction' => 'update',// /create
+            'resultAction' => 'update',
+        // /create
         ];
     }//end synchronizeContract()
 
@@ -1993,8 +1994,9 @@ class SynchronizationService
         $this->checkRateLimit($source);
 
         // Extract source configuration
-        $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
-        $endpoint     = $sourceConfig['endpoint'] ?? '';
+        $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
+        // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
+        $endpoint = $sourceConfig['endpoint'] ?? '';
         if (is_string($endpoint) === true
             && str_contains($endpoint, '{{') === true
             && str_contains($endpoint, '}}') === true
@@ -2234,7 +2236,8 @@ class SynchronizationService
             // Use next endpoint URL pagination
             $nextEndpoint = $this->getNextEndpoint(body: $result, url: $sourceData['location'] ?? '', currentEndpoint: $currentEndpoint);
             if ($nextEndpoint === null || $nextEndpoint === $currentEndpoint) {
-                return null; // No more pages
+                return null;
+                // No more pages
             }
 
             return [
@@ -2250,7 +2253,8 @@ class SynchronizationService
             $nextConfig = $this->getNextPage(config: $config, sourceConfig: $syncData['sourceConfig'] ?? [], currentPage: $nextPage);
 
             return [
-                'endpoint'         => $currentEndpoint, // Base endpoint stays the same
+                'endpoint'         => $currentEndpoint,
+            // Base endpoint stays the same
                 'config'           => $nextConfig,
                 'page'             => $nextPage,
                 'usesNextEndpoint' => false,
@@ -2356,9 +2360,10 @@ class SynchronizationService
     {
         $allObjects      = [];
         $currentEndpoint = $endpoint;
-        $maxPages        = 50; // Safety limit
-        $sourceData      = $source !== null ? $source->getObject() : [];
-        $syncData        = $synchronization->getObject();
+        $maxPages        = 50;
+        // Safety limit
+        $sourceData = $source !== null ? $source->getObject() : [];
+        $syncData   = $synchronization->getObject();
 
         for ($i = 0; $i < $maxPages; $i++) {
             $pageData    = $this->fetchSinglePageData($source, $currentEndpoint, $config, $synchronization);
@@ -3431,45 +3436,45 @@ class SynchronizationService
         // $tags = [];
         // $published = null;
         // $registerId = null;
-        //        switch ($this->getArrayType($endpoint)) {
-        //            // Single file endpoint
-        //            case 'Not array':
-        //                $this->fetchFile(source: $source, endpoint: $endpoint, config: $config, objectId: $objectId, tags: $tags, published: $published);
-        //                break;
-        //            // Array of object that has file(s)
-        //            case 'Associative array':
-        //                $actualEndpoint = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $objectId, published: $published, registerId: $registerId);
+        // switch ($this->getArrayType($endpoint)) {
+        // Single file endpoint
+        // case 'Not array':
+        // $this->fetchFile(source: $source, endpoint: $endpoint, config: $config, objectId: $objectId, tags: $tags, published: $published);
+        // break;
+        // Array of object that has file(s)
+        // case 'Associative array':
+        // $actualEndpoint = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $objectId, published: $published, registerId: $registerId);
         //
-        //                if ($actualEndpoint === null) {
-        //                    return $dataDot->jsonSerialize();
-        //                }
-        //                $this->fetchFile(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, filename: $filename, published: $published);
-        //                break;
-        //            // Array of object(s) that has file(s)
-        //            case "Multidimensional array":
-        //                foreach ($endpoint as $object) {
-        //                    $filename = null;
-        //                    $tags = [];
-        //                    $published = null;
-        //                    $registerId = null;
-        //                    $actualEndpoint = $this->getFileContext(config: $config, endpoint: $object, filename: $filename, tags: $tags, objectId: $objectId, published: $published, registerId: $registerId);
-        //                    if ($actualEndpoint === null) {
-        //                        continue;
-        //                    }
-        //                    $this->fetchFile(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, filename: $filename, published: $published);
-        //                }
-        //                break;
-        //            // Array of just endpoints
-        //            case "Indexed array":
-        //                foreach ($endpoint as $key => $childEndpoint) {
-        //                    $filename = null;
-        //                    $tags = [];
-        //                    $published = null;
-        //                    $registerId = null;
-        //                    $this->fetchFile(source: $source, endpoint: $childEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, published: $published);
-        //                }
-        //                break;
-        //        }
+        // if ($actualEndpoint === null) {
+        // return $dataDot->jsonSerialize();
+        // }
+        // $this->fetchFile(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, filename: $filename, published: $published);
+        // break;
+        // Array of object(s) that has file(s)
+        // case "Multidimensional array":
+        // foreach ($endpoint as $object) {
+        // $filename = null;
+        // $tags = [];
+        // $published = null;
+        // $registerId = null;
+        // $actualEndpoint = $this->getFileContext(config: $config, endpoint: $object, filename: $filename, tags: $tags, objectId: $objectId, published: $published, registerId: $registerId);
+        // if ($actualEndpoint === null) {
+        // continue;
+        // }
+        // $this->fetchFile(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, filename: $filename, published: $published);
+        // }
+        // break;
+        // Array of just endpoints
+        // case "Indexed array":
+        // foreach ($endpoint as $key => $childEndpoint) {
+        // $filename = null;
+        // $tags = [];
+        // $published = null;
+        // $registerId = null;
+        // $this->fetchFile(source: $source, endpoint: $childEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, published: $published);
+        // }
+        // break;
+        // }
         // Start fire-and-forget file fetching based on endpoint type
         $this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: $rule->getUuid(), objectId: $objectId);
 
@@ -3537,8 +3542,9 @@ class SynchronizationService
 
                 // Array of object that has file(s)
                 case 'Associative array':
-                    $contextObjectId = null; // Separate variable to avoid overwriting the original
-                    $actualEndpoint  = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $contextObjectId, published: $published, registerId: $registerId);
+                    $contextObjectId = null;
+                    // Separate variable to avoid overwriting the original
+                    $actualEndpoint = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $contextObjectId, published: $published, registerId: $registerId);
                     // Use context object ID if specified, otherwise fall back to the original object ID
                     $targetObjectId = $contextObjectId ?? $objectId;
                     if ($actualEndpoint !== null) {
@@ -4447,7 +4453,7 @@ class SynchronizationService
         return false;
     }//end shouldPublishFile()
 
-    /**
+    /*
      * Fetches a file from a given endpoint and saves it to the OpenRegister system.
      *
      * This method downloads a file from a remote source and stores it in the OpenRegister
