@@ -1,0 +1,8 @@
+{
+  "spec_slug": "digikoppeling-adapter",
+  "title": "Digikoppeling 2.0 transport (overheid-NL)",
+  "app": "openconnector",
+  "repo": "https://github.com/ConductionNL/openconnector",
+  "depends_on": [],
+  "issue": null
+}
