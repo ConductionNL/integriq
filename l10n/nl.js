@@ -1,6 +1,10 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Address lookup temporarily unavailable" : "Adresopzoeking tijdelijk niet beschikbaar",
+    "Query parameter q is required" : "Parameter q is vereist",
+    "Address not found" : "Adres niet gevonden",
+    "Parameters lat and lng are required" : "Parameters lat en lng zijn vereist",
     "API Key" : "API-sleutel",
     "About Event Logs" : "Over gebeurtenislogboeken",
     "Account is disabled" : "Account is uitgeschakeld",

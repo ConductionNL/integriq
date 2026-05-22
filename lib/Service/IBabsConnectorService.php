@@ -119,8 +119,8 @@ class IBabsConnectorService
             $config = json_decode($config, true) ?? [];
         }
 
-        $organisatieId = $config['organisatieId'] ?? null;
-
+        // NOTE: $config['organisatieId'] will be used by the real CallService
+        // upload once implemented; placeholder body below does not consume it.
         $metadata = [
             'onderwerp'          => $voorstel['onderwerp'] ?? '',
             'portefeuillehouder' => $voorstel['portefeuillehouder'] ?? '',

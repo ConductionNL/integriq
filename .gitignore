@@ -1,13 +1,36 @@
+# IDE
 /.idea/
 /*.iml
 *.Identifier
 
+# Dependencies
 /vendor/
 /vendor-bin/*/vendor/
+/node_modules/
 
+# Build artifacts
+/js/
+
+# Documentation
+/docs/node_modules/
+/docs/build/
+/docs/.docusaurus/
+/website/node_modules/
+/website/.docusaurus/
+
+# Testing & Quality
 /.php-cs-fixer.cache
 /tests/.phpunit.cache
+/.phpunit.cache/
+.phpunit.cache/
+.phpunit.result.cache
+/coverage/
+/coverage-frontend/
+/phpmetrics/
+/quality-reports/
+/phpqa/
 
+# Nextcloud
 /node_modules/
 /js/
 /docs/node_modules/
@@ -16,8 +39,12 @@
 /custom-apps/
 /config/
 
-/coverage/
-/coverage-frontend/
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/worktrees/
 
 # Test/build artifacts
 .docusaurus

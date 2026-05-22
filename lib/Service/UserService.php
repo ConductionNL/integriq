@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * UserService
  *
  * This service handles all user-related business logic including user data retrieval,
@@ -131,7 +131,8 @@ class UserService
             'avatarScope'         => method_exists($user, 'getAvatarScope') ? $user->getAvatarScope() : 'contacts',
             'lastLogin'           => method_exists($user, 'getLastLogin') ? $user->getLastLogin() : 0,
             'backend'             => method_exists($user, 'getBackendClassName') ? $user->getBackendClassName() : 'unknown',
-            'subadmin'            => [], // Subadmin info would require additional service
+            'subadmin'            => [],
+        // Subadmin info would require additional service
             'groups'              => $groupNames,
             'language'            => $language,
             'locale'              => $locale,
@@ -361,7 +362,8 @@ class UserService
             $currentMemoryUsage  = memory_get_usage(true);
 
             // If we're already using too much memory, return 0 to prevent OOM
-            if ($currentMemoryUsage > 128 * 1024 * 1024) { // 128MB threshold
+            if ($currentMemoryUsage > 128 * 1024 * 1024) {
+                // 128MB threshold
                 $this->logger->warning(
                         'Memory usage too high for quota calculation',
                         [

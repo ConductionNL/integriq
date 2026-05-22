@@ -251,17 +251,17 @@ class AuthorizationService
         }
 
         // @TODO: This code can be enabled once the frontend can properly set users and usergroups
-        //        $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
+        // $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
         //
-        //        $userGroups = array_map(function(IGroup $group) {
-        //            return $group->getGID();
-        //        }, $this->groupManager->getUserGroups($user));
+        // $userGroups = array_map(function(IGroup $group) {
+        // return $group->getGID();
+        // }, $this->groupManager->getUserGroups($user));
         //
-        //        $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
+        // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
         //
-        //        if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        //            throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to login on this endpoint']);
-        //        }
+        // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
+        // throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to login on this endpoint']);
+        // }
         $this->userSession->setUser($user);
     }//end authorizeBasic()
 
@@ -282,17 +282,17 @@ class AuthorizationService
         }
 
         // @TODO: This code can be enabled once the frontend can properly set users and usergroups
-        //        $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
+        // $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
         //
-        //        $userGroups = array_map(function(IGroup $group) {
-        //            return $group->getGID();
-        //        }, $this->groupManager->getUserGroups($user));
+        // $userGroups = array_map(function(IGroup $group) {
+        // return $group->getGID();
+        // }, $this->groupManager->getUserGroups($user));
         //
-        //        $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
+        // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
         //
-        //        if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        //            throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to view endpoint']);
-        //        }
+        // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
+        // throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to view endpoint']);
+        // }
     }//end authorizeOAuth()
 
     /**

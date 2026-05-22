@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2025 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -39,7 +39,7 @@ class Version1Date20250118124025 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -68,13 +68,16 @@ class Version1Date20250118124025 extends SimpleMigrationStep
 
         if ($schema->hasTable(tableName: 'openconnector_synchronization_contracts') === true) {
             $table = $schema->getTable(tableName: 'openconnector_synchronization_contracts');
-            $table->addColumn('target_last_action', Types::STRING, ['notnull' => false, 'length' => 6]); // 6 chars is enough for 'create', 'update', 'delete'
+            $table->addColumn('target_last_action', Types::STRING, ['notnull' => false, 'length' => 6]);
+            // 6 chars is enough for 'create', 'update', 'delete'
         }
 
         if ($schema->hasTable(tableName: 'openconnector_synchronization_contract_logs') === true) {
             $table = $schema->getTable(tableName: 'openconnector_synchronization_contract_logs');
-            $table->addColumn('synchronization_log_id', Types::STRING, ['notnull' => false, 'length' => 36]); // synchronization_log_id
-            $table->addColumn('target_result', Types::STRING, ['notnull' => false, 'length' => 6]); // target_result
+            $table->addColumn('synchronization_log_id', Types::STRING, ['notnull' => false, 'length' => 36]);
+            // synchronization_log_id
+            $table->addColumn('target_result', Types::STRING, ['notnull' => false, 'length' => 6]);
+            // target_result
             $table->addColumn('test', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
             $table->addColumn('force', Types::BOOLEAN, ['notnull' => true, 'default' => false]);
 

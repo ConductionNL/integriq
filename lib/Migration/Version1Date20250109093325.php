@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -38,9 +38,9 @@ class Version1Date20250109093325 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
- * @var ISchemaWrapper $schema
-*/
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         if (!$schema->hasTable('openconnector_events')) {
@@ -124,10 +124,13 @@ class Version1Date20250109093325 extends SimpleMigrationStep
             $table->addColumn('description', Types::TEXT, ['notnull' => false]);
             $table->addColumn('reference', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
-            $table->addColumn('action', Types::STRING, ['notnull' => true, 'length' => 20]); // create, read, update, delete
-            $table->addColumn('timing', Types::STRING, ['notnull' => true, 'length' => 10, 'default' => 'before']); // before or after
+            $table->addColumn('action', Types::STRING, ['notnull' => true, 'length' => 20]);
+            // create, read, update, delete
+            $table->addColumn('timing', Types::STRING, ['notnull' => true, 'length' => 10, 'default' => 'before']);
+            // before or after
             $table->addColumn('conditions', Types::JSON, ['notnull' => false]);
-            $table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 50]); // mapping, error, script, synchronization
+            $table->addColumn('type', Types::STRING, ['notnull' => true, 'length' => 50]);
+            // mapping, error, script, synchronization
             $table->addColumn('configuration', Types::JSON, ['notnull' => false]);
             $table->addColumn('order', Types::INTEGER, ['notnull' => true, 'default' => 0]);
             $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);

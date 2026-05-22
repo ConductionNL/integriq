@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * LogsController
  *
  * Controller for managing synchronization logs
