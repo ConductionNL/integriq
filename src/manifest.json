@@ -318,7 +318,8 @@
     {
       "id": "RuleDetail",
       "route": "/rules/:id",
-      "type": "detail",
+      "type": "custom",
+      "component": "RuleDetailPage",
       "title": "Rule",
       "config": {
         "register": "openconnector",

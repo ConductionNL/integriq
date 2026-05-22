@@ -42,6 +42,7 @@ import {
 	addEndpointRuleHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -62,4 +63,12 @@ export default {
 	// (per #847). Open follow-up upstream: CnFormDialog has no native
 	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
 	JobFormFields,
+
+	// Full-page custom components — referenced by manifest pages whose
+	// `type` is `custom`. RuleDetailPage upgrades /rules/:id from the
+	// stock detail layout to a bespoke editor with a visual JsonLogic
+	// condition tree + action-specific parameter form (#833). The
+	// stock detail type wasn't expressive enough for the recursive
+	// condition builder, hence the promotion to a custom page.
+	RuleDetailPage,
 }
