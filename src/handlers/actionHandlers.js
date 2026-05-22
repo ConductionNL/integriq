@@ -32,6 +32,7 @@ import {
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 } from './modalBus.js'
+import { getRouter } from './routerRef.js'
 
 /**
  * Extract a stable id from a row. OR returns rows with `id` set; legacy
@@ -153,4 +154,65 @@ export function testMappingModalHandler({ item }) {
  */
 export function addEndpointRuleHandler({ item }) {
 	modalBus.$emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
+}
+
+// Query-aware "View logs" navigation. See #837 + nc-vue#330.
+//
+// Each parent index page (Sources / Endpoints / Jobs / Synchronizations /
+// CloudEvents) has a "View logs" row action that navigates to the
+// corresponding *Logs page. Using `handler: "navigate"` lands on the
+// UNFILTERED log list and forces the user to filter manually. This
+// handler pushes the same route with `?<queryParam>=<rowId>` on the URL
+// so the destination log page can pre-apply the filter.
+//
+// The destination route + query-param key are looked up by `actionId`
+// rather than passed through manifest fields, because the nc-vue
+// registry-handler signature (`{ actionId, item }`) does not forward the
+// rest of the action object — adding fields like `queryParam` on the
+// manifest requires nc-vue#330 to land first. Once that PR ships, this
+// handler can be deleted and the manifest entries can go back to
+// `handler: "navigate"` with a declarative `queryParam` field.
+const VIEW_LOGS_TARGETS = {
+	'view-source-logs': { route: 'SourceLogs', queryParam: 'source' },
+	'view-endpoint-logs': { route: 'EndpointLogs', queryParam: 'endpoint' },
+	'view-job-logs': { route: 'JobLogs', queryParam: 'job' },
+	'view-synchronization-logs': { route: 'SynchronizationLogs', queryParam: 'synchronization' },
+	'view-cloud-event-logs': { route: 'CloudEventLogs', queryParam: 'event' },
+}
+
+/**
+ * Navigate from a parent index row to the corresponding logs page with
+ * the parent id pre-filled as a URL query param.
+ *
+ * Resolves the destination route + query-param key from
+ * `VIEW_LOGS_TARGETS` keyed by `actionId`. Falls back to the unfiltered
+ * route when the action id is unknown (defensive — keeps the existing
+ * "go to logs" UX rather than dead-clicking).
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function viewLogsHandler({ actionId, item }) {
+	const target = VIEW_LOGS_TARGETS[actionId]
+	if (!target) {
+		// eslint-disable-next-line no-console
+		console.warn(`[openconnector] viewLogsHandler: unknown actionId "${actionId}"`)
+		return
+	}
+	const router = getRouter()
+	if (!router) {
+		// eslint-disable-next-line no-console
+		console.warn('[openconnector] viewLogsHandler: router not set; cannot navigate')
+		return
+	}
+	router.push({
+		name: target.route,
+		query: { [target.queryParam]: rowId(item) },
+	}).catch((err) => {
+		// vue-router throws NavigationDuplicated when pushing the same
+		// route twice; swallow that specific case, surface anything else.
+		if (err && err.name !== 'NavigationDuplicated') {
+			// eslint-disable-next-line no-console
+			console.warn('[openconnector] viewLogsHandler navigation failed', err)
+		}
+	})
 }

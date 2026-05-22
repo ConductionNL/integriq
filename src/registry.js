@@ -40,6 +40,7 @@ import {
 	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	viewLogsHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
@@ -57,6 +58,11 @@ export default {
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	// Query-aware navigation handler for "View logs" row actions on
+	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
+	// destination *Logs route. Will be retired once nc-vue#330 lands a
+	// declarative `queryParam` field on the built-in `navigate` handler.
+	viewLogsHandler,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
