@@ -63,6 +63,9 @@ class SynchronizationService
     const KEY_FOR_EXTRA_DATA_LOCATION          = 'keyToSetExtraData';
     const MERGE_EXTRA_DATA_OBJECT_LOCATION     = 'mergeExtraData';
     const UNSET_CONFIG_KEY_LOCATION            = 'unsetConfigKey';
+
+    const EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION = 'endpointTemplate';
+
     const EXTRA_DATA_BEFORE_CONDITIONS_LOCATION = 'fetchExtraDataBeforeConditions';
     const EXTEND_BEFORE_CONDITIONS_LOCATION     = 'extendInputBeforeConditions';
     const EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT = 'extendInputFetchObjectBeforeConditions';
@@ -158,6 +161,10 @@ class SynchronizationService
 
         $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
         foreach ($directSynchronizations as $synchronization) {
+            if ($this->shouldTriggerOnEvent(synchronization: $synchronization, eventMutationType: $eventMutationType) === false) {
+                continue;
+            }
+
             try {
                 if ($eventMutationType === 'delete') {
                     $this->synchronize(
@@ -196,6 +203,10 @@ class SynchronizationService
                 continue;
             }
 
+            if ($this->shouldTriggerOnEvent(synchronization: $synchronization, eventMutationType: $eventMutationType) === false) {
+                continue;
+            }
+
             try {
                 $parentObjectArray = $this->resolveParentObjectForRelatedObjectTrigger(
                  synchronization: $synchronization,
@@ -227,6 +238,32 @@ class SynchronizationService
             }//end try
         }//end foreach
     }//end handleObjectEventSynchronization()
+
+    /**
+     * Determines whether a synchronization should run for the given mutation type.
+     *
+     * Checks sourceConfig['triggerOnlyOnEvents'] (case-insensitive). When the key
+     * is absent or empty the synchronization always runs; when present it runs only
+     * if $eventMutationType is listed.
+     *
+     * @param ObjectEntity $synchronization   The synchronization to evaluate.
+     * @param string       $eventMutationType One of create|update|delete.
+     *
+     * @return bool True when the synchronization should run, false when it should be skipped.
+     */
+    private function shouldTriggerOnEvent(ObjectEntity $synchronization, string $eventMutationType): bool
+    {
+        $sourceConfig  = (array) ($synchronization->getSourceConfig() ?? []);
+        $allowedEvents = ($sourceConfig['triggerOnlyOnEvents'] ?? []);
+
+        if (empty($allowedEvents) === true) {
+            return true;
+        }
+
+        $normalised = array_map('strtolower', (array) $allowedEvents);
+        return in_array(strtolower($eventMutationType), $normalised, true);
+
+    }//end shouldTriggerOnEvent()
 
     /**
      * Resolve and fetch the parent object for a related-object trigger.
@@ -990,6 +1027,21 @@ class SynchronizationService
                 }
             }
         }//end if
+
+        if (isset($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
+            && is_string($extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION]) === true
+            && $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION] !== ''
+        ) {
+            $endpoint = $this->mappingService->renderTemplateString(
+                template: $extraDataConfig[$this::EXTRA_DATA_ENDPOINT_TEMPLATE_LOCATION],
+                context: [
+                    'endpoint'        => ($endpoint ?? null),
+                    'object'          => $object,
+                    'originId'        => $originId,
+                    'extraDataConfig' => $extraDataConfig,
+                ]
+            );
+        }
 
         if (!$endpoint) {
             throw new Exception(
@@ -1941,8 +1993,25 @@ class SynchronizationService
         $this->checkRateLimit($source);
 
         // Extract source configuration
-        $sourceConfig   = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
-        $endpoint       = $sourceConfig['endpoint'] ?? '';
+        $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
+        $endpoint     = $sourceConfig['endpoint'] ?? '';
+        if (is_string($endpoint) === true
+            && str_contains($endpoint, '{{') === true
+            && str_contains($endpoint, '}}') === true
+        ) {
+            $contextData = ($data ?? []);
+            // After-rule responses pass the OR object (`{id, @self}`) here; lift @self.relations
+            // to the top level so simple `{{ data.zaaknummer }}` lookups still resolve.
+            if (isset($contextData['@self']['relations']) === true && is_array($contextData['@self']['relations']) === true) {
+                $contextData = array_merge($contextData['@self']['relations'], $contextData);
+            }
+
+            $endpoint = $this->mappingService->renderTemplateString(
+                template: $endpoint,
+                context: ['data' => $contextData]
+            );
+        }
+
         $headers        = $sourceConfig['headers'] ?? [];
         $query          = $sourceConfig['query'] ?? [];
         $usesPagination = true;
