@@ -1217,12 +1217,13 @@ class SynchronizationService
                 }
 
                 foreach ($targetIdsToDelete as $targetIdToDelete) {
-                    // Scope-check the cleanup candidate before deleting it. `updateTargetOpenRegister`'s
-                    // `delete` branch calls `$objectService->delete(['id' => $uuid])` with no
-                    // register/schema scope, so a contract whose `targetId` UUID accidentally
-                    // collides with an object living in a foreign register/schema would otherwise
-                    // delete that foreign object. We verify here that the object actually lives in
-                    // this sync's register/schema before invoking the unscoped delete path.
+                    // Scope-check the cleanup candidate before deleting it. Defence in depth:
+                    // `updateTargetOpenRegister`'s `delete` branch now invokes the scoped
+                    // `deleteObject($uuid, $register, $schema)` API (OR#1638 / hydra#309), but
+                    // we still verify here that the object actually lives in this sync's
+                    // register/schema. This avoids audit noise and an unnecessary OR call when
+                    // a contract's `targetId` UUID accidentally collides with an object in a
+                    // foreign register/schema.
                     //
                     // _rbac / _multitenancy are off because the previous SQL-level guard this
                     // replaces (the JOIN against `openregister_objects` in the pre-cutover code)
@@ -1592,7 +1593,10 @@ class SynchronizationService
                 $contractData['targetLastAction'] = ($contractData['targetId'] !== null) ? 'update' : 'create';
                 break;
             case 'delete':
-                $objectService->delete(object: ['id' => $contractData['targetId']]);
+                // Use the scoped delete API (OR#1638) so a UUID collision across magic
+                // tables cannot silently delete a foreign-scope object. Register and
+                // schema are derived from $syncData['targetId'] above.
+                $objectService->deleteObject(uuid: $contractData['targetId'], register: $register, schema: $schema);
                 $contractData['targetId']         = null;
                 $contractData['targetLastAction'] = 'delete';
                 break;
