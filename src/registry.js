@@ -42,6 +42,7 @@ import {
 	addEndpointRuleHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -62,4 +63,14 @@ export default {
 	// (per #847). Open follow-up upstream: CnFormDialog has no native
 	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
 	JobFormFields,
+
+	// `type: custom` page components — referenced by manifest
+	// `pages[].component` strings. SynchronizationDetailPage (per #834)
+	// wraps CnDetailPage with five bespoke widget sections that the
+	// generic schema-driven detail page can't express cleanly:
+	// source-config, target-config, mapping-picker, actions-list,
+	// followups-list. Source/target config swap on the type
+	// discriminator (api/register/schema/file), reusing #867's
+	// conditional-visibility pattern.
+	SynchronizationDetailPage,
 }
