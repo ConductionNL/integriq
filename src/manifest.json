@@ -295,7 +295,8 @@
     {
       "id": "MappingDetail",
       "route": "/mappings/:id",
-      "type": "detail",
+      "type": "custom",
+      "component": "MappingDetailPage",
       "title": "Mapping",
       "config": {
         "register": "openconnector",
