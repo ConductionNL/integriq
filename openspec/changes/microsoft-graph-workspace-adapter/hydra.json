@@ -1,0 +1,8 @@
+{
+  "spec_slug": "microsoft-graph-workspace-adapter",
+  "title": "Microsoft Graph + Google Workspace Adapter",
+  "app": "openconnector",
+  "repo": "https://github.com/ConductionNL/openconnector",
+  "depends_on": [],
+  "issue": null
+}
