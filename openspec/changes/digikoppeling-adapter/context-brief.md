@@ -3,6 +3,17 @@ status: draft
 ---
 # Digikoppeling 2.0 transport (overheid-NL)
 
+## Placement & Information Architecture
+
+**Placement type:** `SUB_PAGE` — Sub-page beneath a top-level menu entry. Renders as a page inside the parent surface (usually reachable via a router child route or a tab on the parent index page).
+
+**Lives at:** Adapters > Adapter-catalogus (Overheid-NL) / Adapters
+
+**Rationale:** Transport adapter  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 Digikoppeling is the mandatory Dutch government transport standard (Forum Standaardisatie "pas-toe-of-leg-uit" list) for machine-to-machine messaging between public bodies. Any Conduction app that exchanges structured data with another overheidsorganisatie — be it a municipality, a uitvoeringsorganisatie like SVB or UWV, a province, a water board, a ministry, or a chain partner running zaaksystemen — is legally required to use Digikoppeling for the transport layer when the receiving party publishes a Digikoppeling endpoint. The standard exists in three flavours that solve different problems: WUS (WSDL/UDDI/SOAP) for small synchronous request/response calls, OUS (One-way Asynchronous Service) for fire-and-forget delivery of larger payloads where the response comes back via a separate callback, and Grote Berichten (ebMS3 / AS4 profile) for payloads larger than 20 MB or where guaranteed delivery is non-negotiable. Best Effort is the lightweight variant for non-critical messaging where the OUS retry semantics are overkill but a Digikoppeling-style envelope is still required for interoperability.
