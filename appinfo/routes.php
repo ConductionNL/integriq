@@ -95,6 +95,10 @@ return [
 		['name' => 'synchronizationContracts#deactivate', 'url' => '/api/synchronization-contracts/{id}/deactivate', 'verb' => 'POST'],
 		['name' => 'synchronizationContracts#execute', 'url' => '/api/synchronization-contracts/{id}/execute', 'verb' => 'POST'],
 
+		// User CORS preflight endpoints
+		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],
+		['name' => 'user#preflightedCorsLogin', 'url' => '/api/user/login', 'verb' => 'OPTIONS'],
+
 		// User endpoints
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
