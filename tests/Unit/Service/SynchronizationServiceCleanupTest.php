@@ -39,17 +39,20 @@ use ReflectionMethod;
  * Tests the scope-checked cleanup behaviour in deleteInvalidObjects.
  *
  * The cleanup pass must verify each candidate target lives in the sync's
- * register/schema before invoking the unscoped `objectService->delete(['id' => $uuid])`
- * inside `updateTargetOpenRegister`. Without this guard a UUID collision
- * across magic tables would silently delete a foreign-scope object.
+ * register/schema before invoking the scoped `objectService->deleteObject($uuid, $register, $schema)`
+ * inside `updateTargetOpenRegister`. The scoped API (OR#1638 / hydra#309) prevents a UUID
+ * collision across magic tables from silently deleting a foreign-scope object; this
+ * pre-flight guard provides defence in depth and avoids unnecessary OR calls + audit noise
+ * when a contract's `targetId` UUID accidentally collides with an object in a foreign
+ * register/schema.
  */
 class SynchronizationServiceCleanupTest extends TestCase
 {
 
-    private const SYNC_UUID = 'sync-uuid-1';
-    private const REGISTER_ID = '1';
-    private const SCHEMA_ID = '2';
-    private const TARGET_IN_SCOPE = 'object-in-scope-uuid';
+    private const SYNC_UUID           = 'sync-uuid-1';
+    private const REGISTER_ID         = '1';
+    private const SCHEMA_ID           = '2';
+    private const TARGET_IN_SCOPE     = 'object-in-scope-uuid';
     private const TARGET_OUT_OF_SCOPE = 'object-out-of-scope-uuid';
 
     /**
@@ -66,7 +69,6 @@ class SynchronizationServiceCleanupTest extends TestCase
      * @var LoggerInterface&MockObject
      */
     private $logger;
-
 
     /**
      * Set up test fixtures.
@@ -107,7 +109,6 @@ class SynchronizationServiceCleanupTest extends TestCase
             ->getMock();
     }//end setUp()
 
-
     /**
      * Build a Synchronization OR-object stub with `targetType: register/schema`
      * and `targetId: {registerId}/{schemaId}`.
@@ -125,7 +126,6 @@ class SynchronizationServiceCleanupTest extends TestCase
             self::SYNC_UUID
         );
     }//end makeSync()
-
 
     /**
      * Build a SynchronizationContract OR-object stub bound to this sync.
@@ -148,7 +148,6 @@ class SynchronizationServiceCleanupTest extends TestCase
         );
     }//end makeContract()
 
-
     /**
      * Map ORObjectService::find parameter names to positional indices.
      *
@@ -169,7 +168,6 @@ class SynchronizationServiceCleanupTest extends TestCase
         return $positions;
     }//end findParamPositions()
 
-
     /**
      * In-scope orphan: target object lives in this sync's register/schema → delete proceeds.
      *
@@ -177,9 +175,9 @@ class SynchronizationServiceCleanupTest extends TestCase
      */
     public function testInScopeOrphanIsDeleted(): void
     {
-        $sync     = $this->makeSync();
-        $contract = $this->makeContract(self::TARGET_IN_SCOPE);
-        $pos      = $this->findParamPositions();
+        $sync         = $this->makeSync();
+        $contract     = $this->makeContract(self::TARGET_IN_SCOPE);
+        $pos          = $this->findParamPositions();
         $targetEntity = ObjectServiceMockBuilder::objectEntity($this, [], self::TARGET_IN_SCOPE);
 
         // First findAll: enumerate contracts for the sync. Second findAll: re-lookup by targetId.
@@ -209,7 +207,6 @@ class SynchronizationServiceCleanupTest extends TestCase
         $this->assertSame(1, $deleted, 'In-scope orphan should be deleted');
     }//end testInScopeOrphanIsDeleted()
 
-
     /**
      * Cross-scope contract: target UUID does NOT live in this sync's register/schema → skip delete.
      *
@@ -236,7 +233,6 @@ class SynchronizationServiceCleanupTest extends TestCase
         $this->assertSame(0, $deleted, 'Out-of-scope contract must not trigger deletion');
     }//end testCrossScopeContractIsSkipped()
 
-
     /**
      * Scope-check throws DoesNotExistException → swallowed silently, no delete.
      *
@@ -259,7 +255,6 @@ class SynchronizationServiceCleanupTest extends TestCase
 
         $this->assertSame(0, $deleted);
     }//end testDoesNotExistExceptionIsSwallowed()
-
 
     /**
      * Scope-check throws an unexpected Throwable → warning logged, candidate skipped, loop continues.
@@ -297,7 +292,6 @@ class SynchronizationServiceCleanupTest extends TestCase
         $this->assertSame(0, $deleted);
     }//end testUnexpectedThrowableLogsWarningAndContinues()
 
-
     /**
      * Malformed targetId (no `/` separator) → warning logged, no contracts inspected.
      *
@@ -327,7 +321,6 @@ class SynchronizationServiceCleanupTest extends TestCase
         $this->assertSame(0, $deleted);
     }//end testMalformedTargetIdLogsWarningAndBails()
 
-
     /**
      * Mixed batch: one in-scope, one out-of-scope → only in-scope orphan deleted.
      *
@@ -335,10 +328,10 @@ class SynchronizationServiceCleanupTest extends TestCase
      */
     public function testInScopeAndOutOfScopeMixedBatch(): void
     {
-        $sync       = $this->makeSync();
-        $inScope    = $this->makeContract(self::TARGET_IN_SCOPE, 'origin-a');
-        $outOfScope = $this->makeContract(self::TARGET_OUT_OF_SCOPE, 'origin-b');
-        $pos        = $this->findParamPositions();
+        $sync         = $this->makeSync();
+        $inScope      = $this->makeContract(self::TARGET_IN_SCOPE, 'origin-a');
+        $outOfScope   = $this->makeContract(self::TARGET_OUT_OF_SCOPE, 'origin-b');
+        $pos          = $this->findParamPositions();
         $targetEntity = ObjectServiceMockBuilder::objectEntity($this, [], self::TARGET_IN_SCOPE);
 
         // First findAll: list of contracts. Subsequent findAlls: per-target re-lookup.
@@ -363,6 +356,4 @@ class SynchronizationServiceCleanupTest extends TestCase
 
         $this->assertSame(1, $deleted, 'Only in-scope orphan should be deleted in mixed batch');
     }//end testInScopeAndOutOfScopeMixedBatch()
-
-
 }//end class
