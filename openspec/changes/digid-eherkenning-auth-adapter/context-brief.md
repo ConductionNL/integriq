@@ -3,6 +3,17 @@ status: draft
 ---
 # DigiD + eHerkenning authentication broker
 
+## Placement & Information Architecture
+
+**Placement type:** `SETTING` — Setting under the app's Beheer/Admin/Configuration surface. Lives in the existing settings UI; no top-level menu entry.
+
+**Lives at:** Adapters > Adapter-catalogus (Overheid-NL, auth) + Beheer > Authenticatie / split
+
+**Rationale:** Adapter for new-connection use; broker config in Beheer  
+_Source: /tmp/ia-doc-dec-cat-conn.md_
+
+> **Implementation note for builders:** Respect the placement above. Do not promote this spec to a top-level menu item, sub-page, or new route unless the placement type explicitly says so. If the placement is `DETAIL_TAB`, `WIDGET`, `ACTION`, `SETTING`, or `INFRA`, the feature must NOT introduce a new entry in the app sidebar. When in doubt, ask before creating a new top-level surface.
+
 ## Purpose
 
 DigiD (for natural persons / Dutch citizens) and eHerkenning (for legal entities and the people who act on their behalf) are the two mandatory authentication means for accessing Dutch government services. Any Conduction app that exposes a portal where a citizen logs in to inspect their own zaak, file a request, or upload documents needs DigiD; any app that exposes a portal where a company acts (vergunningaanvraag, subsidie, aanbesteding) needs eHerkenning. Optional sister means — Idensys (already deprecated for new connections but still live for some), IRMA / Yivi (privacy-friendly attribute-based credentials gaining traction at municipalities), and EU-eIDAS notified schemes (Belgian itsme, German Personalausweis, etc.) for cross-border use — round out the field. Today no Conduction app speaks any of these directly: each app that has tried has bounced off the Logius accreditation process, the Routeringsdienst contract, the SAML metadata exchange, and the PKIoverheid certificate management, and has ended up either contracting a commercial broker (Signicat, Connectis, KPN Lokale Overheid) or shipping no public authentication at all.
