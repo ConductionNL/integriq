@@ -42,6 +42,7 @@ import {
 	addEndpointRuleHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
 
@@ -65,18 +66,12 @@ export default {
 	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
 	JobFormFields,
 
-	// Full-page custom components — referenced by manifest pages whose
-	// `type` is `custom`. RuleDetailPage upgrades /rules/:id from the
-	// stock detail layout to a bespoke editor with a visual JsonLogic
-	// condition tree + action-specific parameter form (#833). The
-	// stock detail type wasn't expressive enough for the recursive
-	// condition builder, hence the promotion to a custom page.
+	// Custom-page components — referenced by manifest `pages[].component`
+	// when `pages[].type === 'custom'`. The 3 bespoke editors below
+	// (Mapping #832, Rule #833, Synchronization #834) wrap CnDetailPage
+	// with surfaces too rich for schema-driven detail pages — see each
+	// component's JSDoc for the per-section rationale.
+	MappingDetailPage,
 	RuleDetailPage,
-	// SynchronizationDetailPage (per #834) wraps CnDetailPage with five
-	// bespoke widget sections that the generic schema-driven detail page
-	// can't express cleanly: source-config, target-config, mapping-picker,
-	// actions-list, followups-list. Source/target config swap on the type
-	// discriminator (api/register/schema/file), reusing #867's
-	// conditional-visibility pattern.
 	SynchronizationDetailPage,
 }
