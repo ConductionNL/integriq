@@ -38,7 +38,10 @@ import {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	testMappingModalHandler,
+	addEndpointRuleHandler,
 } from './handlers/actionHandlers.js'
+import JobFormFields from './modals/v2/JobFormFields.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -47,4 +50,16 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// Modal-opening row-action handlers — emit on the shared modal bus,
+	// the App.vue-mounted ModalHost picks up and renders the modal.
+	testMappingModalHandler,
+	addEndpointRuleHandler,
+
+	// Slot-override components — referenced by manifest `pages[].slots`
+	// keys. The Jobs page wires `form-fields` to JobFormFields so the
+	// CnFormDialog inner content renders a Synchronization picker when
+	// `jobClass === OCA\OpenConnector\Action\SynchronizationAction`
+	// (per #847). Open follow-up upstream: CnFormDialog has no native
+	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
+	JobFormFields,
 }

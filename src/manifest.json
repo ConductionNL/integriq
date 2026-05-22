@@ -181,6 +181,7 @@
         "includeFields": ["name", "description", "endpoint", "method", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
+          { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "EndpointLogs" }
         ]
       }
@@ -250,13 +251,19 @@
         "register": "openconnector",
         "schema": "job",
         "columns": ["name", "jobClass", "interval", "isEnabled", "lastRun", "status"],
-        "includeFields": ["name", "description", "jobClass", "interval", "isEnabled"],
+        "includeFields": ["name", "description", "jobClass", "arguments", "interval", "isEnabled"],
+        "fieldOverrides": {
+          "arguments": { "widget": "json" }
+        },
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
           { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "JobLogs" }
         ]
+      },
+      "slots": {
+        "form-fields": "JobFormFields"
       }
     },
     {
@@ -279,7 +286,10 @@
         "schema": "mapping",
         "columns": ["name", "description", "passThrough", "dateModified"],
         "includeFields": ["name", "description"],
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "test", "label": "Test mapping", "icon": "icon-play", "handler": "testMappingModalHandler" }
+        ]
       }
     },
     {
