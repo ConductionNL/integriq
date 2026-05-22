@@ -249,12 +249,18 @@ class SettingsService
             // Retention Settings with defaults
             // Retention Settings with defaults
             $data['retention'] = [
-                'successLogRetention'      => 3600000,     // 1 Hour default
-                'callLogRetention'         => 2592000000,  // 1 month default
-                'eventMessageRetention'    => 604800000,   // 1 week default
-                'jobLogRetention'          => 2592000000,  // 1 month default
-                'syncContractLogRetention' => 7776000000,  // 3 months default
-                'syncLogRetention'         => 2592000000,  // 1 month default
+                'successLogRetention'      => 3600000,
+            // 1 Hour default
+                'callLogRetention'         => 2592000000,
+            // 1 month default
+                'eventMessageRetention'    => 604800000,
+            // 1 week default
+                'jobLogRetention'          => 2592000000,
+            // 1 month default
+                'syncContractLogRetention' => 7776000000,
+            // 3 months default
+                'syncLogRetention'         => 2592000000,
+            // 1 month default
             ];
 
             $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
@@ -364,7 +370,8 @@ class SettingsService
                         WHERE expires IS NULL OR expires = ''
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]); // Convert ms to microseconds
+                    $stmt->execute([$retentionMs * 1000]);
+                    // Convert ms to microseconds
                     $results['retentionResults']['callLogsUpdated'] = $stmt->rowCount();
                 } catch (\Exception $e) {
                     $error = 'Failed to set call logs expiry dates: '.$e->getMessage();
@@ -383,7 +390,8 @@ class SettingsService
                         WHERE expires IS NULL OR expires = ''
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]); // Convert ms to microseconds
+                    $stmt->execute([$retentionMs * 1000]);
+                    // Convert ms to microseconds
                     $results['retentionResults']['callLogsUpdated'] = $stmt->rowCount();
                 } catch (\Exception $e) {
                     $error = 'Failed to set call logs expiry dates: '.$e->getMessage();

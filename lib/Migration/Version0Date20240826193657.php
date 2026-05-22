@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -43,7 +43,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -227,19 +227,29 @@ class Version0Date20240826193657 extends SimpleMigrationStep
 
         if (!$schema->hasTable('openconnector_consumers')) {
             $table = $schema->createTable('openconnector_consumers');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]); // The id of the consumer
-            $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]); // The uuid of the consumer
-            $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]); // The name of the consumer
-            $table->addColumn('description', Types::TEXT, ['notnull' => false]); // The description of the consumer
-            $table->addColumn('domains', Types::JSON, ['notnull' => false]); // The domains the consumer is allowed to run from
-            $table->addColumn('ips', Types::JSON, ['notnull' => false]); // The ips the consumer is allowed to run from
-            $table->addColumn('authorization_type', Types::STRING, ['notnull' => false, 'length' => 255]); // The authorization type of the consumer, should be one of the following: 'none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt'. Keep in mind that the consumer needs to be able to handle the authorization type.
-            $table->addColumn('authorization_configuration', Types::TEXT, ['notnull' => false]); // The authorization configuration of the consumer
-            $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']); // the date and time the consumer was created
-            $table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']); // the date and time the consumer was updated
+            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
+            // The id of the consumer
+            $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
+            // The uuid of the consumer
+            $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
+            // The name of the consumer
+            $table->addColumn('description', Types::TEXT, ['notnull' => false]);
+            // The description of the consumer
+            $table->addColumn('domains', Types::JSON, ['notnull' => false]);
+            // The domains the consumer is allowed to run from
+            $table->addColumn('ips', Types::JSON, ['notnull' => false]);
+            // The ips the consumer is allowed to run from
+            $table->addColumn('authorization_type', Types::STRING, ['notnull' => false, 'length' => 255]);
+            // The authorization type of the consumer, should be one of the following: 'none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt'. Keep in mind that the consumer needs to be able to handle the authorization type.
+            $table->addColumn('authorization_configuration', Types::TEXT, ['notnull' => false]);
+            // The authorization configuration of the consumer
+            $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+            // the date and time the consumer was created
+            $table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+            // the date and time the consumer was updated
             $table->setPrimaryKey(['id']);
             $table->addIndex(['uuid'], 'openconnector_consumers_uuid_index');
-        }
+        }//end if
 
         if (!$schema->hasTable('openconnector_call_logs')) {
             $table = $schema->createTable('openconnector_call_logs');

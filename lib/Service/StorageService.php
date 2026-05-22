@@ -77,7 +77,7 @@ class StorageService
     public function createUpload(string $path, string $fileName, int $size, ?string $objectId=null): array
     {
         $user = $this->userManager->get(self::APP_USER);
-        //        $userFolder = $this->rootFolder->getUserFolder(userId: $user ? $user->getUID() : 'Guest');
+        // $userFolder = $this->rootFolder->getUserFolder(userId: $user ? $user->getUID() : 'Guest');
         $uploadFolder = $this->rootFolder->get($path);
 
         $partSize = $this->config->getValueInt('openconnector', 'part-size', 1000000);
@@ -87,7 +87,7 @@ class StorageService
         $remainingSize = $size;
         $parts         = [];
 
-        /**
+        /*
          * @var File $target
          */
         $target = $uploadFolder->newFile($fileName);
@@ -141,9 +141,9 @@ class StorageService
         $uploadFolder = $userFolder->get($path);
 
         try {
-            /**
- * @var File $target
-*/
+            /*
+             * @var File $target
+             */
             $target = $uploadFolder->get($fileName);
             $target->putContent($content);
         } catch (NotFoundException $e) {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * LogSizeColumnsMigration
  *
  * Migration step to add size columns to all log tables for tracking log entry sizes.
@@ -92,7 +92,7 @@ class Version1Date20250826120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();

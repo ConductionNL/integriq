@@ -1,0 +1,26 @@
+{
+    "response": {
+        "numFound": 1,
+        "start": 0,
+        "maxScore": 30.0,
+        "docs": [
+            {
+                "id": "adr-0855200000000001",
+                "type": "adres",
+                "weergavenaam": "Stadhuisplein 1, 5038TC Tilburg",
+                "score": 30.0,
+                "straatnaam": "Stadhuisplein",
+                "huisnummer": 1,
+                "postcode": "5038TC",
+                "woonplaatsnaam": "Tilburg",
+                "gemeentenaam": "Tilburg",
+                "provincienaam": "Noord-Brabant",
+                "nummeraanduiding_id": "0855200000000001",
+                "adresseerbaarobject_id": "0855010000000001",
+                "pandid": ["0855100000000001"],
+                "centroide_ll": "POINT(5.0913 51.5555)",
+                "centroide_rd": "POINT(133421.5 397612.3)"
+            }
+        ]
+    }
+}

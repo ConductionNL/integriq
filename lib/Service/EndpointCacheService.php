@@ -267,7 +267,8 @@ class EndpointCacheService
                 return '(?:/([^/]+))?$#';
             },
             $regex,
-            1 // Limit to only one replacement
+            1
+        // Limit to only one replacement
         );
 
         if (str_ends_with($regex, '?#') === false && str_ends_with($regex, '$#') === false) {

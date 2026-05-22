@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * JobLogMessageColumnMigration
  *
  * Migration step to increase the message column size in the openconnector_job_logs table
@@ -89,7 +89,7 @@ class Version1Date20250826103500 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /**
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
