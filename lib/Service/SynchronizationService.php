@@ -644,7 +644,12 @@ class SynchronizationService
             $result['objects']['found'] = count($objectList);
 
             if ($sourceConfig['resultsPosition'] === '_object') {
-                $objectList = [$objectList];
+                // Only wrap when the source returned an associative object — a sequential
+                // list slipped through here causes the downstream loop to see a single
+                // [[…items]] element and miss every row.
+                if (array_is_list($objectList) === false) {
+                    $objectList = [$objectList];
+                }
                 $result['objects']['found'] = count($objectList);
             }
 
@@ -2069,7 +2074,11 @@ class SynchronizationService
             usesPagination: $usesPagination
         );
 
-        if (array_is_list($objects) === false) {
+        // For non-`_object` sources, an associative array means the source returned a single
+        // record at the root and we need to wrap it for the downstream foreach. For
+        // `_object` sources the wrap is the caller's responsibility (see line ~646) and
+        // doing it twice produces a [[…items]] payload that loses every row.
+        if (($sourceConfig['resultsPosition'] ?? null) !== '_object' && array_is_list($objects) === false) {
             $objects = [$objects];
         }
 
@@ -3162,7 +3171,7 @@ class SynchronizationService
 
         try {
             $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-            $objectEntity  = $objectService->findByUuid(uuid: $objectId);
+            $objectEntity  = $objectService->find(id: $objectId);
             $file          = $fileService->saveFile(
                 objectEntity: $objectEntity,
                 fileName: $filename,
@@ -3190,7 +3199,7 @@ class SynchronizationService
             if ($shouldPublish && $file !== null) {
                 try {
                     $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-                    $objectEntity  = $objectService->findByUuid(uuid: $objectId);
+                    $objectEntity  = $objectService->find(id: $objectId);
                     $fileService->publishFile(object: $objectEntity, file: $filename);
                 } catch (Exception $e) {
                     // Log but don't fail the entire operation
@@ -3672,7 +3681,7 @@ class SynchronizationService
 
         // Get the object entity and file service
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-        $objectEntity  = $objectService->findByUuid(uuid: $objectId);
+        $objectEntity  = $objectService->find(id: $objectId);
         $fileService   = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 
         // Check if associative array (multiple files with metadata)
@@ -4243,7 +4252,7 @@ class SynchronizationService
             // Get the object entity
             $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
             try {
-                $objectEntity = $objectService->findByUuid(uuid: $objectId);
+                $objectEntity = $objectService->find(id: $objectId);
             } catch (DoesNotExistException $e) {
                 // It is possible we are trying to delete files for an object id where the object has not been persisted yet (for example a zgw informatieobject can have a beforehand generated uuid)
                 return 0;

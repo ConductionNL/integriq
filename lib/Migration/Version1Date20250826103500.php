@@ -108,15 +108,14 @@ class Version1Date20250826103500 extends SimpleMigrationStep
             return $schema;
         }
 
-        // Change the column to TEXT type to allow longer messages
-        // In Nextcloud migrations, we use changeColumn to modify existing columns
-        $table->changeColumn(
-                'message',
-                [
-                    'type'    => \Doctrine\DBAL\Types\Type::getType(Types::TEXT),
-                    'notnull' => true,
-                ]
-                );
+        // Drop the existing column and recreate it with TEXT type
+        // Nextcloud migrations work better with drop/add pattern for type changes — Doctrine's
+        // changeColumn silently no-ops the type change in some DB backends, leaving the column
+        // stuck at VARCHAR(255) and causing job-log truncation errors at runtime.
+        $table->dropColumn('message');
+        $table->addColumn('message', Types::TEXT)
+                ->setNotnull(true)
+                ->setDefault('success');
 
         $output->info('Updated message column in openconnector_job_logs table to TEXT type');
 
