@@ -2,24 +2,21 @@
 <!-- Copyright (C) 2026 Conduction B.V. -->
 <!--
   RuleActionConfig — picks the rule action type and renders the
-  parameter form for that action. Mirrors the legacy EditRule modal's
-  `typeOptions` switch but only ships rich forms for the two most-
-  used actions in v1:
-    - synchronization → Synchronization picker + "retain response"
-    - error → HTTP code + title + message + includeJsonLogicResult
-  All other action types fall through to a JSON editor for the
-  matching `configuration[<type>]` sub-object, matching what
-  RuleService::processCustomRule actually reads at evaluation time.
+  parameter form for that action.
 
-  Picker pattern follows #867's JobFormFields.vue: load
-  synchronizations once on demand from
-  `/apps/openregister/api/objects/openconnector/synchronization`.
+  Action-type → bespoke-form wiring lives in ACTION_FORM_MAP below.
+  Each bespoke form lives under `src/views/Rule/actionForms/` and
+  owns `v-model:value` over its slice of `configuration[<type>]`,
+  with the exception of `mapping` which is stored as a bare id at
+  `configuration.mapping` (no nested slot) — that single irregularity
+  is handled by the form's `v-model:id` contract.
 
-  Out of scope (deferred to follow-up): rich forms for fetch_file,
-  write_file, save_object, extend_input, extend_external_input. Each
-  has a non-trivial param surface (file paths, schema pickers,
-  property maps) that warrants its own component — tracked as a
-  follow-up issue alongside drag-reorder.
+  Action types without a bespoke form (currently none — every type
+  enumerated by the legacy modal has a dedicated form as of #877)
+  still fall through to the JSON-textarea path so unknown future
+  types stay editable.
+
+  Closes #877 (action-form half).
 -->
 <template>
 	<div class="rule-action-config">
@@ -39,61 +36,28 @@
 			</p>
 		</div>
 
-		<!-- Synchronization-specific parameters -->
-		<div v-if="actionType === 'synchronization'" class="rule-action-config__params">
-			<label class="rule-action-config__label" :for="'rule-action-sync-' + uid">
-				{{ t('openconnector', 'Synchronization') }}
-			</label>
-			<NcSelect
-				:input-id="'rule-action-sync-' + uid"
-				:value="selectedSynchronization"
-				:options="synchronizationOptions"
-				:loading="synchronizationsLoading"
-				:placeholder="t('openconnector', 'Select a synchronization')"
-				@input="onSynchronizationPick" />
-			<NcCheckboxRadioSwitch
-				type="switch"
-				:checked="!!retainResponse"
-				@update:checked="onRetainResponseToggle">
-				{{ t('openconnector', 'Retain original response') }}
-			</NcCheckboxRadioSwitch>
-			<span class="rule-action-config__helper">
-				{{ t('openconnector', 'When enabled, the synchronization runs but the rule preserves the original response body instead of replacing it.') }}
-			</span>
+		<!-- Bespoke form for the picked action type. `mapping` is the one
+		     outlier: its value lives at configuration.mapping (bare id)
+		     instead of configuration.mapping.mapping. -->
+		<div v-if="actionType === 'mapping'" class="rule-action-config__params">
+			<MappingForm
+				:id="configuration.mapping || ''"
+				@update:id="onMappingIdUpdate" />
+		</div>
+		<div v-else-if="actionType === 'javascript'" class="rule-action-config__params">
+			<JavascriptForm
+				:code="typeof configuration.javascript === 'string' ? configuration.javascript : ''"
+				@update:code="onJavascriptCodeUpdate" />
+		</div>
+		<div v-else-if="formComponent" class="rule-action-config__params">
+			<component
+				:is="formComponent"
+				:value="slotValue"
+				@update:value="onSlotUpdate" />
 		</div>
 
-		<!-- Error-specific parameters -->
-		<div v-else-if="actionType === 'error'" class="rule-action-config__params">
-			<NcTextField
-				:label="t('openconnector', 'HTTP status code')"
-				type="number"
-				:value="errorCodeString"
-				placeholder="500"
-				@update:value="(value) => updateNested('error', 'code', value === '' ? null : Number(value))" />
-			<NcTextField
-				:label="t('openconnector', 'Error title')"
-				:value="errorTitle"
-				:placeholder="t('openconnector', 'Something went wrong')"
-				@update:value="(value) => updateNested('error', 'name', value)" />
-			<label class="rule-action-config__label" :for="'rule-action-error-msg-' + uid">
-				{{ t('openconnector', 'Error message') }}
-			</label>
-			<textarea
-				:id="'rule-action-error-msg-' + uid"
-				class="rule-action-config__textarea"
-				:value="errorMessage"
-				:placeholder="t('openconnector', 'We encountered an unexpected problem')"
-				rows="3"
-				@input="updateNested('error', 'message', $event.target.value)" />
-			<NcCheckboxRadioSwitch
-				type="switch"
-				:checked="!!includeJsonLogicResult"
-				@update:checked="(value) => updateNested('error', 'includeJsonLogicResult', value)">
-				{{ t('openconnector', 'Include JSON Logic results in errors array') }}
-			</NcCheckboxRadioSwitch>
-		</div>
-
-		<!-- Fallback: raw JSON editor for the matching configuration[<type>] slot -->
+		<!-- Fallback: raw JSON editor for the matching configuration[<type>] slot.
+		     Only fires for action types with no entry in ACTION_FORM_MAP. -->
 		<div v-else-if="actionType" class="rule-action-config__params">
 			<label class="rule-action-config__label" :for="'rule-action-raw-' + uid">
 				{{ rawEditorLabel }}
@@ -109,20 +73,29 @@
 			<span
 				class="rule-action-config__helper"
 				:class="{ 'rule-action-config__helper--error': rawError }">
-				{{ rawError || t('openconnector', 'Rich form coming in a follow-up. Edit the raw JSON for now — it is written back as configuration.{type}.', { type: actionType }) }}
+				{{ rawError || t('openconnector', 'No bespoke form yet for this action type. Edit the raw JSON for now — it is written back as configuration.{type}.', { type: actionType }) }}
 			</span>
 		</div>
 	</div>
 </template>
 
 <script>
-import {
-	NcCheckboxRadioSwitch,
-	NcSelect,
-	NcTextField,
-} from '@nextcloud/vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import { NcSelect } from '@nextcloud/vue'
+import SynchronizationForm from './actionForms/SynchronizationForm.vue'
+import ErrorForm from './actionForms/ErrorForm.vue'
+import MappingForm from './actionForms/MappingForm.vue'
+import JavascriptForm from './actionForms/JavascriptForm.vue'
+import AuthenticationForm from './actionForms/AuthenticationForm.vue'
+import DownloadForm from './actionForms/DownloadForm.vue'
+import UploadForm from './actionForms/UploadForm.vue'
+import LockingForm from './actionForms/LockingForm.vue'
+import FetchFileForm from './actionForms/FetchFileForm.vue'
+import WriteFileForm from './actionForms/WriteFileForm.vue'
+import FilepartsCreateForm from './actionForms/FilepartsCreateForm.vue'
+import FilepartUploadForm from './actionForms/FilepartUploadForm.vue'
+import SaveObjectForm from './actionForms/SaveObjectForm.vue'
+import ExtendInputForm from './actionForms/ExtendInputForm.vue'
+import ExtendExternalInputForm from './actionForms/ExtendExternalInputForm.vue'
 
 /**
  * Canonical list of rule action types. Lifted from the legacy modal's
@@ -149,22 +122,60 @@ const ACTION_TYPES = [
 	{ id: 'extend_external_input', label: 'Extend external input' },
 ]
 
+/**
+ * Map from action-type id (as used at `configuration.type`) to the
+ * component name to render. Forms that need to read/write a different
+ * slot than `configuration[type]` (currently only `mapping` and
+ * `javascript`) are special-cased in the template above.
+ */
+const ACTION_FORM_MAP = {
+	synchronization: 'SynchronizationForm',
+	error: 'ErrorForm',
+	mapping: 'MappingForm',
+	javascript: 'JavascriptForm',
+	authentication: 'AuthenticationForm',
+	download: 'DownloadForm',
+	upload: 'UploadForm',
+	locking: 'LockingForm',
+	fetch_file: 'FetchFileForm',
+	write_file: 'WriteFileForm',
+	fileparts_create: 'FilepartsCreateForm',
+	filepart_upload: 'FilepartUploadForm',
+	save_object: 'SaveObjectForm',
+	extend_input: 'ExtendInputForm',
+	extend_external_input: 'ExtendExternalInputForm',
+}
+
 let actionUidCounter = 0
 
 export default {
 	name: 'RuleActionConfig',
 
 	components: {
-		NcCheckboxRadioSwitch,
 		NcSelect,
-		NcTextField,
+		SynchronizationForm,
+		ErrorForm,
+		MappingForm,
+		JavascriptForm,
+		AuthenticationForm,
+		DownloadForm,
+		UploadForm,
+		LockingForm,
+		FetchFileForm,
+		WriteFileForm,
+		FilepartsCreateForm,
+		FilepartUploadForm,
+		SaveObjectForm,
+		ExtendInputForm,
+		ExtendExternalInputForm,
 	},
 
 	props: {
 		/**
 		 * Current `configuration` blob from the rule object. The action
 		 * type lives at `configuration.type`; the action-specific
-		 * sub-config lives at `configuration[<type>]`.
+		 * sub-config lives at `configuration[<type>]` (except for the
+		 * two outliers documented in ACTION_FORM_MAP).
 		 * @type {object}
 		 */
 		configuration: { type: Object, default: () => ({}) },
@@ -173,8 +184,6 @@ export default {
 	data() {
 		return {
 			uid: ++actionUidCounter,
-			synchronizationOptions: [],
-			synchronizationsLoading: false,
 			/** Draft JSON string for the fallback editor, keyed by action type. */
 			rawDrafts: {},
 			rawError: '',
@@ -191,39 +200,12 @@ export default {
 		selectedTypeOption() {
 			return this.typeOptions.find((option) => option.id === this.actionType) || null
 		},
-		syncConfig() {
-			const value = this.configuration?.synchronization
-			return value && typeof value === 'object' ? value : {}
+		formComponent() {
+			return ACTION_FORM_MAP[this.actionType] || null
 		},
-		retainResponse() {
-			return !!this.syncConfig.retainResponse
-		},
-		synchronizationId() {
-			return this.syncConfig.synchronization || this.syncConfig.synchronizationId || ''
-		},
-		selectedSynchronization() {
-			const id = String(this.synchronizationId)
-			if (!id) return null
-			return this.synchronizationOptions.find((option) => option.id === id) ?? {
-				id,
-				label: id,
-			}
-		},
-		errorConfig() {
-			const value = this.configuration?.error
-			return value && typeof value === 'object' ? value : {}
-		},
-		errorCodeString() {
-			return this.errorConfig.code != null ? String(this.errorConfig.code) : ''
-		},
-		errorTitle() {
-			return this.errorConfig.name || ''
-		},
-		errorMessage() {
-			return this.errorConfig.message || ''
-		},
-		includeJsonLogicResult() {
-			return !!this.errorConfig.includeJsonLogicResult
+		slotValue() {
+			const raw = this.configuration?.[this.actionType]
+			return raw && typeof raw === 'object' ? raw : {}
 		},
 		rawDraft() {
 			const draft = this.rawDrafts[this.actionType]
@@ -238,17 +220,6 @@ export default {
 		},
 	},
 
-	watch: {
-		actionType: {
-			immediate: true,
-			handler(value) {
-				if (value === 'synchronization' && this.synchronizationOptions.length === 0) {
-					this.fetchSynchronizations()
-				}
-			},
-		},
-	},
-
 	methods: {
 		onTypePick(option) {
 			if (!option) return
@@ -256,29 +227,23 @@ export default {
 			this.$emit('update', next)
 		},
 
-		onSynchronizationPick(option) {
-			const nextSync = { ...this.syncConfig }
-			if (option?.id) {
-				nextSync.synchronization = String(option.id)
+		onSlotUpdate(next) {
+			const merged = { ...(this.configuration || {}), [this.actionType]: next }
+			this.$emit('update', merged)
+		},
+
+		onMappingIdUpdate(id) {
+			const next = { ...(this.configuration || {}) }
+			if (id) {
+				next.mapping = String(id)
 			} else {
-				delete nextSync.synchronization
-				delete nextSync.synchronizationId
+				delete next.mapping
 			}
-			const next = { ...(this.configuration || {}), synchronization: nextSync }
 			this.$emit('update', next)
 		},
 
-		onRetainResponseToggle(value) {
-			const nextSync = { ...this.syncConfig, retainResponse: !!value }
-			const next = { ...(this.configuration || {}), synchronization: nextSync }
-			this.$emit('update', next)
-		},
-
-		updateNested(section, key, value) {
-			const current = this.configuration?.[section]
-			const base = current && typeof current === 'object' ? current : {}
-			const nextSection = { ...base, [key]: value }
-			const next = { ...(this.configuration || {}), [section]: nextSection }
+		onJavascriptCodeUpdate(code) {
+			const next = { ...(this.configuration || {}), javascript: code }
 			this.$emit('update', next)
 		},
 
@@ -299,32 +264,6 @@ export default {
 				this.$emit('update', next)
 			} catch (parseErr) {
 				this.rawError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
-			}
-		},
-
-		async fetchSynchronizations() {
-			this.synchronizationsLoading = true
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/openconnector/synchronization'),
-					{ params: { limit: 500 } },
-				)
-				const data = response.data
-				const list = Array.isArray(data?.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.synchronizationOptions = list.map((sync) => ({
-					id: String(sync.id || sync.uuid),
-					label: sync.name || sync.title || sync.id,
-				}))
-			} catch (err) {
-				// eslint-disable-next-line no-console
-				console.warn('[RuleActionConfig] synchronization fetch failed', err)
-				this.synchronizationOptions = []
-			} finally {
-				this.synchronizationsLoading = false
 			}
 		},
 	},

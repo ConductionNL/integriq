@@ -89,7 +89,7 @@ class StUFFieldMapper
 
                 // Transform dates from ISO 8601 to StUF YYYYMMDD format.
                 if ($stufField === 'geboortedatum' && is_string($value) === true) {
-                    $value = $this->isoDateToStUF($value);
+                    $value = $this->isoDateToStUF(isoDate: $value);
                 }
 
                 $result[$stufField] = $value;
@@ -98,7 +98,7 @@ class StUFFieldMapper
 
         // Map nested verblijfsadres.
         if (isset($person['verblijfsadres']) === true && is_array($person['verblijfsadres']) === true) {
-            $result['verblijfsadres'] = $this->mapAddressToStUF($person['verblijfsadres']);
+            $result['verblijfsadres'] = $this->mapAddressToStUF(address: $person['verblijfsadres']);
         }
 
         return $result;
@@ -125,7 +125,7 @@ class StUFFieldMapper
 
                 // Transform dates from StUF YYYYMMDD to ISO 8601 format.
                 if ($registerField === 'geboortedatum' && is_string($value) === true) {
-                    $value = $this->stufDateToISO($value);
+                    $value = $this->stufDateToISO(stufDate: $value);
                 }
 
                 $result[$registerField] = $value;

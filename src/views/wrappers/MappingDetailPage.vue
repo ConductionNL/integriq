@@ -26,12 +26,18 @@
   store re-fetches automatically, so the rules editor reacts to the
   fresh values without a manual reload.
 
+  Right of the rules editor sits a **live preview pane** (closes #876):
+  a JSON textarea for a sample input plus a read-only pretty-printed
+  output of `POST /api/mappings/test`. Debounced at 400 ms; re-fires on
+  every rule edit or sample-input change. Server-side errors render
+  inline; a "Reset preview" button clears the sample and result.
+
   The "Test mapping" header action re-uses the existing v2 modal pattern
   from #867: emit `EVENT_OPEN_TEST_MAPPING` on `modalBus`, the App.vue
   `ModalHost` picks it up and mounts `TestMappingModal` with the current
   mapping pre-selected.
 
-  Closes ConductionNL/openconnector#832.
+  Closes ConductionNL/openconnector#832 and #876.
 -->
 <template>
 	<CnDetailPage
@@ -79,21 +85,71 @@
 				</dl>
 			</section>
 
-			<!-- Rules editor -->
-			<section class="cn-mapping-detail__card">
-				<h3 class="cn-mapping-detail__section-title">
-					{{ t('openconnector', 'Transformation rules') }}
-				</h3>
-				<MappingRulesEditor
-					:mapping-rules="mappingRules"
-					:cast-rules="castRules"
-					:unset-rules="unsetRules"
-					:pass-through="!!mapping.passThrough"
-					:saving="saving"
-					@update-mapping="onUpdateMapping"
-					@update-cast="onUpdateCast"
-					@update-unset="onUpdateUnset" />
-			</section>
+			<!-- Rules + preview, side by side -->
+			<div class="cn-mapping-detail__split">
+				<section class="cn-mapping-detail__card cn-mapping-detail__rules">
+					<h3 class="cn-mapping-detail__section-title">
+						{{ t('openconnector', 'Transformation rules') }}
+					</h3>
+					<MappingRulesEditor
+						:mapping-rules="mappingRules"
+						:cast-rules="castRules"
+						:unset-rules="unsetRules"
+						:pass-through="!!mapping.passThrough"
+						:saving="saving"
+						@update-mapping="onUpdateMapping"
+						@update-cast="onUpdateCast"
+						@update-unset="onUpdateUnset" />
+				</section>
+
+				<section class="cn-mapping-detail__card cn-mapping-detail__preview">
+					<div class="cn-mapping-detail__preview-header">
+						<h3 class="cn-mapping-detail__section-title">
+							{{ t('openconnector', 'Live preview') }}
+						</h3>
+						<NcButton type="tertiary"
+							:disabled="previewLoading"
+							@click="resetPreview">
+							<template #icon>
+								<RestoreIcon :size="18" />
+							</template>
+							{{ t('openconnector', 'Reset preview') }}
+						</NcButton>
+					</div>
+					<p class="cn-mapping-detail__hint">
+						{{ t('openconnector', 'Edit the sample input below; the output re-renders as you type and on every rule change.') }}
+					</p>
+
+					<label for="cn-mapping-detail__sample-input" class="cn-mapping-detail__field-label">
+						{{ t('openconnector', 'Sample input (JSON)') }}
+					</label>
+					<textarea id="cn-mapping-detail__sample-input"
+						v-model="sampleInput"
+						class="cn-mapping-detail__textarea"
+						rows="8"
+						spellcheck="false"
+						:placeholder="samplePlaceholder" />
+					<p v-if="sampleParseError" class="cn-mapping-detail__error">
+						{{ sampleParseError }}
+					</p>
+
+					<div class="cn-mapping-detail__preview-output">
+						<div class="cn-mapping-detail__field-label cn-mapping-detail__preview-output-label">
+							<span>{{ t('openconnector', 'Output') }}</span>
+							<NcLoadingIcon v-if="previewLoading" :size="16" />
+						</div>
+						<NcNoteCard v-if="previewError" type="error">
+							<p>{{ previewError }}</p>
+						</NcNoteCard>
+						<pre v-else-if="previewOutput !== null"
+							class="cn-mapping-detail__pre"><!--
+							-->{{ formattedPreview }}</pre>
+						<p v-else class="cn-mapping-detail__preview-empty">
+							{{ t('openconnector', 'Output will appear here once a sample input and rules produce a result.') }}
+						</p>
+					</div>
+				</section>
+			</div>
 		</div>
 	</CnDetailPage>
 </template>
@@ -103,12 +159,24 @@ import { CnDetailPage, useObjectStore } from '@conduction/nextcloud-vue'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcNoteCard,
 } from '@nextcloud/vue'
 import PlayOutlineIcon from 'vue-material-design-icons/PlayOutline.vue'
+import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import debounce from 'lodash/debounce.js'
 
 import MappingRulesEditor from './MappingRulesEditor.vue'
 import { modalBus, EVENT_OPEN_TEST_MAPPING } from '../../handlers/modalBus.js'
+
+/** Default sample input shown until the user edits the textarea. */
+const DEFAULT_SAMPLE = '{}'
+
+/** Debounce delay for preview requests, in milliseconds. */
+const PREVIEW_DEBOUNCE_MS = 400
 
 /**
  * Normalise the `mapping` field (Twig-template map) of a Mapping object to
@@ -161,7 +229,10 @@ export default {
 		MappingRulesEditor,
 		NcButton,
 		NcCheckboxRadioSwitch,
+		NcLoadingIcon,
+		NcNoteCard,
 		PlayOutlineIcon,
+		RestoreIcon,
 	},
 
 	props: {
@@ -195,6 +266,11 @@ export default {
 		return {
 			objectType: 'mapping',
 			saving: false,
+			sampleInput: DEFAULT_SAMPLE,
+			sampleParseError: '',
+			previewLoading: false,
+			previewError: '',
+			previewOutput: null,
 		}
 	},
 
@@ -254,11 +330,58 @@ export default {
 		unsetRules() {
 			return asUnsetList(this.mapping?.unset)
 		},
+		samplePlaceholder() {
+			return '{\n  "name": "hello"\n}'
+		},
+		formattedPreview() {
+			try {
+				return JSON.stringify(this.previewOutput, null, 2)
+			} catch (_e) {
+				return String(this.previewOutput)
+			}
+		},
+		/**
+		 * Combined reactivity key for the preview watcher. Recomputing this
+		 * forces the debounced preview to refire whenever the rule shape or
+		 * sample input changes.
+		 */
+		previewSignal() {
+			return JSON.stringify({
+				mapping: this.mappingRules,
+				cast: this.castRules,
+				unset: this.unsetRules,
+				passThrough: !!this.mapping?.passThrough,
+				input: this.sampleInput,
+			})
+		},
+	},
+
+	watch: {
+		previewSignal: {
+			immediate: false,
+			handler() {
+				this.schedulePreview()
+			},
+		},
 	},
 
 	mounted() {
 		this.ensureRegistered()
-		this.reload()
+		const fetch = this.reload()
+		// Trigger the first preview render once data lands.
+		Promise.resolve(fetch).finally(() => this.schedulePreview())
+	},
+
+	beforeDestroy() {
+		if (this.schedulePreview && this.schedulePreview.cancel) {
+			this.schedulePreview.cancel()
+		}
+	},
+
+	created() {
+		// Bind the debounced function on the instance so each component gets
+		// its own timer and `.cancel()` works on teardown.
+		this.schedulePreview = debounce(this.runPreview, PREVIEW_DEBOUNCE_MS)
 	},
 
 	methods: {
@@ -335,6 +458,64 @@ export default {
 		onTogglePassThrough(value) {
 			return this.persistPatch({ passThrough: !!value })
 		},
+
+		/**
+		 * Issue the live-preview request against `/api/mappings/test`. The
+		 * inflight indicator is shown next to the Output label so it
+		 * doesn't block edits in the rules table on the left.
+		 */
+		async runPreview() {
+			if (!this.hasMapping) return
+			let parsed
+			const raw = (this.sampleInput || '').trim()
+			try {
+				parsed = raw.length > 0 ? JSON.parse(raw) : {}
+			} catch (parseErr) {
+				this.sampleParseError = this.t(
+					'openconnector',
+					'Sample input is not valid JSON: {message}',
+					{ message: parseErr.message },
+				)
+				this.previewLoading = false
+				return
+			}
+			this.sampleParseError = ''
+			this.previewLoading = true
+			this.previewError = ''
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openconnector/api/mappings/test'),
+					{
+						inputObject: parsed,
+						mapping: this.mapping,
+					},
+				)
+				this.previewOutput = response.data?.resultObject ?? response.data ?? null
+			} catch (err) {
+				const status = err?.response?.status
+				const message = err?.response?.data?.message
+					|| err?.response?.data?.error
+					|| err?.message
+					|| ''
+				this.previewError = this.t('openconnector', 'Preview failed')
+					+ (status ? ` (${status})` : '')
+					+ (message ? `: ${message}` : '')
+			} finally {
+				this.previewLoading = false
+			}
+		},
+
+		/** Clear sample input + output and cancel any pending request. */
+		resetPreview() {
+			if (this.schedulePreview && this.schedulePreview.cancel) {
+				this.schedulePreview.cancel()
+			}
+			this.sampleInput = DEFAULT_SAMPLE
+			this.sampleParseError = ''
+			this.previewOutput = null
+			this.previewError = ''
+			this.previewLoading = false
+		},
 	},
 }
 </script>
@@ -381,5 +562,103 @@ export default {
 	margin: 4px 0 0 0;
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
+}
+
+.cn-mapping-detail__split {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 24px;
+}
+
+@media (max-width: 1100px) {
+	.cn-mapping-detail__split {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.cn-mapping-detail__rules,
+.cn-mapping-detail__preview {
+	min-width: 0;
+}
+
+.cn-mapping-detail__preview {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.cn-mapping-detail__preview-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 4px;
+}
+
+.cn-mapping-detail__preview-header .cn-mapping-detail__section-title {
+	margin: 0;
+}
+
+.cn-mapping-detail__field-label {
+	display: block;
+	font-weight: 500;
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+	margin-top: 8px;
+}
+
+.cn-mapping-detail__preview-output-label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.cn-mapping-detail__textarea {
+	width: 100%;
+	font-family: var(--font-face-monospace, monospace);
+	font-size: 13px;
+	resize: vertical;
+	padding: 8px;
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.cn-mapping-detail__error {
+	color: var(--color-error);
+	font-size: 12px;
+	margin: 4px 0 0 0;
+}
+
+.cn-mapping-detail__preview-output {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.cn-mapping-detail__pre {
+	background: var(--color-background-dark);
+	color: var(--color-main-text);
+	padding: 12px;
+	border-radius: var(--border-radius);
+	overflow: auto;
+	max-height: 360px;
+	font-family: var(--font-face-monospace, monospace);
+	font-size: 12px;
+	white-space: pre-wrap;
+	word-break: break-word;
+	margin: 0;
+}
+
+.cn-mapping-detail__preview-empty {
+	margin: 0;
+	padding: 16px;
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+	border: 1px dashed var(--color-border);
+	border-radius: var(--border-radius);
+	font-style: italic;
+	font-size: 13px;
 }
 </style>

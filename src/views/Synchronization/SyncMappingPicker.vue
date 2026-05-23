@@ -17,6 +17,11 @@
   `lib/Settings/openconnector_register.json` ("Mapping slug for
   source-to-target field transformation"). We render the human label
   but emit the slug back up.
+
+  #878 follow-up: a collapsible SyncMappingPreview is attached under the
+  primary picker so users can verify the picked transformation against a
+  sample object without leaving the page (legacy flow was a separate
+  "Test mapping" modal accessed from the mapping detail page).
 -->
 
 <template>
@@ -35,6 +40,7 @@
 			<span class="sync-mapping__helper">
 				{{ t('openconnector', 'Transforms each source record into the target shape.') }}
 			</span>
+			<SyncMappingPreview :mapping-id="value" />
 		</div>
 
 		<div class="sync-mapping__field">
@@ -78,6 +84,8 @@ import { NcSelect } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+import SyncMappingPreview from './SyncMappingPreview.vue'
+
 let pickerSeq = 0
 
 export default {
@@ -85,6 +93,7 @@ export default {
 
 	components: {
 		NcSelect,
+		SyncMappingPreview,
 	},
 
 	props: {

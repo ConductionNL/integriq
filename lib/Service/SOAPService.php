@@ -1,4 +1,22 @@
 <?php
+/**
+ * OpenConnector SOAP service.
+ *
+ * Basic SOAP client for communicating with SOAP sources using a WSDL. Manages
+ * execution of SOAP requests using the Guzzle HTTP client for the actual
+ * HTTP transport.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -33,9 +51,7 @@ use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 /**
- * This class contains a basic SOAP client for communicating with SOAP Sources using a WSDL
- *
- * It manages the execution of SOAP requests using the Guzzle HTTP client for performing the actual HTTP requests.
+ * Basic SOAP client for communicating with SOAP sources using a WSDL.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -47,29 +63,37 @@ class SOAPService
 {
 
     /**
-     * @var Client The GuzzleClient used by the SOAP engine
+     * The GuzzleClient used by the SOAP engine.
+     *
+     * @var Client
      */
     private Client $client;
 
     /**
-     * @var Psr18Transport The PSR-18 transport layer of the SOAP engine
+     * The PSR-18 transport layer of the SOAP engine.
+     *
+     * @var Psr18Transport
      */
     private Psr18Transport $transport;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param CookieJar $cookieJar A cookie jar to pass on cookies between SOAP requests.
      */
     public function __construct(private readonly CookieJar $cookieJar)
     {
+
     }//end __construct()
 
     /**
-     * Fetch the SOAP Version to work in.
+     * Fetch the SOAP version to work in.
      *
-     * @param  string|int|null $soapVersion the specified soap version according to the configuration.
+     * @param string|int|null $soapVersion The specified soap version according to the configuration.
+     *
      * @return int The soap version as specified in constants.
+     *
+     * @throws BadRequestHttpException When an unsupported numeric soap version is supplied.
      */
     private function getSoapVersion(string|int|null $soapVersion): int
     {
@@ -77,9 +101,9 @@ class SOAPService
             return $soapVersion;
         }
 
-        if (is_int($soapVersion)) {
+        if (is_int($soapVersion) === true) {
             throw new BadRequestHttpException(
-             message: 'improper configuration, only soap 1.1 and 1.2 are supported'
+                message: 'improper configuration, only soap 1.1 and 1.2 are supported'
             );
         }
 
@@ -104,13 +128,14 @@ class SOAPService
     }//end getSoapVersion()
 
     /**
-     * Setup an SOAP engine for a source.
+     * Setup a SOAP engine for a source.
      *
      * @param ObjectEntity $source       The source ObjectEntity.
      * @param array        $passedConfig The config to setup the HTTP client with.
      *
      * @return Engine The resulting soap engine.
-     * @throws \SoapFault
+     *
+     * @throws \SoapFault When the SOAP client cannot be created.
      */
     public function setupEngine(ObjectEntity $source, array $passedConfig): Engine
     {
@@ -126,45 +151,49 @@ class SOAPService
         $this->client = new Client($passedConfig);
         $wsdl         = $config['wsdl'];
         $soapVersion  = $config['soapVersion'] ?? null;
-        $permanent    = $config['permanentWsdl'] === 'true' || $config['permanentWsdl'] === true;
+        $permanent    = ($config['permanentWsdl'] === 'true' || $config['permanentWsdl'] === true);
 
         unset($passedConfig['wsdl'], $passedConfig['soapVersion']);
+
+        if ($permanent === true) {
+            $wsdlProvider = new PermanentWsdlLoaderProvider(new Psr18Loader($this->client, new HttpFactory()));
+        } else {
+            $wsdlProvider = new TemporaryWsdlLoaderProvider(new Psr18Loader($this->client, new HttpFactory()));
+        }
+
         try {
             $engine       = new SimpleEngine(
                 $driver   = ExtSoapDriver::createFromClient(
                     $soap = $client = AbusedClient::createFromOptions(
                         ExtSoapOptions::defaults(
-                                $wsdl,
-                                [
-                                    'cache_wsdl'   => WSDL_CACHE_NONE,
-                                    'trace'        => true,
-                                    'location'     => $sourceData['location'] ?? '',
-                                    'soap_version' => $this->getSoapVersion($soapVersion),
-                                ]
-                                )
-                            ->withWsdlProvider($permanent ? new PermanentWsdlLoaderProvider(new Psr18Loader($this->client, new HttpFactory())) : new TemporaryWsdlLoaderProvider(new Psr18Loader($this->client, new HttpFactory())))
+                            $wsdl,
+                            [
+                                'cache_wsdl'   => WSDL_CACHE_NONE,
+                                'trace'        => true,
+                                'location'     => $sourceData['location'] ?? '',
+                                'soap_version' => $this->getSoapVersion(soapVersion: $soapVersion),
+                            ]
+                        )
+                            ->withWsdlProvider($wsdlProvider)
                             ->disableWsdlCache()
                     )
                 ),
                 $this->transport = Psr18Transport::createForClient($this->client),
-            // $transport = new TraceableTransport(
-            // $client,
-            // new ExtSoapClientTransport($client)
-            // )
             );
         } catch (\SoapFault $fault) {
             throw $fault;
         }//end try
 
         return $engine;
+
     }//end setupEngine()
 
     /**
-     * Parse an XML snippet with its own dynamic XSD
+     * Parse an XML snippet with its own dynamic XSD.
      *
      * @param string $xmlString The XML split in two parts: the XSD and the data to parse.
      *
-     * @return \SimpleXMLElement The resulting XML element.
+     * @return \SimpleXMLElement|null The resulting XML element, or null when no document element is present.
      */
     private function parseDynamicXsd(string $xmlString): ?\SimpleXMLElement
     {
@@ -174,63 +203,67 @@ class SOAPService
         $dom = new DOMDocument();
         $dom->loadXML($xmlString);
 
-        // 3. OPTIONAL: Validate against schema in the XML itself (or use an external .xsd file)
+        // OPTIONAL: Validate against schema in the XML itself (or use an external .xsd file).
         libxml_use_internal_errors(true);
         if ($dom->schemaValidateSource($xmlString) !== true) {
             libxml_clear_errors();
         }
 
-        // 4. Parse the data inside diffgram
+        // Parse the data inside diffgram.
         $simpleXml = simplexml_load_string(
-          $xmlString,
-          'SimpleXMLElement',
-          0,
+            $xmlString,
+            'SimpleXMLElement',
+            0,
             'diffgr',
-          true
-          );
+            true
+        );
 
-        // The diffgram will be under the 'diffgram' namespace
+        // The diffgram will be under the 'diffgram' namespace.
         $namespaces = $simpleXml->getNamespaces(true);
         $diffgram   = $simpleXml->children($namespaces['diffgr'])->diffgram;
 
-        // Or just get the DocumentElement directly
+        // Or just get the DocumentElement directly.
         $documentElement = $simpleXml->xpath('//DocumentElement')[0];
 
         if ($documentElement === null) {
             return null;
         }
 
-		// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
+        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
         return $documentElement->QueryExecResult;
+
     }//end parseDynamicXsd()
 
     /**
-     * Call a soap source with provided configuration.
+     * Call a SOAP source with provided configuration.
      *
      * @param ObjectEntity $source     The SOAP source ObjectEntity.
      * @param string       $soapAction The SOAPAction to call (most comparable to an endpoint in REST).
      * @param array        $config     The configuration to use when calling the source.
      *
      * @return Response The resulting response.
-     * @throws \SoapFault
+     *
+     * @throws \SoapFault When the SOAP engine cannot satisfy the request.
      */
     public function callSoapSource(ObjectEntity $source, string $soapAction, array $config): Response
     {
         $body = json_decode(json: $config['body'] ?? '{}', associative: true);
         unset($config['body']);
-        if (isset($config['json'])) {
+        if (isset($config['json']) === true) {
             $body = $config['json'];
             unset($config['json']);
         }
 
         libxml_set_external_entity_loader(
-                static function ($public, $system) {
-                    return $system;
-                }
-                );
+            static function ($public, $system) {
+                return $system;
+            }
+        );
+
         /*
          * @var $engine Engine
          */
+
         $engine = $this->setupEngine(source: $source, passedConfig: $config);
 
         if (isset($body['edcLk01']['object']['inhoud']) === true) {
@@ -238,38 +271,42 @@ class SOAPService
                 $body['edcLk01']['object']['inhoud'] = base64_decode($body['edcLk01']['object']['inhoud']);
             }
 
-            if (is_array($body['edcLk01']['object']['inhoud']) === true && isset($body['edcLk01']['object']['inhoud']['_']) === true) {
+            if (is_array($body['edcLk01']['object']['inhoud']) === true
+                && isset($body['edcLk01']['object']['inhoud']['_']) === true
+            ) {
                 $body['edcLk01']['object']['inhoud']['_'] = base64_decode($body['edcLk01']['object']['inhoud']['_']);
             }
         }
 
-        // In SOAP the endpoint is decided by the WSDL, however, the SOAP method can be derived from the endpoint property of the call.
+        // In SOAP the endpoint is decided by the WSDL, however, the SOAP method
+        // can be derived from the endpoint property of the call.
         $result = $engine->request($soapAction, $body);
 
-        // @TODO: This must be replaced by an generic detector of fields that should be parsed in the parseDynamicXsd-function.
-        if (isset($result->{'QueryExecute2Result'}) === true && isset($result->{'QueryExecute2Result'}->any) === true) {
-            $result->{'QueryExecute2Result'} = $this->parseDynamicXsd($result->{'QueryExecute2Result'}->any);
+        // @TODO: This must be replaced by a generic detector of fields that should be parsed in the parseDynamicXsd-function.
+        if (isset($result->{'QueryExecute2Result'}) === true
+            && isset($result->{'QueryExecute2Result'}->any) === true
+        ) {
+            $result->{'QueryExecute2Result'} = $this->parseDynamicXsd(xmlString: $result->{'QueryExecute2Result'}->any);
 
             if ($result->{'QueryExecute2Result'} === null) {
                 $result->{'QueryExecute2Result'} = [];
             }
         }
 
-        // @TODO: The detection of binary data fields should be dynamic
-		// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
+        // @TODO: The detection of binary data fields should be dynamic.
+        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
         if (isset($result->FileBytes) === true && json_encode($result) === false) {
-      // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
+            // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
             $result->FileBytes = base64_encode($result->FileBytes);
         }
 
         libxml_set_external_entity_loader(
-                static function () {
-                    return null;
-                }
-                );
+            static function () {
+                return null;
+            }
+        );
 
         return new Response(status: 200, body: json_encode($result));
 
-        // return json_encode($result);
     }//end callSoapSource()
 }//end class

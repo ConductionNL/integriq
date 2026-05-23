@@ -35,10 +35,21 @@ use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
+ * Controller exposing OpenConnector-specific settings actions.
+ *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class SettingsController extends Controller
 {
+    /**
+     * Constructor.
+     *
+     * @param string          $appName         The app identifier.
+     * @param IRequest        $request         The current request.
+     * @param SettingsService $settingsService Service that performs the rebase action.
+     * @param LoggerInterface $logger          Logger instance.
+     * @param IL10N           $l               Localisation service.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
@@ -46,16 +57,20 @@ class SettingsController extends Controller
         private readonly LoggerInterface $logger,
         private readonly IL10N $l
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
+
     }//end __construct()
 
     /**
      * Rebase all logs with current retention settings.
+     *
      * Recomputes deletion timestamps for CallLog/JobLog/SynchronizationLog rows
      * based on the current retention windows. This is the openconnector-specific
      * action that has no OR equivalent (OR's archival workflow uses ISO durations
      * + per-object retention; the connector mixes service-level constants with
      * per-source overrides — see local ADR-004).
+     *
+     * @return JSONResponse JSON response with the rebase result.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
