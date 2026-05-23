@@ -21,7 +21,6 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 
 | File | LoC | Replacement plan |
 |---|---|---|
-| `Mapping/EditMapping.vue` | 1537 | Bespoke create/edit modal (CnIndexPage `#form-dialog`) — strip `dateCreated`/`passThrough`/`slug` legacy/system fields |
 | `Synchronization/EditSynchronization.vue` | 1076 | Bespoke create/edit modal — strip legacy/system fields |
 | `Rule/EditRule.vue` | 1888 | Bespoke rule-builder modal (visual condition/action editor) |
 | `Endpoint/AddEndpointRule.vue` | 172 | Bespoke endpoint-rule relation picker |
@@ -34,6 +33,12 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 | `MappingTest/components/TestMappingInputObject.vue` | 78 | Sub-widget of TestMapping |
 | `MappingTest/components/TestMappingMappingSelect.vue` | 643 | Sub-widget of TestMapping (JSON-path picker) |
 | `MappingTest/components/TestMappingResult.vue` | 313 | Sub-widget of TestMapping (result viewer) |
-| `Mapping/mappingItem/EditMappingItem.vue` | 271 | Sub-record edit modal (mapping item inside EditMapping) |
-| `Mapping/mappingItem/DeleteMappingItem.vue` | 186 | Sub-record delete confirm |
 | `TestSource/TestSource.vue` | 193 | Action-surface modal (test-source connection) |
+
+## Removed
+
+| File | Removed in | Replacement |
+|---|---|---|
+| `Mapping/EditMapping.vue` | #874 | `src/views/wrappers/MappingDetailPage.vue` + `MappingRulesEditor.vue` + `EditMappingRuleDialog.vue` (3-tab transformation-rules editor on CnDetailPage) |
+| `Mapping/mappingItem/EditMappingItem.vue` | #874 | `src/views/wrappers/EditMappingRuleDialog.vue` |
+| `Mapping/mappingItem/DeleteMappingItem.vue` | #874 | CnDetailPage's built-in delete action on the rule row |
