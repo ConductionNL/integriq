@@ -351,8 +351,15 @@ export default {
 		schema: { type: String, default: SCHEMA_SLUG },
 	},
 
-	setup() {
+	setup(props) {
 		const objectStore = useObjectStore()
+		// Register the type so objectStore.fetchObject/saveObject can resolve
+		// the schema → register pair for URL building. Mirrors the pattern in
+		// RuleDetailPage / MappingDetailPage; without this, fetchObject throws
+		// "Object type 'synchronization' is not registered in the store".
+		if (typeof objectStore.registerObjectType === 'function') {
+			objectStore.registerObjectType(SCHEMA_SLUG, props.schema || SCHEMA_SLUG, props.register || REGISTER_SLUG)
+		}
 		return { objectStore }
 	},
 
