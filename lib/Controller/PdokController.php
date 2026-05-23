@@ -52,7 +52,7 @@ class PdokController extends Controller
         IRequest $request,
         private readonly PdokConnector $pdokConnector
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
