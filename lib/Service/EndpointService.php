@@ -438,8 +438,6 @@ class EndpointService
     ): array {
         if ($serializedObject === [] && $object !== null) {
             $serializedObject = $object->jsonSerialize();
-        } else if ($serializedObject === null) {
-            return $serializedObject;
         } else {
             $this->objectService->getOpenRegisters()->clearCurrents();
             $object = $mapper->find($serializedObject['id']);
@@ -749,7 +747,7 @@ class EndpointService
 
             $ids = $main[$property];
 
-            if ($ids === null || empty($ids) === true) {
+            if (empty($ids) === true) {
                 $returnArray = [
                     'count'   => 0,
                     'results' => [],

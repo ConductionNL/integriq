@@ -15,11 +15,6 @@ parameters:
 			path: lib/Controller/UserController.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between OCP\\\\IUser and false will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Controller/UserController.php
-
-		-
 			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:SOFTWARE_CATALOG_REGISTER_ID is unused\\.$#"
 			count: 1
 			path: lib/EventListener/ViewUpdatedOrCreatedEventListener.php
@@ -60,16 +55,6 @@ parameters:
 			path: lib/Service/AuthorizationService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between OCP\\\\IUser\\|null and false will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/AuthorizationService.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between non\\-empty\\-string and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/AuthorizationService.php
-
-		-
 			message: "#^Method OCA\\\\OpenConnector\\\\Service\\\\CallService\\:\\:call\\(\\) should return OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity but returns GuzzleHttp\\\\Promise\\\\PromiseInterface\\.$#"
 			count: 1
 			path: lib/Service/CallService.php
@@ -83,26 +68,6 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between null and 'soap' will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/CallService.php
-
-		-
-			message: "#^Offset int on array\\<string, string\\> in isset\\(\\) does not exist\\.$#"
-			count: 2
-			path: lib/Service/ConfigurationHandlers/SynchronizationHandler.php
-
-		-
-			message: "#^Result of && is always false\\.$#"
-			count: 3
-			path: lib/Service/ConfigurationHandlers/SynchronizationHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 'actions'\\|'followUps' and 'conditions' will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/ConfigurationHandlers/SynchronizationHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/ConfigurationHandlers/SynchronizationHandler.php
 
 		-
 			message: "#^Call to method export\\(\\) on an unknown class OCA\\\\OpenConnector\\\\Service\\\\ConfigurationHandlerInterface\\.$#"
@@ -195,16 +160,6 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between array and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between mixed and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
 			message: "#^Call to method evaluate\\(\\) on an unknown class Symfony\\\\Component\\\\ExpressionLanguage\\\\ExpressionLanguage\\.$#"
 			count: 1
 			path: lib/Service/EventService.php
@@ -243,16 +198,6 @@ parameters:
 			message: "#^Parameter \\$minute of method DateTime\\:\\:setTime\\(\\) expects int, string given\\.$#"
 			count: 1
 			path: lib/Service/JobService.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between \\*NEVER\\* and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/MappingService.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between array and false will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/MappingService.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
