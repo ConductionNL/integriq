@@ -29,7 +29,10 @@
 			:key="field.key"
 			class="cn-job-form-fields__field">
 			<!-- Custom Synchronization picker for the `arguments` field
-			     when jobClass is SynchronizationAction. -->
+			     when jobClass is SynchronizationAction. Skipped when the
+			     schema doesn't declare an `arguments` field — the picker
+			     is then injected as a standalone block below the field
+			     list (see after-loop section). -->
 			<template v-if="field.key === 'arguments' && isSynchronizationJob">
 				<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
 					{{ t('openconnector', 'Synchronization') }}{{ field.required ? ' *' : '' }}
@@ -52,8 +55,29 @@
 			     (text, textarea, number, checkbox, json). Anything else
 			     falls through to a text input. -->
 			<template v-else>
+				<!-- jobClass select — must precede the widget-based branches
+				     because the schema declares jobClass with widget='text'
+				     (the default), so an order-by-widget check would
+				     short-circuit to NcTextField and the conditional
+				     Synchronization picker would never engage. -->
+				<div v-if="field.key === 'jobClass'" class="cn-job-form-fields__select-wrapper">
+					<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
+						{{ field.label }}{{ field.required ? ' *' : '' }}
+					</label>
+					<NcSelect
+						:input-id="'cn-job-form-' + field.key"
+						:value="selectedJobClassOption"
+						:options="jobClassOptions"
+						:clearable="!field.required"
+						:placeholder="t('openconnector', 'Pick an action class')"
+						@input="onJobClassPick" />
+					<span class="cn-job-form-fields__helper">
+						{{ field.description || t('openconnector', 'The PHP class that runs when this job fires.') }}
+					</span>
+				</div>
+
 				<NcTextField
-					v-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
+					v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
 					:label="field.label + (field.required ? ' *' : '')"
 					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
@@ -100,25 +124,6 @@
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</NcCheckboxRadioSwitch>
 
-				<!-- jobClass select — enumerated set of built-in Action
-				     classes. Triggers the conditional picker above when
-				     SynchronizationAction is chosen. -->
-				<div v-else-if="field.key === 'jobClass'" class="cn-job-form-fields__select-wrapper">
-					<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
-						{{ field.label }}{{ field.required ? ' *' : '' }}
-					</label>
-					<NcSelect
-						:input-id="'cn-job-form-' + field.key"
-						:value="selectedJobClassOption"
-						:options="jobClassOptions"
-						:clearable="!field.required"
-						:placeholder="t('openconnector', 'Pick an action class')"
-						@input="onJobClassPick" />
-					<span class="cn-job-form-fields__helper">
-						{{ field.description || t('openconnector', 'The PHP class that runs when this job fires.') }}
-					</span>
-				</div>
-
 				<!-- JSON / object editor for arguments when NOT a sync job. -->
 				<div v-else-if="field.widget === 'json' || (field.key === 'arguments' && !isSynchronizationJob)" class="cn-job-form-fields__textarea-wrapper">
 					<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
@@ -148,6 +153,30 @@
 					:placeholder="field.description"
 					@update:value="(value) => updateField(field.key, value)" />
 			</template>
+		</div>
+
+		<!-- Standalone Synchronization picker — rendered when jobClass is
+		     SynchronizationAction AND the schema does not declare an
+		     `arguments` field (the in-loop branch above handles the case
+		     where it does). Keeps the conditional UX working regardless of
+		     whether the Job schema gets an explicit arguments field in OR. -->
+		<div
+			v-if="isSynchronizationJob && !hasArgumentsField"
+			class="cn-job-form-fields__field">
+			<label for="cn-job-form-arguments" class="cn-job-form-fields__label">
+				{{ t('openconnector', 'Synchronization') }} *
+			</label>
+			<NcSelect
+				input-id="cn-job-form-arguments"
+				:value="selectedSynchronization"
+				:options="synchronizationOptions"
+				:loading="synchronizationsLoading"
+				:clearable="false"
+				:placeholder="t('openconnector', 'Select a synchronization')"
+				@input="onSynchronizationPick" />
+			<span class="cn-job-form-fields__helper">
+				{{ t('openconnector', 'The synchronization this job will run. Written back as arguments.synchronizationId.') }}
+			</span>
 		</div>
 	</div>
 </template>
@@ -230,6 +259,13 @@ export default {
 	computed: {
 		isSynchronizationJob() {
 			return this.formData?.jobClass === SYNCHRONIZATION_ACTION_CLASS
+		},
+		hasArgumentsField() {
+			// True when the schema-derived field list includes an `arguments`
+			// field — drives whether the Synchronization picker renders
+			// in-loop (overlaying the arguments field) or as a standalone
+			// block after the loop. See template for the wire-up.
+			return Array.isArray(this.fields) && this.fields.some((f) => f.key === 'arguments')
 		},
 		jobClassOptions() {
 			return JOB_CLASS_OPTIONS
