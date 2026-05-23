@@ -35,7 +35,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 
         <!-- Chain B/C OR cutover: openconnector now stores domain data in OpenRegister.
              OR's ObjectService is required to boot openconnector controllers. -->
-        <nextcloud min-version="0.2.0" max-version="34"-app id="openregister"/>
+        <nextcloud-app id="openregister" min-version="0.2.0"/>
 	</dependencies>
 
 	<background-jobs>
