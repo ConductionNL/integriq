@@ -52,7 +52,7 @@ class DSOController extends Controller
         private readonly DSOParserService $parser,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -74,7 +74,7 @@ class DSOController extends Controller
 
         // Validate webhook signature.
         $signatureHeader = $this->request->getHeader('X-DSO-Signature');
-        if ($this->validateSignature($signatureHeader, $body) === false) {
+        if ($this->validateSignature(signature: $signatureHeader, body: $body) === false) {
             $this->logger->warning('DSO STAM: Invalid webhook signature');
             return new JSONResponse(
                 ['error' => 'invalid_signature', 'message' => 'Webhook signature validation failed'],
