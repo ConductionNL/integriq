@@ -21,7 +21,6 @@
 <script>
 import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
-import { useSettingsStore } from './store/store.js'
 import ModalHost from './modals/v2/ModalHost.vue'
 
 export default {
@@ -57,14 +56,6 @@ export default {
 				: false
 			return isAdmin ? [...base, 'admin'] : base
 		},
-	},
-
-	async created() {
-		// Initialise Pinia stores so the existing custom-component views keep
-		// working through the manifest transition. CnAppRoot itself does not
-		// depend on them, but the views in registry.js do.
-		const settingsStore = useSettingsStore()
-		await settingsStore.fetchSettings()
 	},
 
 	methods: {

@@ -114,8 +114,8 @@ class Version1Date20250826103500 extends SimpleMigrationStep
         // stuck at VARCHAR(255) and causing job-log truncation errors at runtime.
         $table->dropColumn('message');
         $table->addColumn('message', Types::TEXT)
-                ->setNotnull(true)
-                ->setDefault('success');
+            ->setNotnull(true)
+            ->setDefault('success');
 
         $output->info('Updated message column in openconnector_job_logs table to TEXT type');
 
