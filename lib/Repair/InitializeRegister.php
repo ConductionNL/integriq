@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
 class InitializeRegister implements IRepairStep
 {
     /**
+     * Constructor.
+     *
      * @param ContainerInterface $container Server DI container (used to
      *                                      resolve OR's ConfigurationService
      *                                      lazily so the class_exists guard
