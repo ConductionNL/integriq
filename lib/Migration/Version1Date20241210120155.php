@@ -1,11 +1,24 @@
 <?php
+/**
+ * Add current_page and message columns.
+ *
+ * This migration changes the following:
+ * - Adding 1 new column for the table Synchronization: currentPage.
+ * - Adding 1 new column for the table SynchronizationContractLogs: message.
+ *
+ * @category Migration
+ * @package  OCA\OpenConnector\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenConnector\Migration;
 
@@ -16,75 +29,86 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * This migration changes the following:
- * - Adding 1 new column for the table Synchronization: currentPage
- * - Adding 1 new column for the table SynchronizationContractLogs: message
+ * Adds the current_page and message columns to the synchronization tables.
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241210120155 extends SimpleMigrationStep
 {
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Pre-schema change callback.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
     }//end preSchemaChange()
 
     /**
-     * @param  IOutput                   $output
-     * @param  Closure(): ISchemaWrapper $schemaClosure
-     * @param  array                     $options
-     * @return null|ISchemaWrapper
+     * Adds the current_page and message columns when missing.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return ISchemaWrapper|null The modified schema wrapper.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Synchronizations table
+        // Synchronizations table.
         if ($schema->hasTable('openconnector_synchronizations') === true) {
             $table = $schema->getTable('openconnector_synchronizations');
 
             if ($table->hasColumn('current_page') === false) {
                 $table->addColumn(
-                'current_page',
-                Types::INTEGER,
-                [
-                    'notnull' => false,
-                    'default' => 1,
-                ]
+                    'current_page',
+                    Types::INTEGER,
+                    [
+                        'notnull' => false,
+                        'default' => 1,
+                    ]
                 );
             }
         }
 
-        // SynchronizationContractLogs table
+        // SynchronizationContractLogs table.
         if ($schema->hasTable('openconnector_synchronization_contract_logs') === true) {
             $table = $schema->getTable('openconnector_synchronization_contract_logs');
 
             if ($table->hasColumn('message') === false) {
                 $table->addColumn(
-                'message',
-                Types::STRING,
-                [
-                    'length'  => 255,
-                    'notnull' => false,
-                ]
+                    'message',
+                    Types::STRING,
+                    [
+                        'length'  => 255,
+                        'notnull' => false,
+                    ]
                 )->setDefault(null);
             }
         }
 
         return $schema;
+
     }//end changeSchema()
 
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Post-schema change callback.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
