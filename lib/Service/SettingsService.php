@@ -65,14 +65,20 @@ class SettingsService
     }//end __construct()
 
     /**
-     * Build a platform-portable SQL expression that adds a microsecond
-     * interval (bound as a `?` placeholder, in microseconds) to a column
-     * value. Returns the expression as a string ready to splice into SQL.
+     * Build a platform-portable SQL expression that adds a microsecond interval
+     * to a column value.
      *
-     * - MySQL/MariaDB:  `DATE_ADD(<column>, INTERVAL ? MICROSECOND)`
-     * - PostgreSQL:     `<column> + (? || ' microseconds')::interval`
+     * The microsecond value is bound as a `?` placeholder. Returns the expression
+     * as a string ready to splice into SQL.
+     *
+     * - MySQL/MariaDB:  `DATE_ADD(<column>, INTERVAL ? MICROSECOND)`.
+     * - PostgreSQL:     `<column> + (? || ' microseconds')::interval`.
      *
      * Fixes GH #822 (Postgres portability of rebase()'s SQL).
+     *
+     * @param string $createdColumn The column expression to add the interval to.
+     *
+     * @return string The SQL expression.
      */
     private function expiresExpression(string $createdColumn): string
     {
@@ -86,8 +92,14 @@ class SettingsService
 
     /**
      * Portable replacement for `SHOW COLUMNS FROM <table> LIKE 'X'`.
+     *
      * Returns true when the named column exists on the named table.
      * Fixes GH #822 (Postgres portability of rebase()'s column probe).
+     *
+     * @param string $unprefixedTable The Nextcloud table name without the `oc_` prefix.
+     * @param string $column          The column name to check.
+     *
+     * @return bool True when the column exists, false otherwise.
      */
     private function columnExists(string $unprefixedTable, string $column): bool
     {
@@ -123,8 +135,9 @@ class SettingsService
      * This method provides warning counts for items that need attention,
      * as well as total counts for all OpenConnector tables using optimized SQL queries.
      *
-     * @return array Array containing warning counts and total counts for all tables
-     * @throws \RuntimeException If statistics retrieval fails
+     * @return array Array containing warning counts and total counts for all tables.
+     *
+     * @throws \RuntimeException If statistics retrieval fails.
      */
     public function getStats(): array
     {
@@ -174,8 +187,8 @@ class SettingsService
                 'lastUpdated' => (new \DateTime())->format('c'),
             ];
 
-            // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance
-            // All tables - simple counts (OpenConnector tables don't have size/expires columns like OpenRegister)
+            // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance.
+            // All tables - simple counts (OpenConnector tables don't have size/expires columns like OpenRegister).
             $allTables = [
                 'callLogs'                    => '`*PREFIX*openconnector_call_logs`',
                 'consumers'                   => '`*PREFIX*openconnector_consumers`',
@@ -203,7 +216,7 @@ class SettingsService
 
                     $stats['totals']['total'.ucfirst($key)] = (int) ($count ?? 0);
                 } catch (\Exception $e) {
-                    // Table might not exist, set to 0 and continue
+                    // Table might not exist, set to 0 and continue.
                     $stats['totals']['total'.ucfirst($key)] = 0;
                     $this->logger->debug(
                             'Table does not exist or query failed',
@@ -240,27 +253,26 @@ class SettingsService
         try {
             $data = [];
 
-            // Version information
+            // Version information.
             $data['version'] = [
                 'appName'    => 'Open Connector',
                 'appVersion' => '0.2.0',
             ];
 
-            // Retention Settings with defaults
-            // Retention Settings with defaults
+            // Retention settings with defaults.
             $data['retention'] = [
+                // 1 Hour default.
                 'successLogRetention'      => 3600000,
-            // 1 Hour default
+                // 1 month default.
                 'callLogRetention'         => 2592000000,
-            // 1 month default
+                // 1 week default.
                 'eventMessageRetention'    => 604800000,
-            // 1 week default
+                // 1 month default.
                 'jobLogRetention'          => 2592000000,
-            // 1 month default
+                // 3 months default.
                 'syncContractLogRetention' => 7776000000,
-            // 3 months default
+                // 1 month default.
                 'syncLogRetention'         => 2592000000,
-            // 1 month default
             ];
 
             $retentionConfig = $this->config->getValueString($this->appName, 'retention', '');
@@ -301,8 +313,8 @@ class SettingsService
     public function updateSettings(array $data): array
     {
         try {
-            // Handle Retention settings
-            if (isset($data['retention'])) {
+            // Handle Retention settings.
+            if (isset($data['retention']) === true) {
                 $retentionData   = $data['retention'];
                 $retentionConfig = [
                     'successLogRetention'      => $retentionData['successLogRetention'] ?? 3600000,
@@ -315,7 +327,7 @@ class SettingsService
                 $this->config->setValueString($this->appName, 'retention', json_encode($retentionConfig));
             }
 
-            // Return the updated settings
+            // Return the updated settings.
             return $this->getSettings();
         } catch (\Exception $e) {
             $this->logger->error(
@@ -349,18 +361,18 @@ class SettingsService
                 'errors'           => [],
             ];
 
-            // Get current settings
+            // Get current settings.
             $settings  = $this->getSettings();
             $retention = $settings['retention'] ?? [];
 
             // Platform-portable `expires = <createdCol> + <microseconds>` SQL fragments.
             // MySQL uses DATE_ADD; PostgreSQL uses native interval arithmetic.
             // See {@see expiresExpression()} — fixes GH #822.
-            $expiresExpr         = $this->expiresExpression('created');
-            $expiresExprCoalesce = $this->expiresExpression('COALESCE(created, NOW())');
+            $expiresExpr         = $this->expiresExpression(createdColumn: 'created');
+            $expiresExprCoalesce = $this->expiresExpression(createdColumn: 'COALESCE(created, NOW())');
 
-            // **DATABASE-OPTIMIZED REBASE**: Use direct SQL UPDATE queries for maximum performance
-            // 0. Update successful logs expiry dates
+            // **DATABASE-OPTIMIZED REBASE**: Use direct SQL UPDATE queries for maximum performance.
+            // 0. Update successful logs expiry dates.
             if (isset($retention['successLogRetention']) === true && $retention['successLogRetention'] > 0) {
                 try {
                     $retentionMs = $retention['successLogRetention'];
@@ -371,7 +383,7 @@ class SettingsService
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
                     $stmt->execute([$retentionMs * 1000]);
-                    // Convert ms to microseconds
+                    // Convert ms to microseconds.
                     $results['retentionResults']['callLogsUpdated'] = $stmt->rowCount();
                 } catch (\Exception $e) {
                     $error = 'Failed to set call logs expiry dates: '.$e->getMessage();
@@ -380,8 +392,8 @@ class SettingsService
                 }
             }
 
-            // 1. Update call logs expiry dates
-            if (isset($retention['callLogRetention']) && $retention['callLogRetention'] > 0) {
+            // 1. Update call logs expiry dates.
+            if (isset($retention['callLogRetention']) === true && $retention['callLogRetention'] > 0) {
                 try {
                     $retentionMs = $retention['callLogRetention'];
                     $expiryQuery = "
@@ -391,7 +403,7 @@ class SettingsService
                     ";
                     $stmt        = $this->db->prepare($expiryQuery);
                     $stmt->execute([$retentionMs * 1000]);
-                    // Convert ms to microseconds
+                    // Convert ms to microseconds.
                     $results['retentionResults']['callLogsUpdated'] = $stmt->rowCount();
                 } catch (\Exception $e) {
                     $error = 'Failed to set call logs expiry dates: '.$e->getMessage();
@@ -400,13 +412,13 @@ class SettingsService
                 }
             }
 
-            // 2. Update event messages expiry dates (skip if expires column doesn't exist)
-            if (isset($retention['eventMessageRetention']) && $retention['eventMessageRetention'] > 0) {
+            // 2. Update event messages expiry dates (skip if expires column doesn't exist).
+            if (isset($retention['eventMessageRetention']) === true && $retention['eventMessageRetention'] > 0) {
                 try {
                     $retentionMs = $retention['eventMessageRetention'];
                     // Check if expires column exists before updating (portable per GH #822).
                     $results['retentionResults']['eventMessagesUpdated'] = 'Column expires not found - skipped';
-                    if ($this->columnExists('openconnector_event_messages', 'expires') === true) {
+                    if ($this->columnExists(unprefixedTable: 'openconnector_event_messages', column: 'expires') === true) {
                         $expiryQuery = "
                             UPDATE `*PREFIX*openconnector_event_messages`
                             SET expires = $expiresExpr
@@ -423,8 +435,8 @@ class SettingsService
                 }//end try
             }//end if
 
-            // 3. Update job logs expiry dates
-            if (isset($retention['jobLogRetention']) && $retention['jobLogRetention'] > 0) {
+            // 3. Update job logs expiry dates.
+            if (isset($retention['jobLogRetention']) === true && $retention['jobLogRetention'] > 0) {
                 try {
                     $retentionMs = $retention['jobLogRetention'];
                     $expiryQuery = "
@@ -442,8 +454,8 @@ class SettingsService
                 }
             }
 
-            // 4. Update synchronization contract logs expiry dates (handle empty expires values)
-            if (isset($retention['syncContractLogRetention']) && $retention['syncContractLogRetention'] > 0) {
+            // 4. Update synchronization contract logs expiry dates (handle empty expires values).
+            if (isset($retention['syncContractLogRetention']) === true && $retention['syncContractLogRetention'] > 0) {
                 try {
                     $retentionMs = $retention['syncContractLogRetention'];
                     $expiryQuery = "
@@ -461,8 +473,8 @@ class SettingsService
                 }
             }
 
-            // 5. Update synchronization logs expiry dates (handle empty expires values)
-            if (isset($retention['syncLogRetention']) && $retention['syncLogRetention'] > 0) {
+            // 5. Update synchronization logs expiry dates (handle empty expires values).
+            if (isset($retention['syncLogRetention']) === true && $retention['syncLogRetention'] > 0) {
                 try {
                     $retentionMs = $retention['syncLogRetention'];
                     $expiryQuery = "
@@ -482,7 +494,7 @@ class SettingsService
 
             $results['endTime']  = new \DateTime();
             $results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
-            $results['success']  = empty($results['errors']);
+            $results['success']  = empty($results['errors']) === true;
 
             $this->logger->info(
                     'Rebase operation completed',
