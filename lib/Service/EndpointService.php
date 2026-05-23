@@ -26,7 +26,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\AppFramework\Http;
-use OC\AppFramework\Http\Request;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
@@ -179,11 +178,11 @@ class EndpointService
      * Transform outgoing errors according to a specified format
      *
      * @param Response $result  The result from either the rules or the target of the endpoint.
-     * @param Request  $request The current request, used to determine the request identifier.
+     * @param IRequest $request The current request, used to determine the request identifier.
      *
      * @return Response
      */
-    private function transformError(Response $result, Request $request): Response
+    private function transformError(Response $result, IRequest $request): Response
     {
         if ($result->getStatus() < 200 || $result->getStatus() >= 300) {
             $resultData = $result->getData();
@@ -1035,8 +1034,8 @@ class EndpointService
     /**
      * Check conditions for using an endpoint.
      *
-     * @param Endpoint $endpoint The endpoint for which the checks should be done.
-     * @param IRequest $request  The inbound request.
+     * @param ObjectEntity $endpoint The endpoint for which the checks should be done.
+     * @param IRequest     $request  The inbound request.
      *
      * @return array
      * @throws Exception
@@ -1046,7 +1045,7 @@ class EndpointService
         $endpointData       = $endpoint->getObject();
         $conditions         = ($endpointData['conditions'] ?? []);
         $data['parameters'] = $request->getParams();
-        $data['headers']    = $this->getHeaders(server: $request->server, proxyHeaders: true);
+        $data['headers']    = $this->getHeaders(server: $_SERVER, proxyHeaders: true);
 
         $result = JsonLogic::apply(logic: $conditions, data: $data);
 
@@ -1069,7 +1068,7 @@ class EndpointService
     private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request): JSONResponse
     {
         $endpointData = $endpoint->getObject();
-        $headers      = $this->getHeaders(server: $request->server);
+        $headers      = $this->getHeaders(server: $_SERVER);
 
         // Fetch the source entity by targetId.
         $source = $this->orObjectService->find(id: ($endpointData['targetId'] ?? ''), register: 'openconnector', schema: 'source');
@@ -1096,11 +1095,11 @@ class EndpointService
     /**
      * Generates url based on available endpoints for the object type.
      *
-     * @param string                           $id           The id of the object to generate an url for.
-     * @param OCA\OpenRegister\Db\SchemaMapper $schemaMapper The mapper to get schemas
-     * @param int|null                         $register     The register of the object (aids performance).
-     * @param int|null                         $schema       The schema of the object (aids performance).
-     * @param array                            $parentIds    The ids of the main object on subobjects.
+     * @param string                            $id           The id of the object to generate an url for.
+     * @param \OCA\OpenRegister\Db\SchemaMapper $schemaMapper The mapper to get schemas
+     * @param int|null                          $register     The register of the object (aids performance).
+     * @param int|null                          $schema       The schema of the object (aids performance).
+     * @param array                             $parentIds    The ids of the main object on subobjects.
      *
      * @return string The generated url.
      * @throws ContainerExceptionInterface
@@ -1400,8 +1399,8 @@ class EndpointService
     /**
      * Processes authentication rules
      *
-     * @param Rule  $rule The rule to process
-     * @param array $data The data of the request
+     * @param ObjectEntity $rule The rule to process
+     * @param array        $data The data of the request
      *
      * @return array|JSONResponse the unchanged $data array if authentication succeeds, or a JSONResponse containing an error on authentication.
      */
@@ -1546,8 +1545,8 @@ class EndpointService
     /**
      * Processes a mapping rule
      *
-     * @param Rule  $rule The rule object containing mapping details
-     * @param array $data The data to be processed through the mapping rule
+     * @param ObjectEntity $rule The rule object containing mapping details
+     * @param array        $data The data to be processed through the mapping rule
      *
      * @return array The processed data after applying the mapping rule
      * @throws DoesNotExistException When the mapping configuration does not exist
@@ -1568,8 +1567,8 @@ class EndpointService
     /**
      * Extends input for performing business logic
      *
-     * @param Rule  $rule The rule containing the configuration which parameters could be extended
-     * @param array $data The data array containing the input parameters.
+     * @param ObjectEntity $rule The rule containing the configuration which parameters could be extended
+     * @param array        $data The data array containing the input parameters.
      *
      * @return array The data array with the extended parameters in the 'extendedParameters' key.
      * @throws ContainerExceptionInterface
@@ -1624,10 +1623,10 @@ class EndpointService
     /**
      * Fetches the audit trail for an object, returns a specific audit rule if the path parameter audittrail-id is specified.
      *
-     * @param Rule     $rule     The rule to execute
-     * @param Endpoint $endpoint The endpoint on which the rule is executed
-     * @param array    $data     The data from the request.
-     * @param string   $objectId The object id for which the request was done.
+     * @param ObjectEntity $rule     The rule to execute
+     * @param ObjectEntity $endpoint The endpoint on which the rule is executed
+     * @param array        $data     The data from the request.
+     * @param string       $objectId The object id for which the request was done.
      *
      * @return array|Response The updated data array, or a json response with a not found error.
      *
@@ -1696,8 +1695,8 @@ class EndpointService
     /**
      * Process a custom rule
      *
-     * @param Rule  $rule The rule to process
-     * @param array $data The data to process
+     * @param ObjectEntity $rule The rule to process
+     * @param array        $data The data to process
      *
      * @return array The updated data array.
      */
@@ -2083,7 +2082,7 @@ class EndpointService
      *
      * @param ObjectEntity $rule     The rule to process.
      * @param array        $data     The data from the object in array form.
-     * @param Request      $request  The current request used to read the uploaded part body.
+     * @param IRequest     $request  The current request used to read the uploaded part body.
      * @param string|null  $objectId The id of the object.
      *
      * @return array The updated object data.
@@ -2095,7 +2094,7 @@ class EndpointService
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
      */
-    private function processFilePartUploadRule(ObjectEntity $rule, array $data, Request $request, ?string $objectId=null): array
+    private function processFilePartUploadRule(ObjectEntity $rule, array $data, IRequest $request, ?string $objectId=null): array
     {
         $ruleConfig = $rule->getObject()['configuration'] ?? [];
         if (isset($ruleConfig['filepart_upload']) === false) {
@@ -2138,8 +2137,8 @@ class EndpointService
     /**
      * Processes a JavaScript rule
      *
-     * @param Rule  $rule The rule object containing JavaScript execution details
-     * @param array $data The input data to be processed by the JavaScript rule
+     * @param ObjectEntity $rule The rule object containing JavaScript execution details
+     * @param array        $data The input data to be processed by the JavaScript rule
      *
      * @return array The processed data after executing the JavaScript rule
      */
@@ -2154,9 +2153,9 @@ class EndpointService
     /**
      * Downloads a file based upon configuration
      *
-     * @param Rule   $rule     The rule to execute.
-     * @param array  $data     The data to perform the rule on.
-     * @param string $objectId The id of the requested object.
+     * @param ObjectEntity $rule     The rule to execute.
+     * @param array        $data     The data to perform the rule on.
+     * @param string       $objectId The id of the requested object.
      *
      * @return Response A response containing the file requested.
      *
@@ -2278,11 +2277,11 @@ class EndpointService
     /**
      * Parse raw content into structured data based on content type.
      *
-     * @param Request $request The current request, used to inspect headers and raw body.
+     * @param IRequest $request The current request, used to inspect headers and raw body.
      *
      * @return mixed Parsed data (array for JSON/XML) or original string.
      */
-    private function parseContent(Request $request): mixed
+    private function parseContent(IRequest $request): mixed
     {
         $contentType = $request->getHeader('Content-Type');
 
@@ -2310,7 +2309,7 @@ class EndpointService
 
         // Try XML decode if content type suggests XML or content looks like XML.
         if ($contentType === 'application/xml' || $contentType === 'text/xml'
-            || ($contentType === null && $this->looksLikeXml(content: $content) === true)
+            || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($content);
