@@ -146,7 +146,7 @@ class PdokConnector
             return ['docs' => [], 'numFound' => 0];
         }
 
-        return $this->fetch('suggest', ['q' => $query, 'rows' => 10], self::TTL_QUERY, false);
+        return $this->fetch(endpoint: 'suggest', params: ['q' => $query, 'rows' => 10], ttl: self::TTL_QUERY, writeThrough: false);
 
     }//end suggest()
 
@@ -163,7 +163,7 @@ class PdokConnector
             return ['docs' => [], 'numFound' => 0];
         }
 
-        return $this->fetch('lookup', ['id' => $id], self::TTL_RESOLVED, true);
+        return $this->fetch(endpoint: 'lookup', params: ['id' => $id], ttl: self::TTL_RESOLVED, writeThrough: true);
 
     }//end lookup()
 
@@ -184,7 +184,7 @@ class PdokConnector
 
         $params = ['q' => $query, 'rows' => $rows, 'start' => $start];
 
-        return $this->fetch('free', $params, self::TTL_QUERY, false);
+        return $this->fetch(endpoint: 'free', params: $params, ttl: self::TTL_QUERY, writeThrough: false);
 
     }//end free()
 
@@ -200,7 +200,7 @@ class PdokConnector
     {
         $params = ['type' => 'adres', 'lat' => $lat, 'lon' => $lng, 'rows' => 1];
 
-        return $this->fetch('reverse', $params, self::TTL_RESOLVED, true);
+        return $this->fetch(endpoint: 'reverse', params: $params, ttl: self::TTL_RESOLVED, writeThrough: true);
 
     }//end reverse()
 
@@ -223,51 +223,83 @@ class PdokConnector
      */
     private function fetch(string $endpoint, array $params, int $ttl, bool $writeThrough): array
     {
-        $cacheKey = $this->cacheKey($endpoint, $params);
-        $cached   = $this->cacheGet($cacheKey);
+        $cacheKey = $this->cacheKey(endpoint: $endpoint, params: $params);
+        $cached   = $this->cacheGet(key: $cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
         // Check OR for an existing record before calling upstream (lookup/reverse only).
         if ($writeThrough === true) {
-            $orHit = $this->orLookup($endpoint, $params);
+            $orHit = $this->orLookup(endpoint: $endpoint, params: $params);
             if ($orHit !== null) {
-                $this->logCall($endpoint, true, true, null, null, $this->circuitState(), false);
-                $this->cacheSet($cacheKey, $orHit, $ttl);
+                $this->logCall(
+                    endpoint: $endpoint,
+                    cacheHit: true,
+                    orHit: true,
+                    upstreamLatencyMs: null,
+                    httpStatus: null,
+                    circuitState: $this->circuitState(),
+                    writeThrough: false
+                );
+                $this->cacheSet(key: $cacheKey, value: $orHit, ttl: $ttl);
                 return $orHit;
             }
         }
 
         // Circuit breaker — short-circuit when open and no fallback is available.
         if ($this->circuitState() === 'open') {
-            $this->logCall($endpoint, false, false, null, null, 'open', false);
+            $this->logCall(
+                endpoint: $endpoint,
+                cacheHit: false,
+                orHit: false,
+                upstreamLatencyMs: null,
+                httpStatus: null,
+                circuitState: 'open',
+                writeThrough: false
+            );
             return ['docs' => [], 'numFound' => 0, 'stale' => true];
         }
 
         $started  = microtime(true);
         $httpCode = null;
         try {
-            $raw      = $this->callPdok($endpoint, $params);
+            $raw      = $this->callPdok(endpoint: $endpoint, params: $params);
             $httpCode = 200;
         } catch (PdokUpstreamException $e) {
             $httpCode = $e->getStatusCode();
-            $this->logCall($endpoint, false, false, (int) ((microtime(true) - $started) * 1000), $httpCode, $this->circuitState(), false);
+            $this->logCall(
+                endpoint: $endpoint,
+                cacheHit: false,
+                orHit: false,
+                upstreamLatencyMs: (int) ((microtime(true) - $started) * 1000),
+                httpStatus: $httpCode,
+                circuitState: $this->circuitState(),
+                writeThrough: false
+            );
             return ['docs' => [], 'numFound' => 0, 'stale' => true];
         }
 
-        $normalised = $this->normaliseResponse($raw);
+        $normalised = $this->normaliseResponse(raw: $raw);
 
-        $this->cacheSet($cacheKey, $normalised, $ttl);
+        $this->cacheSet(key: $cacheKey, value: $normalised, ttl: $ttl);
 
         if ($writeThrough === true) {
             foreach ($normalised['docs'] as $doc) {
-                $this->writeThrough($doc);
+                $this->writeThrough(doc: $doc);
             }
         }
 
         $latencyMs = (int) ((microtime(true) - $started) * 1000);
-        $this->logCall($endpoint, false, false, $latencyMs, $httpCode, $this->circuitState(), $writeThrough);
+        $this->logCall(
+            endpoint: $endpoint,
+            cacheHit: false,
+            orHit: false,
+            upstreamLatencyMs: $latencyMs,
+            httpStatus: $httpCode,
+            circuitState: $this->circuitState(),
+            writeThrough: $writeThrough
+        );
 
         return $normalised;
 
@@ -295,12 +327,12 @@ class PdokConnector
                 $status   = $response->getStatusCode();
                 if ($status >= 200 && $status < 300) {
                     $this->circuitOnSuccess();
-                    return $this->decodePdokBody($response);
+                    return $this->decodePdokBody(response: $response);
                 }
 
                 if ($status === 429) {
                     $attempt++;
-                    $this->sleepBackoff($attempt);
+                    $this->sleepBackoff(attempt: $attempt);
                     continue;
                 }
 
@@ -359,7 +391,7 @@ class PdokConnector
 
         $normalised = [];
         foreach ($docs as $doc) {
-            $normalised[] = $this->normalize($doc);
+            $normalised[] = $this->normalize(pdokDoc: $doc);
         }
 
         return ['docs' => $normalised, 'numFound' => $numFound];
@@ -400,7 +432,7 @@ class PdokConnector
             'addressCountry'      => 'NL',
             'bagAddressId'        => ($pdokDoc['nummeraanduiding_id'] ?? null),
             'bagBuildingId'       => ($pdokDoc['pandid'] ?? null),
-            'location'            => $this->parseWkt(($pdokDoc['centroide_ll'] ?? null)),
+            'location'            => $this->parseWkt(wkt: ($pdokDoc['centroide_ll'] ?? null)),
             'source'              => 'pdok',
             'fetchedAt'           => gmdate('Y-m-d\TH:i:s\Z'),
         ];
@@ -464,7 +496,11 @@ class PdokConnector
         }
 
         $value = $this->cache->get($key);
-        return (is_array($value) === true ? $value : null);
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
 
     }//end cacheGet()
 

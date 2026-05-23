@@ -117,7 +117,7 @@ class DSOParserService
 
         // Validate BSN if aanvrager contains one.
         if (isset($payload['aanvrager']['bsn']) === true) {
-            $bsnValid = $this->validateBSN($payload['aanvrager']['bsn']);
+            $bsnValid = $this->validateBSN(bsn: $payload['aanvrager']['bsn']);
             if ($bsnValid === false) {
                 $errors[] = [
                     'field'   => 'aanvrager.bsn',
@@ -129,7 +129,7 @@ class DSOParserService
 
         // Validate indieningsdatum format (ISO 8601).
         if (isset($payload['indieningsdatum']) === true
-            && $this->validateISODate($payload['indieningsdatum']) === false
+            && $this->validateISODate(date: $payload['indieningsdatum']) === false
         ) {
             $errors[] = [
                 'field'   => 'indieningsdatum',
@@ -154,15 +154,20 @@ class DSOParserService
      */
     public function parseVerzoek(array $payload): array
     {
+        $bouwkosten = null;
+        if (isset($payload['bouwkosten']) === true) {
+            $bouwkosten = (float) $payload['bouwkosten'];
+        }
+
         $verzoek = [
             'verzoekId'       => $payload['verzoekId'] ?? null,
             'bronorganisatie' => $payload['bronorganisatie'] ?? null,
             'type'            => $payload['type'] ?? null,
             'indieningsdatum' => $payload['indieningsdatum'] ?? null,
-            'aanvrager'       => $this->parseAanvrager($payload['aanvrager'] ?? []),
-            'locatie'         => $this->parseLocatie($payload['locatie'] ?? []),
-            'activiteiten'    => $this->parseActiviteiten($payload['activiteiten'] ?? []),
-            'bouwkosten'      => isset($payload['bouwkosten']) === true ? (float) $payload['bouwkosten'] : null,
+            'aanvrager'       => $this->parseAanvrager(aanvrager: $payload['aanvrager'] ?? []),
+            'locatie'         => $this->parseLocatie(locatie: $payload['locatie'] ?? []),
+            'activiteiten'    => $this->parseActiviteiten(activiteiten: $payload['activiteiten'] ?? []),
+            'bouwkosten'      => $bouwkosten,
             'bijlagen'        => $payload['bijlagen'] ?? [],
             'status'          => 'ontvangen',
             'environment'     => $payload['environment'] ?? 'productie',
@@ -284,7 +289,7 @@ class DSOParserService
 
         // Convert GML to GeoJSON if present.
         if (isset($locatie['gmlGeometrie']) === true) {
-            $parsed['geometrie'] = $this->convertGMLToGeoJSON($locatie['gmlGeometrie']);
+            $parsed['geometrie'] = $this->convertGMLToGeoJSON(gml: $locatie['gmlGeometrie']);
         }
 
         return $parsed;
