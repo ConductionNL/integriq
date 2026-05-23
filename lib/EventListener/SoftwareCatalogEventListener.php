@@ -1,87 +1,103 @@
 <?php
+/**
+ * OpenConnector SoftwareCatalog EventListener.
+ *
+ * Handles organization and contact related events in the software catalog,
+ * including user management and email notifications.
+ *
+ * @category EventListener
+ * @package  OCA\OpenConnector\EventListener
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ *
+ * @todo This listener should be moved to the software catalog app.
+ */
 
 namespace OCA\OpenConnector\EventListener;
 
 use OCA\OpenConnector\Service\SoftwareCatalogueService;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use Psr\Log\LoggerInterface;
 
 /**
  * Event listener for handling software catalog specific events.
  *
- * This listener handles organization and contact related events in the software catalog,
- * including user management and email notifications.
- *
- * @category EventListener
- * @package  OCA\OpenConnector\EventListener
- * @author   Conduction b.v. <info@conduction.nl>
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/OpenConnector
- * @version  1.0.0
- * @todo     This listener should be moved to the software catalog app
- */
-/**
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class SoftwareCatalogEventListener implements IEventListener
 {
+
     /**
-     * Schema ID for organizations
+     * Schema ID for organizations.
+     *
+     * @var int
      */
     private const ORGANIZATION_SCHEMA_ID = 1;
 
     /**
-     * Schema ID for contacts
+     * Schema ID for contacts.
+     *
+     * @var int
      */
     private const CONTACT_SCHEMA_ID = 2;
 
     /**
-     * Constructor for SoftwareCatalogEventListener
+     * Constructor.
      *
-     * @param SoftwareCatalogueService $softwareCatalogueService The software catalog service
-     * @param LoggerInterface          $logger                   The logger instance
+     * @param SoftwareCatalogueService $softwareCatalogueService The software catalog service.
+     * @param LoggerInterface          $logger                   The logger instance.
      */
     public function __construct(
         private readonly SoftwareCatalogueService $softwareCatalogueService,
         private readonly LoggerInterface $logger,
     ) {
+
     }//end __construct()
 
     /**
-     * Handles events related to software catalog objects
+     * Handles events related to software catalog objects.
      *
-     * @param  Event $event The event to handle
+     * @param Event $event The event to handle.
+     *
      * @return void
      */
     public function handle(Event $event): void
     {
-        // Handle object creation
+        // Handle object creation.
         if ($event instanceof ObjectCreatedEvent) {
-            $this->handleObjectCreated($event);
+            $this->handleObjectCreated(event: $event);
             return;
         }
 
-        // Handle object updates
+        // Handle object updates.
         if ($event instanceof ObjectUpdatedEvent) {
-            $this->handleObjectUpdated($event);
+            $this->handleObjectUpdated(event: $event);
             return;
         }
 
-        // Handle object deletion
+        // Handle object deletion.
         if ($event instanceof ObjectDeletedEvent) {
-            $this->handleObjectDeleted($event);
+            $this->handleObjectDeleted(event: $event);
             return;
         }
+
     }//end handle()
 
     /**
-     * Handles object creation events
+     * Handles object creation events.
      *
-     * @param  ObjectCreatedEvent $event The creation event
+     * @param ObjectCreatedEvent $event The creation event.
+     *
      * @return void
      */
     private function handleObjectCreated(ObjectCreatedEvent $event): void
@@ -91,7 +107,7 @@ class SoftwareCatalogEventListener implements IEventListener
             return;
         }
 
-        // Handle organization creation
+        // Handle organization creation.
         if ($object->getSchema() === self::ORGANIZATION_SCHEMA_ID) {
             try {
                 $this->softwareCatalogueService->handleNewOrganization($object);
@@ -108,7 +124,7 @@ class SoftwareCatalogEventListener implements IEventListener
             return;
         }
 
-        // Handle contact creation
+        // Handle contact creation.
         if ($object->getSchema() === self::CONTACT_SCHEMA_ID) {
             try {
                 $this->softwareCatalogueService->handleNewContact($object);
@@ -122,12 +138,14 @@ class SoftwareCatalogEventListener implements IEventListener
                         );
             }
         }
+
     }//end handleObjectCreated()
 
     /**
-     * Handles object update events
+     * Handles object update events.
      *
-     * @param  ObjectUpdatedEvent $event The update event
+     * @param ObjectUpdatedEvent $event The update event.
+     *
      * @return void
      */
     private function handleObjectUpdated(ObjectUpdatedEvent $event): void
@@ -137,7 +155,7 @@ class SoftwareCatalogEventListener implements IEventListener
             return;
         }
 
-        // Handle contact updates
+        // Handle contact updates.
         if ($object->getSchema() === self::CONTACT_SCHEMA_ID) {
             try {
                 $this->softwareCatalogueService->handleContactUpdate($object);
@@ -151,12 +169,14 @@ class SoftwareCatalogEventListener implements IEventListener
                         );
             }
         }
+
     }//end handleObjectUpdated()
 
     /**
-     * Handles object deletion events
+     * Handles object deletion events.
      *
-     * @param  ObjectDeletedEvent $event The deletion event
+     * @param ObjectDeletedEvent $event The deletion event.
+     *
      * @return void
      */
     private function handleObjectDeleted(ObjectDeletedEvent $event): void
@@ -166,7 +186,7 @@ class SoftwareCatalogEventListener implements IEventListener
             return;
         }
 
-        // Handle contact deletion
+        // Handle contact deletion.
         if ($object->getSchema() === self::CONTACT_SCHEMA_ID) {
             try {
                 $this->softwareCatalogueService->handleContactDeletion($object);
@@ -180,5 +200,6 @@ class SoftwareCatalogEventListener implements IEventListener
                         );
             }
         }
+
     }//end handleObjectDeleted()
 }//end class
