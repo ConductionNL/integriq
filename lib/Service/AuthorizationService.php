@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector AuthorizationService.
+ *
+ * Service class for handling authorization on incoming calls — JWT, basic auth,
+ * OAuth bearer tokens and API keys.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -51,9 +68,13 @@ class AuthorizationService
     const PSS_ALGORITHMS   = ['PS256', 'PS384', 'PS512'];
 
     /**
-     * @param IUserManager                            $userManager
-     * @param IUserSession                            $userSession
-     * @param \OCA\OpenRegister\Service\ObjectService $orObjectService
+     * Constructor.
+     *
+     * @param IUserManager                            $userManager     The user manager.
+     * @param IUserSession                            $userSession     The user session.
+     * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR ObjectService used to resolve consumers.
+     * @param IGroupManager                           $groupManager    The group manager.
+     * @param IProvider                               $tokenProvider   OAuth token provider.
      */
     public function __construct(
         private readonly IUserManager $userManager,
@@ -62,19 +83,30 @@ class AuthorizationService
         private readonly IGroupManager $groupManager,
         private readonly IProvider $tokenProvider,
     ) {
+
     }//end __construct()
 
     /**
      * Find the issuer (consumer) for the request.
      *
-     * @param  string $issuer The issuer from the JWT token.
+     * @param string $issuer The issuer from the JWT token.
+     *
      * @return ObjectEntity The consumer for the JWT token.
+     *
      * @throws AuthenticationException Thrown if no issuer was found.
      */
     private function findIssuer(string $issuer): ObjectEntity
     {
-        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'consumer', 'name' => $issuer]]);
-        $consumers = $matches['results'] ?? $matches;
+        $matches   = $this->orObjectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => 'openconnector',
+                    'schema'   => 'consumer',
+                    'name'     => $issuer,
+                ],
+            ]
+        );
+        $consumers = ($matches['results'] ?? $matches);
 
         if (count($consumers) === 0) {
             throw new AuthenticationException(message: 'The issuer was not found', details: ['iss' => $issuer]);
@@ -86,7 +118,8 @@ class AuthorizationService
     /**
      * Check if the headers of a JWT token are valid.
      *
-     * @param  JWS $token The unserialized token.
+     * @param JWS $token The unserialized token.
+     *
      * @return void
      */
     private function checkHeaders(JWS $token): void
@@ -105,10 +138,12 @@ class AuthorizationService
     /**
      * Get the Json Web Key for a public key combined with an algorithm.
      *
-     * @param  string $publicKey The public key to create a JWK for
-     * @param  string $algorithm The algorithm deciding how the key should be defined.
+     * @param string $publicKey The public key to create a JWK for.
+     * @param string $algorithm The algorithm deciding how the key should be defined.
+     *
      * @return JWKSet The resulting JWK-set.
-     * @throws AuthenticationException
+     *
+     * @throws AuthenticationException If the algorithm is not supported.
      */
     private function getJWK(string $publicKey, string $algorithm): JWKSet
     {
@@ -141,9 +176,11 @@ class AuthorizationService
     /**
      * Validate data in the payload.
      *
-     * @param  array $payload The payload of the JWT token.
+     * @param array $payload The payload of the JWT token.
+     *
      * @return void
-     * @throws AuthenticationException
+     *
+     * @throws AuthenticationException If the token is missing/expired.
      */
     public function validatePayload(array $payload): void
     {
@@ -162,16 +199,26 @@ class AuthorizationService
         }
 
         if ($exp->diff($now)->format('%R') === '+') {
-            throw new AuthenticationException(message: 'The token has expired', details: ['iat' => $iat->getTimestamp(), 'exp' => $exp->getTimestamp(), 'time checked' => $now->getTimestamp()]);
+            throw new AuthenticationException(
+                message: 'The token has expired',
+                details: [
+                    'iat'          => $iat->getTimestamp(),
+                    'exp'          => $exp->getTimestamp(),
+                    'time checked' => $now->getTimestamp(),
+                ]
+            );
         }
+
     }//end validatePayload()
 
     /**
      * Checks if authorization header contains a valid JWT token.
      *
-     * @param  string $authorization The authorization header.
+     * @param string $authorization The authorization header.
+     *
      * @return void
-     * @throws AuthenticationException
+     *
+     * @throws AuthenticationException On any validation failure.
      */
     public function authorizeJwt(string $authorization): void
     {
@@ -200,7 +247,7 @@ class AuthorizationService
         $jws = $serializerManager->unserialize(input: $token);
 
         try {
-            $this->checkHeaders($jws);
+            $this->checkHeaders(token: $jws);
         } catch (InvalidHeaderException $exception) {
             throw new AuthenticationException(message: 'The token could not be validated', details: ['reason' => $exception->getMessage()]);
         }
@@ -220,23 +267,27 @@ class AuthorizationService
         $jwkSet = $this->getJWK(publicKey: $publicKey, algorithm: $algorithm);
 
         if ($verifier->verifyWithKeySet(jws: $jws, jwkset: $jwkSet, signatureIndex: 0) === false) {
-            throw new AuthenticationException(message: 'The token could not be validated', details: ['reason' => 'The token does not match the public key']);
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'The token does not match the public key']
+            );
         }
 
-        $this->validatePayload($payload);
+        $this->validatePayload(payload: $payload);
 
         $this->userSession->setUser($this->userManager->get($issuerData['userId'] ?? ''));
     }//end authorizeJwt()
 
     /**
-     * Authorize user based on basic
+     * Authorize user based on basic auth.
      *
-     * @param string $header The authorization header given in the request
-     * @param array  $users  The users allowed to be authenticated according to the rule
-     * @param array  $groups The groups allowed to be authenticated according to the rule
+     * @param string $header The authorization header given in the request.
+     * @param array  $users  The users allowed to be authenticated according to the rule.
+     * @param array  $groups The groups allowed to be authenticated according to the rule.
      *
      * @return void
-     * @throws AuthenticationException
+     *
+     * @throws AuthenticationException On invalid credentials.
      */
     public function authorizeBasic(string $header, array $users, array $groups): void
     {
@@ -260,19 +311,40 @@ class AuthorizationService
         // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
         //
         // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        // throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to login on this endpoint']);
+        // throw new AuthenticationException(
+        // message: 'Not authorized',
+        // details: ['reason' => 'The selected user is not allowed to login on this endpoint']
+        // );
         // }
         $this->userSession->setUser($user);
+
     }//end authorizeBasic()
 
+    /**
+     * Authorize user based on OAuth bearer tokens.
+     *
+     * @param string $header The authorization header given in the request.
+     * @param array  $users  The users allowed to be authenticated according to the rule.
+     * @param array  $groups The groups allowed to be authenticated according to the rule.
+     *
+     * @return void
+     *
+     * @throws AuthenticationException On invalid tokens.
+     */
     public function authorizeOAuth(string $header, array $users, array $groups): void
     {
         if (str_starts_with($header, 'Bearer') === false) {
-            throw new AuthenticationException(message: 'Invalid method', details: ['reason' => 'The authentication method you are using is not allowed on this resource.']);
+            throw new AuthenticationException(
+                message: 'Invalid method',
+                details: ['reason' => 'The authentication method you are using is not allowed on this resource.']
+            );
         }
 
         if ($this->userSession->isLoggedIn() === false) {
-            throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The token you used has either expired or was not recognized as a valid token']);
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'The token you used has either expired or was not recognized as a valid token']
+            );
         }
 
         $user = $this->userSession->getUser();
@@ -296,19 +368,20 @@ class AuthorizationService
     }//end authorizeOAuth()
 
     /**
-     * Add CORS headers to controller result
+     * Add CORS headers to controller result.
      *
-     * @param  IRequest $request  The incoming request.
-     * @param  Response $response The outgoing response.
+     * @param IRequest $request  The incoming request.
+     * @param Response $response The outgoing response.
+     *
      * @return Response The updated response.
-     * @throws SecurityException
+     *
+     * @throws SecurityException If Allow-Credentials is true.
      */
     public function corsAfterController(IRequest $request, Response $response)
     {
-        // only react if it's a CORS request and if the request sends origin and
-        if (isset($request->server['HTTP_ORIGIN'])) {
-            // allow credentials headers must not be true or CSRF is possible
-            // otherwise
+        // Only react if it's a CORS request and if the request sends origin and.
+        if (isset($request->server['HTTP_ORIGIN']) === true) {
+            // Allow credentials headers must not be true or CSRF is possible otherwise.
             foreach ($response->getHeaders() as $header => $value) {
                 if (strtolower($header) === 'access-control-allow-credentials'
                     && strtolower(trim($value)) === 'true'
@@ -326,12 +399,14 @@ class AuthorizationService
     }//end corsAfterController()
 
     /**
-     * Authorize user based on APIkey
+     * Authorize user based on API key.
      *
-     * @param  string $header The authorization header used.
-     * @param  array  $keys   The array of keys configured on the rule.
+     * @param string $header The authorization header used.
+     * @param array  $keys   The array of keys configured on the rule.
+     *
      * @return void
-     * @throws AuthenticationException
+     *
+     * @throws AuthenticationException On invalid API keys.
      */
     public function authorizeApiKey(string $header, array $keys): void
     {
