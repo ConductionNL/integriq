@@ -28,7 +28,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use Psr\Container\ContainerExceptionInterface;
@@ -57,7 +56,6 @@ class SynchronizationsController extends Controller
      *
      * @param string                 $appName                The name of the app.
      * @param IRequest               $request                The request object.
-     * @param IAppConfig             $config                 The app configuration object.
      * @param OrObjectService        $orObjectService        The OR object service.
      * @param SynchronizationService $synchronizationService The synchronization service.
      * @param IL10N                  $l                      The localization service.
@@ -66,7 +64,6 @@ class SynchronizationsController extends Controller
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config,
         private readonly OrObjectService $orObjectService,
         private readonly SynchronizationService $synchronizationService,
         private readonly IL10N $l,

@@ -1,71 +1,11 @@
 # PHPStan baseline — tracked lint debt for openconnector
 #
-# This baseline was generated during the Phase 2 canonical-root-config sync
-# (PR follow-up to shillinq#300 / decidesk#243). PHPStan had never run on
-# this repo before; everything below is pre-existing static-analysis debt
-# absorbed as tracked items, NOT new debt introduced by the sync.
-#
 # Burndown tracked at: https://github.com/ConductionNL/openconnector/issues/848
 # Remove entries here as the underlying code is fixed.
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Action\\\\EventAction\\:\\:\\$callService is never read, only written\\.$#"
-			count: 1
-			path: lib/Action/EventAction.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\ConsumersController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/ConsumersController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\ConsumersController\\:\\:\\$l is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/ConsumersController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\EndpointsController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/EndpointsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\EventsController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/EventsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\JobsController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/JobsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\MappingsController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/MappingsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\RulesController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/RulesController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\RulesController\\:\\:\\$l is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/RulesController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\SourcesController\\:\\:\\$config is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/SourcesController.php
-
-		-
 			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
-			count: 1
-			path: lib/Controller/SynchronizationsController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\SynchronizationsController\\:\\:\\$config is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/SynchronizationsController.php
 
@@ -75,37 +15,12 @@ parameters:
 			path: lib/Controller/UserController.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\UserController\\:\\:\\$authorizationService is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/UserController.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Controller\\\\UserController\\:\\:\\$organisationBridgeService is never read, only written\\.$#"
-			count: 1
-			path: lib/Controller/UserController.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between OCP\\\\IUser and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Controller/UserController.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\EventListener\\\\ViewDeletedEventListener\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/ViewDeletedEventListener.php
-
-		-
 			message: "#^Constant OCA\\\\OpenConnector\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:SOFTWARE_CATALOG_REGISTER_ID is unused\\.$#"
-			count: 1
-			path: lib/EventListener/ViewUpdatedOrCreatedEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/ViewUpdatedOrCreatedEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\EventListener\\\\ViewUpdatedOrCreatedEventListener\\:\\:\\$synchronizationService is never read, only written\\.$#"
 			count: 1
 			path: lib/EventListener/ViewUpdatedOrCreatedEventListener.php
 
@@ -141,16 +56,6 @@ parameters:
 
 		-
 			message: "#^PHPDoc tag @throws with type OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException is not subtype of Throwable$#"
-			count: 1
-			path: lib/Service/AuthorizationService.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\AuthorizationService\\:\\:\\$groupManager is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/AuthorizationService.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\AuthorizationService\\:\\:\\$tokenProvider is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/AuthorizationService.php
 
@@ -390,11 +295,6 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:\\$appConfig is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
 			message: "#^Result of \\|\\| is always false\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
@@ -560,16 +460,6 @@ parameters:
 			path: lib/Service/RuleService.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\RuleService\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/RuleService.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\SOAPService\\:\\:\\$transport is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/SOAPService.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between SimpleXMLElement\\|false and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/SOAPService.php
@@ -598,11 +488,6 @@ parameters:
 			message: "#^Anonymous function has an unused use \\$openRegister\\.$#"
 			count: 2
 			path: lib/Service/SoftwareCatalogueService.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\StUFFieldMapper\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/StUFFieldMapper.php
 
 		-
 			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\StorageService\\:\\:\\$userSession\\.$#"
@@ -695,19 +580,9 @@ parameters:
 			path: lib/Service/SynchronizationService.php
 
 		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Service\\\\UserService\\:\\:\\$userManager is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/UserService.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between OCP\\\\Accounts\\\\IAccountProperty and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/UserService.php
-
-		-
-			message: "#^Property OCA\\\\OpenConnector\\\\Settings\\\\OpenConnectorAdmin\\:\\:\\$l is never read, only written\\.$#"
-			count: 1
-			path: lib/Settings/OpenConnectorAdmin.php
 
 		-
 			message: "#^Class OC\\\\Files\\\\Node\\\\File not found\\.$#"

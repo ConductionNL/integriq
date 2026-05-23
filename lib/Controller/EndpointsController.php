@@ -34,7 +34,6 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -83,7 +82,6 @@ class EndpointsController extends Controller
      *
      * @param string               $appName              The name of the app.
      * @param IRequest             $request              The request object.
-     * @param IAppConfig           $config               The app configuration object.
      * @param EndpointService      $endpointService      Service for handling endpoint operations.
      * @param AuthorizationService $authorizationService Service for handling authorization.
      * @param ObjectService        $objectService        Service for direct ObjectService operations.
@@ -97,7 +95,6 @@ class EndpointsController extends Controller
     public function __construct(
         $appName,
         IRequest $request,
-        private IAppConfig $config,
         private EndpointService $endpointService,
         private AuthorizationService $authorizationService,
         private ObjectService $objectService,

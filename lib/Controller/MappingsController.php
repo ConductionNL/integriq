@@ -29,7 +29,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -54,7 +53,6 @@ class MappingsController extends Controller
      *
      * @param string         $appName        The name of the app.
      * @param IRequest       $request        The request object.
-     * @param IAppConfig     $config         The app configuration object.
      * @param MappingService $mappingService The mapping service.
      * @param ObjectService  $objectService  The object service (OC).
      * @param IL10N          $l              The localization service.
@@ -62,7 +60,6 @@ class MappingsController extends Controller
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config,
         private readonly MappingService $mappingService,
         private readonly ObjectService $objectService,
         private readonly IL10N $l

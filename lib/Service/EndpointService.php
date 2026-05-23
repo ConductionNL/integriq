@@ -41,7 +41,6 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -92,7 +91,6 @@ class EndpointService
      * @param MappingService         $mappingService         Service used to apply request/response mappings.
      * @param ORObjectService        $orObjectService        OpenRegister object service for register/schema CRUD.
      * @param IConfig                $config                 Nextcloud system configuration.
-     * @param IAppConfig             $appConfig              Nextcloud app-scoped configuration.
      * @param StorageService         $storageService         Service used for file part and attachment storage.
      * @param AuthorizationService   $authorizationService   Service used to authorize incoming endpoint requests.
      * @param ContainerInterface     $containerInterface     PSR container used to resolve optional services.
@@ -109,7 +107,6 @@ class EndpointService
         private readonly MappingService $mappingService,
         private readonly ORObjectService $orObjectService,
         private readonly IConfig $config,
-        private readonly IAppConfig $appConfig,
         private readonly StorageService $storageService,
         private readonly AuthorizationService $authorizationService,
         private readonly ContainerInterface $containerInterface,

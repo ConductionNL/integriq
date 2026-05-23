@@ -20,23 +20,13 @@ namespace OCA\OpenConnector\Settings;
 
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IConfig;
-use OCP\IL10N;
 use OCP\Settings\ISettings;
 
 /**
  * Admin settings panel for OpenConnector.
- *
- * @SuppressWarnings(PHPMD.ShortVariable)
  */
 class OpenConnectorAdmin implements ISettings
 {
-
-    /**
-     * Localisation service.
-     *
-     * @var IL10N
-     */
-    private IL10N $l;
 
     /**
      * Nextcloud config service.
@@ -49,12 +39,10 @@ class OpenConnectorAdmin implements ISettings
      * Constructor.
      *
      * @param IConfig $config Nextcloud config service.
-     * @param IL10N   $l      Localisation service.
      */
-    public function __construct(IConfig $config, IL10N $l)
+    public function __construct(IConfig $config)
     {
         $this->config = $config;
-        $this->l      = $l;
 
     }//end __construct()
 

@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
-use Psr\Log\LoggerInterface;
 
 /**
  * Service for mapping StUF fields to/from OpenRegister object properties.
@@ -61,12 +60,9 @@ class StUFFieldMapper
 
     /**
      * StUFFieldMapper constructor.
-     *
-     * @param LoggerInterface $logger Logger for error handling
      */
-    public function __construct(
-        private readonly LoggerInterface $logger
-    ) {
+    public function __construct()
+    {
 
     }//end __construct()
 

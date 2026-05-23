@@ -21,10 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\SecurityService;
 use OCA\OpenConnector\Service\UserService;
-use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -73,13 +71,6 @@ class UserController extends Controller
     private readonly IUserSession $userSession;
 
     /**
-     * Authorization service for handling authentication
-     *
-     * @var AuthorizationService
-     */
-    private readonly AuthorizationService $authorizationService;
-
-    /**
      * Security service for handling rate limiting and XSS protection
      *
      * @var SecurityService
@@ -92,13 +83,6 @@ class UserController extends Controller
      * @var UserService
      */
     private readonly UserService $userService;
-
-    /**
-     * Organisation bridge service for organization management
-     *
-     * @var OrganisationBridgeService
-     */
-    private readonly OrganisationBridgeService $organisationBridgeService;
 
     /**
      * Logger for application events
@@ -141,29 +125,25 @@ class UserController extends Controller
      * Initializes the controller with required dependencies for user management
      * and authentication operations.
      *
-     * @param string                    $appName                   The name of the app
-     * @param IRequest                  $request                   The request object for handling HTTP requests
-     * @param IUserManager              $userManager               The user manager for user operations
-     * @param IUserSession              $userSession               The user session manager
-     * @param AuthorizationService      $authorizationService      The authorization service
-     * @param ICacheFactory             $cacheFactory              The cache factory for rate limiting
-     * @param LoggerInterface           $logger                    The logger for security events
-     * @param UserService               $userService               The user service for user-related operations
-     * @param OrganisationBridgeService $organisationBridgeService The organization bridge service
-     * @param IL10N                     $l                         The localization service
-     * @param string                    $corsMethods               Allowed CORS methods
-     * @param string                    $corsAllowedHeaders        Allowed CORS headers
-     * @param int                       $corsMaxAge                CORS max age
+     * @param string          $appName            The name of the app
+     * @param IRequest        $request            The request object for handling HTTP requests
+     * @param IUserManager    $userManager        The user manager for user operations
+     * @param IUserSession    $userSession        The user session manager
+     * @param ICacheFactory   $cacheFactory       The cache factory for rate limiting
+     * @param LoggerInterface $logger             The logger for security events
+     * @param UserService     $userService        The user service for user-related operations
+     * @param IL10N           $l                  The localization service
+     * @param string          $corsMethods        Allowed CORS methods
+     * @param string          $corsAllowedHeaders Allowed CORS headers
+     * @param int             $corsMaxAge         CORS max age
      *
      * @psalm-param   string $appName
      * @psalm-param   IRequest $request
      * @psalm-param   IUserManager $userManager
      * @psalm-param   IUserSession $userSession
-     * @psalm-param   AuthorizationService $authorizationService
      * @psalm-param   ICacheFactory $cacheFactory
      * @psalm-param   LoggerInterface $logger
      * @psalm-param   UserService $userService
-     * @psalm-param   OrganisationBridgeService $organisationBridgeService
      * @psalm-param   IL10N $l
      * @psalm-param   string $corsMethods
      * @psalm-param   string $corsAllowedHeaders
@@ -172,11 +152,9 @@ class UserController extends Controller
      * @phpstan-param IRequest $request
      * @phpstan-param IUserManager $userManager
      * @phpstan-param IUserSession $userSession
-     * @phpstan-param AuthorizationService $authorizationService
      * @phpstan-param ICacheFactory $cacheFactory
      * @phpstan-param LoggerInterface $logger
      * @phpstan-param UserService $userService
-     * @phpstan-param OrganisationBridgeService $organisationBridgeService
      * @phpstan-param IL10N $l
      * @phpstan-param string $corsMethods
      * @phpstan-param string $corsAllowedHeaders
@@ -187,25 +165,21 @@ class UserController extends Controller
         IRequest $request,
         IUserManager $userManager,
         IUserSession $userSession,
-        AuthorizationService $authorizationService,
         ICacheFactory $cacheFactory,
         LoggerInterface $logger,
         UserService $userService,
-        OrganisationBridgeService $organisationBridgeService,
         IL10N $l,
         string $corsMethods='PUT, POST, GET, DELETE, PATCH',
         string $corsAllowedHeaders='Authorization, Content-Type, Accept',
         int $corsMaxAge=1728000
     ) {
         parent::__construct(appName: $appName, request: $request);
-        $this->userManager          = $userManager;
-        $this->userSession          = $userSession;
-        $this->authorizationService = $authorizationService;
-        $this->securityService      = new SecurityService(cacheFactory: $cacheFactory, logger: $logger);
-        $this->userService          = $userService;
-        $this->organisationBridgeService = $organisationBridgeService;
-        $this->logger = $logger;
-        $this->l      = $l;
+        $this->userManager     = $userManager;
+        $this->userSession     = $userSession;
+        $this->securityService = new SecurityService(cacheFactory: $cacheFactory, logger: $logger);
+        $this->userService     = $userService;
+        $this->logger          = $logger;
+        $this->l = $l;
 
         $this->corsMethods        = $corsMethods;
         $this->corsAllowedHeaders = $corsAllowedHeaders;
