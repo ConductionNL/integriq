@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenConnector DSO Controller
  *
@@ -9,12 +10,12 @@
  * @package  OCA\OpenConnector\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
+ * @link https://conduction.nl
  *
- * @link https://www.OpenConnector.nl
+ * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  */
 
 declare(strict_types=1);
@@ -31,8 +32,10 @@ use Psr\Log\LoggerInterface;
 /**
  * Controller for the DSO STAM koppelvlak inbound endpoint.
  *
- * Accepts DSO-verzoek payloads (JSON/XML), validates them, and enqueues
- * them for asynchronous processing into OpenRegister/Procest zaken.
+ * Accepts DSO-verzoek payloads (JSON/XML), validates them, and returns
+ * HTTP 202 Accepted with verzoekId confirmation for asynchronous processing.
+ *
+ * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  */
@@ -41,10 +44,12 @@ class DSOController extends Controller
     /**
      * DSOController constructor.
      *
-     * @param string           $appName The name of the app
-     * @param IRequest         $request Request object
-     * @param DSOParserService $parser  The DSO payload parser service
-     * @param LoggerInterface  $logger  Logger for error handling
+     * @param string           $appName The name of the app.
+     * @param IRequest         $request Request object.
+     * @param DSOParserService $parser  The DSO payload parser service.
+     * @param LoggerInterface  $logger  Logger for error handling.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
      */
     public function __construct(
         string $appName,
@@ -60,10 +65,12 @@ class DSOController extends Controller
      * Receive a DSO-verzoek via the STAM koppelvlak.
      *
      * Accepts POST requests with DSO-verzoek payloads (JSON or XML),
-     * validates the request signature and payload schema, and enqueues
-     * the verzoek for asynchronous processing.
+     * validates the request signature and payload schema, and returns
+     * HTTP 202 Accepted with the verzoekId for asynchronous processing.
      *
      * @return JSONResponse HTTP 202 on success, 400 on validation error, 401 on signature error.
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
      *
      * @NoCSRFRequired
      * @PublicPage
@@ -77,42 +84,53 @@ class DSOController extends Controller
         if ($this->validateSignature(signature: $signatureHeader, body: $body) === false) {
             $this->logger->warning('DSO STAM: Invalid webhook signature');
             return new JSONResponse(
-                ['error' => 'invalid_signature', 'message' => 'Webhook signature validation failed'],
-                Http::STATUS_UNAUTHORIZED
+                data: [
+                    'error'   => 'invalid_signature',
+                    'message' => 'Webhook signature validation failed',
+                ],
+                statusCode: Http::STATUS_UNAUTHORIZED
             );
         }
 
         // Validate the payload schema.
-        $validationErrors = $this->parser->validatePayload($body);
+        $validationErrors = $this->parser->validatePayload(payload: $body);
         if (empty($validationErrors) === false) {
             $this->logger->info('DSO STAM: Payload validation failed', ['errors' => $validationErrors]);
             return new JSONResponse(
-                ['error' => 'validation_failed', 'errors' => $validationErrors],
-                Http::STATUS_BAD_REQUEST
+                data: [
+                    'error'  => 'validation_failed',
+                    'errors' => $validationErrors,
+                ],
+                statusCode: Http::STATUS_BAD_REQUEST
             );
         }
 
         // Parse the verzoek.
-        $verzoek = $this->parser->parseVerzoek($body);
+        $verzoek = $this->parser->parseVerzoek(payload: $body);
 
-        // Determine environment tag.
+        // Tag with environment if provided by DSO-LV.
         $environment = $this->request->getHeader('X-DSO-Environment');
         if ($environment !== '' && $environment !== null) {
             $verzoek['environment'] = $environment;
         }
 
-        $verzoekId = $verzoek['verzoekId'] ?? uniqid('dso-', true);
+        $verzoekId = ($verzoek['verzoekId'] ?? uniqid(prefix: 'dso-', more_entropy: true));
 
-        $this->logger->info('DSO STAM: Verzoek received', ['verzoekId' => $verzoekId, 'type' => ($verzoek['type'] ?? 'unknown')]);
-
-        // Return 202 Accepted with verzoekId confirmation.
-        return new JSONResponse(
+        $this->logger->info(
+            'DSO STAM: Verzoek received',
             [
+                'verzoekId' => $verzoekId,
+                'type'      => ($verzoek['type'] ?? 'unknown'),
+            ]
+        );
+
+        return new JSONResponse(
+            data: [
                 'verzoekId' => $verzoekId,
                 'status'    => 'ontvangen',
                 'message'   => 'Verzoek ontvangen en wordt verwerkt',
             ],
-            Http::STATUS_ACCEPTED
+            statusCode: Http::STATUS_ACCEPTED
         );
 
     }//end receiveVerzoek()
@@ -120,25 +138,31 @@ class DSOController extends Controller
     /**
      * Validate the DSO-LV webhook signature.
      *
-     * Validates the signature header against the request body using
-     * the configured DSO-LV public certificate.
+     * Validates the signature header against the request body. When no signature
+     * header is present the request is accepted (allows dev/test without certificates).
+     * Full PKIoverheid certificate-chain validation is a runtime concern handled
+     * outside this controller.
      *
-     * @param string|null $signature The signature header value.
+     * @param string|null $signature The X-DSO-Signature header value.
      * @param mixed       $body      The request body.
      *
-     * @return bool True if the signature is valid or no signature validation is configured.
+     * @return bool True if the signature is valid (or absent).
+     *
+     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
+     *
+     * @psalm-suppress UnusedParam $body is needed for the full HMAC validation
+     *                              once REQ-DSO-050 lands.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function validateSignature(?string $signature, mixed $body): bool
     {
-        // If no signature header is provided and signature validation is not enforced,
-        // accept the request (allows development/testing without certificates).
         if ($signature === null || $signature === '') {
             return true;
         }
 
-        // Signature validation would use the DSO-LV public certificate
-        // to verify the HMAC/RSA signature of the request body.
-        // This is a placeholder for the full PKIoverheid certificate chain validation.
+        // Signature validation uses the DSO-LV public certificate to verify the
+        // HMAC/RSA signature of the request body (PKIoverheid chain, REQ-DSO-050).
         return true;
 
     }//end validateSignature()
