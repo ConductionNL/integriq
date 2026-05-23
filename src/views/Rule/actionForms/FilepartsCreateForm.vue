@@ -86,5 +86,6 @@ export default {
 
 <style scoped>
 .action-form { display: flex; flex-direction: column; gap: 10px; }
+
 .action-form__label { font-weight: bold; }
 </style>

@@ -112,8 +112,11 @@ export default {
 
 <style scoped>
 .action-form { display: flex; flex-direction: column; gap: 10px; }
+
 .action-form__label { font-weight: bold; }
+
 .action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+
 .action-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
 </style>

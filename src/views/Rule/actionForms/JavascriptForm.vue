@@ -38,12 +38,16 @@ export default {
 
 <style scoped>
 .action-form { display: flex; flex-direction: column; gap: 10px; }
+
 .action-form__label { font-weight: bold; }
+
 .action-form__helper { color: var(--color-text-maxcontrast); font-size: 12px; }
+
 .action-form__textarea {
 	width: 100%; padding: 8px; font-family: var(--font-face, sans-serif);
 	font-size: 14px; background: var(--color-main-background); color: var(--color-main-text);
 	border: 1px solid var(--color-border); border-radius: var(--border-radius); resize: vertical;
 }
+
 .action-form__textarea--code { font-family: var(--font-face-monospace, monospace); font-size: 13px; }
 </style>

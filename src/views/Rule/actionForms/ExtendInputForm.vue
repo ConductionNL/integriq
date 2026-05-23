@@ -109,7 +109,9 @@ export default {
 
 <style scoped>
 .action-form { display: flex; flex-direction: column; gap: 10px; }
+
 .action-form__label { font-weight: bold; }
+
 .action-form__row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
 @media (max-width: 720px) { .action-form__row { grid-template-columns: 1fr; } }
 </style>
