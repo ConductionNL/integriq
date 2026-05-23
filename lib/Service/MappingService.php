@@ -344,7 +344,10 @@ class MappingService
      */
     private function handleCast(Dot $dotArray, string $key, string $cast)
     {
-        $value = $dotArray->get($key);
+        $value          = $dotArray->get($key);
+        $unsetIfValue   = null;
+        $setNullIfValue = null;
+        $countValue     = null;
 
         if (str_starts_with($cast, 'unsetIfValue==') === true) {
             $unsetIfValue = substr($cast, 14);

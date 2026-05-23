@@ -3491,6 +3491,7 @@ class SynchronizationService
         $schema        = $configuration['save_object']['schema'];
         $mapping       = $configuration['save_object']['mapping'] ?? null;
         $patch         = $configuration['save_object']['patch'] ?? false;
+        $id            = null;
 
         if (empty($mapping) === false) {
             if (isset($data['_objectBeforeMapping']['id']) === true) {
