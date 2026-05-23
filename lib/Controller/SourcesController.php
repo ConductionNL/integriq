@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector sources controller.
+ *
+ * Controller for source listing pages and source-test/call-log endpoints.
+ * Surfaces filtered call logs and runs ad-hoc test calls against a source.
+ *
+ * @category Controller
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Controller;
 
@@ -14,6 +31,8 @@ use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
+ * Controller for source listing pages and source-test/call-log endpoints.
+ *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -25,13 +44,15 @@ use OCP\AppFramework\Db\DoesNotExistException;
 class SourcesController extends Controller
 {
     /**
-     * Constructor for the SourcesController
+     * Constructor for the SourcesController.
      *
-     * @param string          $appName         The name of the app
-     * @param IRequest        $request         The request object
-     * @param IAppConfig      $config          The app configuration object
-     * @param OrObjectService $orObjectService The OR object service
-     * @param IL10N           $l               The localization service
+     * @param string          $appName         The name of the app.
+     * @param IRequest        $request         The request object.
+     * @param IAppConfig      $config          The app configuration object.
+     * @param OrObjectService $orObjectService The OR object service.
+     * @param IL10N           $l               The localization service.
+     *
+     * @return void
      */
     public function __construct(
         $appName,
@@ -40,18 +61,18 @@ class SourcesController extends Controller
         private readonly OrObjectService $orObjectService,
         private readonly IL10N $l
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
-     * Returns the template of the main app's page
+     * Returns the template of the main app's page.
      *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The rendered template response
+     * @return TemplateResponse The rendered template response.
      */
     public function page(): TemplateResponse
     {
@@ -63,7 +84,7 @@ class SourcesController extends Controller
     }//end page()
 
     /**
-     * Retrieves call logs with filtering and pagination support
+     * Retrieves call logs with filtering and pagination support.
      *
      * This method returns call logs based on query parameters,
      * with support for various filtering parameters to narrow down the results.
@@ -78,25 +99,37 @@ class SourcesController extends Controller
      * - limit: Number of results per page (default: 20)
      * - offset: Offset for pagination (default: 0)
      *
+     * @param SearchService $searchService Service used to strip special query parameters.
+     *
+     * @return JSONResponse A JSON response containing the filtered call logs and pagination.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the filtered call logs and pagination
      */
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
-            // Get filters from request
+            // Get filters from request.
             $filters        = $this->request->getParams();
             $specialFilters = [];
 
-            // Pagination using _page and _limit
-            $limit  = isset($filters['_limit']) ? (int) $filters['_limit'] : 20;
-            $page   = isset($filters['_page']) ? (int) $filters['_page'] : 1;
-            $offset = ($page - 1) * $limit;
+            // Pagination using _page and _limit.
+            if (isset($filters['_limit']) === true) {
+                $limit = (int) $filters['_limit'];
+            } else {
+                $limit = 20;
+            }
+
+            if (isset($filters['_page']) === true) {
+                $page = (int) $filters['_page'];
+            } else {
+                $page = 1;
+            }
+
+            $offset = (($page - 1) * $limit);
             unset($filters['_limit'], $filters['_page']);
 
-            // Handle special filters
+            // Handle special filters.
             if (empty($filters['date_from']) === false) {
                 $specialFilters['date_from'] = $filters['date_from'];
                 unset($filters['date_from']);
@@ -123,11 +156,11 @@ class SourcesController extends Controller
 
             if (empty($filters['slow_requests']) === false) {
                 $specialFilters['slow_requests'] = 5000;
-                // 5 seconds in milliseconds
+                // 5 seconds in milliseconds.
                 unset($filters['slow_requests']);
             }
 
-            // Build search conditions and parameters
+            // Build search conditions and parameters.
             $searchConditions = [];
             $searchParams     = [];
 
@@ -158,11 +191,16 @@ class SourcesController extends Controller
 
             $sortFields = [];
             if (empty($filters['_sort']) === false && is_array($filters['_sort']) === true) {
-                // Have some control of what to be sortable
+                // Have some control of what to be sortable.
                 $allowedSortFields = ['created', 'status_code', 'endpoint'];
                 foreach ($filters['_sort'] as $field => $direction) {
                     if (in_array($field, $allowedSortFields, true) === true) {
-                        $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                        if (strtoupper($direction) === 'DESC') {
+                            $dir = 'DESC';
+                        } else {
+                            $dir = 'ASC';
+                        }
+
                         $sortFields[$field] = $dir;
                     }
                 }
@@ -170,10 +208,10 @@ class SourcesController extends Controller
                 unset($filters['_sort']);
             }
 
-            // Remove special query params from filters
+            // Remove special query params from filters.
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-            // Get call logs with filters and pagination via OR ObjectService
+            // Get call logs with filters and pagination via OR ObjectService.
             $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'call_log'], $filters);
             $matches   = $this->orObjectService->findAll(
                     config: [
@@ -182,13 +220,22 @@ class SourcesController extends Controller
                         'offset'  => $offset,
                     ]
                     );
-            $callLogs  = $matches['results'] ?? $matches;
-            $total     = $matches['total'] ?? count($callLogs);
+            $callLogs  = ($matches['results'] ?? $matches);
+            $total     = ($matches['total'] ?? count($callLogs));
 
-            $pages       = $limit > 0 ? ceil($total / $limit) : 1;
-            $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
+            if ($limit > 0) {
+                $pages = ceil($total / $limit);
+            } else {
+                $pages = 1;
+            }
 
-            // Return flattened paginated response
+            if ($limit > 0) {
+                $currentPage = (floor($offset / $limit) + 1);
+            } else {
+                $currentPage = 1;
+            }
+
+            // Return flattened paginated response.
             return new JSONResponse(
                     [
                         'results'       => $callLogs,
@@ -204,12 +251,9 @@ class SourcesController extends Controller
     }//end logs()
 
     /**
-     * Test a source
+     * Test a source.
      *
      * This method fires a test call to the source and returns the response.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
      *
      * Endpoint: /api/source-test/{id}
      * Properties:
@@ -220,8 +264,13 @@ class SourcesController extends Controller
      *   type: (string, one of: json, xml, yaml)
      *   body: (string)
      *
-     * @param  string $id The UUID of the source to test (post chain-B/C: OR IDs are UUIDs, not ints)
-     * @return JSONResponse A JSON response containing the test results
+     * @param CallService $callService The CallService used to dispatch the outbound test call.
+     * @param string      $id          The UUID of the source to test (post chain-B/C: OR IDs are UUIDs, not ints).
+     *
+     * @return JSONResponse A JSON response containing the test results.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function test(CallService $callService, string $id): JSONResponse
     {
@@ -233,35 +282,35 @@ class SourcesController extends Controller
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
 
-        // Get the request data
+        // Get the request data.
         $requestData = $this->request->getParams();
 
-        // Build Guzzle call configuration array
+        // Build Guzzle call configuration array.
         $config = [];
 
-        // Add headers if present
-        if (isset($requestData['headers']) && is_array($requestData['headers'])) {
+        // Add headers if present.
+        if (isset($requestData['headers']) === true && is_array($requestData['headers']) === true) {
             $config['headers'] = $requestData['headers'];
         }
 
-        // Add query parameters if present
-        if (isset($requestData['query']) && is_array($requestData['query'])) {
+        // Add query parameters if present.
+        if (isset($requestData['query']) === true && is_array($requestData['query']) === true) {
             $config['query'] = $requestData['query'];
         }
 
-        // Set method, default to POST if not provided
-        $method = $requestData['method'] ?? 'GET';
+        // Set method, default to POST if not provided.
+        $method = ($requestData['method'] ?? 'GET');
 
-        // Set endpoint
-        $endpoint = $requestData['endpoint'] ?? '';
+        // Set endpoint.
+        $endpoint = ($requestData['endpoint'] ?? '');
 
-        // Set body if present
-        if (isset($requestData['body'])) {
+        // Set body if present.
+        if (isset($requestData['body']) === true) {
             $config['body'] = $requestData['body'];
         }
 
-        // Set content type based on the type parameter
-        if (isset($requestData['type'])) {
+        // Set content type based on the type parameter.
+        if (isset($requestData['type']) === true) {
             switch ($requestData['type']) {
                 case 'json':
                     $config['headers']['Content-Type'] = 'application/json';
@@ -275,9 +324,9 @@ class SourcesController extends Controller
             }
         }
 
-        // fire the call
+        // Fire the call.
         $timeStart = microtime(true);
-        $callLog   = $callService->call($source, $endpoint, $method, $config);
+        $callLog   = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
         $timeEnd   = microtime(true);
 
         return new JSONResponse($callLog->getObject());

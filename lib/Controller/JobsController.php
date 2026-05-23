@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector jobs controller.
+ *
+ * Controller for job listing, log retrieval, and ad-hoc job run/test endpoints.
+ * Delegates execution to JobService and applies search-style log filtering.
+ *
+ * @category Controller
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Controller;
 
@@ -15,6 +32,8 @@ use OCP\IL10N;
 use OCP\IRequest;
 
 /**
+ * Controller for job listing, log retrieval, and ad-hoc job run/test endpoints.
+ *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -27,14 +46,16 @@ use OCP\IRequest;
 class JobsController extends Controller
 {
     /**
-     * Constructor for the JobController
+     * Constructor for the JobController.
      *
-     * @param string          $appName         The name of the app
-     * @param IRequest        $request         The request object
-     * @param IAppConfig      $config          The app configuration object
-     * @param OrObjectService $orObjectService The OR object service
-     * @param JobService      $jobService      The job service (used by run/test action methods)
-     * @param IL10N           $l               The localization service
+     * @param string          $appName         The name of the app.
+     * @param IRequest        $request         The request object.
+     * @param IAppConfig      $config          The app configuration object.
+     * @param OrObjectService $orObjectService The OR object service.
+     * @param JobService      $jobService      The job service (used by run/test action methods).
+     * @param IL10N           $l               The localization service.
+     *
+     * @return void
      */
     public function __construct(
         $appName,
@@ -44,18 +65,18 @@ class JobsController extends Controller
         private JobService $jobService,
         private IL10N $l
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
-     * Returns the template of the main app's page
+     * Returns the template of the main app's page.
      *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
+     * @return TemplateResponse The rendered template response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
     {
@@ -67,7 +88,7 @@ class JobsController extends Controller
     }//end page()
 
     /**
-     * Retrieves job logs with filtering and pagination support
+     * Retrieves job logs with filtering and pagination support.
      *
      * This method returns job logs based on query parameters,
      * with support for various filtering parameters to narrow down the results.
@@ -81,78 +102,99 @@ class JobsController extends Controller
      * - limit: Number of results per page (default: 20)
      * - offset: Offset for pagination (default: 0)
      *
+     * @param SearchService $searchService Service used to strip special query parameters.
+     *
+     * @return JSONResponse A JSON response containing the filtered job logs and pagination.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return JSONResponse A JSON response containing the filtered job logs and pagination
      */
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
-            // Get filters from request
+            // Get filters from request.
             $filters        = $this->request->getParams();
             $specialFilters = [];
 
-            // Pagination using _page and _limit
-            $limit  = isset($filters['_limit']) ? (int) $filters['_limit'] : 20;
-            $page   = isset($filters['_page']) ? (int) $filters['_page'] : 1;
-            $offset = ($page - 1) * $limit;
+            // Pagination using _page and _limit.
+            if (isset($filters['_limit']) === true) {
+                $limit = (int) $filters['_limit'];
+            } else {
+                $limit = 20;
+            }
+
+            if (isset($filters['_page']) === true) {
+                $page = (int) $filters['_page'];
+            } else {
+                $page = 1;
+            }
+
+            $offset = (($page - 1) * $limit);
             unset($filters['_limit'], $filters['_page']);
 
-            // Handle special filters
-            if (!empty($filters['date_from'])) {
+            // Handle special filters.
+            if (empty($filters['date_from']) === false) {
                 $specialFilters['date_from'] = $filters['date_from'];
             }
 
-            if (!empty($filters['date_to'])) {
+            if (empty($filters['date_to']) === false) {
                 $specialFilters['date_to'] = $filters['date_to'];
             }
 
-            if (!empty($filters['status'])) {
+            if (empty($filters['status']) === false) {
                 $specialFilters['status'] = $filters['status'];
             }
 
-            if (!empty($filters['slow_executions'])) {
+            if (empty($filters['slow_executions']) === false) {
                 $specialFilters['slow_executions'] = 5000;
-                // 5 seconds in milliseconds
+                // 5 seconds in milliseconds.
             }
 
-            // Build search conditions and parameters
+            // Build search conditions and parameters.
             $searchConditions = [];
             $searchParams     = [];
 
-            if (!empty($specialFilters['date_from'])) {
+            if (empty($specialFilters['date_from']) === false) {
                 $searchConditions[] = "created >= ?";
                 $searchParams[]     = $specialFilters['date_from'];
             }
 
-            if (!empty($specialFilters['date_to'])) {
+            if (empty($specialFilters['date_to']) === false) {
                 $searchConditions[] = "created <= ?";
                 $searchParams[]     = $specialFilters['date_to'];
             }
 
-            if (!empty($specialFilters['status'])) {
+            if (empty($specialFilters['status']) === false) {
                 $searchConditions[] = "status = ?";
                 $searchParams[]     = $specialFilters['status'];
             }
 
-            if (!empty($specialFilters['slow_executions'])) {
+            if (empty($specialFilters['slow_executions']) === false) {
                 $searchConditions[] = "execution_time > ?";
                 $searchParams[]     = $specialFilters['slow_executions'];
             }
 
-            // Remove special query params from filters
+            // Remove special query params from filters.
             $filters = $searchService->unsetSpecialQueryParams(filters: $filters);
 
-            // Get job logs with filters and pagination via OR ObjectService
-            $orFilters   = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
-            $matches     = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
-            $jobLogs     = $matches['results'] ?? $matches;
-            $total       = $matches['total'] ?? count($jobLogs);
-            $pages       = $limit > 0 ? ceil($total / $limit) : 1;
-            $currentPage = $limit > 0 ? floor($offset / $limit) + 1 : 1;
+            // Get job logs with filters and pagination via OR ObjectService.
+            $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'job_log'], $filters);
+            $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters, 'limit' => $limit, 'offset' => $offset]);
+            $jobLogs   = ($matches['results'] ?? $matches);
+            $total     = ($matches['total'] ?? count($jobLogs));
+            if ($limit > 0) {
+                $pages = ceil($total / $limit);
+            } else {
+                $pages = 1;
+            }
 
-            // Return flattened paginated response
+            if ($limit > 0) {
+                $currentPage = (floor($offset / $limit) + 1);
+            } else {
+                $currentPage = 1;
+            }
+
+            // Return flattened paginated response.
             return new JSONResponse(
                     [
                         'results'       => $jobLogs,
@@ -168,16 +210,17 @@ class JobsController extends Controller
     }//end logs()
 
     /**
-     * Executes a job
+     * Executes a job.
      *
      * This method executes a job based on its ID and returns the execution results.
      * The job can be executed with optional parameters provided in the request body.
      *
+     * @param string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints).
+     *
+     * @return JSONResponse A JSON response containing the execution results.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param  string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints)
-     * @return JSONResponse A JSON response containing the execution results
      */
     public function run(string $id): JSONResponse
     {
@@ -188,40 +231,49 @@ class JobsController extends Controller
         }
 
         try {
-            // Get execution parameters from request
+            // Get execution parameters from request.
             $parameters = $this->request->getParams();
 
-            // Remove non-parameter fields
+            // Remove non-parameter fields.
             foreach ($parameters as $key => $value) {
-                if (str_starts_with($key, '_')) {
+                if (str_starts_with($key, '_') === true) {
                     unset($parameters[$key]);
                 }
             }
 
-            // Determine if forceRun is set
-            $forceRun = isset($parameters['forceRun']) ? filter_var($parameters['forceRun'], FILTER_VALIDATE_BOOLEAN) : false;
+            // Determine if forceRun is set.
+            if (isset($parameters['forceRun']) === true) {
+                $forceRun = filter_var($parameters['forceRun'], FILTER_VALIDATE_BOOLEAN);
+            } else {
+                $forceRun = false;
+            }
 
-            // Execute the job
-            $result = $this->jobService->executeJob($job, $forceRun);
+            // Execute the job.
+            $result = $this->jobService->executeJob(job: $job, forceRun: $forceRun);
 
-            // Return the execution results
-            return new JSONResponse($result);
+            // Return the execution results (serialize the ObjectEntity to a plain array).
+            if ($result === null) {
+                return new JSONResponse(null);
+            }
+
+            return new JSONResponse($result->jsonSerialize());
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
     }//end run()
 
     /**
-     * Test a job
+     * Test a job.
      *
      * This method executes a job based on its ID and returns the execution results.
      * The job can be executed with optional parameters provided in the request body.
      *
+     * @param string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints).
+     *
+     * @return JSONResponse A JSON response containing the execution results.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param  string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints)
-     * @return JSONResponse A JSON response containing the execution results
      */
     public function test(string $id): JSONResponse
     {
@@ -232,24 +284,28 @@ class JobsController extends Controller
         }
 
         try {
-            // Get execution parameters from request
+            // Get execution parameters from request.
             $parameters = $this->request->getParams();
 
-            // Remove non-parameter fields
+            // Remove non-parameter fields.
             foreach ($parameters as $key => $value) {
-                if (str_starts_with($key, '_')) {
+                if (str_starts_with($key, '_') === true) {
                     unset($parameters[$key]);
                 }
             }
 
-            // Always force run for test
+            // Always force run for test.
             $forceRun = true;
 
-            // Execute the job
-            $result = $this->jobService->executeJob($job, $forceRun);
+            // Execute the job.
+            $result = $this->jobService->executeJob(job: $job, forceRun: $forceRun);
 
-            // Return the execution results
-            return new JSONResponse($result);
+            // Return the execution results (serialize the ObjectEntity to a plain array).
+            if ($result === null) {
+                return new JSONResponse(null);
+            }
+
+            return new JSONResponse($result->jsonSerialize());
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
