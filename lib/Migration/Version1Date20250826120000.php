@@ -1,20 +1,23 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * LogSizeColumnsMigration
+/**
+ * Log size columns migration.
  *
  * Migration step to add size columns to all log tables for tracking log entry sizes.
  * This helps with storage management and automated cleanup based on log sizes.
  *
  * @category Migration
  * @package  OCA\OpenConnector\Migration
- * @author   OpenConnector Development Team
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openconnector
- * @version  1.0.0
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenConnector\Migration;
 
@@ -65,7 +68,7 @@ class Version1Date20250826120000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes needed
+        // No pre-schema changes needed.
     }//end preSchemaChange()
 
     /**
@@ -95,9 +98,10 @@ class Version1Date20250826120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // List of log tables that need the size column
+        // List of log tables that need the size column.
         $logTables = [
             'openconnector_call_logs',
             'openconnector_job_logs',
@@ -107,31 +111,31 @@ class Version1Date20250826120000 extends SimpleMigrationStep
 
         $tablesUpdated = 0;
 
-        // Add size column to each log table
+        // Add size column to each log table.
         foreach ($logTables as $tableName) {
-            if (!$schema->hasTable($tableName)) {
+            if ($schema->hasTable($tableName) === false) {
                 $output->warning("Table {$tableName} not found, skipping");
                 continue;
             }
 
             $table = $schema->getTable($tableName);
 
-            // Check if the size column already exists
-            if ($table->hasColumn('size')) {
+            // Check if the size column already exists.
+            if ($table->hasColumn('size') === true) {
                 $output->info("'size' column already exists in {$tableName} table, skipping");
                 continue;
             }
 
-            // Add the size column with default value of 4096 bytes (4KB)
+            // Add the size column with default value of 4096 bytes (4KB).
             $table->addColumn(
-                    'size',
-                    Types::INTEGER,
-                    [
-                        'notnull' => true,
-                        'default' => 4096,
-                        'comment' => 'Size of the log entry in bytes',
-                    ]
-                    );
+                'size',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                    'default' => 4096,
+                    'comment' => 'Size of the log entry in bytes',
+                ]
+            );
 
             $tablesUpdated++;
             $output->info("Added 'size' column to {$tableName} table");

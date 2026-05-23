@@ -1,12 +1,6 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
- * Chain B (openconnector-register-storage) — main migration entrypoint.
+/**
+ * Chain B migration: import register + copy rows to OpenRegister.
  *
  * Calls ConfigurationService::importFromApp() to materialise the openconnector
  * register + 15 schemas (declared by chain A's lib/Settings/openconnector_register.json),
@@ -15,8 +9,22 @@ declare(strict_types=1);
  *
  * Idempotent: re-running has no effect after `openconnector.storage_migrated` is set.
  *
- * Cross-ref: openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md REQ-001/005, local ADR-012 (strangler-fig pattern).
+ * Cross-ref: openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
+ * REQ-001/005, local ADR-012 (strangler-fig pattern).
+ *
+ * @category Migration
+ * @package  OCA\OpenConnector\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenConnector\Migration;
 
@@ -31,15 +39,27 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Imports the openconnector register and copies legacy rows into OpenRegister.
+ */
 class Version2Date20260520000001 extends SimpleMigrationStep
 {
-
-    // Nextcloud's MigrationService::createInstance() uses `new $class()` —
-    // migrations cannot have constructor parameters. All dependencies are
-    // resolved via the service container inside postSchemaChange().
+    /**
+     * No-op pre-schema callback.
+     *
+     * Nextcloud's MigrationService::createInstance() uses `new $class()` —
+     * migrations cannot have constructor parameters. All dependencies are
+     * resolved via the service container inside postSchemaChange().
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
+     */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No-op. All work happens in postSchemaChange so OR's schemas exist
+        // No-op. All work happens in postSchemaChange so OR's schemas exist.
         // before we attempt to import the descriptor.
     }//end preSchemaChange()
 
@@ -47,12 +67,34 @@ class Version2Date20260520000001 extends SimpleMigrationStep
      * No schema diff for chain B — the OR tables already exist from the
      * openregister app's own migrations. We only IMPORT the descriptor and
      * COPY legacy rows.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return ISchemaWrapper|null Always null for this migration.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         return null;
+
     }//end changeSchema()
 
+    /**
+     * Imports the register descriptor and copies legacy rows.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
+     *
+     * @throws \Throwable When the descriptor cannot be decoded or import fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         $container = \OC::$server;
@@ -80,7 +122,7 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         try {
             $orAppPath  = $appManager->getAppPath('openregister');
             $orAutoload = $orAppPath.'/vendor/autoload.php';
-            if (file_exists($orAutoload)) {
+            if (file_exists($orAutoload) === true) {
                 include_once $orAutoload;
                 $output->info('chain-B: required openregister autoload from '.$orAutoload);
             } else {
@@ -103,7 +145,10 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         // Guard against OpenRegister being unavailable (would crash the
         // upgrade with a useless DI error). Defer to next upgrade.
         if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
-            $output->warning('chain-B: openregister app not enabled or not loaded; skipping descriptor import + migration. Re-run `occ upgrade` after enabling openregister.');
+            $output->warning(
+                'chain-B: openregister app not enabled or not loaded; skipping descriptor import + migration.'
+                .' Re-run `occ upgrade` after enabling openregister.'
+            );
             return;
         }
 
@@ -139,17 +184,17 @@ class Version2Date20260520000001 extends SimpleMigrationStep
         foreach ($result as $perEntity) {
             $skipped = (int) ($perEntity['skipped'] ?? 0);
             $output->info(
-                    sprintf(
-                '  %s: legacy=%d migrated=%d skipped=%d fkRewrites=%d (%dms)',
-                $perEntity['slug'] ?? '?',
-                (int) ($perEntity['legacyCount'] ?? 0),
-                (int) ($perEntity['migratedCount'] ?? 0),
-                $skipped,
-                (int) ($perEntity['fkRewrites'] ?? 0),
-                (int) ($perEntity['elapsedMs'] ?? 0)
-            )
-                    );
-            if ($skipped > 0 || !empty($perEntity['error'])) {
+                sprintf(
+                    '  %s: legacy=%d migrated=%d skipped=%d fkRewrites=%d (%dms)',
+                    $perEntity['slug'] ?? '?',
+                    (int) ($perEntity['legacyCount'] ?? 0),
+                    (int) ($perEntity['migratedCount'] ?? 0),
+                    $skipped,
+                    (int) ($perEntity['fkRewrites'] ?? 0),
+                    (int) ($perEntity['elapsedMs'] ?? 0)
+                )
+            );
+            if ($skipped > 0 || empty($perEntity['error']) === false) {
                 $allOk = false;
             }
         }
@@ -158,7 +203,11 @@ class Version2Date20260520000001 extends SimpleMigrationStep
             $appConfig->setValueString('openconnector', 'storage_migrated', 'true');
             $output->info('chain-B: storage_migrated=true — all 15 entities copied successfully.');
         } else {
-            $output->warning('chain-B: storage_migrated flag NOT set — at least one entity reported skips or errors. Use occ openconnector:migrate-storage to retry per-entity.');
+            $output->warning(
+                'chain-B: storage_migrated flag NOT set — at least one entity reported skips or errors.'
+                .' Use occ openconnector:migrate-storage to retry per-entity.'
+            );
         }
+
     }//end postSchemaChange()
 }//end class

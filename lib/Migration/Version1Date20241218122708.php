@@ -1,11 +1,23 @@
 <?php
+/**
+ * Drop the consumer authorization_configuration column.
+ *
+ * Removes the legacy authorization_configuration column from the consumers
+ * table; consumer configuration moved to the typed configuration field.
+ *
+ * @category Migration
+ * @package  OCA\OpenConnector\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenConnector\Migration;
 
@@ -15,32 +27,40 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * FIXME Auto-generated migration step: Please modify to your needs!
+ * Drops the legacy authorization_configuration column from the consumers table.
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241218122708 extends SimpleMigrationStep
 {
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Pre-schema change callback.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
     }//end preSchemaChange()
 
     /**
-     * @param  IOutput                   $output
-     * @param  Closure(): ISchemaWrapper $schemaClosure
-     * @param  array                     $options
-     * @return null|ISchemaWrapper
+     * Drops the authorization_configuration column from the consumers table.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return ISchemaWrapper|null The modified schema wrapper.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable(tableName: 'openconnector_consumers') === true) {
@@ -49,12 +69,17 @@ class Version1Date20241218122708 extends SimpleMigrationStep
         }
 
         return $schema;
+
     }//end changeSchema()
 
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Post-schema change callback.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
