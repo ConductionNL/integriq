@@ -25,7 +25,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 
@@ -45,7 +44,6 @@ class EventsController extends Controller
      *
      * @param string          $appName         The name of the app.
      * @param IRequest        $request         The request object.
-     * @param IAppConfig      $config          The app configuration object.
      * @param OrObjectService $orObjectService The OR object service.
      * @param EventService    $eventService    The event service.
      * @param IL10N           $l               The localization service.
@@ -53,7 +51,6 @@ class EventsController extends Controller
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config,
         private readonly OrObjectService $orObjectService,
         private readonly EventService $eventService,
         private readonly IL10N $l

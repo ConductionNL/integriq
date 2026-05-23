@@ -22,12 +22,10 @@
 
 namespace OCA\OpenConnector\EventListener;
 
-use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 
 /**
  * Event listener that handles view updates and creations.
@@ -60,14 +58,9 @@ class ViewUpdatedOrCreatedEventListener implements IEventListener
 
     /**
      * Constructor.
-     *
-     * @param SynchronizationService $synchronizationService Service that performs the synchronization.
-     * @param LoggerInterface        $logger                 Logger instance.
      */
-    public function __construct(
-        private readonly SynchronizationService $synchronizationService,
-        private readonly LoggerInterface $logger,
-    ) {
+    public function __construct()
+    {
 
     }//end __construct()
 

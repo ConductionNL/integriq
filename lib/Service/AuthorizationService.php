@@ -44,9 +44,7 @@ use OCP\IRequest;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCP\AppFramework\Http\Attribute\CORS;
 use OCP\AppFramework\Http\Response;
-use OCP\Authentication\Token\IProvider;
 use OCP\IGroup;
-use OCP\IGroupManager;
 use OCP\ISession;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -73,15 +71,11 @@ class AuthorizationService
      * @param IUserManager                            $userManager     The user manager.
      * @param IUserSession                            $userSession     The user session.
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR ObjectService used to resolve consumers.
-     * @param IGroupManager                           $groupManager    The group manager.
-     * @param IProvider                               $tokenProvider   OAuth token provider.
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
-        private readonly IGroupManager $groupManager,
-        private readonly IProvider $tokenProvider,
     ) {
 
     }//end __construct()

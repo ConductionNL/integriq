@@ -27,7 +27,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 
@@ -50,7 +49,6 @@ class JobsController extends Controller
      *
      * @param string          $appName         The name of the app.
      * @param IRequest        $request         The request object.
-     * @param IAppConfig      $config          The app configuration object.
      * @param OrObjectService $orObjectService The OR object service.
      * @param JobService      $jobService      The job service (used by run/test action methods).
      * @param IL10N           $l               The localization service.
@@ -60,7 +58,6 @@ class JobsController extends Controller
     public function __construct(
         $appName,
         IRequest $request,
-        private IAppConfig $config,
         private OrObjectService $orObjectService,
         private JobService $jobService,
         private IL10N $l

@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 
 /**
  * Event listener that removes extended views when a view is deleted.
@@ -40,13 +39,11 @@ class ViewDeletedEventListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param LoggerInterface $logger         Logger instance.
-     * @param SchemaMapper    $schemaMapper   Schema mapper used to resolve view + extendview schemas.
-     * @param RegisterMapper  $registerMapper Register mapper used to resolve the vng-gemma register.
-     * @param ObjectService   $objectService  Service providing access to the OR object layer.
+     * @param SchemaMapper   $schemaMapper   Schema mapper used to resolve view + extendview schemas.
+     * @param RegisterMapper $registerMapper Register mapper used to resolve the vng-gemma register.
+     * @param ObjectService  $objectService  Service providing access to the OR object layer.
      */
     public function __construct(
-        private readonly LoggerInterface $logger,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly ObjectService $objectService,

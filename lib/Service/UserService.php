@@ -24,7 +24,6 @@ namespace OCA\OpenConnector\Service;
 
 use OCP\IDBConnection;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -54,7 +53,6 @@ class UserService
     /**
      * UserService constructor.
      *
-     * @param IUserManager              $userManager               The user manager service.
      * @param IUserSession              $userSession               The user session service.
      * @param IConfig                   $config                    The configuration service.
      * @param IGroupManager             $groupManager              The group manager service.
@@ -67,7 +65,6 @@ class UserService
      * @return void
      */
     public function __construct(
-        private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly IConfig $config,
         private readonly IGroupManager $groupManager,

@@ -21,8 +21,6 @@ namespace OCA\OpenConnector\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IAppConfig;
-use OCP\IL10N;
 use OCP\IRequest;
 
 /**
@@ -37,16 +35,12 @@ class RulesController extends Controller
     /**
      * Constructor for the RuleController.
      *
-     * @param string     $appName The name of the app.
-     * @param IRequest   $request The request object.
-     * @param IAppConfig $config  The app configuration object.
-     * @param IL10N      $l       The localization service.
+     * @param string   $appName The name of the app.
+     * @param IRequest $request The request object.
      */
     public function __construct(
         $appName,
         IRequest $request,
-        private IAppConfig $config,
-        private IL10N $l
     ) {
         parent::__construct(appName: $appName, request: $request);
 

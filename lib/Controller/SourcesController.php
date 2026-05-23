@@ -25,7 +25,6 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -48,7 +47,6 @@ class SourcesController extends Controller
      *
      * @param string          $appName         The name of the app.
      * @param IRequest        $request         The request object.
-     * @param IAppConfig      $config          The app configuration object.
      * @param OrObjectService $orObjectService The OR object service.
      * @param IL10N           $l               The localization service.
      *
@@ -57,7 +55,6 @@ class SourcesController extends Controller
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config,
         private readonly OrObjectService $orObjectService,
         private readonly IL10N $l
     ) {

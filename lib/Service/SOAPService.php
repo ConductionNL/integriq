@@ -70,13 +70,6 @@ class SOAPService
     private Client $client;
 
     /**
-     * The PSR-18 transport layer of the SOAP engine.
-     *
-     * @var Psr18Transport
-     */
-    private Psr18Transport $transport;
-
-    /**
      * Constructor.
      *
      * @param CookieJar $cookieJar A cookie jar to pass on cookies between SOAP requests.
@@ -178,7 +171,7 @@ class SOAPService
                             ->disableWsdlCache()
                     )
                 ),
-                $this->transport = Psr18Transport::createForClient($this->client),
+                Psr18Transport::createForClient($this->client),
             );
         } catch (\SoapFault $fault) {
             throw $fault;

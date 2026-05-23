@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use DateTime;
 
@@ -170,7 +169,6 @@ class RuleService
     /**
      * Constructor for RuleService.
      *
-     * @param LoggerInterface          $logger           Logger used for rule processing diagnostics.
      * @param ObjectService            $objectService    OpenConnector object-service facade.
      * @param SoftwareCatalogueService $catalogueService Software-catalog rule helper.
      * @param RegisterMapper           $registerMapper   Mapper used to resolve register IDs.
@@ -181,7 +179,6 @@ class RuleService
      * @return void
      */
     public function __construct(
-        private readonly LoggerInterface $logger,
         private readonly ObjectService $objectService,
         private readonly SoftwareCatalogueService $catalogueService,
         private readonly RegisterMapper $registerMapper,

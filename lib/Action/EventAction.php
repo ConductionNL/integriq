@@ -19,30 +19,16 @@
 
 namespace OCA\OpenConnector\Action;
 
-use OCA\OpenConnector\Service\CallService;
-
 /**
  * Runs event-driven actions wired into the OpenConnector cron job list.
  */
 class EventAction
 {
-
-    /**
-     * Service used to execute outbound calls.
-     *
-     * @var CallService
-     */
-    private CallService $callService;
-
     /**
      * Constructor.
-     *
-     * @param CallService $callService Service used to execute outbound calls.
      */
-    public function __construct(
-        CallService $callService,
-    ) {
-        $this->callService = $callService;
+    public function __construct()
+    {
 
     }//end __construct()
 
