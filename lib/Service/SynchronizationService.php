@@ -650,6 +650,7 @@ class SynchronizationService
                 if (array_is_list($objectList) === false) {
                     $objectList = [$objectList];
                 }
+
                 $result['objects']['found'] = count($objectList);
             }
 
