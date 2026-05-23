@@ -1,24 +1,53 @@
 <?php
+/**
+ * OpenConnector ObjectCreated EventListener.
+ *
+ * Listens for OpenRegister ObjectCreatedEvent and triggers downstream
+ * synchronization for the affected object.
+ *
+ * @category EventListener
+ * @package  OCA\OpenConnector\EventListener
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\EventListener;
 
 use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
 
 /**
+ * Event listener that triggers synchronization on object creation.
+ *
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ObjectCreatedEventListener implements IEventListener
 {
+    /**
+     * Constructor.
+     *
+     * @param SynchronizationService $synchronizationService Service that performs the synchronization.
+     */
     public function __construct(
         private readonly SynchronizationService $synchronizationService,
     ) {
+
     }//end __construct()
 
     /**
-     * @inheritDoc
+     * Handle a fired event.
+     *
+     * @param Event $event Event payload to handle.
+     *
+     * @return void
      */
     public function handle(Event $event): void
     {
@@ -39,5 +68,6 @@ class ObjectCreatedEventListener implements IEventListener
             object: $object,
             eventMutationType: 'create'
         );
+
     }//end handle()
 }//end class
