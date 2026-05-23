@@ -1,5 +1,6 @@
 <script setup>
 import { navigationStore } from '../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -8,7 +9,7 @@ import { navigationStore } from '../../store/store.js'
 		@close="closeModal">
 		<!-- Do not remove this seemingly useless class "TestMappingMainModal" -->
 		<div class="modalContent TestMappingMainModal">
-			<h2>Mapping test</h2>
+			<h2>{{ t('openconnector', 'Mapping test') }}</h2>
 
 			<div class="content">
 				<TestMappingInputObject ref="inputObjectRef"
@@ -97,42 +98,45 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 /* modal */
 div[class='modal-container']:has(.TestMappingMainModal) {
-    width: clamp(1000px, 100%, 1200px) !important;
+	width: clamp(1000px, 100%, 1200px) !important;
 }
 </style>
 
 <style scoped>
 .content {
-    height: 600px;
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
+	height: 600px;
+	display: flex;
+	flex-direction: row;
+	gap: 12px;
 }
+
 .content > * {
-    height: 100%;
-    overflow: auto;
-    padding-top: var(--OC-margin-20);
-    padding-bottom: var(--OC-margin-20);
+	height: 100%;
+	overflow: auto;
+	padding-top: var(--OC-margin-20);
+	padding-bottom: var(--OC-margin-20);
 }
+
 .content > *:not(:last-child) {
-    border-right: 1px solid gray;
+	border-right: 1px solid gray;
 }
 
 .content > :deep(h4) {
-    margin-top: 0;
+	margin-top: 0;
 }
 
 /* Open Register note card */
 .openregister-notecard {
-   display: flex;
-   justify-content: center;
+	display: flex;
+	justify-content: center;
 }
+
 .openregister-notecard > .notecard {
-    width: fit-content;
-    /* max-width: 500px; */
+	width: fit-content;
+	/* max-width: 500px; */
 }
 
 </style>

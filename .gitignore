@@ -1,18 +1,66 @@
+# IDE
 /.idea/
 /*.iml
 *.Identifier
 
+# Dependencies
 /vendor/
 /vendor-bin/*/vendor/
+/node_modules/
 
+# Build artifacts
+/js/
+
+# Documentation
+/docs/node_modules/
+/docs/build/
+/docs/.docusaurus/
+/website/node_modules/
+/website/.docusaurus/
+
+# Testing & Quality
 /.php-cs-fixer.cache
 /tests/.phpunit.cache
+/.phpunit.cache/
+.phpunit.cache/
+.phpunit.result.cache
+/coverage/
+/coverage-frontend/
+/phpmetrics/
+/quality-reports/
+/phpqa/
 
+# Nextcloud
 /node_modules/
 /js/
+/docs/node_modules/
+/docs/.docusaurus/
 /custom_apps/
 /custom-apps/
 /config/
 
-/coverage/
-/coverage-frontend/
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/worktrees/
+
+# Test/build artifacts
+.docusaurus
+.phpunit.result.cache
+
+# SBOM is published as release asset (see SECURITY.md), not stored in repo
+sbom.cdx.json
+bom-php.cdx.json
+bom-npm.cdx.json
+
+# Playwright (journeydoc / ADR-030)
+/tests/e2e/.auth/
+/tests/e2e/playwright-report/
+/tests/e2e/test-results/
+/test-results/
+/playwright-report/
+
+# Newman run artifacts
+/tests/postman/newman-report.json

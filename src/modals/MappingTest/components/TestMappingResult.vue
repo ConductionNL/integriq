@@ -1,17 +1,18 @@
 <script setup>
 import { mappingStore } from '../../../store/store.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
 	<div>
-		<h4>Test result</h4>
+		<h4>{{ t('openconnector', 'Test result') }}</h4>
 
 		<div class="content">
 			<NcNoteCard v-if="mappingTest.success" type="success">
-				<p>Mapping successfully tested</p>
+				<p>{{ t('openconnector', 'Mapping tested successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="mappingTest.success === false" type="error">
-				<p>Mapping failed to test</p>
+				<p>{{ t('openconnector', 'Mapping failed to test') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="mappingTest.error" type="error">
 				<p>{{ mappingTest.error }}</p>
@@ -25,10 +26,10 @@ import { mappingStore } from '../../../store/store.js'
 
 			<div v-if="mappingTest.result?.isValid !== undefined">
 				<p v-if="mappingTest.result.isValid" class="valid">
-					<NcIconSvgWrapper inline :path="mdiCheckCircle" /> input object is valid
+					<NcIconSvgWrapper inline :path="mdiCheckCircle" /> {{ t('openconnector', 'input object is valid') }}
 				</p>
 				<p v-if="!mappingTest.result.isValid" class="invalid">
-					<NcIconSvgWrapper inline :path="mdiCloseCircle" /> input object is invalid
+					<NcIconSvgWrapper inline :path="mdiCloseCircle" /> {{ t('openconnector', 'input object is invalid') }}
 				</p>
 			</div>
 
@@ -36,8 +37,8 @@ import { mappingStore } from '../../../store/store.js'
 				<table>
 					<thead>
 						<tr>
-							<th>Field</th>
-							<th>Errors</th>
+							<th>{{ t('openconnector', 'Field') }}</th>
+							<th>{{ t('openconnector', 'Errors') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -56,21 +57,21 @@ import { mappingStore } from '../../../store/store.js'
 			</div>
 
 			<div v-if="!Object.keys(mappingTest.result?.validationErrors || {}).length">
-				<h4>Save object</h4>
+				<h4>{{ t('openconnector', 'Save object') }}</h4>
 
 				<NcSelect v-bind="registers"
 					v-model="registers.value"
-					input-label="Register"
+					:input-label="t('openconnector', 'Register')"
 					:loading="fetchRegistersLoading"
 					:disabled="!openRegisterInstalled || saveObjectLoading"
 					required>
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">
-							Loading...
+							{{ t('openconnector', 'Loading...') }}
 						</p>
 						<p v-if="!loading && !registers.options?.length">
-							Er zijn geen registers beschikbaar
+							{{ t('openconnector', 'No registers available') }}
 						</p>
 					</template>
 					<!-- eslint-disable-next-line vue/no-unused-vars  -->
@@ -81,7 +82,7 @@ import { mappingStore } from '../../../store/store.js'
 								<h6 style="margin: 0">
 									{{ label }}
 								</h6>
-								{{ fullRegister.description || 'No description' }}
+								{{ fullRegister.description || t('openconnector', 'No description') }}
 							</span>
 						</div>
 					</template>
@@ -99,14 +100,14 @@ import { mappingStore } from '../../../store/store.js'
 						<NcLoadingIcon v-if="saveObjectLoading" :size="20" />
 						<ContentSaveOutline v-if="!saveObjectLoading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 
 				<NcNoteCard v-if="saveObjectSuccess === true" type="success">
-					<p>Object saved successfully</p>
+					<p>{{ t('openconnector', 'Object saved successfully') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="saveObjectSuccess === false" type="error">
-					<p>{{ saveObjectError || 'An error occurred' }}</p>
+					<p>{{ saveObjectError || t('openconnector', 'An error occurred') }}</p>
 				</NcNoteCard>
 			</div>
 		</div>
@@ -230,21 +231,23 @@ export default {
 
 <style scoped>
 .content {
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+	text-align: left;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
+
 .result {
-    color: var(--color-main-text);
-    background-color: var(--color-main-background);
-    min-width: 0;
-    border-radius: var(--border-radius-large);
-    box-shadow: 0 0 10px var(--color-box-shadow);
-    height: fit-content;
-    padding: 15px;
-    margin: 20px 0.5rem;
+	color: var(--color-main-text);
+	background-color: var(--color-main-background);
+	min-width: 0;
+	border-radius: var(--border-radius-large);
+	box-shadow: 0 0 10px var(--color-box-shadow);
+	height: fit-content;
+	padding: 15px;
+	margin: 20px 0.5rem;
 }
+
 .result pre {
 	white-space: pre-wrap;
 	word-break: break-word;
@@ -254,50 +257,57 @@ export default {
 .valid {
 	color: var(--color-success);
 }
+
 .invalid {
 	color: var(--color-error);
 }
+
 .validation-errors {
-    margin-block-start: 0.5rem;
-    overflow-x: auto;
-    width: 100%;
+	margin-block-start: 0.5rem;
+	overflow-x: auto;
+	width: 100%;
 }
+
 .validation-errors table {
-    border: 1px solid grey;
-    border-collapse: collapse;
+	border: 1px solid grey;
+	border-collapse: collapse;
 }
+
 .validation-errors th, .validation-errors td {
-    border: 1px solid grey;
-    padding: 8px;
+	border: 1px solid grey;
+	padding: 8px;
 }
 
 .v-select {
-    min-width: auto;
-    width: 100%;
+	min-width: auto;
+	width: 100%;
 }
 
 /* custom select option */
 .custom-select-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
+
 .custom-select-option > .material-design-icon {
-    margin-block-start: 2px;
+	margin-block-start: 2px;
 }
+
 .custom-select-option > h6 {
-    line-height: 0.8;
+	line-height: 0.8;
 }
 /* truncate long option labels/descriptions */
 .custom-select-option > span {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
 }
+
 .custom-select-option > span h6,
 .custom-select-option > span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 </style>

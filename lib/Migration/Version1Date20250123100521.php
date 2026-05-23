@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SPDX-FileCopyrightText: 2025 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -17,25 +17,29 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * FIXME Auto-generated migration step: Please modify to your needs!
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20250123100521 extends SimpleMigrationStep {
+class Version1Date20250123100521 extends SimpleMigrationStep
+{
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end preSchemaChange()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 * @return null|ISchemaWrapper
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
-        /**
+    /**
+     * @param  IOutput                   $output
+     * @param  Closure(): ISchemaWrapper $schemaClosure
+     * @param  array                     $options
+     * @return null|ISchemaWrapper
+     */
+    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
+    {
+        /*
          * @var ISchemaWrapper $schema
          */
         $schema = $schemaClosure();
@@ -48,13 +52,14 @@ class Version1Date20250123100521 extends SimpleMigrationStep {
         }
 
         return $schema;
-	}
+    }//end changeSchema()
 
-	/**
-	 * @param IOutput $output
-	 * @param Closure(): ISchemaWrapper $schemaClosure
-	 * @param array $options
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-	}
-}
+    /**
+     * @param IOutput                   $output
+     * @param Closure(): ISchemaWrapper $schemaClosure
+     * @param array                     $options
+     */
+    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
+    {
+    }//end postSchemaChange()
+}//end class

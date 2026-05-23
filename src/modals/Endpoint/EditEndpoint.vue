@@ -1,6 +1,7 @@
 <script setup>
 import { endpointStore, navigationStore } from '../../store/store.js'
 import { Endpoint } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,11 +10,11 @@ import { Endpoint } from '../../entities/index.js'
 		label-id="editEndpoint"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>{{ endpointItem.id ? 'Edit' : 'Add' }} Endpoint</h2>
+			<h2>{{ endpointItem.id ? t('openconnector', 'Edit endpoint') : t('openconnector', 'Add endpoint') }}</h2>
 
 			<div v-if="success !== null">
 				<NcNoteCard v-if="success" type="success">
-					<p>Endpoint successfully added</p>
+					<p>{{ t('openconnector', 'Endpoint successfully saved') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error }}</p>
@@ -23,29 +24,29 @@ import { Endpoint } from '../../entities/index.js'
 			<form v-if="success === null" @submit.prevent="handleSubmit">
 				<div class="form-group">
 					<NcTextField
-						label="Name*"
+						:label="t('openconnector', 'Name') + '*'"
 						:value.sync="endpointItem.name" />
 
 					<NcTextArea
 						resize="vertical"
-						label="Description"
+						:label="t('openconnector', 'Description')"
 						:value.sync="endpointItem.description" />
 
 					<NcTextField
-						label="Endpoint"
+						:label="t('openconnector', 'Endpoint')"
 						:value.sync="endpointItem.endpoint" />
 
 					<NcTextArea
 						resize="vertical"
-						label="Endpoint Array (split on ,)"
+						:label="t('openconnector', 'Endpoint array (split on ,)')"
 						:value.sync="endpointItem.endpointArray" />
 
 					<NcTextField
-						label="Endpoint Regex"
+						:label="t('openconnector', 'Endpoint regex')"
 						:value.sync="endpointItem.endpointRegex" />
 
 					<NcTextField
-						label="Slug"
+						:label="t('openconnector', 'Slug')"
 						:value.sync="endpointItem.slug" />
 
 					<div>
@@ -61,19 +62,19 @@ import { Endpoint } from '../../entities/index.js'
 					<div>
 						<NcSelect v-bind="registerOptions"
 							v-model="registerOptions.value"
-							input-label="Register"
+							:input-label="t('openconnector', 'Register')"
 							:disabled="registersLoading" />
 
 						<NcSelect v-bind="schemaOptions"
 							v-model="schemaOptions.value"
 							:disabled="!registerOptions.value || schemasLoading"
-							input-label="Schema" />
+							:input-label="t('openconnector', 'Schema')" />
 					</div>
 
 					<div>
 						<NcSelect v-bind="configurationOptions"
 							v-model="configurationOptions.value"
-							input-label="Configurations"
+							:input-label="t('openconnector', 'Configurations')"
 							:multiple="true"
 							:disabled="configurationsLoading" />
 					</div>
@@ -87,7 +88,7 @@ import { Endpoint } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="success === null"
@@ -98,7 +99,7 @@ import { Endpoint } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

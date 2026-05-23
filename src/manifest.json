@@ -1,0 +1,427 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+  "version": "2.0.0",
+  "dependencies": [
+    "openregister"
+  ],
+  "menu": [
+    {
+      "id": "Dashboard",
+      "label": "Dashboard",
+      "icon": "icon-category-dashboard",
+      "route": "Dashboard",
+      "order": 10
+    },
+    {
+      "id": "Sources",
+      "label": "Sources",
+      "icon": "icon-link",
+      "route": "Sources",
+      "order": 20
+    },
+    {
+      "id": "Endpoints",
+      "label": "Endpoints",
+      "icon": "icon-category-integration",
+      "route": "Endpoints",
+      "order": 30
+    },
+    {
+      "id": "Consumers",
+      "label": "Consumers",
+      "icon": "icon-group",
+      "route": "Consumers",
+      "order": 40
+    },
+    {
+      "id": "Webhooks",
+      "label": "Webhooks",
+      "icon": "icon-mail",
+      "route": "Webhooks",
+      "order": 50
+    },
+    {
+      "id": "Jobs",
+      "label": "Jobs",
+      "icon": "icon-category-workflow",
+      "route": "Jobs",
+      "order": 60
+    },
+    {
+      "id": "Mappings",
+      "label": "Mappings",
+      "icon": "icon-category-customization",
+      "route": "Mappings",
+      "order": 70
+    },
+    {
+      "id": "Rules",
+      "label": "Rules",
+      "icon": "icon-toggle",
+      "route": "Rules",
+      "order": 80
+    },
+    {
+      "id": "Synchronizations",
+      "label": "Synchronizations",
+      "icon": "icon-history",
+      "route": "Synchronizations",
+      "order": 90
+    },
+    {
+      "id": "CloudEvents",
+      "label": "Cloud events",
+      "icon": "icon-category-monitoring",
+      "route": "CloudEvents",
+      "order": 100
+    },
+    {
+      "id": "Documentation",
+      "label": "Documentation",
+      "icon": "icon-info",
+      "href": "https://openconnector.conduction.nl",
+      "section": "settings",
+      "order": 15
+    },
+    {
+      "id": "Settings",
+      "label": "Settings",
+      "icon": "icon-settings",
+      "route": "AppSettings",
+      "section": "settings",
+      "order": 20
+    }
+  ],
+  "pages": [
+    {
+      "id": "Dashboard",
+      "route": "/",
+      "type": "dashboard",
+      "title": "Dashboard",
+      "config": {
+        "dateRange": { "enabled": true, "persistKey": "openconnector-dashboard" },
+        "widgets": [
+          { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "props": { "route": { "name": "Sources" } },                  "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" } },
+          { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "props": { "route": { "name": "Mappings" } },                 "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" } },
+          { "id": "kpi-synchronizations", "title": "Synchronizations", "type": "stats-block", "props": { "route": { "name": "Synchronizations" } },         "dataSource": { "register": "openconnector", "schema": "synchronization",          "aggregate": "count" } },
+          { "id": "kpi-contracts",        "title": "Contracts",        "type": "stats-block", "props": { "route": { "name": "SynchronizationContracts" } }, "dataSource": { "register": "openconnector", "schema": "synchronization_contract", "aggregate": "count" } },
+          { "id": "kpi-jobs",             "title": "Jobs",             "type": "stats-block", "props": { "route": { "name": "Jobs" } },                     "dataSource": { "register": "openconnector", "schema": "job",                      "aggregate": "count" } },
+          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "props": { "route": { "name": "Endpoints" } },                "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" } },
+
+          { "id": "calls-daily",  "title": "Outgoing calls — daily",        "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "call_log",         "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
+          { "id": "calls-hourly", "title": "Outgoing calls — by hour",      "type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "call_log",         "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } },
+          { "id": "jobs-daily",   "title": "Job executions — daily",        "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "job_log",          "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
+          { "id": "jobs-hourly",  "title": "Job executions — by hour",      "type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "job_log",          "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } },
+          { "id": "sync-daily",   "title": "Synchronization runs — daily",  "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "synchronization_log", "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
+          { "id": "sync-hourly",  "title": "Synchronization runs — by hour","type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "synchronization_log", "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } }
+        ],
+        "layout": [
+          { "id": "L1",  "widgetId": "kpi-sources",          "gridX": 0,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L2",  "widgetId": "kpi-mappings",         "gridX": 2,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L3",  "widgetId": "kpi-synchronizations", "gridX": 4,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L4",  "widgetId": "kpi-contracts",        "gridX": 6,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L5",  "widgetId": "kpi-jobs",             "gridX": 8,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+          { "id": "L6",  "widgetId": "kpi-endpoints",        "gridX": 10, "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
+
+          { "id": "L7",  "widgetId": "calls-daily",          "gridX": 0,  "gridY": 2,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L8",  "widgetId": "calls-hourly",         "gridX": 6,  "gridY": 2,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L9",  "widgetId": "jobs-daily",           "gridX": 0,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L10", "widgetId": "jobs-hourly",          "gridX": 6,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L11", "widgetId": "sync-daily",           "gridX": 0,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 },
+          { "id": "L12", "widgetId": "sync-hourly",          "gridX": 6,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 }
+        ]
+      }
+    },
+    {
+      "id": "Sources",
+      "route": "/sources",
+      "type": "index",
+      "title": "Sources",
+      "config": {
+        "register": "openconnector",
+        "schema": "source",
+        "columns": ["name", "type", "status", "isEnabled", "lastSync", "dateModified"],
+        "includeFields": ["name", "description", "type", "isEnabled"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
+          { "id": "view-source-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+        ]
+      }
+    },
+    {
+      "id": "SourceDetail",
+      "route": "/sources/:id",
+      "type": "detail",
+      "title": "Source",
+      "config": {
+        "register": "openconnector",
+        "schema": "source"
+      }
+    },
+    {
+      "id": "SourceLogs",
+      "route": "/sources/logs",
+      "type": "logs",
+      "title": "Source logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "call_log"
+      }
+    },
+    {
+      "id": "Endpoints",
+      "route": "/endpoints",
+      "type": "index",
+      "title": "Endpoints",
+      "config": {
+        "register": "openconnector",
+        "schema": "endpoint",
+        "columns": ["name", "method", "endpoint", "targetType", "updated"],
+        "includeFields": ["name", "description", "endpoint", "method", "targetType"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
+          { "id": "view-endpoint-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+        ]
+      }
+    },
+    {
+      "id": "EndpointDetail",
+      "route": "/endpoints/:id",
+      "type": "detail",
+      "title": "Endpoint",
+      "config": {
+        "register": "openconnector",
+        "schema": "endpoint"
+      }
+    },
+    {
+      "id": "EndpointLogs",
+      "route": "/endpoints/logs",
+      "type": "logs",
+      "title": "Endpoint logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "call_log"
+      }
+    },
+    {
+      "id": "Consumers",
+      "route": "/consumers",
+      "type": "index",
+      "title": "Consumers",
+      "config": {
+        "register": "openconnector",
+        "schema": "consumer",
+        "columns": ["name", "authorizationType", "domains", "updated"],
+        "includeFields": ["name", "description", "authorizationType"],
+        "sidebar": { "enabled": true, "showMetadata": true }
+      }
+    },
+    {
+      "id": "ConsumerDetail",
+      "route": "/consumers/:id",
+      "type": "detail",
+      "title": "Consumer",
+      "config": {
+        "register": "openconnector",
+        "schema": "consumer"
+      }
+    },
+    {
+      "id": "Webhooks",
+      "route": "/webhooks",
+      "type": "index",
+      "title": "Webhooks",
+      "config": {
+        "register": "openconnector",
+        "schema": "consumer",
+        "columns": ["name", "authorizationType", "domains", "updated"],
+        "includeFields": ["name", "description", "authorizationType"],
+        "sidebar": { "enabled": true, "showMetadata": true }
+      }
+    },
+    {
+      "id": "Jobs",
+      "route": "/jobs",
+      "type": "index",
+      "title": "Jobs",
+      "config": {
+        "register": "openconnector",
+        "schema": "job",
+        "columns": ["name", "jobClass", "interval", "isEnabled", "lastRun", "status"],
+        "includeFields": ["name", "description", "jobClass", "arguments", "interval", "isEnabled"],
+        "fieldOverrides": {
+          "arguments": { "widget": "json" }
+        },
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
+          { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
+          { "id": "view-job-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+        ]
+      },
+      "slots": {
+        "form-fields": "JobFormFields"
+      }
+    },
+    {
+      "id": "JobLogs",
+      "route": "/jobs/logs",
+      "type": "logs",
+      "title": "Job logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "job_log"
+      }
+    },
+    {
+      "id": "Mappings",
+      "route": "/mappings",
+      "type": "index",
+      "title": "Mappings",
+      "config": {
+        "register": "openconnector",
+        "schema": "mapping",
+        "columns": ["name", "description", "passThrough", "dateModified"],
+        "includeFields": ["name", "description"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "test", "label": "Test mapping", "icon": "icon-play", "handler": "testMappingModalHandler" }
+        ]
+      }
+    },
+    {
+      "id": "MappingDetail",
+      "route": "/mappings/:id",
+      "type": "custom",
+      "component": "MappingDetailPage",
+      "title": "Mapping",
+      "config": {
+        "register": "openconnector",
+        "schema": "mapping"
+      }
+    },
+    {
+      "id": "Rules",
+      "route": "/rules",
+      "type": "index",
+      "title": "Rules",
+      "config": {
+        "register": "openconnector",
+        "schema": "rule",
+        "columns": ["name", "action", "timing", "type", "order"],
+        "includeFields": ["name", "description", "action", "timing", "type"],
+        "sidebar": { "enabled": true, "showMetadata": true }
+      }
+    },
+    {
+      "id": "RuleDetail",
+      "route": "/rules/:id",
+      "type": "custom",
+      "component": "RuleDetailPage",
+      "title": "Rule",
+      "config": {
+        "register": "openconnector",
+        "schema": "rule"
+      }
+    },
+    {
+      "id": "Synchronizations",
+      "route": "/synchronizations",
+      "type": "index",
+      "title": "Synchronizations",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization",
+        "columns": ["name", "sourceType", "targetType", "status", "sourceLastSynced"],
+        "includeFields": ["name", "description", "sourceType", "targetType"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
+        "actions": [
+          { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
+          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
+          { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
+          { "id": "view-synchronization-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" },
+          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
+        ]
+      }
+    },
+    {
+      "id": "SynchronizationContracts",
+      "route": "/synchronizations/contracts",
+      "type": "index",
+      "title": "Contracts",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization_contract",
+        "columns": ["synchronization", "originId", "targetId", "sourceLastSynced", "updated"],
+        "sidebar": { "enabled": true, "showMetadata": true }
+      }
+    },
+    {
+      "id": "SynchronizationLogs",
+      "route": "/synchronizations/logs",
+      "type": "logs",
+      "title": "Synchronization logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization_log"
+      }
+    },
+    {
+      "id": "SynchronizationDetail",
+      "route": "/synchronizations/:id",
+      "type": "custom",
+      "title": "Synchronization",
+      "component": "SynchronizationDetailPage",
+      "config": {
+        "register": "openconnector",
+        "schema": "synchronization"
+      }
+    },
+    {
+      "id": "CloudEvents",
+      "route": "/cloud-events/events",
+      "type": "index",
+      "title": "Cloud events",
+      "config": {
+        "register": "openconnector",
+        "schema": "event",
+        "columns": ["source", "type", "subject", "status", "time"],
+        "includeFields": ["source", "type", "subject", "data"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "view-cloud-event-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+        ]
+      }
+    },
+    {
+      "id": "CloudEventDetail",
+      "route": "/cloud-events/events/:id",
+      "type": "detail",
+      "title": "Cloud event",
+      "config": {
+        "register": "openconnector",
+        "schema": "event"
+      }
+    },
+    {
+      "id": "CloudEventLogs",
+      "route": "/cloud-events/logs",
+      "type": "logs",
+      "title": "Cloud event logs",
+      "config": {
+        "register": "openconnector",
+        "schema": "call_log"
+      }
+    },
+    {
+      "id": "AppSettings",
+      "route": "/settings",
+      "type": "settings",
+      "title": "Settings"
+    }
+  ]
+}

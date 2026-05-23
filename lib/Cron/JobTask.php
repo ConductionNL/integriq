@@ -2,7 +2,7 @@
 
 /**
  * JobTask
- * 
+ *
  * Background job task for executing jobs in the OpenConnector application.
  * This task runs scheduled jobs by delegating execution to the JobService.
  *
@@ -29,60 +29,62 @@ use OCP\BackgroundJob\IJob;
  * scheduled intervals and configurations.
  *
  * @psalm-api
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class JobTask extends TimedJob
 {
-	/**
-	 * Job service for handling job execution logic
-	 */
-	private readonly JobService $jobService;
 
-	/**
-	 * JobTask constructor
-	 *
-	 * Initializes the job task with required dependencies and
-	 * configures the background job settings.
-	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param JobService $jobService Service for handling job execution
-	 *
-	 * @psalm-param ITimeFactory $time
-	 * @psalm-param JobService $jobService
-	 */
-	public function __construct(
-		ITimeFactory $time,
-		JobService $jobService
-	) {
-		parent::__construct($time);
-		$this->jobService = $jobService;
+    /**
+     * Job service for handling job execution logic
+     */
+    private readonly JobService $jobService;
 
-		// Run every 5 minutes
-		$this->setInterval(300);
+    /**
+     * JobTask constructor
+     *
+     * Initializes the job task with required dependencies and
+     * configures the background job settings.
+     *
+     * @param ITimeFactory $time       Time factory for job scheduling
+     * @param JobService   $jobService Service for handling job execution
+     *
+     * @psalm-param ITimeFactory $time
+     * @psalm-param JobService $jobService
+     */
+    public function __construct(
+        ITimeFactory $time,
+        JobService $jobService
+    ) {
+        parent::__construct($time);
+        $this->jobService = $jobService;
 
-		// Set as time insensitive to run during low-load periods
-		$this->setTimeSensitivity(IJob::TIME_SENSITIVE);
+        // Run every 5 minutes
+        $this->setInterval(300);
 
-		// Only run one instance of this job at a time
-		$this->setAllowParallelRuns(false);
-	}
+        // Set as time insensitive to run during low-load periods
+        $this->setTimeSensitivity(IJob::TIME_SENSITIVE);
 
-	/**
-	 * Execute the job task
-	 *
-	 * This method delegates job execution to the JobService,
-	 * which handles all the complex business logic for job
-	 * validation, execution, and logging.
-	 *
-	 * @param mixed $argument The job arguments containing jobId and optional parameters
-	 *
-	 * @return void
-	 *
-	 * @psalm-param array{jobId?: int, forceRun?: bool} $argument
-	 * @phpstan-param mixed $argument
-	 */
-	public function run(mixed $argument): void
-	{
-		// Delegate job execution to the service layer
-		$this->jobService->run();
-	}
-}
+        // Only run one instance of this job at a time
+        $this->setAllowParallelRuns(false);
+    }//end __construct()
+
+    /**
+     * Execute the job task
+     *
+     * This method delegates job execution to the JobService,
+     * which handles all the complex business logic for job
+     * validation, execution, and logging.
+     *
+     * @param mixed $argument The job arguments containing jobId and optional parameters
+     *
+     * @return void
+     *
+     * @psalm-param   array{jobId?: int, forceRun?: bool} $argument
+     * @phpstan-param mixed $argument
+     */
+    public function run(mixed $argument): void
+    {
+        // Delegate job execution to the service layer
+        $this->jobService->run();
+    }//end run()
+}//end class

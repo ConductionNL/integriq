@@ -1,6 +1,7 @@
 <script setup>
 import { endpointStore, navigationStore, ruleStore } from '../../store/store.js'
 import { Endpoint } from '../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -8,11 +9,11 @@ import { Endpoint } from '../../entities/index.js'
 		label-id="addEndpointRule"
 		@close="closeModal">
 		<div class="modalContent">
-			<h2>Add Rule to Endpoint</h2>
+			<h2>{{ t('openconnector', 'Add Rule to Endpoint') }}</h2>
 
 			<div v-if="success || error">
 				<NcNoteCard v-if="success" type="success">
-					<p>Rule successfully added to endpoint</p>
+					<p>{{ t('openconnector', 'Rule successfully added to endpoint') }}</p>
 				</NcNoteCard>
 				<NcNoteCard v-if="error" type="error">
 					<p>{{ error }}</p>
@@ -24,7 +25,7 @@ import { Endpoint } from '../../entities/index.js'
 					v-bind="ruleOptions"
 					v-model="ruleOptions.value"
 					:loading="loading"
-					input-label="Select Rule"
+					:input-label="t('openconnector', 'Select Rule')"
 					:multiple="false"
 					:clearable="false" />
 			</form>
@@ -35,7 +36,7 @@ import { Endpoint } from '../../entities/index.js'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton v-if="!success"
 					:disabled="loading || !ruleOptions.value"
@@ -45,7 +46,7 @@ import { Endpoint } from '../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

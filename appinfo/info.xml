@@ -12,6 +12,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 - 📰 Send cloud events
 - 🆓 Map and translate API calls
 
+**Support:** For support, contact support@conduction.nl. For a Service Level Agreement (SLA), contact sales@conduction.nl.
     ]]></description>
 	<version>0.2.8</version>
 	<licence>agpl</licence>
@@ -31,6 +32,10 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
         <lib>curl</lib>
 
         <owncloud max-version="0" min-version="0"/>
+
+        <!-- Chain B/C OR cutover: openconnector now stores domain data in OpenRegister.
+             OR's ObjectService is required to boot openconnector controllers. -->
+        <nextcloud-app id="openregister" min-version="0.2.0"/>
 	</dependencies>
 
 	<background-jobs>
@@ -42,7 +47,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 		<navigation>
 			<id>openconnector</id>
 			<name>Connector</name>
-			<route>openconnector.dashboard.page</route>
+			<route>openconnector.ui.dashboard</route>
 			<icon>app.svg</icon>
 		</navigation>
 	</navigations>
@@ -51,4 +56,13 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
 		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
 	</settings>
+
+	<repair-steps>
+		<install>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+		</install>
+		<post-migration>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+		</post-migration>
+	</repair-steps>
 </info>

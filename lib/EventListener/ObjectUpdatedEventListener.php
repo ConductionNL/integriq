@@ -7,16 +7,17 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class ObjectUpdatedEventListener implements IEventListener
 {
+    public function __construct(
+        private readonly SynchronizationService $synchronizationService,
+    ) {
+    }//end __construct()
 
-	public function __construct(
-		private readonly SynchronizationService $synchronizationService,
-	)
-	{
-	}
-
-	/**
+    /**
      * @inheritDoc
      */
     public function handle(Event $event): void
@@ -38,5 +39,5 @@ class ObjectUpdatedEventListener implements IEventListener
             object: $object,
             eventMutationType: 'update'
         );
-    }
-}
+    }//end handle()
+}//end class

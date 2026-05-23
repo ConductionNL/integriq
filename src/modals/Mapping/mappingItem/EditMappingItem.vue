@@ -1,6 +1,7 @@
 <script setup>
 import { mappingStore, navigationStore } from '../../../store/store.js'
 import { Mapping } from '../../../entities/index.js'
+import { translate as t } from '@nextcloud/l10n'
 </script>
 
 <template>
@@ -9,13 +10,13 @@ import { Mapping } from '../../../entities/index.js'
 		ref="modalRef"
 		label-id="editMappingItem"
 		:can-close="true"
-		:name="(isEdit ? 'Edit ' : 'Add ') + modalLabel"
+		:name="(isEdit ? t('openconnector', 'Edit') + ' ' : t('openconnector', 'Add') + ' ') + modalLabel"
 		@close="closeDialog"
 		@cancel="closeDialog"
 		@update:open="val => { if (!val) closeDialog() }">
 		<div class="modalContent">
 			<NcNoteCard v-if="success" type="success">
-				<p>{{ modalLabel }} successfully {{ isEdit ? 'updated' : 'added' }}</p>
+				<p>{{ modalLabel }} {{ isEdit ? t('openconnector', 'updated successfully') : t('openconnector', 'added successfully') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -28,12 +29,12 @@ import { Mapping } from '../../../entities/index.js'
 						:label="keyLabel"
 						required
 						:error="isKeyTaken(keyInput)"
-						:helper-text="isKeyTaken(keyInput) ? 'This key is already in use. Please choose a different key name.' : ''"
+						:helper-text="isKeyTaken(keyInput) ? t('openconnector', 'This key is already in use. Please choose a different key name.') : ''"
 						:value.sync="keyInput" />
 					<NcTextField
 						v-if="showsValueField"
 						id="value"
-						label="Value"
+						:label="t('openconnector', 'Value')"
 						:value.sync="valueInput" />
 				</div>
 			</form>
@@ -44,7 +45,7 @@ import { Mapping } from '../../../entities/index.js'
 					<template #icon>
 						<CancelIcon :size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="!success"
@@ -55,7 +56,7 @@ import { Mapping } from '../../../entities/index.js'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

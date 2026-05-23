@@ -14,6 +14,11 @@
 			"OCA\\OpenConnector\\": "lib/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"OCA\\OpenConnector\\Tests\\": "tests/"
+		}
+	},
 	"scripts": {
 		"post-install-cmd": [
 			"@composer bin all install --ansi"
@@ -40,7 +45,9 @@
 		"phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
 		"check": "E=0; for CMD in lint phpcs psalm test:unit; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"check:full": "E=0; for CMD in lint phpcs psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
-		"check:strict": "E=0; for CMD in lint phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"check:strict": "E=0; for CMD in check:no-legacy-types check:routes lint phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"check:routes": "php tests/scripts/check-routes.php",
+		"check:no-legacy-types": "if grep -rEn 'use OCA\\\\\\\\OpenConnector\\\\\\\\Db\\\\\\\\(Source|Consumer|Endpoint|Event|EventMessage|EventSubscription|Job|JobLog|Mapping|Rule|Synchronization|SynchronizationContract|SynchronizationContractLog|SynchronizationLog|CallLog|SourceMapper|ConsumerMapper|EndpointMapper|EventMapper|EventMessageMapper|EventSubscriptionMapper|JobMapper|JobLogMapper|MappingMapper|RuleMapper|SynchronizationMapper|SynchronizationContractMapper|SynchronizationContractLogMapper|SynchronizationLogMapper|CallLogMapper)( |;|\\\\\\\\)' lib/ tests/ 2>/dev/null; then echo 'FAIL: deleted OCA\\\\OpenConnector\\\\Db\\\\* type import found above. The 15 entity + 15 mapper classes were deleted in chain C; use \\\\OCA\\\\OpenRegister\\\\Service\\\\ObjectService with register/schema named parameters instead.'; exit 1; else echo 'check:no-legacy-types: PASS'; fi",
 		"fix": [
 			"@cs:fix"
 		],
@@ -64,7 +71,7 @@
 		]
 	},
 	"require": {
-		"php": "^8.1",
+		"php": "^8.3",
 		"ext-dom": "*",
 		"ext-libxml": "*",
 		"ext-simplexml": "*",
@@ -80,8 +87,8 @@
 		"react/promise": "^3.2",
 		"symfony/console": "^5.4",
 		"symfony/uid": "^6.4",
-		"symfony/yaml": "^6.4",
-		"twig/twig": "^3.14",
+		"symfony/yaml": "^6.4.40",
+		"twig/twig": "^3.26",
 		"web-token/jwt-framework": "^3"
 	},
 	"require-dev": {
@@ -95,12 +102,15 @@
 		"phpunit/phpunit": "^10.5",
 		"roave/security-advisories": "dev-latest",
 		"squizlabs/php_codesniffer": "^3.9",
+		"cyclonedx/cyclonedx-php-composer": "^6.2",
 		"vimeo/psalm": "^5.26"
 	},
 	"config": {
 		"allow-plugins": {
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
+			"cyclonedx/cyclonedx-php-composer": true,
+			"phpro/grumphp": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
 		"optimize-autoloader": true,

@@ -1,0 +1,3 @@
+# openconnector-register-schema-declaration
+
+Chain A (config): Declare openconnector's OpenRegister schema as lib/Settings/openconnector_register.json. Defines one 'openconnector' register with 15 schemas (11 mutable config: source/consumer/endpoint/event/event_message/event_subscription/job/mapping/rule/synchronization/synchronization_contract + 4 appendOnly+immutable logs: call_log/job_log/synchronization_log/synchronization_contract_log). FK fields carry x-openregister-relation annotations. Log schemas carry x-openregister-archival driven by source/job retention settings. No PHP changes — OR provisions all storage via ConfigurationService import. Predecessor for openconnector-register-storage (code chain B).

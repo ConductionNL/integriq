@@ -1,0 +1,14 @@
+{
+  "$comment": "Seed data for openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Only mutable config schemas are seeded; log schemas are append-only at runtime and not pre-populated. This file ships with empty arrays — a fresh openconnector install has no Sources, Endpoints, Jobs, etc. Operators populate these via the UI or via Configuration export/import (local ADR-015). Chain B's storage migration is responsible for translating any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
+  "source": [],
+  "consumer": [],
+  "endpoint": [],
+  "event": [],
+  "event_message": [],
+  "event_subscription": [],
+  "job": [],
+  "mapping": [],
+  "rule": [],
+  "synchronization": [],
+  "synchronization_contract": []
+}
