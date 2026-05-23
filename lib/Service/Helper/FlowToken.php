@@ -19,8 +19,8 @@
 
 namespace OCA\OpenConnector\Service\Helper;
 
-use OC\AppFramework\Http\Request;
 use OCP\AppFramework\Http\Response;
+use OCP\IRequest;
 
 /**
  * Container for original + amended payloads passed through the rule pipeline.
@@ -96,7 +96,7 @@ class FlowToken
      * @param string|null $path               Request path used when serialising a Request.
      */
     public function __construct(
-        Request|array $requestOriginal=[],
+        IRequest|array $requestOriginal=[],
         Response|array $responseOriginal=[],
         array $syncInputOriginal=[],
         array $syncOutputOriginal=[],
@@ -197,7 +197,7 @@ class FlowToken
      *
      * @return mixed Parsed data (array for JSON/XML) or original string.
      */
-    private function parseContent(Request $request): mixed
+    private function parseContent(IRequest $request): mixed
     {
         $contentType = $request->getHeader('Content-Type');
 
@@ -224,7 +224,7 @@ class FlowToken
 
         // Try XML decode if content type suggests XML or content looks like XML.
         if ($contentType === 'application/xml' || $contentType === 'text/xml'
-            || ($contentType === null && $this->looksLikeXml(content: $content) === true)
+            || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($content);
@@ -248,13 +248,13 @@ class FlowToken
      *
      * @return array The stored array shape.
      */
-    public function setRequestOriginal(array|Request $requestOriginal, ?string $path=null): array
+    public function setRequestOriginal(array|IRequest $requestOriginal, ?string $path=null): array
     {
-        if ($requestOriginal instanceof Request) {
+        if ($requestOriginal instanceof IRequest) {
             $request         = $requestOriginal;
             $requestOriginal = [
                 'method'     => $request->getMethod(),
-                'headers'    => $this->getHeaders(server: $request->server, proxyHeaders: true),
+                'headers'    => $this->getHeaders(server: $_SERVER, proxyHeaders: true),
                 'parameters' => array_merge($request->getParams(), $this->parseContent(request: $request)),
                 'path'       => $path,
             ];

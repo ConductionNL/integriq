@@ -140,11 +140,6 @@ parameters:
 			path: lib/Service/EndpointCacheService.php
 
 		-
-			message: "#^Access to an undefined property OCP\\\\IRequest\\:\\:\\$server\\.$#"
-			count: 2
-			path: lib/Service/EndpointService.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Http\\\\Response\\:\\:getData\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
@@ -190,107 +185,12 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^PHPDoc tag @param for parameter \\$endpoint with type OCA\\\\OpenConnector\\\\Service\\\\Endpoint is not subtype of native type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\.$#"
-			count: 2
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^PHPDoc tag @param for parameter \\$rule with type OCA\\\\OpenConnector\\\\Service\\\\Rule is not subtype of native type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\.$#"
-			count: 7
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^PHPDoc tag @param for parameter \\$schemaMapper with type OCA\\\\OpenConnector\\\\Service\\\\OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper is not subtype of native type OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
 			message: "#^PHPDoc tag @return with type array\\|null is not subtype of native type array\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
 
 		-
 			message: "#^PHPDoc tag @throws with type GuzzleHttp\\\\Exception\\\\GuzzleException\\|OCA\\\\OpenRegister\\\\Exception\\\\ValidationException\\|OCP\\\\AppFramework\\\\Db\\\\DoesNotExistException\\|OCP\\\\AppFramework\\\\Db\\\\MultipleObjectsReturnedException\\|OCP\\\\Files\\\\InvalidPathException\\|OCP\\\\Files\\\\NotFoundException\\|Psr\\\\Container\\\\ContainerExceptionInterface\\|Twig\\\\Error\\\\LoaderError\\|Twig\\\\Error\\\\SyntaxError is not subtype of Throwable$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$endpoint of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:checkConditions\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Endpoint\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$endpoint of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processAuditTrailRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Endpoint\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$request of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:parseContent\\(\\) has invalid type OC\\\\AppFramework\\\\Http\\\\Request\\.$#"
-			count: 2
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$request of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processFilePartUploadRule\\(\\) expects OC\\\\AppFramework\\\\Http\\\\Request, OCP\\\\IRequest given\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$request of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processFilePartUploadRule\\(\\) has invalid type OC\\\\AppFramework\\\\Http\\\\Request\\.$#"
-			count: 2
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$request of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:transformError\\(\\) expects OC\\\\AppFramework\\\\Http\\\\Request, OCP\\\\IRequest given\\.$#"
-			count: 3
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$request of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:transformError\\(\\) has invalid type OC\\\\AppFramework\\\\Http\\\\Request\\.$#"
-			count: 2
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$requestOriginal of class OCA\\\\OpenConnector\\\\Service\\\\Helper\\\\FlowToken constructor expects array\\|OC\\\\AppFramework\\\\Http\\\\Request, OCP\\\\IRequest given\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processAuditTrailRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processAuthenticationRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processCustomRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processDownloadRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processExtendInputRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processJavaScriptRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$rule of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:processMappingRule\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\Rule\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Parameter \\$schemaMapper of method OCA\\\\OpenConnector\\\\Service\\\\EndpointService\\:\\:generateEndpointUrl\\(\\) has invalid type OCA\\\\OpenConnector\\\\Service\\\\OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
 
@@ -345,27 +245,7 @@ parameters:
 			path: lib/Service/EventService.php
 
 		-
-			message: "#^Class OC\\\\AppFramework\\\\Http\\\\Request not found\\.$#"
-			count: 1
-			path: lib/Service/Helper/FlowToken.php
-
-		-
 			message: "#^Function request_parse_body not found\\.$#"
-			count: 1
-			path: lib/Service/Helper/FlowToken.php
-
-		-
-			message: "#^Parameter \\$request of method OCA\\\\OpenConnector\\\\Service\\\\Helper\\\\FlowToken\\:\\:parseContent\\(\\) has invalid type OC\\\\AppFramework\\\\Http\\\\Request\\.$#"
-			count: 1
-			path: lib/Service/Helper/FlowToken.php
-
-		-
-			message: "#^Parameter \\$requestOriginal of method OCA\\\\OpenConnector\\\\Service\\\\Helper\\\\FlowToken\\:\\:__construct\\(\\) has invalid type OC\\\\AppFramework\\\\Http\\\\Request\\.$#"
-			count: 1
-			path: lib/Service/Helper/FlowToken.php
-
-		-
-			message: "#^Parameter \\$requestOriginal of method OCA\\\\OpenConnector\\\\Service\\\\Helper\\\\FlowToken\\:\\:setRequestOriginal\\(\\) has invalid type OC\\\\AppFramework\\\\Http\\\\Request\\.$#"
 			count: 1
 			path: lib/Service/Helper/FlowToken.php
 
