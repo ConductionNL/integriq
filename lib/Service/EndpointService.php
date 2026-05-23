@@ -749,7 +749,7 @@ class EndpointService
 
             $ids = $main[$property];
 
-            if (isset($ids) === false || $ids === null || empty($ids) === true) {
+            if ($ids === null || empty($ids) === true) {
                 $returnArray = [
                     'count'   => 0,
                     'results' => [],
@@ -1685,6 +1685,9 @@ class EndpointService
             );
         } else if ($config['locking']['action'] === 'unlock') {
             $object = $this->objectService->getOpenRegisters()->unlockObject(identifier: $objectId);
+        } else {
+            // Unknown locking action — leave $data untouched.
+            return $data;
         }
 
         $data['body'] = $object->jsonSerialize();
@@ -1737,7 +1740,8 @@ class EndpointService
             $result = [];
             foreach ($files as $key => $value) {
                 // Check for tags.
-                $tags = [];
+                $tags     = [];
+                $fileName = null;
                 if (is_array($value) === true) {
                     $content = $value['content'];
                     if (isset($value['label']) === true && isset($config['tags']) === true
@@ -1774,7 +1778,6 @@ class EndpointService
                 }
             }//end foreach
 
-            $result[$key] = $file->getPath();
             $dataDot[$config['filePath']] = $result;
         } else {
             $content  = $files;

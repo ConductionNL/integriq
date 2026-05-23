@@ -195,42 +195,12 @@ parameters:
 			path: lib/Service/EndpointService.php
 
 		-
-			message: "#^Result of \\|\\| is always false\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between array and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between mixed and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Variable \\$file might not be defined\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Variable \\$fileName might not be defined\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Variable \\$ids in isset\\(\\) always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Variable \\$object might not be defined\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
 
@@ -290,16 +260,6 @@ parameters:
 			path: lib/Service/MappingService.php
 
 		-
-			message: "#^Variable \\$setNullIfValue might not be defined\\.$#"
-			count: 3
-			path: lib/Service/MappingService.php
-
-		-
-			message: "#^Variable \\$unsetIfValue might not be defined\\.$#"
-			count: 3
-			path: lib/Service/MappingService.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\DB\\\\IResult\\:\\:fetchAllAssociative\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/Migration/LegacyToRegisterMigrator.php
@@ -351,11 +311,6 @@ parameters:
 
 		-
 			message: "#^Access to an undefined property OCA\\\\OpenConnector\\\\Service\\\\SearchService\\:\\:\\$elasticService\\.$#"
-			count: 1
-			path: lib/Service/SearchService.php
-
-		-
-			message: "#^Variable \\$vars might not be defined\\.$#"
 			count: 1
 			path: lib/Service/SearchService.php
 
@@ -451,11 +406,6 @@ parameters:
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/SynchronizationService.php
-
-		-
-			message: "#^Variable \\$id might not be defined\\.$#"
 			count: 1
 			path: lib/Service/SynchronizationService.php
 

@@ -461,6 +461,7 @@ class SearchService
     public function parseQueryString(string $queryString=''): array
     {
         $pairs = explode(separator: '&', string: $queryString);
+        $vars  = [];
 
         foreach ($pairs as $pair) {
             $kvpair = explode(separator: '=', string: $pair);
