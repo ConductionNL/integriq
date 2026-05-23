@@ -1,0 +1,8 @@
+[
+  {
+    "slug": "prometheus-metrics",
+    "title": "Prometheus Metrics Endpoint",
+    "summary": "Expose application metrics in Prometheus text exposition format at `GET /api/metrics` for monitoring, alerting, and operational dashboards. Provide a health check endpoint at `GET /api/health` for liveness/readiness probes in container orchestration environments.",
+    "docsUrl": "openspec/specs/prometheus-metrics/spec.md"
+  }
+]
