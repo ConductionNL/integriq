@@ -23,8 +23,8 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<bugs>https://github.com/ConductionNL/OpenConnector/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenConnector</repository>
 	<dependencies>
-        <nextcloud min-version="28" max-version="32"/>
-        <php min-version="8.0" min-int-size="64"/>
+        <nextcloud min-version="28" max-version="34"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
@@ -35,7 +35,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 
         <!-- Chain B/C OR cutover: openconnector now stores domain data in OpenRegister.
              OR's ObjectService is required to boot openconnector controllers. -->
-        <nextcloud-app id="openregister" min-version="0.2.0"/>
+        <nextcloud min-version="0.2.0" max-version="34"-app id="openregister"/>
 	</dependencies>
 
 	<background-jobs>
