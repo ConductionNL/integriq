@@ -1,14 +1,32 @@
 <?php
+/**
+ * OpenConnector App Bootstrap.
+ *
+ * Registers services, event listeners and integration providers when the
+ * Nextcloud framework bootstraps the openconnector app.
+ *
+ * @category AppInfo
+ * @package  OCA\OpenConnector\AppInfo
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 declare(strict_types=1);
 
 namespace OCA\OpenConnector\AppInfo;
 
+// @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
 use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
-use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener; // @todo: remove this temporary listener to the software catalog application
+use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
 use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\SettingsService;
@@ -23,65 +41,101 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
+ * Bootstrap entry point for the OpenConnector app.
+ *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Application extends App implements IBootstrap
 {
+
+    /**
+     * App identifier.
+     *
+     * @var string
+     */
     public const APP_ID = 'openconnector';
 
     /**
+     * Constructor.
+     *
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function __construct()
     {
-        parent::__construct(self::APP_ID);
+        parent::__construct(appName: self::APP_ID);
+
     }//end __construct()
 
+    /**
+     * Register services and event listeners.
+     *
+     * @param IRegistrationContext $context Registration context.
+     *
+     * @return void
+     */
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        // Register services
+        // Register services.
         $context->registerService(
           SettingsService::class,
           function ($c) {
             return new SettingsService(
-                $c->get('OCP\IDBConnection'),
-                $c->get('OCP\IAppConfig'),
-                $c->get('Psr\Log\LoggerInterface')
+                db: $c->get('OCP\IDBConnection'),
+                config: $c->get('OCP\IAppConfig'),
+                logger: $c->get('Psr\Log\LoggerInterface')
             );
           }
           );
 
-        // @var IEventDispatcher $dispatcher
+        /*
+         * Event dispatcher registration.
+         *
+         * @var IEventDispatcher $dispatcher
+         */
+
         $dispatcher = $this->getContainer()->get(IEventDispatcher::class);
         $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: ObjectCreatedEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
-        // @todo: remove this temporary listener to the software catalog application
+        // @todo Remove this temporary listener to the software catalog application.
         // $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
     }//end register()
 
+    /**
+     * Boot the app and wire integration providers.
+     *
+     * @param IBootContext $context Boot context.
+     *
+     * @return void
+     */
     public function boot(IBootContext $context): void
     {
         $this->registerIntegrationProviders(context: $context);
+
     }//end boot()
 
     /**
-     * Register openconnector-side IntegrationProviders with OR's
-     * IntegrationRegistry. Per OR's pluggable-integration-registry spec
-     * (AD-1), apps register their providers at boot — OR's registry is
-     * a shared per-request service so all apps see the same instance.
+     * Register openconnector-side IntegrationProviders with OR's IntegrationRegistry.
+     *
+     * Per OR's pluggable-integration-registry spec (AD-1), apps register their
+     * providers at boot — OR's registry is a shared per-request service so all
+     * apps see the same instance.
      *
      * Currently registered:
-     *   - SynchronizationContractProvider — surfaces SyncContract leaves
-     *     on the OR objects they synchronise (GH #824).
+     *   - SynchronizationContractProvider — surfaces SyncContract leaves on the
+     *     OR objects they synchronise (GH #824).
      *
      * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
-     * openconnector is loaded but openregister isn't enabled yet) so
-     * boot doesn't crash on a stale install.
+     * openconnector is loaded but openregister isn't enabled yet) so boot
+     * doesn't crash on a stale install.
+     *
+     * @param IBootContext $context Boot context.
+     *
+     * @return void
      */
     private function registerIntegrationProviders(IBootContext $context): void
     {
@@ -107,5 +161,6 @@ class Application extends App implements IBootstrap
                 // Logger unavailable, ignore.
             }
         }
+
     }//end registerIntegrationProviders()
 }//end class
