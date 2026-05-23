@@ -290,10 +290,6 @@ class MappingService
                 $cast = explode(',', $cast);
             }
 
-            if ($cast === false) {
-                continue;
-            }
-
             foreach ($cast as $singleCast) {
                 $this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
             }
@@ -320,13 +316,11 @@ class MappingService
             }
         }
 
-        // Ensure output is always an array.
+        // Defensive coercion: prior branches set $output from $dotArray->all() (always array)
+        // or from the # root-level extraction (always array). The is_array() guard is dead
+        // per static analysis but kept for safety against future refactors.
         if (is_array($output) === false) {
-            if ($output === null) {
-                $output = [];
-            } else {
-                $output = [$output];
-            }
+            $output = [];
         }
 
         return $output;

@@ -318,7 +318,7 @@ class UserController extends Controller
             }
 
             // Check if user is authenticated (either via session or basic auth).
-            if ($currentUser === null || $currentUser === false) {
+            if ($currentUser === null) {
                 $response = new JSONResponse(
                     data: ['message' => $this->l->t('Current user is not logged in')],
                     statusCode: 401

@@ -218,7 +218,7 @@ class AuthorizationService
     {
         $token = substr(string: $authorization, offset: strlen('Bearer '));
 
-        if ($token === '' || $token === null) {
+        if ($token === '') {
             throw new AuthenticationException(message: 'No token has been provided', details: []);
         }
 
@@ -343,7 +343,7 @@ class AuthorizationService
 
         $user = $this->userSession->getUser();
 
-        if ($user === false) {
+        if ($user === null) {
             throw new AuthenticationException(message: 'Invalid token', details: []);
         }
 
