@@ -8,77 +8,77 @@
     {
       "id": "Dashboard",
       "label": "Dashboard",
-      "icon": "icon-category-dashboard",
+      "icon": "Finance",
       "route": "Dashboard",
       "order": 10
     },
     {
       "id": "Sources",
       "label": "Sources",
-      "icon": "icon-link",
+      "icon": "DatabaseArrowLeftOutline",
       "route": "Sources",
       "order": 20
     },
     {
       "id": "Endpoints",
       "label": "Endpoints",
-      "icon": "icon-category-integration",
+      "icon": "Api",
       "route": "Endpoints",
       "order": 30
     },
     {
       "id": "Consumers",
       "label": "Consumers",
-      "icon": "icon-group",
+      "icon": "AccountMultipleOutline",
       "route": "Consumers",
       "order": 40
     },
     {
       "id": "Webhooks",
       "label": "Webhooks",
-      "icon": "icon-mail",
+      "icon": "Webhook",
       "route": "Webhooks",
       "order": 50
     },
     {
       "id": "Jobs",
       "label": "Jobs",
-      "icon": "icon-category-workflow",
+      "icon": "Update",
       "route": "Jobs",
       "order": 60
     },
     {
       "id": "Mappings",
       "label": "Mappings",
-      "icon": "icon-category-customization",
+      "icon": "SitemapOutline",
       "route": "Mappings",
       "order": 70
     },
     {
       "id": "Rules",
       "label": "Rules",
-      "icon": "icon-toggle",
+      "icon": "ScaleBalance",
       "route": "Rules",
       "order": 80
     },
     {
       "id": "Synchronizations",
       "label": "Synchronizations",
-      "icon": "icon-history",
+      "icon": "VectorPolylinePlus",
       "route": "Synchronizations",
       "order": 90
     },
     {
       "id": "CloudEvents",
       "label": "Cloud events",
-      "icon": "icon-category-monitoring",
+      "icon": "CloudUploadOutline",
       "route": "CloudEvents",
       "order": 100
     },
     {
       "id": "Documentation",
       "label": "Documentation",
-      "icon": "icon-info",
+      "icon": "BookOpenVariant",
       "href": "https://openconnector.conduction.nl",
       "section": "settings",
       "order": 15
@@ -86,7 +86,7 @@
     {
       "id": "Settings",
       "label": "Settings",
-      "icon": "icon-settings",
+      "icon": "Cog",
       "route": "AppSettings",
       "section": "settings",
       "order": 20
