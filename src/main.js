@@ -18,6 +18,13 @@ import bundledManifest from './manifest.json'
 import customComponents from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 
+// MDI icons referenced by manifest `headerActions[]` / `actions[]` /
+// `menu[]` entries. CnActionsBar renders them via CnIcon, which reads
+// from the per-app registry below. Anything NOT registered here falls
+// back to HelpCircleOutline (the `?` placeholder) at render time. Keep
+// in PascalCase, matching the file-name in vue-material-design-icons/.
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
 import '@conduction/nextcloud-vue/css/index.css'
 
@@ -29,7 +36,9 @@ Vue.use(PiniaVuePlugin)
 Vue.use(VueRouter)
 
 // Register library-side icon set + lib translations once at bootstrap.
-registerIcons()
+registerIcons({
+	TextBoxOutline,
+})
 try {
 	registerTranslations()
 } catch (e) {

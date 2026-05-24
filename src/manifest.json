@@ -144,11 +144,11 @@
         "includeFields": ["name", "description", "type", "isEnabled"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SourceLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "SourceLogs" }
         ],
         "actions": [
           { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
-          { "id": "view-source-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       }
     },
@@ -184,11 +184,11 @@
         "includeFields": ["name", "description", "endpoint", "method", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "EndpointLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "EndpointLogs" }
         ],
         "actions": [
           { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
-          { "id": "view-endpoint-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-endpoint-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       }
     },
@@ -263,12 +263,12 @@
         },
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "JobLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "JobLogs" }
         ],
         "actions": [
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
-          { "id": "view-job-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-job-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       },
       "slots": {
@@ -349,14 +349,14 @@
         "sidebar": { "enabled": true, "showMetadata": true },
         "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "SynchronizationLogs" },
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "SynchronizationLogs" },
           { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
         ],
         "actions": [
           { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
-          { "id": "view-synchronization-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" },
+          { "id": "view-synchronization-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" },
           { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
         ]
       }
@@ -406,10 +406,10 @@
         "includeFields": ["source", "type", "subject", "data"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "icon-history", "handler": "navigate", "route": "CloudEventLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "CloudEventLogs" }
         ],
         "actions": [
-          { "id": "view-cloud-event-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-cloud-event-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       }
     },
