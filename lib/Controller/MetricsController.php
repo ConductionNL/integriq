@@ -34,6 +34,15 @@ use Psr\Log\LoggerInterface;
  * for monitoring sources, calls, and synchronizations.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
  */
 class MetricsController extends Controller
 {
@@ -63,6 +72,10 @@ class MetricsController extends Controller
      * @return TextPlainResponse Plain text response with Prometheus metrics.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-3
      */
     public function index(): TextPlainResponse
     {
@@ -114,6 +127,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
      */
     private function collectSourceMetrics(array &$lines): void
     {
@@ -165,6 +180,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-5
      */
     private function collectCallMetrics(array &$lines): void
     {
@@ -202,6 +219,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
      */
     private function collectSyncMetrics(array &$lines): void
     {
@@ -283,6 +302,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
      */
     private function collectJobMetrics(array &$lines): void
     {
@@ -339,6 +360,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
      */
     private function collectMappingRuleMetrics(array &$lines): void
     {
@@ -372,6 +395,11 @@ class MetricsController extends Controller
      * @param string $tableName The table name.
      *
      * @return int The row count.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
      */
     private function countTable(string $tableName): int
     {

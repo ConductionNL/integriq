@@ -32,6 +32,8 @@ use Psr\Log\LoggerInterface;
  * Returns JSON indicating whether the application and its dependencies are healthy.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-9
  */
 class HealthController extends Controller
 {
@@ -59,6 +61,8 @@ class HealthController extends Controller
      * @return JSONResponse JSON response with health status and checks.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-9
      */
     public function index(): JSONResponse
     {
