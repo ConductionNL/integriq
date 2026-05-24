@@ -1,4 +1,23 @@
 <?php
+/**
+ * OpenConnector Synchronization Service.
+ *
+ * Service for handling synchronization operations between internal and external
+ * data sources. Provides functionality for mapping, transforming, and synchronizing
+ * data with support for asynchronous file fetching using ReactPHP for improved
+ * performance.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -32,29 +51,32 @@ use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 
 /**
- * SynchronizationService
- *
  * Service for handling synchronization operations between internal and external data sources.
- * Provides functionality for mapping, transforming, and synchronizing data with support for
- * asynchronous file fetching using ReactPHP for improved performance.
- *
- * @category  Service
- * @package   OCA\OpenConnector\Service
- * @author    Conduction b.v.
- * @copyright 2024 Conduction b.v.
- * @license   AGPL-3.0-or-later
- * @version   1.0.0
- * @link      https://github.com/ConductionNL/OpenConnector
  *
  * @SuppressWarnings(PHPMD)
  */
 class SynchronizationService
 {
 
+    /**
+     * Retention period in milliseconds for error logs.
+     *
+     * @var integer
+     */
     private int $errorRetention;
 
+    /**
+     * Retention period in milliseconds for synchronization contract error logs.
+     *
+     * @var integer
+     */
     private int $errorContractRetention;
 
+    /**
+     * Retention period in milliseconds for success logs.
+     *
+     * @var integer
+     */
     private int $successRetention;
 
     const EXTRA_DATA_CONFIGS_LOCATION          = 'extraDataConfigs';
@@ -71,11 +93,23 @@ class SynchronizationService
     const EXTEND_BEFORE_CONDITIONS_FETCH_OBJECT = 'extendInputFetchObjectBeforeConditions';
     const FILE_TAG_TYPE        = 'files';
     const VALID_MUTATION_TYPES = ['create', 'update', 'delete'];
-    const DEFAULT_MAX_PAGES    = 50;
-    // Safety limit to prevent infinite page requesting loop
+    // Safety limit to prevent infinite page requesting loop.
+    const DEFAULT_MAX_PAGES = 50;
     private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
     private const DEFAULT_ERROR_LOG_RETENTION   = 259200000;
 
+    /**
+     * Constructor.
+     *
+     * @param CallService        $callService        Service used to perform HTTP calls.
+     * @param MappingService     $mappingService     Service used to map source data to target shape.
+     * @param ContainerInterface $containerInterface Service container for lazy resolution.
+     * @param ORObjectService    $orObjectService    OpenRegister object service.
+     * @param ObjectService      $objectService      Local object service.
+     * @param StorageService     $storageService     Storage service for file persistence.
+     * @param LoggerInterface    $logger             Logger used for error reporting.
+     * @param IAppConfig         $appConfig          App configuration provider.
+     */
     public function __construct(
         private readonly CallService $callService,
         private readonly MappingService $mappingService,
@@ -87,25 +121,32 @@ class SynchronizationService
         IAppConfig $appConfig,
     ) {
         if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
-            $this->errorRetention         = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention       = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
-            ;
+            $retentionRaw         = $appConfig->getValueString(app: 'openconnector', key: 'retention');
+            $retentionDecoded     = json_decode($retentionRaw, true);
+            $this->errorRetention = $retentionDecoded['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
+            $this->errorContractRetention = $retentionDecoded['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
+            $this->successRetention       = $retentionDecoded['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
         } else {
             $this->errorRetention         = self::DEFAULT_ERROR_LOG_RETENTION;
             $this->errorContractRetention = self::DEFAULT_ERROR_LOG_RETENTION;
             $this->successRetention       = self::DEFAULT_SUCCESS_LOG_RETENTION;
         }
+
     }//end __construct()
 
     /**
-     * Calculates the used retention for created logs. Consists of the maximum of the retention from the source, and the global retention, unless either of both is 0, in which case retention is indefinite.
+     * Calculates the used retention for created logs.
      *
-     * @param  int[] $retentions The list of retentions in milliseconds to find the maximum duration for.
-     * @return DateTime|null The calculated expiry
-     * @throws \DateMalformedStringException
+     * Consists of the maximum of the retention from the source, and the global
+     * retention, unless either of both is 0, in which case retention is indefinite.
      *
-     * @TODO: At a later point in time this should be changed to using the most specific source for expiration
+     * @param int[] ...$retentions The list of retentions in milliseconds to find the maximum duration for.
+     *
+     * @return \DateTime|null The calculated expiry.
+     *
+     * @throws \DateMalformedStringException When the date string cannot be parsed.
+     *
+     * @TODO: At a later point in time this should be changed to using the most specific source for expiration.
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -119,16 +160,22 @@ class SynchronizationService
     /**
      * Finds all synchronizations by the given source ID, which is a combination of register and schema.
      *
-     * @param $register The register id.
-     * @param $schema   The schema id.
+     * @param mixed $register The register id.
+     * @param mixed $schema   The schema id.
      *
      * @return array The list of records matching the source ID.
      */
     public function findAllBySourceId($register, $schema)
     {
         $sourceId = "$register/$schema";
-        $result   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization', 'sourceId' => $sourceId]]);
+        $filters  = [
+            'register' => 'openconnector',
+            'schema'   => 'synchronization',
+            'sourceId' => $sourceId,
+        ];
+        $result   = $this->orObjectService->findAll(config: ['filters' => $filters]);
         return $result['results'] ?? $result;
+
     }//end findAllBySourceId()
 
     /**
@@ -194,7 +241,15 @@ class SynchronizationService
             }//end try
         }//end foreach
 
-        $triggeredMatches          = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization', 'sourceType' => 'register/schema', 'triggerFromRelatedObjectsRegister' => $register, 'triggerFromRelatedObjectsSchema' => $schema, 'triggerFromRelatedObjectsMutationType' => $eventMutationType]]);
+        $triggeredFilters          = [
+            'register'                              => 'openconnector',
+            'schema'                                => 'synchronization',
+            'sourceType'                            => 'register/schema',
+            'triggerFromRelatedObjectsRegister'     => $register,
+            'triggerFromRelatedObjectsSchema'       => $schema,
+            'triggerFromRelatedObjectsMutationType' => $eventMutationType,
+        ];
+        $triggeredMatches          = $this->orObjectService->findAll(config: ['filters' => $triggeredFilters]);
         $triggeredSynchronizations = $triggeredMatches['results'] ?? $triggeredMatches;
 
         foreach ($triggeredSynchronizations as $synchronization) {
@@ -267,10 +322,11 @@ class SynchronizationService
     /**
      * Resolve and fetch the parent object for a related-object trigger.
      *
-     * @param Synchronization $synchronization The synchronization that should run.
-     * @param array           $triggerObject   The related object payload from the event.
-     * @param string|int      $triggerRegister The register of the related object source.
-     * @param string|int      $triggerSchema   The schema of the related object source.
+     * @param ObjectEntity $synchronization The synchronization that should run.
+     * @param array        $triggerObject   The related object payload from the event.
+     * @param string|int   $triggerRegister The register of the related object source.
+     * @param string|int   $triggerSchema   The schema of the related object source.
+     * @param string|null  $mutationType    The mutation type that triggered the call.
      *
      * @return array|null The fetched parent object as array, or null when it cannot be resolved.
      */
@@ -328,7 +384,11 @@ class SynchronizationService
         } else if (filter_var($relationReference, FILTER_VALIDATE_URL) !== false) {
             $path        = trim((string) parse_url($relationReference, PHP_URL_PATH), '/');
             $segments    = array_values(array_filter(explode('/', $path), static fn ($segment) => $segment !== ''));
-            $lastSegment = end($segments) ?: null;
+            $lastSegment = end($segments);
+            if ($lastSegment === false) {
+                $lastSegment = null;
+            }
+
             if (is_string($lastSegment) === true && Uuid::isValid($lastSegment) === true) {
                 $parentObjectId = $lastSegment;
             }
@@ -373,14 +433,15 @@ class SynchronizationService
     /**
      * Synchronizes internal data to external sources based on synchronization rules.
      *
-     * @param Synchronization                         $synchronization The synchronization configuration.
-     * @param \OCA\OpenRegister\Db\ObjectEntity|array $object          The object to be synchronized, also referenced so its updated in parent objects.
-     * @param SynchronizationLog                      $log             The log object to record synchronization details and results.
-     * @param bool                                    $isTest          Whether this is a test run (does not persist data if true).
+     * @param ObjectEntity                            $synchronization The synchronization configuration.
+     * @param \OCA\OpenRegister\Db\ObjectEntity|array $object          The object to be synchronized, also referenced.
+     * @param ObjectEntity                            $log             The log object recording synchronization details.
+     * @param FlowToken                               $flowToken       The flow token tracking the operation.
+     * @param bool|null                               $isTest          Whether this is a test run (does not persist data).
      * @param bool|null                               $force           Whether to force the synchronization regardless of changes.
-     * @param string|null                             $mutationType    If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
+     * @param string|null                             $mutationType    Single object mutation type: 'create', 'update' or 'delete'.
      *
-     * @return SynchronizationContract|array|null Returns a synchronization contract, an array for test cases, or null if conditions are not met.
+     * @return ObjectEntity|array|null Returns a synchronization contract, an array for test cases, or null if conditions are not met.
      */
     private function synchronizeInternToExtern(
         ObjectEntity $synchronization,
@@ -435,12 +496,12 @@ class SynchronizationService
         }//end if
 
         $syncConditions = $syncData['conditions'] ?? [];
-        if ($syncConditions !== [] && !JsonLogic::apply($syncConditions, $serializedObject)) {
+        if ($syncConditions !== [] && JsonLogic::apply($syncConditions, $serializedObject) !== true) {
             return null;
         }
 
-        // Keep the working object in sync with pre-condition enrichment so mapping
-        // and target payload generation use the same extended data.
+        // Keep the working object in sync with pre-condition enrichment so mapping.
+        // And target payload generation use the same extended data.
         if (is_array($serializedObject) === true) {
             $object = $serializedObject;
         }
@@ -454,7 +515,7 @@ class SynchronizationService
             $originId = $object['id'];
         }
 
-        if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true && $object->getUuid()) {
+        if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true && empty($object->getUuid()) === false) {
             $originId = $object->getUuid();
             $object   = $object->getObject();
         }
@@ -476,35 +537,56 @@ class SynchronizationService
                 }
             }
 
-            $object = array_merge($object, $this->processExtendInputRule(['extend_input' => ['properties' => $targetConfig['extend_input'], 'fetchObject' => $fetchObject]], $object));
-        }
+            $extendConfig = [
+                'extend_input' => [
+                    'properties'  => $targetConfig['extend_input'],
+                    'fetchObject' => $fetchObject,
+                ],
+            ];
+            $object       = array_merge($object, $this->processExtendInputRule(config: $extendConfig, data: $object));
+        }//end if
 
-        // If the source configuration contains a dot notation for the id position, we need to extract the id from the source object
+        // If the source configuration contains a dot notation for the id position, we need to extract the id from the source object.
         $synchronizationContract = null;
-        // Get the synchronization contract for this object
+        // Get the synchronization contract for this object.
         if ($originId !== null) {
-            $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid(), 'originId' => $originId]]);
-            $contracts = $matches['results'] ?? $matches;
-            $synchronizationContract = count($contracts) > 0 ? $contracts[0] : null;
+            $contractFilters = [
+                'register'          => 'openconnector',
+                'schema'            => 'synchronization_contract',
+                'synchronizationId' => $synchronization->getUuid(),
+                'originId'          => $originId,
+            ];
+            $matches         = $this->orObjectService->findAll(config: ['filters' => $contractFilters]);
+            $contracts       = $matches['results'] ?? $matches;
+            if (count($contracts) > 0) {
+                $synchronizationContract = $contracts[0];
+            } else {
+                $synchronizationContract = null;
+            }
         }
 
         if ($synchronizationContract instanceof ObjectEntity === false) {
-            // Only persist if not test
-            if ($isTest === false) {
-                $synchronizationContract = $this->orObjectService->saveObject(
-                    object: ['synchronizationId' => $synchronization->getUuid(), 'originId' => $originId],
-                    register: 'openconnector',
-                    schema: 'synchronization_contract',
-                );
-            } else {
-                $synchronizationContract = $this->orObjectService->saveObject(
-                    object: ['synchronizationId' => $synchronization->getUuid(), 'originId' => $originId],
-                    register: 'openconnector',
-                    schema: 'synchronization_contract',
-                );
-            }
+            $contractPayload = [
+                'synchronizationId' => $synchronization->getUuid(),
+                'originId'          => $originId,
+            ];
+            // Only persist if not test.
+            $synchronizationContract = $this->orObjectService->saveObject(
+                object: $contractPayload,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+            );
 
-            $synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization,  flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
+            $synchronizationContract = $this->synchronizeContract(
+                synchronizationContract: $synchronizationContract,
+                synchronization: $synchronization,
+                flowToken: $flowToken,
+                object: $object,
+                isTest: $isTest,
+                force: $force,
+                log: $log,
+                mutationType: $mutationType
+            );
 
             if ($isTest === true && is_array($synchronizationContract) === true) {
                 // If this is a log and contract array return for the test endpoint.
@@ -513,11 +595,25 @@ class SynchronizationService
                 return $logAndContractArray;
             }
         } else {
-            // @todo this is wierd
-            $synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization, flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
+            // @todo this is wierd.
+            $synchronizationContract = $this->synchronizeContract(
+                synchronizationContract: $synchronizationContract,
+                synchronization: $synchronization,
+                flowToken: $flowToken,
+                object: $object,
+                isTest: $isTest,
+                force: $force,
+                log: $log,
+                mutationType: $mutationType
+            );
             if ($isTest === false && $synchronizationContract instanceof ObjectEntity === true) {
                 // If this is a regular synchronizationContract update it to the database.
-                $this->orObjectService->saveObject(object: $synchronizationContract->getObject(), register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+                $this->orObjectService->saveObject(
+                    object: $synchronizationContract->getObject(),
+                    register: 'openconnector',
+                    schema: 'synchronization_contract',
+                    uuid: $synchronizationContract->getUuid()
+                );
             } else if ($isTest === true && is_array($synchronizationContract) === true) {
                 // If this is a log and contract array return for the test endpoint.
                 $logAndContractArray = $synchronizationContract;
@@ -527,10 +623,16 @@ class SynchronizationService
         }//end if
 
         if ($synchronizationContract instanceof ObjectEntity === true) {
-            $synchronizationContract = $this->orObjectService->saveObject(object: $synchronizationContract->getObject(), register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+            $synchronizationContract = $this->orObjectService->saveObject(
+                object: $synchronizationContract->getObject(),
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $synchronizationContract->getUuid()
+            );
         }
 
         return $synchronizationContract;
+
     }//end synchronizeInternToExtern()
 
     /**
@@ -542,18 +644,19 @@ class SynchronizationService
      *
      * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
      *
-     * @param Synchronization    $synchronization The synchronization configuration and state.
-     * @param SynchronizationLog $log             The log object to record synchronization details and results.
-     * @param bool|null          $isTest          Optional flag to run the synchronization in test mode (no deletions, no persistence).
-     * @param bool|null          $force           Optional flag to bypass change checks and force synchronization of all objects.
-     * @param string|null        $source          The source to synchronize, if not provided, the synchronization's source will be used
-     * @param array|null         $data            The data to add to synchronize, if not provided, the synchronization's data will be used
-     * @param string|null        $mutationType    The current type of mutation we are doing this::VALID_MUTATION_TYPES
+     * @param ObjectEntity $synchronization The synchronization configuration and state.
+     * @param ObjectEntity $log             The log object to record synchronization details and results.
+     * @param FlowToken    $flowToken       The flow token tracking the operation.
+     * @param bool|null    $isTest          Optional flag to run the synchronization in test mode (no deletions, no persistence).
+     * @param bool|null    $force           Optional flag to bypass change checks and force synchronization of all objects.
+     * @param string|null  $source          The source to synchronize, if not provided, the synchronization's source will be used.
+     * @param array|null   $data            The data to add to synchronize, if not provided, the synchronization's data will be used.
+     * @param string|null  $mutationType    The current type of mutation we are doing this::VALID_MUTATION_TYPES.
      *
-     * @return SynchronizationLog Returns the updated synchronization log with processing results.
+     * @return ObjectEntity Returns the updated synchronization log with processing results.
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
-     * @throws Exception If the source ID is empty or synchronization cannot proceed.
+     * @throws Exception                    If the source ID is empty or synchronization cannot proceed.
      */
     private function synchronizeExternToIntern(
         ObjectEntity $synchronization,
@@ -566,11 +669,11 @@ class SynchronizationService
         ?string $mutationType=null
     ): ObjectEntity {
         $syncData = $synchronization->getObject();
-        // Start overall timing measurement
+        // Start overall timing measurement.
         $overallStartTime   = microtime(true);
         $rateLimitException = null;
 
-        // Initialize timing data in result
+        // Initialize timing data in result.
         $logData          = $log->getObject();
         $result           = $logData['result'] ?? [];
         $result['timing'] = [
@@ -578,28 +681,53 @@ class SynchronizationService
             'total_ms' => 0,
         ];
 
-        // Stage 1: Configuration and validation
+        // Stage 1: Configuration and validation.
         $stageStartTime = microtime(true);
         $sourceConfig   = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
 
-        // If a source is provided, use it instead of the synchronization's source
+        // If a source is provided, use it instead of the synchronization's source.
         if ($source !== null) {
-            $srcMatches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $source]]);
+            $srcFilters = [
+                'register' => 'openconnector',
+                'schema'   => 'source',
+                'location' => $source,
+            ];
+            $srcMatches = $this->orObjectService->findAll(config: ['filters' => $srcFilters]);
             $srcList    = $srcMatches['results'] ?? $srcMatches;
             if (count($srcList) > 0) {
                 $sourceEntity = $srcList[0];
             } else {
-                $sourceEntity = $this->orObjectService->saveObject(object: ['location' => $source, 'name' => basename($source), 'type' => 'api', 'isEnabled' => true], register: 'openconnector', schema: 'source');
+                $sourceObject = [
+                    'location'  => $source,
+                    'name'      => basename($source),
+                    'type'      => 'api',
+                    'isEnabled' => true,
+                ];
+                $sourceEntity = $this->orObjectService->saveObject(
+                    object: $sourceObject,
+                    register: 'openconnector',
+                    schema: 'source'
+                );
             }
 
             $syncData['sourceId'] = $sourceEntity->getUuid();
-            $synchronization      = $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
+            $synchronization      = $this->orObjectService->saveObject(
+                object: $syncData,
+                register: 'openconnector',
+                schema: 'synchronization',
+                uuid: $synchronization->getUuid()
+            );
             $syncData = $synchronization->getObject();
-        }
+        }//end if
 
         if (empty($syncData['sourceId'] ?? null) === true && $source === null) {
             $logData['message'] = 'sourceId of synchronization cannot be empty. Canceling synchronization...';
-            $log = $this->orObjectService->saveObject(object: $logData, register: 'openconnector', schema: 'synchronization_log', uuid: $log->getUuid());
+            $log = $this->orObjectService->saveObject(
+                object: $logData,
+                register: 'openconnector',
+                schema: 'synchronization_log',
+                uuid: $log->getUuid()
+            );
             throw new Exception('sourceId of synchronization cannot be empty. Canceling synchronization...');
         }
 
@@ -620,14 +748,18 @@ class SynchronizationService
                 mutationType: $mutationType
             );
         } else {
-            // Stage 2: Fetching objects from source
+            // Stage 2: Fetching objects from source.
             $stageStartTime = microtime(true);
             try {
-                $objectList = $this->getAllObjectsFromSource($synchronization, $isTest, $data);
+                $objectList = $this->getAllObjectsFromSource(
+                    synchronization: $synchronization,
+                    isTest: $isTest,
+                    data: $data
+                );
             } catch (TooManyRequestsHttpException $e) {
                 $rateLimitException = $e;
-                $objectList         = [];
-                // Ensure it's defined
+                // Ensure it's defined.
+                $objectList = [];
             }
 
             $fetchDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
@@ -639,13 +771,13 @@ class SynchronizationService
                 'fetch_method'    => 'optimized_sequential',
             ];
 
-            // Stage 3: Object list preparation
+            // Stage 3: Object list preparation.
             $stageStartTime = microtime(true);
             $result['objects']['found'] = count($objectList);
 
             if ($sourceConfig['resultsPosition'] === '_object') {
-                // Only wrap when the source returned an associative object — a sequential
-                // list slipped through here causes the downstream loop to see a single
+                // Only wrap when the source returned an associative object — a sequential.
+                // List slipped through here causes the downstream loop to see a single.
                 // [[…items]] element and miss every row.
                 if (array_is_list($objectList) === false) {
                     $objectList = [$objectList];
@@ -660,7 +792,7 @@ class SynchronizationService
                 'final_object_count' => count($objectList),
             ];
 
-            // Stage 4: Processing individual objects
+            // Stage 4: Processing individual objects.
             $stageStartTime        = microtime(true);
             $synchronizedTargetIds = [];
             $objectProcessingTimes = [];
@@ -684,10 +816,19 @@ class SynchronizationService
                 $result = $processResult['result'];
                 $result['_embed']['contracts'] = array_map(
                         function ($contractId) {
-                            $contractMatches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'uuid' => $contractId]]);
+                            $contractFilters = [
+                                'register' => 'openconnector',
+                                'schema'   => 'synchronization_contract',
+                                'uuid'     => $contractId,
+                            ];
+                            $contractMatches = $this->orObjectService->findAll(config: ['filters' => $contractFilters]);
                             $contractList    = $contractMatches['results'] ?? $contractMatches;
                             $contract        = array_shift($contractList);
-                            return $contract !== null ? $contract->getObject() : null;
+                            if ($contract !== null) {
+                                return $contract->getObject();
+                            }
+
+                            return null;
                         },
                         $result['contracts']
                         );
@@ -698,19 +839,49 @@ class SynchronizationService
             }//end foreach
 
             $totalProcessingDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
+            $objectCount = count($objectList);
+            $timeCount   = count($objectProcessingTimes);
+            if ($objectCount > 0) {
+                $averagePerObjectMs = round($totalProcessingDuration / $objectCount, 2);
+            } else {
+                $averagePerObjectMs = 0;
+            }
+
+            if ($timeCount > 0) {
+                $minObjectMs    = min($objectProcessingTimes);
+                $maxObjectMs    = max($objectProcessingTimes);
+                $medianObjectMs = $this->calculateMedian(numbers: $objectProcessingTimes);
+            } else {
+                $minObjectMs    = 0;
+                $maxObjectMs    = 0;
+                $medianObjectMs = 0;
+            }
+
             $result['timing']['stages']['process_objects'] = [
                 'duration_ms'           => $totalProcessingDuration,
                 'description'           => 'Processing and synchronizing individual objects',
-                'objects_processed'     => count($objectList),
-                'average_per_object_ms' => count($objectList) > 0 ? round($totalProcessingDuration / count($objectList), 2) : 0,
-                'min_object_ms'         => count($objectProcessingTimes) > 0 ? min($objectProcessingTimes) : 0,
-                'max_object_ms'         => count($objectProcessingTimes) > 0 ? max($objectProcessingTimes) : 0,
-                'median_object_ms'      => count($objectProcessingTimes) > 0 ? $this->calculateMedian($objectProcessingTimes) : 0,
+                'objects_processed'     => $objectCount,
+                'average_per_object_ms' => $averagePerObjectMs,
+                'min_object_ms'         => $minObjectMs,
+                'max_object_ms'         => $maxObjectMs,
+                'median_object_ms'      => $medianObjectMs,
             ];
 
-            // Stage 5: Cleanup - Delete invalid objects
-            $stageStartTime = microtime(true);
-            $deletedCount   = $this->deleteInvalidObjects(synchronization: $synchronization, synchronizedTargetIds: $synchronizedTargetIds, deleteRestriction: isset($sourceConfig['restrictDeletion']) === true && (bool) $sourceConfig['restrictDeletion'], data: isset($data) === true ? $data : []);
+            // Stage 5: Cleanup - Delete invalid objects.
+            $stageStartTime    = microtime(true);
+            $deleteRestriction = (isset($sourceConfig['restrictDeletion']) === true && (bool) $sourceConfig['restrictDeletion']);
+            if (isset($data) === true) {
+                $deleteData = $data;
+            } else {
+                $deleteData = [];
+            }
+
+            $deletedCount = $this->deleteInvalidObjects(
+                synchronization: $synchronization,
+                synchronizedTargetIds: $synchronizedTargetIds,
+                deleteRestriction: $deleteRestriction,
+                data: $deleteData
+            );
             $result['objects']['deleted'] = $deletedCount;
 
             $result['timing']['stages']['cleanup_invalid'] = [
@@ -720,14 +891,22 @@ class SynchronizationService
             ];
         }//end if
 
-        // Stage 6: Follow-up synchronizations
+        // Stage 6: Follow-up synchronizations.
         $stageStartTime = microtime(true);
         $followUpCount  = 0;
         $syncData       = $synchronization->getObject();
         foreach ($syncData['followUps'] ?? [] as $followUp) {
-            $followUpSynchronization = $this->orObjectService->find(id: $followUp, register: 'openconnector', schema: 'synchronization');
+            $followUpSynchronization = $this->orObjectService->find(
+                id: $followUp,
+                register: 'openconnector',
+                schema: 'synchronization'
+            );
             if ($followUpSynchronization !== null) {
-                $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
+                $this->synchronize(
+                    synchronization: $followUpSynchronization,
+                    isTest: $isTest,
+                    force: $force
+                );
                 $followUpCount++;
             }
         }
@@ -738,27 +917,37 @@ class SynchronizationService
             'follow_ups_executed' => $followUpCount,
         ];
 
-        // Calculate total timing
+        // Calculate total timing.
         $result['timing']['total_ms'] = round((microtime(true) - $overallStartTime) * 1000, 2);
 
-        // Add performance summary
+        // Add performance summary.
         $objectsPerSecond = 0;
         if (isset($objectList) === true && count($objectList) > 0) {
             $objectsPerSecond = round(count($objectList) / ($result['timing']['total_ms'] / 1000), 2);
         }
 
         $result['timing']['summary'] = [
-            'slowest_stage'      => $this->getSlowestStage($result['timing']['stages']),
-            'efficiency_ratio'   => $this->calculateEfficiencyRatio($result['timing']['stages']),
+            'slowest_stage'      => $this->getSlowestStage(stages: $result['timing']['stages']),
+            'efficiency_ratio'   => $this->calculateEfficiencyRatio(stages: $result['timing']['stages']),
             'objects_per_second' => $objectsPerSecond,
         ];
 
         $logData['result'] = $result;
-        $log = $this->orObjectService->saveObject(object: $logData, register: 'openconnector', schema: 'synchronization_log', uuid: $log->getUuid());
+        $log = $this->orObjectService->saveObject(
+            object: $logData,
+            register: 'openconnector',
+            schema: 'synchronization_log',
+            uuid: $log->getUuid()
+        );
 
         if ($rateLimitException !== null) {
             $logData['message'] = $rateLimitException->getMessage();
-            $log = $this->orObjectService->saveObject(object: $logData, register: 'openconnector', schema: 'synchronization_log', uuid: $log->getUuid());
+            $log = $this->orObjectService->saveObject(
+                object: $logData,
+                register: 'openconnector',
+                schema: 'synchronization_log',
+                uuid: $log->getUuid()
+            );
 
             throw new TooManyRequestsHttpException(
                 $rateLimitException->getMessage(),
@@ -768,32 +957,40 @@ class SynchronizationService
         }
 
         $syncData['targetLastSynced'] = (new DateTime())->format('c');
-        $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
+        $this->orObjectService->saveObject(
+            object: $syncData,
+            register: 'openconnector',
+            schema: 'synchronization',
+            uuid: $synchronization->getUuid()
+        );
 
         return $log;
+
     }//end synchronizeExternToIntern()
 
     /**
      * Synchronizes a given synchronization (or a complete source).
      *
-     * @param Synchronization                              $synchronization
-     * @param bool|null                                    $isTest          False by default, currently added for synchronziation-test endpoint
-     * @param bool|null                                    $force           False by default, if true, the object will be updated regardless of changes
-     * @param array|\OCA\OpenRegister\Db\ObjectEntity|null $object          Object to synchronize, updated by reference
-     * @param string|null                                  $mutationType    If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
-     * @param string|null                                  $source          The source to synchronize, if not provided, the synchronization's source will be used
-     * @param array|null                                   $data            The data to add to synchronize, if not provided, the synchronization's data will be used
+     * @param ObjectEntity                                 $synchronization The synchronization to run.
+     * @param bool|null                                    $isTest          Test mode flag.
+     * @param bool|null                                    $force           Force the update flag.
+     * @param array|\OCA\OpenRegister\Db\ObjectEntity|null $object          Object to synchronize, by reference.
+     * @param string|null                                  $mutationType    Mutation type for single object syncs.
+     * @param string|null                                  $source          Optional source override.
+     * @param array|null                                   $data            Optional data payload.
+     * @param FlowToken|null                               $flowToken       Optional flow token.
      *
-     * @return array|SynchronizationContract|array|null
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws GuzzleException
-     * @throws LoaderError
-     * @throws SyntaxError
-     * @throws MultipleObjectsReturnedException
-     * @throws \OCP\DB\Exception
-     * @throws Exception
-     * @throws TooManyRequestsHttpException
+     * @return array|ObjectEntity|null Returns the synchronization log, contract array or null.
+     *
+     * @throws ContainerExceptionInterface      When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface       When a required service is not found.
+     * @throws GuzzleException                  When a remote HTTP call fails.
+     * @throws LoaderError                      When the Twig loader fails.
+     * @throws SyntaxError                      When a Twig template has a syntax error.
+     * @throws MultipleObjectsReturnedException When the query expects one but receives many.
+     * @throws \OCP\DB\Exception                When the database layer raises an exception.
+     * @throws Exception                        For any other generic error condition.
+     * @throws TooManyRequestsHttpException     When the source rate-limits the request.
      */
     public function synchronize(
         ObjectEntity $synchronization,
@@ -811,13 +1008,19 @@ class SynchronizationService
         }
 
         if ($mutationType !== null && in_array($mutationType, $this::VALID_MUTATION_TYPES) === false) {
-            throw new Exception(sprintf('Invalid mutation type: %s given. Allowed mutation types are: %s', $mutationType, implode(', ', $this::VALID_MUTATION_TYPES)));
+            throw new Exception(
+                sprintf(
+                    'Invalid mutation type: %s given. Allowed mutation types are: %s',
+                    $mutationType,
+                    implode(', ', $this::VALID_MUTATION_TYPES)
+                )
+            );
         }
 
-        // Start execution time measurement
+        // Start execution time measurement.
         $startTime = microtime(true);
 
-        // Prepare initial log array
+        // Prepare initial log array.
         $log = [
             'synchronizationId' => $synchronization->getUuid(),
             'result'            => [
@@ -834,14 +1037,18 @@ class SynchronizationService
             ],
             'test'              => $isTest,
             'force'             => $force,
-            'expires'           => $this->calculateExpires($this->errorRetention),
+            'expires'           => $this->calculateExpires(...[$this->errorRetention]),
         ];
 
-        // Shortcut for intern-to-extern sync
+        // Shortcut for intern-to-extern sync.
         if (($syncData['sourceType'] ?? '') === 'register/schema' && $object !== null) {
-            // lets always create the log entry first, because we need its uuid later on for contractLogs
+            // Always create the log entry first, because we need its uuid later on for contractLogs.
             $log['result']['type'] = 'internToExtern';
-            $log = $this->orObjectService->saveObject(object: $log, register: 'openconnector', schema: 'synchronization_log');
+            $log = $this->orObjectService->saveObject(
+                object: $log,
+                register: 'openconnector',
+                schema: 'synchronization_log'
+            );
 
             return $this->synchronizeInternToExtern(
                 synchronization: $synchronization,
@@ -855,10 +1062,14 @@ class SynchronizationService
 
         $log['result']['type'] = 'externToIntern';
 
-        // lets always create the log entry first, because we need its uuid later on for contractLogs
-        $log = $this->orObjectService->saveObject(object: $log, register: 'openconnector', schema: 'synchronization_log');
+        // Always create the log entry first, because we need its uuid later on for contractLogs.
+        $log = $this->orObjectService->saveObject(
+            object: $log,
+            register: 'openconnector',
+            schema: 'synchronization_log'
+        );
 
-        // Handle full extern-to-intern sync
+        // Handle full extern-to-intern sync.
         $log = $this->synchronizeExternToIntern(
             synchronization: $synchronization,
             log: $log,
@@ -870,66 +1081,74 @@ class SynchronizationService
             mutationType: $mutationType
         );
 
-        // Finalize log
+        // Finalize log.
         $executionTime = round((microtime(true) - $startTime) * 1000);
         $logData       = $log->getObject();
         $logData['executionTime'] = $executionTime;
         $logData['message']       = 'Success';
-        $logData['expires']       = $this->calculateExpires($this->successRetention, $this->successRetention)?->format('c');
-        $log = $this->orObjectService->saveObject(object: $logData, register: 'openconnector', schema: 'synchronization_log', uuid: $log->getUuid());
+        $logData['expires']       = $this->calculateExpires(...[$this->successRetention, $this->successRetention])?->format('c');
+        $log = $this->orObjectService->saveObject(
+            object: $logData,
+            register: 'openconnector',
+            schema: 'synchronization_log',
+            uuid: $log->getUuid()
+        );
 
         return $log->getObject();
+
     }//end synchronize()
 
     /**
-     * Gets id from object as is in the origin
+     * Gets id from object as is in the origin.
      *
-     * @param Synchronization $synchronization
-     * @param array           $object
+     * @param ObjectEntity $synchronization The synchronization providing the id position config.
+     * @param array        $object          The source object to extract the id from.
      *
-     * @return string|int id
-     * @throws Exception
+     * @return string|int The extracted origin id.
+     *
+     * @throws Exception When the id cannot be found at the configured position.
      */
     private function getOriginId(ObjectEntity $synchronization, array $object): int|string
     {
-        // Default ID position is 'id' if not specified in source config
+        // Default ID position is 'id' if not specified in source config.
         $originIdPosition = 'id';
         $sourceConfig     = $synchronization->getObject()['sourceConfig'] ?? [];
 
-        // Check if a custom ID position is defined in the source configuration
+        // Check if a custom ID position is defined in the source configuration.
         if (isset($sourceConfig['idPosition']) === true && empty($sourceConfig['idPosition']) === false) {
-            // Override default with custom ID position from config
+            // Override default with custom ID position from config.
             $originIdPosition = $sourceConfig['idPosition'];
         }
 
-        // Create Dot object for easy access to nested array values
+        // Create Dot object for easy access to nested array values.
         $objectDot = new Dot($object);
 
-        // Try to get the ID value from the specified position in the object
+        // Try to get the ID value from the specified position in the object.
         $originId = $objectDot->get($originIdPosition);
 
-        // If no ID was found at the specified position, throw an error
+        // If no ID was found at the specified position, throw an error.
         if ($originId === null) {
             throw new Exception('Could not find origin id in object for key: '.$originIdPosition);
         }
 
-        // Return the found ID value
+        // Return the found ID value.
         return $originId;
+
     }//end getOriginId()
 
     /**
      * Fetch an object from a specific endpoint.
      *
-     * @param Synchronization $synchronization The synchronization containing the source.
+     * @param ObjectEntity    $synchronization The synchronization containing the source.
      * @param string          $endpoint        The endpoint to request to fetch the desired object.
      * @param string|int|null $source          The source to request if object is in other source than synchronization.
      *
      * @return array The resulting object.
      *
-     * @throws GuzzleException
-     * @throws LoaderError
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
+     * @throws GuzzleException   When a remote HTTP call fails.
+     * @throws LoaderError       When the Twig loader fails.
+     * @throws SyntaxError       When a Twig template has a syntax error.
+     * @throws \OCP\DB\Exception When the database layer raises an exception.
      */
     public function getObjectFromSource(ObjectEntity $synchronization, string $endpoint, string|int|null $source=null): array
     {
@@ -943,9 +1162,13 @@ class SynchronizationService
 
         $sourceEntity = $this->orObjectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
 
-        // Let's get the source config
+        // Let's get the source config.
         $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
-        $sourceData   = $sourceEntity !== null ? $sourceEntity->getObject() : [];
+        if ($sourceEntity !== null) {
+            $sourceData = $sourceEntity->getObject();
+        } else {
+            $sourceData = [];
+        }
 
         $config = [];
         if (empty($sourceConfig['headers']) === false) {
@@ -971,30 +1194,24 @@ class SynchronizationService
     /**
      * Fetches additional data for a given object based on the synchronization configuration.
      *
-     * This method retrieves extra data using either a dynamically determined endpoint from the object
-     * or a statically defined endpoint in the configuration. The extra data can be merged with the original
-     * object or returned as-is, based on the provided configuration.
-     *
-     * @param Synchronization $synchronization The synchronization instance containing configuration details.
-     * @param array           $extraDataConfig The configuration array specifying how to retrieve and handle the extra data:
-     *                                         - EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION: The key to retrieve the dynamic
-     *                                         endpoint from the object. - EXTRA_DATA_STATIC_ENDPOINT_LOCATION: The
-     *                                         statically defined endpoint. - KEY_FOR_EXTRA_DATA_LOCATION: The key under
-     *                                         which the extra data should be returned. - MERGE_EXTRA_DATA_OBJECT_LOCATION:
-     *                                         Boolean flag indicating whether to merge the extra data with the object.
-     * @param array           $object          The original object for which extra data needs to be fetched.
-     * @param string|null     $originId
+     * @param ObjectEntity $synchronization The synchronization instance containing configuration details.
+     * @param array        $extraDataConfig The configuration array specifying how to retrieve and handle the extra data.
+     * @param array        $object          The original object for which extra data needs to be fetched.
+     * @param string|null  $originId        Optional origin id when already resolved by the caller.
      *
      * @return array The original object merged with the extra data, or the extra data itself based on the configuration.
      *
-     * @throws Exception|GuzzleException If both dynamic and static endpoint configurations are missing or the endpoint cannot be determined.
+     * @throws Exception        When both dynamic and static endpoint configurations are missing.
+     * @throws GuzzleException  When the HTTP call to the source fails.
      */
     private function fetchExtraDataForObject(
         ObjectEntity $synchronization,
         array $extraDataConfig,
         array $object, ?string $originId=null
     ): array {
-        if (isset($extraDataConfig[$this::EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION]) === false && isset($extraDataConfig[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION]) === false) {
+        if (isset($extraDataConfig[$this::EXTRA_DATA_DYNAMIC_ENDPOINT_LOCATION]) === false
+            && isset($extraDataConfig[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION]) === false
+        ) {
             return $object;
         }
 
@@ -1007,7 +1224,7 @@ class SynchronizationService
         // Get endpoint static defined in config.
         if (isset($extraDataConfig[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION]) === true) {
             if ($originId === null) {
-                $originId = $this->getOriginId($synchronization, $object);
+                $originId = $this->getOriginId(synchronization: $synchronization, object: $object);
             }
 
             if (isset($extraDataConfig['endpointIdLocation']) === true) {
@@ -1018,7 +1235,7 @@ class SynchronizationService
             $endpoint = $extraDataConfig[$this::EXTRA_DATA_STATIC_ENDPOINT_LOCATION];
 
             if ($originId === null) {
-                $originId = $this->getOriginId($synchronization, $object);
+                $originId = $this->getOriginId(synchronization: $synchronization, object: $object);
             }
 
             $endpoint = str_replace(search: '{{ originId }}', replace: $originId, subject: $endpoint);
@@ -1049,7 +1266,7 @@ class SynchronizationService
             );
         }
 
-        if (!$endpoint) {
+        if (empty($endpoint) === true) {
             throw new Exception(
                 sprintf(
                     'Could not get static or dynamic endpoint, object: %s',
@@ -1060,10 +1277,17 @@ class SynchronizationService
 
         $syncData     = $synchronization->getObject();
         $sourceConfig = $syncData['sourceConfig'] ?? [];
-        if (isset($extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]) === true && isset($sourceConfig[$extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]]) === true) {
+        if (isset($extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]) === true
+            && isset($sourceConfig[$extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]]) === true
+        ) {
             unset($sourceConfig[$extraDataConfig[$this::UNSET_CONFIG_KEY_LOCATION]]);
             $syncData['sourceConfig'] = $sourceConfig;
-            $synchronization          = $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
+            $synchronization          = $this->orObjectService->saveObject(
+                object: $syncData,
+                register: 'openconnector',
+                schema: 'synchronization',
+                uuid: $synchronization->getUuid()
+            );
         }
 
         $source = null;
@@ -1073,7 +1297,7 @@ class SynchronizationService
 
         $extraData = $this->getObjectFromSource(synchronization: $synchronization, endpoint: $endpoint, source: $source);
 
-        // Temporary fix,
+        // Temporary fix.
         if (isset($extraDataConfig['extraDataConfigPerResult']) === true) {
             $results = $extraData;
             if (isset($extraDataConfig['resultsLocation']) === true) {
@@ -1082,7 +1306,12 @@ class SynchronizationService
             }
 
             foreach ($results as $key => $result) {
-                $results[$key] = $this->fetchExtraDataForObject(synchronization: $synchronization, extraDataConfig: $extraDataConfig['extraDataConfigPerResult'], object: $result, originId: $originId);
+                $results[$key] = $this->fetchExtraDataForObject(
+                    synchronization: $synchronization,
+                    extraDataConfig: $extraDataConfig['extraDataConfigPerResult'],
+                    object: $result,
+                    originId: $originId
+                );
             }
 
             $extraData = $results;
@@ -1094,49 +1323,57 @@ class SynchronizationService
         }
 
         // Merge with earlier fetchde object if configured.
-        if (isset($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION]) === true && ($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION] === true || $extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION] === 'true')) {
+        $mergeFlag = ($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION] ?? null);
+        if (isset($extraDataConfig[$this::MERGE_EXTRA_DATA_OBJECT_LOCATION]) === true
+            && ($mergeFlag === true || $mergeFlag === 'true')
+        ) {
             return array_merge($object, $extraData);
         }
 
         return $extraData;
+
     }//end fetchExtraDataForObject()
 
     /**
      * Fetches multiple extra data entries for an object based on the source configuration.
      *
-     * This method iterates through a list of extra data configurations, fetches the additional data for each configuration,
-     * and merges it with the original object.
-     *
-     * @param Synchronization $synchronization The synchronization instance containing configuration details.
-     * @param array           $sourceConfig    The source configuration containing extra data retrieval settings.
-     * @param array           $object          The original object for which extra data needs to be fetched.
+     * @param ObjectEntity $synchronization The synchronization instance containing configuration details.
+     * @param array        $sourceConfig    The source configuration containing extra data retrieval settings.
+     * @param array        $object          The original object for which extra data needs to be fetched.
      *
      * @return array The updated object with all fetched extra data merged into it.
-     * @throws GuzzleException
+     *
+     * @throws GuzzleException When the underlying HTTP call fails.
      */
     private function fetchMultipleExtraData(ObjectEntity $synchronization, array $sourceConfig, array $object): array
     {
         if (isset($sourceConfig[$this::EXTRA_DATA_CONFIGS_LOCATION]) === true) {
             foreach ($sourceConfig[$this::EXTRA_DATA_CONFIGS_LOCATION] as $extraDataConfig) {
-                $object = array_merge($object, $this->fetchExtraDataForObject($synchronization, $extraDataConfig, $object));
+                $object = array_merge(
+                    $object,
+                    $this->fetchExtraDataForObject(
+                        synchronization: $synchronization,
+                        extraDataConfig: $extraDataConfig,
+                        object: $object
+                    )
+                );
             }
         }
 
         return $object;
+
     }//end fetchMultipleExtraData()
 
     /**
      * Maps a given object using a source hash mapping configuration.
      *
-     * This function retrieves a hash mapping configuration for a synchronization instance, if available,
-     * and applies it to the input object using the mapping service.
-     *
-     * @param Synchronization $synchronization The synchronization instance containing the hash mapping configuration.
-     * @param array           $object          The input object to be mapped.
+     * @param ObjectEntity $synchronization The synchronization instance containing the hash mapping configuration.
+     * @param array        $object          The input object to be mapped.
      *
      * @return array|Exception The mapped object, or the original object if no mapping is found.
-     * @throws LoaderError
-     * @throws SyntaxError
+     *
+     * @throws LoaderError When the Twig loader fails.
+     * @throws SyntaxError When a Twig template has a syntax error.
      */
     private function mapHashObject(ObjectEntity $synchronization, array $object): array|Exception
     {
@@ -1157,20 +1394,23 @@ class SynchronizationService
     /**
      * Deletes invalid objects associated with a synchronization.
      *
-     * This function identifies and removes objects that are no longer valid or do not exist
-     * in the source data for a given synchronization. It compares the target IDs from the
-     * synchronization contract with the synchronized target IDs and deletes the unmatched ones.
-     *
-     * @param Synchronization $synchronization       The synchronization entity to process.
-     * @param array|null      $synchronizedTargetIds An array of target IDs that are still valid in the source.
-     * @param bool            $deleteRestriction     Sets if the deletion of objects should be restricted to identifiers called in $data
-     * @param array           $data                  The data to be checked when $deleteRestriction is true for origin ids
+     * @param ObjectEntity $synchronization       The synchronization entity to process.
+     * @param array|null   $synchronizedTargetIds An array of target IDs that are still valid in the source.
+     * @param bool         $deleteRestriction     Sets if the deletion of objects should be restricted to identifiers called in $data.
+     * @param array        $data                  The data to be checked when $deleteRestriction is true for origin ids.
      *
      * @return int The count of objects that were deleted.
-     * @throws ContainerExceptionInterface|NotFoundExceptionInterface|\OCP\DB\Exception If any database or object deletion errors occur during execution.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found in the container.
+     * @throws \OCP\DB\Exception           When the database layer raises an exception.
      */
-    public function deleteInvalidObjects(ObjectEntity $synchronization, ?array $synchronizedTargetIds=[], bool $deleteRestriction=false, array $data=[]): int
-    {
+    public function deleteInvalidObjects(
+        ObjectEntity $synchronization,
+        ?array $synchronizedTargetIds=[],
+        bool $deleteRestriction=false,
+        array $data=[]
+    ): int {
         $deletedObjectsCount = 0;
         $syncData            = $synchronization->getObject();
         $type = $syncData['targetType'] ?? '';
@@ -1192,7 +1432,12 @@ class SynchronizationService
                 }
 
                 [$registerId, $schemaId] = explode(separator: '/', string: $rawTargetId, limit: 2);
-                $contractMatches         = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid()]]);
+                $cleanupFilters          = [
+                    'register'          => 'openconnector',
+                    'schema'            => 'synchronization_contract',
+                    'synchronizationId' => $synchronization->getUuid(),
+                ];
+                $contractMatches         = $this->orObjectService->findAll(config: ['filters' => $cleanupFilters]);
                 $allContracts            = $contractMatches['results'] ?? $contractMatches;
                 $allContractTargetIds    = [];
                 $allContractSourceIds    = [];
@@ -1204,12 +1449,12 @@ class SynchronizationService
                     }
                 }
 
-                // Initialize $synchronizedTargetIds as empty array if null
+                // Initialize $synchronizedTargetIds as empty array if null.
                 if ($synchronizedTargetIds === null) {
                     $synchronizedTargetIds = [];
                 }
 
-                // Check if we have contracts that became invalid or do not exist in the source anymore
+                // Check if we have contracts that became invalid or do not exist in the source anymore.
                 $targetIdsToDelete = array_diff($allContractTargetIds, $synchronizedTargetIds);
                 if ($deleteRestriction === true) {
                     $encodedData       = json_encode($data);
@@ -1264,8 +1509,14 @@ class SynchronizationService
                     }
 
                     try {
-                        $contractSearch = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronization->getUuid(), 'targetId' => $targetIdToDelete]]);
-                        $contractList   = $contractSearch['results'] ?? $contractSearch;
+                        $targetContractFilters = [
+                            'register'          => 'openconnector',
+                            'schema'            => 'synchronization_contract',
+                            'synchronizationId' => $synchronization->getUuid(),
+                            'targetId'          => $targetIdToDelete,
+                        ];
+                        $contractSearch        = $this->orObjectService->findAll(config: ['filters' => $targetContractFilters]);
+                        $contractList          = $contractSearch['results'] ?? $contractSearch;
                         if (empty($contractList) === true) {
                             $this->logger->warning(
                                 'Contract not found on second lookup during sync cleanup; continuing',
@@ -1280,7 +1531,12 @@ class SynchronizationService
                         $synchronizationContract = $contractList[0];
                         $synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
                         $contractData            = $synchronizationContract->getObject();
-                        $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+                        $this->orObjectService->saveObject(
+                            object: $contractData,
+                            register: 'openconnector',
+                            schema: 'synchronization_contract',
+                            uuid: $synchronizationContract->getUuid()
+                        );
                         $deletedObjectsCount++;
                     } catch (Throwable $e) {
                         $this->logger->warning(
@@ -1303,53 +1559,59 @@ class SynchronizationService
     /**
      * Recursively sort an associative array by key.
      *
-     * @param  $array mixed The array to sort.
+     * @param mixed $array The array to sort.
+     *
      * @return bool Whether or not the sort is successful.
      */
     public function sortNestedArray(mixed &$array): bool
     {
-        if (!is_array($array)) {
+        if (is_array($array) === false) {
             return false;
         }
 
         ksort($array);
         foreach ($array as $k => $v) {
-            $this->sortNestedArray($array[$k]);
+            $this->sortNestedArray(array: $array[$k]);
         }
 
         return true;
+
     }//end sortNestedArray()
 
     /**
      * Hash an object in a unified order, so the order in which keys are given does not influence the hash.
      *
-     * @param  array $object The object to hash.
+     * @param array $object The object to hash.
+     *
      * @return string The object hash.
      */
     private function hashObject(array $object): string
     {
-        $this->sortNestedArray($object);
+        $this->sortNestedArray(array: $object);
 
         return md5(serialize($object));
+
     }//end hashObject()
 
     /**
-     * Synchronize a contract
+     * Synchronize a contract.
      *
-     * @param SynchronizationContract $synchronizationContract
-     * @param Synchronization|null    $synchronization
-     * @param array                   $object
-     * @param bool|null               $isTest                  False by default, currently added for synchronization-test endpoint
-     * @param bool|null               $force                   False by default, if true, the object will be updated regardless of changes
-     * @param SynchronizationLog|null $log                     The log to update
-     * @param string|null             $mutationType            If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
+     * @param ObjectEntity      $synchronizationContract The contract to synchronize.
+     * @param ObjectEntity|null $synchronization         The synchronization driving the contract.
+     * @param FlowToken         $flowToken               The flow token threading through the call chain.
+     * @param array             $object                  The source object being synchronized.
+     * @param bool|null         $isTest                  False by default, currently added for sync-test.
+     * @param bool|null         $force                   False by default, force update regardless of changes.
+     * @param ObjectEntity|null $log                     The log to update.
+     * @param string|null       $mutationType            Single object mutation type: 'create', 'update' or 'delete'.
      *
-     * @return SynchronizationContract|Exception|array
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws LoaderError
-     * @throws SyntaxError
-     * @throws GuzzleException
+     * @return ObjectEntity|Exception|array Returns the updated contract entity, an Exception on mapping failures or the test array.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws LoaderError                 When the Twig loader fails.
+     * @throws SyntaxError                 When a Twig template has a syntax error.
+     * @throws GuzzleException             When a remote HTTP call fails.
      */
     public function synchronizeContract(
         ObjectEntity $synchronizationContract,
@@ -1363,50 +1625,76 @@ class SynchronizationService
     ): ObjectEntity|Exception|array {
         $contractLog  = null;
         $contractData = $synchronizationContract->getObject();
-        $syncData     = $synchronization !== null ? $synchronization->getObject() : [];
+        if ($synchronization !== null) {
+            $syncData = $synchronization->getObject();
+        } else {
+            $syncData = [];
+        }
 
-        // We are doing something so lets log it
+        // We are doing something so lets log it.
         if (isset($contractData['uuid']) === true && $contractData['uuid'] !== null) {
+            if ($synchronization !== null) {
+                $synchronizationId = $synchronization->getUuid();
+            } else {
+                $synchronizationId = null;
+            }
+
             $contractLogData = [
-                'synchronizationId'         => $synchronization !== null ? $synchronization->getUuid() : null,
+                'synchronizationId'         => $synchronizationId,
                 'synchronizationContractId' => $synchronizationContract->getUuid(),
                 'source'                    => $object,
                 'test'                      => $isTest,
                 'force'                     => $force,
-                'expiry'                    => $this->calculateExpires($this->errorContractRetention)?->format('c'),
+                'expiry'                    => $this->calculateExpires(...[$this->errorContractRetention])?->format('c'),
             ];
-            $contractLog     = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log');
-        }
+            $contractLog     = $this->orObjectService->saveObject(
+                object: $contractLogData,
+                register: 'openconnector',
+                schema: 'synchronization_contract_log'
+            );
+        }//end if
 
         if ($contractLog !== null && $log !== null) {
             $contractLogData = $contractLog->getObject();
             $contractLogData['synchronizationLogId'] = $log->getUuid();
-            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+            $contractLog = $this->orObjectService->saveObject(
+                object: $contractLogData,
+                register: 'openconnector',
+                schema: 'synchronization_contract_log',
+                uuid: $contractLog->getUuid()
+            );
         }
 
         $flowToken->setSyncInputOriginal($object);
 
         $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
 
-        // Check if extra data needs to be fetched
-        // If not fetched before conditions, fetch now
-        if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === false || ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] !== true && $sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] !== 'true')) {
+        // Check if extra data needs to be fetched.
+        // If not fetched before conditions, fetch now.
+        $extraBefore = ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] ?? null);
+        if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === false
+            || ($extraBefore !== true && $extraBefore !== 'true')
+        ) {
             $object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
         }
 
         $flowToken->setSyncOutputAmended($object);
 
-        // Get mapped hash object (some fields can make it look the object has changed even if it hasn't)
+        // Get mapped hash object (some fields can make it look the object has changed even if it hasn't).
         $hashObject = $this->mapHashObject(synchronization: $synchronization, object: $object);
-        // Let create a source hash for the object
-        $originHash = $this->hashObject($hashObject);
+        // Let create a source hash for the object.
+        $originHash = $this->hashObject(object: $hashObject);
 
-        // If no source target mapping is defined, use original object
+        // If no source target mapping is defined, use original object.
         $sourceTargetMappingId = $syncData['sourceTargetMapping'] ?? null;
         if (empty($sourceTargetMappingId) === true) {
             $sourceTargetMapping = null;
         } else {
-            $sourceTargetMapping = $this->orObjectService->find(id: $sourceTargetMappingId, register: 'openconnector', schema: 'mapping');
+            $sourceTargetMapping = $this->orObjectService->find(
+                id: $sourceTargetMappingId,
+                register: 'openconnector',
+                schema: 'mapping'
+            );
             if ($sourceTargetMapping === null) {
                 return new Exception('Source target mapping not found: '.$sourceTargetMappingId);
             }
@@ -1417,11 +1705,16 @@ class SynchronizationService
         // 2. If the synchronization config hasn't been updated since last check
         // 3. If source target mapping exists, check it hasn't been updated since last check
         // 4. If target ID and hash exist (object hasn't been removed from target)
-        // 5. Force parameter is false (otherwise always continue with update)
+        // 5. Force parameter is false (otherwise always continue with update).
         $contractUpdated           = $contractData['updated'] ?? null;
         $contractSourceLastChecked = $contractData['sourceLastChecked'] ?? null;
-        $syncUpdated    = $syncData['updated'] ?? null;
-        $mappingUpdated = $sourceTargetMapping !== null ? ($sourceTargetMapping->getObject()['updated'] ?? null) : null;
+        $syncUpdated = $syncData['updated'] ?? null;
+        if ($sourceTargetMapping !== null) {
+            $mappingUpdated = ($sourceTargetMapping->getObject()['updated'] ?? null);
+        } else {
+            $mappingUpdated = null;
+        }
+
         if ($force === false
             && $originHash === ($contractData['originHash'] ?? null)
             && $syncUpdated < $contractSourceLastChecked
@@ -1429,31 +1722,52 @@ class SynchronizationService
             && isset($contractData['targetId']) === true && $contractData['targetId'] !== null
             && isset($contractData['targetHash']) === true && $contractData['targetHash'] !== null
         ) {
-            // We checked the source so let log that
+            // We checked the source so let log that.
             $contractData['sourceLastChecked'] = (new DateTime())->format('c');
-            $synchronizationContract           = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+            $synchronizationContract           = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $synchronizationContract->getUuid()
+            );
 
             if ($contractLog !== null) {
                 $contractLogData           = $contractLog->getObject();
-                $contractLogData['expiry'] = $this->calculateExpires($this->successRetention)?->format('c');
-                $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+                $contractLogData['expiry'] = $this->calculateExpires(...[$this->successRetention])?->format('c');
+                $contractLog = $this->orObjectService->saveObject(
+                    object: $contractLogData,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract_log',
+                    uuid: $contractLog->getUuid()
+                );
+            }
+
+            if ($contractLog !== null) {
+                $skipLog = $contractLog->getObject();
+            } else {
+                $skipLog = null;
             }
 
             return [
-                'log'          => $contractLog !== null ? $contractLog->getObject() : null,
+                'log'          => $skipLog,
                 'contract'     => $synchronizationContract->getObject(),
                 'resultAction' => 'skip',
             ];
-        }
+        }//end if
 
-        // The object has changed, oke let do mappig and set metadata
+        // The object has changed, oke let do mappig and set metadata.
         $contractData['originHash']        = $originHash;
         $contractData['sourceLastChanged'] = (new DateTime())->format('c');
         $contractData['sourceLastChecked'] = (new DateTime())->format('c');
-        $synchronizationContract           = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+        $synchronizationContract           = $this->orObjectService->saveObject(
+            object: $contractData,
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $synchronizationContract->getUuid()
+        );
         $contractData = $synchronizationContract->getObject();
 
-        // Execute mapping if found
+        // Execute mapping if found.
         $objectBeforeMapping = $object;
         if ($sourceTargetMapping !== null) {
             $flowToken->setSyncOutputOriginal($object);
@@ -1465,45 +1779,75 @@ class SynchronizationService
         if ($contractLog !== null) {
             $contractLogData           = $contractLog->getObject();
             $contractLogData['target'] = $object;
-            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+            $contractLog = $this->orObjectService->saveObject(
+                object: $contractLogData,
+                register: 'openconnector',
+                schema: 'synchronization_contract_log',
+                uuid: $contractLog->getUuid()
+            );
         }
 
-        $object = $this->replaceRelatedOriginIds(object: $object, config: $sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [], replaceIdWithTargetId: true);
+        $object = $this->replaceRelatedOriginIds(
+            object: $object,
+            config: ($sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? []),
+            replaceIdWithTargetId: true
+        );
         $flowToken->setSyncOutputAmended($object);
 
         if (empty($syncData['actions'] ?? []) === false) {
-            $object = $this->processRules(synchronization: $synchronization, data: $object, timing: 'before', flowToken: $flowToken);
+            $object = $this->processRules(
+                synchronization: $synchronization,
+                data: $object,
+                timing: 'before',
+                flowToken: $flowToken
+            );
             $flowToken->setSyncOutputAmended($object);
         }
 
-        // set the target hash
+        // Set the target hash.
         $targetHash = md5(serialize($object));
 
         $contractData['targetHash']        = $targetHash;
         $contractData['targetLastChanged'] = (new DateTime())->format('c');
         $contractData['targetLastSynced']  = (new DateTime())->format('c');
         $contractData['sourceLastSynced']  = (new DateTime())->format('c');
-        $synchronizationContract           = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+        $synchronizationContract           = $this->orObjectService->saveObject(
+            object: $contractData,
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $synchronizationContract->getUuid()
+        );
         $contractData = $synchronizationContract->getObject();
 
-        // Handle synchronization based on test mode
+        // Handle synchronization based on test mode.
         if ($isTest === true) {
-            // Return test data without updating target
+            // Return test data without updating target.
             if ($contractLog !== null) {
                 $contractLogData = $contractLog->getObject();
                 $contractLogData['targetResult'] = 'test';
-                $contractLogData['expiry']       = $this->calculateExpires($this->successRetention)?->format('c');
-                $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+                $contractLogData['expiry']       = $this->calculateExpires(...[$this->successRetention])?->format('c');
+                $contractLog = $this->orObjectService->saveObject(
+                    object: $contractLogData,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract_log',
+                    uuid: $contractLog->getUuid()
+                );
+            }
+
+            if ($contractLog !== null) {
+                $testLog = $contractLog->getObject();
+            } else {
+                $testLog = null;
             }
 
             return [
-                'log'          => $contractLog !== null ? $contractLog->getObject() : null,
+                'log'          => $testLog,
                 'contract'     => $synchronizationContract->getObject(),
                 'resultAction' => 'skip',
             ];
-        }
+        }//end if
 
-        // Update target and create log when not in test mode
+        // Update target and create log when not in test mode.
         $synchronizationContract = $this->updateTarget(
             synchronizationContract: $synchronizationContract,
             targetObject: $object,
@@ -1515,118 +1859,173 @@ class SynchronizationService
         $sourceType = $syncData['sourceType'] ?? '';
         if ($targetType === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: ($syncData['targetId'] ?? '/'));
-            $this->processRules(synchronization: $synchronization, data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]), timing: 'after', objectId: $contractData['targetId'] ?? null, registerId: $registerId, schemaId: $schemaId, flowToken: $flowToken);
+            $this->processRules(
+                synchronization: $synchronization,
+                data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]),
+                timing: 'after',
+                objectId: ($contractData['targetId'] ?? null),
+                registerId: $registerId,
+                schemaId: $schemaId,
+                flowToken: $flowToken
+            );
         } else if ($targetType === 'api' && $sourceType === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: ($syncData['sourceId'] ?? '/'));
-            $this->processRules(synchronization: $synchronization, data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]), timing: 'after', objectId: $contractData['originId'] ?? null, registerId: $registerId, schemaId: $schemaId, flowToken: $flowToken);
-        }
+            $this->processRules(
+                synchronization: $synchronization,
+                data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]),
+                timing: 'after',
+                objectId: ($contractData['originId'] ?? null),
+                registerId: $registerId,
+                schemaId: $schemaId,
+                flowToken: $flowToken
+            );
+        }//end if
 
-        // Create log entry for the synchronization
+        // Create log entry for the synchronization.
         if ($contractLog !== null) {
             $contractLogData = $contractLog->getObject();
-            $contractLogData['targetResult'] = $contractData['targetLastAction'] ?? null;
-            $contractLogData['expiry']       = $this->calculateExpires($this->successRetention)?->format('c');
-            $contractLog = $this->orObjectService->saveObject(object: $contractLogData, register: 'openconnector', schema: 'synchronization_contract_log', uuid: $contractLog->getUuid());
+            $contractLogData['targetResult'] = ($contractData['targetLastAction'] ?? null);
+            $contractLogData['expiry']       = $this->calculateExpires(...[$this->successRetention])?->format('c');
+            $contractLog = $this->orObjectService->saveObject(
+                object: $contractLogData,
+                register: 'openconnector',
+                schema: 'synchronization_contract_log',
+                uuid: $contractLog->getUuid()
+            );
         }
 
-        $synchronizationContract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+        $synchronizationContract = $this->orObjectService->saveObject(
+            object: $contractData,
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $synchronizationContract->getUuid()
+        );
 
+        if ($contractLog !== null) {
+            $finalLog = $contractLog->getObject();
+        } else {
+            $finalLog = [];
+        }
+
+        // Update or create.
         return [
-            'log'          => $contractLog !== null ? $contractLog->getObject() : [],
+            'log'          => $finalLog,
             'contract'     => $synchronizationContract->getObject(),
             'resultAction' => 'update',
-        // /create
         ];
+
     }//end synchronizeContract()
 
     /**
      * Updates or deletes a target object in the Open Register system.
      *
-     * This method updates a target object associated with a synchronization contract
-     * or deletes it based on the specified action. It extracts the register and schema
-     * from the target ID and performs the corresponding operation using the object service.
+     * @param ObjectEntity $synchronizationContract The synchronization contract being updated.
+     * @param ObjectEntity $synchronization         The synchronization entity containing the target ID.
+     * @param array|null   $targetObject            An optional array containing the data for the target object.
+     * @param string|null  $action                  The action to perform: 'save' (default) or 'delete'.
      *
-     * @param SynchronizationContract $synchronizationContract The synchronization contract being updated.
-     * @param Synchronization         $synchronization         The synchronization entity containing the target ID.
-     * @param array|null              $targetObject            An optional array containing the data for the target object. Defaults to an empty array.
-     * @param string|null             $action                  The action to perform: 'save' (default) to update or 'delete' to remove the target object.
+     * @return ObjectEntity The updated synchronization contract with the modified target ID.
      *
-     * @return SynchronizationContract The updated synchronization contract with the modified target ID.
-     * @throws ContainerExceptionInterface|NotFoundExceptionInterface If an error occurs while interacting with the object service or processing the data.
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
      */
-    private function updateTargetOpenRegister(ObjectEntity $synchronizationContract, ObjectEntity $synchronization, ?array &$targetObject=[], ?string $action='save'): ObjectEntity
-    {
-        // Setup the object service
+    private function updateTargetOpenRegister(
+        ObjectEntity $synchronizationContract,
+        ObjectEntity $synchronization,
+        ?array &$targetObject=[],
+        ?string $action='save'
+    ): ObjectEntity {
+        // Setup the object service.
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
         $syncData      = $synchronization->getObject();
         $contractData  = $synchronizationContract->getObject();
         $sourceConfig  = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
 
-        // if we already have an id, we need to get the object and update it
+        // If we already have an id, we need to get the object and update it.
         if (isset($contractData['targetId']) === true && $contractData['targetId'] !== null) {
             $targetObject['id'] = $contractData['targetId'];
         }
 
         if (isset($sourceConfig['subObjects']) === true) {
-            $targetObject = $this->updateIdsOnSubObjects(subObjectsConfig: $sourceConfig['subObjects'], synchronizationId: $synchronization->getUuid(), targetObject: $targetObject);
+            $targetObject = $this->updateIdsOnSubObjects(
+                subObjectsConfig: $sourceConfig['subObjects'],
+                synchronizationId: $synchronization->getUuid(),
+                targetObject: $targetObject
+            );
         }
 
-        // Extract register and schema from the targetId
-        // The targetId needs to be filled in as: {registerId} + / + {schemaId} for example: 1/1
+        // Extract register and schema from the targetId.
+        // The targetId needs to be filled in as: {registerId} + / + {schemaId} for example: 1/1.
         $targetId = $syncData['targetId'] ?? '/';
         list($register, $schema) = explode('/', $targetId);
 
-        // Save the object to the target
+        // Save the object to the target.
         switch ($action) {
             case 'save':
                 if (isset($targetObject['id']) === true && ($contractData['targetId'] ?? null) === null) {
                     $contractData['targetId'] = $targetObject['id'];
                 }
 
-                $targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
+                $targetObject = $this->replaceRelatedOriginIds(
+                    object: $targetObject,
+                    config: ($sourceConfig['originIdsToReplace'] ?? [])
+                );
 
-                $target = $objectService->saveObject(register: $register, schema: $schema, object: $targetObject, uuid: $contractData['targetId'] ?? null);
-                // Get the id from the target object
+                $target = $objectService->saveObject(
+                    register: $register,
+                    schema: $schema,
+                    object: $targetObject,
+                    uuid: ($contractData['targetId'] ?? null)
+                );
+                // Get the id from the target object.
                 $contractData['targetId'] = $target->getUuid();
 
-                // Handle sub-objects synchronization if sourceConfig is defined
+                // Handle sub-objects synchronization if sourceConfig is defined.
                 if (isset($sourceConfig['subObjects']) === true) {
                     $targetObjectRendered = $objectService->renderEntity($target, ['all']);
-                    $this->updateContractsForSubObjects(subObjectsConfig: $sourceConfig['subObjects'], synchronizationId: $synchronization->getUuid(), targetObject: $targetObjectRendered);
+                    $this->updateContractsForSubObjects(
+                        subObjectsConfig: $sourceConfig['subObjects'],
+                        synchronizationId: $synchronization->getUuid(),
+                        targetObject: $targetObjectRendered
+                    );
                 }
 
-                // Set target last action based on whether we're creating or updating
-                $contractData['targetLastAction'] = ($contractData['targetId'] !== null) ? 'update' : 'create';
+                // Set target last action based on whether we're creating or updating.
+                if ($contractData['targetId'] !== null) {
+                    $contractData['targetLastAction'] = 'update';
+                } else {
+                    $contractData['targetLastAction'] = 'create';
+                }
                 break;
             case 'delete':
-                // Use the scoped delete API (OR#1638) so a UUID collision across magic
-                // tables cannot silently delete a foreign-scope object. Register and
-                // schema are derived from $syncData['targetId'] above.
+                // Use the scoped delete API (OR#1638) so a UUID collision across magic.
+                // Tables cannot silently delete a foreign-scope object. Register and.
+                // Schema are derived from $syncData['targetId'] above.
                 $objectService->deleteObject(uuid: $contractData['targetId'], register: $register, schema: $schema);
                 $contractData['targetId']         = null;
                 $contractData['targetLastAction'] = 'delete';
                 break;
         }//end switch
 
-        $synchronizationContract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+        $synchronizationContract = $this->orObjectService->saveObject(
+            object: $contractData,
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $synchronizationContract->getUuid()
+        );
 
         return $synchronizationContract;
+
     }//end updateTargetOpenRegister()
 
     /**
-     * Recursively replaces 'originId' values with corresponding target IDs in the given object,
-     * according to the provided config array. The config array defines which keys to traverse and replace with ObjectEntity uuids.
+     * Recursively replaces 'originId' values with corresponding target IDs in the given object.
      *
-     * The object can contain nested associative arrays (sub objects) or indexed arrays of associative arrays (array of multiple subobjects).
-     * Only keys present in the config array are processed.
-     * Beforehand the $object must be mapped so properties that are relations to other objects set as a 'originId' which are equal to existing originIds on SynchronizationContracts, so that we can take the targetId of
-     * those found contracts so objects can be linked from earlier synchronizations.
-     *
-     * @param array $object                The object array to process (can be nested)
+     * @param array $object                The object array to process (can be nested).
      * @param array $config                A nested config tree indicating which keys to process and replace.
      * @param bool  $replaceIdWithTargetId If we need to replace id with target id found by origin id if configured.
      *
-     * @return array The processed data with 'originId' replaced with actual ObjectEntities their uuids where applicable.
+     * @return array The processed data with 'originId' replaced where applicable.
      */
     public function replaceRelatedOriginIds(array $object, array $config, bool $replaceIdWithTargetId=false): array
     {
@@ -1636,26 +2035,36 @@ class SynchronizationService
             }
 
             if (is_array($object[$key]) === true
-                && $this->isAssociativeArray(reset($object[$key])) === true
+                && $this->isAssociativeArray(array: reset($object[$key])) === true
                 && is_array($subConfig) === true
             ) {
-                // It's a list of associative objects
+                // It's a list of associative objects.
                 foreach ($object[$key] as $i => $item) {
                     if (is_array($item) === true) {
-                        $object[$key][$i] = $this->replaceRelatedOriginIds(object: $item, config: $subConfig, replaceIdWithTargetId: $replaceIdWithTargetId);
+                        $object[$key][$i] = $this->replaceRelatedOriginIds(
+                            object: $item,
+                            config: $subConfig,
+                            replaceIdWithTargetId: $replaceIdWithTargetId
+                        );
                     }
                 }
-            } else if ($this->isAssociativeArray($object[$key]) === true && is_array($subConfig) === true) {
-                // Single nested associative object
-                $object[$key] = $this->replaceRelatedOriginIds(object: $object[$key], config: $subConfig, replaceIdWithTargetId: $replaceIdWithTargetId);
+            } else if ($this->isAssociativeArray(array: $object[$key]) === true && is_array($subConfig) === true) {
+                // Single nested associative object.
+                $object[$key] = $this->replaceRelatedOriginIds(
+                    object: $object[$key],
+                    config: $subConfig,
+                    replaceIdWithTargetId: $replaceIdWithTargetId
+                );
             } else if ($subConfig === 'true' && is_string($object[$key]) === true && $replaceIdWithTargetId === false) {
-                // Leaf: value is a string, marked for replacement
-                $object[$key] = $this->replaceIdInString($object[$key]);
-            }
+                // Leaf: value is a string, marked for replacement.
+                $object[$key] = $this->replaceIdInString(value: $object[$key]);
+            }//end if
 
-            // Replace 'id' at this level if requested, demands originId to be set aswel
-            if ($replaceIdWithTargetId === true && $key === 'id' && isset($object['originId']) && is_string($object['originId'])) {
-                $targetId = $this->replaceIdInString($object['originId']);
+            // Replace 'id' at this level if requested, demands originId to be set aswel.
+            if ($replaceIdWithTargetId === true && $key === 'id'
+                && isset($object['originId']) === true && is_string($object['originId']) === true
+            ) {
+                $targetId = $this->replaceIdInString(value: $object['originId']);
                 if ($targetId !== null && $targetId !== $object['originId']) {
                     $object['id'] = $targetId;
                 }
@@ -1663,37 +2072,32 @@ class SynchronizationService
         }//end foreach
 
         return $object;
+
     }//end replaceRelatedOriginIds()
 
     /**
      * Replaces a UUID within a string with a mapped target ID using the synchronization mapper.
      *
-     * This method scans the input string for the first valid UUID (v4 or general format),
-     * validates it using Uuid::isValid(), and replaces only that UUID with the mapped target ID.
-     * If no valid UUID is found, the original string is returned unchanged.
+     * @param string $value The string potentially containing a UUID to replace.
      *
-     * Examples:
-     * - '80c24f50-4dc9-4937-b99e-9c253b5dfe8a' → 'abc123'
-     * - 'https://example.com/entity/80c24f50-4dc9-4937-b99e-9c253b5dfe8a' → 'https://example.com/entity/abc123'
-     * - 'no-id-here' → 'no-id-here'
-     *
-     * @param  string $value The string potentially containing a UUID to replace.
      * @return string The string with the UUID replaced if found and valid, otherwise the original string.
      */
     private function replaceIdInString(string $value): string
     {
         // First check if we already can find object with origin id as is.
-        $targetId = $this->findTargetIdByOriginId($value);
+        $targetId = $this->findTargetIdByOriginId(originId: $value);
         if ($targetId !== null && $targetId !== $value) {
             return $targetId;
         }
 
-        // If not a direct match, check for embedded UUID (used for uri relations)
-        if (preg_match('/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/', $value, $matches) && filter_var($value, FILTER_VALIDATE_URL)) {
+        // If not a direct match, check for embedded UUID (used for uri relations).
+        if (preg_match('/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/', $value, $matches) === 1
+            && filter_var($value, FILTER_VALIDATE_URL) !== false
+        ) {
             $originId = $matches[0];
 
             if (Uuid::isValid($originId) === true) {
-                $targetId = $this->findTargetIdByOriginId($originId);
+                $targetId = $this->findTargetIdByOriginId(originId: $originId);
 
                 if ($targetId !== null && $targetId !== $originId) {
                     return str_replace($originId, $targetId, $value);
@@ -1702,6 +2106,7 @@ class SynchronizationService
         }
 
         return $value;
+
     }//end replaceIdInString()
 
     /**
@@ -1713,14 +2118,20 @@ class SynchronizationService
      */
     private function findTargetIdByOriginId(string $originId): ?string
     {
-        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $originId]]);
-        $contracts = $matches['results'] ?? $matches;
+        $targetFilters = [
+            'register' => 'openconnector',
+            'schema'   => 'synchronization_contract',
+            'originId' => $originId,
+        ];
+        $matches       = $this->orObjectService->findAll(config: ['filters' => $targetFilters]);
+        $contracts     = $matches['results'] ?? $matches;
         if (empty($contracts) === false) {
             $contractData = $contracts[0]->getObject();
             return $contractData['targetId'] ?? null;
         }
 
         return null;
+
     }//end findTargetIdByOriginId()
 
     /**
@@ -1741,34 +2152,43 @@ class SynchronizationService
 
             $propertyData = $targetObject[$propertyName];
 
-            // If property data is an array of subObjects, iterate and process
-            if (is_array($propertyData) && $this->isAssociativeArray($propertyData)) {
-                if (isset($propertyData['originId'])) {
-                    $this->processSyncContract($synchronizationId, $propertyData);
+            // If property data is an array of subObjects, iterate and process.
+            if (is_array($propertyData) === true && $this->isAssociativeArray(array: $propertyData) === true) {
+                if (isset($propertyData['originId']) === true) {
+                    $this->processSyncContract(synchronizationId: $synchronizationId, subObjectData: $propertyData);
                 }
 
-                // Recursively process any nested subObjects within the associative array
+                // Recursively process any nested subObjects within the associative array.
                 foreach ($propertyData as $key => $value) {
                     if (is_array($value) === true && isset($subObjectConfig['subObjects']) === true) {
-                        $this->updateContractsForSubObjects($subObjectConfig['subObjects'], $synchronizationId, [$key => $value]);
+                        $this->updateContractsForSubObjects(
+                            subObjectsConfig: $subObjectConfig['subObjects'],
+                            synchronizationId: $synchronizationId,
+                            targetObject: [$key => $value]
+                        );
                     }
                 }
             }
 
-            // Process if it's an indexed array (list) of associative arrays
-            if (is_array($propertyData) === true && !$this->isAssociativeArray($propertyData)) {
+            // Process if it's an indexed array (list) of associative arrays.
+            if (is_array($propertyData) === true && $this->isAssociativeArray(array: $propertyData) === false) {
                 foreach ($propertyData as $subObjectData) {
                     if (is_array($subObjectData) === true && isset($subObjectData['originId']) === true) {
-                        $this->processSyncContract($synchronizationId, $subObjectData);
+                        $this->processSyncContract(synchronizationId: $synchronizationId, subObjectData: $subObjectData);
                     }
 
-                    // Recursively process nested sub-objects
+                    // Recursively process nested sub-objects.
                     if (is_array($subObjectData) === true && isset($subObjectConfig['subObjects']) === true) {
-                        $this->updateContractsForSubObjects($subObjectConfig['subObjects'], $synchronizationId, $subObjectData);
+                        $this->updateContractsForSubObjects(
+                            subObjectsConfig: $subObjectConfig['subObjects'],
+                            synchronizationId: $synchronizationId,
+                            targetObject: $subObjectData
+                        );
                     }
                 }
             }
         }//end foreach
+
     }//end updateContractsForSubObjects()
 
     /**
@@ -1778,17 +2198,43 @@ class SynchronizationService
      * @param array  $subObjectData     The data of the subObject to process.
      *
      * @return void
-     * @throws \OCP\DB\Exception
+     *
+     * @throws \OCP\DB\Exception When the database layer raises an exception.
      */
     private function processSyncContract(string $synchronizationId, array $subObjectData): void
     {
-        $id          = $subObjectData['id']['id']['id']['id'] ?? $subObjectData['id']['id']['id'] ?? $subObjectData['id']['id'] ?? $subObjectData['id'];
+        $rawId    = ($subObjectData['id'] ?? null);
+        $idLevel2 = null;
+        if (is_array($rawId) === true) {
+            $idLevel2 = ($rawId['id'] ?? null);
+        }
+
+        $idLevel3 = null;
+        if (is_array($idLevel2) === true) {
+            $idLevel3 = ($idLevel2['id'] ?? null);
+        }
+
+        $idLevel4 = null;
+        if (is_array($idLevel3) === true) {
+            $idLevel4 = ($idLevel3['id'] ?? null);
+        }
+
+        $id          = ($idLevel4 ?? $idLevel3 ?? $idLevel2 ?? $rawId);
         $originId    = $subObjectData['originId'] ?? null;
         $subContract = null;
         if ($originId !== null) {
-            $contractMatches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $originId]]);
-            $contractList    = $contractMatches['results'] ?? $contractMatches;
-            $subContract     = empty($contractList) === false ? $contractList[0] : null;
+            $subContractFilters = [
+                'register' => 'openconnector',
+                'schema'   => 'synchronization_contract',
+                'originId' => $originId,
+            ];
+            $contractMatches    = $this->orObjectService->findAll(config: ['filters' => $subContractFilters]);
+            $contractList       = $contractMatches['results'] ?? $contractMatches;
+            if (empty($contractList) === false) {
+                $subContract = $contractList[0];
+            } else {
+                $subContract = null;
+            }
         }
 
         $contractData = [
@@ -1802,23 +2248,33 @@ class SynchronizationService
         ];
 
         if ($subContract === null) {
-            $subContract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract');
+            $subContract = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract'
+            );
         } else {
             $existing     = $subContract->getObject();
             $contractData = array_merge($existing, $contractData);
-            $subContract  = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $subContract->getUuid());
+            $subContract  = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $subContract->getUuid()
+            );
         }//end if
 
         $this->orObjectService->saveObject(
             object: [
-                'synchronizationId'         => $subContract->getObject()['synchronizationId'] ?? null,
+                'synchronizationId'         => ($subContract->getObject()['synchronizationId'] ?? null),
                 'synchronizationContractId' => $subContract->getUuid(),
                 'target'                    => $subObjectData,
-                'expires'                   => $this->calculateExpires($this->successRetention, $this->successRetention)?->format('c'),
+                'expires'                   => $this->calculateExpires(...[$this->successRetention, $this->successRetention])?->format('c'),
             ],
             register: 'openconnector',
             schema: 'synchronization_contract_log'
         );
+
     }//end processSyncContract()
 
     /**
@@ -1830,17 +2286,17 @@ class SynchronizationService
      */
     private function isAssociativeArray(mixed $array): bool
     {
-        // Check if the array is associative
-        return (is_array($array) && count(array_filter(array_keys($array), 'is_string')) > 0);
+        // Check if the array is associative.
+        return (is_array($array) === true && count(array_filter(array_keys($array), 'is_string')) > 0);
+
     }//end isAssociativeArray()
 
     /**
      * Processes subObjects update their arrays with existing targetId's so OpenRegister can update the objects instead of duplicate them.
      *
-     * @param array     $subObjectsConfig     The configuration for subObjects.
-     * @param string    $synchronizationId    The ID of the synchronization.
-     * @param array     $targetObject         The target object containing subObjects to be processed.
-     * @param bool|null $parentIsNumericArray Whether the parent object is a numeric array (default false).
+     * @param array  $subObjectsConfig  The configuration for subObjects.
+     * @param string $synchronizationId The ID of the synchronization.
+     * @param array  $targetObject      The target object containing subObjects to be processed.
      *
      * @return array The updated target object with IDs updated on subObjects.
      */
@@ -1853,23 +2309,32 @@ class SynchronizationService
                 continue;
             }
 
-            if ($this->isAssociativeArray($value) === true) {
-                $targetObject[$propertyName] = $this->updateIdsOnSubObjects(subObjectsConfig: $subObjectsConfig, synchronizationId: $synchronizationId, targetObject: $value);
+            if ($this->isAssociativeArray(array: $value) === true) {
+                $targetObject[$propertyName] = $this->updateIdsOnSubObjects(
+                    subObjectsConfig: $subObjectsConfig,
+                    synchronizationId: $synchronizationId,
+                    targetObject: $value
+                );
                 continue;
             }
 
-            if (is_array(reset($value)) === true && $this->isAssociativeArray(reset($value)) === true) {
+            if (is_array(reset($value)) === true && $this->isAssociativeArray(array: reset($value)) === true) {
                 foreach ($value as $key => $subValue) {
                     if (is_array($subValue) === false) {
                         continue;
                     }
 
-                    $targetObject[$propertyName][$key] = $this->updateIdsOnSubObjects(subObjectsConfig: $subObjectsConfig, synchronizationId: $synchronizationId, targetObject: $subValue);
+                    $targetObject[$propertyName][$key] = $this->updateIdsOnSubObjects(
+                        subObjectsConfig: $subObjectsConfig,
+                        synchronizationId: $synchronizationId,
+                        targetObject: $subValue
+                    );
                 }
             }
-        }
+        }//end foreach
 
         return $targetObject;
+
     }//end updateIdsOnSubObjects()
 
     /**
@@ -1885,39 +2350,55 @@ class SynchronizationService
     private function updateIdOnSubObject(string $synchronizationId, array $subObject): array
     {
         if (isset($subObject['originId']) === true) {
-            $contractMatches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'synchronizationId' => $synchronizationId, 'originId' => $subObject['originId']]]);
+            $idFilters       = [
+                'register'          => 'openconnector',
+                'schema'            => 'synchronization_contract',
+                'synchronizationId' => $synchronizationId,
+                'originId'          => $subObject['originId'],
+            ];
+            $contractMatches = $this->orObjectService->findAll(config: ['filters' => $idFilters]);
             $contractList    = $contractMatches['results'] ?? $contractMatches;
             if (empty($contractList) === false) {
                 $contractData    = $contractList[0]->getObject();
-                $subObject['id'] = $contractData['targetId'] ?? null;
+                $subObject['id'] = ($contractData['targetId'] ?? null);
             }
         }
 
         return $subObject;
+
     }//end updateIdOnSubObject()
 
     /**
-     * Write the data to the target
+     * Write the data to the target.
      *
-     * @param SynchronizationContract $synchronizationContract
-     * @param array|null              $targetObject
-     * @param string|null             $action                  Determines what needs to be done with the target object, defaults to 'save'
-     * @param string|null             $mutationType            If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
+     * @param ObjectEntity $synchronizationContract The contract to update.
+     * @param array|null   $targetObject            The data payload for the target.
+     * @param string|null  $action                  Action to perform; defaults to 'save'.
+     * @param string|null  $mutationType            Mutation type for single object syncs.
      *
-     * @return SynchronizationContract
-     * @throws ContainerExceptionInterface
-     * @throws GuzzleException
-     * @throws LoaderError
-     * @throws NotFoundExceptionInterface
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
-     * @throws Exception
+     * @return ObjectEntity The updated contract entity.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws GuzzleException             When a remote HTTP call fails.
+     * @throws LoaderError                 When the Twig loader fails.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws SyntaxError                 When a Twig template has a syntax error.
+     * @throws \OCP\DB\Exception           When the database layer raises an exception.
+     * @throws Exception                   For unsupported target types.
      */
-    public function updateTarget(ObjectEntity $synchronizationContract, ?array &$targetObject=[], ?string $action='save', ?string $mutationType=null): ObjectEntity
-    {
-        // The function can be called solo so let's make sure we have the full synchronization object
+    public function updateTarget(
+        ObjectEntity $synchronizationContract,
+        ?array &$targetObject=[],
+        ?string $action='save',
+        ?string $mutationType=null
+    ): ObjectEntity {
+        // The function can be called solo so let's make sure we have the full synchronization object.
         $contractData    = $synchronizationContract->getObject();
-        $synchronization = $this->orObjectService->find(id: $contractData['synchronizationId'] ?? null, register: 'openconnector', schema: 'synchronization');
+        $synchronization = $this->orObjectService->find(
+            id: ($contractData['synchronizationId'] ?? null),
+            register: 'openconnector',
+            schema: 'synchronization'
+        );
 
         if ($synchronization === null) {
             throw new Exception('Synchronization not found for contract: '.($contractData['synchronizationId'] ?? 'null'));
@@ -1932,34 +2413,47 @@ class SynchronizationService
 
         switch ($type) {
             case 'register/schema':
-                $synchronizationContract = $this->updateTargetOpenRegister(synchronizationContract: $synchronizationContract, synchronization: $synchronization, targetObject: $targetObject, action: $action);
+                $synchronizationContract = $this->updateTargetOpenRegister(
+                    synchronizationContract: $synchronizationContract,
+                    synchronization: $synchronization,
+                    targetObject: $targetObject,
+                    action: $action
+                );
                 break;
             case 'api':
                 $targetConfig            = $syncData['targetConfig'] ?? [];
-                $synchronizationContract = $this->writeObjectToTarget(synchronization: $synchronization, contract: $synchronizationContract, endpoint: $targetConfig['endpoint'] ?? '', targetObject: $targetObject, mutationType: $mutationType);
+                $synchronizationContract = $this->writeObjectToTarget(
+                    synchronization: $synchronization,
+                    contract: $synchronizationContract,
+                    endpoint: ($targetConfig['endpoint'] ?? ''),
+                    targetObject: $targetObject,
+                    mutationType: $mutationType
+                );
                 break;
             case 'database':
-                // @todo: implement
+                // @todo: implement.
                 break;
             default:
                 throw new Exception("Unsupported target type: $type");
-        }
+        }//end switch
 
         return $synchronizationContract;
+
     }//end updateTarget()
 
     /**
-     * Get all the object from a source
+     * Get all the object from a source.
      *
-     * @param Synchronization $synchronization
-     * @param bool|null       $isTest          False by default, currently added for synchronziation-test endpoint
-     * @param array|null      $data            The data to add to synchronize, if not provided, the synchronization's data will be used
+     * @param ObjectEntity $synchronization The synchronization providing source configuration.
+     * @param bool|null    $isTest          Test mode flag.
+     * @param array|null   $data            Optional payload data.
      *
-     * @return array
-     * @throws ContainerExceptionInterface
-     * @throws GuzzleException
-     * @throws NotFoundExceptionInterface
-     * @throws \OCP\DB\Exception
+     * @return array The fetched source objects.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws GuzzleException             When a remote HTTP call fails.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws \OCP\DB\Exception           When the database layer raises an exception.
      */
     public function getAllObjectsFromSource(ObjectEntity $synchronization, ?bool $isTest=false, ?array $data=null): array
     {
@@ -1969,51 +2463,57 @@ class SynchronizationService
 
         switch ($type) {
             case 'register/schema':
-                // @todo: implement
+                // @todo: implement.
                 break;
             case 'api':
                 $objects = $this->getAllObjectsFromApi(synchronization: $synchronization, isTest: $isTest, data: $data);
                 break;
             case 'database':
-                // @todo: implement
+                // @todo: implement.
                 break;
         }
 
         return $objects;
+
     }//end getAllObjectsFromSource()
 
     /**
      * Fetches all objects from an API source for a given synchronization.
      *
-     * @param Synchronization $synchronization The synchronization object containing source information.
-     * @param bool|null       $isTest          If true, only a single object is returned for testing purposes.
-     * @param array|null      $data            The data to add to synchronize, if not provided, the synchronization's data will be used
+     * @param ObjectEntity $synchronization The synchronization object containing source information.
+     * @param bool|null    $isTest          If true, only a single object is returned for testing purposes.
+     * @param array|null   $data            The data to add to synchronize.
      *
      * @return array An array of all objects retrieved from the API.
-     * @throws GuzzleException
-     * @throws LoaderError
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
+     *
+     * @throws GuzzleException   When a remote HTTP call fails.
+     * @throws LoaderError       When the Twig loader fails.
+     * @throws SyntaxError       When a Twig template has a syntax error.
+     * @throws \OCP\DB\Exception When the database layer raises an exception.
      */
     public function getAllObjectsFromApi(ObjectEntity $synchronization, ?bool $isTest=false, ?array $data=null): array
     {
         $syncData = $synchronization->getObject();
-        $source   = $this->orObjectService->find(id: $syncData['sourceId'] ?? null, register: 'openconnector', schema: 'source');
+        $source   = $this->orObjectService->find(
+            id: ($syncData['sourceId'] ?? null),
+            register: 'openconnector',
+            schema: 'source'
+        );
 
-        // Check rate limit before proceeding
-        $this->checkRateLimit($source);
+        // Check rate limit before proceeding.
+        $this->checkRateLimit(source: $source);
 
-        // Extract source configuration
+        // Extract source configuration.
         $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
-        // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
+        // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation.
         $endpoint = $sourceConfig['endpoint'] ?? '';
         if (is_string($endpoint) === true
             && str_contains($endpoint, '{{') === true
             && str_contains($endpoint, '}}') === true
         ) {
             $contextData = ($data ?? []);
-            // After-rule responses pass the OR object (`{id, @self}`) here; lift @self.relations
-            // to the top level so simple `{{ data.zaaknummer }}` lookups still resolve.
+            // After-rule responses pass the OR object (`{id, @self}`) here; lift @self.relations.
+            // To the top level so simple `{{ data.zaaknummer }}` lookups still resolve.
             if (isset($contextData['@self']['relations']) === true && is_array($contextData['@self']['relations']) === true) {
                 $contextData = array_merge($contextData['@self']['relations'], $contextData);
             }
@@ -2057,14 +2557,18 @@ class SynchronizationService
         }
 
         $currentPage = 1;
-        $sourceData  = $source !== null ? $source->getObject() : [];
+        if ($source !== null) {
+            $sourceData = $source->getObject();
+        } else {
+            $sourceData = [];
+        }
 
-        // Start with the current page
+        // Start with the current page.
         if (isset($sourceData['rateLimitLimit']) === true && $sourceData['rateLimitLimit'] !== null) {
             $currentPage = $syncData['currentPage'] ?? 1;
         }
 
-        // Fetch all pages recursively
+        // Fetch all pages recursively.
         $objects = $this->fetchAllPages(
             source: $source,
             endpoint: $endpoint,
@@ -2075,15 +2579,15 @@ class SynchronizationService
             usesPagination: $usesPagination
         );
 
-        // For non-`_object` sources, an associative array means the source returned a single
-        // record at the root and we need to wrap it for the downstream foreach. For
-        // `_object` sources the wrap is the caller's responsibility (see line ~646) and
-        // doing it twice produces a [[…items]] payload that loses every row.
+        // For non-`_object` sources, an associative array means the source returned a single.
+        // Record at the root and we need to wrap it for the downstream foreach. For.
+        // `_object` sources the wrap is the caller's responsibility and doing it twice.
+        // Produces a [[…items]] payload that loses every row.
         if (($sourceConfig['resultsPosition'] ?? null) !== '_object' && array_is_list($objects) === false) {
             $objects = [$objects];
         }
 
-        // Merge additional data into each object if $data is provided
+        // Merge additional data into each object if $data is provided.
         if ($data !== null
             && empty($data) === false
             && $useDataAsRequestBody === false
@@ -2093,82 +2597,94 @@ class SynchronizationService
             }
         }
 
-        // Reset the current page after synchronization if not a test
+        // Reset the current page after synchronization if not a test.
         if ($isTest === false) {
             $syncData['currentPage'] = 1;
-            $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
+            $this->orObjectService->saveObject(
+                object: $syncData,
+                register: 'openconnector',
+                schema: 'synchronization',
+                uuid: $synchronization->getUuid()
+            );
         }
 
         return $objects;
-    }//end getAllObjectsFromApi()
 
-    /**
-     * Recursively fetches all pages of data from the API.
-     *
-     * @param Source $source The source object containing rate limit and configuration details.
-     * @param string $endpoint The API endpoint to fetch data from.
-     * @param array $config Configuration for the API call (e.g., headers and query parameters).
-     * @param Synchronization $synchronization The synchronization object containing state information.
-     * @param int $currentPage The current page number for pagination.
-     * @param bool $isTest If true, stops after fetching the first object from the first page.
-     * @param bool $usesNextEndpoint If true, doesnt use normal pagination but next endpoint.
-     *
-     * @return array An array of objects retrieved from the API.
-     * @throws GuzzleException
-     * @throws TooManyRequestsHttpException
-     * @throws LoaderError
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
-     */
+    }//end getAllObjectsFromApi()
 
     /**
      * Fetches all pages from a paginated API endpoint with optimized sequential processing.
      *
-     * This method uses an optimized approach to fetch paginated data more efficiently
-     * than the original recursive implementation, reducing overhead and improving performance.
+     * @param ObjectEntity|null $source           The data source configuration.
+     * @param string            $endpoint         The API endpoint to fetch from.
+     * @param array             $config           The request configuration.
+     * @param ObjectEntity      $synchronization  The synchronization context.
+     * @param int               $currentPage      The starting page number.
+     * @param bool              $isTest           Whether this is a test run (returns only first object).
+     * @param bool|null         $usesNextEndpoint Whether the API uses next endpoint URLs.
+     * @param bool|null         $usesPagination   Whether pagination is enabled.
      *
-     * @param Source          $source           The data source configuration
-     * @param string          $endpoint         The API endpoint to fetch from
-     * @param array           $config           The request configuration
-     * @param Synchronization $synchronization  The synchronization context
-     * @param int             $currentPage      The starting page number
-     * @param bool            $isTest           Whether this is a test run (returns only first object)
-     * @param bool|null       $usesNextEndpoint Whether the API uses next endpoint URLs
-     * @param bool            $usesPagination   Whether pagination is enabled
+     * @return array Combined objects from all pages.
      *
-     * @return array Combined objects from all pages
-     * @throws TooManyRequestsHttpException When rate limit is exceeded
+     * @throws TooManyRequestsHttpException When rate limit is exceeded.
      */
-    private function fetchAllPages(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization, int $currentPage, bool $isTest=false, ?bool $usesNextEndpoint=null, ?bool $usesPagination=true): array
-    {
-        // Return objects if we don't paginate
+    private function fetchAllPages(
+        ?ObjectEntity $source,
+        string $endpoint,
+        array $config,
+        ObjectEntity $synchronization,
+        int $currentPage,
+        bool $isTest=false,
+        ?bool $usesNextEndpoint=null,
+        ?bool $usesPagination=true
+    ): array {
+        // Return objects if we don't paginate.
         if ($usesPagination === false) {
-            return $this->fetchSinglePage($source, $endpoint, $config, $synchronization);
+            return $this->fetchSinglePage(
+                source: $source,
+                endpoint: $endpoint,
+                config: $config,
+                synchronization: $synchronization
+            );
         }
 
-        // Use optimized sequential fetching (much faster than the original recursive approach)
-        return $this->fetchAllPagesOptimized($source, $endpoint, $config, $synchronization, $currentPage, $isTest, $usesNextEndpoint);
+        // Use optimized sequential fetching (much faster than the original recursive approach).
+        return $this->fetchAllPagesOptimized(
+            source: $source,
+            endpoint: $endpoint,
+            config: $config,
+            synchronization: $synchronization,
+            currentPage: $currentPage,
+            isTest: $isTest,
+            usesNextEndpoint: $usesNextEndpoint
+        );
+
     }//end fetchAllPages()
 
     /**
      * Fetches all pages using an optimized sequential approach.
      *
-     * This method eliminates the recursive overhead of the original implementation
-     * and uses a simple iterative approach that's much faster and more reliable.
+     * @param ObjectEntity|null $source           The data source configuration.
+     * @param string            $endpoint         The API endpoint to fetch from.
+     * @param array             $config           The request configuration.
+     * @param ObjectEntity      $synchronization  The synchronization context.
+     * @param int               $currentPage      The starting page number.
+     * @param bool              $isTest           Whether this is a test run.
+     * @param bool|null         $usesNextEndpoint Whether the API uses next endpoint URLs.
      *
-     * @param Source          $source           The data source configuration
-     * @param string          $endpoint         The API endpoint to fetch from
-     * @param array           $config           The request configuration
-     * @param Synchronization $synchronization  The synchronization context
-     * @param int             $currentPage      The starting page number
-     * @param bool            $isTest           Whether this is a test run
-     * @param bool|null       $usesNextEndpoint Whether the API uses next endpoint URLs
+     * @return array Combined objects from all pages.
      *
-     * @return array Combined objects from all pages
-     * @throws TooManyRequestsHttpException When rate limit is exceeded
+     * @throws TooManyRequestsHttpException When rate limit is exceeded.
      */
-    private function fetchAllPagesOptimized(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization, int $currentPage, bool $isTest=false, ?bool $usesNextEndpoint=null): array
-    {
+    private function fetchAllPagesOptimized(
+        ?ObjectEntity $source,
+        string $endpoint,
+        array $config,
+        ObjectEntity $synchronization,
+        int $currentPage,
+        bool $isTest=false,
+        ?bool $usesNextEndpoint=null
+    ): array {
         $allObjects      = [];
         $currentEndpoint = $endpoint;
         $syncData        = $synchronization->getObject();
@@ -2177,235 +2693,302 @@ class SynchronizationService
         $pageCount       = 0;
 
         for ($i = 0; $i < $maxPages; $i++) {
-            // Fetch the current page
-            $pageData    = $this->fetchSinglePageData($source, $currentEndpoint, $config, $synchronization);
+            // Fetch the current page.
+            $pageData    = $this->fetchSinglePageData(
+                source: $source,
+                endpoint: $currentEndpoint,
+                config: $config,
+                synchronization: $synchronization
+            );
             $pageObjects = $pageData['objects'];
             $pageCount++;
 
-            // If test mode is enabled, return only the first object from the first page
+            // If test mode is enabled, return only the first object from the first page.
             if ($isTest === true && empty($pageObjects) === false) {
                 return [$pageObjects[0]];
             }
 
-            // If no objects found, we've reached the end
+            // If no objects found, we've reached the end.
             if (empty($pageObjects) === true) {
                 break;
             }
 
-            // Add objects to our collection
+            // Add objects to our collection.
             $allObjects = array_merge($allObjects, $pageObjects);
 
-            // Determine the next page URL/config
-            $nextInfo = $this->getNextPageInfo($source, $currentEndpoint, $config, $synchronization, $currentPage, $pageData['result'], $usesNextEndpoint);
+            // Determine the next page URL/config.
+            $nextInfo = $this->getNextPageInfo(
+                source: $source,
+                currentEndpoint: $currentEndpoint,
+                config: $config,
+                synchronization: $synchronization,
+                currentPage: $currentPage,
+                result: $pageData['result'],
+                usesNextEndpoint: $usesNextEndpoint
+            );
 
             if ($nextInfo === null) {
-                // No more pages
+                // No more pages.
                 break;
             }
 
-            // Update for next iteration
+            // Update for next iteration.
             $currentEndpoint  = $nextInfo['endpoint'];
             $config           = $nextInfo['config'];
             $currentPage      = $nextInfo['page'];
             $usesNextEndpoint = $nextInfo['usesNextEndpoint'];
 
-            // Update synchronization current page
+            // Update synchronization current page.
             $syncData['currentPage'] = $currentPage;
-            $synchronization         = $this->orObjectService->saveObject(object: $syncData, register: 'openconnector', schema: 'synchronization', uuid: $synchronization->getUuid());
+            $synchronization         = $this->orObjectService->saveObject(
+                object: $syncData,
+                register: 'openconnector',
+                schema: 'synchronization',
+                uuid: $synchronization->getUuid()
+            );
             $syncData = $synchronization->getObject();
         }//end for
 
         return $allObjects;
+
     }//end fetchAllPagesOptimized()
 
     /**
      * Gets information for the next page in pagination.
      *
-     * This method determines the next page URL and configuration based on the current
-     * page response and pagination pattern.
+     * @param ObjectEntity|null $source           The data source configuration.
+     * @param string            $currentEndpoint  The current page endpoint.
+     * @param array             $config           The current request configuration.
+     * @param ObjectEntity      $synchronization  The synchronization context.
+     * @param int               $currentPage      The current page number.
+     * @param array             $result           The current page response payload.
+     * @param bool|null         $usesNextEndpoint Whether the API uses next endpoint URLs.
      *
-     * @param Source          $source           The data source configuration
-     * @param string          $currentEndpoint  The current page endpoint
-     * @param array           $config           The current request configuration
-     * @param Synchronization $synchronization  The synchronization context
-     * @param int             $currentPage      The current page number
-     * @param bool|null       $usesNextEndpoint Whether the API uses next endpoint URLs
-     *
-     * @return array|null Next page information or null if no more pages
+     * @return array|null Next page information or null if no more pages.
      */
-    private function getNextPageInfo(?ObjectEntity $source, string $currentEndpoint, array $config, ObjectEntity $synchronization, int $currentPage, array $result, ?bool $usesNextEndpoint=null): ?array
-    {
-        if (empty($result)) {
+    private function getNextPageInfo(
+        ?ObjectEntity $source,
+        string $currentEndpoint,
+        array $config,
+        ObjectEntity $synchronization,
+        int $currentPage,
+        array $result,
+        ?bool $usesNextEndpoint=null
+    ): ?array {
+        if (empty($result) === true) {
             return null;
         }
 
-        // Determine pagination method if not already known
-        if ($usesNextEndpoint === null && array_key_exists('next', $result)) {
+        // Determine pagination method if not already known.
+        if ($usesNextEndpoint === null && array_key_exists('next', $result) === true) {
             $usesNextEndpoint = true;
         }
 
-        $sourceData = $source !== null ? $source->getObject() : [];
+        if ($source !== null) {
+            $sourceData = $source->getObject();
+        } else {
+            $sourceData = [];
+        }
 
         if ($usesNextEndpoint === true) {
-            // Use next endpoint URL pagination
-            $nextEndpoint = $this->getNextEndpoint(body: $result, url: $sourceData['location'] ?? '', currentEndpoint: $currentEndpoint);
+            // Use next endpoint URL pagination.
+            $nextEndpoint = $this->getNextEndpoint(
+                body: $result,
+                url: ($sourceData['location'] ?? ''),
+                currentEndpoint: $currentEndpoint
+            );
             if ($nextEndpoint === null || $nextEndpoint === $currentEndpoint) {
+                // No more pages.
                 return null;
-                // No more pages
             }
 
             return [
                 'endpoint'         => $nextEndpoint,
                 'config'           => $config,
-                'page'             => $currentPage + 1,
+                'page'             => ($currentPage + 1),
                 'usesNextEndpoint' => true,
             ];
-        } else {
-            // Use page number pagination
-            $nextPage   = $currentPage + 1;
-            $syncData   = $synchronization->getObject();
-            $nextConfig = $this->getNextPage(config: $config, sourceConfig: $syncData['sourceConfig'] ?? [], currentPage: $nextPage);
+        }
 
-            return [
-                'endpoint'         => $currentEndpoint,
-            // Base endpoint stays the same
-                'config'           => $nextConfig,
-                'page'             => $nextPage,
-                'usesNextEndpoint' => false,
-            ];
-        }//end if
+        // Use page number pagination.
+        $nextPage   = ($currentPage + 1);
+        $syncData   = $synchronization->getObject();
+        $nextConfig = $this->getNextPage(
+            config: $config,
+            sourceConfig: ($syncData['sourceConfig'] ?? []),
+            currentPage: $nextPage
+        );
+
+        // Base endpoint stays the same.
+        return [
+            'endpoint'         => $currentEndpoint,
+            'config'           => $nextConfig,
+            'page'             => $nextPage,
+            'usesNextEndpoint' => false,
+        ];
+
     }//end getNextPageInfo()
 
     /**
      * Fetches a single page synchronously.
      *
-     * This method handles the actual HTTP request and response parsing for a single page,
-     * used both in parallel and sequential fetching scenarios.
+     * @param ObjectEntity|null $source          The data source configuration.
+     * @param string            $endpoint        The page endpoint to fetch.
+     * @param array             $config          The request configuration.
+     * @param ObjectEntity      $synchronization The synchronization context.
      *
-     * @param Source          $source          The data source configuration
-     * @param string          $endpoint        The page endpoint to fetch
-     * @param array           $config          The request configuration
-     * @param Synchronization $synchronization The synchronization context
+     * @return array Objects from the page.
      *
-     * @return array Objects from the page
-     * @throws TooManyRequestsHttpException When rate limit is exceeded
+     * @throws TooManyRequestsHttpException When rate limit is exceeded.
      */
     private function fetchSinglePage(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization): array
     {
-        $pageData = $this->fetchSinglePageData($source, $endpoint, $config, $synchronization);
+        $pageData = $this->fetchSinglePageData(
+            source: $source,
+            endpoint: $endpoint,
+            config: $config,
+            synchronization: $synchronization
+        );
 
         return $pageData['objects'];
+
     }//end fetchSinglePage()
 
     /**
      * Fetches and parses a single page.
      *
-     * @param ObjectEntity|null $source          The data source configuration
-     * @param string            $endpoint        The page endpoint to fetch
-     * @param array             $config          The request configuration
-     * @param ObjectEntity      $synchronization The synchronization context
+     * @param ObjectEntity|null $source          The data source configuration.
+     * @param string            $endpoint        The page endpoint to fetch.
+     * @param array             $config          The request configuration.
+     * @param ObjectEntity      $synchronization The synchronization context.
      *
-     * @return array{objects: array, result: array}
-     * @throws TooManyRequestsHttpException When rate limit is exceeded
+     * @return array{objects: array, result: array} The decoded objects + raw response.
+     *
+     * @throws TooManyRequestsHttpException When rate limit is exceeded.
      */
     private function fetchSinglePageData(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization): array
     {
-        // Make the API call
+        // Make the API call.
         $callLog     = $this->callService->call(source: $source, endpoint: $endpoint, config: $config);
         $callLogData = $callLog->getObject();
         $response    = $callLogData['response'] ?? null;
 
-        // Check for rate limiting
+        // Check for rate limiting.
         if ($response === null && ($callLogData['statusCode'] ?? 0) === 429) {
             throw new TooManyRequestsHttpException(
                 message: "Rate Limit on Source exceeded.",
                 code: 429,
-                headers: $this->getRateLimitHeaders($source)
+                headers: $this->getRateLimitHeaders(source: $source)
             );
         }
 
         if ($response === null) {
-            return ['objects' => [], 'result' => []];
+            return [
+                'objects' => [],
+                'result'  => [],
+            ];
         }
 
         $body = $response['body'] ?? '';
 
-        // Try parsing the response body in different formats, starting with JSON
+        // Try parsing the response body in different formats, starting with JSON.
         $result = json_decode($body, true);
 
-        // If JSON parsing failed, try XML
+        // If JSON parsing failed, try XML.
         if (empty($result) === true) {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($body, "SimpleXMLElement", LIBXML_NOCDATA);
 
             if ($xml !== false) {
-                $result = $this->xmlToArray($xml);
+                $result = $this->xmlToArray(xml: $xml);
             }
         }
 
         if (empty($result) === true) {
-            return ['objects' => [], 'result' => []];
+            return [
+                'objects' => [],
+                'result'  => [],
+            ];
         }
 
-        // Process and return the objects from this page
+        // Process and return the objects from this page.
         return [
             'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
             'result'  => $result,
         ];
+
     }//end fetchSinglePageData()
 
     /**
      * Fallback method for sequential page fetching.
      *
-     * This method provides the original sequential fetching behavior as a fallback
-     * when parallel fetching fails or is not suitable.
+     * @param ObjectEntity|null $source           The data source configuration.
+     * @param string            $endpoint         The API endpoint to fetch from.
+     * @param array             $config           The request configuration.
+     * @param ObjectEntity      $synchronization  The synchronization context.
+     * @param int               $currentPage      The starting page number.
+     * @param bool              $isTest           Whether this is a test run.
+     * @param bool|null         $usesNextEndpoint Whether the API uses next endpoint URLs.
      *
-     * @param Source          $source           The data source configuration
-     * @param string          $endpoint         The API endpoint to fetch from
-     * @param array           $config           The request configuration
-     * @param Synchronization $synchronization  The synchronization context
-     * @param int             $currentPage      The starting page number
-     * @param bool            $isTest           Whether this is a test run
-     * @param bool|null       $usesNextEndpoint Whether the API uses next endpoint URLs
-     *
-     * @return array Combined objects from all pages
+     * @return array Combined objects from all pages.
      */
-    private function fetchAllPagesSequential(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization, int $currentPage, bool $isTest=false, ?bool $usesNextEndpoint=null): array
-    {
+    private function fetchAllPagesSequential(
+        ?ObjectEntity $source,
+        string $endpoint,
+        array $config,
+        ObjectEntity $synchronization,
+        int $currentPage,
+        bool $isTest=false,
+        ?bool $usesNextEndpoint=null
+    ): array {
         $allObjects      = [];
         $currentEndpoint = $endpoint;
-        $maxPages        = 50;
-        // Safety limit
-        $sourceData = $source !== null ? $source->getObject() : [];
-        $syncData   = $synchronization->getObject();
+        // Safety limit.
+        $maxPages = 50;
+        if ($source !== null) {
+            $sourceData = $source->getObject();
+        } else {
+            $sourceData = [];
+        }
+
+        $syncData = $synchronization->getObject();
 
         for ($i = 0; $i < $maxPages; $i++) {
-            $pageData    = $this->fetchSinglePageData($source, $currentEndpoint, $config, $synchronization);
+            $pageData    = $this->fetchSinglePageData(
+                source: $source,
+                endpoint: $currentEndpoint,
+                config: $config,
+                synchronization: $synchronization
+            );
             $pageObjects = $pageData['objects'];
 
-            // If test mode is enabled, return only the first object
-            if ($isTest === true && !empty($pageObjects)) {
+            // If test mode is enabled, return only the first object.
+            if ($isTest === true && empty($pageObjects) === false) {
                 return [$pageObjects[0]];
             }
 
-            if (empty($pageObjects)) {
+            if (empty($pageObjects) === true) {
                 break;
             }
 
             $allObjects = array_merge($allObjects, $pageObjects);
 
             $result = $pageData['result'];
-            if (empty($result)) {
+            if (empty($result) === true) {
                 break;
             }
 
-            // Determine pagination method
-            if ($usesNextEndpoint === null && array_key_exists('next', $result)) {
+            // Determine pagination method.
+            if ($usesNextEndpoint === null && array_key_exists('next', $result) === true) {
                 $usesNextEndpoint = true;
             }
 
             if ($usesNextEndpoint === true) {
-                $nextEndpoint = $this->getNextEndpoint(body: $result, url: $sourceData['location'] ?? '', currentEndpoint: $currentEndpoint);
+                $nextEndpoint = $this->getNextEndpoint(
+                    body: $result,
+                    url: ($sourceData['location'] ?? ''),
+                    currentEndpoint: $currentEndpoint
+                );
                 if ($nextEndpoint === null || $nextEndpoint === $currentEndpoint) {
                     break;
                 }
@@ -2413,7 +2996,11 @@ class SynchronizationService
                 $currentEndpoint = $nextEndpoint;
             } else {
                 $currentPage++;
-                $config = $this->getNextPage(config: $config, sourceConfig: $syncData['sourceConfig'] ?? [], currentPage: $currentPage);
+                $config = $this->getNextPage(
+                    config: $config,
+                    sourceConfig: ($syncData['sourceConfig'] ?? []),
+                    currentPage: $currentPage
+                );
             }
         }//end for
 
@@ -2423,9 +3010,11 @@ class SynchronizationService
     /**
      * Checks if the source has exceeded its rate limit and throws an exception if true.
      *
-     * @param Source $source The source object containing rate limit details.
+     * @param ObjectEntity|null $source The source object containing rate limit details.
      *
-     * @throws TooManyRequestsHttpException
+     * @return void
+     *
+     * @throws TooManyRequestsHttpException When the source rate-limit is exceeded.
      */
     private function checkRateLimit(?ObjectEntity $source): void
     {
@@ -2442,37 +3031,35 @@ class SynchronizationService
             throw new TooManyRequestsHttpException(
                 message: "Rate Limit on Source has been exceeded. Canceling synchronization...",
                 code: 429,
-                headers: $this->getRateLimitHeaders($source)
+                headers: $this->getRateLimitHeaders(source: $source)
             );
         }
+
     }//end checkRateLimit()
 
     /**
      * Retrieves rate limit information from a given source and formats it as HTTP headers.
      *
-     * This function extracts rate limit details from the provided source object and returns them
-     * as an associative array of headers. The headers can be used for communicating rate limit status
-     * in API responses or logging purposes.
+     * @param ObjectEntity|null $source The source object containing rate limit details.
      *
-     * @param Source $source The source object containing rate limit details, such as limits, remaining requests, and reset times.
-     *
-     * @return array An associative array of rate limit headers:
-     *               - 'X-RateLimit-Limit' (int|null): The maximum number of allowed requests.
-     *               - 'X-RateLimit-Remaining' (int|null): The number of requests remaining in the current window.
-     *               - 'X-RateLimit-Reset' (int|null): The Unix timestamp when the rate limit resets.
-     *               - 'X-RateLimit-Used' (int|null): The number of requests used so far.
-     *               - 'X-RateLimit-Window' (int|null): The duration of the rate limit window in seconds.
+     * @return array An associative array of rate limit headers.
      */
     private function getRateLimitHeaders(?ObjectEntity $source): array
     {
-        $sourceData = $source !== null ? $source->getObject() : [];
+        if ($source !== null) {
+            $sourceData = $source->getObject();
+        } else {
+            $sourceData = [];
+        }
+
         return [
-            'X-RateLimit-Limit'     => $sourceData['rateLimitLimit'] ?? null,
-            'X-RateLimit-Remaining' => $sourceData['rateLimitRemaining'] ?? null,
-            'X-RateLimit-Reset'     => $sourceData['rateLimitReset'] ?? null,
+            'X-RateLimit-Limit'     => ($sourceData['rateLimitLimit'] ?? null),
+            'X-RateLimit-Remaining' => ($sourceData['rateLimitRemaining'] ?? null),
+            'X-RateLimit-Reset'     => ($sourceData['rateLimitReset'] ?? null),
             'X-RateLimit-Used'      => 0,
-            'X-RateLimit-Window'    => $sourceData['rateLimitWindow'] ?? null,
+            'X-RateLimit-Window'    => ($sourceData['rateLimitWindow'] ?? null),
         ];
+
     }//end getRateLimitHeaders()
 
     /**
@@ -2497,24 +3084,25 @@ class SynchronizationService
     /**
      * Extracts the next API endpoint for pagination from the response body.
      *
-     * @param array  $body The decoded JSON response body from the API.
-     * @param string $url  The base URL of the API source.
+     * @param array       $body            The decoded JSON response body from the API.
+     * @param string      $url             The base URL of the API source.
+     * @param string|null $currentEndpoint Optional current endpoint to preserve missing query params.
      *
      * @return string|null The next endpoint URL if available, or null if there is no next page.
      */
     private function getNextEndpoint(array $body, string $url, ?string $currentEndpoint=null): ?string
     {
-        $nextLink = $this->getNextlinkFromCall($body);
+        $nextLink = $this->getNextlinkFromCall(body: $body);
         if ($nextLink === null || $nextLink === '') {
             return null;
         }
 
-        if (str_starts_with($nextLink, $url)) {
+        if (str_starts_with($nextLink, $url) === true) {
             $nextLink = substr($nextLink, strlen($url));
         }
 
-        // Preserve missing query params from current endpoint (e.g. expand=...)
-        // when the API next link only contains paging information.
+        // Preserve missing query params from current endpoint (e.g. expand=...).
+        // When the API next link only contains paging information.
         if ($currentEndpoint !== null) {
             $nextParts    = parse_url($nextLink);
             $currentParts = parse_url($currentEndpoint);
@@ -2541,6 +3129,7 @@ class SynchronizationService
         }//end if
 
         return $nextLink;
+
     }//end getNextEndpoint()
 
     /**
@@ -2558,70 +3147,71 @@ class SynchronizationService
     /**
      * Extracts all objects from the API response body.
      *
-     * @param array           $array           The decoded JSON body of the API response.
-     * @param Synchronization $synchronization The synchronization object containing source configuration.
+     * @param array        $array           The decoded JSON body of the API response.
+     * @param ObjectEntity $synchronization The synchronization object containing source configuration.
      *
      * @return array An array of items extracted from the response body.
-     * @throws Exception If the position of objects in the return body cannot be determined.
+     *
+     * @throws Exception When the position of objects in the return body cannot be determined.
      */
     public function getAllObjectsFromArray(array $array, ObjectEntity $synchronization): array
     {
-        // Get the source configuration from the synchronization object
+        // Get the source configuration from the synchronization object.
         $syncData     = $synchronization->getObject();
         $sourceConfig = $syncData['sourceConfig'] ?? [];
 
-        // Check if a specific objects position is defined in the source configuration
+        // Check if a specific objects position is defined in the source configuration.
         if (empty($sourceConfig['resultsPosition']) === false) {
             $position = $sourceConfig['resultsPosition'];
-            // if position is root, return the array
+            // If position is root, return the array.
             if ($position === '_root' || $position === '_object') {
                 return $array;
             }
 
-            // Use Dot notation to access nested array elements
+            // Use Dot notation to access nested array elements.
             $dot = new Dot($array);
             if ($dot->has($position) === true) {
-                // Return the objects at the specified position
+                // Return the objects at the specified position.
                 return $dot->get($position);
-            } else {
-                // Throw an exception if the specified position doesn't exist
-                return [];
-                // @todo log error
-                // throw new Exception("Cannot find the specified position of objects in the return body.");
             }
+
+            // @todo log error.
+            // Throw an exception if the specified position doesn't exist.
+            return [];
         }
 
-        // Define common keys to check for objects
+        // Define common keys to check for objects.
         $commonKeys = ['items', 'result', 'results'];
 
-        // Loop through common keys and return first match found
+        // Loop through common keys and return first match found.
         foreach ($commonKeys as $key) {
             if (isset($array[$key]) === true) {
                 return $array[$key];
             }
         }
 
-        // If no objects can be found, throw an exception
+        // If no objects can be found, throw an exception.
         throw new Exception("Cannot determine the position of objects in the return body.");
+
     }//end getAllObjectsFromArray()
 
     /**
      * Write an created, updated or deleted object to an external target.
      *
-     * @param Synchronization         $synchronization The synchronization to run.
-     * @param SynchronizationContract $contract        The contract to enforce.
-     * @param string                  $endpoint        The endpoint to write the object to.
-     * @param array|null              $targetObject    Update referenced targetObject so we can return response here.
-     * @param string|null             $mutationType    If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
+     * @param ObjectEntity $synchronization The synchronization to run.
+     * @param ObjectEntity $contract        The contract to enforce.
+     * @param string       $endpoint        The endpoint to write the object to.
+     * @param array|null   $targetObject    Update referenced targetObject so we can return response here.
+     * @param string|null  $mutationType    Single object mutation type: 'create', 'update' or 'delete'.
      *
-     * @return SynchronizationContract The updated contract.
+     * @return ObjectEntity The updated contract.
      *
-     * @throws ContainerExceptionInterface
-     * @throws GuzzleException
-     * @throws LoaderError
-     * @throws NotFoundExceptionInterface
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws GuzzleException             When a remote HTTP call fails.
+     * @throws LoaderError                 When the Twig loader fails.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws SyntaxError                 When a Twig template has a syntax error.
+     * @throws \OCP\DB\Exception           When the database layer raises an exception.
      */
     private function writeObjectToTarget(
         ObjectEntity $synchronization,
@@ -2633,8 +3223,16 @@ class SynchronizationService
         $syncData     = $synchronization->getObject();
         $contractData = $contract->getObject();
         $targetId     = $contractData['targetId'] ?? null;
-        $target       = $this->orObjectService->find(id: $syncData['targetId'] ?? null, register: 'openconnector', schema: 'source');
-        $targetData   = $target !== null ? $target->getObject() : [];
+        $target       = $this->orObjectService->find(
+            id: ($syncData['targetId'] ?? null),
+            register: 'openconnector',
+            schema: 'source'
+        );
+        if ($target !== null) {
+            $targetData = $target->getObject();
+        } else {
+            $targetData = [];
+        }
 
         if ($targetObject !== null) {
             $object = $targetObject;
@@ -2668,7 +3266,7 @@ class SynchronizationService
         if ($mutationType === 'delete') {
             $method = 'DELETE';
 
-            // @todo check for {{targetId}} in endpoint and replace
+            // @todo check for {{targetId}} in endpoint and replace.
             if (isset($targetConfig['deleteEndpoint']) === true) {
                 $endpoint = $targetConfig['deleteEndpoint'];
                 $endpoint = str_replace(search: '{{ originId }}', replace: $sourceId, subject: $endpoint);
@@ -2686,17 +3284,27 @@ class SynchronizationService
                 $targetConfig['json'] = $this->mappingService->executeMapping(mapping: $deleteMapping, input: $object);
             }
 
-            $callResponse = $this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig);
+            $callResponse = $this->callService->call(
+                source: $target,
+                endpoint: $endpoint,
+                method: $method,
+                config: $targetConfig
+            );
             $response     = $callResponse->getObject()['response'] ?? [];
 
             $contractData['targetHash'] = md5(serialize($response['body'] ?? ''));
             $contractData['targetId']   = null;
-            $contract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $contract->getUuid());
+            $contract = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $contract->getUuid()
+            );
 
             return $contract;
         }//end if
 
-        // @TODO For now only JSON APIs are supported
+        // @TODO For now only JSON APIs are supported.
         $targetConfig['json'] = $object;
 
         if ($targetId === null) {
@@ -2704,7 +3312,12 @@ class SynchronizationService
                 $targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
             }
 
-            $callResponse = $this->callService->call(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig);
+            $callResponse = $this->callService->call(
+                source: $target,
+                endpoint: $endpoint,
+                method: 'POST',
+                config: $targetConfig
+            );
             $response     = $callResponse->getObject()['response'] ?? [];
 
             $body = json_decode($response['body'] ?? '', true);
@@ -2714,7 +3327,7 @@ class SynchronizationService
             if (isset($targetConfig['idPosition']) === true) {
                 $targetId = $bodyDot->get($targetConfig['idPosition']);
             } else if (isset($targetConfig['idposition']) === true) {
-                // Backwards compatible if older sync still use idposition (lowercase)
+                // Backwards compatible if older sync still use idposition (lowercase).
                 $targetId = $bodyDot->get($targetConfig['idposition']);
             } else if (isset($body['id']) === true) {
                 $targetId = $body['id'];
@@ -2723,7 +3336,12 @@ class SynchronizationService
             }
 
             $contractData['targetId'] = $targetId;
-            $contract = $this->orObjectService->saveObject(object: $contractData, register: 'openconnector', schema: 'synchronization_contract', uuid: $contract->getUuid());
+            $contract = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $contract->getUuid()
+            );
             return $contract;
         }//end if
 
@@ -2746,7 +3364,12 @@ class SynchronizationService
             $targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
         }
 
-        $callResponse        = $this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig);
+        $callResponse        = $this->callService->call(
+            source: $target,
+            endpoint: $endpoint,
+            method: $method,
+            config: $targetConfig
+        );
         $response            = $callResponse->getObject()['response'] ?? [];
         $decodedResponseBody = json_decode($response['body'] ?? '', true);
         if (is_array($decodedResponseBody) === false) {
@@ -2757,24 +3380,26 @@ class SynchronizationService
         $targetObject = $body;
 
         return $contract;
+
     }//end writeObjectToTarget()
 
     /**
      * Synchronize data to a target.
      *
-     * The synchronizationContract should be given if the normal procedure to find the contract (on originId) is not available to the contract that should be updated.
+     * @param ObjectEntity      $object                  The object to synchronize.
+     * @param ObjectEntity|null $synchronizationContract If given: the synchronization contract that should be updated.
+     * @param bool|null         $force                   If true, the object will be updated regardless of changes.
+     * @param bool|null         $test                    If true, run as a test without persisting target writes.
+     * @param ObjectEntity|null $log                     Optional log entity to update during the run.
      *
-     * @param  ObjectEntity                 $object                  The object to synchronize
-     * @param  SynchronizationContract|null $synchronizationContract If given: the synchronization contract that should be updated.
-     * @param  bool|null                    $force                   If true, the object will be updated regardless of changes
-     * @return array The updated synchronizationContracts
+     * @return array The updated synchronizationContracts.
      *
-     * @throws ContainerExceptionInterface
-     * @throws LoaderError
-     * @throws NotFoundExceptionInterface
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
-     * @throws GuzzleException
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws LoaderError                 When the Twig loader fails.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws SyntaxError                 When a Twig template has a syntax error.
+     * @throws \OCP\DB\Exception           When the database layer raises an exception.
+     * @throws GuzzleException             When a remote HTTP call fails.
      */
     public function synchronizeToTarget(
         ObjectEntity $object,
@@ -2786,12 +3411,27 @@ class SynchronizationService
         $objectId = $object->getUuid();
 
         if ($synchronizationContract === null) {
-            $contractMatches         = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $objectId]]);
-            $contractList            = $contractMatches['results'] ?? $contractMatches;
-            $synchronizationContract = empty($contractList) === false ? $contractList[0] : null;
+            $stcFilters      = [
+                'register' => 'openconnector',
+                'schema'   => 'synchronization_contract',
+                'originId' => $objectId,
+            ];
+            $contractMatches = $this->orObjectService->findAll(config: ['filters' => $stcFilters]);
+            $contractList    = $contractMatches['results'] ?? $contractMatches;
+            if (empty($contractList) === false) {
+                $synchronizationContract = $contractList[0];
+            } else {
+                $synchronizationContract = null;
+            }
         }
 
-        $syncMatches      = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'synchronization', 'sourceType' => 'register/schema', 'sourceId' => "{$object->getRegister()}/{$object->getSchema()}"]]);
+        $stsFilters       = [
+            'register'   => 'openconnector',
+            'schema'     => 'synchronization',
+            'sourceType' => 'register/schema',
+            'sourceId'   => "{$object->getRegister()}/{$object->getSchema()}",
+        ];
+        $syncMatches      = $this->orObjectService->findAll(config: ['filters' => $stsFilters]);
         $synchronizations = $syncMatches['results'] ?? $syncMatches;
         if (count($synchronizations) === 0) {
             return [];
@@ -2824,7 +3464,12 @@ class SynchronizationService
         );
 
         if (isset($result['contract']) === true) {
-            $synchronizationContract = $this->orObjectService->saveObject(object: $result['contract'], register: 'openconnector', schema: 'synchronization_contract', uuid: $synchronizationContract->getUuid());
+            $synchronizationContract = $this->orObjectService->saveObject(
+                object: $result['contract'],
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $synchronizationContract->getUuid()
+            );
         }
 
         return [$synchronizationContract];
@@ -2832,12 +3477,12 @@ class SynchronizationService
     }//end synchronizeToTarget()
 
     /**
-     * Saves object to OpenRegister
+     * Saves object to OpenRegister.
      *
-     * @param Rule  $rule
-     * @param array $data
+     * @param ObjectEntity $rule The rule entity describing the save_object configuration.
+     * @param array        $data The data array containing the input parameters.
      *
-     * @return array $data
+     * @return array The serialized saved object payload.
      */
     private function processSaveObjectRule(ObjectEntity $rule, array $data): array
     {
@@ -2846,8 +3491,9 @@ class SynchronizationService
         $schema        = $configuration['save_object']['schema'];
         $mapping       = $configuration['save_object']['mapping'] ?? null;
         $patch         = $configuration['save_object']['patch'] ?? false;
+        $id            = null;
 
-        if ($mapping) {
+        if (empty($mapping) === false) {
             if (isset($data['_objectBeforeMapping']['id']) === true) {
                 $id = $data['_objectBeforeMapping']['id'];
                 unset($data['_objectBeforeMapping']);
@@ -2864,20 +3510,26 @@ class SynchronizationService
             }
         }
 
-        $object = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
+        $object = $this->orObjectService->saveObject(
+            register: $register,
+            schema: $schema,
+            object: $data
+        )->jsonSerialize();
 
         return $object;
+
     }//end processSaveObjectRule()
 
     /**
-     * Extends input for performing business logic
+     * Extends input for performing business logic.
      *
-     * @param array $config The rule configuration which parameters could be extended
+     * @param array $config The rule configuration which parameters could be extended.
      * @param array $data   The data array containing the input parameters.
      *
-     * @return array The data array with the extended parameters in the 'extendedParameters' key.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * @return array The data array with the extended parameters merged in.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
      */
     private function processExtendInputRule(array $config, array $data): array
     {
@@ -2886,16 +3538,25 @@ class SynchronizationService
 
         // If the extends are given as a comma separated string, separate them into an array.
         if (is_string($config['extend_input']['properties']) === true) {
-            $config['extend_input']['properties'] = explode(separator: ',', string: $config['extend_input']['properties']);
+            $config['extend_input']['properties'] = explode(
+                separator: ',',
+                string: $config['extend_input']['properties']
+            );
         }
 
-        if (isset($data['id']) === true || isset($data['@self']['id']) === true || $data['uuid'] === true) {
-            $id = $data['@self']['id'] ?? $data['id'] ?? $data['uuid'];
+        if (isset($data['id']) === true || isset($data['@self']['id']) === true || ($data['uuid'] ?? null) === true) {
+            $id = ($data['@self']['id'] ?? $data['id'] ?? $data['uuid']);
         }
 
         // If we can fetch the object to extend again, use OpenRegister to fetch the extended object.
-        if (isset($id) === true && isset($config['extend_input']['fetchObject']) === true && ($config['extend_input']['fetchObject'] === true || $config['extend_input']['fetchObject'] === 'true')) {
-            $object = $this->objectService->getOpenRegisters()->find(id: $id, extend: $config['extend_input']['properties']);
+        $fetchObject = ($config['extend_input']['fetchObject'] ?? null);
+        if (isset($id) === true && isset($config['extend_input']['fetchObject']) === true
+            && ($fetchObject === true || $fetchObject === 'true')
+        ) {
+            $object = $this->objectService->getOpenRegisters()->find(
+                id: $id,
+                extend: $config['extend_input']['properties']
+            );
             return $object->jsonSerialize();
         }
 
@@ -2917,26 +3578,36 @@ class SynchronizationService
         }
 
         return array_merge($data, $extendedParameters->all());
+
     }//end processExtendInputRule()
 
     /**
-     * Processes rules for an endpoint request
+     * Processes rules for an endpoint request.
      *
-     * @param Synchronization $synchronization The endpoint being processed
-     * @param array           $data            Current request data
-     * @param string          $timing
-     * @param string|null     $objectId
-     * @param int|null        $registerId
-     * @param int|null        $schemaId
+     * @param ObjectEntity|null $synchronization The endpoint being processed.
+     * @param array             $data            Current request data.
+     * @param string            $timing          When to apply the rule (before/after).
+     * @param string|null       $objectId        Optional object id under rule context.
+     * @param string|null       $registerId      Optional register id under rule context.
+     * @param string|null       $schemaId        Optional schema id under rule context.
+     * @param FlowToken|null    $flowToken       Optional flow token to thread through the call chain.
      *
-     * @return array|JSONResponse Returns modified data or error response if rule fails
-     * @throws ContainerExceptionInterface
-     * @throws GuzzleException
-     * @throws NotFoundExceptionInterface
-     * @throws Exception
+     * @return array|JSONResponse Returns modified data or error response if rule fails.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws GuzzleException             When a remote HTTP call fails.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws Exception                   For unsupported rule types.
      */
-    private function processRules(?ObjectEntity $synchronization, array $data, string $timing, ?string $objectId=null, ?string $registerId=null, ?string $schemaId=null, ?FlowToken $flowToken=null): array|JSONResponse
-    {
+    private function processRules(
+        ?ObjectEntity $synchronization,
+        array $data,
+        string $timing,
+        ?string $objectId=null,
+        ?string $registerId=null,
+        ?string $schemaId=null,
+        ?FlowToken $flowToken=null
+    ): array|JSONResponse {
         if ($synchronization === null) {
             return $data;
         }
@@ -2948,101 +3619,124 @@ class SynchronizationService
         }
 
         try {
-            // Get all rules at once and sort by order
+            // Get all rules at once and sort by order.
             $ruleEntities = array_filter(
                 array_map(
-                    fn($ruleId) => $this->getRuleById($ruleId),
+                    fn($ruleId) => $this->getRuleById(id: $ruleId),
                     $rules
                 )
             );
 
-            // Sort rules by order
+            // Sort rules by order.
             usort(
-                    $ruleEntities,
-                    function ($a, $b) {
-                        $aOrder = $a->getObject()['order'] ?? 0;
-                        $bOrder = $b->getObject()['order'] ?? 0;
-                        return $aOrder - $bOrder;
-                    }
-                    );
+                $ruleEntities,
+                function ($a, $b) {
+                    $aOrder = ($a->getObject()['order'] ?? 0);
+                    $bOrder = ($b->getObject()['order'] ?? 0);
+                    return ($aOrder - $bOrder);
+                }
+            );
 
-            $syncName = $syncData['name'] ?? $synchronization->getUuid();
+            $syncName = ($syncData['name'] ?? $synchronization->getUuid());
 
-            // Process each rule in order
+            // Process each rule in order.
             foreach ($ruleEntities as $rule) {
                 $ruleData = $rule->getObject();
                 if ($flowToken !== null) {
                     $data['flowToken'] = $flowToken->__serialize();
                 }
 
-                // Check rule conditions
-                $ruleName   = $ruleData['name'] ?? $rule->getUuid();
-                $ruleType   = $ruleData['type'] ?? '';
-                $ruleTiming = $ruleData['timing'] ?? '';
-                if ($this->checkRuleConditions($rule, $data) === false || $ruleTiming !== $timing) {
-                    $this->logger->info('Rule condition check failed for synchronization '.$syncName.' and rule '.$ruleName.' of type: '.$ruleType);
+                // Check rule conditions.
+                $ruleName   = ($ruleData['name'] ?? $rule->getUuid());
+                $ruleType   = ($ruleData['type'] ?? '');
+                $ruleTiming = ($ruleData['timing'] ?? '');
+                if ($this->checkRuleConditions(rule: $rule, data: $data) === false || $ruleTiming !== $timing) {
+                    $this->logger->info(
+                        'Rule condition check failed for synchronization '.$syncName
+                        .' and rule '.$ruleName.' of type: '.$ruleType
+                    );
                     unset($data['flowToken']);
                     continue;
                 }
 
                 unset($data['flowToken']);
 
-                $this->logger->info('Applying rule for synchronization '.$syncName.' with rule '.$ruleName.' of type '.$ruleType);
+                $this->logger->info(
+                    'Applying rule for synchronization '.$syncName
+                    .' with rule '.$ruleName.' of type '.$ruleType
+                );
 
-                // Process rule based on type
+                // Process rule based on type.
                 $result = match ($ruleType) {
-                    'error' => $this->processErrorRule($rule),
-                    'mapping' => $this->processMappingRule($rule, $data),
-                    'synchronization' => $this->processSyncRule($rule, $data),
-                    'save_object' => $this->processSaveObjectRule($rule, $data),
-                    'fetch_file' => $this->processFetchFileRule($rule, $data, $objectId),
-                    'write_file' => $this->processWriteFileRule($rule, $data, $objectId, $registerId, $schemaId),
-                    'extend_input' => $this->processExtendInputRule(config: $ruleData['config'] ?? [], data: $data),
+                    'error' => $this->processErrorRule(rule: $rule),
+                    'mapping' => $this->processMappingRule(rule: $rule, data: $data),
+                    'synchronization' => $this->processSyncRule(rule: $rule, data: $data),
+                    'save_object' => $this->processSaveObjectRule(rule: $rule, data: $data),
+                    'fetch_file' => $this->processFetchFileRule(rule: $rule, data: $data, objectId: $objectId),
+                    'write_file' => $this->processWriteFileRule(
+                        rule: $rule,
+                        data: $data,
+                        objectId: $objectId,
+                        registerId: $registerId,
+                        schemaId: $schemaId
+                    ),
+                    'extend_input' => $this->processExtendInputRule(
+                        config: ($ruleData['config'] ?? []),
+                        data: $data
+                    ),
                     default => throw new Exception('Unsupported rule type: '.$ruleType),
                 };
 
-                // If result is JSONResponse, return error immediately
+                // If result is JSONResponse, return error immediately.
                 if ($result instanceof JSONResponse) {
                     return $result;
                 }
 
-                // Update data with rule result
+                // Update data with rule result.
                 $data = $result;
 
-                $this->logger->info('Successfully applied rule for synchronization '.$syncName.' with rule '.$ruleName.' of type '.$ruleType);
+                $this->logger->info(
+                    'Successfully applied rule for synchronization '.$syncName
+                    .' with rule '.$ruleName.' of type '.$ruleType
+                );
             }//end foreach
 
             return $data;
         } catch (Exception $e) {
-            $this->logger->error('Error processing rules for synchronization '.($syncData['name'] ?? '').' : '.$e->getMessage());
+            $this->logger->error(
+                'Error processing rules for synchronization '.($syncData['name'] ?? '').' : '.$e->getMessage()
+            );
             return new JSONResponse(['error' => 'Rule processing failed: '.$e->getMessage()], 500);
         }//end try
+
     }//end processRules()
 
     /**
-     * Get a rule by its ID using RuleMapper
+     * Get a rule by its ID using RuleMapper.
      *
-     * @param string $id The unique identifier of the rule
+     * @param string $id The unique identifier of the rule.
      *
-     * @return Rule|null The rule object if found, or null if not found
+     * @return ObjectEntity|null The rule object if found, or null if not found.
      */
     private function getRuleById(string $id): ?ObjectEntity
     {
         return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'rule');
+
     }//end getRuleById()
 
     /**
-     * Write a file to the filesystem
+     * Write a file to the filesystem.
      *
-     * @param string $fileName The filename
-     * @param string $content  The content of the file
+     * @param string $fileName The filename.
+     * @param string $content  The content of the file.
      * @param string $objectId The id of the object the file belongs to.
      *
-     * @return File|bool File or false.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws GenericFileException
-     * @throws LockedException
+     * @return mixed File or false.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws GenericFileException        When file operations fail.
+     * @throws LockedException             When the file is locked.
      */
     private function writeFile(string $fileName, string $content, string $objectId): mixed
     {
@@ -3059,36 +3753,53 @@ class SynchronizationService
         }
 
         return $file;
+
     }//end writeFile()
 
     /**
      * Fetch a file from a source.
      *
-     * @param Source          $source     The source to fetch the file from.
-     * @param string          $endpoint   The endpoint for the file.
-     * @param array           $config     The configuration of the action.
-     * @param string          $objectId   The id of the object the file belongs to.
-     * @param int|            $objectId   The id of the object the file belongs to.
-     * @param array           $tags       Tags to assign to the file.
-     * @param string|null     $filename   Filename to assign to the file.
-     * @param int|string|null $registerId The id of the register the object belongs to.
+     * @param ObjectEntity|null $source     The source to fetch the file from.
+     * @param string            $endpoint   The endpoint for the file.
+     * @param array             $config     The configuration of the action.
+     * @param string            $objectId   The id of the object the file belongs to.
+     * @param array|null        $tags       Tags to assign to the file.
+     * @param string|null       $filename   Filename to assign to the file.
+     * @param string|null       $published  Optional published timestamp.
+     * @param int|string|null   $registerId The id of the register the object belongs to.
      *
      * @return string If write is enabled: the url of the file, if write is disabled: the base64 encoded file.
-     * @throws ContainerExceptionInterface
-     * @throws GenericFileException
-     * @throws GuzzleException
-     * @throws LoaderError
-     * @throws LockedException
-     * @throws NotFoundExceptionInterface
-     * @throws SyntaxError
-     * @throws \OCP\DB\Exception
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws GenericFileException        When file operations fail.
+     * @throws GuzzleException             When a remote HTTP call fails.
+     * @throws LoaderError                 When the Twig loader fails.
+     * @throws LockedException             When the file is locked.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws SyntaxError                 When a Twig template has a syntax error.
+     * @throws \OCP\DB\Exception           When the database layer raises an exception.
      */
-    private function fetchFile(?ObjectEntity $source, string $endpoint, array $config, string $objectId, ?array $tags=[], ?string &$filename=null, ?string $published=null, int|string|null $registerId=null): string
-    {
-        $sourceData       = $source !== null ? $source->getObject() : [];
+    private function fetchFile(
+        ?ObjectEntity $source,
+        string $endpoint,
+        array $config,
+        string $objectId,
+        ?array $tags=[],
+        ?string &$filename=null,
+        ?string $published=null,
+        int|string|null $registerId=null
+    ): string {
+        if ($source !== null) {
+            $sourceData = $source->getObject();
+        } else {
+            $sourceData = [];
+        }
+
         $sourceLocation   = $sourceData['location'] ?? '';
         $originalEndpoint = $endpoint;
-        $endpoint         = ($sourceLocation !== '' && str_contains(haystack: $endpoint, needle: $sourceLocation) === true) ? substr(string: $endpoint, offset: strlen(string: $sourceLocation)) : $endpoint;
+        if ($sourceLocation !== '' && str_contains(haystack: $endpoint, needle: $sourceLocation) === true) {
+            $endpoint = substr(string: $endpoint, offset: strlen(string: $sourceLocation));
+        }
 
         $sourceConfig = json_encode($config['sourceConfiguration']);
         if (isset($config['originId']) === true) {
@@ -3136,7 +3847,7 @@ class SynchronizationService
             $filename = $filename.$config['fileExtension'];
         }
 
-        // Check if response is valid
+        // Check if response is valid.
         if ($response === null) {
             throw new Exception("Failed to fetch file from endpoint: {$originalEndpoint}. No response received.");
         }
@@ -3146,7 +3857,7 @@ class SynchronizationService
         }
 
         if ($filename === null) {
-            // Get a filename from the response. First try to do this using the Content-Disposition header
+            // Get a filename from the response. First try the Content-Disposition header.
             $filename = $this->getFilenameFromHeaders(response: $response, result: $result);
         }
 
@@ -3154,8 +3865,10 @@ class SynchronizationService
             throw new Exception("Could not write file from endpoint {$originalEndpoint}: no filename could be determined");
         }
 
-        // Validate objectId format (should be a UUID)
-        if (empty($objectId) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId)) {
+        // Validate objectId format (should be a UUID).
+        if (empty($objectId) === true
+            || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId) !== 1
+        ) {
             throw new Exception("Invalid object ID format: {$objectId}. Expected a valid UUID.");
         }
 
@@ -3165,10 +3878,13 @@ class SynchronizationService
             $content = $body;
         }
 
-        $shouldShare = !empty($tags) && isset($config['autoShare']) ? $config['autoShare'] : false;
+        $shouldShare = false;
+        if (empty($tags) === false && isset($config['autoShare']) === true) {
+            $shouldShare = $config['autoShare'];
+        }
 
-        // Determine if file should be published based on the published parameter
-        $shouldPublish = $this->shouldPublishFile($published);
+        // Determine if file should be published based on the published parameter.
+        $shouldPublish = $this->shouldPublishFile(published: $published);
 
         try {
             $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
@@ -3181,30 +3897,49 @@ class SynchronizationService
                 tags: $tags
             );
 
-            // Publish the file if needed
-            if ($shouldPublish && $file !== null) {
+            // Publish the file if needed.
+            if ($shouldPublish === true && $file !== null) {
                 try {
                     $fileService->publishFile(object: $objectEntity, file: $filename);
                 } catch (Exception $e) {
-                    // Log but don't fail the entire operation
-                    $this->logger->error("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage());
+                    // Log but don't fail the entire operation.
+                    $this->logger->error(
+                        "Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage()
+                    );
                 }
             }
         } catch (DoesNotExistException $exception) {
-            // If the object cannot be found, continue with register/schema/objectId combination
-            $register = $config['register'] ?? null;
-            $schema   = $config['schema'] ?? null;
-            $file     = $fileService->addFile(objectEntity: $objectId, fileName: $filename, content: $response['body'], share: isset($config['autoShare']) ? $config['autoShare'] : false, tags: $tags, register: $register, schema: $schema, registerId: $registerId);
+            // If the object cannot be found, continue with register/schema/objectId combination.
+            $register = ($config['register'] ?? null);
+            $schema   = ($config['schema'] ?? null);
+            if (isset($config['autoShare']) === true) {
+                $shareFlag = $config['autoShare'];
+            } else {
+                $shareFlag = false;
+            }
 
-            // For the addFile case, we'll need to get the object entity to publish
-            if ($shouldPublish && $file !== null) {
+            $file = $fileService->addFile(
+                objectEntity: $objectId,
+                fileName: $filename,
+                content: $response['body'],
+                share: $shareFlag,
+                tags: $tags,
+                register: $register,
+                schema: $schema,
+                registerId: $registerId
+            );
+
+            // For the addFile case, we'll need to get the object entity to publish.
+            if ($shouldPublish === true && $file !== null) {
                 try {
                     $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
                     $objectEntity  = $objectService->find(id: $objectId);
                     $fileService->publishFile(object: $objectEntity, file: $filename);
                 } catch (Exception $e) {
-                    // Log but don't fail the entire operation
-                    $this->logger->error("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage());
+                    // Log but don't fail the entire operation.
+                    $this->logger->error(
+                        "Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage()
+                    );
                 }
             }
         } catch (Exception $e) {
@@ -3212,14 +3947,23 @@ class SynchronizationService
         }//end try
 
         return $originalEndpoint;
+
     }//end fetchFile()
 
+    /**
+     * Determine the file name from a fetched response.
+     *
+     * @param array        $response The HTTP response array (headers + body).
+     * @param ObjectEntity $result   The CallLog entity for the original call.
+     *
+     * @return string|null Resolved filename, or null when nothing matched.
+     */
     private function getFilenameFromHeaders(array $response, ObjectEntity $result): ?string
     {
         $filename = null;
-        // Get a filename from the response. First try to do this using the Content-Disposition header
+        // Get a filename from the response. First try the Content-Disposition header.
         if (isset($response['headers']['Content-Disposition']) === true
-            && str_contains($response['headers']['Content-Disposition'][0], 'filename')
+            && str_contains($response['headers']['Content-Disposition'][0], 'filename') === true
         ) {
             $explodedContentDisposition = explode('=', $response['headers']['Content-Disposition'][0]);
 
@@ -3227,42 +3971,54 @@ class SynchronizationService
         } else {
             // Otherwise, parse the url and content type header.
             $resultData = $result->getObject();
-            $requestUrl = $resultData['request']['url'] ?? '';
+            $requestUrl = ($resultData['request']['url'] ?? '');
             $parsedUrl  = parse_url($requestUrl);
-            $path       = explode(separator:'/', string: $parsedUrl['path'] ?? '');
+            $path       = explode(separator:'/', string: ($parsedUrl['path'] ?? ''));
             $filename   = end($path);
 
             if (count(explode(separator: '.', string: $filename)) === 1
-                && (isset($response['headers']['Content-Type']) === true || isset($response['headers']['content-type']) === true)
+                && (isset($response['headers']['Content-Type']) === true
+                || isset($response['headers']['content-type']) === true)
             ) {
-                $explodedMimeType = isset($response['headers']['Content-Type']) === true ? explode(separator: '/', string: explode(separator: ';', string: $response['headers']['Content-Type'][0])[0]) : explode(separator: '/', string: explode(separator: ';', string: $response['headers']['content-type'][0])[0]);
+                if (isset($response['headers']['Content-Type']) === true) {
+                    $contentTypeHeader = $response['headers']['Content-Type'][0];
+                } else {
+                    $contentTypeHeader = $response['headers']['content-type'][0];
+                }
+
+                $baseType         = explode(separator: ';', string: $contentTypeHeader)[0];
+                $explodedMimeType = explode(separator: '/', string: $baseType);
 
                 $filename = $filename.'.'.end($explodedMimeType);
             }
         }//end if
 
         return $filename;
+
     }//end getFilenameFromHeaders()
 
     /**
      * Extracts an endpoint from the given data and optionally retrieves a filename and tags.
      *
-     * This function checks if a sub-object file path exists in the configuration and retrieves
-     * the relevant endpoint using dot notation. It also extracts filename and tag information
-     * if available.
+     * @param array           $config     The configuration array.
+     * @param mixed           $endpoint   The data containing the endpoint, string or array.
+     * @param string|null     $filename   Reference to the filename to be updated.
+     * @param array|null      $tags       Reference to the tag list to be updated.
+     * @param string|null     $objectId   Reference to the object id to attach files to.
+     * @param string|null     $published  Reference to the published status to be updated.
+     * @param int|string|null $registerId Reference to the registerId to be updated.
      *
-     * @param array           $config      The configuration array, which may include 'subObjectFilepath', 'tags', 'useLabelsAsTags', and 'allowedLabels'.
-     * @param mixed           $endpoint    The data containing the endpoint, which can be a string or an array.
-     * @param string|null     &$filename   A reference to the filename (if available) that will be updated.
-     * @param array|null      &$tags       A reference to an array of tags (if available) that will be updated.
-     * @param string|null     &$objectId   A reference to the object id (if available) that the file will be attached to.
-     * @param string|null     &$published  A reference to the published status (if available) that will be updated.
-     * @param int|string|null &$registerId A reference to the registerId (if available) that will be updated.
-     *
-     * @return string The extracted endpoint from the data.
+     * @return string|null The extracted endpoint or null when nothing matched.
      */
-    private function getFileContext(array $config, mixed $endpoint, ?string &$filename=null, ?array &$tags=[], ?string &$objectId=null, ?string &$published=null, int|string|null &$registerId=null)
-    {
+    private function getFileContext(
+        array $config,
+        mixed $endpoint,
+        ?string &$filename=null,
+        ?array &$tags=[],
+        ?string &$objectId=null,
+        ?string &$published=null,
+        int|string|null &$registerId=null
+    ) {
         $dataDot = new Dot($endpoint);
         if (isset($config['objectIdPath']) === true && empty($config['objectIdPath']) === false) {
             $objectId = $dataDot->get($config['objectIdPath']);
@@ -3273,82 +4029,87 @@ class SynchronizationService
         }
 
         if (is_array($endpoint) === true) {
-            // Handle labels/tags with support for multiple property names
+            // Handle labels/tags with support for multiple property names.
             $extractedTags = [];
 
-            // Check for various tag/label property names and extract values
+            // Check for various tag/label property names and extract values.
             $tagProperties = ['label', 'labels', 'tag', 'tags'];
             foreach ($tagProperties as $property) {
-                if (isset($endpoint[$property]) === true && !empty($endpoint[$property])) {
+                if (isset($endpoint[$property]) === true && empty($endpoint[$property]) === false) {
                     $value = $endpoint[$property];
 
-                    // Handle both single values and arrays
-                    if (is_array($value)) {
-                        $extractedTags = array_merge(
-                        $extractedTags,
-                        array_filter(
-                        $value,
-              function ($item) {
-                            return !empty($item) && is_string($item);
-              }
-                        )
+                    // Handle both single values and arrays.
+                    if (is_array($value) === true) {
+                        $filteredValues = array_filter(
+                            $value,
+                            function ($item) {
+                                return (empty($item) === false && is_string($item) === true);
+                            }
                         );
-                    } else if (is_string($value) && !empty($value)) {
+                        $extractedTags  = array_merge($extractedTags, $filteredValues);
+                    } else if (is_string($value) === true && empty($value) === false) {
                         $extractedTags[] = $value;
                     }
                 }
             }
 
-            // Remove duplicates and apply tag filtering logic
+            // Remove duplicates and apply tag filtering logic.
             $extractedTags = array_unique($extractedTags);
 
-            // Check if we have meaningful tag configuration
-            $hasUseLabelsAsTags     = isset($config['useLabelsAsTags']) && $config['useLabelsAsTags'] === true;
-            $hasAllowedLabels       = isset($config['allowedLabels']) && is_array($config['allowedLabels']) && !empty($config['allowedLabels']);
-            $hasLegacyTags          = isset($config['tags']) && is_array($config['tags']) && !empty($config['tags']);
-            $hasMeaningfulTagConfig = $hasUseLabelsAsTags || $hasAllowedLabels || $hasLegacyTags;
+            // Check if we have meaningful tag configuration.
+            $hasUseLabelsAsTags     = (isset($config['useLabelsAsTags']) === true && $config['useLabelsAsTags'] === true);
+            $hasAllowedLabels       = (isset($config['allowedLabels']) === true
+                && is_array($config['allowedLabels']) === true
+                && empty($config['allowedLabels']) === false);
+            $hasLegacyTags          = (isset($config['tags']) === true
+                && is_array($config['tags']) === true
+                && empty($config['tags']) === false);
+            $hasMeaningfulTagConfig = ($hasUseLabelsAsTags === true
+                || $hasAllowedLabels === true
+                || $hasLegacyTags === true);
 
             foreach ($extractedTags as $tagValue) {
-                if ($hasUseLabelsAsTags) {
+                if ($hasUseLabelsAsTags === true) {
                     // If useLabelsAsTags is explicitly enabled, always use the tag.
                     $tags[] = $tagValue;
-                } else if ($hasAllowedLabels && in_array($tagValue, $config['allowedLabels'], true)) {
+                } else if ($hasAllowedLabels === true && in_array($tagValue, $config['allowedLabels'], true) === true) {
                     // If config has specific allowed labels, check if this tag is allowed.
                     $tags[] = $tagValue;
-                } else if ($hasLegacyTags && in_array($tagValue, $config['tags'], true)) {
+                } else if ($hasLegacyTags === true && in_array($tagValue, $config['tags'], true) === true) {
                     // Legacy behavior - if config has non-empty tags array and tag is in it.
                     $tags[] = $tagValue;
-                } else if (!$hasMeaningfulTagConfig) {
+                } else if ($hasMeaningfulTagConfig === false) {
                     // If no meaningful tag configuration is provided, use all tags (default behavior).
                     $tags[] = $tagValue;
                 }
             }
 
-            // Extract filename if available
+            // Extract filename if available.
             if (isset($endpoint['filename']) === true && empty($endpoint['filename']) === false) {
                 $filename = $endpoint['filename'];
             }
 
-            // Extract published status if available
+            // Extract published status if available.
             if (isset($endpoint['published']) === true) {
                 $published = $endpoint['published'];
             }
 
-            // Extract published status if available
+            // Extract registerId if available.
             if (isset($endpoint['registerId']) === true) {
                 $registerId = $endpoint['registerId'];
             }
 
-            // Check if endpoint exists before returning it
+            // Check if endpoint exists before returning it.
             if (isset($endpoint['endpoint']) === true) {
                 return $endpoint['endpoint'];
             }
 
-            // If no endpoint is found, return null
+            // If no endpoint is found, return null.
             return null;
         }//end if
 
         return $endpoint;
+
     }//end getFileContext()
 
     /**
@@ -3367,7 +4128,7 @@ class SynchronizationService
      */
     private function getArrayType(mixed $array): string
     {
-        // Check if not array
+        // Check if not array.
         if (is_array($array) === false) {
             return "Not array";
         }
@@ -3376,39 +4137,38 @@ class SynchronizationService
             return 'Empty array';
         }
 
-        // Check for an associative array
+        // Check for an associative array.
         if (array_keys($array) !== range(0, count($array) - 1)) {
             return "Associative array";
         }
 
-        // Check for a multidimensional array
+        // Check for a multidimensional array.
         if (count($array) !== count($array, COUNT_RECURSIVE)) {
             return "Multidimensional array";
         }
 
-        // Otherwise, it's an indexed array
+        // Otherwise, it's an indexed array.
         return "Indexed array";
+
     }//end getArrayType()
 
     /**
-     * Process a rule to fetch a file from an external source using fire-and-forget ReactPHP execution.
+     * Process a rule to fetch a file from an external source using fire-and-forget execution.
      *
-     * This method initiates file fetching operations asynchronously without blocking the main execution flow.
-     * The actual file fetching happens in the background, allowing the synchronization to continue immediately.
-     *
-     * @param Rule        $rule     The rule to process containing fetch_file configuration.
-     * @param array       $data     The data written to the object.
-     * @param string|null $objectId The UUID of the object to attach files to.
+     * @param ObjectEntity $rule     The rule to process containing fetch_file configuration.
+     * @param array        $data     The data written to the object.
+     * @param string|null  $objectId The UUID of the object to attach files to.
      *
      * @return array The resulting object data with placeholder values for file paths.
-     * @throws Exception If OpenRegister app is not available or configuration is missing.
+     *
+     * @throws Exception When OpenRegister app is not available or configuration is missing.
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      */
     private function processFetchFileRule(ObjectEntity $rule, array $data, ?string $objectId=null): array
     {
-        // Check if OpenRegister app is available
+        // Check if OpenRegister app is available.
         $appManager = \OC::$server->get(\OCP\App\IAppManager::class);
         if ($appManager->isEnabledForUser('openregister') === false) {
             throw new Exception('OpenRegister app is required for the fetch file rule and not installed');
@@ -3416,15 +4176,19 @@ class SynchronizationService
 
         $ruleData = $rule->getObject();
 
-        // Validate rule configuration
+        // Validate rule configuration.
         if (isset($ruleData['configuration']['fetch_file']) === false) {
             throw new Exception('No configuration found for fetch_file');
         }
 
         $config = $ruleData['configuration']['fetch_file'];
 
-        $dataDot  = new Dot($data);
-        $endpoint = isset($config['filePath']) === true && $config['filePath'] !== '' ? $dataDot->get($config['filePath']) : $config['endpoint'];
+        $dataDot = new Dot($data);
+        if (isset($config['filePath']) === true && $config['filePath'] !== '') {
+            $endpoint = $dataDot->get($config['filePath']);
+        } else {
+            $endpoint = $config['endpoint'];
+        }
 
         if ($objectId === null && isset($config['objectIdPath']) === true) {
             $objectId = $dataDot->get($config['objectIdPath']);
@@ -3434,83 +4198,50 @@ class SynchronizationService
             $config['originId'] = $dataDot->get($config['originIdPath']);
         }
 
-        // If no endpoint is found, return data unchanged
+        // If no endpoint is found, return data unchanged.
         if ($endpoint === null) {
             return $dataDot->jsonSerialize();
         }
 
-        // Get source for file fetching
-        $source = $this->orObjectService->find(id: $config['source'] ?? null, register: 'openconnector', schema: 'source');
+        // Get source for file fetching.
+        $source = $this->orObjectService->find(
+            id: ($config['source'] ?? null),
+            register: 'openconnector',
+            schema: 'source'
+        );
         if ($source === null) {
             $this->logger->error("Failed to find source for fetch file rule: source not found");
             return $dataDot->jsonSerialize();
         }
 
-        // $filename = null;
-        // $tags = [];
-        // $published = null;
-        // $registerId = null;
-        // switch ($this->getArrayType($endpoint)) {
-        // Single file endpoint
-        // case 'Not array':
-        // $this->fetchFile(source: $source, endpoint: $endpoint, config: $config, objectId: $objectId, tags: $tags, published: $published);
-        // break;
-        // Array of object that has file(s)
-        // case 'Associative array':
-        // $actualEndpoint = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $objectId, published: $published, registerId: $registerId);
-        //
-        // if ($actualEndpoint === null) {
-        // return $dataDot->jsonSerialize();
-        // }
-        // $this->fetchFile(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, filename: $filename, published: $published);
-        // break;
-        // Array of object(s) that has file(s)
-        // case "Multidimensional array":
-        // foreach ($endpoint as $object) {
-        // $filename = null;
-        // $tags = [];
-        // $published = null;
-        // $registerId = null;
-        // $actualEndpoint = $this->getFileContext(config: $config, endpoint: $object, filename: $filename, tags: $tags, objectId: $objectId, published: $published, registerId: $registerId);
-        // if ($actualEndpoint === null) {
-        // continue;
-        // }
-        // $this->fetchFile(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, filename: $filename, published: $published);
-        // }
-        // break;
-        // Array of just endpoints
-        // case "Indexed array":
-        // foreach ($endpoint as $key => $childEndpoint) {
-        // $filename = null;
-        // $tags = [];
-        // $published = null;
-        // $registerId = null;
-        // $this->fetchFile(source: $source, endpoint: $childEndpoint, config: $config, objectId: $objectId, registerId: $registerId, tags: $tags, published: $published);
-        // }
-        // break;
-        // }
-        // Start fire-and-forget file fetching based on endpoint type
-        $this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: $rule->getUuid(), objectId: $objectId);
+        // Start fire-and-forget file fetching based on endpoint type.
+        $this->startAsyncFileFetching(
+            source: $source,
+            config: $config,
+            endpoint: $endpoint,
+            ruleId: $rule->getUuid(),
+            objectId: $objectId
+        );
 
-        // Return data immediately with placeholder values
-        if (isset($config['setPlaceholder']) === false || (isset($config['setPlaceholder']) === true && $config['setPlaceholder'] != false)) {
-            $dataDot[$config['filePath']] = $this->generatePlaceholderValues($endpoint);
+        // Return data immediately with placeholder values.
+        if (isset($config['setPlaceholder']) === false
+            || (isset($config['setPlaceholder']) === true && $config['setPlaceholder'] !== false)
+        ) {
+            $dataDot[$config['filePath']] = $this->generatePlaceholderValues(endpoint: $endpoint);
         }
 
         return $dataDot->jsonSerialize();
+
     }//end processFetchFileRule()
 
     /**
      * Starts asynchronous file fetching operations using ReactPHP promises.
      *
-     * This method creates fire-and-forget promises that handle file fetching in the background
-     * without blocking the main synchronization process.
-     *
-     * @param Source      $source   The source to fetch files from.
-     * @param array       $config   The fetch_file rule configuration.
-     * @param mixed       $endpoint The endpoint(s) to fetch files from.
-     * @param int         $ruleId   The ID of the rule for error logging.
-     * @param string|null $objectId The UUID of the object to attach files to.
+     * @param ObjectEntity|null $source   The source to fetch files from.
+     * @param array             $config   The fetch_file rule configuration.
+     * @param mixed             $endpoint The endpoint(s) to fetch files from.
+     * @param string            $ruleId   The ID of the rule for error logging.
+     * @param string|null       $objectId The UUID of the object to attach files to.
      *
      * @return void
      *
@@ -3518,23 +4249,26 @@ class SynchronizationService
      */
     private function startAsyncFileFetching(?ObjectEntity $source, array $config, mixed $endpoint, string $ruleId, ?string $objectId=null): void
     {
-        // Execute file fetching immediately but with error isolation
-        // This provides "fire-and-forget" behavior without complex ReactPHP setup
-        $this->executeAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: $ruleId, objectId: $objectId);
+        // Execute file fetching immediately but with error isolation.
+        // This provides "fire-and-forget" behavior without complex ReactPHP setup.
+        $this->executeAsyncFileFetching(
+            source: $source,
+            config: $config,
+            endpoint: $endpoint,
+            ruleId: $ruleId,
+            objectId: $objectId
+        );
+
     }//end startAsyncFileFetching()
 
     /**
      * Executes the actual file fetching operations asynchronously.
      *
-     * This method handles different types of endpoints (single, associative array, multidimensional array, indexed array)
-     * and fetches files accordingly. All operations are wrapped in try-catch blocks to prevent errors from
-     * affecting the main synchronization process.
-     *
-     * @param Source      $source   The source to fetch files from.
-     * @param array       $config   The fetch_file rule configuration.
-     * @param mixed       $endpoint The endpoint(s) to fetch files from.
-     * @param int         $ruleId   The ID of the rule for error logging.
-     * @param string|null $objectId The UUID of the object to attach files to.
+     * @param ObjectEntity|null $source   The source to fetch files from.
+     * @param array             $config   The fetch_file rule configuration.
+     * @param mixed             $endpoint The endpoint(s) to fetch files from.
+     * @param string            $ruleId   The ID of the rule for error logging.
+     * @param string|null       $objectId The UUID of the object to attach files to.
      *
      * @return void
      *
@@ -3548,37 +4282,65 @@ class SynchronizationService
             $published  = null;
             $registerId = null;
 
-            switch ($this->getArrayType($endpoint)) {
-                // Single file endpoint
+            switch ($this->getArrayType(array: $endpoint)) {
+                // Single file endpoint.
                 case 'Not array':
-                    $this->fetchFileSafely($source, $endpoint, $config, $objectId);
+                    $this->fetchFileSafely(
+                        source: $source,
+                        endpoint: $endpoint,
+                        config: $config,
+                        objectId: $objectId
+                    );
                     break;
 
-                // Array of object that has file(s)
+                // Array of object that has file(s).
                 case 'Associative array':
                     $contextObjectId = null;
-                    // Separate variable to avoid overwriting the original
-                    $actualEndpoint = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $contextObjectId, published: $published, registerId: $registerId);
-                    // Use context object ID if specified, otherwise fall back to the original object ID
-                    $targetObjectId = $contextObjectId ?? $objectId;
+                    // Separate variable to avoid overwriting the original.
+                    $actualEndpoint = $this->getFileContext(
+                        config: $config,
+                        endpoint: $endpoint,
+                        filename: $filename,
+                        tags: $tags,
+                        objectId: $contextObjectId,
+                        published: $published,
+                        registerId: $registerId
+                    );
+                    // Use context object ID if specified, otherwise fall back to the original object ID.
+                    $targetObjectId = ($contextObjectId ?? $objectId);
                     if ($actualEndpoint !== null) {
-                        $this->fetchFileSafely(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $targetObjectId, filename: $filename, tags: $tags, published: $published, registerId: $registerId);
+                        $this->fetchFileSafely(
+                            source: $source,
+                            endpoint: $actualEndpoint,
+                            config: $config,
+                            objectId: $targetObjectId,
+                            filename: $filename,
+                            tags: $tags,
+                            published: $published,
+                            registerId: $registerId
+                        );
                     }
                     break;
 
-                 // Array is empty
+                // Array is empty.
                 case 'Empty array':
-                    // Array of object(s) that has file(s) - use cleanup logic
+                    // Array of object(s) that has file(s) - use cleanup logic.
                 case "Multidimensional array":
-                    // Array of just endpoints - use cleanup logic
+                    // Array of just endpoints - use cleanup logic.
                 case "Indexed array":
-                    $this->processMultipleFilesWithCleanup($source, $config, $endpoint, $objectId);
+                    $this->processMultipleFilesWithCleanup(
+                        source: $source,
+                        config: $config,
+                        endpoints: $endpoint,
+                        objectId: $objectId
+                    );
                     break;
             }//end switch
         } catch (Exception $e) {
-            // Log error but don't throw - this is fire-and-forget
+            // Log error but don't throw - this is fire-and-forget.
             $this->logger->error("Async file fetching failed for rule {$ruleId}: ".$e->getMessage());
         }//end try
+
     }//end executeAsyncFileFetching()
 
     /**
@@ -3587,38 +4349,47 @@ class SynchronizationService
      * This method wraps the existing fetchFile method with error isolation to enable
      * fire-and-forget execution. Errors are caught and logged without affecting the main process.
      *
-     * @param Source          $source     The source to fetch the file from.
-     * @param string          $endpoint   The endpoint for the file.
-     * @param array           $config     The configuration of the action.
-     * @param string          $objectId   The UUID of the object the file belongs to.
-     * @param string|null     $filename   Optional filename to assign to the file.
-     * @param array           $tags       Optional tags to assign to the file.
-     * @param string|null     $published  Optional published status to determine if file should be published.
-     * @param int|string|null $registerId Optional published status to determine if file should be published.
+     * @param ObjectEntity|null $source     The source to fetch the file from.
+     * @param string            $endpoint   The endpoint for the file.
+     * @param array             $config     The configuration of the action.
+     * @param string            $objectId   The UUID of the object the file belongs to.
+     * @param string|null       $filename   Optional filename to assign to the file.
+     * @param array             $tags       Optional tags to assign to the file.
+     * @param int|string|null   $published  Optional published status.
+     * @param int|string|null   $registerId Optional register identifier.
      *
      * @return void
      *
      * @psalm-param array<string, mixed> $config
      * @psalm-param array<string> $tags
      */
-    private function fetchFileSafely(?ObjectEntity $source, string $endpoint, array $config, string $objectId, ?string $filename=null, array $tags=[], int|string|null $published=null, int|string|null $registerId=null): void
-    {
+    private function fetchFileSafely(
+        ?ObjectEntity $source,
+        string $endpoint,
+        array $config,
+        string $objectId,
+        ?string $filename=null,
+        array $tags=[],
+        int|string|null $published=null,
+        int|string|null $registerId=null
+    ): void {
         try {
-            // Execute the file fetching operation
+            // Execute the file fetching operation.
             $result = $this->fetchFile(
-             source: $source,
-             endpoint: $endpoint,
-             config: $config,
-             objectId: $objectId,
-             tags: $tags,
-             filename: $filename,
-             published: $published,
-             registerId: $registerId
+                source: $source,
+                endpoint: $endpoint,
+                config: $config,
+                objectId: $objectId,
+                tags: $tags,
+                filename: $filename,
+                published: $published,
+                registerId: $registerId
             );
         } catch (Exception $e) {
-            // Log error with detailed information but don't throw
+            // Log error with detailed information but don't throw.
             $this->logger->error("File fetch failed for endpoint {$endpoint}, objectId {$objectId}: ".$e->getMessage());
         }
+
     }//end fetchFileSafely()
 
     /**
@@ -3634,7 +4405,7 @@ class SynchronizationService
      */
     private function generatePlaceholderValues(mixed $endpoint): mixed
     {
-        switch ($this->getArrayType($endpoint)) {
+        switch ($this->getArrayType(array: $endpoint)) {
             case 'Not array':
                 return 'file://fetching-async';
 
@@ -3655,19 +4426,25 @@ class SynchronizationService
     /**
      * Process a rule to write files.
      *
-     * @param Rule   $rule       The rule to process.
-     * @param array  $data       The data to write.
-     * @param string $objectId   The object to write the data to.
-     * @param int    $registerId The register the object is in.
-     * @param int    $schemaId   The schema the object is in.
+     * @param ObjectEntity $rule       The rule to process.
+     * @param array        $data       The data to write.
+     * @param string       $objectId   The object to write the data to.
+     * @param string       $registerId The register the object is in.
+     * @param string       $schemaId   The schema the object is in.
      *
-     * @return array
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws Exception
+     * @return array The updated data after processing.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws Exception                   When the rule configuration is missing.
      */
-    private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId, string $registerId, string $schemaId): array
-    {
+    private function processWriteFileRule(
+        ObjectEntity $rule,
+        array $data,
+        string $objectId,
+        string $registerId,
+        string $schemaId
+    ): array {
         $ruleData = $rule->getObject();
         if (isset($ruleData['configuration']['write_file']) === false) {
             throw new Exception('No configuration found for write_file');
@@ -3680,12 +4457,12 @@ class SynchronizationService
             return $dataDot->jsonSerialize();
         }
 
-        // Get the object entity and file service
+        // Get the object entity and file service.
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
         $objectEntity  = $objectService->find(id: $objectId);
         $fileService   = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 
-        // Check if associative array (multiple files with metadata)
+        // Check if associative array (multiple files with metadata).
         if (is_array($files) === true && isset($files[0]) === true && array_keys($files[0]) !== range(0, count($files[0]) - 1)) {
             $result = [];
             foreach ($files as $key => $value) {
@@ -3693,12 +4470,12 @@ class SynchronizationService
                 $fileName = '';
                 $tags     = [];
 
-                // Extract file data
+                // Extract file data.
                 if (is_array($value) === true) {
                     $content  = $value['content'];
-                    $fileName = $value['filename'] ?? "file_$key";
+                    $fileName = ($value['filename'] ?? "file_$key");
 
-                    // Handle tags from config and value labels
+                    // Handle tags from config and value labels.
                     if (isset($value['label']) === true && isset($config['tags']) === true
                         && in_array(needle: $value['label'], haystack: $config['tags']) === true
                     ) {
@@ -3709,14 +4486,14 @@ class SynchronizationService
                     $fileName = "file_$key";
                 }
 
-                // Merge with configured tags
-                $allTags = array_unique(array_merge($config['tags'] ?? [], $tags));
+                // Merge with configured tags.
+                $allTags = array_unique(array_merge(($config['tags'] ?? []), $tags));
 
-                // Determine if we should share the file - only if there are user-defined tags
-                $shouldShare = !empty($allTags);
+                // Determine if we should share the file - only if there are user-defined tags.
+                $shouldShare = (empty($allTags) === false);
 
                 try {
-                    // Use the new saveFile method
+                    // Use the new saveFile method.
                     $file = $fileService->saveFile(
                         objectEntity: $objectEntity,
                         fileName: $fileName,
@@ -3734,24 +4511,24 @@ class SynchronizationService
 
             $dataDot[$config['filePath']] = $result;
         } else {
-            // Single file case
+            // Single file case.
             $content  = $files;
-            $fileName = $dataDot[$config['fileNamePath']] ?? 'default_file';
+            $fileName = ($dataDot[$config['fileNamePath']] ?? 'default_file');
 
-            // Get configured tags
-            $tags = $config['tags'] ?? [];
+            // Get configured tags.
+            $tags = ($config['tags'] ?? []);
 
-            // Determine if we should share the file - only if there are user-defined tags
-            $shouldShare = !empty($tags);
+            // Determine if we should share the file - only if there are user-defined tags.
+            $shouldShare = (empty($tags) === false);
 
             try {
-                // Use the new saveFile method
+                // Use the new saveFile method.
                 $file = $fileService->saveFile(
-                 objectEntity: $objectEntity,
-                 fileName: $fileName,
-                 content: $content,
-                 share: $shouldShare,
-                 tags: $tags
+                    objectEntity: $objectEntity,
+                    fileName: $fileName,
+                    content: $content,
+                    share: $shouldShare,
+                    tags: $tags
                 );
 
                 $dataDot[$config['filePath']] = $file->getPath();
@@ -3762,14 +4539,15 @@ class SynchronizationService
         }//end if
 
         return $dataDot->jsonSerialize();
+
     }//end processWriteFileRule()
 
     /**
-     * Processes an error rule
+     * Processes an error rule.
      *
-     * @param Rule $rule The rule object containing error details
+     * @param ObjectEntity $rule The rule object containing error details.
      *
-     * @return JSONResponse Response containing error details and HTTP status code
+     * @return JSONResponse Response containing error details and HTTP status code.
      */
     private function processErrorRule(ObjectEntity $rule): JSONResponse
     {
@@ -3781,19 +4559,21 @@ class SynchronizationService
             ],
             $config['error']['code']
         );
+
     }//end processErrorRule()
 
     /**
-     * Processes a mapping rule
+     * Processes a mapping rule.
      *
-     * @param Rule  $rule The rule object containing mapping details
-     * @param array $data The data to be processed through the mapping rule
+     * @param ObjectEntity $rule The rule object containing mapping details.
+     * @param array        $data The data to be processed through the mapping rule.
      *
-     * @return array The processed data after applying the mapping rule
-     * @throws DoesNotExistException When the mapping configuration does not exist
-     * @throws MultipleObjectsReturnedException When multiple mapping objects are returned unexpectedly
-     * @throws LoaderError When there is an error loading the mapping
-     * @throws SyntaxError When there is a syntax error in the mapping configuration
+     * @return array The processed data after applying the mapping rule.
+     *
+     * @throws DoesNotExistException            When the mapping configuration does not exist.
+     * @throws MultipleObjectsReturnedException When multiple mapping objects are returned unexpectedly.
+     * @throws LoaderError                      When there is an error loading the mapping.
+     * @throws SyntaxError                      When there is a syntax error in the mapping configuration.
      */
     private function processMappingRule(ObjectEntity $rule, array $data): array
     {
@@ -3801,45 +4581,49 @@ class SynchronizationService
         $mapping = $this->mappingService->getMapping($config['mapping']);
 
         return $this->processMapping(mapping: $mapping, data: $data);
+
     }//end processMappingRule()
 
     /**
-     * Executes mapping on data from endpoint flow
+     * Executes mapping on data from endpoint flow.
      *
-     * @param mapping $mapping
-     * @param array   $data
+     * @param ObjectEntity $mapping The mapping entity.
+     * @param array        $data    The data to be mapped.
      *
-     * @return array $data
+     * @return array The mapped data.
      */
     private function processMapping(ObjectEntity $mapping, array $data): array
     {
         return $this->mappingService->executeMapping($mapping, $data);
+
     }//end processMapping()
 
     /**
-     * Processes a synchronization rule
+     * Processes a synchronization rule.
      *
-     * @param Rule  $rule The rule object containing synchronization details
-     * @param array $data The data to be synchronized
+     * @param ObjectEntity $rule The rule object containing synchronization details.
+     * @param array        $data The data to be synchronized.
      *
-     * @return array The data after synchronization processing
+     * @return array The data after synchronization processing.
      */
     private function processSyncRule(ObjectEntity $rule, array $data): array
     {
         $config = $rule->getObject()['configuration'] ?? [];
-        // Here you would implement the synchronization logic
-        // For now, just return the data unchanged
+        // Here you would implement the synchronization logic.
+        // For now, just return the data unchanged.
         return $data;
+
     }//end processSyncRule()
 
     /**
-     * Checks if rule conditions are met
+     * Checks if rule conditions are met.
      *
-     * @param Rule  $rule The rule object containing conditions to be checked
-     * @param array $data The input data against which the conditions are evaluated
+     * @param ObjectEntity $rule The rule object containing conditions to be checked.
+     * @param array        $data The input data against which the conditions are evaluated.
      *
-     * @return bool True if conditions are met, false otherwise
-     * @throws Exception
+     * @return bool True if conditions are met, false otherwise.
+     *
+     * @throws Exception When the JsonLogic evaluator throws.
      */
     private function checkRuleConditions(ObjectEntity $rule, array $data): bool
     {
@@ -3849,6 +4633,7 @@ class SynchronizationService
         }
 
         return JsonLogic::apply($conditions, $data) === true;
+
     }//end checkRuleConditions()
 
     /**
@@ -3867,7 +4652,11 @@ class SynchronizationService
             $newKey = str_replace($toReplace, $replacement, $key);
 
             if (is_array($value) === true && $value !== []) {
-                $result[$newKey] = $this->encodeArrayKeys($value, $toReplace, $replacement);
+                $result[$newKey] = $this->encodeArrayKeys(
+                    array: $value,
+                    toReplace: $toReplace,
+                    replacement: $replacement
+                );
                 continue;
             }
 
@@ -3879,16 +4668,17 @@ class SynchronizationService
     }//end encodeArrayKeys()
 
     /**
-     * Convert SimpleXMLElement to array while preserving namespaced attributes
+     * Convert SimpleXMLElement to array while preserving namespaced attributes.
      *
-     * @param  \SimpleXMLElement $xml The XML element to convert
-     * @return array The array representation with preserved namespaced attributes
+     * @param \SimpleXMLElement $xml The XML element to convert.
+     *
+     * @return array The array representation with preserved namespaced attributes.
      */
     private function xmlToArray(\SimpleXMLElement $xml): array
     {
         $result = [];
 
-        // Handle attributes - this preserves namespaced attributes with colons
+        // Handle attributes - this preserves namespaced attributes with colons.
         $attributes = $xml->attributes();
         if (count($attributes) > 0) {
             $result['@attributes'] = [];
@@ -3897,30 +4687,35 @@ class SynchronizationService
             }
         }
 
-        // Handle namespaced attributes
+        // Handle namespaced attributes.
         $namespaces = $xml->getNamespaces(true);
         foreach ($namespaces as $prefix => $namespace) {
             $nsAttributes = $xml->attributes($namespace);
             if (count($nsAttributes) > 0) {
-                if (!isset($result['@attributes'])) {
+                if (isset($result['@attributes']) === false) {
                     $result['@attributes'] = [];
                 }
 
                 foreach ($nsAttributes as $attrName => $attrValue) {
-                    // Preserve the namespace prefix in the attribute name (with colon)
-                    $nsAttrName = $prefix ? "$prefix:$attrName" : $attrName;
+                    // Preserve the namespace prefix in the attribute name (with colon).
+                    if (empty($prefix) === false) {
+                        $nsAttrName = "$prefix:$attrName";
+                    } else {
+                        $nsAttrName = $attrName;
+                    }
+
                     $result['@attributes'][$nsAttrName] = (string) $attrValue;
                 }
             }
         }
 
-        // Handle child elements
+        // Handle child elements.
         foreach ($xml->children() as $childName => $child) {
-            $childArray = $this->xmlToArray($child);
+            $childArray = $this->xmlToArray(xml: $child);
 
-            if (isset($result[$childName])) {
-                // If this child name already exists, convert to or add to array
-                if (!is_array($result[$childName]) || !isset($result[$childName][0])) {
+            if (isset($result[$childName]) === true) {
+                // If this child name already exists, convert to or add to array.
+                if (isset($result[$childName][0]) === false) {
                     $result[$childName] = [$result[$childName]];
                 }
 
@@ -3930,7 +4725,7 @@ class SynchronizationService
             }
         }
 
-        // Handle text content
+        // Handle text content.
         $text = trim((string) $xml);
         if (count($result) === 0 && $text !== '') {
             return ['#text' => $text];
@@ -3939,20 +4734,22 @@ class SynchronizationService
         }
 
         return $result;
+
     }//end xmlToArray()
 
     /**
-     * Process a single object during synchronization
+     * Process a single object during synchronization.
      *
-     * @param Synchronization    $synchronization The synchronization being processed
-     * @param array              $object          The object to synchronize
-     * @param array              $result          The current result tracking data
-     * @param bool               $isTest          Whether this is a test run
-     * @param bool               $force           Whether to force synchronization regardless of changes
-     * @param SynchronizationLog $log             The synchronization log
-     * @param string|null        $mutationType    The type of object mutation
+     * @param ObjectEntity $synchronization The synchronization being processed.
+     * @param array        $object          The object to synchronize.
+     * @param array        $result          The current result tracking data.
+     * @param bool         $isTest          Whether this is a test run.
+     * @param bool         $force           Whether to force synchronization regardless of changes.
+     * @param ObjectEntity $log             The synchronization log.
+     * @param FlowToken    $flowToken       The flow token tracking the operation.
+     * @param string|null  $mutationType    The type of object mutation.
      *
-     * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null]
+     * @return array Contains updated result data and the targetId: ['result' => array, 'targetId' => string|null].
      */
     private function processSynchronizationObject(
         ObjectEntity $synchronization,
@@ -3964,56 +4761,79 @@ class SynchronizationService
         FlowToken &$flowToken,
         ?string $mutationType=null
     ): array {
-        // We can only deal with arrays (based on the source empty values or string might be returned)
+        // We can only deal with arrays (based on the source empty values or string might be returned).
         if (is_array($object) === false) {
             $result['objects']['invalid']++;
-            return ['result' => $result, 'targetId' => null];
+            return [
+                'result'   => $result,
+                'targetId' => null,
+            ];
         }
 
         $syncData     = $synchronization->getObject();
         $sourceConfig = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
-        // Optional to fetch extra data now instead of later in ->synchronizeContract
-        if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === true && ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] === true || $sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] === 'true')) {
-            $object = $this->fetchMultipleExtraData(synchronization: $synchronization, sourceConfig: $sourceConfig, object: $object);
+        // Optional to fetch extra data now instead of later in ->synchronizeContract.
+        $extraBefore = ($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION] ?? null);
+        if (isset($sourceConfig[$this::EXTRA_DATA_BEFORE_CONDITIONS_LOCATION]) === true
+            && ($extraBefore === true || $extraBefore === 'true')
+        ) {
+            $object = $this->fetchMultipleExtraData(
+                synchronization: $synchronization,
+                sourceConfig: $sourceConfig,
+                object: $object
+            );
         }
 
-        $conditionsObject = $this->encodeArrayKeys($object, '.', '&#46;');
+        $conditionsObject = $this->encodeArrayKeys(array: $object, toReplace: '.', replacement: '&#46;');
 
-        // Add flow token to conditions object if it exists
+        // Add flow token to conditions object if it exists.
         if ($flowToken !== null) {
             $conditionsObject['flowToken'] = $flowToken->__serialize();
         }
 
         // Check if object adheres to conditions.
-        // Take note, JsonLogic::apply() returns a range of return types, so checking it with '=== false' or '!== true' does not work properly.
+        // JsonLogic::apply() returns a mixed type, so we explicitly compare against true.
         $syncConditions = $syncData['conditions'] ?? [];
-        if ($syncConditions !== [] && !JsonLogic::apply($syncConditions, $conditionsObject)) {
-            // Increment skipped count in log since object doesn't meet conditions
+        if ($syncConditions !== [] && JsonLogic::apply($syncConditions, $conditionsObject) !== true) {
+            // Increment skipped count in log since object doesn't meet conditions.
             $result['objects']['skipped']++;
-            return ['result' => $result, 'targetId' => null];
+            return [
+                'result'   => $result,
+                'targetId' => null,
+            ];
         }
 
-        // If the source configuration contains a dot notation for the id position, we need to extract the id from the source object
-        $originId = $this->getOriginId($synchronization, $object);
+        // If the source configuration contains a dot notation for the id position, extract the id.
+        $originId = $this->getOriginId(synchronization: $synchronization, object: $object);
 
-        // Get the synchronization contract for this object
+        // Get the synchronization contract for this object.
         $findContractByOriginId = false;
-        if (isset($sourceConfig['findContractByOriginIdOnly']) === true && filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true) {
+        if (isset($sourceConfig['findContractByOriginIdOnly']) === true
+            && filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
+        ) {
             $findContractByOriginId = true;
         }
 
-        // Find sync contract by originId
-        $contractFilters = ['register' => 'openconnector', 'schema' => 'synchronization_contract', 'originId' => $originId];
+        // Find sync contract by originId.
+        $contractFilters = [
+            'register' => 'openconnector',
+            'schema'   => 'synchronization_contract',
+            'originId' => $originId,
+        ];
         if ($findContractByOriginId === false) {
             $contractFilters['synchronizationId'] = $synchronization->getUuid();
         }
 
-        $contractMatches         = $this->orObjectService->findAll(config: ['filters' => $contractFilters]);
-        $contractList            = $contractMatches['results'] ?? $contractMatches;
-        $synchronizationContract = empty($contractList) === false ? $contractList[0] : null;
+        $contractMatches = $this->orObjectService->findAll(config: ['filters' => $contractFilters]);
+        $contractList    = $contractMatches['results'] ?? $contractMatches;
+        if (empty($contractList) === false) {
+            $synchronizationContract = $contractList[0];
+        } else {
+            $synchronizationContract = null;
+        }
 
         if ($synchronizationContract === null) {
-            // Only persist if not test
+            // Only persist if not test.
             $synchronizationContract = $this->orObjectService->saveObject(
                 object: [
                     'synchronizationId' => $synchronization->getUuid(),
@@ -4034,15 +4854,20 @@ class SynchronizationService
                 mutationType: $mutationType
             );
 
-            $synchronizationContract = $synchronizationContractResult['contract'] ?? [];
-            $result['contracts'][]   = $synchronizationContract['uuid'] ?? null;
-            $result['logs'][]        = isset($synchronizationContractResult['log']) ? ($synchronizationContractResult['log']['uuid'] ?? null) : null;
-            $resultAction            = $synchronizationContractResult['resultAction'] ?? null;
+            $synchronizationContract = ($synchronizationContractResult['contract'] ?? []);
+            $result['contracts'][]   = ($synchronizationContract['uuid'] ?? null);
+            if (isset($synchronizationContractResult['log']) === true) {
+                $result['logs'][] = ($synchronizationContractResult['log']['uuid'] ?? null);
+            } else {
+                $result['logs'][] = null;
+            }
+
+            $resultAction = ($synchronizationContractResult['resultAction'] ?? null);
             if ($resultAction === 'update') {
                 $resultAction = 'create';
             }
         } else {
-            // @todo this is weird
+            // @todo this is weird.
             $synchronizationContractResult = $this->synchronizeContract(
                 synchronizationContract: $synchronizationContract,
                 synchronization: $synchronization,
@@ -4055,9 +4880,19 @@ class SynchronizationService
             );
 
             $synchronizationContract = $synchronizationContractResult['contract'];
-            $result['contracts'][]   = isset($synchronizationContractResult['contract']['uuid']) === true ? $synchronizationContractResult['contract']['uuid'] : null;
-            $result['logs'][]        = isset($synchronizationContractResult['log']['uuid']) === true ? $synchronizationContractResult['log']['uuid'] : null;
-            $resultAction            = $synchronizationContractResult['resultAction'] ?? null;
+            if (isset($synchronizationContractResult['contract']['uuid']) === true) {
+                $result['contracts'][] = $synchronizationContractResult['contract']['uuid'];
+            } else {
+                $result['contracts'][] = null;
+            }
+
+            if (isset($synchronizationContractResult['log']['uuid']) === true) {
+                $result['logs'][] = $synchronizationContractResult['log']['uuid'];
+            } else {
+                $result['logs'][] = null;
+            }
+
+            $resultAction = $synchronizationContractResult['resultAction'] ?? null;
         }//end if
 
         switch ($resultAction) {
@@ -4078,24 +4913,33 @@ class SynchronizationService
                 break;
         }
 
-        $targetId = $synchronizationContract['targetId'] ?? null;
+        $targetId = ($synchronizationContract['targetId'] ?? null);
 
-        return ['result' => $result, 'targetId' => $targetId];
+        return [
+            'result'   => $result,
+            'targetId' => $targetId,
+        ];
+
     }//end processSynchronizationObject()
 
     /**
      * Fetch an synchronization by id or other characteristics.
-     * Prevents other services from having to interact with the synchronizationmapper directly.
      *
-     * @param  string|int|null $id      The id of the synchronization.
-     * @param  array           $filters Other filters to find the synchronization by.
-     * @return Synchronization The resulting synchronization
-     * @throws DoesNotExistException Thrown if the synchronization does not exist.
+     * @param string|int|null $id      The id of the synchronization.
+     * @param array           $filters Other filters to find the synchronization by.
+     *
+     * @return ObjectEntity The resulting synchronization.
+     *
+     * @throws DoesNotExistException When the synchronization does not exist.
      */
     public function getSynchronization(null|string|int $id=null, array $filters=[]) :ObjectEntity
     {
         if ($id !== null) {
-            $entity = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization');
+            $entity = $this->orObjectService->find(
+                id: (string) $id,
+                register: 'openconnector',
+                schema: 'synchronization'
+            );
             if ($entity === null) {
                 throw new DoesNotExistException('The synchronization you are looking for does not exist');
             }
@@ -4103,7 +4947,13 @@ class SynchronizationService
             return $entity;
         }
 
-        $orFilters        = array_merge(['register' => 'openconnector', 'schema' => 'synchronization'], $filters);
+        $orFilters        = array_merge(
+            [
+                'register' => 'openconnector',
+                'schema'   => 'synchronization',
+            ],
+            $filters
+        );
         $matches          = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
         $synchronizations = $matches['results'] ?? $matches;
 
@@ -4112,6 +4962,7 @@ class SynchronizationService
         }
 
         return $synchronizations[0];
+
     }//end getSynchronization()
 
     /**
@@ -4129,23 +4980,24 @@ class SynchronizationService
      */
     private function calculateMedian(array $numbers): float
     {
-        if (empty($numbers)) {
+        if (empty($numbers) === true) {
             return 0.0;
         }
 
-        // Sort the array to find the median
+        // Sort the array to find the median.
         sort($numbers);
         $count = count($numbers);
 
-        // If odd number of elements, return the middle one
-        if ($count % 2 === 1) {
+        // If odd number of elements, return the middle one.
+        if (($count % 2) === 1) {
             return (float) $numbers[intval($count / 2)];
         }
 
-        // If even number of elements, return average of two middle values
-        $middle1 = $numbers[intval($count / 2) - 1];
+        // If even number of elements, return average of two middle values.
+        $middle1 = $numbers[(intval($count / 2) - 1)];
         $middle2 = $numbers[intval($count / 2)];
-        return ($middle1 + $middle2) / 2.0;
+        return (($middle1 + $middle2) / 2.0);
+
     }//end calculateMedian()
 
     /**
@@ -4165,7 +5017,7 @@ class SynchronizationService
      */
     private function getSlowestStage(array $stages): array
     {
-        if (empty($stages)) {
+        if (empty($stages) === true) {
             return [
                 'name'        => 'none',
                 'duration_ms' => 0.0,
@@ -4208,7 +5060,7 @@ class SynchronizationService
      */
     private function calculateEfficiencyRatio(array $stages): float
     {
-        if (empty($stages)) {
+        if (empty($stages) === true) {
             return 0.0;
         }
 
@@ -4218,7 +5070,7 @@ class SynchronizationService
         foreach ($stages as $stageName => $stageData) {
             $totalDuration += $stageData['duration_ms'];
 
-            // Consider 'process_objects' as the core processing stage
+            // Consider 'process_objects' as the core processing stage.
             if ($stageName === 'process_objects') {
                 $processingDuration = $stageData['duration_ms'];
             }
@@ -4228,51 +5080,50 @@ class SynchronizationService
             return 0.0;
         }
 
-        return round($processingDuration / $totalDuration, 4);
+        return round(($processingDuration / $totalDuration), 4);
+
     }//end calculateEfficiencyRatio()
 
     /**
      * Cleans up files that are currently attached to an object but not present in the new file set.
      *
-     * This method compares the currently attached files to an object with the new set of files
-     * being processed and removes any files that are no longer needed.
-     *
      * @param string $objectId     The UUID of the object to clean up files for.
      * @param array  $newFileNames Array of filenames that should remain attached to the object.
      *
      * @return int The number of files that were deleted.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws Exception
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws Exception                   When the cleanup encounters an unexpected error.
      */
     private function cleanupOrphanedFiles(string $objectId, array $newFileNames): int
     {
         $deletedCount = 0;
 
         try {
-            // Get the object entity
+            // Get the object entity.
             $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
             try {
                 $objectEntity = $objectService->find(id: $objectId);
             } catch (DoesNotExistException $e) {
-                // It is possible we are trying to delete files for an object id where the object has not been persisted yet (for example a zgw informatieobject can have a beforehand generated uuid)
+                // It is possible we are trying to delete files for an object id where the object has not been persisted yet.
                 return 0;
             }
 
-            // Get the file service
+            // Get the file service.
             $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 
-            // Get all currently attached files for this object
+            // Get all currently attached files for this object.
             $currentFiles = $fileService->getFiles($objectEntity);
 
-            // Check each current file to see if it should be kept
+            // Check each current file to see if it should be kept.
             foreach ($currentFiles as $file) {
                 $fileName = $file->getName();
 
-                // If this file is not in the new set, delete it
-                if (!in_array($fileName, $newFileNames, true)) {
+                // If this file is not in the new set, delete it.
+                if (in_array($fileName, $newFileNames, true) === false) {
                     try {
-                        // Use FileService's deleteFile method instead of direct deletion
+                        // Use FileService's deleteFile method instead of direct deletion.
                         $result = $fileService->deleteFile($file, $objectEntity);
 
                         if ($result === true) {
@@ -4296,10 +5147,10 @@ class SynchronizationService
      * This method fetches multiple files for an object and ensures that any files
      * currently attached to the object but not in the new set are removed.
      *
-     * @param Source      $source    The source to fetch files from.
-     * @param array       $config    The fetch_file rule configuration.
-     * @param array       $endpoints Array of endpoints/file data to process.
-     * @param string|null $objectId  The UUID of the object to attach files to.
+     * @param ObjectEntity|null $source    The source to fetch files from.
+     * @param array             $config    The fetch_file rule configuration.
+     * @param array             $endpoints Array of endpoints/file data to process.
+     * @param string|null       $objectId  The UUID of the object to attach files to.
      *
      * @return void
      */
@@ -4313,7 +5164,7 @@ class SynchronizationService
             return;
         }
 
-        // Process all files first and collect their filenames
+        // Process all files first and collect their filenames.
         foreach ($endpoints as $endpoint) {
             $filename        = null;
             $tags            = [];
@@ -4322,9 +5173,9 @@ class SynchronizationService
             $registerId      = null;
             $published       = null;
 
-            // Handle different endpoint types
-            if (is_array($endpoint)) {
-                // This is an object with file metadata (multidimensional array case)
+            // Handle different endpoint types.
+            if (is_array($endpoint) === true) {
+                // This is an object with file metadata (multidimensional array case).
                 $actualEndpoint = $this->getFileContext(
                     config: $config,
                     endpoint: $endpoint,
@@ -4335,17 +5186,17 @@ class SynchronizationService
                     registerId: $registerId
                 );
             } else {
-                // This is a simple endpoint string (indexed array case)
+                // This is a simple endpoint string (indexed array case).
                 $actualEndpoint = $endpoint;
             }
 
-            // Use context object ID if specified, otherwise fall back to the original object ID
-            $targetObjectId = $contextObjectId ?? $objectId;
+            // Use context object ID if specified, otherwise fall back to the original object ID.
+            $targetObjectId = ($contextObjectId ?? $objectId);
 
             if ($actualEndpoint !== null) {
-                // Determine filename for tracking BEFORE attempting fetch
+                // Determine filename for tracking BEFORE attempting fetch.
                 try {
-                    // Fetch the file
+                    // Fetch the file.
                     $this->fetchFile(
                         source: $source,
                         endpoint: $actualEndpoint,
@@ -4358,73 +5209,68 @@ class SynchronizationService
                     );
                 } catch (Exception $e) {
                     $this->logger->error("Failed to fetch file from endpoint {$actualEndpoint}: ".$e->getMessage());
-                    // Note: We still keep the filename in tracking array even if fetch fails
-                    // This prevents cleanup from deleting files that should exist
+                    // Note: We still keep the filename in tracking array even if fetch fails.
+                    // This prevents cleanup from deleting files that should exist.
                 }
 
                 $trackingFilename = $filename;
 
                 if ($trackingFilename === null) {
-                    // Try to extract filename from endpoint URL
+                    // Try to extract filename from endpoint URL.
                     $pathParts        = explode('/', $actualEndpoint);
                     $trackingFilename = end($pathParts);
 
-                    // If still no clear filename, generate a fallback
-                    if (empty($trackingFilename) || strpos($trackingFilename, '?') !== false) {
+                    // If still no clear filename, generate a fallback.
+                    if (empty($trackingFilename) === true || strpos($trackingFilename, '?') !== false) {
                         $trackingFilename = 'file_'.md5($actualEndpoint);
                     }
                 }
 
-                // Add to tracking array BEFORE attempting fetch (so failures don't affect cleanup)
-                if (!empty($trackingFilename)) {
+                // Add to tracking array BEFORE attempting fetch (so failures don't affect cleanup).
+                if (empty($trackingFilename) === false) {
                     $newFileNames[] = $trackingFilename;
                 }
             }//end if
         }//end foreach
 
-        // Always run cleanup, even if newFileNames is empty
-        // This handles the case where all files should be removed from an object
-        $this->cleanupOrphanedFiles($targetObjectId, $newFileNames);
+        // Always run cleanup, even if newFileNames is empty.
+        // This handles the case where all files should be removed from an object.
+        $this->cleanupOrphanedFiles(objectId: $targetObjectId, newFileNames: $newFileNames);
+
     }//end processMultipleFilesWithCleanup()
 
     /**
      * Cleans up files for an object based on the current attachments array.
      *
-     * This method compares the files currently attached to an object with the files
-     * that should exist based on the attachments array from the synchronized data.
-     * Files that are no longer referenced in the attachments will be removed.
-     *
      * @param string $objectId    The UUID of the object to clean up files for.
      * @param array  $attachments Array of attachment objects with filename properties.
      *
      * @return int The number of files that were deleted.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws Exception
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     * @throws Exception                   When the cleanup encounters an unexpected error.
      */
     public function cleanupFilesFromAttachments(string $objectId, array $attachments): int
     {
-        // Extract filenames from attachments array
+        // Extract filenames from attachments array.
         $expectedFileNames = [];
         foreach ($attachments as $attachment) {
-            if (isset($attachment['filename']) && !empty($attachment['filename'])) {
+            if (isset($attachment['filename']) === true && empty($attachment['filename']) === false) {
                 $expectedFileNames[] = $attachment['filename'];
             }
         }
 
-        // Remove duplicates in case the same file appears multiple times with different labels
+        // Remove duplicates in case the same file appears multiple times with different labels.
         $expectedFileNames = array_unique($expectedFileNames);
 
-        // Use the existing cleanup method
-        return $this->cleanupOrphanedFiles($objectId, $expectedFileNames);
+        // Use the existing cleanup method.
+        return $this->cleanupOrphanedFiles(objectId: $objectId, newFileNames: $expectedFileNames);
+
     }//end cleanupFilesFromAttachments()
 
     /**
      * Determines if a file should be published based on the published parameter.
-     *
-     * This method checks if the published parameter indicates that a file should be published.
-     * It supports boolean values (true/false), string values ("true"/"false"), and date strings.
-     * For date strings, it assumes the file should be published if a date is provided.
      *
      * @param string|null $published The published parameter from the attachment data.
      *
@@ -4436,53 +5282,41 @@ class SynchronizationService
             return false;
         }
 
-        // Handle boolean true values
+        // Handle boolean true values.
         if ($published === true || $published === 'true' || $published === '1') {
             return true;
         }
 
-        // Handle boolean false values
+        // Handle boolean false values.
         if ($published === false || $published === 'false' || $published === '0') {
             return false;
         }
 
-        // Handle date strings - if it's a valid date string, consider it as published
-        if (is_string($published) && !empty($published)) {
-            // Try to parse as a date
+        // Handle date strings - if it's a valid date string, consider it as published.
+        if (is_string($published) === true && empty($published) === false) {
+            // Try to parse as a date.
             $date = \DateTime::createFromFormat(\DateTime::ATOM, $published);
             if ($date !== false) {
                 return true;
             }
 
-            // Try other common date formats
-            $formats = ['Y-m-d', 'Y-m-d H:i:s', 'Y-m-d\TH:i:s\Z', 'Y-m-d\TH:i:sP', 'Y-m-d\TH:i:s'];
+            // Try other common date formats.
+            $formats = [
+                'Y-m-d',
+                'Y-m-d H:i:s',
+                'Y-m-d\TH:i:s\Z',
+                'Y-m-d\TH:i:sP',
+                'Y-m-d\TH:i:s',
+            ];
             foreach ($formats as $format) {
                 $date = \DateTime::createFromFormat($format, $published);
                 if ($date !== false) {
                     return true;
                 }
             }
-        }
+        }//end if
 
         return false;
-    }//end shouldPublishFile()
 
-    /*
-     * Fetches a file from a given endpoint and saves it to the OpenRegister system.
-     *
-     * This method downloads a file from a remote source and stores it in the OpenRegister
-     * file system, optionally applying tags and sharing settings.
-     *
-     * @param Source $source The source configuration for the API call.
-     * @param string $endpoint The endpoint URL to fetch the file from.
-     * @param array $config Configuration array containing method, write settings, etc.
-     * @param string $objectId The UUID of the object to attach the file to.
-     * @param array|null $tags Optional array of tags to apply to the file.
-     * @param string|null $filename Optional filename to use for the saved file.
-     * @param string|null $published Optional published status to determine if file should be published.
-     *
-     * @return string The original endpoint URL.
-     * @throws Exception If the file cannot be fetched or saved.
-     * @throws \OCP\DB\Exception
-     */
+    }//end shouldPublishFile()
 }//end class

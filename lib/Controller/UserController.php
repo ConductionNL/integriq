@@ -1,27 +1,28 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * UserController
+/**
+ * OpenConnector UserController.
  *
  * This controller handles user-related API endpoints including user information
  * retrieval, updates, and authentication with comprehensive security measures.
  *
  * @category Controller
- * @package  OpenConnector
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  1.0.0
- * @link     https://github.com/ConductionNL/opencatalogi
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\SecurityService;
 use OCA\OpenConnector\Service\UserService;
-use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -70,13 +71,6 @@ class UserController extends Controller
     private readonly IUserSession $userSession;
 
     /**
-     * Authorization service for handling authentication
-     *
-     * @var AuthorizationService
-     */
-    private readonly AuthorizationService $authorizationService;
-
-    /**
      * Security service for handling rate limiting and XSS protection
      *
      * @var SecurityService
@@ -89,13 +83,6 @@ class UserController extends Controller
      * @var UserService
      */
     private readonly UserService $userService;
-
-    /**
-     * Organisation bridge service for organization management
-     *
-     * @var OrganisationBridgeService
-     */
-    private readonly OrganisationBridgeService $organisationBridgeService;
 
     /**
      * Logger for application events
@@ -138,29 +125,25 @@ class UserController extends Controller
      * Initializes the controller with required dependencies for user management
      * and authentication operations.
      *
-     * @param string                    $appName                   The name of the app
-     * @param IRequest                  $request                   The request object for handling HTTP requests
-     * @param IUserManager              $userManager               The user manager for user operations
-     * @param IUserSession              $userSession               The user session manager
-     * @param AuthorizationService      $authorizationService      The authorization service
-     * @param ICacheFactory             $cacheFactory              The cache factory for rate limiting
-     * @param LoggerInterface           $logger                    The logger for security events
-     * @param UserService               $userService               The user service for user-related operations
-     * @param OrganisationBridgeService $organisationBridgeService The organization bridge service
-     * @param IL10N                     $l                         The localization service
-     * @param string                    $corsMethods               Allowed CORS methods
-     * @param string                    $corsAllowedHeaders        Allowed CORS headers
-     * @param int                       $corsMaxAge                CORS max age
+     * @param string          $appName            The name of the app
+     * @param IRequest        $request            The request object for handling HTTP requests
+     * @param IUserManager    $userManager        The user manager for user operations
+     * @param IUserSession    $userSession        The user session manager
+     * @param ICacheFactory   $cacheFactory       The cache factory for rate limiting
+     * @param LoggerInterface $logger             The logger for security events
+     * @param UserService     $userService        The user service for user-related operations
+     * @param IL10N           $l                  The localization service
+     * @param string          $corsMethods        Allowed CORS methods
+     * @param string          $corsAllowedHeaders Allowed CORS headers
+     * @param int             $corsMaxAge         CORS max age
      *
      * @psalm-param   string $appName
      * @psalm-param   IRequest $request
      * @psalm-param   IUserManager $userManager
      * @psalm-param   IUserSession $userSession
-     * @psalm-param   AuthorizationService $authorizationService
      * @psalm-param   ICacheFactory $cacheFactory
      * @psalm-param   LoggerInterface $logger
      * @psalm-param   UserService $userService
-     * @psalm-param   OrganisationBridgeService $organisationBridgeService
      * @psalm-param   IL10N $l
      * @psalm-param   string $corsMethods
      * @psalm-param   string $corsAllowedHeaders
@@ -169,11 +152,9 @@ class UserController extends Controller
      * @phpstan-param IRequest $request
      * @phpstan-param IUserManager $userManager
      * @phpstan-param IUserSession $userSession
-     * @phpstan-param AuthorizationService $authorizationService
      * @phpstan-param ICacheFactory $cacheFactory
      * @phpstan-param LoggerInterface $logger
      * @phpstan-param UserService $userService
-     * @phpstan-param OrganisationBridgeService $organisationBridgeService
      * @phpstan-param IL10N $l
      * @phpstan-param string $corsMethods
      * @phpstan-param string $corsAllowedHeaders
@@ -184,25 +165,21 @@ class UserController extends Controller
         IRequest $request,
         IUserManager $userManager,
         IUserSession $userSession,
-        AuthorizationService $authorizationService,
         ICacheFactory $cacheFactory,
         LoggerInterface $logger,
         UserService $userService,
-        OrganisationBridgeService $organisationBridgeService,
         IL10N $l,
         string $corsMethods='PUT, POST, GET, DELETE, PATCH',
         string $corsAllowedHeaders='Authorization, Content-Type, Accept',
         int $corsMaxAge=1728000
     ) {
-        parent::__construct($appName, $request);
-        $this->userManager          = $userManager;
-        $this->userSession          = $userSession;
-        $this->authorizationService = $authorizationService;
-        $this->securityService      = new SecurityService($cacheFactory, $logger);
-        $this->userService          = $userService;
-        $this->organisationBridgeService = $organisationBridgeService;
-        $this->logger = $logger;
-        $this->l      = $l;
+        parent::__construct(appName: $appName, request: $request);
+        $this->userManager     = $userManager;
+        $this->userSession     = $userSession;
+        $this->securityService = new SecurityService(cacheFactory: $cacheFactory, logger: $logger);
+        $this->userService     = $userService;
+        $this->logger          = $logger;
+        $this->l = $l;
 
         $this->corsMethods        = $corsMethods;
         $this->corsAllowedHeaders = $corsAllowedHeaders;
@@ -252,7 +229,12 @@ class UserController extends Controller
      */
     private function buildCorsPreflightResponse(): Response
     {
-        $origin = ($this->request->getHeader('Origin') ?: ($this->request->server['HTTP_ORIGIN'] ?? '*'));
+        $originHeader = $this->request->getHeader('Origin');
+        if ($originHeader !== '') {
+            $origin = $originHeader;
+        } else {
+            $origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
+        }
 
         // Credentials require a non-wildcard origin; fall back to the dev origin only when the
         // request truly has no Origin header (server-side test tooling).
@@ -280,7 +262,13 @@ class UserController extends Controller
      */
     private function addCorsHeaders(JSONResponse $response): JSONResponse
     {
-        $origin = ($this->request->getHeader('Origin') ?: ($this->request->server['HTTP_ORIGIN'] ?? '*'));
+        $originHeader = $this->request->getHeader('Origin');
+        if ($originHeader !== '') {
+            $origin = $originHeader;
+        } else {
+            $origin = ($this->request->server['HTTP_ORIGIN'] ?? '*');
+        }
+
         if ($origin === '*' && $this->request->getHeader('Origin') === '') {
             $origin = 'http://localhost:3000';
         }
@@ -330,13 +318,13 @@ class UserController extends Controller
             }
 
             // Check if user is authenticated (either via session or basic auth).
-            if ($currentUser === null || $currentUser === false) {
+            if ($currentUser === null) {
                 $response = new JSONResponse(
                     data: ['message' => $this->l->t('Current user is not logged in')],
                     statusCode: 401
                 );
                 $response = $this->securityService->addSecurityHeaders($response);
-                return $this->addCorsHeaders($response);
+                return $this->addCorsHeaders(response: $response);
             }
 
             // Build user data array with essential information (already sanitized).
@@ -344,7 +332,7 @@ class UserController extends Controller
 
             $response = new JSONResponse($userData);
             $response = $this->securityService->addSecurityHeaders($response);
-            return $this->addCorsHeaders($response);
+            return $this->addCorsHeaders(response: $response);
         } catch (\Exception $e) {
             // Log the error and return generic error response.
             $response = new JSONResponse(
@@ -352,7 +340,7 @@ class UserController extends Controller
                 statusCode: 500
             );
             $response = $this->securityService->addSecurityHeaders($response);
-            return $this->addCorsHeaders($response);
+            return $this->addCorsHeaders(response: $response);
         }//end try
 
     }//end me()
@@ -374,10 +362,10 @@ class UserController extends Controller
     public function updateMe(): JSONResponse
     {
         try {
-            // Get the current user from the session
+            // Get the current user from the session.
             $currentUser = $this->userService->getCurrentUser();
 
-            // Check if user is logged in
+            // Check if user is logged in.
             if ($currentUser === null) {
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('User not authenticated')],
@@ -386,24 +374,24 @@ class UserController extends Controller
                 return $this->securityService->addSecurityHeaders($response);
             }
 
-            // Get and sanitize the request data to prevent XSS
+            // Get and sanitize the request data to prevent XSS.
             $data          = $this->request->getParams();
             $sanitizedData = $this->securityService->sanitizeInput($data);
 
-            // Remove system parameters that shouldn't be updated
+            // Remove system parameters that shouldn't be updated.
             foreach ($sanitizedData as $key => $value) {
                 if (str_starts_with($key, '_') === true) {
                     unset($sanitizedData[$key]);
                 }
             }
 
-            // Update user properties based on provided data
+            // Update user properties based on provided data.
             $updateResult = $this->userService->updateUserProperties($currentUser, $sanitizedData);
 
-            // Build updated user data array
+            // Build updated user data array.
             $userData = $this->userService->buildUserDataArray($currentUser);
 
-            // Add update result information to response
+            // Add update result information to response.
             $responseData = $userData;
             if ($updateResult['organisation_updated'] === true) {
                 $responseData['update_message'] = $updateResult['organisation_message'];
@@ -412,7 +400,7 @@ class UserController extends Controller
             $response = new JSONResponse($responseData);
             return $this->securityService->addSecurityHeaders($response);
         } catch (\Exception $e) {
-            // Log the error and return generic error response
+            // Log the error and return generic error response.
             $response = new JSONResponse(
                 data: ['error' => $this->l->t('Failed to update user information')],
                 statusCode: 500
@@ -445,30 +433,30 @@ class UserController extends Controller
     public function login(): JSONResponse
     {
         try {
-            // MEMORY MONITORING: Check initial memory usage to prevent OOM
+            // MEMORY MONITORING: Check initial memory usage to prevent OOM.
             $initialMemoryUsage = memory_get_usage(true);
             $memoryLimit        = ini_get('memory_limit');
 
-            // Convert memory limit to bytes for comparison
-            $memoryLimitBytes = $this->convertToBytes($memoryLimit);
+            // Convert memory limit to bytes for comparison.
+            $memoryLimitBytes = $this->convertToBytes(memoryLimit: $memoryLimit);
 
-            // If we're already using more than 80% of memory limit, return error
+            // If we're already using more than 80% of memory limit, return error.
             if ($memoryLimitBytes > 0 && $initialMemoryUsage > ($memoryLimitBytes * 0.8)) {
                 $response = new JSONResponse(
+                    // Service Unavailable.
                     data: ['error' => $this->l->t('Server memory usage too high, please try again later')],
                     statusCode: 503
-                // Service Unavailable
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
 
-            // Get client IP address for rate limiting
+            // Get client IP address for rate limiting.
             $clientIp = $this->securityService->getClientIpAddress($this->request);
 
-            // Get and sanitize login credentials from request
+            // Get and sanitize login credentials from request.
             $data = $this->request->getParams();
 
-            // Validate and sanitize credentials to prevent XSS attacks
+            // Validate and sanitize credentials to prevent XSS attacks.
             $credentialValidation = $this->securityService->validateLoginCredentials($data);
             if ($credentialValidation['valid'] === false) {
                 $response = new JSONResponse(
@@ -482,35 +470,35 @@ class UserController extends Controller
             $username    = $credentials['username'];
             $password    = $credentials['password'];
 
-            // Check rate limiting before attempting authentication
+            // Check rate limiting before attempting authentication.
             $rateLimitCheck = $this->securityService->checkLoginRateLimit($username, $clientIp);
             if ($rateLimitCheck['allowed'] === false) {
-                // Apply progressive delay if specified
+                // Apply progressive delay if specified.
                 if (isset($rateLimitCheck['delay']) === true) {
                     sleep($rateLimitCheck['delay']);
                 }
 
                 $response = new JSONResponse(
+                    // Too Many Requests.
                     data: [
                         'error'         => $rateLimitCheck['reason'],
                         'retry_after'   => $rateLimitCheck['delay'] ?? null,
                         'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
                     ],
                     statusCode: 429
-                    // Too Many Requests
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
 
-            // Attempt to authenticate the user
+            // Attempt to authenticate the user.
             $user = $this->userManager->checkPassword($username, $password);
 
-            // Check if authentication was successful
+            // Check if authentication was successful.
             if ($user === false) {
-                // Record failed login attempt for rate limiting
+                // Record failed login attempt for rate limiting.
                 $this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
 
-                // Return generic error message to prevent username enumeration
+                // Return generic error message to prevent username enumeration.
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('Invalid username or password')],
                     statusCode: 401
@@ -518,9 +506,9 @@ class UserController extends Controller
                 return $this->securityService->addSecurityHeaders($response);
             }
 
-            // Check if user account is enabled
+            // Check if user account is enabled.
             if ($user->isEnabled() === false) {
-                // Record failed login attempt for disabled account
+                // Record failed login attempt for disabled account.
                 $this->securityService->recordFailedLoginAttempt($username, $clientIp, 'account_disabled');
 
                 $response = new JSONResponse(
@@ -530,7 +518,7 @@ class UserController extends Controller
                 return $this->securityService->addSecurityHeaders($response);
             }
 
-            // Authentication successful - record success and clear rate limits
+            // Authentication successful - record success and clear rate limits.
             $this->securityService->recordSuccessfulLogin($username, $clientIp);
 
             // Set the user in the session using Nextcloud's session management.
@@ -548,19 +536,19 @@ class UserController extends Controller
                     statusCode: 500
                 );
                 $response = $this->securityService->addSecurityHeaders($response);
-                return $this->addCorsHeaders($response);
+                return $this->addCorsHeaders(response: $response);
             }
 
-            // Build user data array for response (sanitized)
+            // Build user data array for response (sanitized).
             $userData = $this->userService->buildUserDataArray($user);
 
-            // MEMORY MONITORING: Check memory usage after building user data
+            // MEMORY MONITORING: Check memory usage after building user data.
             $finalMemoryUsage    = memory_get_usage(true);
-            $memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
+            $memoryIncreaseBytes = ($finalMemoryUsage - $initialMemoryUsage);
 
-            // Log memory usage for monitoring
-            if ($memoryIncreaseBytes > 10 * 1024 * 1024) {
-                // 10MB threshold
+            // Log memory usage for monitoring.
+            if ($memoryIncreaseBytes > (10 * 1024 * 1024)) {
+                // 10MB threshold.
                 $this->logger->warning(
                         'High memory usage during login',
                         [
@@ -592,7 +580,7 @@ class UserController extends Controller
             );
 
             $response = $this->securityService->addSecurityHeaders($response);
-            return $this->addCorsHeaders($response);
+            return $this->addCorsHeaders(response: $response);
         } catch (\Exception $e) {
             // Log the actual error for debugging (sensitive info is in the trace, not the user response).
             $this->logger->error(
@@ -610,19 +598,20 @@ class UserController extends Controller
                 statusCode: 500
             );
             $response = $this->securityService->addSecurityHeaders($response);
-            return $this->addCorsHeaders($response);
+            return $this->addCorsHeaders(response: $response);
         }//end try
 
     }//end login()
 
     /**
-     * Convert PHP memory limit string to bytes
+     * Convert PHP memory limit string to bytes.
      *
      * This helper method converts PHP memory limit strings (like "128M", "1G")
      * to bytes for memory usage comparisons.
      *
-     * @param  string $memoryLimit The memory limit string from PHP ini
-     * @return int The memory limit in bytes, or 0 if unlimited
+     * @param string $memoryLimit The memory limit string from PHP ini.
+     *
+     * @return integer The memory limit in bytes, or 0 if unlimited.
      *
      * @psalm-param    string $memoryLimit
      * @psalm-return   int
@@ -631,28 +620,29 @@ class UserController extends Controller
      */
     private function convertToBytes(string $memoryLimit): int
     {
-        // If memory limit is -1, it means unlimited
+        // If memory limit is -1, it means unlimited.
         if ($memoryLimit === '-1') {
             return 0;
         }
 
-        // Convert the memory limit to bytes
+        // Convert the memory limit to bytes.
         $memoryLimit = trim($memoryLimit);
-        $last        = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+        $last        = strtolower($memoryLimit[(strlen($memoryLimit) - 1)]);
         $value       = (int) $memoryLimit;
 
         switch ($last) {
             case 'g':
                 $value *= 1024;
-                // fall through
+                // Fall through.
             case 'm':
                 $value *= 1024;
-                // fall through
+                // Fall through.
             case 'k':
                 $value *= 1024;
         }
 
         return $value;
+
     }//end convertToBytes()
 
     /**

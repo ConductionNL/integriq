@@ -53,9 +53,14 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
     /**
      * Export a synchronization entity to its serialised configuration form.
      *
-     * @param Entity                                                                           $entity     The synchronization entity to export.
-     * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings   The global mappings for ID/slug conversion.
-     * @param array<int, int|string>                                                           $mappingIds Collected mapping ids (out param).
+     * @param Entity                 $entity     The synchronization entity to export.
+     * @param array<string,mixed>    $mappings   The global mappings for ID/slug conversion.
+     *                                           Shape: `[$type => ['idToSlug' => array, 'slugToId' => array]]` where `$type`
+     *                                           is one of `register|schema|source|mapping|action|followUp|condition`. The
+     *                                           inner idToSlug/slugToId arrays are looked up by both int and string keys
+     *                                           at runtime, so the value type is intentionally relaxed to `mixed` for
+     *                                           static-analysis purposes.
+     * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
      *
      * @return array The serialised synchronization configuration.
      */
@@ -187,8 +192,9 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
     /**
      * Import a synchronization configuration into a synchronization entity.
      *
-     * @param array                                                                            $data     The serialised synchronization configuration.
-     * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
+     * @param array               $data     The serialised synchronization configuration.
+     * @param array<string,mixed> $mappings The global mappings for ID/slug conversion.
+     *                                      See {@see self::export()} for the runtime shape.
      *
      * @return Entity The imported synchronization entity.
      */
@@ -265,8 +271,8 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
             $data['targetSourceMapping'] = $mappings['mapping']['slugToId'][$data['targetSourceMapping']];
         }
 
-        // Convert arrays of slugs back to IDs.
-        $idArrays = ['actions', 'followUps'];
+        // Convert arrays of slugs back to IDs (mirrors $idArrays in export()).
+        $idArrays = ['actions', 'followUps', 'conditions'];
         foreach ($idArrays as $arrayKey) {
             if (isset($data[$arrayKey]) === true && is_array($data[$arrayKey]) === true) {
                 $data[$arrayKey] = array_map(

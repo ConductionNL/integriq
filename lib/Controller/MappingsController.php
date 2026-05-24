@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector MappingsController.
+ *
+ * Controller for mapping pages, mapping execution tests, and persistence helpers
+ * exposed to the OpenConnector frontend.
+ *
+ * @category Controller
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Controller;
 
@@ -12,7 +29,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -20,6 +36,8 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
+ * Controller for mapping page rendering, execution tests, and persistence helpers.
+ *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -31,35 +49,34 @@ use Psr\Container\NotFoundExceptionInterface;
 class MappingsController extends Controller
 {
     /**
-     * Constructor for the MappingsController
+     * Constructor for the MappingsController.
      *
-     * @param string         $appName        The name of the app
-     * @param IRequest       $request        The request object
-     * @param IAppConfig     $config         The app configuration object
-     * @param MappingService $mappingService The mapping service
-     * @param ObjectService  $objectService  The object service (OC)
-     * @param IL10N          $l              The localization service
+     * @param string         $appName        The name of the app.
+     * @param IRequest       $request        The request object.
+     * @param MappingService $mappingService The mapping service.
+     * @param ObjectService  $objectService  The object service (OC).
+     * @param IL10N          $l              The localization service.
      */
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly IAppConfig $config,
         private readonly MappingService $mappingService,
         private readonly ObjectService $objectService,
         private readonly IL10N $l
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
+
     }//end __construct()
 
     /**
-     * Returns the template of the main app's page
+     * Returns the template of the main app's page.
      *
      * This method renders the main page of the application, adding any necessary data to the template.
      *
+     * @return TemplateResponse The rendered template response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
      */
     public function page(): TemplateResponse
     {
@@ -68,22 +85,24 @@ class MappingsController extends Controller
             'index',
             []
         );
+
     }//end page()
 
     /**
-     * Tests a mapping
+     * Tests a mapping.
      *
      * This method tests a mapping with provided input data and optional schema validation.
      *
+     * @param ObjectService $objectService Object service used to access OpenRegister.
+     * @param IURLGenerator $urlGenerator  URL generator used to resolve schema URLs during validation.
+     *
+     * @return JSONResponse A JSON response containing the test results.
+     *
+     * @throws ContainerExceptionInterface Container resolution failure.
+     * @throws NotFoundExceptionInterface  Container lookup miss.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param ObjectService $objectService
-     * @param IURLGenerator $urlGenerator
-     *
-     * @return JSONResponse A JSON response containing the test results
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      *
      * @example
      * Request:
@@ -115,25 +134,25 @@ class MappingsController extends Controller
     {
         $openRegisters = $objectService->getOpenRegisters();
 
-        // Get all parameters from the request
+        // Get all parameters from the request.
         $data = $this->request->getParams();
 
-        // Validate that required parameters are present
+        // Validate that required parameters are present.
         if (isset($data['inputObject']) === false || isset($data['mapping']) === false) {
             throw new InvalidArgumentException('Both `inputObject` and `mapping` are required');
         }
 
-        // Decode the input object from JSON
+        // Decode the input object from JSON.
         $inputObject = $data['inputObject'];
 
-        // Decode the mapping from JSON
+        // Decode the mapping from JSON.
         $mapping = $data['mapping'];
 
-        // Initialize schema and validation flags
+        // Initialize schema and validation flags.
         $schema     = false;
         $validation = false;
 
-        // If a schema is provided, retrieve it
+        // If a schema is provided, retrieve it.
         if (empty($data['schema']) === false) {
             if ($openRegisters === null) {
                 return new JSONResponse(
@@ -159,20 +178,26 @@ class MappingsController extends Controller
             }
         }//end if
 
-        // Check if validation is requested
+        // Check if validation is requested.
         if (empty($data['validation']) === false) {
             $validation = $data['validation'];
         }
 
-        // Create a new ObjectEntity representing the mapping configuration
-        $mappingObject = new ObjectEntity();
-        $mappingObject->hydrate(is_array($mapping) ? $mapping : ['mapping' => $mapping]);
+        // Create a new ObjectEntity representing the mapping configuration.
+        if (is_array($mapping) === true) {
+            $mappingPayload = $mapping;
+        } else {
+            $mappingPayload = ['mapping' => $mapping];
+        }
 
-        // Perform the mapping operation
+        $mappingObject = new ObjectEntity();
+        $mappingObject->hydrate($mappingPayload);
+
+        // Perform the mapping operation.
         try {
             $resultObject = $this->mappingService->executeMapping(mapping: $mappingObject, input: $inputObject);
         } catch (Exception $e) {
-            // If mapping fails, return an error response
+            // If mapping fails, return an error response.
             return new JSONResponse(
                     [
                         'error'   => $this->l->t('Mapping error'),
@@ -182,11 +207,11 @@ class MappingsController extends Controller
                     );
         }
 
-        // Initialize validation variables
+        // Initialize validation variables.
         $isValid          = true;
         $validationErrors = [];
 
-        // Perform schema validation if both schema and validation are provided
+        // Perform schema validation if both schema and validation are provided.
         if ($schema !== false && $validation !== false && $openRegisters !== null) {
             $result = $openRegisters->validateObject(object: $resultObject, schemaObject: $schema->getSchemaObject($urlGenerator));
 
@@ -198,7 +223,7 @@ class MappingsController extends Controller
             }
         }
 
-        // Return the result as a JSON response
+        // Return the result as a JSON response.
         return new JSONResponse(
                 [
                     'resultObject'     => $resultObject,
@@ -206,23 +231,25 @@ class MappingsController extends Controller
                     'validationErrors' => $validationErrors,
                 ]
                 );
+
     }//end test()
 
     /**
-     * Saves a mapping object
+     * Saves a mapping object.
      *
      * This method saves a mapping object based on POST data.
      *
+     * @return JSONResponse|null The saved mapping JSON or an error response, null when no error.
+     *
+     * @throws ContainerExceptionInterface Container resolution failure.
+     * @throws NotFoundExceptionInterface  Container lookup miss.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return JSONResponse|null
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function saveObject(): ?JSONResponse
     {
-        // Check if the OpenRegister service is available
+        // Check if the OpenRegister service is available.
         $openRegisters = $this->objectService->getOpenRegisters();
         if ($openRegisters === null) {
             return new JSONResponse(['error' => $this->l->t('OpenRegister is not installed')], 412);
@@ -238,28 +265,30 @@ class MappingsController extends Controller
         // — a TypeError under the new signature, which surfaced as 500.
         $saved = $openRegisters->saveObject(
             object:   $data['object'],
-            register: $data['register'] ?? 'openconnector',
-            schema:   $data['schema'] ?? 'mapping'
+            register: ($data['register'] ?? 'openconnector'),
+            schema:   ($data['schema'] ?? 'mapping')
         );
 
         return new JSONResponse($saved->getObject());
+
     }//end saveObject()
 
     /**
-     * Retrieves a list of objects to map to
+     * Retrieves a list of objects to map to.
      *
      * This method retrieves a list of objects to map to based on GET data.
      *
+     * @return JSONResponse
+     *
+     * @throws ContainerExceptionInterface Container resolution failure.
+     * @throws NotFoundExceptionInterface  Container lookup miss.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @return JSONResponse
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function getObjects(): JSONResponse
     {
-        // Check if the OpenRegister service is available
+        // Check if the OpenRegister service is available.
         $openRegisters = $this->objectService->getOpenRegisters();
         $data          = [];
         $data['openRegisters'] = false;

@@ -1,4 +1,24 @@
 <?php
+/**
+ * OpenConnector rule service.
+ *
+ * Service for handling Rule processing in the OpenConnector app. Provides
+ * functionality to process various types of Rules, applying transformations
+ * and business logic to data based on rule configurations.
+ *
+ * Note: The custom rules functionality is experimental and subject to change.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -10,7 +30,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Http\JSONResponse;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use DateTime;
 
@@ -36,8 +55,11 @@ class RuleService
     // @TODO: replace this with a way to store these uuids somewhere.
 
     /**
-     * Index for tracking the current node ID for software catalog
-     * Used to ensure consistent node identifiers in the output
+     * Index for tracking the current node ID for software catalog.
+     *
+     * Used to ensure consistent node identifiers in the output.
+     *
+     * @var integer
      */
     private int $currentNodeIdIndex = 0;
 
@@ -72,8 +94,11 @@ class RuleService
     // @TODO: replace this with a way to store these uuids somewhere.
 
     /**
-     * Index for tracking the current node ID for software catalog
-     * Used to ensure consistent node identifiers in the output
+     * Index for tracking the current relation ID for software catalog.
+     *
+     * Used to ensure consistent relation identifiers in the output.
+     *
+     * @var integer
      */
     private int $currentRelationIdIndex = 0;
 
@@ -133,13 +158,27 @@ class RuleService
     private const BRON = 'id-a5524578-7a1c-464e-b628-c6125dc4a6c6';
 
     /**
-     * Stores relation IDs created during processing for the software catalog
-     * Used to add all relations to the relations folder in a single batch
+     * Stores relation IDs created during processing for the software catalog.
+     *
+     * Used to add all relations to the relations folder in a single batch.
+     *
+     * @var array<int, string>
      */
     private array $createdRelationIds = [];
 
+    /**
+     * Constructor for RuleService.
+     *
+     * @param ObjectService            $objectService    OpenConnector object-service facade.
+     * @param SoftwareCatalogueService $catalogueService Software-catalog rule helper.
+     * @param RegisterMapper           $registerMapper   Mapper used to resolve register IDs.
+     * @param SchemaMapper             $schemaMapper     Mapper used to resolve schema IDs.
+     * @param CallService              $callService      Service used for outbound HTTP calls during rule evaluation.
+     * @param ORObjectService          $orObjectService  OpenRegister object-service used by extend / save rules.
+     *
+     * @return void
+     */
     public function __construct(
-        private readonly LoggerInterface $logger,
         private readonly ObjectService $objectService,
         private readonly SoftwareCatalogueService $catalogueService,
         private readonly RegisterMapper $registerMapper,
@@ -150,22 +189,22 @@ class RuleService
     }//end __construct()
 
     /**
-     * Process a custom rule
+     * Process a custom rule.
      *
-     * @param ObjectEntity $rule The rule to process
-     * @param array        $data The data to process
+     * @param ObjectEntity $rule The rule to process.
+     * @param array        $data The data to process.
      *
-     * @return array The updated data array.
+     * @return array|JSONResponse The updated data array (or a JSONResponse if the rule short-circuits).
      */
     public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $ruleData = $rule->getObject();
-        $type     = $ruleData['configuration']['type'] ?? '';
+        $type     = ($ruleData['configuration']['type'] ?? '');
 
-        // Process custom rule based on type
+        // Process custom rule based on type.
         $data = match ($type) {
-            'softwareCatalogus' => $this->processSoftwareCatalogusRule($rule, $data),
-            'connectRelations' => $this->processCustomConnectionsRule($rule, $data),
+            'softwareCatalogus' => $this->processSoftwareCatalogusRule(rule: $rule, data: $data),
+            'connectRelations' => $this->processCustomConnectionsRule(rule: $rule, data: $data),
             default => throw new Exception('Unsupported custom rule type: '.($ruleData['type'] ?? '')),
         };
 
@@ -185,22 +224,22 @@ class RuleService
         $ruleData = $rule->getObject();
         $config   = $ruleData['configuration']['configuration'] ?? [];
 
-        // Get register ID and schema IDs
+        // Get register ID and schema IDs.
         $registerId          = $config['register'];
         $voorzieningSchemaId = $config['VoorzieningSchema'];
         $voorzieningGebruikSchemaId = $config['VoorzieningGebruikSchema'];
         $organisatieSchemaId        = $config['OrganisatieSchema'];
         $voorzieningAanbodSchemaId  = $config['VoorzieningAanbodSchema'];
 
-        // Get OpenRegisters instance and set the register
+        // Get OpenRegisters instance and set the register.
         $openRegisters = $this->objectService->getOpenRegisters();
         $openRegisters->setRegister($registerId);
 
-        // Fetch Voorziening objects
+        // Fetch Voorziening objects.
         $openRegisters->setSchema($voorzieningSchemaId);
         $objectEntityMapper = $openRegisters->getMapper('objectEntity');
 
-        // Fetch VoorzieningGebruik objects
+        // Fetch VoorzieningGebruik objects.
         $openRegisters->setSchema($voorzieningGebruikSchemaId);
         $objectEntityMapper   = $openRegisters->getMapper('objectEntity');
         $voorzieningGebruiken = $objectEntityMapper->findAll(
@@ -230,12 +269,14 @@ class RuleService
             ids: $voorzieningIds,
         );
 
-        // Process property definitions and update basic metadata
-        $data = $this->processPropertyDefinitionsAndMetadata($data);
+        // Process property definitions and update basic metadata.
+        $data = $this->processPropertyDefinitionsAndMetadata(data: $data);
 
         $register   = $this->registerMapper->find('vng-gemma');
         $schema     = $this->schemaMapper->find('extendview');
-        $addedViews = $this->objectService->getOpenRegisters()->findAll(['filters' => ['register' => $register->getId(), 'schema' => $schema->getId()]]);
+        $addedViews = $this->objectService->getOpenRegisters()->findAll(
+            ['filters' => ['register' => $register->getId(), 'schema' => $schema->getId()]]
+        );
 
         $addedViews = array_map(
                 function (ObjectEntity $view): array {
@@ -250,7 +291,7 @@ class RuleService
                 $addedViews
                 );
 
-        $publishPropertyId = $this->getPublishPropertyId($data['body']['propertyDefinitions']);
+        $publishPropertyId = $this->getPublishPropertyId(propertyDefinitions: $data['body']['propertyDefinitions']);
 
         $addedViews = array_filter(
                 $addedViews,
@@ -267,17 +308,17 @@ class RuleService
                 }
                 );
 
-        // Find and configure organizational folders
+        // Find and configure organizational folders.
         list($applicationFolderKey, $relationsFolderKey, $applicationFolderCount, $relationsFolderCount)
-            = $this->setupOrganizationalFolders($data);
+            = $this->setupOrganizationalFolders(data: $data);
 
-        // Process voorzieningen data and add to export
+        // Process voorzieningen data and add to export.
         $data = $this->processVoorzieningenData(
-            $data,
-            $voorzieningen,
-            $applicationFolderKey,
-            $applicationFolderCount,
-            $addedViews
+            data: $data,
+            voorzieningen: $voorzieningen,
+            applicationFolderKey: $applicationFolderKey,
+            applicationFolderCount: $applicationFolderCount,
+            views: $addedViews
         );
 
         $data['body']['views'] = array_merge($data['body']['views'], $addedViews);
@@ -294,7 +335,7 @@ class RuleService
 
         $data['body']['organizations'][] = $organization;
 
-        // Add all created relations to the Relations folder
+        // Add all created relations to the Relations folder.
         foreach ($this->createdRelationIds as $relationId) {
             $data['body']['organizations'][$relationsFolderKey]['item'][$relationsFolderCount]['item'][] = [
                 'identifierRef' => $relationId,
@@ -336,10 +377,11 @@ class RuleService
     }//end processSoftwareCatalogusRule()
 
     /**
-     * Find the 'publiceren' property by name in the list of propertyDefinitions
+     * Find the 'publiceren' property by name in the list of propertyDefinitions.
      *
-     * @param  array $propertyDefinitions The list of propertyDefinitions
-     * @return string The id of the 'Publiceren' property
+     * @param array $propertyDefinitions The list of propertyDefinitions.
+     *
+     * @return string The id of the 'Publiceren' property.
      */
     private function getPublishPropertyId(array $propertyDefinitions): string
     {
@@ -368,13 +410,17 @@ class RuleService
      */
     private function processPropertyDefinitionsAndMetadata(array $data): array
     {
-        // Check if property definitions already exist
+        // Check if property definitions already exist.
         $propertyDefinitions = array_fill_keys(array_keys(self::PROPERTY_DEFINITIONS), false);
 
         foreach ($data['body']['propertyDefinitions'] as $propertyDefinition) {
-            if (isset($propertyDefinition['identifier']) === true && array_key_exists($propertyDefinition['identifier'], $propertyDefinitions) === true) {
-                // Verify the name matches what we expect
-                if (isset($propertyDefinition['name']) === true && $propertyDefinition['name'] !== self::PROPERTY_DEFINITIONS[$propertyDefinition['identifier']]) {
+            if (isset($propertyDefinition['identifier']) === true
+                && array_key_exists($propertyDefinition['identifier'], $propertyDefinitions) === true
+            ) {
+                // Verify the name matches what we expect.
+                if (isset($propertyDefinition['name']) === true
+                    && $propertyDefinition['name'] !== self::PROPERTY_DEFINITIONS[$propertyDefinition['identifier']]
+                ) {
                     throw new Exception(
                             sprintf(
                         'Property definition with ID %s has unexpected name: "%s". Expected: "%s"',
@@ -387,9 +433,9 @@ class RuleService
 
                 $propertyDefinitions[$propertyDefinition['identifier']] = true;
             }
-        }
+        }//end foreach
 
-        // Add property definitions that don't exist yet
+        // Add property definitions that don't exist yet.
         foreach (self::PROPERTY_DEFINITIONS as $id => $name) {
             if ($propertyDefinitions[$id] === false) {
                 $data['body']['propertyDefinitions'][] = [
@@ -400,19 +446,19 @@ class RuleService
             }
         }
 
-        // Add datum export
+        // Add datum export.
         $datumExport = new DateTime();
         $data['body']['properties'][] = [
+            // Datum export.
             'propertyDefinitionRef' => self::PROP_DATUM_EXPORT,
-        // Datum export
             'value'                 => $datumExport->format('Y-m-d H:i:s'),
             'value-lang'            => 'nl',
         ];
 
-        // Update Model name
+        // Update Model name.
         $data['body']['name'] = "Turfburg (test VNG Realisatie)";
 
-        // Update filename
+        // Update filename.
         $filename = $datumExport->format('d-m-Y').'_GEMMA 2_'.$data['body']['name'].'_ameff_model.xml';
         $data['headers']['Content-Disposition'] = 'attachment; filename="'.$filename.'"';
 
@@ -431,7 +477,7 @@ class RuleService
      */
     private function setupOrganizationalFolders(array &$data): array
     {
-        // Get all folder keys
+        // Get all folder keys.
         $applicationFolderKey = null;
         $relationsFolderKey   = null;
 
@@ -444,12 +490,12 @@ class RuleService
                     case 'Relations':
                         $relationsFolderKey = $key;
                         break;
-                    // Add more cases here as needed for future folder types
+                    // Add more cases here as needed for future folder types.
                 }
             }
         }
 
-        // Check if both required folders exist
+        // Check if both required folders exist.
         if ($applicationFolderKey === null || $relationsFolderKey === null) {
             $missingFolders = array_filter(
                     [
@@ -460,18 +506,18 @@ class RuleService
             throw new Exception('Required folder(s) not found in organizations: '.implode(', ', array_keys($missingFolders)));
         }
 
-        // Add the Applicaties / Pakketten (Softwarecatalogus) folder
-        $applicationFolderCount = count($data['body']['organizations'][$applicationFolderKey]['item']);
+        // Add the Applicaties / Pakketten (Softwarecatalogus) folder.
         // Index for adding to this organization/folder later on.
+        $applicationFolderCount = count($data['body']['organizations'][$applicationFolderKey]['item']);
         $data['body']['organizations'][$applicationFolderKey]['item'][] = [
             'identifier' => "id-29ec7061-0aba-c9eb-25fd-7c9232e4f0",
             'label'      => "Applicaties (Softwarecatalogus)",
             'label-lang' => "nl",
         ];
 
-        // Add the Relaties (Softwarecatalogus) folder
-        $relationsFolderCount = count($data['body']['organizations'][$relationsFolderKey]['item']);
+        // Add the Relaties (Softwarecatalogus) folder.
         // Index for adding to this organization/folder later on.
+        $relationsFolderCount = count($data['body']['organizations'][$relationsFolderKey]['item']);
         $data['body']['organizations'][$relationsFolderKey]['item'][] = [
             'identifier' => "id-8e7d5c3b-6a2f-9d4e-1b3c-7a9e2d5f8c0b",
             'label'      => "Relaties (Softwarecatalogus)",
@@ -482,19 +528,18 @@ class RuleService
     }//end setupOrganizationalFolders()
 
     /**
-     * Process voorzieningen data and add to export structure
+     * Process voorzieningen data and add to export structure.
      *
      * Processes voorzieningen objects, counts children for reference components,
      * creates elements and relationships, and adds them to the appropriate folders.
      *
-     * @param array  $data                   The data structure to update
-     * @param array  $voorzieningen          The voorzieningen to process
-     * @param string $applicationFolderKey   The key of the Application folder
-     * @param int    $applicationFolderCount The count of items in the Application folder
-     * @param string $relationsFolderKey     The key of the Relations folder
-     * @param int    $relationsFolderCount   The count of items in the Relations folder
+     * @param array  $data                   The data structure to update.
+     * @param array  $voorzieningen          The voorzieningen to process.
+     * @param string $applicationFolderKey   The key of the Application folder.
+     * @param int    $applicationFolderCount The count of items in the Application folder.
+     * @param array  $views                  The set of catalogue views to extend with new connections (passed by reference).
      *
-     * @return array The updated data
+     * @return array The updated data.
      */
     private function processVoorzieningenData(
         array $data,
@@ -503,7 +548,7 @@ class RuleService
         int $applicationFolderCount,
         array &$views,
     ): array {
-        // Reset relation IDs array
+        // Reset relation IDs array.
         $this->createdRelationIds = [];
 
         // Count the total amount of children we are going to add for each referentieComponent.
@@ -520,7 +565,7 @@ class RuleService
             }
         }
 
-        // Add voorzieningen (pakketten/applicaties) to response data
+        // Add voorzieningen (pakketten/applicaties) to response data.
         foreach ($voorzieningen as $voorziening) {
             $voorziening = $voorziening->jsonSerialize();
 
@@ -530,12 +575,12 @@ class RuleService
 
             $elementId = "id-{$voorziening['id']}";
 
-            // Add voorziening to Application folder
+            // Add voorziening to Application folder.
             $data['body']['organizations'][$applicationFolderKey]['item'][$applicationFolderCount]['item'][] = [
                 'identifierRef' => $elementId,
             ];
 
-            // Add voorziening to elements
+            // Add voorziening to elements (with SWC type / object id / extern pakket / omschrijving / bron props).
             $data['body']['elements'][] = [
                 'identifier'         => $elementId,
                 'name'               => $voorziening['naam'],
@@ -546,40 +591,34 @@ class RuleService
                 'properties'         => [
                     [
                         'propertyDefinitionRef' => self::PROP_SWC_TYPE,
-            // SWC type
                         'value'                 => 'Pakket',
                     ],
                     [
                         'propertyDefinitionRef' => self::PROP_OBJECT_ID,
-                    // Object ID
                         'value'                 => $voorziening['id'],
                     ],
                     [
                         'propertyDefinitionRef' => 'propid-39',
-                    // URL
                         'value'                 => '',
                     ],
                     [
                         'propertyDefinitionRef' => self::PROP_EXTERN_PAKKET,
-                    // Extern Pakket
                         'value'                 => 'n',
                     ],
                     [
                         'propertyDefinitionRef' => self::PROP_OMSCHRIJVING,
-                    // Omschrijving gebruik
                         'value'                 => '',
                     ],
                     [
                         'propertyDefinitionRef' => self::BRON,
-                    // Omschrijving gebruik
                         'value'                 => 'Softwarecatalogus',
                     ],
                 ],
             ];
 
-            // Add new nodes and add relations between voorziening and referentiecomponent
+            // Add new nodes and add relations between voorziening and referentiecomponent.
             foreach ($voorziening['referentieComponenten'] as $referentieComponent) {
-                // Create relation between voorziening and referentieComponent
+                // Create relation between voorziening and referentieComponent.
                 $relationId = $this->createRelation(
                     data: $data,
                     sourceId: $elementId,
@@ -594,8 +633,16 @@ class RuleService
                     }
 
                     $connections = [];
-                    if (isset($view['nodes']) && is_array($view['nodes'])) {
-                        $this->processNodes($view['nodes'], $referentieComponent, $elementId, $newChildrenCount[$referentieComponent] ?? 0, $data, $relationId, $connections);
+                    if (isset($view['nodes']) === true && is_array($view['nodes']) === true) {
+                        $this->processNodes(
+                            nodes: $view['nodes'],
+                            matchIdentificatie: $referentieComponent,
+                            newElementId: $elementId,
+                            totalNewChildren: ($newChildrenCount[$referentieComponent] ?? 0),
+                            data: $data,
+                            relationId: $relationId,
+                            connections: $connections
+                        );
                     }
 
                     if (isset($view['connections']) === false || empty($view['connections']) === true) {
@@ -603,13 +650,22 @@ class RuleService
                     }
 
                     $view['connections'] = array_merge($view['connections'], $connections);
-                }
+                }//end foreach
             }//end foreach
         }//end foreach
 
         return $data;
     }//end processVoorzieningenData()
 
+    /**
+     * Create an ArchiMate connection entry tying a relation/source/target triple together.
+     *
+     * @param string $relationId The relationship id to reference.
+     * @param string $sourceId   The source element id.
+     * @param string $targetId   The target element id.
+     *
+     * @return array The connection array shape consumed by the catalogue exporter.
+     */
     private function createConnection(string $relationId, string $sourceId, string $targetId)
     {
         $connectionUuid = Uuid::v4();
@@ -642,26 +698,35 @@ class RuleService
     /**
      * Recursively processes nodes and their nested nodes to find matches and create subnodes
      *
-     * @param array       &$nodes             The nodes to process
-     * @param string|null $matchIdentificatie The identificatie to match against elementRef
-     * @param string      $newElementId       The ID of the new element to reference
-     * @param int         $totalNewChildren   The total amount of children we are going to add for the current $matchIdentificatie.
-     * @param array       &$data              The data structure to update
+     * @param array       $nodes              The nodes to process (passed by reference).
+     * @param string|null $matchIdentificatie The identificatie to match against elementRef.
+     * @param string      $newElementId       The ID of the new element to reference.
+     * @param int         $totalNewChildren   Count of children to add for the current $matchIdentificatie.
+     * @param array       $data               The data structure to update (passed by reference).
+     * @param string      $relationId         The relation id to attach to the new connection.
+     * @param array       $connections        Connections accumulator (passed by reference).
      *
      * @return void
      */
-    private function processNodes(array &$nodes, ?string $matchIdentificatie, string $newElementId, int $totalNewChildren, array &$data, string $relationId, array &$connections): void
-    {
-        // If matchIdentificatie is null, return early
+    private function processNodes(
+        array &$nodes,
+        ?string $matchIdentificatie,
+        string $newElementId,
+        int $totalNewChildren,
+        array &$data,
+        string $relationId,
+        array &$connections
+    ): void {
+        // If matchIdentificatie is null, return early.
         if ($matchIdentificatie === null) {
             return;
         }
 
-        // Loop through each node in the array
+        // Loop through each node in the array.
         foreach ($nodes as &$node) {
-            // Check if current node has an elementRef property and if it matches the target identificatie
+            // Check if current node has an elementRef property and if it matches the target identificatie.
             if (isset($node['elementRef']) === true && $node['elementRef'] === $matchIdentificatie) {
-                // Create a subnode with reference to the newly created element
+                // Create a subnode with reference to the newly created element.
                 $subnodeUuid = 'id-OutOfUniqueUUIDs-'.$this->currentNodeIdIndex;
                 if ($this->currentNodeIdIndex < count(self::NODE_IDS)) {
                     $subnodeUuid = self::NODE_IDS[$this->currentNodeIdIndex];
@@ -670,51 +735,49 @@ class RuleService
                 $this->currentNodeIdIndex++;
                 $subnodeId = "id-{$subnodeUuid}";
 
-                // Initialize the nodes array if it doesn't exist properly
+                // Initialize the nodes array if it doesn't exist properly.
                 if (isset($node['nodes']) === false || is_array($node['nodes']) === false) {
                     $node['nodes'] = [];
                 }
 
                 // Count the total amount of children including the new subnodes and store it in the node array.
                 if (isset($node['totalChildren']) === false) {
-                    $node['totalChildren'] = count($node['nodes']) + $totalNewChildren;
+                    $node['totalChildren'] = (count($node['nodes']) + $totalNewChildren);
                 }
 
-                // Count the total amount of children including the new subnode
+                // Count the total amount of children including the new subnode.
                 $totalChildren = $node['totalChildren'];
 
-                // Calculate the index of the child node
-                $childIndex = count($node['nodes']) + 1;
+                // Calculate the index of the child node.
+                $childIndex = (count($node['nodes']) + 1);
 
                 $parentPadding = 20;
                 $childSpacing  = 8;
-                $parentWidth   = $node['position']['w'] - ($parentPadding * 2);
-                $parentHeight  = $node['position']['h'] - ($parentPadding * 2);
+                $parentWidth   = ($node['position']['w'] - ($parentPadding * 2));
+                $parentHeight  = ($node['position']['h'] - ($parentPadding * 2));
 
-                // Calculate child width:
-                // Available width = (parent width - left/right padding - spacing between children) / number of children
+                // Calculate child width: available width = (parent width - left/right padding - spacing between
+                // children) / number of children, capped at a maximum of 120px per child.
                 $childWidth = min(
-                    ($parentWidth - ($childSpacing * ($totalChildren - 1))) / $totalChildren,
+                    (($parentWidth - ($childSpacing * ($totalChildren - 1))) / $totalChildren),
                     120
-                // Maximum width of 120px
                 );
 
-                // Child height at least 30px and no more than 100px
+                // Child height at least 30px and no more than 100px.
                 $childHeight = max(30, min($parentHeight, 100));
                 // If there is another child node, use the height of that child node, but no more than the parent height.
                 if (isset($node['nodes'][0]) === true) {
                     $childHeight = max(30, min($node['nodes'][0]['position']['h'], $parentHeight));
                 }
 
-                // Calculate X position:
-                // Start from parent's left edge + padding + (child's index × (child width + spacing))
-                $absoluteX = $node['position']['x'] + $parentPadding + (($childIndex - 1) * ($childWidth + $childSpacing));
+                // Calculate X position: start from parent's left edge + padding +
+                // (child's index x (child width + spacing)).
+                $absoluteX = ($node['position']['x'] + $parentPadding + (($childIndex - 1) * ($childWidth + $childSpacing)));
 
-                // Calculate Y position:
-                // Position from bottom of parent
-                $absoluteY = $node['position']['y'] + ($node['position']['h'] - $childHeight - 10);
+                // Calculate Y position: position from bottom of parent.
+                $absoluteY = ($node['position']['y'] + ($node['position']['h'] - $childHeight - 10));
 
-                // Add subnode with reference to new element
+                // Add subnode with reference to new element.
                 $node['nodes'][] = [
                     'identifier' => $subnodeId,
                     'elementRef' => $newElementId,
@@ -744,15 +807,16 @@ class RuleService
                             'size'  => "10",
                             'style' => 'plain',
                         ],
+                        // @TODO: Somehow when all 3 are 0, color is removed from the style array...
                         'color'     => [
                             'r' => "0",
                             'g' => "0",
                             'b' => "0",
-                        ],// @TODO: Somehow when all 3 are 0, color is removed from the style array...
+                        ],
                     ],
                 ];
 
-                // @TODO: Create relation between voorziening node and referentieComponent node
+                // @TODO: Create relation between voorziening node and referentieComponent node.
                  $connections[] = $this->createConnection(
                      relationId: $relationId,
                          sourceId: $subnodeId,
@@ -760,9 +824,9 @@ class RuleService
                  );
             }//end if
 
-            // Process nested nodes recursively if they exist
+            // Process nested nodes recursively if they exist.
             if (isset($node['nodes']) === true && is_array($node['nodes']) === true) {
-                // Call this function recursively on the nested nodes
+                // Call this function recursively on the nested nodes.
                 $this->processNodes(
                     nodes:$node['nodes'],
                     matchIdentificatie: $matchIdentificatie,
@@ -779,12 +843,12 @@ class RuleService
     /**
      * Creates a relation between elements and adds it to the data structure
      *
-     * @param array  &$data        The data structure to update
-     * @param string $sourceId     The source element ID
-     * @param string $targetId     The target element ID
-     * @param string $relationType The type of relation
+     * @param array  $data         The data structure to update (passed by reference).
+     * @param string $sourceId     The source element ID.
+     * @param string $targetId     The target element ID.
+     * @param string $relationType The type of relation.
      *
-     * @return string The relation ID
+     * @return string The relation ID.
      */
     private function createRelation(
         array &$data,
@@ -792,17 +856,17 @@ class RuleService
         string $targetId,
         string $relationType
     ): string {
-        // Create relation UUID
+        // Create relation UUID.
         $relationUuid = 'id-OutOfUniqueUUIDs-'.$this->currentRelationIdIndex;
 
-        // Use predefined relation ID if available
+        // Use predefined relation ID if available.
         if ($this->currentRelationIdIndex < count(self::RELATION_IDS)) {
             $relationUuid = self::RELATION_IDS[$this->currentRelationIdIndex];
         }
 
         $this->currentRelationIdIndex++;
 
-        // Add relation to relationships array
+        // Add relation to relationships array.
         $relationId = "id-{$relationUuid}";
         $data['body']['relationships'][] = [
             'identifier' => $relationId,
@@ -811,8 +875,8 @@ class RuleService
             'type'       => $relationType,
             'properties' => [
                 [
+                    // Object ID.
                     'propertyDefinitionRef' => self::PROP_OBJECT_ID,
-        // Object ID
                     'value'                 => $relationUuid,
                 ],
                 [
@@ -822,12 +886,20 @@ class RuleService
             ],
         ];
 
-        // Store relation ID for later folder assignment
+        // Store relation ID for later folder assignment.
         $this->createdRelationIds[] = $relationId;
 
         return $relationId;
     }//end createRelation()
 
+    /**
+     * Process the custom-connections rule by extending the catalogue model with the given model id.
+     *
+     * @param ObjectEntity $rule The rule being processed.
+     * @param array        $data The rule data envelope.
+     *
+     * @return array|JSONResponse A JSON-response with the outcome, or the data on no-op paths.
+     */
     private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $explodedPath = explode(separator: '/', string: $data['path']);
@@ -907,11 +979,13 @@ class RuleService
     }//end getExternalObject()
 
     /**
-     * Extend an object with an external url
+     * Extend an object with an external url.
      *
-     * @param  ObjectEntity $rule The rule to execute.
-     * @param  array        $data The data to extend.
+     * @param ObjectEntity $rule The rule to execute.
+     * @param array        $data The data to extend.
+     *
      * @return array|JSONResponse
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
@@ -919,7 +993,7 @@ class RuleService
     public function extendExternalUrl(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $ruleData = $rule->getObject();
-        $config   = $ruleData['configuration'] ?? [];
+        $config   = ($ruleData['configuration'] ?? []);
 
         $dataDot            = new Dot($data);
         $extendedParameters = new Dot();
@@ -930,22 +1004,59 @@ class RuleService
             try {
                 if (is_array($url) === true) {
                     $extendedParameters->add(
-                    $property['property'],
-                    array_map(
-             function (string $url) use ($property, $config) {
-                        return $this->getExternalObject($url, $config, $property['schema']);
-             },
-                    $url
-                    )
+                        $property['property'],
+                        array_map(
+                            function (string $url) use ($property, $config) {
+                                return $this->getExternalObject(
+                                    url: $url,
+                                    configuration: $config,
+                                    schemaId: $property['schema']
+                                );
+                            },
+                            $url
+                        )
                     );
                 }
 
-                $extendedParameters->add($property['property'], $this->getExternalObject($url, $config, $property['schema']));
+                $extendedParameters->add(
+                    $property['property'],
+                    $this->getExternalObject(
+                        url: $url,
+                        configuration: $config,
+                        schemaId: $property['schema']
+                    )
+                );
             } catch (ValidationException $exception) {
-                return new JSONResponse(data: ['message' => 'Invalid Input', 'error' => 'The object referenced in field '.$property['property'].' is not valid', 'errors' => [['name' => $propName, 'code' => 'invalid-resource', 'reason' => 'The resource is not valid']]], statusCode: 400);
+                return new JSONResponse(
+                    data: [
+                        'message' => 'Invalid Input',
+                        'error'   => 'The object referenced in field '.$property['property'].' is not valid',
+                        'errors'  => [
+                            [
+                                'name'   => $propName,
+                                'code'   => 'invalid-resource',
+                                'reason' => 'The resource is not valid',
+                            ],
+                        ],
+                    ],
+                    statusCode: 400
+                );
             } catch (Exception $exception) {
-                return new JSONResponse(data: ['message' => 'Invalid Input', 'error' => $exception->getMessage(), 'errors' => [['name' => $propName, 'code' => 'invalid-resource', 'reason' => 'The resource is not valid']]], statusCode: 400);
-            }
+                return new JSONResponse(
+                    data: [
+                        'message' => 'Invalid Input',
+                        'error'   => $exception->getMessage(),
+                        'errors'  => [
+                            [
+                                'name'   => $propName,
+                                'code'   => 'invalid-resource',
+                                'reason' => 'The resource is not valid',
+                            ],
+                        ],
+                    ],
+                    statusCode: 400
+                );
+            }//end try
         }//end foreach
 
         $existingParams = $data['extendedParameters'] ?? [];

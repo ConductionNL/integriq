@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "x-openregister": {
     "type": "application",
@@ -319,7 +319,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": ["name", "action"],
@@ -332,7 +332,7 @@
           "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
           "action": { "type": "string", "description": "Action verb (e.g. `error`, `replace`, `appendHeader`)" },
           "timing": { "type": "string", "description": "Pipeline timing slot (pre-request, post-request, pre-response, post-response)" },
-          "conditions": { "type": "array", "items": { "type": "object" }, "description": "Conditional expression list (all-of by default)" },
+          "conditions": { "type": "object", "description": "JsonLogic expression tree (canonical top-level object shape, e.g. {\"and\": [{\"var\": [\"user.email\"]}]}). Backend evaluator (jwadhams/json-logic-php) accepts either object or array; the schema mandates object to match what the visual builder emits." },
           "type": { "type": "string", "description": "Rule kind (authorization, transformation, validation, audit)" },
           "configuration": { "type": "object", "description": "Action-specific configuration" },
           "order": { "type": "integer", "description": "Execution order within its timing slot", "default": 100 },

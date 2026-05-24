@@ -1,20 +1,24 @@
 <?php
+/**
+ * OpenConnector SynchronizationContractsController.
+ *
+ * Controller for managing synchronization contracts. Handles action operations
+ * (activate/deactivate/execute/statistics/performance/export); CRUD operations
+ * are served by OR's generic routes.
+ *
+ * @category Controller
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 declare(strict_types=1);
-
-/*
- * SynchronizationContractsController
- *
- * Controller for managing synchronization contracts
- *
- * @category  Controller
- * @package   OCA\OpenConnector\Controller
- * @author    Conduction.nl <info@conduction.nl>
- * @copyright 2024 Conduction.nl
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   1.0.0
- * @link      https://github.com/ConductionNL/openconnector
- */
 
 namespace OCA\OpenConnector\Controller;
 
@@ -27,13 +31,10 @@ use OCP\IL10N;
 use OCP\IRequest;
 
 /**
- * Controller for managing synchronization contracts
+ * Controller for managing synchronization contracts.
  *
  * This controller handles action operations for synchronization contracts,
  * including statistics and export. CRUD operations are served by OR's generic routes.
- *
- * @category Controller
- * @package  OCA\OpenConnector\Controller
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.LongVariable)
@@ -74,23 +75,24 @@ class SynchronizationContractsController extends Controller
         OrObjectService $orObjectService,
         IL10N $l
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->orObjectService = $orObjectService;
         $this->l = $l;
+
     }//end __construct()
 
     /**
-     * Activate a synchronization contract
+     * Activate a synchronization contract.
      *
      * This method activates a synchronization contract.
      *
+     * @param string $id The ID of the contract to activate.
+     *
+     * @return JSONResponse The activation response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $id The ID of the contract to activate
-     *
-     * @return JSONResponse The activation response
      */
     public function activate(string $id): JSONResponse
     {
@@ -100,22 +102,23 @@ class SynchronizationContractsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
         }
 
-        // Set contract as active (implementation depends on your business logic)
-        // For now, we'll just return success
+        // Set contract as active (implementation depends on your business logic).
+        // For now, we'll just return success.
         return new JSONResponse(['message' => $this->l->t('Contract activated successfully')]);
+
     }//end activate()
 
     /**
-     * Deactivate a synchronization contract
+     * Deactivate a synchronization contract.
      *
      * This method deactivates a synchronization contract.
      *
+     * @param string $id The ID of the contract to deactivate.
+     *
+     * @return JSONResponse The deactivation response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $id The ID of the contract to deactivate
-     *
-     * @return JSONResponse The deactivation response
      */
     public function deactivate(string $id): JSONResponse
     {
@@ -125,22 +128,23 @@ class SynchronizationContractsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
         }
 
-        // Set contract as inactive (implementation depends on your business logic)
-        // For now, we'll just return success
+        // Set contract as inactive (implementation depends on your business logic).
+        // For now, we'll just return success.
         return new JSONResponse(['message' => $this->l->t('Contract deactivated successfully')]);
+
     }//end deactivate()
 
     /**
-     * Execute a synchronization contract immediately
+     * Execute a synchronization contract immediately.
      *
      * This method triggers immediate execution of a synchronization contract.
      *
+     * @param string $id The ID of the contract to execute.
+     *
+     * @return JSONResponse The execution response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string $id The ID of the contract to execute
-     *
-     * @return JSONResponse The execution response
      */
     public function execute(string $id): JSONResponse
     {
@@ -150,9 +154,10 @@ class SynchronizationContractsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);
         }
 
-        // Execute contract (implementation depends on your business logic)
-        // For now, we'll just return success
+        // Execute contract (implementation depends on your business logic).
+        // For now, we'll just return success.
         return new JSONResponse(['message' => $this->l->t('Contract executed successfully')]);
+
     }//end execute()
 
     /**
@@ -168,7 +173,7 @@ class SynchronizationContractsController extends Controller
     public function statistics(): JSONResponse
     {
         try {
-            // Get basic counts by status via OR ObjectService
+            // Get basic counts by status via OR ObjectService.
             $baseFilters     = ['register' => 'openconnector', 'schema' => 'synchronization_contract'];
             $allMatches      = $this->orObjectService->findAll(config: ['filters' => $baseFilters]);
             $activeMatches   = $this->orObjectService->findAll(config: ['filters' => array_merge($baseFilters, ['status' => 'active'])]);
@@ -205,8 +210,8 @@ class SynchronizationContractsController extends Controller
     public function performance(): JSONResponse
     {
         try {
-            // Get performance data for different time periods
-            // This is a simplified implementation - adjust based on your actual requirements
+            // Get performance data for different time periods.
+            // This is a simplified implementation - adjust based on your actual requirements.
             $performanceData = [
                 'last_7_days'  => [
                     'successRate'          => 85.5,
@@ -232,21 +237,21 @@ class SynchronizationContractsController extends Controller
     }//end performance()
 
     /**
-     * Export contracts as CSV
+     * Export contracts as CSV.
      *
      * This method exports synchronization contracts as a CSV file.
      *
+     * @param string|null $synchronizationId Filter by synchronization ID.
+     * @param string|null $status            Filter by contract status.
+     * @param string|null $originId          Filter by origin ID.
+     * @param string|null $targetId          Filter by target ID.
+     * @param string|null $dateFrom          Filter contracts from this date.
+     * @param string|null $dateTo            Filter contracts until this date.
+     *
+     * @return JSONResponse The export response.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
-     *
-     * @param string|null $synchronizationId Filter by synchronization ID
-     * @param string|null $status            Filter by contract status
-     * @param string|null $originId          Filter by origin ID
-     * @param string|null $targetId          Filter by target ID
-     * @param string|null $dateFrom          Filter contracts from this date
-     * @param string|null $dateTo            Filter contracts until this date
-     *
-     * @return JSONResponse The export response
      */
     public function export(
         ?string $synchronizationId=null,
@@ -257,7 +262,7 @@ class SynchronizationContractsController extends Controller
         ?string $dateTo=null
     ): JSONResponse {
         try {
-            // Build filters array (same as index method)
+            // Build filters array (same as index method).
             $filters = [];
 
             if ($synchronizationId !== null) {
@@ -284,12 +289,12 @@ class SynchronizationContractsController extends Controller
                 $filters['date_to'] = $dateTo;
             }
 
-            // Get all contracts matching filters (no pagination for export) via OR ObjectService
+            // Get all contracts matching filters (no pagination for export) via OR ObjectService.
             $orFilters = array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters);
             $matches   = $this->orObjectService->findAll(config: ['filters' => $orFilters]);
-            $contracts = $matches['results'] ?? $matches;
+            $contracts = ($matches['results'] ?? $matches);
 
-            // Create CSV content
+            // Create CSV content.
             $csvData = "UUID,Synchronization ID,Origin ID,Target ID,Origin Hash,Target Hash,Source Last Synced,Target Last Synced,Created,Updated\n";
 
             foreach ($contracts as $contract) {
@@ -309,7 +314,7 @@ class SynchronizationContractsController extends Controller
                 );
             }
 
-            // Return CSV as response
+            // Return CSV as response.
             return new JSONResponse(
                     [
                         'filename'    => 'synchronization_contracts_'.date('Y-m-d_H-i-s').'.csv',

@@ -1,52 +1,129 @@
 <?php
+/**
+ * OpenConnector FlowToken.
+ *
+ * Mutable container that carries the original + amended request / response /
+ * sync-input / sync-output payloads across the rule pipeline.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service\Helper
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service\Helper;
 
-use OC\AppFramework\Http\Request;
 use OCP\AppFramework\Http\Response;
+use OCP\IRequest;
 
 /**
+ * Container for original + amended payloads passed through the rule pipeline.
+ *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class FlowToken
 {
 
+    /**
+     * Original request snapshot.
+     *
+     * @var array
+     */
     private array $requestOriginal;
 
+    /**
+     * Amended request snapshot.
+     *
+     * @var array
+     */
     private array $requestAmended;
 
+    /**
+     * Original response snapshot.
+     *
+     * @var array
+     */
     private array $responseOriginal;
 
+    /**
+     * Amended response snapshot.
+     *
+     * @var array
+     */
     private array $responseAmended;
 
+    /**
+     * Original sync input snapshot.
+     *
+     * @var array
+     */
     private array $syncInputOriginal;
 
+    /**
+     * Amended sync input snapshot.
+     *
+     * @var array
+     */
     private array $syncInputAmended;
 
+    /**
+     * Original sync output snapshot.
+     *
+     * @var array
+     */
     private array $syncOutputOriginal;
 
+    /**
+     * Amended sync output snapshot.
+     *
+     * @var array
+     */
     private array $syncOutputAmended;
 
+    /**
+     * Constructor.
+     *
+     * @param $requestOriginal    Original inbound request or pre-built array payload.
+     * @param $responseOriginal   Original outbound response or pre-built array payload.
+     * @param array       $syncInputOriginal  Original sync input snapshot.
+     * @param array       $syncOutputOriginal Original sync output snapshot.
+     * @param string|null $path               Request path used when serialising a Request.
+     */
     public function __construct(
-        Request|array $requestOriginal=[],
+        IRequest|array $requestOriginal=[],
         Response|array $responseOriginal=[],
         array $syncInputOriginal=[],
         array $syncOutputOriginal=[],
         ?string $path=null
     ) {
         $this->setRequestOriginal(requestOriginal: $requestOriginal, path: $path);
-        $this->setRequestAmended($this->getRequestOriginal());
+        $this->setRequestAmended(requestAmended: $this->getRequestOriginal());
 
-        $this->setResponseOriginal($responseOriginal);
-        $this->setResponseAmended($this->getResponseOriginal());
+        $this->setResponseOriginal(responseOriginal: $responseOriginal);
+        $this->setResponseAmended(responseAmended: $this->getResponseOriginal());
 
-        $this->setSyncInputOriginal($syncInputOriginal);
-        $this->setSyncInputAmended($this->getSyncInputOriginal());
+        $this->setSyncInputOriginal(syncInputOriginal: $syncInputOriginal);
+        $this->setSyncInputAmended(syncInputAmended: $this->getSyncInputOriginal());
 
-        $this->setSyncOutputOriginal($syncOutputOriginal);
-        $this->setSyncOutputAmended($this->getSyncOutputOriginal());
+        $this->setSyncOutputOriginal(syncOutputOriginal: $syncOutputOriginal);
+        $this->setSyncOutputAmended(syncOutputAmended: $this->getSyncOutputOriginal());
+
     }//end __construct()
 
+    /**
+     * Filter $_SERVER for HTTP_* headers, optionally including proxy headers.
+     *
+     * @param array   $server       Server array (typically $request->server).
+     * @param boolean $proxyHeaders Whether to include X-Forwarded-* / X-Real-IP / X-Original-URI.
+     *
+     * @return array Map of lowercase header name to value.
+     */
     private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
         $headers = array_filter(
@@ -77,46 +154,50 @@ class FlowToken
                     ),
             $headers
         );
+
     }//end getHeaders()
 
     /**
      * Gets the raw content for a http request from the input stream.
      *
-     * @return string The raw content body for a http request
+     * @return string The raw content body for a http request.
      */
     private function getRawContent(): string
     {
         return file_get_contents(filename: 'php://input');
+
     }//end getRawContent()
 
     /**
-     * Check if content appears to be XML
+     * Check if content appears to be XML.
      *
-     * @param  string $content Content to check
-     * @return bool True if content is valid XML
+     * @param string $content Content to check.
+     *
+     * @return boolean True if content is valid XML.
      */
     private function looksLikeXml(string $content): bool
     {
-        // Suppress XML errors
+        // Suppress XML errors.
         libxml_use_internal_errors(true);
 
-        // Attempt to parse the content as XML
-        $result = simplexml_load_string($content) !== false;
+        // Attempt to parse the content as XML.
+        $result = (simplexml_load_string($content) !== false);
 
-        // Clear any XML errors
+        // Clear any XML errors.
         libxml_clear_errors();
 
         return $result;
+
     }//end looksLikeXml()
 
     /**
-     * Parse raw content into structured data based on content type
+     * Parse raw content into structured data based on content type.
      *
-     * @param  string      $content     The raw content to parse
-     * @param  string|null $contentType Optional content type hint
-     * @return mixed Parsed data (array for JSON/XML) or original string
+     * @param $request The inbound request used to determine content type and fallback parameters.
+     *
+     * @return mixed Parsed data (array for JSON/XML) or original string.
      */
-    private function parseContent(Request $request): mixed
+    private function parseContent(IRequest $request): mixed
     {
         $contentType = $request->getHeader('Content-Type');
 
@@ -126,7 +207,6 @@ class FlowToken
             $parsedFiles = array_map(
                     function ($file) {
                         return file_get_contents($file['tmp_name']);
-
                     },
                     $files
                     );
@@ -136,15 +216,15 @@ class FlowToken
 
         $content = $this->getRawContent();
 
-        // Try JSON decode first
+        // Try JSON decode first.
         $json = json_decode($content, true);
         if ($json !== null) {
             return $json;
         }
 
-        // Try XML decode if content type suggests XML or content looks like XML
+        // Try XML decode if content type suggests XML or content looks like XML.
         if ($contentType === 'application/xml' || $contentType === 'text/xml'
-            || ($contentType === null && $this->looksLikeXml($content) === true)
+            || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string($content);
@@ -155,18 +235,27 @@ class FlowToken
             }
         }
 
-        // Return original content as fallback
+        // Return original content as fallback.
         return $request->getParams();
+
     }//end parseContent()
 
-    public function setRequestOriginal(array|Request $requestOriginal, ?string $path=null): array
+    /**
+     * Set the original request, normalising Request objects into an array shape.
+     *
+     * @param $requestOriginal The original request payload.
+     * @param string|null $path            Path used when serialising a Request.
+     *
+     * @return array The stored array shape.
+     */
+    public function setRequestOriginal(array|IRequest $requestOriginal, ?string $path=null): array
     {
-        if ($requestOriginal instanceof Request) {
+        if ($requestOriginal instanceof IRequest) {
             $request         = $requestOriginal;
             $requestOriginal = [
                 'method'     => $request->getMethod(),
-                'headers'    => $this->getHeaders($request->server, true),
-                'parameters' => array_merge($request->getParams(), $this->parseContent($request)),
+                'headers'    => $this->getHeaders(server: $_SERVER, proxyHeaders: true),
+                'parameters' => array_merge($request->getParams(), $this->parseContent(request: $request)),
                 'path'       => $path,
             ];
         }
@@ -174,30 +263,64 @@ class FlowToken
         $this->requestOriginal = $requestOriginal;
 
         return $this->requestOriginal;
+
     }//end setRequestOriginal()
 
+    /**
+     * Get the original request snapshot.
+     *
+     * @return array
+     */
     public function getRequestOriginal(): array
     {
         return $this->requestOriginal;
+
     }//end getRequestOriginal()
 
+    /**
+     * Set the amended request snapshot.
+     *
+     * @param array $requestAmended Amended request snapshot.
+     *
+     * @return array
+     */
     public function setRequestAmended(array $requestAmended): array
     {
         $this->requestAmended = $requestAmended;
 
         return $this->requestAmended;
+
     }//end setRequestAmended()
 
+    /**
+     * Get the amended request snapshot.
+     *
+     * @return array
+     */
     public function getRequestAmended(): array
     {
         return $this->requestAmended;
+
     }//end getRequestAmended()
 
+    /**
+     * Set the original response, normalising Response objects into an array shape.
+     *
+     * @param array|Response $responseOriginal Original response or pre-built array payload.
+     *
+     * @return array The stored array shape.
+     */
     public function setResponseOriginal(array|Response $responseOriginal): array
     {
         if ($responseOriginal instanceof Response) {
+            if (method_exists($responseOriginal, 'getData') === true) {
+                $data = $responseOriginal->getData();
+            } else {
+                $data = [];
+            }
+
             $responseOriginal = [
-                'data'    => method_exists($responseOriginal, 'getData') ? $responseOriginal->getData() : [],
+                'data'    => $data,
                 'headers' => $responseOriginal->getHeaders(),
                 'status'  => $responseOriginal->getStatus(),
                 'cookies' => $responseOriginal->getCookies(),
@@ -207,67 +330,152 @@ class FlowToken
         $this->responseOriginal = $responseOriginal;
 
         return $responseOriginal;
+
     }//end setResponseOriginal()
 
+    /**
+     * Get the original response snapshot.
+     *
+     * @return array
+     */
     public function getResponseOriginal(): array
     {
         return $this->responseOriginal;
+
     }//end getResponseOriginal()
 
+    /**
+     * Set the amended response snapshot.
+     *
+     * @param array $responseAmended Amended response snapshot.
+     *
+     * @return array
+     */
     public function setResponseAmended(array $responseAmended): array
     {
         $this->responseAmended = $responseAmended;
 
         return $this->responseAmended;
+
     }//end setResponseAmended()
 
+    /**
+     * Get the amended response snapshot.
+     *
+     * @return array
+     */
     public function getResponseAmended(): array
     {
         return $this->responseAmended;
+
     }//end getResponseAmended()
 
+    /**
+     * Set the original sync input snapshot.
+     *
+     * @param array $syncInputOriginal Original sync input snapshot.
+     *
+     * @return array
+     */
     public function setSyncInputOriginal(array $syncInputOriginal): array
     {
         $this->syncInputOriginal = $syncInputOriginal;
 
         return $this->syncInputOriginal;
+
     }//end setSyncInputOriginal()
 
+    /**
+     * Get the original sync input snapshot.
+     *
+     * @return array
+     */
     public function getSyncInputOriginal(): array
     {
         return $this->syncInputOriginal;
+
     }//end getSyncInputOriginal()
 
+    /**
+     * Set the amended sync input snapshot.
+     *
+     * @param array $syncInputAmended Amended sync input snapshot.
+     *
+     * @return array
+     */
     public function setSyncInputAmended(array $syncInputAmended): array
     {
-        return $this->syncInputAmended = $syncInputAmended;
+        $this->syncInputAmended = $syncInputAmended;
+        return $this->syncInputAmended;
+
     }//end setSyncInputAmended()
 
+    /**
+     * Get the amended sync input snapshot.
+     *
+     * @return array
+     */
     public function getSyncInputAmended(): array
     {
         return $this->syncInputAmended;
+
     }//end getSyncInputAmended()
 
+    /**
+     * Set the original sync output snapshot.
+     *
+     * @param array $syncOutputOriginal Original sync output snapshot.
+     *
+     * @return array
+     */
     public function setSyncOutputOriginal(array $syncOutputOriginal): array
     {
-        return $this->syncOutputOriginal = $syncOutputOriginal;
+        $this->syncOutputOriginal = $syncOutputOriginal;
+        return $this->syncOutputOriginal;
+
     }//end setSyncOutputOriginal()
 
+    /**
+     * Get the original sync output snapshot.
+     *
+     * @return array
+     */
     public function getSyncOutputOriginal(): array
     {
         return $this->syncOutputOriginal;
+
     }//end getSyncOutputOriginal()
 
+    /**
+     * Set the amended sync output snapshot.
+     *
+     * @param array $syncOutputAmended Amended sync output snapshot.
+     *
+     * @return array
+     */
     public function setSyncOutputAmended(array $syncOutputAmended): array
     {
-        return $this->syncOutputAmended = $syncOutputAmended;
+        $this->syncOutputAmended = $syncOutputAmended;
+        return $this->syncOutputAmended;
+
     }//end setSyncOutputAmended()
 
+    /**
+     * Get the amended sync output snapshot.
+     *
+     * @return array
+     */
     public function getSyncOutputAmended(): array
     {
         return $this->syncOutputAmended;
+
     }//end getSyncOutputAmended()
 
+    /**
+     * Serialise the FlowToken into an array suitable for json encoding.
+     *
+     * @return array
+     */
     public function __serialize(): array
     {
         return [
@@ -280,5 +488,6 @@ class FlowToken
             'syncOutputOriginal' => $this->syncOutputOriginal,
             'syncOutputAmended'  => $this->syncOutputAmended,
         ];
+
     }//end __serialize()
 }//end class

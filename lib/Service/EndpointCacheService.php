@@ -1,4 +1,23 @@
 <?php
+/**
+ * OpenConnector EndpointCacheService.
+ *
+ * Service for caching endpoint data to improve matching performance.
+ *
+ * This service caches endpoint data in memory to avoid database queries
+ * on every request when matching paths to endpoints.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -8,17 +27,7 @@ use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service for caching endpoint data to improve matching performance
- *
- * This service caches endpoint data in memory to avoid database queries
- * on every request when matching paths to endpoints.
- *
- * @category Service
- * @package  OCA\OpenConnector\Service
- * @author   Ruben van der Linde <ruben@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  1.0.0
- * @link     https://github.com/ConductionNL/openconnector
+ * Service for caching endpoint data to improve matching performance.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -29,18 +38,19 @@ use Psr\Log\LoggerInterface;
  */
 class EndpointCacheService
 {
+
     /**
-     * Cache key for endpoint data
+     * Cache key for endpoint data.
      */
     private const CACHE_KEY = 'openconnector_endpoints_cache';
 
     /**
-     * Cache TTL in seconds (1 hour)
+     * Cache TTL in seconds (1 hour).
      */
     private const CACHE_TTL = 3600;
 
     /**
-     * In-memory cache for request lifetime
+     * In-memory cache for request lifetime.
      *
      * @var array|null
      */
@@ -54,27 +64,30 @@ class EndpointCacheService
     private bool $cacheDirty = false;
 
     /**
-     * Constructor for EndpointCacheService
+     * Constructor for EndpointCacheService.
      *
-     * @param ICacheFactory                           $cacheFactory    Factory for creating cache instances
-     * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR object service for endpoint lookups
-     * @param LoggerInterface                         $logger          Logger for error handling
+     * @param ICacheFactory                           $cacheFactory    Factory for creating cache instances.
+     * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR object service for endpoint lookups.
+     * @param LoggerInterface                         $logger          Logger for error handling.
      */
     public function __construct(
         private readonly ICacheFactory $cacheFactory,
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
         private readonly LoggerInterface $logger
     ) {
+
     }//end __construct()
 
     /**
-     * Find the best matching endpoint for a path and method using cached data with smart fallback
+     * Find the best matching endpoint for a path and method using cached data with smart fallback.
      *
-     * @param  string $path    The path to match against endpoint regex patterns
-     * @param  string $method  The HTTP method to filter by (GET, POST, etc)
-     * @param  bool   $isRetry Internal flag to prevent infinite recursion
-     * @return ObjectEntity|null Returns the best matching endpoint or null if none found
-     * @throws \Exception When multiple endpoints match (ambiguous routing)
+     * @param string  $path    The path to match against endpoint regex patterns.
+     * @param string  $method  The HTTP method to filter by (GET, POST, etc).
+     * @param boolean $isRetry Internal flag to prevent infinite recursion.
+     *
+     * @return ObjectEntity|null Returns the best matching endpoint or null if none found.
+     *
+     * @throws \Exception When multiple endpoints match (ambiguous routing).
      */
     public function findByPathRegex(string $path, string $method, bool $isRetry=false): ?ObjectEntity
     {
@@ -83,38 +96,52 @@ class EndpointCacheService
         $matches = array_filter(
                 $endpoints,
                 function ($endpoint) use ($path, $method) {
-                    // Work with arrays directly - much faster than object reconstruction
-                    $endpointData   = ($endpoint instanceof ObjectEntity) ? $endpoint->getObject() : (is_array($endpoint) ? $endpoint : []);
-                    $pattern        = $endpointData['endpointRegex'] ?? null;
-                    $endpointMethod = $endpointData['method'] ?? null;
+                    // Work with arrays directly - much faster than object reconstruction.
+                    if ($endpoint instanceof ObjectEntity) {
+                        $endpointData = $endpoint->getObject();
+                    } else if (is_array($endpoint) === true) {
+                        $endpointData = $endpoint;
+                    } else {
+                        $endpointData = [];
+                    }
 
-                    // Skip if no regex pattern is set
+                    $pattern        = ($endpointData['endpointRegex'] ?? null);
+                    $endpointMethod = ($endpointData['method'] ?? null);
+
+                    // Skip if no regex pattern is set.
                     if (empty($pattern) === true) {
                         return false;
                     }
 
-                    // Check if both path matches the regex pattern and method matches
-                    return preg_match($pattern, $path) === 1 && $endpointMethod === $method;
+                    // Check if both path matches the regex pattern and method matches.
+                    return (preg_match($pattern, $path) === 1 && $endpointMethod === $method);
                 }
                 );
 
-        // Smart fallback: if no matches found and we haven't retried yet, refresh cache once and try again
-        if (empty($matches) && !$isRetry) {
+        // Smart fallback: if no matches found and we haven't retried yet, refresh cache once and try again.
+        if (empty($matches) === true && $isRetry === false) {
             $this->logger->info("No endpoint matches found for {$method} {$path}, refreshing cache and retrying");
 
-            // Force refresh the cache
+            // Force refresh the cache.
             $this->refreshCache();
 
-            // Try once more with fresh data
-            return $this->findByPathRegex($path, $method, true);
+            // Try once more with fresh data.
+            return $this->findByPathRegex(path: $path, method: $method, isRetry: true);
         }
 
-        // Handle multiple matches - this is an ambiguous routing situation
+        // Handle multiple matches - this is an ambiguous routing situation.
         if (count($matches) > 1) {
             $endpointNames = array_map(
                     function ($ep) {
-                        $data = ($ep instanceof ObjectEntity) ? $ep->getObject() : (is_array($ep) ? $ep : []);
-                        return $data['name'] ?? 'unnamed';
+                        if ($ep instanceof ObjectEntity) {
+                            $data = $ep->getObject();
+                        } else if (is_array($ep) === true) {
+                            $data = $ep;
+                        } else {
+                            $data = [];
+                        }
+
+                        return ($data['name'] ?? 'unnamed');
                     },
                     $matches
                     );
@@ -123,89 +150,106 @@ class EndpointCacheService
             );
         }
 
-        // Return null if no matches
-        if (empty($matches)) {
+        // Return null if no matches.
+        if (empty($matches) === true) {
             return null;
         }
 
-        // Return the matched ObjectEntity endpoint
+        // Return the matched ObjectEntity endpoint.
         $matchedEndpoint = reset($matches);
-        return ($matchedEndpoint instanceof ObjectEntity) ? $matchedEndpoint : null;
+        if ($matchedEndpoint instanceof ObjectEntity) {
+            return $matchedEndpoint;
+        }
+
+        return null;
+
     }//end findByPathRegex()
 
     /**
-     * Get all endpoints from cache or database as ObjectEntity arrays (for performance)
+     * Get all endpoints from cache or database as ObjectEntity arrays (for performance).
      *
-     * @return array Array of ObjectEntity instances (for faster filtering)
+     * @return array Array of ObjectEntity instances (for faster filtering).
      */
     public function getAllEndpoints(): array
     {
-        // Return from memory cache if available and cache is not dirty (request lifetime)
-        if ($this->memoryCache !== null && !$this->cacheDirty) {
+        // Return from memory cache if available and cache is not dirty (request lifetime).
+        if ($this->memoryCache !== null && $this->cacheDirty === false) {
             return $this->memoryCache;
         }
 
         try {
             $cache = $this->cacheFactory->createDistributed('openconnector');
 
-            // Check if cache is dirty (endpoints were modified)
-            if ($this->cacheDirty) {
+            // Check if cache is dirty (endpoints were modified).
+            if ($this->cacheDirty === true) {
                 $this->logger->info('Endpoint cache is dirty, forcing refresh');
                 $this->refreshCache();
-                return $this->memoryCache ?? [];
+                return ($this->memoryCache ?? []);
             }
 
-            // Try to get from persistent cache
+            // Try to get from persistent cache.
             $cachedData = $cache->get(self::CACHE_KEY);
 
-            if ($cachedData !== null && is_array($cachedData)) {
+            if ($cachedData !== null && is_array($cachedData) === true) {
                 $this->memoryCache = $cachedData;
                 return $cachedData;
             }
 
-            // Cache miss - load from database
+            // Cache miss - load from database.
             $this->refreshCache();
 
-            return $this->memoryCache ?? [];
+            return ($this->memoryCache ?? []);
         } catch (\Exception $e) {
             $this->logger->warning('Endpoint cache error, falling back to database: '.$e->getMessage());
 
-            // Fallback to direct OR query
+            // Fallback to direct OR query.
             return $this->fetchEndpointsFromOr();
         }//end try
+
     }//end getAllEndpoints()
 
     /**
      * Fetch all endpoints from OpenRegister ObjectService.
      *
-     * @return array Array of ObjectEntity instances
+     * @return array Array of ObjectEntity instances.
      */
     private function fetchEndpointsFromOr(): array
     {
         $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']]);
-        $endpoints = $matches['results'] ?? $matches;
-        return is_array($endpoints) ? $endpoints : [];
+        $endpoints = ($matches['results'] ?? $matches);
+        if (is_array($endpoints) === true) {
+            return $endpoints;
+        }
+
+        return [];
+
     }//end fetchEndpointsFromOr()
 
     /**
-     * Refresh the endpoint cache from OpenRegister
+     * Refresh the endpoint cache from OpenRegister.
      *
      * @return void
      */
     public function refreshCache(): void
     {
         try {
-            // Load fresh data from OR
+            // Load fresh data from OR.
             $endpoints = $this->fetchEndpointsFromOr();
 
-            // Store in memory cache (request lifetime)
+            // Store in memory cache (request lifetime).
             $this->memoryCache = $endpoints;
             $this->cacheDirty  = false;
 
-            // Persist serialisable data (arrays) in distributed cache
+            // Persist serialisable data (arrays) in distributed cache.
             $serialisable = array_map(
                 static function ($ep) {
-                    return ($ep instanceof ObjectEntity) ? $ep->getObject() : (is_array($ep) ? $ep : []);
+                    if ($ep instanceof ObjectEntity) {
+                        return $ep->getObject();
+                    } else if (is_array($ep) === true) {
+                        return $ep;
+                    }
+
+                    return [];
                 },
                 $endpoints
             );
@@ -218,10 +262,11 @@ class EndpointCacheService
             $this->logger->error('Failed to refresh endpoint cache: '.$e->getMessage());
             throw $e;
         }//end try
+
     }//end refreshCache()
 
     /**
-     * Clear the endpoint cache
+     * Clear the endpoint cache.
      *
      * This should be called when endpoints are created, updated, or deleted.
      *
@@ -230,10 +275,10 @@ class EndpointCacheService
     public function clearCache(): void
     {
         try {
-            // Clear memory cache
+            // Clear memory cache.
             $this->memoryCache = null;
 
-            // Clear persistent cache
+            // Clear persistent cache.
             $cache = $this->cacheFactory->createDistributed('openconnector');
             $cache->remove(self::CACHE_KEY);
 
@@ -241,16 +286,18 @@ class EndpointCacheService
         } catch (\Exception $e) {
             $this->logger->warning('Failed to clear endpoint cache: '.$e->getMessage());
         }
+
     }//end clearCache()
 
     /**
-     * Create endpoint regex pattern from endpoint path
+     * Create endpoint regex pattern from endpoint path.
      *
      * This mirrors the logic from EndpointMapper::createEndpointRegex()
      * but is kept here to maintain cache service independence.
      *
-     * @param  string $endpoint The endpoint path pattern
-     * @return string The regex pattern for matching
+     * @param string $endpoint The endpoint path pattern.
+     *
+     * @return string The regex pattern for matching.
      */
     private function createEndpointRegex(string $endpoint): string
     {
@@ -260,28 +307,29 @@ class EndpointCacheService
             $endpoint
         ).'#';
 
-        // Replace only the LAST occurrence of "(/([^/]+))?#" with "(?:/([^/]+))?$#"
+        // Replace only the LAST occurrence of "(/([^/]+))?#" with "(?:/([^/]+))?$#".
         $regex = preg_replace_callback(
             '/\(\/\(\[\^\/\]\+\)\)\?#/',
             function ($matches) {
                 return '(?:/([^/]+))?$#';
             },
             $regex,
+            // Limit to only one replacement.
             1
-        // Limit to only one replacement
         );
 
         if (str_ends_with($regex, '?#') === false && str_ends_with($regex, '$#') === false) {
-            $regex = substr($regex, 0, -1).'$#';
+            $regex = (substr($regex, 0, -1).'$#');
         }
 
         return $regex;
+
     }//end createEndpointRegex()
 
     /**
-     * Get cache statistics for monitoring
+     * Get cache statistics for monitoring.
      *
-     * @return array Cache statistics
+     * @return array Cache statistics.
      */
     public function getCacheStats(): array
     {
@@ -289,10 +337,16 @@ class EndpointCacheService
             $cache      = $this->cacheFactory->createDistributed('openconnector');
             $cachedData = $cache->get(self::CACHE_KEY);
 
+            if ($cachedData !== null && is_array($cachedData) === true) {
+                $endpointCount = count($cachedData);
+            } else {
+                $endpointCount = 0;
+            }
+
             return [
-                'cached'         => $cachedData !== null,
-                'memory_cached'  => $this->memoryCache !== null,
-                'endpoint_count' => $cachedData && is_array($cachedData) ? count($cachedData) : 0,
+                'cached'         => ($cachedData !== null),
+                'memory_cached'  => ($this->memoryCache !== null),
+                'endpoint_count' => $endpointCount,
                 'cache_key'      => self::CACHE_KEY,
                 'cache_ttl'      => self::CACHE_TTL,
                 'cache_dirty'    => $this->cacheDirty,
@@ -301,9 +355,10 @@ class EndpointCacheService
             return [
                 'error'         => $e->getMessage(),
                 'cached'        => false,
-                'memory_cached' => $this->memoryCache !== null,
+                'memory_cached' => ($this->memoryCache !== null),
                 'cache_dirty'   => $this->cacheDirty,
             ];
         }//end try
+
     }//end getCacheStats()
 }//end class

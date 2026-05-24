@@ -1,4 +1,20 @@
 <?php
+/**
+ * OpenConnector EventService.
+ *
+ * Service class for managing events and their delivery.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -11,37 +27,40 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
- * Service class for managing events and their delivery
- *
- * @package OCA\OpenConnector\Service
+ * Service class for managing events and their delivery.
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class EventService
 {
     /**
-     * @param ORObjectService $objectService The OR ObjectService for data access
-     * @param IClientService  $clientService
-     * @param LoggerInterface $logger
+     * Constructor.
+     *
+     * @param ORObjectService $objectService The OR ObjectService for data access.
+     * @param IClientService  $clientService HTTP client service used to deliver push messages.
+     * @param LoggerInterface $logger        Logger for delivery successes and failures.
      */
     public function __construct(
         private readonly ORObjectService $objectService,
         private readonly IClientService $clientService,
         private readonly LoggerInterface $logger
     ) {
+
     }//end __construct()
 
     /**
-     * Process a new event and create messages for all matching subscriptions
+     * Process a new event and create messages for all matching subscriptions.
      *
-     * @param  ObjectEntity $event The event ObjectEntity to process
-     * @return array<ObjectEntity> Array of created message ObjectEntities
-     * @throws Exception
+     * @param ObjectEntity $event The event ObjectEntity to process.
+     *
+     * @return array<ObjectEntity> Array of created message ObjectEntities.
+     *
+     * @throws Exception On failure to process the event.
      */
     public function processEvent(ObjectEntity $event): array
     {
         try {
-            // Find all active subscriptions
+            // Find all active subscriptions.
             $matches       = $this->objectService->findAll(
                     config: [
                         'filters' => [
@@ -51,18 +70,18 @@ class EventService
                         ],
                     ]
                     );
-            $subscriptions = $matches['results'] ?? $matches;
+            $subscriptions = ($matches['results'] ?? $matches);
             $messages      = [];
 
             foreach ($subscriptions as $subscription) {
-                if ($this->doesEventMatchSubscription($event, $subscription)) {
-                    $message    = $this->createEventMessage($event, $subscription);
+                if ($this->doesEventMatchSubscription(event: $event, subscription: $subscription) === true) {
+                    $message    = $this->createEventMessage(event: $event, subscription: $subscription);
                     $messages[] = $message;
 
                     $subscriptionData = $subscription->getObject();
-                    // If it's a push subscription, attempt immediate delivery
+                    // If it's a push subscription, attempt immediate delivery.
                     if (($subscriptionData['style'] ?? '') === 'push') {
-                        $this->deliverMessage($message);
+                        $this->deliverMessage(message: $message);
                     }
                 }
             }
@@ -78,51 +97,55 @@ class EventService
                     );
             throw $e;
         }//end try
+
     }//end processEvent()
 
     /**
-     * Check if an event matches a subscription's criteria
+     * Check if an event matches a subscription's criteria.
      *
-     * @param  ObjectEntity $event
-     * @param  ObjectEntity $subscription
-     * @return bool
+     * @param ObjectEntity $event        The event to evaluate.
+     * @param ObjectEntity $subscription The subscription whose filters/types are checked.
+     *
+     * @return boolean
      */
     private function doesEventMatchSubscription(ObjectEntity $event, ObjectEntity $subscription): bool
     {
         $eventData        = $event->getObject();
         $subscriptionData = $subscription->getObject();
 
-        // Check event type matches
-        $types = $subscriptionData['types'] ?? [];
+        // Check event type matches.
+        $types = ($subscriptionData['types'] ?? []);
         if (empty($types) === false
-            && in_array($eventData['type'] ?? '', $types) === false
+            && in_array(($eventData['type'] ?? ''), $types) === false
         ) {
             return false;
         }
 
-        // Check source matches
-        $subscriptionSource = $subscriptionData['source'] ?? null;
+        // Check source matches.
+        $subscriptionSource = ($subscriptionData['source'] ?? null);
         if ($subscriptionSource !== null
             && ($eventData['source'] ?? null) !== $subscriptionSource
         ) {
             return false;
         }
 
-        // Process filters if any exist
-        $filters = $subscriptionData['filters'] ?? [];
+        // Process filters if any exist.
+        $filters = ($subscriptionData['filters'] ?? []);
         if (empty($filters) === false) {
-            return $this->evaluateFilters($eventData, $filters);
+            return $this->evaluateFilters(eventData: $eventData, filters: $filters);
         }
 
         return true;
+
     }//end doesEventMatchSubscription()
 
     /**
-     * Evaluate filter conditions against an event data array
+     * Evaluate filter conditions against an event data array.
      *
-     * @param  array $eventData The event data as plain array
-     * @param  array $filters
-     * @return bool
+     * @param array $eventData The event data as plain array.
+     * @param array $filters   Subscription filters.
+     *
+     * @return boolean
      */
     private function evaluateFilters(array $eventData, array $filters): bool
     {
@@ -141,7 +164,7 @@ class EventService
 
                     case 'prefix':
                         foreach ($condition as $field => $value) {
-                            if (str_starts_with($eventData[$field] ?? '', $value) === false) {
+                            if (str_starts_with(($eventData[$field] ?? ''), $value) === false) {
                                 return false;
                             }
                         }
@@ -149,7 +172,7 @@ class EventService
 
                     case 'suffix':
                         foreach ($condition as $field => $value) {
-                            if (str_ends_with($eventData[$field] ?? '', $value) === false) {
+                            if (str_ends_with(($eventData[$field] ?? ''), $value) === false) {
                                 return false;
                             }
                         }
@@ -165,15 +188,18 @@ class EventService
         }//end foreach
 
         return true;
+
     }//end evaluateFilters()
 
     /**
-     * Create a new event message
+     * Create a new event message.
      *
-     * @param  ObjectEntity $event
-     * @param  ObjectEntity $subscription
+     * @param ObjectEntity $event        The event to materialise.
+     * @param ObjectEntity $subscription The subscription owning the message.
+     *
      * @return ObjectEntity
-     * @throws \OCP\DB\Exception
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
      */
     private function createEventMessage(ObjectEntity $event, ObjectEntity $subscription): ObjectEntity
     {
@@ -183,7 +209,7 @@ class EventService
         return $this->objectService->saveObject(
             object: [
                 'eventId'        => $event->getUuid(),
-                'consumerId'     => $subscriptionData['consumerId'] ?? null,
+                'consumerId'     => ($subscriptionData['consumerId'] ?? null),
                 'subscriptionId' => $subscription->getUuid(),
                 'status'         => 'pending',
                 'payload'        => $event->jsonSerialize(),
@@ -193,19 +219,21 @@ class EventService
             register: 'openconnector',
             schema: 'event_message'
         );
+
     }//end createEventMessage()
 
     /**
-     * Attempt to deliver a message
+     * Attempt to deliver a message.
      *
-     * @param  ObjectEntity $message
-     * @return bool
+     * @param ObjectEntity $message The pending message to deliver.
+     *
+     * @return boolean True when delivered successfully.
      */
     public function deliverMessage(ObjectEntity $message): bool
     {
         try {
             $messageData    = $message->getObject();
-            $subscriptionId = $messageData['subscriptionId'] ?? null;
+            $subscriptionId = ($messageData['subscriptionId'] ?? null);
 
             if ($subscriptionId === null) {
                 return false;
@@ -278,13 +306,15 @@ class EventService
 
             return false;
         }//end try
+
     }//end deliverMessage()
 
     /**
-     * Process pending message retries
+     * Process pending message retries.
      *
-     * @param  int $maxRetries Maximum number of retry attempts
-     * @return int Number of successfully delivered messages
+     * @param integer $maxRetries Maximum number of retry attempts.
+     *
+     * @return integer Number of successfully delivered messages.
      */
     public function processRetries(int $maxRetries=5): int
     {
@@ -297,26 +327,28 @@ class EventService
                     ],
                 ]
                 );
-        $messages     = $matches['results'] ?? $matches;
+        $messages     = ($matches['results'] ?? $matches);
         $successCount = 0;
 
         foreach ($messages as $message) {
             $messageData = $message->getObject();
             $retryCount  = (int) ($messageData['retryCount'] ?? 0);
-            if ($retryCount < $maxRetries && $this->deliverMessage($message)) {
+            if ($retryCount < $maxRetries && $this->deliverMessage(message: $message) === true) {
                 $successCount++;
             }
         }
 
         return $successCount;
+
     }//end processRetries()
 
     /**
-     * Get events for a pull-based subscription
+     * Get events for a pull-based subscription.
      *
-     * @param  ObjectEntity $subscription
-     * @param  int|null     $limit
-     * @param  string|null  $cursor
+     * @param ObjectEntity $subscription The owning subscription.
+     * @param integer|null $limit        Maximum number of messages to return.
+     * @param string|null  $cursor       Pagination cursor from the previous call.
+     *
      * @return array{messages: ObjectEntity[], cursor: string|null}
      */
     public function pullEvents(ObjectEntity $subscription, ?int $limit=100, ?string $cursor=null): array
@@ -332,60 +364,70 @@ class EventService
             $filters['id'] = ['>' => $cursor];
         }
 
-        $matches    = $this->objectService->findAll(
+        $matches  = $this->objectService->findAll(
                 config: [
                     'filters' => $filters,
-                    'limit'   => $limit ?? 100,
+                    'limit'   => ($limit ?? 100),
                 ]
                 );
-        $messages   = $matches['results'] ?? $matches;
-        $lastCursor = count($messages) > 0 ? end($messages)->getUuid() : null;
+        $messages = ($matches['results'] ?? $matches);
+        if (count($messages) > 0) {
+            $lastCursor = end($messages)->getUuid();
+        } else {
+            $lastCursor = null;
+        }
 
         return [
             'messages' => $messages,
             'cursor'   => $lastCursor,
         ];
+
     }//end pullEvents()
 
     /**
-     * Handle object creation by creating and processing a CloudEvent
+     * Handle object creation by creating and processing a CloudEvent.
      *
-     * @param  ObjectEntity $object The created object
-     * @return ObjectEntity[] The created CloudEvent messages
-     * @throws Exception
-     * @throws \OCP\DB\Exception
+     * @param ObjectEntity $object The created object.
+     *
+     * @return ObjectEntity[] The created CloudEvent messages.
+     *
+     * @throws Exception        On event processing failure.
+     * @throws \OCP\DB\Exception On persistence failure.
      */
     public function handleObjectCreated(ObjectEntity $object): array
     {
         $objectData = $object->getObject();
         $event      = $this->objectService->saveObject(
             object: [
-                'source'  => '/objects/'.($objectData['type'] ?? ''),
+                'source'  => ('/objects/'.($objectData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.created',
                 'time'    => (new DateTime())->format('c'),
                 'subject' => $object->getUuid(),
                 'data'    => [
-                    'type'       => $objectData['type'] ?? null,
+                    'type'       => ($objectData['type'] ?? null),
                     'id'         => $object->getUuid(),
                     'attributes' => $objectData,
                 ],
-                'userId'  => $objectData['userId'] ?? null,
+                'userId'  => ($objectData['userId'] ?? null),
             ],
             register: 'openconnector',
             schema: 'event'
         );
 
-        return $this->processEvent($event);
+        return $this->processEvent(event: $event);
+
     }//end handleObjectCreated()
 
     /**
-     * Handle object update by creating and processing a CloudEvent
+     * Handle object update by creating and processing a CloudEvent.
      *
-     * @param  ObjectEntity $oldObject The previous state of the object
-     * @param  ObjectEntity $newObject The new state of the object
-     * @return ObjectEntity[] The created CloudEvent messages
-     * @throws Exception
-     * @throws \OCP\DB\Exception
+     * @param ObjectEntity $oldObject The previous state of the object.
+     * @param ObjectEntity $newObject The new state of the object.
+     *
+     * @return ObjectEntity[] The created CloudEvent messages.
+     *
+     * @throws Exception        On event processing failure.
+     * @throws \OCP\DB\Exception On persistence failure.
      */
     public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array
     {
@@ -394,34 +436,37 @@ class EventService
 
         $event = $this->objectService->saveObject(
             object: [
-                'source'  => '/objects/'.($newData['type'] ?? ''),
+                'source'  => ('/objects/'.($newData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.updated',
                 'time'    => (new DateTime())->format('c'),
                 'subject' => $newObject->getUuid(),
                 'data'    => [
-                    'type'       => $newData['type'] ?? null,
+                    'type'       => ($newData['type'] ?? null),
                     'id'         => $newObject->getUuid(),
                     'attributes' => $newData,
                     'previous'   => [
                         'attributes' => $oldData,
                     ],
                 ],
-                'userId'  => $newData['userId'] ?? null,
+                'userId'  => ($newData['userId'] ?? null),
             ],
             register: 'openconnector',
             schema: 'event'
         );
 
-        return $this->processEvent($event);
+        return $this->processEvent(event: $event);
+
     }//end handleObjectUpdated()
 
     /**
-     * Handle object deletion by creating and processing a CloudEvent
+     * Handle object deletion by creating and processing a CloudEvent.
      *
-     * @param  ObjectEntity $object The deleted object
-     * @return ObjectEntity[] The created CloudEvent messages
-     * @throws Exception
-     * @throws \OCP\DB\Exception
+     * @param ObjectEntity $object The deleted object.
+     *
+     * @return ObjectEntity[] The created CloudEvent messages.
+     *
+     * @throws Exception        On event processing failure.
+     * @throws \OCP\DB\Exception On persistence failure.
      */
     public function handleObjectDeleted(ObjectEntity $object): array
     {
@@ -429,20 +474,21 @@ class EventService
 
         $event = $this->objectService->saveObject(
             object: [
-                'source'  => '/objects/'.($objectData['type'] ?? ''),
+                'source'  => ('/objects/'.($objectData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.deleted',
                 'time'    => (new DateTime())->format('c'),
                 'subject' => $object->getUuid(),
                 'data'    => [
-                    'type' => $objectData['type'] ?? null,
+                    'type' => ($objectData['type'] ?? null),
                     'id'   => $object->getUuid(),
                 ],
-                'userId'  => $objectData['userId'] ?? null,
+                'userId'  => ($objectData['userId'] ?? null),
             ],
             register: 'openconnector',
             schema: 'event'
         );
 
-        return $this->processEvent($event);
+        return $this->processEvent(event: $event);
+
     }//end handleObjectDeleted()
 }//end class
