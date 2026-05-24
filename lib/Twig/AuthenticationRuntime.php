@@ -48,6 +48,8 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      * @return string
      *
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-4
      */
     public function oauthToken(array $source): string
     {
@@ -69,6 +71,8 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      * @return string
      *
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-4
      */
     public function decosToken(array $source): string
     {
@@ -90,6 +94,8 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      * @return string
      *
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-4
      */
     public function jwtToken(array $source): string
     {
