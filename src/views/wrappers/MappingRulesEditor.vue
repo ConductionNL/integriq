@@ -607,7 +607,7 @@ export default {
 			// presses keep moving the same logical row.
 			this.$nextTick(() => {
 				const rows = this.$el.querySelectorAll(
-					`section.cn-rules-editor__panel .cn-rules-editor__row`,
+					'section.cn-rules-editor__panel .cn-rules-editor__row',
 				)
 				const row = rows[target]
 				if (row && typeof row.focus === 'function') row.focus()
