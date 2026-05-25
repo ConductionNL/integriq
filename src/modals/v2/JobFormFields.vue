@@ -260,6 +260,7 @@ export default {
 		isSynchronizationJob() {
 			return this.formData?.jobClass === SYNCHRONIZATION_ACTION_CLASS
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		hasArgumentsField() {
 			// True when the schema-derived field list includes an `arguments`
 			// field — drives whether the Synchronization picker renders
@@ -267,9 +268,11 @@ export default {
 			// block after the loop. See template for the wire-up.
 			return Array.isArray(this.fields) && this.fields.some((f) => f.key === 'arguments')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		jobClassOptions() {
 			return JOB_CLASS_OPTIONS
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		selectedJobClassOption() {
 			const current = this.formData?.jobClass
 			if (!current) return null
@@ -278,6 +281,7 @@ export default {
 				label: current,
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		selectedSynchronization() {
 			const args = this.formData?.arguments
 			const id = args && typeof args === 'object' ? args.synchronizationId : null
@@ -292,6 +296,7 @@ export default {
 	watch: {
 		isSynchronizationJob: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 			handler(value) {
 				if (value && this.synchronizationOptions.length === 0) {
 					this.fetchSynchronizations()
@@ -301,6 +306,7 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		textFieldType(field) {
 			if (field.widget === 'email') return 'email'
 			if (field.widget === 'url') return 'url'
@@ -309,10 +315,12 @@ export default {
 			return 'text'
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		onJobClassPick(option) {
 			this.updateField('jobClass', option?.id ?? null)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		onSynchronizationPick(option) {
 			const current = this.formData?.arguments
 			const next = (current && typeof current === 'object' && !Array.isArray(current))
@@ -326,6 +334,7 @@ export default {
 			this.updateField('arguments', next)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		async fetchSynchronizations() {
 			this.synchronizationsLoading = true
 			try {
@@ -355,6 +364,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		jsonStringFor(field) {
 			if (this.jsonDrafts[field.key] !== undefined) {
 				return this.jsonDrafts[field.key]
@@ -369,6 +379,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
 		onJsonInput(field, raw) {
 			this.$set(this.jsonDrafts, field.key, raw)
 			const trimmed = raw.trim()
