@@ -94,6 +94,8 @@ class FlowToken
      * @param array       $syncInputOriginal  Original sync input snapshot.
      * @param array       $syncOutputOriginal Original sync output snapshot.
      * @param string|null $path               Request path used when serialising a Request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     public function __construct(
         IRequest|array $requestOriginal=[],
@@ -123,6 +125,8 @@ class FlowToken
      * @param boolean $proxyHeaders Whether to include X-Forwarded-* / X-Real-IP / X-Original-URI.
      *
      * @return array Map of lowercase header name to value.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
@@ -161,6 +165,8 @@ class FlowToken
      * Gets the raw content for a http request from the input stream.
      *
      * @return string The raw content body for a http request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     private function getRawContent(): string
     {
@@ -174,6 +180,8 @@ class FlowToken
      * @param string $content Content to check.
      *
      * @return boolean True if content is valid XML.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     private function looksLikeXml(string $content): bool
     {
@@ -196,6 +204,8 @@ class FlowToken
      * @param $request The inbound request used to determine content type and fallback parameters.
      *
      * @return mixed Parsed data (array for JSON/XML) or original string.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     private function parseContent(IRequest $request): mixed
     {
@@ -247,6 +257,8 @@ class FlowToken
      * @param string|null $path            Path used when serialising a Request.
      *
      * @return array The stored array shape.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     public function setRequestOriginal(array|IRequest $requestOriginal, ?string $path=null): array
     {
@@ -270,6 +282,8 @@ class FlowToken
      * Get the original request snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
      */
     public function getRequestOriginal(): array
     {
@@ -283,6 +297,8 @@ class FlowToken
      * @param array $requestAmended Amended request snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function setRequestAmended(array $requestAmended): array
     {
@@ -296,6 +312,8 @@ class FlowToken
      * Get the amended request snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function getRequestAmended(): array
     {
@@ -309,6 +327,8 @@ class FlowToken
      * @param array|Response $responseOriginal Original response or pre-built array payload.
      *
      * @return array The stored array shape.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-2
      */
     public function setResponseOriginal(array|Response $responseOriginal): array
     {
@@ -337,6 +357,8 @@ class FlowToken
      * Get the original response snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-2
      */
     public function getResponseOriginal(): array
     {
@@ -350,6 +372,8 @@ class FlowToken
      * @param array $responseAmended Amended response snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function setResponseAmended(array $responseAmended): array
     {
@@ -363,6 +387,8 @@ class FlowToken
      * Get the amended response snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function getResponseAmended(): array
     {
@@ -376,6 +402,8 @@ class FlowToken
      * @param array $syncInputOriginal Original sync input snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
      */
     public function setSyncInputOriginal(array $syncInputOriginal): array
     {
@@ -389,6 +417,8 @@ class FlowToken
      * Get the original sync input snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
      */
     public function getSyncInputOriginal(): array
     {
@@ -402,6 +432,8 @@ class FlowToken
      * @param array $syncInputAmended Amended sync input snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function setSyncInputAmended(array $syncInputAmended): array
     {
@@ -414,6 +446,8 @@ class FlowToken
      * Get the amended sync input snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function getSyncInputAmended(): array
     {
@@ -427,6 +461,8 @@ class FlowToken
      * @param array $syncOutputOriginal Original sync output snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
      */
     public function setSyncOutputOriginal(array $syncOutputOriginal): array
     {
@@ -439,6 +475,8 @@ class FlowToken
      * Get the original sync output snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
      */
     public function getSyncOutputOriginal(): array
     {
@@ -452,6 +490,8 @@ class FlowToken
      * @param array $syncOutputAmended Amended sync output snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function setSyncOutputAmended(array $syncOutputAmended): array
     {
@@ -464,6 +504,8 @@ class FlowToken
      * Get the amended sync output snapshot.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
      */
     public function getSyncOutputAmended(): array
     {
@@ -475,6 +517,8 @@ class FlowToken
      * Serialise the FlowToken into an array suitable for json encoding.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-5
      */
     public function __serialize(): array
     {
