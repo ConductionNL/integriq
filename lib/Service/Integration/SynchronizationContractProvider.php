@@ -203,8 +203,12 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
             return [];
         }
 
+        // Per-call memo so repeated synchronizationIds across contracts
+        // resolve their display name once (avoids N+1 lookups).
+        $syncNameCache = [];
+
         return array_map(
-            function ($contract): array {
+            function ($contract) use (&$syncNameCache): array {
                 if (is_object($contract) === true && method_exists($contract, 'getObject') === true) {
                     $body = $contract->getObject();
                 } else {
@@ -217,20 +221,124 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
                     $uuid = ($contract['uuid'] ?? '');
                 }
 
+                $synchronizationId = ($body['synchronizationId'] ?? null);
+                $syncName          = $this->resolveSynchronizationName((string) $synchronizationId, $syncNameCache);
+                $lastSynced        = ($body['targetLastSynced'] ?? null);
+                $lastAction        = ($body['targetLastAction'] ?? null);
+
                 return [
-                    'id'                => $uuid,
-                    'synchronizationId' => $body['synchronizationId'] ?? null,
-                    'originId'          => $body['originId'] ?? null,
-                    'originHash'        => $body['originHash'] ?? null,
-                    'targetLastAction'  => $body['targetLastAction'] ?? null,
-                    'targetLastSynced'  => $body['targetLastSynced'] ?? null,
-                    'sourceLastChecked' => $body['sourceLastChecked'] ?? null,
+                    'id'                  => $uuid,
+                    // Generic-card display keys (CnIntegrationCard reads
+                    // title / subtitle / url). Title is the human sync name;
+                    // subtitle summarises the last sync; url deep-links into
+                    // the OpenConnector synchronization detail page.
+                    'title'               => $syncName,
+                    'subtitle'            => $this->buildSubtitle($lastSynced, $lastAction),
+                    'url'                 => $this->buildSyncUrl((string) $synchronizationId),
+                    // Raw provenance fields — preserved for the bespoke
+                    // "Synced from" component + any programmatic consumer.
+                    'synchronizationId'   => $synchronizationId,
+                    'synchronizationName' => $syncName,
+                    'originId'            => $body['originId'] ?? null,
+                    'originHash'          => $body['originHash'] ?? null,
+                    'targetLastAction'    => $lastAction,
+                    'targetLastSynced'    => $lastSynced,
+                    'sourceLastChecked'   => $body['sourceLastChecked'] ?? null,
                 ];
             },
             $rows
         );
 
     }//end list()
+
+    /**
+     * Resolve a synchronization's human-readable name from its id.
+     *
+     * Queries the `openconnector/synchronization` OR object and reads its
+     * `name` field. Falls back to a short-id label when the object can't
+     * be found (deleted sync, permission, etc.). Memoised per list() call
+     * via the by-reference $cache.
+     *
+     * @param string               $synchronizationId The synchronization uuid.
+     * @param array<string,string> $cache             By-ref per-call memo.
+     *
+     * @return string The display name.
+     */
+    private function resolveSynchronizationName(string $synchronizationId, array &$cache): string
+    {
+        if ($synchronizationId === '') {
+            return $this->l10n->t('Unknown synchronization');
+        }
+
+        if (isset($cache[$synchronizationId]) === true) {
+            return $cache[$synchronizationId];
+        }
+
+        $name = $this->l10n->t('Synchronization %s', [substr($synchronizationId, 0, 8)]);
+        try {
+            $sync = $this->objectService->find(
+                id: $synchronizationId,
+                register: self::REGISTER_SLUG,
+                schema: 'synchronization'
+            );
+            if (is_object($sync) === true && method_exists($sync, 'getObject') === true) {
+                $syncBody = $sync->getObject();
+                if (empty($syncBody['name']) === false) {
+                    $name = (string) $syncBody['name'];
+                }
+            }
+        } catch (\Throwable $e) {
+            // Keep the short-id fallback — a missing sync is non-fatal here.
+        }
+
+        $cache[$synchronizationId] = $name;
+        return $name;
+
+    }//end resolveSynchronizationName()
+
+    /**
+     * Build the human subtitle line summarising the last sync.
+     *
+     * @param string|null $lastSynced ISO timestamp of the last target sync.
+     * @param string|null $lastAction The last action (create/update/delete).
+     *
+     * @return string The subtitle (may be empty when nothing is known).
+     */
+    private function buildSubtitle(?string $lastSynced, ?string $lastAction): string
+    {
+        if (empty($lastSynced) === true) {
+            if ($lastAction !== null && $lastAction !== '') {
+                return (string) $lastAction;
+            }
+
+            return '';
+        }
+
+        $date = substr((string) $lastSynced, 0, 10);
+        if ($lastAction !== null && $lastAction !== '') {
+            return $this->l10n->t('Last synced %1$s · %2$s', [$date, (string) $lastAction]);
+        }
+
+        return $this->l10n->t('Last synced %s', [$date]);
+
+    }//end buildSubtitle()
+
+    /**
+     * Build a deep-link into the OpenConnector synchronization detail page.
+     *
+     * @param string $synchronizationId The synchronization uuid.
+     *
+     * @return string|null The SPA deep-link, or null when no id.
+     */
+    private function buildSyncUrl(string $synchronizationId): ?string
+    {
+        if ($synchronizationId === '') {
+            return null;
+        }
+
+        return '/index.php/apps/openconnector/synchronizations/'.$synchronizationId;
+
+    }//end buildSyncUrl()
 
     /**
      * Health descriptor.

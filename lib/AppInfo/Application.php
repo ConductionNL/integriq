@@ -38,7 +38,9 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\Util;
 
 /**
  * Bootstrap entry point for the OpenConnector app.
@@ -103,6 +105,19 @@ class Application extends App implements IBootstrap
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
         // @todo Remove this temporary listener to the software catalog application.
         // $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
+        // Path-2 integration leaf: load the tiny `openconnector-integration`
+        // bundle on EVERY full-page render (not just OpenConnector's own SPA)
+        // so the "Synced from" component is registered on the OpenRegister
+        // integration registry wherever a host app renders an object detail
+        // page (e.g. an OpenCatalogi publication). BeforeTemplateRenderedEvent
+        // fires for every app's page, so the global init-script lands once
+        // per page regardless of which app is active.
+        $dispatcher->addListener(
+            BeforeTemplateRenderedEvent::class,
+            static function (): void {
+                Util::addInitScript('openconnector', 'openconnector-integration');
+            }
+        );
     }//end register()
 
     /**
