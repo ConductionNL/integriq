@@ -136,6 +136,8 @@ class Application extends App implements IBootstrap
      * @param IBootContext $context Boot context.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-repair-and-app-boot/tasks.md#task-2
      */
     private function registerIntegrationProviders(IBootContext $context): void
     {
