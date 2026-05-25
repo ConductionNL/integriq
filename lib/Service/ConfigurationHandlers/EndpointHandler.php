@@ -51,6 +51,8 @@ class EndpointHandler implements ConfigurationHandlerInterface
      * @param array<int, int|string>                                                           $mappingIds Collected mapping ids (out param).
      *
      * @return array The serialised endpoint configuration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -139,6 +141,8 @@ class EndpointHandler implements ConfigurationHandlerInterface
      * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
      *
      * @return Entity The imported endpoint entity.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
      */
     public function import(array $data, array $mappings): Entity
     {
