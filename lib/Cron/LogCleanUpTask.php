@@ -72,6 +72,8 @@ class LogCleanUpTask extends TimedJob
      * @param string $schema The schema slug to clean up.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-5
      */
     private function cleanupSchema(string $schema): void
     {
@@ -109,6 +111,8 @@ class LogCleanUpTask extends TimedJob
      *
      * @psalm-param   mixed $argument
      * @phpstan-param mixed $argument
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-5
      */
     public function run(mixed $argument): void
     {

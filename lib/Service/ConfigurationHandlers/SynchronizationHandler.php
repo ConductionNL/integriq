@@ -63,6 +63,8 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
      * @param array<int, int|string> $mappingIds Collected mapping ids (out param).
      *
      * @return array The serialised synchronization configuration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -197,6 +199,8 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
      *                                      See {@see self::export()} for the runtime shape.
      *
      * @return Entity The imported synchronization entity.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
      */
     public function import(array $data, array $mappings): Entity
     {

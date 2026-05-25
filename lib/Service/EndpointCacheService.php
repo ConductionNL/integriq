@@ -17,6 +17,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
  */
 
 namespace OCA\OpenConnector\Service;
@@ -88,6 +90,8 @@ class EndpointCacheService
      * @return ObjectEntity|null Returns the best matching endpoint or null if none found.
      *
      * @throws \Exception When multiple endpoints match (ambiguous routing).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     public function findByPathRegex(string $path, string $method, bool $isRetry=false): ?ObjectEntity
     {
@@ -169,6 +173,8 @@ class EndpointCacheService
      * Get all endpoints from cache or database as ObjectEntity arrays (for performance).
      *
      * @return array Array of ObjectEntity instances (for faster filtering).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     public function getAllEndpoints(): array
     {
@@ -212,6 +218,8 @@ class EndpointCacheService
      * Fetch all endpoints from OpenRegister ObjectService.
      *
      * @return array Array of ObjectEntity instances.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     private function fetchEndpointsFromOr(): array
     {
@@ -229,6 +237,8 @@ class EndpointCacheService
      * Refresh the endpoint cache from OpenRegister.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     public function refreshCache(): void
     {
@@ -271,6 +281,8 @@ class EndpointCacheService
      * This should be called when endpoints are created, updated, or deleted.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     public function clearCache(): void
     {
@@ -298,6 +310,8 @@ class EndpointCacheService
      * @param string $endpoint The endpoint path pattern.
      *
      * @return string The regex pattern for matching.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     private function createEndpointRegex(string $endpoint): string
     {
@@ -330,6 +344,8 @@ class EndpointCacheService
      * Get cache statistics for monitoring.
      *
      * @return array Cache statistics.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
      */
     public function getCacheStats(): array
     {

@@ -71,6 +71,8 @@ class ObjectService
      * @param array $config The config to be used for the client.
      *
      * @return Client The configured Guzzle client.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function getClient(array $config): Client
     {
@@ -90,6 +92,9 @@ class ObjectService
      * @return array The resulting object.
      *
      * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-2
      */
     public function saveObject(array $data, array $config): array
     {
@@ -123,6 +128,8 @@ class ObjectService
      * @return array The objects found for given filters.
      *
      * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function findObjects(array $filters, array $config): array
     {
@@ -157,6 +164,8 @@ class ObjectService
      * @return array The resulting object.
      *
      * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function findObject(array $filters, array $config): array
     {
@@ -190,6 +199,8 @@ class ObjectService
      * @return array The updated object.
      *
      * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function updateObject(array $filters, array $update, array $config): array
     {
@@ -221,6 +232,8 @@ class ObjectService
      * @return array An empty array.
      *
      * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function deleteObject(array $filters, array $config): array
     {
@@ -249,6 +262,8 @@ class ObjectService
      * @return array The aggregation result.
      *
      * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-3
      */
     public function aggregateObjects(array $filters, array $pipeline, array $config):array
     {
@@ -278,6 +293,8 @@ class ObjectService
      *
      * @throws ContainerExceptionInterface When the container fails.
      * @throws NotFoundExceptionInterface  When the service is not bound.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-4
      */
     public function getOpenRegisters(): ?\OCA\OpenRegister\Service\ObjectService
     {
@@ -310,6 +327,8 @@ class ObjectService
      * @throws ContainerExceptionInterface When the container fails.
      * @throws NotFoundExceptionInterface  When the service is not bound.
      * @throws InvalidArgumentException    If an unknown object type is provided.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-5
      */
     public function getMapper(?string $objectType=null, ?int $schema=null, ?int $register=null): mixed
     {

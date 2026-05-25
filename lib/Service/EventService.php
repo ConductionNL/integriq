@@ -56,6 +56,8 @@ class EventService
      * @return array<ObjectEntity> Array of created message ObjectEntities.
      *
      * @throws Exception On failure to process the event.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
      */
     public function processEvent(ObjectEntity $event): array
     {
@@ -107,6 +109,8 @@ class EventService
      * @param ObjectEntity $subscription The subscription whose filters/types are checked.
      *
      * @return boolean
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
      */
     private function doesEventMatchSubscription(ObjectEntity $event, ObjectEntity $subscription): bool
     {
@@ -146,6 +150,8 @@ class EventService
      * @param array $filters   Subscription filters.
      *
      * @return boolean
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
      */
     private function evaluateFilters(array $eventData, array $filters): bool
     {
@@ -200,6 +206,8 @@ class EventService
      * @return ObjectEntity
      *
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
      */
     private function createEventMessage(ObjectEntity $event, ObjectEntity $subscription): ObjectEntity
     {
@@ -228,6 +236,8 @@ class EventService
      * @param ObjectEntity $message The pending message to deliver.
      *
      * @return boolean True when delivered successfully.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-2
      */
     public function deliverMessage(ObjectEntity $message): bool
     {
@@ -315,6 +325,8 @@ class EventService
      * @param integer $maxRetries Maximum number of retry attempts.
      *
      * @return integer Number of successfully delivered messages.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-2
      */
     public function processRetries(int $maxRetries=5): int
     {
@@ -350,6 +362,8 @@ class EventService
      * @param string|null  $cursor       Pagination cursor from the previous call.
      *
      * @return array{messages: ObjectEntity[], cursor: string|null}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-3
      */
     public function pullEvents(ObjectEntity $subscription, ?int $limit=100, ?string $cursor=null): array
     {
@@ -393,6 +407,8 @@ class EventService
      *
      * @throws Exception        On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-4
      */
     public function handleObjectCreated(ObjectEntity $object): array
     {
@@ -428,6 +444,8 @@ class EventService
      *
      * @throws Exception        On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-4
      */
     public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array
     {
@@ -467,6 +485,8 @@ class EventService
      *
      * @throws Exception        On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-4
      */
     public function handleObjectDeleted(ObjectEntity $object): array
     {
