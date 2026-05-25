@@ -190,6 +190,7 @@ export default {
 		schema: { type: String, default: 'rule' },
 	},
 
+	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 	setup(props) {
 		const objectStore = useObjectStore()
 		if (typeof objectStore.registerObjectType === 'function') {
@@ -214,10 +215,12 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		pageTitle() {
 			if (!this.draft) return this.t('openconnector', 'Rule')
 			return this.draft.name ? `${this.t('openconnector', 'Rule')}: ${this.draft.name}` : this.t('openconnector', 'Rule')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		errorMessage() {
 			if (!this.error) return ''
 			if (typeof this.error === 'string') return this.error
@@ -229,11 +232,14 @@ export default {
 		 * stored conditions as a string (CodeMirror text), an array,
 		 * or a single leaf — all of those normalise here so the visual
 		 * builder always has a group to render.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1
 		 */
 		rootConditionGroup() {
 			const raw = this.draft?.conditions
 			return this.normaliseConditions(raw)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		dirty() {
 			if (!this.draft || !this.pristine) return false
 			try {
@@ -247,10 +253,12 @@ export default {
 	watch: {
 		id: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 			handler(value) {
 				if (value) this.load()
 			},
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		rawConditions(value) {
 			if (value) {
 				try {
@@ -279,6 +287,8 @@ export default {
 		 *
 		 * @param {*} raw The persisted conditions value.
 		 * @return {object} A JsonLogic group node.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1
 		 */
 		normaliseConditions(raw) {
 			if (raw === null || raw === undefined || raw === '') {
@@ -300,6 +310,7 @@ export default {
 			return { ...EMPTY_ROOT_GROUP }
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		async load() {
 			this.loading = true
 			this.error = null
@@ -319,21 +330,25 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		updateField(key, value) {
 			if (!this.draft) return
 			this.$set(this.draft, key, value)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
 			this.$set(this.draft, 'conditions', node)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		onConfigurationUpdate(next) {
 			if (!this.draft) return
 			this.$set(this.draft, 'configuration', next)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		onRawConditionsInput(value) {
 			this.rawConditionsDraft = value
 			const trimmed = value.trim()
@@ -351,6 +366,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		async onSave() {
 			if (!this.draft || this.saving) return
 			this.saving = true
@@ -371,6 +387,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		onCancel() {
 			if (!this.pristine) return
 			this.draft = JSON.parse(JSON.stringify(this.pristine))
@@ -382,6 +399,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
 		onRetry() {
 			this.load()
 		},
