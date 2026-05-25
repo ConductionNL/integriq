@@ -275,13 +275,19 @@ export default {
 	},
 
 	computed: {
-		/** Pinia store instance. */
+		/**
+		 * Pinia store instance.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 */
 		store() {
 			return useObjectStore()
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		resolvedId() {
 			return this.id != null ? String(this.id) : ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		mapping() {
 			if (!this.resolvedId) return {}
 			return this.store.getObject(this.objectType, this.resolvedId) || {}
@@ -289,29 +295,36 @@ export default {
 		hasMapping() {
 			return !!this.mapping && Object.keys(this.mapping).length > 0
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		loading() {
 			return !!this.store.loading?.[this.objectType] && !this.hasMapping
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		loadError() {
 			return this.store.errors?.[this.objectType] || null
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		errorMessage() {
 			const err = this.loadError
 			if (!err) return ''
 			return err.message
 				|| this.t('openconnector', 'Failed to load mapping')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		title() {
 			return this.mapping?.name || this.t('openconnector', 'Mapping')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		description() {
 			return this.mapping?.description || ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		passThroughLabel() {
 			return this.mapping?.passThrough
 				? this.t('openconnector', 'Pass through enabled')
 				: this.t('openconnector', 'Pass through disabled')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		sidebarConfig() {
 			return {
 				enabled: true,
@@ -321,18 +334,23 @@ export default {
 				showMetadata: true,
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		mappingRules() {
 			return asObjectMap(this.mapping?.mapping)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		castRules() {
 			return asObjectMap(this.mapping?.cast)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		unsetRules() {
 			return asUnsetList(this.mapping?.unset)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		samplePlaceholder() {
 			return '{\n  "name": "hello"\n}'
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		formattedPreview() {
 			try {
 				return JSON.stringify(this.previewOutput, null, 2)
@@ -344,6 +362,8 @@ export default {
 		 * Combined reactivity key for the preview watcher. Recomputing this
 		 * forces the debounced preview to refire whenever the rule shape or
 		 * sample input changes.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
 		 */
 		previewSignal() {
 			return JSON.stringify({
@@ -359,12 +379,14 @@ export default {
 	watch: {
 		previewSignal: {
 			immediate: false,
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 			handler() {
 				this.schedulePreview()
 			},
 		},
 	},
 
+	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 	mounted() {
 		this.ensureRegistered()
 		const fetch = this.reload()
@@ -372,12 +394,14 @@ export default {
 		Promise.resolve(fetch).finally(() => this.schedulePreview())
 	},
 
+	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 	beforeDestroy() {
 		if (this.schedulePreview && this.schedulePreview.cancel) {
 			this.schedulePreview.cancel()
 		}
 	},
 
+	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 	created() {
 		// Bind the debounced function on the instance so each component gets
 		// its own timer and `.cancel()` works on teardown.
@@ -390,6 +414,8 @@ export default {
 		 * time this page mounts. Idempotent — registering twice with the
 		 * same arguments is a no-op modulo Vue reactivity churn, but we
 		 * gate on `objectTypeRegistry` anyway.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
 		 */
 		ensureRegistered() {
 			const registry = this.store.objectTypeRegistry || {}
@@ -406,7 +432,11 @@ export default {
 			)
 		},
 
-		/** Force a server-side re-fetch of the current mapping. */
+		/**
+		 * Force a server-side re-fetch of the current mapping.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 */
 		reload() {
 			if (!this.resolvedId) return Promise.resolve(null)
 			return this.store.fetchObject(this.objectType, this.resolvedId)
@@ -415,6 +445,8 @@ export default {
 		/**
 		 * Emit the bus event picked up by ModalHost (`src/modals/v2/ModalHost.vue`)
 		 * to mount TestMappingModal with the current mapping pre-loaded.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
 		 */
 		openTestModal() {
 			if (!this.hasMapping) return
@@ -427,6 +459,8 @@ export default {
 		 * the existing values for unchanged fields stay intact.
 		 *
 		 * @param {object} patch Fields to merge over the current mapping.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
 		 */
 		async persistPatch(patch) {
 			if (!this.hasMapping) return
@@ -446,15 +480,19 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onUpdateMapping(nextRules) {
 			return this.persistPatch({ mapping: nextRules })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onUpdateCast(nextRules) {
 			return this.persistPatch({ cast: nextRules })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onUpdateUnset(nextList) {
 			return this.persistPatch({ unset: nextList })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
 		onTogglePassThrough(value) {
 			return this.persistPatch({ passThrough: !!value })
 		},
@@ -463,6 +501,8 @@ export default {
 		 * Issue the live-preview request against `/api/mappings/test`. The
 		 * inflight indicator is shown next to the Output label so it
 		 * doesn't block edits in the rules table on the left.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
 		 */
 		async runPreview() {
 			if (!this.hasMapping) return
@@ -505,7 +545,11 @@ export default {
 			}
 		},
 
-		/** Clear sample input + output and cancel any pending request. */
+		/**
+		 * Clear sample input + output and cancel any pending request.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
+		 */
 		resetPreview() {
 			if (this.schedulePreview && this.schedulePreview.cancel) {
 				this.schedulePreview.cancel()
