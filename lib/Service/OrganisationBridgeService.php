@@ -64,6 +64,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   \OCA\OpenRegister\Service\OrganisationService|null
      * @phpstan-return \OCA\OpenRegister\Service\OrganisationService|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-1
      */
     public function getOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService
     {
@@ -94,6 +96,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-2
      */
     public function isOrganisationServiceAvailable(): bool
     {
@@ -110,6 +114,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   array
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-3
      */
     public function getUserOrganisationStats(): array
     {
@@ -155,6 +161,8 @@ class OrganisationBridgeService
      * @param string $organisationUuid The organization UUID to set as active.
      *
      * @return array Result with success status and message.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-4
      */
     public function setActiveOrganisation(string $organisationUuid): array
     {
@@ -205,6 +213,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   array|null
      * @phpstan-return array|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-5
      */
     public function getActiveOrganisation(): ?array
     {
@@ -239,6 +249,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   array
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-5
      */
     public function getUserOrganisations(): array
     {

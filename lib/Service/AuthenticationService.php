@@ -92,6 +92,8 @@ class AuthenticationService
      * @param array $configuration Configuration array for authentication.
      *
      * @return array|array[] The call options for OAuth with Client Credentials.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
      */
     private function createClientCredentialConfig(array $configuration): array
     {
@@ -142,6 +144,8 @@ class AuthenticationService
      * @param array $configuration Configuration array for authentication.
      *
      * @return array|array[] The call options for OAuth with Password Credentials
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
      */
     private function createPasswordConfig(array $configuration): array
     {
@@ -180,6 +184,8 @@ class AuthenticationService
      * @throws BadRequestException                     Thrown if the configuration is not compatible with OAuth.
      * @throws \GuzzleHttp\Exception\GuzzleException Thrown if the token endpoint does not respond with an access token.
      * @todo   Convert GuzzleException to another error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
      */
     public function fetchOAuthTokens(array $configuration): string
     {
@@ -223,6 +229,8 @@ class AuthenticationService
      * @return string The access token
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-3
      */
     public function fetchDecosToken(array $configuration): string
     {
@@ -250,6 +258,8 @@ class AuthenticationService
      * @param array $configuration The auth configuration for the source.
      *
      * @return JWK|null The resulting JWK key, or null when the secret cannot be parsed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getRSJWK(array $configuration): ?JWK
     {
@@ -278,6 +288,8 @@ class AuthenticationService
      * @param array $configuration The source configuration.
      *
      * @return JWK|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getHSJWK(array $configuration): ?JWK
     {
@@ -298,6 +310,8 @@ class AuthenticationService
      *
      * @throws \Twig\Error\LoaderError When the template cannot be loaded.
      * @throws \Twig\Error\SyntaxError When the template has invalid syntax.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getJWTPayload(array $configuration): array
     {
@@ -312,6 +326,8 @@ class AuthenticationService
      * @param array $configuration The auth configuration for the source.
      *
      * @return JWK|null The resulting JWK key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getJWK(array $configuration): ?JWK
     {
@@ -334,6 +350,8 @@ class AuthenticationService
      * @param string|null $x5t       If applicable: the Base64 encoded SHA-1 thumbprint of the used certificate.
      *
      * @return string The serialised JWT token.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
     {
@@ -375,6 +393,8 @@ class AuthenticationService
      * @param array $configuration The auth configuration for the JWT token. Must at least contain payload, algorithm and secret.
      *
      * @return string The generated JWT token
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     public function fetchJWTToken(array $configuration): string
     {

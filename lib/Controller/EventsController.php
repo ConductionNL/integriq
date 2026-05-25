@@ -88,6 +88,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
      */
     public function messages(int $id): JSONResponse
     {
@@ -123,6 +125,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
      */
     public function subscribe(): JSONResponse
     {
@@ -155,6 +159,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
      */
     public function updateSubscription(string $subscriptionId): JSONResponse
     {
@@ -194,6 +200,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
      */
     public function unsubscribe(string $subscriptionId): JSONResponse
     {
@@ -215,6 +223,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
      */
     public function subscriptions(): JSONResponse
     {
@@ -250,6 +260,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
      */
     public function subscriptionMessages(string $subscriptionId): JSONResponse
     {
@@ -287,6 +299,8 @@ class EventsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-3
      */
     public function pull(string $subscriptionId): JSONResponse
     {

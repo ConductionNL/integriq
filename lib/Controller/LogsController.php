@@ -94,6 +94,8 @@ class LogsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
      */
     public function index(
         ?int $limit=20,
@@ -170,6 +172,8 @@ class LogsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
      */
     public function show(string $id): JSONResponse
     {
@@ -193,6 +197,8 @@ class LogsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
      */
     public function destroy(string $id): JSONResponse
     {
@@ -215,6 +221,8 @@ class LogsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-2
      */
     public function statistics(): JSONResponse
     {
@@ -272,6 +280,8 @@ class LogsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-2
      */
     public function export(
         ?string $level=null,

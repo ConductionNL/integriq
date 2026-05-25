@@ -122,6 +122,8 @@ class MappingService
      * @param string $replacement The encoded character.
      *
      * @return array The array with encoded array keys
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -152,6 +154,8 @@ class MappingService
      * @throws LoaderError|SyntaxError Twig exceptions.
      *
      * @psalm-param array<string, mixed> $context
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     public function renderTemplateString(string $template, array $context=[]): string
     {
@@ -171,6 +175,8 @@ class MappingService
      *
      * @return array The result (output) of the mapping process
      * @throws LoaderError|SyntaxError Twig Exceptions
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     public function executeMapping(\OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping, array $input, bool $list=false): array
     {
@@ -206,6 +212,8 @@ class MappingService
      * @throws Exception When mapping fails
      *
      * @SuppressWarnings(PHPMD.ElseExpression)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     private function executeMappingLocal(\OCA\OpenRegister\Db\Mapping $mapping, array $input, bool $list=false): array
     {
@@ -335,6 +343,8 @@ class MappingService
      * @param string $cast     The type of cast we want to do.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
      */
     private function handleCast(Dot $dotArray, string $key, string $cast)
     {
@@ -512,6 +522,8 @@ class MappingService
      * @param array $array Array to check.
      *
      * @return bool True if array keys are null else false.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
      */
     private function areAllArrayKeysNull(array $array): bool
     {
@@ -543,6 +555,8 @@ class MappingService
      * @param string $coordinates A string containing coordinates.
      *
      * @return array An array of coordinates.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
      */
     public function coordinateStringToArray(string $coordinates): array
     {
@@ -579,6 +593,8 @@ class MappingService
      * @param string $mappingId The unique identifier of the mapping to retrieve.
      *
      * @return ObjectEntity The requested mapping entity.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-3
      */
     public function getMapping(string $mappingId): ObjectEntity
     {
@@ -595,6 +611,8 @@ class MappingService
      * This maintains proper encapsulation and separation of concerns.
      *
      * @return array<ObjectEntity> An array containing all mapping entities
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-3
      */
     public function getMappings(): array
     {
