@@ -105,6 +105,8 @@ class JobsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-1
      */
     public function logs(SearchService $searchService): JSONResponse
     {
@@ -218,6 +220,8 @@ class JobsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-2
      */
     public function run(string $id): JSONResponse
     {
@@ -271,6 +275,8 @@ class JobsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-2
      */
     public function test(string $id): JSONResponse
     {

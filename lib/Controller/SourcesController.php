@@ -102,6 +102,8 @@ class SourcesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
      */
     public function logs(SearchService $searchService): JSONResponse
     {
@@ -268,6 +270,8 @@ class SourcesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
      */
     public function test(CallService $callService, string $id): JSONResponse
     {

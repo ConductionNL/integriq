@@ -88,6 +88,8 @@ class AuthorizationService
      * @return ObjectEntity The consumer for the JWT token.
      *
      * @throws AuthenticationException Thrown if no issuer was found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
     private function findIssuer(string $issuer): ObjectEntity
     {
@@ -115,6 +117,8 @@ class AuthorizationService
      * @param JWS $token The unserialized token.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
     private function checkHeaders(JWS $token): void
     {
@@ -138,6 +142,8 @@ class AuthorizationService
      * @return JWKSet The resulting JWK-set.
      *
      * @throws AuthenticationException If the algorithm is not supported.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
     private function getJWK(string $publicKey, string $algorithm): JWKSet
     {
@@ -175,6 +181,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException If the token is missing/expired.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
     public function validatePayload(array $payload): void
     {
@@ -213,6 +221,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException On any validation failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
     public function authorizeJwt(string $authorization): void
     {
@@ -282,6 +292,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException On invalid credentials.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-2
      */
     public function authorizeBasic(string $header, array $users, array $groups): void
     {
@@ -324,6 +336,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException On invalid tokens.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-3
      */
     public function authorizeOAuth(string $header, array $users, array $groups): void
     {
@@ -370,6 +384,8 @@ class AuthorizationService
      * @return Response The updated response.
      *
      * @throws SecurityException If Allow-Credentials is true.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-5
      */
     public function corsAfterController(IRequest $request, Response $response)
     {
@@ -401,6 +417,8 @@ class AuthorizationService
      * @return void
      *
      * @throws AuthenticationException On invalid API keys.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-4
      */
     public function authorizeApiKey(string $header, array $keys): void
     {

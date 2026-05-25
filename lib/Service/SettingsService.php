@@ -79,6 +79,8 @@ class SettingsService
      * @param string $createdColumn The column expression to add the interval to.
      *
      * @return string The SQL expression.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
     private function expiresExpression(string $createdColumn): string
     {
@@ -100,6 +102,8 @@ class SettingsService
      * @param string $column          The column name to check.
      *
      * @return bool True when the column exists, false otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
     private function columnExists(string $unprefixedTable, string $column): bool
     {
@@ -138,6 +142,8 @@ class SettingsService
      * @return array Array containing warning counts and total counts for all tables.
      *
      * @throws \RuntimeException If statistics retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
     public function getStats(): array
     {
@@ -247,6 +253,8 @@ class SettingsService
      *
      * @return array The current retention settings configuration.
      * @throws \RuntimeException If settings retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-4
      */
     public function getSettings(): array
     {
@@ -309,6 +317,8 @@ class SettingsService
      *
      * @return array The updated settings configuration.
      * @throws \RuntimeException If settings update fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-4
      */
     public function updateSettings(array $data): array
     {
@@ -350,6 +360,8 @@ class SettingsService
      *
      * @return array Array containing the rebase operation results
      * @throws \RuntimeException If the rebase operation fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
     public function rebase(): array
     {

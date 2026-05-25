@@ -74,6 +74,8 @@ class SettingsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
     public function rebase(): JSONResponse
     {
