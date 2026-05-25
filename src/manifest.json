@@ -80,7 +80,7 @@
       "label": "Documentation",
       "icon": "BookOpenVariant",
       "href": "https://openconnector.conduction.nl",
-      "section": "settings",
+      "section": "footer",
       "order": 15
     },
     {
