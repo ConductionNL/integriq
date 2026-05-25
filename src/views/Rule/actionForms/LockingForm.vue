@@ -40,18 +40,22 @@ export default {
 	components: { NcSelect, NcTextField },
 	props: { ...valueProp },
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		actionOptions() {
 			return LOCK_ACTIONS.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedAction() {
 			return this.actionOptions.find((opt) => opt.id === this.value.action) || null
 		},
 	},
 	methods: {
 		patch: patchMethod(),
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		onActionPick(option) {
 			this.patch('action', option?.id || '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		onDurationInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
