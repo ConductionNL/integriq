@@ -191,6 +191,8 @@ class LegacyToRegisterMigrator
      * @param integer     $batchSize  Default 10,000; valid range [100, 100000].
      *
      * @return array<array{slug:string,legacyCount:int,migratedCount:int,skipped:int,fkRewrites:int,elapsedMs:int}>
+     *
+     * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
      */
     public function migrateAll(bool $dryRun=false, ?string $entitySlug=null, int $batchSize=10000): array
     {

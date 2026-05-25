@@ -90,6 +90,7 @@ export default {
 		this.loadAvailableRules()
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		async loadAvailableRules() {
 			this.loading = true
 
@@ -113,6 +114,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		async addRule() {
 			if (!this.ruleOptions.value) return
 
@@ -163,6 +165,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeTimeoutFunc)

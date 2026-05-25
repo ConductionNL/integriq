@@ -397,6 +397,7 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		tabs() {
 			return [
 				{
@@ -416,12 +417,14 @@ export default {
 				},
 			]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		mappingRowList() {
 			return Object.keys(this.mappingRules).map((key) => ({
 				key,
 				value: this.mappingRules[key],
 			}))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		castRowList() {
 			return Object.keys(this.castRules).map((key) => ({
 				key,
@@ -432,18 +435,21 @@ export default {
 
 	watch: {
 		mappingRules: {
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 			handler(next) {
 				this.mappingDraft = objectToRowList(next)
 			},
 			deep: true,
 		},
 		castRules: {
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 			handler(next) {
 				this.castDraft = objectToRowList(next)
 			},
 			deep: true,
 		},
 		unsetRules: {
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 			handler(next) {
 				this.unsetDraft = [...next]
 			},
@@ -452,6 +458,7 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		formatTemplate(value) {
 			if (value == null) return ''
 			if (typeof value === 'string') return value
@@ -461,6 +468,7 @@ export default {
 				return String(value)
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		existingKeysFor(kind, currentProperty) {
 			let keys = []
 			if (kind === 'mapping') keys = Object.keys(this.mappingRules)
@@ -472,6 +480,7 @@ export default {
 			return keys
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		openCreate(kind) {
 			this.editing = {
 				kind,
@@ -479,6 +488,7 @@ export default {
 				value: kind === 'cast' ? 'string' : '',
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		openEdit(kind, property) {
 			const source = kind === 'mapping' ? this.mappingRules : this.castRules
 			this.editing = {
@@ -487,6 +497,7 @@ export default {
 				value: source[property] ?? (kind === 'cast' ? 'string' : ''),
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		openEditUnset(property) {
 			this.editing = {
 				kind: 'unset',
@@ -495,6 +506,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onSubmitDialog(payload) {
 			const { kind, property, value } = payload
 			if (kind === 'mapping') {
@@ -507,6 +519,7 @@ export default {
 			this.editing = null
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		commitMapping(oldKey, newKey, newValue) {
 			const next = { ...this.mappingRules }
 			if (oldKey && oldKey !== newKey) {
@@ -515,6 +528,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-mapping', next)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		commitCast(oldKey, newKey, newValue) {
 			const next = { ...this.castRules }
 			if (oldKey && oldKey !== newKey) {
@@ -523,6 +537,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-cast', next)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		commitUnset(oldProperty, newProperty) {
 			const next = [...this.unsetRules]
 			if (oldProperty) {
@@ -547,6 +562,7 @@ export default {
 			this.$emit('update-unset', deduped)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		deleteRule(kind, key) {
 			if (kind === 'mapping') {
 				const next = { ...this.mappingRules }
@@ -558,18 +574,25 @@ export default {
 				this.$emit('update-cast', next)
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		deleteUnset(property) {
 			const next = this.unsetRules.filter((entry) => entry !== property)
 			this.$emit('update-unset', next)
 		},
 
-		/** Drag-end handler: emit a rebuilt object in the new order. */
+		/**
+		 * Drag-end handler: emit a rebuilt object in the new order.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2
+		 */
 		onMappingReorder() {
 			this.$emit('update-mapping', rowListToObject(this.mappingDraft))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onCastReorder() {
 			this.$emit('update-cast', rowListToObject(this.castDraft))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onUnsetReorder() {
 			this.$emit('update-unset', [...this.unsetDraft])
 		},
@@ -582,6 +605,8 @@ export default {
 		 * @param {'mapping'|'cast'|'unset'} kind Which collection.
 		 * @param {number} index Current row index.
 		 * @param {number} direction -1 to move up, 1 to move down.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2
 		 */
 		moveRow(kind, index, direction) {
 			let list

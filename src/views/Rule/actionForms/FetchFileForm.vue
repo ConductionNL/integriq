@@ -108,6 +108,7 @@ export default {
 		}
 	},
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedSource() {
 			const id = String(this.value?.source || '')
 			if (!id) return null
@@ -124,6 +125,7 @@ export default {
 			}
 		},
 	},
+	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 	async mounted() {
 		this.sourcesLoading = true
 		this.sourceOptions = await fetchOpenRegisterCollection('source')
@@ -132,20 +134,25 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		onSourcePick(option) {
 			this.patch('source', option?.id ? String(option.id) : '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : (value || '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		toArray(text) {
 			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		serialiseSourceConfig(value) {
 			if (value === undefined || value === null) return ''
 			if (typeof value === 'string') return value
 			try { return JSON.stringify(value, null, 2) } catch (_e) { return String(value) }
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		onSourceConfigInput(event) {
 			const raw = event.target.value
 			this.sourceConfigDraft = raw

@@ -62,6 +62,8 @@ class PdokController extends Controller
      * @param string $q Partial address text (min 1 char).
      *
      * @return JSONResponse Normalised suggestion documents or a 400 / 503 error envelope.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -84,6 +86,8 @@ class PdokController extends Controller
      * @param string $id PDOK identifier.
      *
      * @return JSONResponse Normalised lookup payload, or 400 / 404 / 503.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -123,6 +127,8 @@ class PdokController extends Controller
      * @param int    $start Page offset.
      *
      * @return JSONResponse Normalised results or 400 / 503.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -146,6 +152,8 @@ class PdokController extends Controller
      * @param float|null $lng Longitude (WGS84).
      *
      * @return JSONResponse Normalised address or 400 / 503.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

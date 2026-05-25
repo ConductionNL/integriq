@@ -41,6 +41,7 @@ export default {
 	props: { ...valueProp },
 	methods: {
 		patch: patchMethod(),
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		onMaxSizeInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

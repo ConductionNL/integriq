@@ -34,6 +34,8 @@ interface ConfigurationHandlerInterface
      * @param array<int, int|string>                                                           $mappingIds Collected mapping ids (out parameter).
      *
      * @return array The OpenAPI entity specification.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#REQ-001
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array;
 
@@ -44,6 +46,8 @@ interface ConfigurationHandlerInterface
      * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings The global mappings for ID/slug conversion.
      *
      * @return Entity The imported entity.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#REQ-003
      */
     public function import(array $data, array $mappings): Entity;
 
@@ -51,6 +55,8 @@ interface ConfigurationHandlerInterface
      * Get the entity type this handler is responsible for.
      *
      * @return string The entity type.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#REQ-003
      */
     public function getEntityType(): string;
 }//end interface

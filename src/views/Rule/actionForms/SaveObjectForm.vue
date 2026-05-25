@@ -52,22 +52,26 @@ export default {
 		}
 	},
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedRegister() {
 			const id = String(this.value?.register || '')
 			if (!id) return null
 			return this.registerOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedSchema() {
 			const id = String(this.value?.schema || '')
 			if (!id) return null
 			return this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedMapping() {
 			const id = String(this.value?.mapping || '')
 			if (!id) return null
 			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
 	},
+	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 	async mounted() {
 		this.loading = true
 		const [registers, schemas, mappings] = await Promise.all([

@@ -130,12 +130,14 @@ export default {
 		}
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-4 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.success = false
 			this.loading = false
 			this.error = false
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-4 */
 		async testJob() {
 			this.loading = true
 
