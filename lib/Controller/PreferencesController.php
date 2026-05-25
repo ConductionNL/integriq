@@ -60,6 +60,8 @@ class PreferencesController extends Controller
      *
      * @return JSONResponse `{value: string|null}`.
      *
+     * @spec openspec/changes/retrofit-2026-05-26-preferences-api/tasks.md#task-1
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
@@ -98,6 +100,8 @@ class PreferencesController extends Controller
      * @param string $value The value to store (empty string clears it).
      *
      * @return JSONResponse `{value: string|null}`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-26-preferences-api/tasks.md#task-2
      *
      * @NoAdminRequired
      * @NoCSRFRequired
