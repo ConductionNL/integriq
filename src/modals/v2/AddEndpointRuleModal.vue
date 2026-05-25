@@ -121,15 +121,19 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		endpointName() {
 			return this.endpoint?.name || this.endpoint?.title || ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		canSave() {
 			return this.selectedRules.length > 0
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		endpointId() {
 			return this.endpoint?.id || this.endpoint?.uuid
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		existingRuleIds() {
 			const raw = this.endpoint?.rules
 			if (!Array.isArray(raw)) return []
@@ -141,6 +145,7 @@ export default {
 	},
 
 	watch: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -150,10 +155,12 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		onClose() {
 			this.$emit('close')
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		resetState() {
 			this.selectedRules = []
 			this.saving = false
@@ -161,6 +168,7 @@ export default {
 			this.error = ''
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		async fetchRules() {
 			this.loadingRules = true
 			try {
@@ -193,6 +201,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
 		async onSave() {
 			if (!this.canSave || !this.endpointId) return
 			this.saving = true
