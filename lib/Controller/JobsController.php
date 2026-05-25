@@ -74,6 +74,8 @@ class JobsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
      */
     public function page(): TemplateResponse
     {

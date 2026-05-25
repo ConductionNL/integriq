@@ -84,6 +84,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function dashboard(): TemplateResponse
     {
@@ -100,6 +102,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function sources(): TemplateResponse
     {
@@ -116,6 +120,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function sourcesLogs(): TemplateResponse
     {
@@ -132,6 +138,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function endpoints(): TemplateResponse
     {
@@ -148,6 +156,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function endpointsLogs(): TemplateResponse
     {
@@ -166,6 +176,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function endpointsId(string $id): TemplateResponse
     {
@@ -182,6 +194,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function consumers(): TemplateResponse
     {
@@ -200,6 +214,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function consumersId(string $id): TemplateResponse
     {
@@ -216,6 +232,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function webhooks(): TemplateResponse
     {
@@ -232,6 +250,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function jobs(): TemplateResponse
     {
@@ -248,6 +268,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function jobsLogs(): TemplateResponse
     {
@@ -264,6 +286,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function mappings(): TemplateResponse
     {
@@ -282,6 +306,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function mappingsId(string $id): TemplateResponse
     {
@@ -298,6 +324,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function rules(): TemplateResponse
     {
@@ -316,6 +344,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function rulesId(string $id): TemplateResponse
     {
@@ -332,6 +362,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function synchronizations(): TemplateResponse
     {
@@ -348,6 +380,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function synchronizationsContracts(): TemplateResponse
     {
@@ -364,6 +398,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function synchronizationsLogs(): TemplateResponse
     {
@@ -380,6 +416,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEvents(): TemplateResponse
     {
@@ -396,6 +434,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEventsEvents(): TemplateResponse
     {
@@ -414,6 +454,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEventsEventsId(string $id): TemplateResponse
     {
@@ -430,6 +472,8 @@ class UiController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEventsLogs(): TemplateResponse
     {

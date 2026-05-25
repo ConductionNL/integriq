@@ -53,6 +53,8 @@ class IBabsConnectorService
      * @param ObjectEntity $source The iBabs source configuration.
      *
      * @return array Result with 'success' boolean and 'message' string.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-001
      */
     public function testConnection(ObjectEntity $source): array
     {
@@ -110,6 +112,8 @@ class IBabsConnectorService
      * @param array        $voorstel The voorstel data including document path and metadata.
      *
      * @return array Result with 'success' boolean and 'vergaderstukId'.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-002
      */
     public function pushVoorstel(ObjectEntity $source, array $voorstel): array
     {
@@ -148,6 +152,8 @@ class IBabsConnectorService
      * @param ObjectEntity $source The iBabs source configuration.
      *
      * @return array Array of besluit records with zaak references and status.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-031
      */
     public function pollBesluiten(ObjectEntity $source): array
     {
@@ -164,6 +170,8 @@ class IBabsConnectorService
      * @param string $ibabsStatus The iBabs besluit status.
      *
      * @return string The corresponding Procest zaak status.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-004
      */
     public function mapBesluitStatus(string $ibabsStatus): string
     {

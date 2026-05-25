@@ -70,6 +70,8 @@ class SourcesController extends Controller
      * @NoCSRFRequired
      *
      * @return TemplateResponse The rendered template response.
+     *
+     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
      */
     public function page(): TemplateResponse
     {
