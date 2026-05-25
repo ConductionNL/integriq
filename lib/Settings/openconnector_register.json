@@ -189,6 +189,20 @@
       },
       "event_message": {
         "slug": "event_message",
+        "x-openregister-notifications": {
+          "delivery-retries-exhausted": {
+            "trigger": {"type": "threshold", "aggregation": "max", "field": "retryCount", "op": "gte", "value": 5},
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Event-bezorging faalt herhaaldelijk (retry {{retryCount}})",
+              "en": "Event delivery failing repeatedly (retry {{retryCount}})"
+            }
+          }
+        },
         "title": "EventMessage",
         "icon": "EmailFast",
         "version": "1.0.0",
@@ -249,6 +263,21 @@
       },
       "job": {
         "slug": "job",
+        "x-openregister-notifications": {
+          "job-overdue": {
+            "trigger": {"type": "scheduled", "intervalSec": 3600, "filter": {"isEnabled": {"op": "equals", "value": true}, "nextRun": {"op": "lt", "value": "now"}}},
+            "enabled": false,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Geplande job loopt achter: {{name}}",
+              "en": "Scheduled job overdue: {{name}}"
+            }
+          }
+        },
         "title": "Job",
         "icon": "ClockOutline",
         "version": "1.0.0",
@@ -427,6 +456,21 @@
       },
       "call_log": {
         "slug": "call_log",
+        "x-openregister-notifications": {
+          "call-failed": {
+            "trigger": {"type": "created", "filter": {"statusCode": {"op": "gte", "value": 400}}},
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Mislukte API-aanroep ({{statusCode}}) op bron {{sourceId}}",
+              "en": "Failed API call ({{statusCode}}) on source {{sourceId}}"
+            }
+          }
+        },
         "title": "CallLog",
         "icon": "PhoneLog",
         "version": "1.0.0",
@@ -466,6 +510,21 @@
       },
       "job_log": {
         "slug": "job_log",
+        "x-openregister-notifications": {
+          "job-error": {
+            "trigger": {"type": "created", "filter": {"level": {"op": "equals", "value": "ERROR"}}},
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Job-fout: {{message}}",
+              "en": "Job error: {{message}}"
+            }
+          }
+        },
         "title": "JobLog",
         "icon": "ClockTimeFour",
         "version": "1.0.0",
@@ -507,6 +566,21 @@
       },
       "synchronization_log": {
         "slug": "synchronization_log",
+        "x-openregister-notifications": {
+          "sync-failed": {
+            "trigger": {"type": "created"},
+            "enabled": false,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Synchronisatie-uitkomst: {{message}}",
+              "en": "Synchronization result: {{message}}"
+            }
+          }
+        },
         "title": "SynchronizationLog",
         "icon": "SyncCircle",
         "version": "1.0.0",
