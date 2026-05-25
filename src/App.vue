@@ -46,6 +46,7 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1 */
 		permissions() {
 			const base = window.OC?.currentUser?.permissions ?? []
 			// CnAppNav's permission filter is an array-includes check; Nextcloud
@@ -66,6 +67,8 @@ export default {
 		 *
 		 * @param {string} key Translation key.
 		 * @return {string} Translated string (or the key on miss).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1
 		 */
 		translateForApp(key) {
 			return ncT('openconnector', key)
