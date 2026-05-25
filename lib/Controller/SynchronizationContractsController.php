@@ -93,6 +93,8 @@ class SynchronizationContractsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function activate(string $id): JSONResponse
     {
@@ -119,6 +121,8 @@ class SynchronizationContractsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function deactivate(string $id): JSONResponse
     {
@@ -145,6 +149,8 @@ class SynchronizationContractsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function execute(string $id): JSONResponse
     {
@@ -169,6 +175,8 @@ class SynchronizationContractsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The statistics response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function statistics(): JSONResponse
     {
@@ -206,6 +214,8 @@ class SynchronizationContractsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The performance response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function performance(): JSONResponse
     {
@@ -252,6 +262,8 @@ class SynchronizationContractsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function export(
         ?string $synchronizationId=null,

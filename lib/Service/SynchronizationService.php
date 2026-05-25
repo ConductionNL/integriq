@@ -147,6 +147,8 @@ class SynchronizationService
      * @throws \DateMalformedStringException When the date string cannot be parsed.
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -164,6 +166,8 @@ class SynchronizationService
      * @param mixed $schema   The schema id.
      *
      * @return array The list of records matching the source ID.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function findAllBySourceId($register, $schema)
     {
@@ -189,6 +193,8 @@ class SynchronizationService
      * @param string       $eventMutationType The triggering mutation: create|update|delete
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
     {
@@ -304,6 +310,8 @@ class SynchronizationService
      * @param string       $eventMutationType One of create|update|delete.
      *
      * @return bool True when the synchronization should run, false when it should be skipped.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function shouldTriggerOnEvent(ObjectEntity $synchronization, string $eventMutationType): bool
     {
@@ -329,6 +337,8 @@ class SynchronizationService
      * @param string|null  $mutationType    The mutation type that triggered the call.
      *
      * @return array|null The fetched parent object as array, or null when it cannot be resolved.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function resolveParentObjectForRelatedObjectTrigger(
         ObjectEntity $synchronization,
@@ -442,6 +452,8 @@ class SynchronizationService
      * @param string|null                             $mutationType    Single object mutation type: 'create', 'update' or 'delete'.
      *
      * @return ObjectEntity|array|null Returns a synchronization contract, an array for test cases, or null if conditions are not met.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function synchronizeInternToExtern(
         ObjectEntity $synchronization,
@@ -657,6 +669,8 @@ class SynchronizationService
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
      * @throws Exception                    If the source ID is empty or synchronization cannot proceed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function synchronizeExternToIntern(
         ObjectEntity $synchronization,
@@ -991,6 +1005,8 @@ class SynchronizationService
      * @throws \OCP\DB\Exception                When the database layer raises an exception.
      * @throws Exception                        For any other generic error condition.
      * @throws TooManyRequestsHttpException     When the source rate-limits the request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function synchronize(
         ObjectEntity $synchronization,
@@ -1107,6 +1123,8 @@ class SynchronizationService
      * @return string|int The extracted origin id.
      *
      * @throws Exception When the id cannot be found at the configured position.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function getOriginId(ObjectEntity $synchronization, array $object): int|string
     {
@@ -1149,6 +1167,8 @@ class SynchronizationService
      * @throws LoaderError       When the Twig loader fails.
      * @throws SyntaxError       When a Twig template has a syntax error.
      * @throws \OCP\DB\Exception When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     public function getObjectFromSource(ObjectEntity $synchronization, string $endpoint, string|int|null $source=null): array
     {
@@ -1203,6 +1223,8 @@ class SynchronizationService
      *
      * @throws Exception        When both dynamic and static endpoint configurations are missing.
      * @throws GuzzleException  When the HTTP call to the source fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchExtraDataForObject(
         ObjectEntity $synchronization,
@@ -1344,6 +1366,8 @@ class SynchronizationService
      * @return array The updated object with all fetched extra data merged into it.
      *
      * @throws GuzzleException When the underlying HTTP call fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchMultipleExtraData(ObjectEntity $synchronization, array $sourceConfig, array $object): array
     {
@@ -1374,6 +1398,8 @@ class SynchronizationService
      *
      * @throws LoaderError When the Twig loader fails.
      * @throws SyntaxError When a Twig template has a syntax error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function mapHashObject(ObjectEntity $synchronization, array $object): array|Exception
     {
@@ -1404,6 +1430,8 @@ class SynchronizationService
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found in the container.
      * @throws \OCP\DB\Exception           When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     public function deleteInvalidObjects(
         ObjectEntity $synchronization,
@@ -1562,6 +1590,8 @@ class SynchronizationService
      * @param mixed $array The array to sort.
      *
      * @return bool Whether or not the sort is successful.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     public function sortNestedArray(mixed &$array): bool
     {
@@ -1584,6 +1614,8 @@ class SynchronizationService
      * @param array $object The object to hash.
      *
      * @return string The object hash.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function hashObject(array $object): string
     {
@@ -1612,6 +1644,8 @@ class SynchronizationService
      * @throws LoaderError                 When the Twig loader fails.
      * @throws SyntaxError                 When a Twig template has a syntax error.
      * @throws GuzzleException             When a remote HTTP call fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function synchronizeContract(
         ObjectEntity $synchronizationContract,
@@ -1928,6 +1962,8 @@ class SynchronizationService
      *
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function updateTargetOpenRegister(
         ObjectEntity $synchronizationContract,
@@ -2026,6 +2062,8 @@ class SynchronizationService
      * @param bool  $replaceIdWithTargetId If we need to replace id with target id found by origin id if configured.
      *
      * @return array The processed data with 'originId' replaced where applicable.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     public function replaceRelatedOriginIds(array $object, array $config, bool $replaceIdWithTargetId=false): array
     {
@@ -2081,6 +2119,8 @@ class SynchronizationService
      * @param string $value The string potentially containing a UUID to replace.
      *
      * @return string The string with the UUID replaced if found and valid, otherwise the original string.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function replaceIdInString(string $value): string
     {
@@ -2115,6 +2155,8 @@ class SynchronizationService
      * @param string $originId The origin ID to look up.
      *
      * @return string|null The target ID if found, null otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function findTargetIdByOriginId(string $originId): ?string
     {
@@ -2142,6 +2184,8 @@ class SynchronizationService
      * @param array  $targetObject      The target object containing subObjects to be processed.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function updateContractsForSubObjects(array $subObjectsConfig, string $synchronizationId, array $targetObject): void
     {
@@ -2200,6 +2244,8 @@ class SynchronizationService
      * @return void
      *
      * @throws \OCP\DB\Exception When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function processSyncContract(string $synchronizationId, array $subObjectData): void
     {
@@ -2283,6 +2329,8 @@ class SynchronizationService
      * @param mixed $array The array to check.
      *
      * @return bool True if the array is associative, false otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function isAssociativeArray(mixed $array): bool
     {
@@ -2299,6 +2347,8 @@ class SynchronizationService
      * @param array  $targetObject      The target object containing subObjects to be processed.
      *
      * @return array The updated target object with IDs updated on subObjects.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function updateIdsOnSubObjects(array $subObjectsConfig, string $synchronizationId, array $targetObject): array
     {
@@ -2346,6 +2396,8 @@ class SynchronizationService
      * @return array The updated subObject with the ID set based on the synchronization contract.
      * @throws MultipleObjectsReturnedException
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function updateIdOnSubObject(string $synchronizationId, array $subObject): array
     {
@@ -2385,6 +2437,8 @@ class SynchronizationService
      * @throws SyntaxError                 When a Twig template has a syntax error.
      * @throws \OCP\DB\Exception           When the database layer raises an exception.
      * @throws Exception                   For unsupported target types.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     public function updateTarget(
         ObjectEntity $synchronizationContract,
@@ -2454,6 +2508,8 @@ class SynchronizationService
      * @throws GuzzleException             When a remote HTTP call fails.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws \OCP\DB\Exception           When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     public function getAllObjectsFromSource(ObjectEntity $synchronization, ?bool $isTest=false, ?array $data=null): array
     {
@@ -2490,6 +2546,8 @@ class SynchronizationService
      * @throws LoaderError       When the Twig loader fails.
      * @throws SyntaxError       When a Twig template has a syntax error.
      * @throws \OCP\DB\Exception When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     public function getAllObjectsFromApi(ObjectEntity $synchronization, ?bool $isTest=false, ?array $data=null): array
     {
@@ -2627,6 +2685,8 @@ class SynchronizationService
      * @return array Combined objects from all pages.
      *
      * @throws TooManyRequestsHttpException When rate limit is exceeded.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchAllPages(
         ?ObjectEntity $source,
@@ -2675,6 +2735,8 @@ class SynchronizationService
      * @return array Combined objects from all pages.
      *
      * @throws TooManyRequestsHttpException When rate limit is exceeded.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchAllPagesOptimized(
         ?ObjectEntity $source,
@@ -2765,6 +2827,8 @@ class SynchronizationService
      * @param bool|null         $usesNextEndpoint Whether the API uses next endpoint URLs.
      *
      * @return array|null Next page information or null if no more pages.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function getNextPageInfo(
         ?ObjectEntity $source,
@@ -2840,6 +2904,8 @@ class SynchronizationService
      * @return array Objects from the page.
      *
      * @throws TooManyRequestsHttpException When rate limit is exceeded.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchSinglePage(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization): array
     {
@@ -2865,6 +2931,8 @@ class SynchronizationService
      * @return array{objects: array, result: array} The decoded objects + raw response.
      *
      * @throws TooManyRequestsHttpException When rate limit is exceeded.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchSinglePageData(?ObjectEntity $source, string $endpoint, array $config, ObjectEntity $synchronization): array
     {
@@ -2931,6 +2999,8 @@ class SynchronizationService
      * @param bool|null         $usesNextEndpoint Whether the API uses next endpoint URLs.
      *
      * @return array Combined objects from all pages.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function fetchAllPagesSequential(
         ?ObjectEntity $source,
@@ -3015,6 +3085,8 @@ class SynchronizationService
      * @return void
      *
      * @throws TooManyRequestsHttpException When the source rate-limit is exceeded.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function checkRateLimit(?ObjectEntity $source): void
     {
@@ -3043,6 +3115,8 @@ class SynchronizationService
      * @param ObjectEntity|null $source The source object containing rate limit details.
      *
      * @return array An associative array of rate limit headers.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function getRateLimitHeaders(?ObjectEntity $source): array
     {
@@ -3070,6 +3144,8 @@ class SynchronizationService
      * @param int   $currentPage  The current page number for pagination.
      *
      * @return array Updated configuration with pagination settings.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function getNextPage(array $config, array $sourceConfig, int $currentPage): array
     {
@@ -3089,6 +3165,8 @@ class SynchronizationService
      * @param string|null $currentEndpoint Optional current endpoint to preserve missing query params.
      *
      * @return string|null The next endpoint URL if available, or null if there is no next page.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     private function getNextEndpoint(array $body, string $url, ?string $currentEndpoint=null): ?string
     {
@@ -3138,6 +3216,8 @@ class SynchronizationService
      * @param array $body The decoded JSON body of the API response.
      *
      * @return string|null The URL for the next page of results, or null if there is no next page.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     public function getNextlinkFromCall(array $body): ?string
     {
@@ -3153,6 +3233,8 @@ class SynchronizationService
      * @return array An array of items extracted from the response body.
      *
      * @throws Exception When the position of objects in the return body cannot be determined.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-2
      */
     public function getAllObjectsFromArray(array $array, ObjectEntity $synchronization): array
     {
@@ -3212,6 +3294,8 @@ class SynchronizationService
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws SyntaxError                 When a Twig template has a syntax error.
      * @throws \OCP\DB\Exception           When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function writeObjectToTarget(
         ObjectEntity $synchronization,
@@ -3400,6 +3484,8 @@ class SynchronizationService
      * @throws SyntaxError                 When a Twig template has a syntax error.
      * @throws \OCP\DB\Exception           When the database layer raises an exception.
      * @throws GuzzleException             When a remote HTTP call fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     public function synchronizeToTarget(
         ObjectEntity $object,
@@ -3483,6 +3569,8 @@ class SynchronizationService
      * @param array        $data The data array containing the input parameters.
      *
      * @return array The serialized saved object payload.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processSaveObjectRule(ObjectEntity $rule, array $data): array
     {
@@ -3530,6 +3618,8 @@ class SynchronizationService
      *
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processExtendInputRule(array $config, array $data): array
     {
@@ -3598,6 +3688,8 @@ class SynchronizationService
      * @throws GuzzleException             When a remote HTTP call fails.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws Exception                   For unsupported rule types.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processRules(
         ?ObjectEntity $synchronization,
@@ -3717,6 +3809,8 @@ class SynchronizationService
      * @param string $id The unique identifier of the rule.
      *
      * @return ObjectEntity|null The rule object if found, or null if not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function getRuleById(string $id): ?ObjectEntity
     {
@@ -3737,6 +3831,8 @@ class SynchronizationService
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws GenericFileException        When file operations fail.
      * @throws LockedException             When the file is locked.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function writeFile(string $fileName, string $content, string $objectId): mixed
     {
@@ -3778,6 +3874,8 @@ class SynchronizationService
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws SyntaxError                 When a Twig template has a syntax error.
      * @throws \OCP\DB\Exception           When the database layer raises an exception.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function fetchFile(
         ?ObjectEntity $source,
@@ -3957,6 +4055,8 @@ class SynchronizationService
      * @param ObjectEntity $result   The CallLog entity for the original call.
      *
      * @return string|null Resolved filename, or null when nothing matched.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function getFilenameFromHeaders(array $response, ObjectEntity $result): ?string
     {
@@ -4009,6 +4109,8 @@ class SynchronizationService
      * @param int|string|null $registerId Reference to the registerId to be updated.
      *
      * @return string|null The extracted endpoint or null when nothing matched.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function getFileContext(
         array $config,
@@ -4125,6 +4227,8 @@ class SynchronizationService
      *
      * @return string A string indicating the type of the array:
      *                "Not array", "Associative array", "Multidimensional array", or "Indexed array".
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function getArrayType(mixed $array): string
     {
@@ -4165,6 +4269,8 @@ class SynchronizationService
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function processFetchFileRule(ObjectEntity $rule, array $data, ?string $objectId=null): array
     {
@@ -4246,6 +4352,8 @@ class SynchronizationService
      * @return void
      *
      * @psalm-param array<string, mixed> $config
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function startAsyncFileFetching(?ObjectEntity $source, array $config, mixed $endpoint, string $ruleId, ?string $objectId=null): void
     {
@@ -4273,6 +4381,8 @@ class SynchronizationService
      * @return void
      *
      * @psalm-param array<string, mixed> $config
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function executeAsyncFileFetching(?ObjectEntity $source, array $config, mixed $endpoint, string $ruleId, ?string $objectId=null): void
     {
@@ -4362,6 +4472,8 @@ class SynchronizationService
      *
      * @psalm-param array<string, mixed> $config
      * @psalm-param array<string> $tags
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function fetchFileSafely(
         ?ObjectEntity $source,
@@ -4402,6 +4514,8 @@ class SynchronizationService
      * @param mixed $endpoint The endpoint(s) to generate placeholders for.
      *
      * @return mixed Placeholder values matching the endpoint structure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function generatePlaceholderValues(mixed $endpoint): mixed
     {
@@ -4437,6 +4551,8 @@ class SynchronizationService
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws Exception                   When the rule configuration is missing.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function processWriteFileRule(
         ObjectEntity $rule,
@@ -4548,6 +4664,8 @@ class SynchronizationService
      * @param ObjectEntity $rule The rule object containing error details.
      *
      * @return JSONResponse Response containing error details and HTTP status code.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processErrorRule(ObjectEntity $rule): JSONResponse
     {
@@ -4574,6 +4692,8 @@ class SynchronizationService
      * @throws MultipleObjectsReturnedException When multiple mapping objects are returned unexpectedly.
      * @throws LoaderError                      When there is an error loading the mapping.
      * @throws SyntaxError                      When there is a syntax error in the mapping configuration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function processMappingRule(ObjectEntity $rule, array $data): array
     {
@@ -4591,6 +4711,8 @@ class SynchronizationService
      * @param array        $data    The data to be mapped.
      *
      * @return array The mapped data.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function processMapping(ObjectEntity $mapping, array $data): array
     {
@@ -4605,6 +4727,8 @@ class SynchronizationService
      * @param array        $data The data to be synchronized.
      *
      * @return array The data after synchronization processing.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processSyncRule(ObjectEntity $rule, array $data): array
     {
@@ -4624,6 +4748,8 @@ class SynchronizationService
      * @return bool True if conditions are met, false otherwise.
      *
      * @throws Exception When the JsonLogic evaluator throws.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function checkRuleConditions(ObjectEntity $rule, array $data): bool
     {
@@ -4644,6 +4770,8 @@ class SynchronizationService
      * @param string $replacement The encoded character.
      *
      * @return array The array with encoded array keys
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -4673,6 +4801,8 @@ class SynchronizationService
      * @param \SimpleXMLElement $xml The XML element to convert.
      *
      * @return array The array representation with preserved namespaced attributes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function xmlToArray(\SimpleXMLElement $xml): array
     {
@@ -4750,6 +4880,8 @@ class SynchronizationService
      * @param string|null  $mutationType    The type of object mutation.
      *
      * @return array Contains updated result data and the targetId: ['result' => array, 'targetId' => string|null].
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function processSynchronizationObject(
         ObjectEntity $synchronization,
@@ -4931,6 +5063,8 @@ class SynchronizationService
      * @return ObjectEntity The resulting synchronization.
      *
      * @throws DoesNotExistException When the synchronization does not exist.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function getSynchronization(null|string|int $id=null, array $filters=[]) :ObjectEntity
     {
@@ -4977,6 +5111,8 @@ class SynchronizationService
      *
      * @psalm-param   array<float|int> $numbers
      * @phpstan-param array<float|int> $numbers
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function calculateMedian(array $numbers): float
     {
@@ -5014,6 +5150,8 @@ class SynchronizationService
      * @phpstan-param  array<string, array{duration_ms: float, description: string}> $stages
      * @psalm-return   array{name: string, duration_ms: float, description: string}
      * @phpstan-return array{name: string, duration_ms: float, description: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function getSlowestStage(array $stages): array
     {
@@ -5057,6 +5195,8 @@ class SynchronizationService
      *
      * @psalm-param   array<string, array{duration_ms: float}> $stages
      * @phpstan-param array<string, array{duration_ms: float}> $stages
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function calculateEfficiencyRatio(array $stages): float
     {
@@ -5095,6 +5235,8 @@ class SynchronizationService
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws Exception                   When the cleanup encounters an unexpected error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function cleanupOrphanedFiles(string $objectId, array $newFileNames): int
     {
@@ -5153,6 +5295,8 @@ class SynchronizationService
      * @param string|null       $objectId  The UUID of the object to attach files to.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function processMultipleFilesWithCleanup(?ObjectEntity $source, array $config, array $endpoints, ?string $objectId=null): void
     {
@@ -5250,6 +5394,8 @@ class SynchronizationService
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      * @throws Exception                   When the cleanup encounters an unexpected error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     public function cleanupFilesFromAttachments(string $objectId, array $attachments): int
     {
@@ -5275,6 +5421,8 @@ class SynchronizationService
      * @param string|null $published The published parameter from the attachment data.
      *
      * @return bool True if the file should be published, false otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-4
      */
     private function shouldPublishFile(?string $published): bool
     {
