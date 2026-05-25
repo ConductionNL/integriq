@@ -155,6 +155,8 @@ class CallService
      * @throws \DateMalformedStringException On invalid datetime string composition.
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -178,6 +180,8 @@ class CallService
      *
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
     private function renderValue(array|string $value, array $sourceData): array|string
     {
@@ -217,6 +221,8 @@ class CallService
      *
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
     private function renderConfiguration(array $configuration, array $sourceData): array
     {
@@ -241,6 +247,8 @@ class CallService
      * @param boolean $read          For GET as default: decides if we are in a list or read (singular) endpoint.
      *
      * @return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
     private function decideMethod(string $default, array $configuration, bool $read=false): string
     {
@@ -282,6 +290,8 @@ class CallService
      * @param string $contents     File contents to write.
      *
      * @return string File location on disk.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
      */
     private function writeFile(string $baseFileName, string $contents): string
     {
@@ -303,6 +313,8 @@ class CallService
      * @param string $filename Filesystem path to remove.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
      */
     private function removeFile($filename): void
     {
@@ -316,6 +328,8 @@ class CallService
      * @param array $config The configuration as stored in the source.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
      */
     public function getCertificate(array &$config)
     {
@@ -351,6 +365,8 @@ class CallService
      * @param array $config The configuration with filenames.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
      */
     public function removeFiles(array $config): void
     {
@@ -399,6 +415,8 @@ class CallService
      * @throws LoaderError       On Twig loader error.
      * @throws SyntaxError       On Twig syntax error.
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
     public function call(
         ObjectEntity $source,
@@ -718,6 +736,8 @@ class CallService
      * @return array The updated response headers.
      *
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-3
      */
     private function sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers): array
     {
@@ -805,6 +825,8 @@ class CallService
      * @param array $config The config array.
      *
      * @return array The updated config array.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
     public function applyConfigDot(array $config): array
     {
