@@ -99,7 +99,7 @@
       "type": "dashboard",
       "title": "Dashboard",
       "config": {
-        "dateRange": { "enabled": true, "persistKey": "openconnector-dashboard" },
+        "dateRange": { "enabled": true, "showHeaderPicker": false, "persistKey": "openconnector-dashboard" },
         "widgets": [
           { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "props": { "route": { "name": "Sources" } },                  "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" } },
           { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "props": { "route": { "name": "Mappings" } },                 "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" } },
