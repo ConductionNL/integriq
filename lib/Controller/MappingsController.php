@@ -104,6 +104,8 @@ class MappingsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
+     *
      * @example
      * Request:
      * {
@@ -246,6 +248,8 @@ class MappingsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
     public function saveObject(): ?JSONResponse
     {
@@ -285,6 +289,8 @@ class MappingsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
     public function getObjects(): JSONResponse
     {

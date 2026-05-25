@@ -164,6 +164,8 @@ class SecurityService
      * @param string $ipAddress The IP address of the request.
      *
      * @return array Result with 'allowed' boolean and optional 'delay' or 'lockout_until'.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
@@ -262,6 +264,8 @@ class SecurityService
      * @param string $reason    The reason for login failure.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
@@ -336,6 +340,8 @@ class SecurityService
      * @param string $ipAddress The IP address of the successful attempt.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
@@ -375,6 +381,8 @@ class SecurityService
      * @param int   $maxLength Maximum allowed length for strings.
      *
      * @return mixed Sanitized input.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-5
      */
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
@@ -431,6 +439,8 @@ class SecurityService
      * @param array $credentials The login credentials to validate.
      *
      * @return array Validated and sanitized credentials or error information.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     public function validateLoginCredentials(array $credentials): array
     {
@@ -490,6 +500,8 @@ class SecurityService
      * @param JSONResponse $response The response to add headers to.
      *
      * @return JSONResponse The response with added security headers.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-5
      */
     public function addSecurityHeaders(JSONResponse $response): JSONResponse
     {
@@ -525,6 +537,8 @@ class SecurityService
      * @param IRequest $request The request object.
      *
      * @return string The client IP address.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     public function getClientIpAddress(IRequest $request): string
     {
@@ -569,6 +583,8 @@ class SecurityService
      * @param string $input The input string to sanitize.
      *
      * @return string Sanitized cache key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     private function sanitizeForCacheKey(string $input): string
     {
@@ -588,6 +604,8 @@ class SecurityService
      * @param array  $context Additional context data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
     private function logSecurityEvent(string $event, array $context=[]): void
     {

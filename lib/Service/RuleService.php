@@ -18,6 +18,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
  */
 
 namespace OCA\OpenConnector\Service;
@@ -195,6 +197,8 @@ class RuleService
      * @param array        $data The data to process.
      *
      * @return array|JSONResponse The updated data array (or a JSONResponse if the rule short-circuits).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -218,6 +222,8 @@ class RuleService
      * @param array        $data The data to process
      *
      * @return array The updated data array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function processSoftwareCatalogusRule(ObjectEntity $rule, array $data): array
     {
@@ -382,6 +388,8 @@ class RuleService
      * @param array $propertyDefinitions The list of propertyDefinitions.
      *
      * @return string The id of the 'Publiceren' property.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function getPublishPropertyId(array $propertyDefinitions): string
     {
@@ -407,6 +415,8 @@ class RuleService
      * @param array $data The data structure to update
      *
      * @return array The updated data
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function processPropertyDefinitionsAndMetadata(array $data): array
     {
@@ -474,6 +484,8 @@ class RuleService
      * @param array $data The data structure to update
      *
      * @return array An array with [$applicationFolderKey, $relationsFolderKey, $applicationFolderCount, $relationsFolderCount]
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function setupOrganizationalFolders(array &$data): array
     {
@@ -540,6 +552,8 @@ class RuleService
      * @param array  $views                  The set of catalogue views to extend with new connections (passed by reference).
      *
      * @return array The updated data.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function processVoorzieningenData(
         array $data,
@@ -665,6 +679,8 @@ class RuleService
      * @param string $targetId   The target element id.
      *
      * @return array The connection array shape consumed by the catalogue exporter.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function createConnection(string $relationId, string $sourceId, string $targetId)
     {
@@ -707,6 +723,8 @@ class RuleService
      * @param array       $connections        Connections accumulator (passed by reference).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function processNodes(
         array &$nodes,
@@ -849,6 +867,8 @@ class RuleService
      * @param string $relationType The type of relation.
      *
      * @return string The relation ID.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function createRelation(
         array &$data,
@@ -899,6 +919,8 @@ class RuleService
      * @param array        $data The rule data envelope.
      *
      * @return array|JSONResponse A JSON-response with the outcome, or the data on no-op paths.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -931,6 +953,8 @@ class RuleService
      * @throws \Psr\Container\NotFoundExceptionInterface
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\SyntaxError
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function getExternalObject(string $url, array $configuration, string|int $schemaId): array
     {
@@ -989,6 +1013,8 @@ class RuleService
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     public function extendExternalUrl(ObjectEntity $rule, array $data): array|JSONResponse
     {

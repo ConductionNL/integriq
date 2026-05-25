@@ -1223,6 +1223,8 @@ class EndpointService
      * @param array        $data The current rule data envelope (body/headers/parameters).
      *
      * @return array The updated $data with the saved object merged into the body.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processSaveObjectRule(ObjectEntity $rule, array $data): array
     {
@@ -1252,6 +1254,8 @@ class EndpointService
      * @param FlowToken|null $flowToken Optional flow token threaded through the rule chain.
      *
      * @return array|JSONResponse Returns modified data or error response if rule fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-1
      */
     private function processRules(
         ObjectEntity $endpoint,
@@ -1387,6 +1391,8 @@ class EndpointService
      * @throws MultipleObjectsReturnedException
      * @throws NotFoundExceptionInterface
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processOverrideRule(ObjectEntity $rule, array $data, string $objectId): array
     {
@@ -1433,6 +1439,8 @@ class EndpointService
      * @param array        $data The data of the request
      *
      * @return array|JSONResponse the unchanged $data array if authentication succeeds, or a JSONResponse containing an error on authentication.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-3
      */
     private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -1521,6 +1529,8 @@ class EndpointService
      * @param array        $data Optional rule data containing JSON-logic result for inclusion.
      *
      * @return JSONResponse Response containing error details and HTTP status code.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-3
      */
     private function processErrorRule(ObjectEntity $rule, array $data=[]): JSONResponse
     {
@@ -1550,6 +1560,8 @@ class EndpointService
      * @param array        $data    The current rule data envelope (body/headers/parameters).
      *
      * @return array The updated $data with mapped body merged in.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processMapping(ObjectEntity $rule, ObjectEntity $mapping, array $data): array
     {
@@ -1583,6 +1595,8 @@ class EndpointService
      * @throws MultipleObjectsReturnedException When multiple mapping objects are returned unexpectedly
      * @throws LoaderError When there is an error loading the mapping
      * @throws SyntaxError When there is a syntax error in the mapping configuration
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processMappingRule(ObjectEntity $rule, array $data): array
     {
@@ -1603,6 +1617,8 @@ class EndpointService
      * @return array The data array with the extended parameters in the 'extendedParameters' key.
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processExtendInputRule(ObjectEntity $rule, array $data): array
     {
@@ -1662,6 +1678,8 @@ class EndpointService
      *
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processAuditTrailRule(ObjectEntity $rule, ObjectEntity $endpoint, array $data, string $objectId): array|Response
     {
@@ -1701,6 +1719,8 @@ class EndpointService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws \OCP\Files\NotFoundException
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
     private function processLockingRule(ObjectEntity $rule, array $data, string $objectId): array
     {
@@ -1732,6 +1752,8 @@ class EndpointService
      * @param array        $data The data to process
      *
      * @return array The updated data array.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
      */
     private function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -1750,6 +1772,8 @@ class EndpointService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
     private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId): array
     {
@@ -1845,6 +1869,8 @@ class EndpointService
      * @param FlowToken    $flowToken The current flow token threaded through the synchronization.
      *
      * @return array The data after synchronization processing.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
     private function processSyncRule(ObjectEntity $rule, array $data, FlowToken $flowToken): array
     {
@@ -2011,6 +2037,8 @@ class EndpointService
      * @throws \OCA\OpenRegister\Exception\ValidationException
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
     private function processFilePartRule(ObjectEntity $rule, array $data, ObjectEntity $endpoint, ?string $objectId=null): array|JSONResponse
     {
@@ -2126,6 +2154,8 @@ class EndpointService
      * @throws SyntaxError
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
     private function processFilePartUploadRule(ObjectEntity $rule, array $data, IRequest $request, ?string $objectId=null): array
     {
@@ -2174,6 +2204,8 @@ class EndpointService
      * @param array        $data The input data to be processed by the JavaScript rule
      *
      * @return array The processed data after executing the JavaScript rule
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
     private function processJavaScriptRule(ObjectEntity $rule, array $data): array
     {
@@ -2196,6 +2228,8 @@ class EndpointService
      * @throws DoesNotExistException
      * @throws NotFoundExceptionInterface
      * @throws \OCP\Files\NotFoundException
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
     private function processDownloadRule(ObjectEntity $rule, array $data, string $objectId): Response
     {
@@ -2270,6 +2304,8 @@ class EndpointService
      * @return bool True if conditions are met, false otherwise.
      *
      * @throws Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-1
      */
     private function checkRuleConditions(ObjectEntity $rule, array $data, mixed &$logicResult): bool
     {
@@ -2288,6 +2324,8 @@ class EndpointService
      * @param array     $ruleData  The processed rule data to update the request with.
      *
      * @return FlowToken The updated flow token with the amended request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-1
      */
     private function updateRequestWithRuleData(FlowToken $flowToken, array $ruleData): FlowToken
     {

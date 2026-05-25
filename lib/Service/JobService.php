@@ -131,6 +131,8 @@ class JobService
      * @throws \DateMalformedStringException On invalid datetime composition.
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -161,6 +163,8 @@ class JobService
      * @phpstan-param  string $message
      * @phpstan-param  int $maxLength
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     private function truncateMessage(string $message, int $maxLength=10000): string
     {
@@ -191,6 +195,8 @@ class JobService
      * @psalm-return   ObjectEntity
      * @phpstan-param  ObjectEntity $job
      * @phpstan-return ObjectEntity
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     public function scheduleJob(ObjectEntity $job): ObjectEntity
     {
@@ -258,6 +264,8 @@ class JobService
      * @psalm-return   int|null
      * @phpstan-param  class-string<IJob>|IJob $job
      * @phpstan-return int|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     public function getJobListId(IJob|string $job): int|null
     {
@@ -308,6 +316,8 @@ class JobService
      * @psalm-return   ObjectEntity|null
      * @phpstan-param  ObjectEntity $job
      * @phpstan-return ObjectEntity|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     public function executeJob(ObjectEntity $job, bool $forceRun=false): ?ObjectEntity
     {
@@ -458,6 +468,8 @@ class JobService
      *
      * @return ObjectEntity The saved job_log ObjectEntity.
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     private function saveJobLog(ObjectEntity $job, array $jobData, array $logData): ObjectEntity
     {
@@ -503,6 +515,8 @@ class JobService
      *
      * @psalm-return   array<ObjectEntity>
      * @phpstan-return ObjectEntity[]
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
      */
     public function run(): array
     {

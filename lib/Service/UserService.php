@@ -86,6 +86,8 @@ class UserService
      *
      * @psalm-return   IUser|null
      * @phpstan-return IUser|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function getCurrentUser(): ?IUser
     {
@@ -107,6 +109,8 @@ class UserService
      * @psalm-return   array
      * @phpstan-param  IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function buildUserDataArray(IUser $user): array
     {
@@ -229,6 +233,8 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-param  array $data
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
@@ -272,6 +278,8 @@ class UserService
      * @psalm-return   array{firstName: string|null, lastName: string|null, middleName: string|null}
      * @phpstan-param  IUser $user
      * @phpstan-return array{firstName: string|null, lastName: string|null, middleName: string|null}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function getCustomNameFields(IUser $user): array
     {
@@ -317,6 +325,8 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-param  array $nameFields
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function setCustomNameFields(IUser $user, array $nameFields): void
     {
@@ -348,6 +358,8 @@ class UserService
      * @psalm-return   array
      * @phpstan-param  IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function buildQuotaInformation(IUser $user): array
     {
@@ -432,6 +444,8 @@ class UserService
      * @psalm-return   int
      * @phpstan-param  string $userId
      * @phpstan-return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getUsedSpaceMemorySafe(string $userId): int
     {
@@ -502,6 +516,8 @@ class UserService
      * @psalm-return   array{0: string, 1: string}
      * @phpstan-param  IUser $user
      * @phpstan-return array{0: string, 1: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getLanguageAndLocale(IUser $user): array
     {
@@ -545,6 +561,8 @@ class UserService
      * @psalm-return   array
      * @phpstan-param  IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getAdditionalProfileInfo(IUser $user): array
     {
@@ -610,6 +628,8 @@ class UserService
      * @psalm-return   array
      * @phpstan-param  IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getAccountManagerPropertiesSelectively(IUser $user): array
     {
@@ -673,6 +693,8 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-param  array $data
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function updateStandardUserProperties(IUser $user, array $data): void
     {
@@ -728,6 +750,8 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-param  array $data
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function updateProfileProperties(IUser $user, array $data): void
     {
@@ -822,6 +846,8 @@ class UserService
      * @psalm-return   string
      * @phpstan-param  string $propertyName
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getDefaultPropertyScope(string $propertyName): string
     {
