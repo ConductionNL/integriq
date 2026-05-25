@@ -81,6 +81,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Get the provider id.
      *
      * @return string The provider identifier.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function getId(): string
     {
@@ -92,6 +94,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Get the user-facing label.
      *
      * @return string The translated label.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function getLabel(): string
     {
@@ -103,6 +107,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Get the icon identifier used by the OR sidebar.
      *
      * @return string The icon identifier.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function getIcon(): string
     {
@@ -114,6 +120,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Get the optional group identifier.
      *
      * @return string|null The group identifier.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function getGroup(): ?string
     {
@@ -125,6 +133,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Get the app id this provider requires.
      *
      * @return string|null The required app id.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function getRequiredApp(): ?string
     {
@@ -136,6 +146,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * Get the storage strategy for this provider.
      *
      * @return string The storage strategy identifier.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function getStorageStrategy(): string
     {
@@ -155,6 +167,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * @param array  $filters  Optional filters with `_limit` and `_page` for pagination.
      *
      * @return array The list of contract summaries.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -225,6 +239,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * SyncContract objects to exist in OR storage.
      *
      * @return array The health descriptor.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function health(): array
     {
@@ -256,6 +272,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      * `openconnector.storage_migrated` to `'true'`.
      *
      * @return bool True when the storage migration has run, false otherwise.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function isEnabled(): bool
     {

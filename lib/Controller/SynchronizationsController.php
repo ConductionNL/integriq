@@ -82,6 +82,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function page(): TemplateResponse
     {
@@ -104,6 +106,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function contracts(int $id): JSONResponse
     {
@@ -142,6 +146,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function logs(SearchService $searchService): JSONResponse
     {
@@ -271,6 +277,8 @@ class SynchronizationsController extends Controller
      *     "isValid": true,
      *     "validationErrors": []
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function test(string $id, ?bool $force=false): JSONResponse
     {
@@ -326,6 +334,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function run(string $id): JSONResponse
     {
@@ -389,6 +399,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function statistics(): JSONResponse
     {
@@ -455,6 +467,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function logsStatistics(): JSONResponse
     {
@@ -542,6 +556,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function logsExport(): JSONResponse
     {
@@ -622,6 +638,8 @@ class SynchronizationsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     public function deleteLog(int $id): JSONResponse
     {
