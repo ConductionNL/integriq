@@ -159,9 +159,11 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		castTypeOptions() {
 			return CAST_TYPE_OPTIONS
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		templatePlaceholder() {
 			// Built outside the template so the embedded `{{ … }}` Twig
 			// markers don't collide with Vue's mustache parser.
@@ -169,6 +171,7 @@ export default {
 			const closeBrace = '}}'
 			return `${openBrace} originalProperty ${closeBrace} or ${openBrace} source.field|default('-') ${closeBrace}`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		templateHelp() {
 			// See `templatePlaceholder`: avoid embedding `{{` directly in
 			// the template literal that becomes Vue parser input.
@@ -180,6 +183,7 @@ export default {
 				{ open: openBrace, close: closeBrace },
 			)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		castSelectValue() {
 			return this.castTypeOptions.find((option) => option.id === this.valueDraft)
 				|| this.castTypeOptions[0]
@@ -187,6 +191,7 @@ export default {
 		isNew() {
 			return this.property == null
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		dialogTitle() {
 			if (this.kind === 'mapping') {
 				return this.isNew
@@ -202,21 +207,25 @@ export default {
 				? this.t('openconnector', 'Add unset rule')
 				: this.t('openconnector', 'Edit unset rule')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		submitLabel() {
 			return this.isNew
 				? this.t('openconnector', 'Add rule')
 				: this.t('openconnector', 'Save rule')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		propertyLabel() {
 			if (this.kind === 'mapping') return this.t('openconnector', 'Target property')
 			return this.t('openconnector', 'Property')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		propertyPlaceholder() {
 			if (this.kind === 'mapping') {
 				return this.t('openconnector', 'e.g. firstName')
 			}
 			return this.t('openconnector', 'JSON path or property name')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		propertyError() {
 			const trimmed = this.propertyDraft.trim()
 			if (!trimmed) return ''
@@ -225,6 +234,7 @@ export default {
 			}
 			return ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		canSubmit() {
 			const property = this.propertyDraft.trim()
 			if (!property || this.propertyError) return false
@@ -239,10 +249,12 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		onCastTypeInput(selected) {
 			if (!selected) return
 			this.valueDraft = selected.id
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
 		onSubmit() {
 			if (!this.canSubmit) return
 			const property = this.propertyDraft.trim()
