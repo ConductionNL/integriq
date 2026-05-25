@@ -147,6 +147,8 @@ class SynchronizationService
      * @throws \DateMalformedStringException When the date string cannot be parsed.
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -164,6 +166,8 @@ class SynchronizationService
      * @param mixed $schema   The schema id.
      *
      * @return array The list of records matching the source ID.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function findAllBySourceId($register, $schema)
     {
@@ -189,6 +193,8 @@ class SynchronizationService
      * @param string       $eventMutationType The triggering mutation: create|update|delete
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
     {
@@ -304,6 +310,8 @@ class SynchronizationService
      * @param string       $eventMutationType One of create|update|delete.
      *
      * @return bool True when the synchronization should run, false when it should be skipped.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function shouldTriggerOnEvent(ObjectEntity $synchronization, string $eventMutationType): bool
     {
@@ -329,6 +337,8 @@ class SynchronizationService
      * @param string|null  $mutationType    The mutation type that triggered the call.
      *
      * @return array|null The fetched parent object as array, or null when it cannot be resolved.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function resolveParentObjectForRelatedObjectTrigger(
         ObjectEntity $synchronization,
@@ -442,6 +452,8 @@ class SynchronizationService
      * @param string|null                             $mutationType    Single object mutation type: 'create', 'update' or 'delete'.
      *
      * @return ObjectEntity|array|null Returns a synchronization contract, an array for test cases, or null if conditions are not met.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function synchronizeInternToExtern(
         ObjectEntity $synchronization,
@@ -657,6 +669,8 @@ class SynchronizationService
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
      * @throws Exception                    If the source ID is empty or synchronization cannot proceed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     private function synchronizeExternToIntern(
         ObjectEntity $synchronization,
@@ -991,6 +1005,8 @@ class SynchronizationService
      * @throws \OCP\DB\Exception                When the database layer raises an exception.
      * @throws Exception                        For any other generic error condition.
      * @throws TooManyRequestsHttpException     When the source rate-limits the request.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function synchronize(
         ObjectEntity $synchronization,
@@ -1612,6 +1628,8 @@ class SynchronizationService
      * @throws LoaderError                 When the Twig loader fails.
      * @throws SyntaxError                 When a Twig template has a syntax error.
      * @throws GuzzleException             When a remote HTTP call fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function synchronizeContract(
         ObjectEntity $synchronizationContract,
@@ -4931,6 +4949,8 @@ class SynchronizationService
      * @return ObjectEntity The resulting synchronization.
      *
      * @throws DoesNotExistException When the synchronization does not exist.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
      */
     public function getSynchronization(null|string|int $id=null, array $filters=[]) :ObjectEntity
     {
