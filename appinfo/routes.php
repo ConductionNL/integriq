@@ -112,6 +112,10 @@ return [
 		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
 
+		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog).
+		['name' => 'preferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
+		['name' => 'preferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
+
 		// UI page routes for SPA deep links
 		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],
 		['name' => 'ui#sources', 'url' => '/sources', 'verb' => 'GET'],
