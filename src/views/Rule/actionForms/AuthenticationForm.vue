@@ -62,21 +62,26 @@ export default {
 	components: { NcSelect, NcTextField },
 	props: { ...valueProp },
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		typeOptions() {
 			return AUTH_TYPES.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedTypeOption() {
 			return this.typeOptions.find((opt) => opt.id === this.value.type) || null
 		},
 	},
 	methods: {
 		patch: patchMethod(),
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		onTypePick(option) {
 			this.patch('type', option?.id || '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : (value || '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		toArray(text) {
 			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
 		},
