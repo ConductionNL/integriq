@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
  */
 
 namespace OCA\OpenConnector\Controller;
@@ -147,6 +149,8 @@ class EndpointsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
     public function handlePath(string $_path): Response
     {
@@ -210,6 +214,8 @@ class EndpointsController extends Controller
      * @PublicPage
      *
      * @since 7.0.0
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -239,6 +245,8 @@ class EndpointsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
     public function logs(SearchService $searchService): JSONResponse
     {
@@ -265,6 +273,8 @@ class EndpointsController extends Controller
      * @param ObjectEntity $endpoint The endpoint to check.
      *
      * @return boolean True if the endpoint is simple and can be optimized.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
      */
     private function isSimpleEndpoint(ObjectEntity $endpoint): bool
     {
@@ -288,6 +298,8 @@ class EndpointsController extends Controller
      * @param string       $path     The request path.
      *
      * @return JSONResponse The direct response from ObjectService.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
      */
     private function handleSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
     {
@@ -435,6 +447,8 @@ class EndpointsController extends Controller
      * @param string $path          The actual request path.
      *
      * @return array The parsed parameters.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
     private function getPathParameters(array $endpointArray, string $path): array
     {
@@ -461,6 +475,8 @@ class EndpointsController extends Controller
      * @param string $path       The request path.
      *
      * @return string The pagination URL.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
     private function buildPaginationUrl(array $parameters, string $path): string
     {

@@ -121,6 +121,8 @@ class EndpointService
      * @param array $responseData The data from the responses found in the rules and openregister.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function parseMessage(array $response, array $responseData): array
     {
@@ -181,6 +183,8 @@ class EndpointService
      * @param IRequest $request The current request, used to determine the request identifier.
      *
      * @return Response
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function transformError(Response $result, IRequest $request): Response
     {
@@ -218,6 +222,8 @@ class EndpointService
      *
      * @return JSONResponse Response containing the result
      * @throws Exception When endpoint configuration is invalid
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     public function handleRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response
     {
@@ -385,6 +391,8 @@ class EndpointService
      * @param string $path          The path called by the client.
      *
      * @return array The parsed path with the fields having the correct name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     private function getPathParameters(array $endpointArray, string $path): array
     {
@@ -429,6 +437,8 @@ class EndpointService
      *
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function replaceInternalReferences(
         QBMapper|ORObjectService|ObjectServiceMapperAdapter $mapper,
@@ -523,6 +533,8 @@ class EndpointService
      * @param array $extend The original extend array
      *
      * @return array The reduced extend array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function reduceExtendKeys(array $extend): array
     {
@@ -577,6 +589,8 @@ class EndpointService
      * @param array     $extend          Optional extend specification controlling which keys are inlined.
      *
      * @return array The modified array with UUIDs replaced by URLs.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function replaceUuidsInArray(array $data, array $uuidToUrlMap, ?bool $isRelatedObject=false, array $extend=[]): array
     {
@@ -645,6 +659,8 @@ class EndpointService
      * @return array The updated request parameters.
      *
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function rewriteExternalReferences(array $parameters, ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper): array
     {
@@ -703,6 +719,8 @@ class EndpointService
      * @return Entity|array The object(s) confirming to the request.
      *
      * @throws Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     private function getObjects(
         ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper,
@@ -846,6 +864,8 @@ class EndpointService
      *
      * @throws DoesNotExistException|LoaderError|MultipleObjectsReturnedException|SyntaxError
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     private function handleSchemaRequest(ObjectEntity $endpoint, FlowToken &$flowToken, string $path): JSONResponse
     {
@@ -983,6 +1003,8 @@ class EndpointService
      * Gets the raw content for a http request from the input stream.
      *
      * @return string The raw content body for a http request
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function getRawContent(): string
     {
@@ -996,6 +1018,8 @@ class EndpointService
      * @param bool  $proxyHeaders Whether the proxy headers should be returned.
      *
      * @return array The resulting headers.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
@@ -1037,6 +1061,8 @@ class EndpointService
      *
      * @return array
      * @throws Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     private function checkConditions(ObjectEntity $endpoint, IRequest $request): array
     {
@@ -1062,6 +1088,8 @@ class EndpointService
      *
      * @return JSONResponse
      * @throws GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request): JSONResponse
     {
@@ -1102,6 +1130,8 @@ class EndpointService
      * @return string The generated url.
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     public function generateEndpointUrl(
         string $id,
@@ -1389,6 +1419,8 @@ class EndpointService
      * @param string $id The unique identifier of the rule
      *
      * @return ObjectEntity|null The rule entity if found, or null if not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
      */
     private function getRuleById(string $id): ?ObjectEntity
     {
@@ -2319,6 +2351,8 @@ class EndpointService
      * @param IRequest $request The current request, used to inspect headers and raw body.
      *
      * @return mixed Parsed data (array for JSON/XML) or original string.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function parseContent(IRequest $request): mixed
     {
@@ -2369,6 +2403,8 @@ class EndpointService
      * @param string $content Content to check.
      *
      * @return bool True if content is valid XML.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
      */
     private function looksLikeXml(string $content): bool
     {
