@@ -72,6 +72,8 @@ class SearchService
      * @param array $newAggregation      New aggregation entries to merge.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function mergeFacets(array $existingAggregation, array $newAggregation): array
     {
@@ -109,6 +111,8 @@ class SearchService
      * @param array|null $newAggregations      New aggregations to merge.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     private function mergeAggregations(?array $existingAggregations, ?array $newAggregations): array
     {
@@ -136,6 +140,8 @@ class SearchService
      * @param array $b Right side.
      *
      * @return integer
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function sortResultArray(array $a, array $b): int
     {
@@ -152,6 +158,8 @@ class SearchService
      * @param array $catalogi      Optional catalog filter array.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi=[]): array
     {
@@ -277,6 +285,8 @@ class SearchService
      * @param string $value   The full $value of the query param, like this: ?$name=$value.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     private function recursiveRequestQueryKey(array &$vars, string $name, string $nameKey, string $value): void
     {
@@ -313,6 +323,8 @@ class SearchService
      * @param array $fieldsToSearch Database field names to filter/search on.
      *
      * @return array $filters
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function createMongoDBSearchFilter(array $filters, array $fieldsToSearch): array
     {
@@ -348,6 +360,8 @@ class SearchService
      * @param array $fieldsToSearch Fields to search on in sql.
      *
      * @return array $searchConditions
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function createMySQLSearchConditions(array $filters, array $fieldsToSearch): array
     {
@@ -368,6 +382,8 @@ class SearchService
      * @param array $filters Query parameters from request.
      *
      * @return array $filters
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function unsetSpecialQueryParams(array $filters): array
     {
@@ -387,6 +403,8 @@ class SearchService
      * @param array $filters Query parameters from request.
      *
      * @return array $searchParams
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function createMySQLSearchParams(array $filters): array
     {
@@ -405,6 +423,8 @@ class SearchService
      * @param array $filters Query parameters from request.
      *
      * @return array $sort
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function createSortForMySQL(array $filters): array
     {
@@ -433,6 +453,8 @@ class SearchService
      * @return array $sort
      *
      * @todo Not functional yet. Needs to be fixed (see PublicationsController->index).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function createSortForMongoDB(array $filters): array
     {
@@ -457,6 +479,8 @@ class SearchService
      * @param string $queryString The input query string from the request.
      *
      * @return array The resulting array of query parameters.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
      */
     public function parseQueryString(string $queryString=''): array
     {
