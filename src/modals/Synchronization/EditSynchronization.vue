@@ -466,15 +466,18 @@ export default {
 		}
 	},
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 		selectedRegisterSourceValueSchemas() {
 			return this.registerOptions?.sourceValue?.schemas || []
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 		selectedRegisterValueSchemas() {
 			return this.registerOptions?.value?.schemas || []
 		},
 	},
 	watch: {
 		'registerOptions.value': {
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 			handler(newVal, oldVal) {
 				// Only clear schema if register ID actually changed
 				// Skip clearing during initialization (when oldVal is null in edit mode)
@@ -488,6 +491,7 @@ export default {
 			deep: true,
 		},
 		'registerOptions.sourceValue': {
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 			handler(newVal, oldVal) {
 				// Only clear schema if register ID actually changed
 				// Skip clearing during initialization (when oldVal is null in edit mode)
@@ -501,6 +505,7 @@ export default {
 			deep: true,
 		},
 	},
+	/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
 	mounted() {
 		if (this.IS_EDIT) {
 			// If there is a synchronization item in the store, use it
@@ -526,6 +531,8 @@ export default {
 		 * Sets the loading state to true while fetching and updates the source options with the fetched data.
 		 * If a source is already selected, it sets it as the active source.
 		 * If the target type is 'api', it sets the active target source.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		getSources() {
 			this.sourcesLoading = true
@@ -566,6 +573,8 @@ export default {
 		 * Fetches the list of source-target mappings from the mapping store and updates the mapping options.
 		 * Sets the loading state to true while fetching and updates the mapping options with the fetched data.
 		 * If a mapping is already selected, it sets it as the active source and target mapping.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		getSourceTargetMappings() {
 			this.sourceTargetMappingLoading = true
@@ -613,6 +622,8 @@ export default {
 		 *
 		 * additionally it adds the schemas of a register to its options data,
 		 * which'll be used to populate the schema options when you select a register.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		getRegisterWithSchemas() {
 			this.registerLoading = true
@@ -719,6 +730,8 @@ export default {
 		 * Sets the loading state to true while fetching and updates the rules options with the fetched data.
 		 * If a rules is already selected, it sets it as the active rules.
 		 * If the target type is 'api', it sets the active target rules.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		getRules() {
 			this.rulesLoading = true
@@ -748,6 +761,8 @@ export default {
 		 * Sets the loading state to true while the installation is in progress.
 		 * Updates the state based on the success or failure of the installation.
 		 * If the installation is successful, it fetches the register and schema options.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		async installOpenRegister() {
 			this.openRegisterLoading = true
@@ -810,6 +825,8 @@ export default {
 		},
 		/**
 		 * Closes the modal and clears the timeout function.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
@@ -817,6 +834,8 @@ export default {
 		},
 		/**
 		 * Tests the synchronization configuration by running a test sync
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5
 		 */
 		testSynchronization() {
 			// TODO: Implement test synchronization functionality
@@ -825,6 +844,8 @@ export default {
 		 * Edits the synchronization by saving the synchronization item to the store.
 		 * Sets the loading state to true while saving and updates the state based on the success or failure of the save operation.
 		 * If the save operation is successful, it closes the modal after a timeout.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
 		 */
 		editSynchronization() {
 			this.loading = true
