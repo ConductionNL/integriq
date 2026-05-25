@@ -4,6 +4,22 @@ Describes the observed behaviour of 35 methods under the
 `configuration-export-import` cluster as 5 new REQs. The code already exists —
 this change retroactively specifies it. New capability `configuration-export-import`.
 
+## Why
+
+The configuration export/import subsystem ships in production but had no spec.
+Bringing it under the ADR-008 annotation convention makes its behaviour —
+including security-relevant credential redaction and several fragile fallbacks —
+explicit, traceable, and reviewable, and registers it in the Specter retrofit
+cohort.
+
+## What Changes
+
+- ADDED: a new `configuration-export-import` capability with 5 numbered REQs
+  describing the observed export, register-export, import, slug-translation, and
+  credential-redaction behaviour.
+- ADDED: `@spec` annotations on all 35 cluster methods pointing at the tasks.
+- No code behaviour changes — annotations and spec only.
+
 ## Affected code units
 
 `lib/Service/ConfigurationService.php`
