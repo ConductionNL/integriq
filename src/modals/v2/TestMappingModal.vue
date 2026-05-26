@@ -47,6 +47,7 @@
 						{{ t('openconnector', 'Validate against schema (optional)') }}
 					</label>
 					<NcSelect id="cn-test-mapping-schema"
+						:aria-label-combobox="t('openconnector', 'Validate against schema (optional)')"
 						v-model="selectedSchema"
 						:options="schemaOptions"
 						:loading="schemasLoading"

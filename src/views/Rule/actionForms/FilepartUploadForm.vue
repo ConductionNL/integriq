@@ -9,6 +9,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Inbound mapping (required)') }}</label>
 		<NcSelect
 			data-testid="action-form-filepart-upload-mapping"
+			:aria-label-combobox="t('openconnector', 'Inbound mapping (required)')"
 			:value="selectedInbound"
 			:options="mappingOptions"
 			:loading="loading"
@@ -17,6 +18,7 @@
 
 		<label class="action-form__label">{{ t('openconnector', 'Outbound mapping (optional)') }}</label>
 		<NcSelect
+			:aria-label-combobox="t('openconnector', 'Outbound mapping (optional)')"
 			:value="selectedOutbound"
 			:options="mappingOptions"
 			:loading="loading"

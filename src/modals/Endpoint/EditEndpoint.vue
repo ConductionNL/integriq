@@ -51,11 +51,13 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<div>
 						<NcSelect v-bind="methodOptions"
+							:input-label="t('openconnector', 'Method')"
 							v-model="methodOptions.value" />
 					</div>
 
 					<div>
 						<NcSelect v-bind="targetTypeOptions"
+							:input-label="t('openconnector', 'Target Type')"
 							v-model="targetTypeOptions.value" />
 					</div>
 

@@ -39,6 +39,7 @@
 				</label>
 				<NcSelect
 					:input-id="'cn-job-form-' + field.key"
+					:aria-label-combobox="t('openconnector', 'Synchronization')"
 					:value="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
@@ -66,6 +67,7 @@
 					</label>
 					<NcSelect
 						:input-id="'cn-job-form-' + field.key"
+						:aria-label-combobox="field.label || t('openconnector', 'Action class')"
 						:value="selectedJobClassOption"
 						:options="jobClassOptions"
 						:clearable="!field.required"
@@ -168,6 +170,7 @@
 			</label>
 			<NcSelect
 				input-id="cn-job-form-arguments"
+				:aria-label-combobox="t('openconnector', 'Synchronization')"
 				:value="selectedSynchronization"
 				:options="synchronizationOptions"
 				:loading="synchronizationsLoading"
