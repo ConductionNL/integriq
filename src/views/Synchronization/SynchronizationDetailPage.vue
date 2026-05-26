@@ -93,6 +93,7 @@
 						</label>
 						<NcSelect
 							:input-id="'sync-source-type'"
+							:aria-label-combobox="t('openconnector', 'Source type')"
 							:value="selectedSourceType"
 							:options="typeOptions"
 							:clearable="false"
@@ -170,6 +171,7 @@
 						</label>
 						<NcSelect
 							:input-id="'sync-target-type'"
+							:aria-label-combobox="t('openconnector', 'Target type')"
 							:value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"

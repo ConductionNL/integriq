@@ -15,6 +15,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Schema') }}</label>
 		<NcSelect
 			data-testid="action-form-fileparts-schema"
+			:aria-label-combobox="t('openconnector', 'Schema')"
 			:value="selectedSchema"
 			:options="schemaOptions"
 			:loading="schemasLoading"
@@ -32,6 +33,7 @@
 			@update:value="(next) => patch('filePartLocation', next)" />
 		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
 		<NcSelect
+			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
 			:value="selectedMapping"
 			:options="mappingOptions"
 			:loading="mappingsLoading"

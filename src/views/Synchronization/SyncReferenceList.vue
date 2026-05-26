@@ -22,6 +22,7 @@
 	<div class="sync-ref-list">
 		<NcSelect
 			:input-id="inputId"
+			:input-label="inputLabel"
 			:value="selectedOptions"
 			:options="options"
 			:loading="loading"
@@ -38,6 +39,7 @@
 
 <script>
 import { NcSelect } from '@nextcloud/vue'
+import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -68,6 +70,8 @@ export default {
 		excludeId: { type: String, default: '' },
 		placeholder: { type: String, default: '' },
 		emptyLabel: { type: String, default: '' },
+		/** Accessible label for the combobox input. */
+		inputLabel: { type: String, default: () => t('openconnector', 'References') },
 	},
 
 	data() {

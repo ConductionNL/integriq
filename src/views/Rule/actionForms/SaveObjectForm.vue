@@ -10,6 +10,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Register (required)') }}</label>
 		<NcSelect
 			data-testid="action-form-save-register"
+			:aria-label-combobox="t('openconnector', 'Register (required)')"
 			:value="selectedRegister"
 			:options="registerOptions"
 			:loading="loading"
@@ -19,6 +20,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Schema (required)') }}</label>
 		<NcSelect
 			data-testid="action-form-save-schema"
+			:aria-label-combobox="t('openconnector', 'Schema (required)')"
 			:value="selectedSchema"
 			:options="schemaOptions"
 			:loading="loading"
@@ -27,6 +29,7 @@
 
 		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
 		<NcSelect
+			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
 			:value="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"

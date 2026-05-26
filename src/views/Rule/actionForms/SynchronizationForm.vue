@@ -14,6 +14,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Synchronization') }}</label>
 		<NcSelect
 			data-testid="action-form-sync"
+			:aria-label-combobox="t('openconnector', 'Synchronization')"
 			:value="selectedSync"
 			:options="syncOptions"
 			:loading="loading"

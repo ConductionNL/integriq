@@ -22,6 +22,7 @@
 			<NcSelect
 				class="rule-condition-group__op"
 				:input-id="'rule-condition-group-op-' + uid"
+				:input-label="t('openconnector', 'Group operator')"
 				:value="selectedOperator"
 				:options="operatorOptions"
 				:clearable="false"

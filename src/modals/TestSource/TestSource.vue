@@ -17,11 +17,13 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						<NcSelect
 							id="method"
 							v-bind="methodOptions"
+							:input-label="t('openconnector', 'Method')"
 							v-model="methodOptions.value" />
 
 						<NcSelect
 							id="type"
 							v-bind="typeOptions"
+							:input-label="t('openconnector', 'Type')"
 							v-model="typeOptions.value" />
 
 						<NcTextField

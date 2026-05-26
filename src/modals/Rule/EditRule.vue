@@ -126,9 +126,9 @@ import { translate as t } from '@nextcloud/l10n'
 					:input-label="t('openconnector', 'Action')" />
 
 				<NcSelect v-bind="typeOptions"
+					:input-label="t('openconnector', 'Type')"
 					v-model="typeOptions.value"
-					:selectable="(option) => option.label === 'Fileparts Create' || option.label === 'Filepart Upload' ? openRegister?.isInstalled : true"
-					:input-label="t('openconnector', 'Type')" />
+					:selectable="(option) => option.label === 'Fileparts Create' || option.label === 'Filepart Upload' ? openRegister?.isInstalled : true" />
 
 				<!-- Add mapping select -->
 				<NcSelect v-if="typeOptions.value?.id === 'mapping' || typeOptions.value?.id === 'save_object'"
@@ -263,6 +263,7 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Extends (dot array)') }}</label>
 								<NcSelect
+									:aria-label-combobox="t('openconnector', 'Extends (dot array)')"
 									v-model="item.extends"
 									:taggable="true"
 									:multiple="true"

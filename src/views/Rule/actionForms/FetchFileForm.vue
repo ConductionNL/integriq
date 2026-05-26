@@ -13,6 +13,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Source') }}</label>
 		<NcSelect
 			data-testid="action-form-fetch-source"
+			:aria-label-combobox="t('openconnector', 'Source')"
 			:value="selectedSource"
 			:options="sourceOptions"
 			:loading="sourcesLoading"

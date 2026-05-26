@@ -41,6 +41,7 @@
 				</label>
 				<NcSelect
 					id="cn-add-endpoint-rule-select"
+					:aria-label-combobox="t('openconnector', 'Select rules to add')"
 					v-model="selectedRules"
 					:options="availableRules"
 					:loading="loadingRules"

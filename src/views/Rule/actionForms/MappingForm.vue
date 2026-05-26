@@ -13,6 +13,7 @@
 		<label class="action-form__label">{{ t('openconnector', 'Mapping') }}</label>
 		<NcSelect
 			data-testid="action-form-mapping"
+			:aria-label-combobox="t('openconnector', 'Mapping')"
 			:value="selected"
 			:options="options"
 			:loading="loading"

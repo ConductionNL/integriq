@@ -11,6 +11,7 @@
 	<div class="action-form">
 		<label class="action-form__label">{{ t('openconnector', 'Authentication type') }}</label>
 		<NcSelect
+			:aria-label-combobox="t('openconnector', 'Authentication type')"
 			:value="selectedTypeOption"
 			:options="typeOptions"
 			:clearable="false"

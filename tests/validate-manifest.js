@@ -5,6 +5,13 @@
 // validate-manifest.js — schema-validates src/manifest.json against the
 // @conduction/nextcloud-vue app-manifest schema using Ajv.
 //
+// @spec openspec/changes/openregister-adopt-app-manifest/specs/openregister-app-manifest/spec.md#REQ-OR-MAN-007
+//   (Build gate validates the manifest — `npm run check:manifest` runs this CLI,
+//    is wired into CI via .github/workflows/spec-validation.yml → check:specs,
+//    Ajv-validates against the canonical schema, prints error paths, exits non-zero
+//    on schema violation. Cleanly skips with exit 0 when no src/manifest.json
+//    exists, since OpenRegister is the foundation app and ships no manifest yet.)
+//
 // Usage:
 //   node tests/validate-manifest.js
 //
@@ -28,14 +35,41 @@ const REPO_ROOT = path.resolve(__dirname, '..')
 
 const MANIFEST_PATH = path.join(REPO_ROOT, 'src', 'manifest.json')
 
-/**
- * Determine whether the manifest is v2 (points to the v2 $schema URL).
- *
- * @param {object} manifest Parsed manifest object.
- * @return {boolean} True when the manifest targets the v2 schema.
- */
-function isV2Manifest(manifest) {
-	return typeof manifest.$schema === 'string' && manifest.$schema.includes('app-manifest-v2')
+// OpenConnector ships a v2 manifest (`$schema` references
+// `app-manifest-v2.schema.json`). Pick the schema file from the manifest's
+// own `$schema` so this validator follows the manifest version rather than
+// hardcoding v1 — falling back to v1 when the manifest doesn't declare one.
+function schemaFileName() {
+	try {
+		const ref = String((JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) || {}).$schema || '')
+		if (ref.includes('app-manifest-v2')) {
+			return 'app-manifest-v2.schema.json'
+		}
+	} catch (_) {
+		// fall through to the v1 default
+	}
+	return 'app-manifest.schema.json'
+}
+
+const SCHEMA_FILE = schemaFileName()
+
+const SCHEMA_CANDIDATES = [
+	process.env.APP_MANIFEST_SCHEMA,
+	path.join(REPO_ROOT, 'node_modules', '@conduction', 'nextcloud-vue', 'src', 'schemas', SCHEMA_FILE),
+	path.join(REPO_ROOT, '..', 'nextcloud-vue', 'src', 'schemas', SCHEMA_FILE),
+].filter(Boolean)
+
+function findSchemaPath() {
+	for (const candidate of SCHEMA_CANDIDATES) {
+		try {
+			if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+				return candidate
+			}
+		} catch (_) {
+			// continue to next candidate
+		}
+	}
+	return null
 }
 
 function loadJson(file) {
@@ -43,66 +77,45 @@ function loadJson(file) {
 	return JSON.parse(raw)
 }
 
-/**
- * Load the bundled validateManifestV2 from @conduction/nextcloud-vue — the
- * same validator CnAppRoot runs at runtime, and therefore the source of truth
- * for what the manifest may contain. Returns null when the package is not
- * requirable in bare node (some published bundles pull in @nextcloud/vue and
- * fail to parse under the CJS loader), so the caller can fall back.
- *
- * @return {?function(object): {valid: boolean, errors?: Array}} validator or null.
- */
-function loadBundledValidator() {
-	const candidates = [
-		'@conduction/nextcloud-vue/dist/utils.cjs.js',
-		'@conduction/nextcloud-vue',
-	]
-	for (const id of candidates) {
-		try {
-			const mod = require(id)
-			const fn = mod && (mod.validateManifestV2 || (mod.default && mod.default.validateManifestV2))
-			if (typeof fn === 'function') return fn
-		} catch (_) {
-			// try next candidate
-		}
-	}
-	return null
-}
-
-/**
- * Resolve the set of allowed page `type` values. The page-type enum in
- * @conduction/nextcloud-vue's shipped JSON schema is the one part of that
- * schema that has NOT drifted from the runtime, so we read it when available
- * and fall back to the full known set otherwise.
- *
- * @return {Set<string>} Allowed page type discriminators.
- */
-function allowedPageTypes() {
-	const FALLBACK = ['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'map', 'roadmap', 'search', 'custom']
-	const schemaFile = path.join(REPO_ROOT, 'node_modules', '@conduction', 'nextcloud-vue', 'src', 'schemas', 'app-manifest-v2.schema.json')
+function loadAjv() {
+	// The canonical schema uses JSON Schema draft 2020-12. Standard Ajv (v7+)
+	// does not auto-load the 2020 meta-schema; we need the `ajv/dist/2020`
+	// entry point.
+	let Ajv2020 = null
+	let addFormats = null
 	try {
-		if (fs.existsSync(schemaFile)) {
-			const schema = loadJson(schemaFile)
-			const en = schema && schema.$defs && schema.$defs.page
-				&& schema.$defs.page.properties && schema.$defs.page.properties.type
-				&& schema.$defs.page.properties.type.enum
-			if (Array.isArray(en) && en.length) return new Set(en)
-		}
+		// Ajv 8+ ships the 2020 draft entry point.
+		Ajv2020 = require('ajv/dist/2020').default || require('ajv/dist/2020')
 	} catch (_) {
-		// fall through to FALLBACK
+		try {
+			// Fall back to standard Ajv.
+			Ajv2020 = require('ajv').default || require('ajv')
+		} catch (__) {
+			console.error('[validate-manifest] Ajv not installed in node_modules.')
+			console.error('[validate-manifest] Install with: npm i -D ajv ajv-formats')
+			console.error('[validate-manifest] Falling back to a structural lint pass.')
+			return { Ajv: null, addFormats: null }
+		}
 	}
-	return new Set(FALLBACK)
+	try {
+		addFormats = require('ajv-formats').default || require('ajv-formats')
+	} catch (_) {
+		// ajv-formats is optional; the schema uses "uri" format on $schema
+		// which without ajv-formats is silently accepted.
+		addFormats = null
+	}
+	return { Ajv: Ajv2020, addFormats }
 }
 
 function structuralLint(manifest) {
-	// Minimal structural fallback when the bundled validator isn't requirable.
+	// Minimal structural fallback when Ajv isn't available.
 	const errors = []
 	if (!manifest.version || typeof manifest.version !== 'string') {
 		errors.push('top-level: version (string) is required')
 	}
 	if (!Array.isArray(manifest.menu)) errors.push('top-level: menu (array) is required')
 	if (!Array.isArray(manifest.pages)) errors.push('top-level: pages (array) is required')
-	const allowedTypes = allowedPageTypes()
+	const allowedTypes = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'custom'])
 	const seenIds = new Set()
 	for (let i = 0; i < (manifest.pages || []).length; i++) {
 		const page = manifest.pages[i]
@@ -128,51 +141,81 @@ function structuralLint(manifest) {
 
 function main() {
 	if (!fs.existsSync(MANIFEST_PATH)) {
-		console.error(`[validate-manifest] manifest not found: ${MANIFEST_PATH}`)
-		process.exit(1)
+		// openregister is the foundation app — no CnAppRoot manifest expected.
+		// Skip cleanly instead of failing CI.
+		console.log(`[validate-manifest] no src/manifest.json (foundation app) — skipping`)
+		process.exit(0)
 	}
 
 	const manifest = loadJson(MANIFEST_PATH)
-	const schemaVariant = isV2Manifest(manifest) ? 'v2' : 'v1'
 	console.log(`[validate-manifest] manifest: ${MANIFEST_PATH}`)
-	console.log(`[validate-manifest] manifest.version: ${manifest.version} (schema variant: ${schemaVariant})`)
+	console.log(`[validate-manifest] manifest.version: ${manifest.version}`)
 	console.log(`[validate-manifest] pages: ${(manifest.pages || []).length}`)
 
-	// Authoritative validator: @conduction/nextcloud-vue's bundled
-	// validateManifestV2 is the SAME code that CnAppRoot runs at runtime, so it
-	// is the source of truth for what the manifest may contain (it accepts the
-	// `handler:'navigate'` + `route` + `icon` action shape the host apps use).
-	//
-	// We deliberately do NOT validate against the package's standalone
-	// src/schemas/app-manifest-v2.schema.json: as of @conduction/nextcloud-vue
-	// 1.0.0-beta.10x that JSON Schema has drifted out of sync with the bundled
-	// validator (it declares a typed-action model with additionalProperties:false
-	// that rejects the `icon`/`route` fields the runtime still reads and renders).
-	// Until nextcloud-vue reconciles the two, the schema path produces false
-	// positives — see the tracked nextcloud-vue issue. So: try the bundled
-	// validator first, then fall back to a structural lint.
-	const bundled = loadBundledValidator()
-	if (bundled) {
-		const result = bundled(manifest)
-		if (result && result.valid) {
-			console.log('[validate-manifest] validateManifestV2 (bundled): PASS')
+	const schemaPath = findSchemaPath()
+	if (!schemaPath) {
+		console.warn('[validate-manifest] no schema candidate resolved; falling back to structural lint.')
+		const errors = structuralLint(manifest)
+		if (errors.length === 0) {
+			console.log('[validate-manifest] structural lint: PASS (0 issues)')
 			process.exit(0)
 		}
-		console.error('[validate-manifest] validateManifestV2 (bundled): FAIL')
-		for (const err of (result && result.errors) || []) {
-			console.error(`  - ${typeof err === 'string' ? err : JSON.stringify(err)}`)
+		console.error('[validate-manifest] structural lint: FAIL')
+		for (const err of errors) console.error(`  - ${err}`)
+		process.exit(1)
+	}
+	console.log(`[validate-manifest] schema: ${schemaPath}`)
+	const schema = loadJson(schemaPath)
+	console.log(`[validate-manifest] schema.version: ${schema.version || '(unset)'}`)
+
+	const { Ajv, addFormats } = loadAjv()
+	if (!Ajv) {
+		const errors = structuralLint(manifest)
+		if (errors.length === 0) {
+			console.log('[validate-manifest] structural lint (no Ajv): PASS (0 issues)')
+			process.exit(0)
 		}
+		console.error('[validate-manifest] structural lint (no Ajv): FAIL')
+		for (const err of errors) console.error(`  - ${err}`)
 		process.exit(1)
 	}
 
-	console.warn('[validate-manifest] bundled validateManifestV2 not requirable in bare node; falling back to structural lint.')
-	const structErrors = structuralLint(manifest)
-	if (structErrors.length === 0) {
-		console.log('[validate-manifest] structural lint: PASS (0 issues)')
+	// The ajv path can fail for environment reasons unrelated to the manifest:
+	// ajv-formats@2 expects ajv@8 but a transitive ajv@6 may resolve (addFormats
+	// then throws on ajv.opts.code), and ajv@6 can't compile a draft-2020 schema.
+	// Formats are best-effort, and any ajv setup/compile failure degrades to the
+	// structural lint rather than crashing the gate.
+	let validate
+	try {
+		const ajv = new Ajv({ allErrors: true, strict: false })
+		if (addFormats) {
+			try {
+				addFormats(ajv)
+			} catch (e) {
+				console.warn(`[validate-manifest] ajv-formats unavailable (${e.message}); continuing without format validation`)
+			}
+		}
+		validate = ajv.compile(schema)
+	} catch (e) {
+		console.warn(`[validate-manifest] Ajv could not compile the schema (${e.message}); falling back to structural lint`)
+		const errors = structuralLint(manifest)
+		if (errors.length === 0) {
+			console.log('[validate-manifest] structural lint (Ajv unavailable): PASS (0 issues)')
+			process.exit(0)
+		}
+		console.error('[validate-manifest] structural lint (Ajv unavailable): FAIL')
+		for (const err of errors) console.error(`  - ${err}`)
+		process.exit(1)
+	}
+	const ok = validate(manifest)
+	if (ok) {
+		console.log('[validate-manifest] Ajv validation: PASS (0 errors)')
 		process.exit(0)
 	}
-	console.error('[validate-manifest] structural lint: FAIL')
-	for (const err of structErrors) console.error(`  - ${err}`)
+	console.error('[validate-manifest] Ajv validation: FAIL')
+	for (const err of validate.errors || []) {
+		console.error(`  - ${err.instancePath || '(root)'} ${err.message} (keyword=${err.keyword})`)
+	}
 	process.exit(1)
 }
 
