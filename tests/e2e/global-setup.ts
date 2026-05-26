@@ -93,15 +93,22 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await page.goto('/index.php/login')
 	await page.locator('input[name="user"]').fill(username)
 	await page.locator('input[name="password"]').fill(password)
-	await page.locator('button[type="submit"]').first().click()
-	// Nextcloud bounces to /apps/dashboard/ (or another default app) on
-	// success. Wait for the global header that only renders on
-	// authenticated pages.
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
+	// Click Submit and wait up to 30s for the URL to leave the login page.
+	// Use Promise.race: either the navigation resolves, or a 30s timeout.
+	// NC redirects to /apps/dashboard/ on success; on brute-force block
+	// it stays on /login with an error message.
+	await Promise.all([
+		page.waitForURL(url => !/\/login/.test(url), { timeout: 30_000 }).catch(() => null),
+		page.locator('button[type="submit"]').first().click(),
+	])
+
 	const currentUrl = page.url()
-	if (/\/login(\?|$|\/)/.test(currentUrl)) {
+	if (/\/login/.test(currentUrl)) {
+		// Check for a visible error message that would explain why login failed.
+		const errorText = await page.locator('.warning, .error, [class*="error"]').first().textContent().catch(() => '')
 		throw new Error(
 			`Login appears to have failed — still on ${currentUrl}. ` +
+			`Error on page: "${errorText}". ` +
 			`Check NC_ADMIN_USER / NC_ADMIN_PASS (defaults admin/admin).`,
 		)
 	}
