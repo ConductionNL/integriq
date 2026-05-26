@@ -1053,7 +1053,11 @@ class SynchronizationService
             ],
             'test'              => $isTest,
             'force'             => $force,
-            'expires'           => $this->calculateExpires(...[$this->errorRetention]),
+            // calculateExpires() returns a ?\DateTime; the OR `expires`
+            // property is string|null, so format it like every other call
+            // site — an unformatted DateTime fails OR schema validation,
+            // which 500'd the dry-run/test (corrupt response in CI).
+            'expires'           => $this->calculateExpires(...[$this->errorRetention])?->format('c'),
         ];
 
         // Shortcut for intern-to-extern sync.
