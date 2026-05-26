@@ -24,8 +24,9 @@ namespace OCA\OpenConnector\Controller;
 use OCA\OpenConnector\Service\SecurityService;
 use OCA\OpenConnector\Service\UserService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -306,6 +307,8 @@ class UserController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function me(): JSONResponse
     {
         try {
@@ -331,7 +334,7 @@ class UserController extends Controller
             if ($currentUser === null) {
                 $response = new JSONResponse(
                     data: ['message' => $this->l->t('Current user is not logged in')],
-                    statusCode: 401
+                    statusCode: Http::STATUS_UNAUTHORIZED
                 );
                 $response = $this->securityService->addSecurityHeaders($response);
                 return $this->addCorsHeaders(response: $response);
@@ -371,6 +374,8 @@ class UserController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function updateMe(): JSONResponse
     {
         try {
@@ -381,7 +386,7 @@ class UserController extends Controller
             if ($currentUser === null) {
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('User not authenticated')],
-                    statusCode: 401
+                    statusCode: Http::STATUS_UNAUTHORIZED
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
@@ -433,10 +438,6 @@ class UserController extends Controller
      * - Security event logging
      * - Security headers in response
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * @PublicPage
-     *
      * @return JSONResponse A JSON response containing login result and user information
      *
      * @psalm-return   JSONResponse
@@ -444,6 +445,8 @@ class UserController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
      */
+    #[NoCSRFRequired]
+    #[PublicPage]
     public function login(): JSONResponse
     {
         try {
@@ -513,9 +516,10 @@ class UserController extends Controller
                 $this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
 
                 // Return generic error message to prevent username enumeration.
+                // HTTP 400 Bad Request: the submitted credentials are invalid input.
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('Invalid username or password')],
-                    statusCode: 401
+                    statusCode: Http::STATUS_BAD_REQUEST
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
@@ -527,7 +531,7 @@ class UserController extends Controller
 
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('Account is disabled')],
-                    statusCode: 401
+                    statusCode: Http::STATUS_BAD_REQUEST
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }
@@ -664,13 +668,12 @@ class UserController extends Controller
     /**
      * Logs out the user on the active user session
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * @PublicPage
-     * @return          JSONResponse
+     * @return JSONResponse
      *
      * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-3
      */
+    #[NoCSRFRequired]
+    #[PublicPage]
     public function logout(): JSONResponse
     {
         $this->userSession->logout();

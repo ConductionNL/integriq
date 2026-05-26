@@ -21,15 +21,21 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenConnector\AppInfo\Application;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
@@ -60,6 +66,8 @@ class SynchronizationsController extends Controller
      * @param SynchronizationService $synchronizationService The synchronization service.
      * @param IL10N                  $l                      The localization service.
      * @param LoggerInterface        $logger                 The logger.
+     * @param IUserSession           $userSession            The user session.
+     * @param ActionAuthService      $actionAuth             The action authorization service.
      */
     public function __construct(
         $appName,
@@ -67,33 +75,13 @@ class SynchronizationsController extends Controller
         private readonly OrObjectService $orObjectService,
         private readonly SynchronizationService $synchronizationService,
         private readonly IL10N $l,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
-    /**
-     * Returns the template of the main app's page.
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @return TemplateResponse The rendered template response.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-
-    }//end page()
 
     /**
      * Retrieves call logs for a job.
@@ -104,11 +92,9 @@ class SynchronizationsController extends Controller
      *
      * @return JSONResponse A JSON response containing the call logs.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function contracts(int $id): JSONResponse
     {
         $matches   = $this->orObjectService->findAll(
@@ -144,11 +130,9 @@ class SynchronizationsController extends Controller
      *
      * @return JSONResponse A JSON response containing the filtered synchronization logs and pagination.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
@@ -280,8 +264,17 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function test(string $id, ?bool $force=false): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization.test');
+
         try {
             $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization');
         } catch (DoesNotExistException $e) {
@@ -337,8 +330,17 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function run(string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization.run');
+
         $parameters = $this->request->getParams();
         $test       = filter_var(($parameters['test'] ?? false), FILTER_VALIDATE_BOOLEAN);
         $force      = filter_var(($parameters['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
@@ -397,11 +399,9 @@ class SynchronizationsController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function statistics(): JSONResponse
     {
         try {
@@ -465,11 +465,9 @@ class SynchronizationsController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function logsStatistics(): JSONResponse
     {
         try {
@@ -554,11 +552,9 @@ class SynchronizationsController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function logsExport(): JSONResponse
     {
         try {
@@ -636,13 +632,19 @@ class SynchronizationsController extends Controller
      * @phpstan-param  int $id
      * @phpstan-return JSONResponse
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function deleteLog(int $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization.delete-log');
+
         try {
             $log = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization_log');
         } catch (DoesNotExistException $e) {

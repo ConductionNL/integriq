@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
+use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SettingsService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -70,13 +72,13 @@ class SettingsController extends Controller
      * + per-object retention; the connector mixes service-level constants with
      * per-source overrides — see local ADR-004).
      *
-     * @return JSONResponse JSON response with the rebase result.
+     * Admin-only: #[AuthorizedAdminSetting] at the middleware layer enforces access.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * @return JSONResponse JSON response with the rebase result.
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function rebase(): JSONResponse
     {
         try {

@@ -22,13 +22,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
+use OCA\OpenConnector\AppInfo\Application;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Controller for managing synchronization contracts.
@@ -62,23 +69,43 @@ class SynchronizationContractsController extends Controller
     private IL10N $l;
 
     /**
+     * The user session
+     *
+     * @var IUserSession
+     */
+    private IUserSession $userSession;
+
+    /**
+     * The action authorization service
+     *
+     * @var ActionAuthService
+     */
+    private ActionAuthService $actionAuth;
+
+    /**
      * Constructor for the SynchronizationContractsController
      *
-     * @param string          $appName         The application name
-     * @param IRequest        $request         The request interface
-     * @param OrObjectService $orObjectService The OR object service
-     * @param IL10N           $l               The localization service
+     * @param string            $appName         The application name
+     * @param IRequest          $request         The request interface
+     * @param OrObjectService   $orObjectService The OR object service
+     * @param IL10N             $l               The localization service
+     * @param IUserSession      $userSession     The user session.
+     * @param ActionAuthService $actionAuth      The action authorization service.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         OrObjectService $orObjectService,
-        IL10N $l
+        IL10N $l,
+        IUserSession $userSession,
+        ActionAuthService $actionAuth
     ) {
         parent::__construct(appName: $appName, request: $request);
 
         $this->orObjectService = $orObjectService;
-        $this->l = $l;
+        $this->l               = $l;
+        $this->userSession     = $userSession;
+        $this->actionAuth      = $actionAuth;
 
     }//end __construct()
 
@@ -91,13 +118,19 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The activation response.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function activate(string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization-contract.activate');
+
         try {
             $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
         } catch (DoesNotExistException $e) {
@@ -119,13 +152,19 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The deactivation response.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function deactivate(string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization-contract.deactivate');
+
         try {
             $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
         } catch (DoesNotExistException $e) {
@@ -147,13 +186,19 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The execution response.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function execute(string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization-contract.execute');
+
         try {
             $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
         } catch (DoesNotExistException $e) {
@@ -171,13 +216,11 @@ class SynchronizationContractsController extends Controller
      *
      * This method returns statistical information about synchronization contracts.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @return JSONResponse The statistics response
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function statistics(): JSONResponse
     {
         try {
@@ -210,13 +253,11 @@ class SynchronizationContractsController extends Controller
      *
      * This method returns performance data for synchronization contracts.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @return JSONResponse The performance response
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function performance(): JSONResponse
     {
         try {
@@ -260,11 +301,9 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The export response.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function export(
         ?string $synchronizationId=null,
         ?string $status=null,

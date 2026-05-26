@@ -28,14 +28,15 @@ use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\EndpointCacheService;
 use OCA\OpenConnector\Service\EndpointService;
 use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -115,28 +116,6 @@ class EndpointsController extends Controller
     }//end __construct()
 
     /**
-     * Returns the template of the main app's page.
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @return TemplateResponse The rendered template response.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-
-    }//end page()
-
-    /**
      * Handles generic path requests by matching against registered endpoints.
      *
      * This method checks if the current path matches any registered endpoint patterns
@@ -148,12 +127,10 @@ class EndpointsController extends Controller
      *
      * @throws Exception On underlying service failure.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     * @PublicPage
-     *
      * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
+    #[NoCSRFRequired]
+    #[PublicPage]
     public function handlePath(string $_path): Response
     {
         try {
@@ -245,11 +222,11 @@ class EndpointsController extends Controller
      *
      * @return JSONResponse A JSON response containing the filtered endpoint logs and pagination.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
      * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function logs(SearchService $searchService): JSONResponse
     {
         // Endpoint logging is not yet wired to the OR call_log schema.

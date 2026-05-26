@@ -21,22 +21,27 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenConnector\AppInfo\Application;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IURLGenerator;
+use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * Controller for mapping page rendering, execution tests, and persistence helpers.
+ * Controller for mapping execution tests and persistence helpers.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -51,44 +56,26 @@ class MappingsController extends Controller
     /**
      * Constructor for the MappingsController.
      *
-     * @param string         $appName        The name of the app.
-     * @param IRequest       $request        The request object.
-     * @param MappingService $mappingService The mapping service.
-     * @param ObjectService  $objectService  The object service (OC).
-     * @param IL10N          $l              The localization service.
+     * @param string            $appName        The name of the app.
+     * @param IRequest          $request        The request object.
+     * @param MappingService    $mappingService The mapping service.
+     * @param ObjectService     $objectService  The object service (OC).
+     * @param IL10N             $l              The localization service.
+     * @param IUserSession      $userSession    The user session.
+     * @param ActionAuthService $actionAuth     The action authorization service.
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly MappingService $mappingService,
         private readonly ObjectService $objectService,
-        private readonly IL10N $l
+        private readonly IL10N $l,
+        private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
-    /**
-     * Returns the template of the main app's page.
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @return TemplateResponse The rendered template response.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-
-    }//end page()
 
     /**
      * Tests a mapping.
@@ -134,8 +121,17 @@ class MappingsController extends Controller
      *     "validationErrors": []
      * }
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function test(ObjectService $objectService, IURLGenerator $urlGenerator): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'mapping.test');
+
         $openRegisters = $objectService->getOpenRegisters();
 
         // Get all parameters from the request.
@@ -241,18 +237,16 @@ class MappingsController extends Controller
     /**
      * Saves a mapping object.
      *
-     * This method saves a mapping object based on POST data.
+     * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
      * @return JSONResponse|null The saved mapping JSON or an error response, null when no error.
      *
      * @throws ContainerExceptionInterface Container resolution failure.
      * @throws NotFoundExceptionInterface  Container lookup miss.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function saveObject(): ?JSONResponse
     {
         // Check if the OpenRegister service is available.
@@ -282,18 +276,16 @@ class MappingsController extends Controller
     /**
      * Retrieves a list of objects to map to.
      *
-     * This method retrieves a list of objects to map to based on GET data.
+     * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
      * @return JSONResponse
      *
      * @throws ContainerExceptionInterface Container resolution failure.
      * @throws NotFoundExceptionInterface  Container lookup miss.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function getObjects(): JSONResponse
     {
         // Check if the OpenRegister service is available.

@@ -25,6 +25,8 @@ namespace OCA\OpenConnector\Controller;
 use OCA\OpenConnector\Service\DSOParserService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -68,13 +70,15 @@ class DSOController extends Controller
      * validates the request signature and payload schema, and returns
      * HTTP 202 Accepted with the verzoekId for asynchronous processing.
      *
-     * @return JSONResponse HTTP 202 on success, 400 on validation error, 401 on signature error.
+     * @return JSONResponse HTTP 202 on success, 400 on validation error, 403 on signature error.
      *
      * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
      *
      * @NoCSRFRequired
      * @PublicPage
      */
+    #[NoCSRFRequired]
+    #[PublicPage]
     public function receiveVerzoek(): JSONResponse
     {
         $body = $this->request->getParams();
@@ -88,7 +92,7 @@ class DSOController extends Controller
                     'error'   => 'invalid_signature',
                     'message' => 'Webhook signature validation failed',
                 ],
-                statusCode: Http::STATUS_UNAUTHORIZED
+                statusCode: Http::STATUS_BAD_REQUEST
             );
         }
 
