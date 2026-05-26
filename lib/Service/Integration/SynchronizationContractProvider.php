@@ -44,6 +44,8 @@ use OCP\IL10N;
 
 /**
  * Exposes openconnector SyncContract objects as integration leaves on OR objects.
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
  */
 class SynchronizationContractProvider extends AbstractIntegrationProvider
 {
@@ -186,17 +188,22 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
             $offset = (((int) $filters['_page']) - 1) * 50;
         }
 
-        $matches = $this->objectService->findAll(
-            config: [
-                'filters' => [
-                    'register' => self::REGISTER_SLUG,
-                    'schema'   => self::SCHEMA_SLUG,
-                    'targetId' => $objectId,
-                ],
-                'limit'   => $limit,
-                'offset'  => $offset,
-            ]
-        );
+        // Pre-set the register/schema context, then filter by targetId only.
+        // Passing 'register'/'schema' *inside* `filters` sets the context but
+        // ALSO leaks them as object-property filters — slug strings compared
+        // against the numeric register/schema columns — which silently matches
+        // nothing. Setting context via setRegister()/setSchema() and keeping
+        // `filters` to `targetId` alone is what actually returns the contracts.
+        $matches = $this->objectService
+            ->setRegister(self::REGISTER_SLUG)
+            ->setSchema(self::SCHEMA_SLUG)
+            ->findAll(
+                config: [
+                    'filters' => ['targetId' => $objectId],
+                    'limit'   => $limit,
+                    'offset'  => $offset,
+                ]
+            );
 
         $rows = $matches['results'] ?? $matches;
         if (is_array($rows) === false) {
@@ -209,20 +216,21 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
 
         return array_map(
             function ($contract) use (&$syncNameCache): array {
+                // ObjectEntity exposes getObject() as a real method but getUuid()
+                // only via the Nextcloud Entity __call magic — so method_exists()
+                // is false for it. Call getUuid() directly inside the object branch
+                // rather than gating it behind method_exists (which would fall
+                // through to `$contract['uuid']` and fatal on the object).
                 if (is_object($contract) === true && method_exists($contract, 'getObject') === true) {
                     $body = $contract->getObject();
+                    $uuid = (string) $contract->getUuid();
                 } else {
                     $body = (array) ($contract['object'] ?? $contract);
-                }
-
-                if (is_object($contract) === true && method_exists($contract, 'getUuid') === true) {
-                    $uuid = $contract->getUuid();
-                } else {
-                    $uuid = ($contract['uuid'] ?? '');
+                    $uuid = (string) ($contract['uuid'] ?? '');
                 }
 
                 $synchronizationId = ($body['synchronizationId'] ?? null);
-                $syncName          = $this->resolveSynchronizationName((string) $synchronizationId, $syncNameCache);
+                $syncName          = $this->resolveSynchronizationName(synchronizationId: (string) $synchronizationId, cache: $syncNameCache);
                 $lastSynced        = ($body['targetLastSynced'] ?? null);
                 $lastAction        = ($body['targetLastAction'] ?? null);
 
@@ -233,8 +241,8 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
                     // subtitle summarises the last sync; url deep-links into
                     // the OpenConnector synchronization detail page.
                     'title'               => $syncName,
-                    'subtitle'            => $this->buildSubtitle($lastSynced, $lastAction),
-                    'url'                 => $this->buildSyncUrl((string) $synchronizationId),
+                    'subtitle'            => $this->buildSubtitle(lastSynced: $lastSynced, lastAction: $lastAction),
+                    'url'                 => $this->buildSyncUrl(synchronizationId: (string) $synchronizationId),
                     // Raw provenance fields — preserved for the bespoke
                     // "Synced from" component + any programmatic consumer.
                     'synchronizationId'   => $synchronizationId,
