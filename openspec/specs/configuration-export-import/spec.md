@@ -6,6 +6,8 @@ retrofit: true
 
 ## Purpose
 
+@e2e exclude Pure backend service (ConfigurationService + per-type ConfigurationHandlers). All slug-translation, export/import, and credential-redaction logic is exercised by PHPUnit + Newman API tests; there is no dedicated UI panel for configuration export/import in openconnector's SPA.
+
 OpenConnector configurations — Sources, Endpoints, Mappings, Rules, Jobs and
 Synchronizations — are stored as OpenRegister objects in the `openconnector`
 register and identified locally by UUID. Operators need to move a coherent set
