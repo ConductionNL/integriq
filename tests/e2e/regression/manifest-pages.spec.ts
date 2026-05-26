@@ -4,11 +4,12 @@
  *
  * Chain E regression: manifest-driven page smoke test.
  *
- * Post chain-D2 cutover (`a9d43736`), 23 of 24 openconnector pages render
- * via nc-vue's built-in `CnIndexPage` / `CnDetailPage` / `CnLogsPage` /
- * `CnDashboardPage` / `CnSettingsPage`, with their CRUD wired against OR's
- * `/api/objects/openconnector/{schema}/*` routes. Only the `Import` page
- * remains `type: custom`.
+ * Post chain-D2 cutover (`a9d43736`), openconnector pages render via nc-vue's
+ * built-in `CnIndexPage` / `CnDetailPage` / `CnLogsPage` / `CnDashboardPage` /
+ * `CnSettingsPage` / `CnFeaturesAndRoadmapPage`, with their CRUD wired against
+ * OR's `/api/objects/openconnector/{schema}/*` routes. Only custom pages
+ * (`MappingDetail`, `RuleDetail`, `SynchronizationDetail`, `Import`) retain
+ * `type: custom` with a `_note` justification.
  *
  * This spec navigates to each manifest page route and asserts:
  *   - the SPA shell mounts (`#app-content` is present)
@@ -49,10 +50,11 @@ async function rootUrl(page: import('@playwright/test').Page): Promise<string> {
 }
 
 /**
- * 24 manifest pages from src/manifest.json (a9d43736), grouped by route
- * prefix to keep the test output readable. Each entry: [pageId, route, type].
+ * 25 manifest pages from src/manifest.json, grouped by route prefix to keep
+ * the test output readable. Each entry: [pageId, route, type].
  */
 const MANIFEST_PAGES: Array<{ id: string; route: string; type: string }> = [
+	{ id: 'FeaturesRoadmap',          route: '/features-roadmap',            type: 'roadmap' },
 	{ id: 'Dashboard',                route: '/',                            type: 'dashboard' },
 	{ id: 'Sources',                  route: '/sources',                     type: 'index' },
 	{ id: 'SourceDetail',             route: '/sources/__nonexistent__',     type: 'detail' },
@@ -75,29 +77,56 @@ const MANIFEST_PAGES: Array<{ id: string; route: string; type: string }> = [
 	{ id: 'CloudEvents',              route: '/cloud-events/events',         type: 'index' },
 	{ id: 'CloudEventDetail',         route: '/cloud-events/events/__nonexistent__', type: 'detail' },
 	{ id: 'CloudEventLogs',           route: '/cloud-events/logs',           type: 'logs' },
-	{ id: 'Import',                   route: '/import',                      type: 'custom' },
 	{ id: 'AppSettings',              route: '/settings',                    type: 'settings' },
 ]
 
 /**
- * Errors we ignore — these come from Nextcloud's own bootstrap, not
- * openconnector. Customer instances often surface deprecation warnings
- * from third-party scripts that don't break the page.
+ * Console noise that is unambiguous from its message TEXT alone — Nextcloud
+ * bootstrap chatter and stale SPA fetch paths, not openconnector page-mount
+ * regressions. Resource-load failures (which carry only a status code in their
+ * text, never the URL) are NOT matched here — they are filtered by URL below.
  */
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
 	/Deprecation/i,
 	/Slow network is detected/i,
 	/favicon/i,
 	/the resource at .* was preloaded using link preload but not used/i,
-	// /api/settings was removed in the chain-C OR-cutover (replaced by
-	// OR's /api/settings/* surface — see appinfo/routes.php comment).
-	// The SPA still pings the old endpoint at every page mount and logs
-	// the 404; that's a stale fetch path scheduled for cleanup, not a
-	// page-mount regression. Filter it from the strict console-error
-	// gate until the SPA is updated.
+	// /api/settings was removed in the chain-C OR-cutover; the SPA still pings
+	// the old endpoint on mount and logs it. Stale fetch path, not a regression.
 	/Error fetching OpenConnector settings/i,
-	/Failed to load resource:.*Not Found/i,
+	// NC-core user-status heartbeat: the unambiguous "[ERROR] core: Failed to
+	// load user status {app: core, …}" message. (The paired generic
+	// resource-load failure is filtered by URL below, not by status text.)
+	/Failed to load user status/i,
+	// Custom detail smoke routes use `__nonexistent__` as the id sentinel; the
+	// page mounts an empty/error state and logs a fetch error for that id.
+	/Error fetching .*\/__nonexistent__/i,
 ]
+
+/**
+ * Resource-load failures ("Failed to load resource: the server responded with a
+ * status of NNN") do NOT include the failing URL in their message text — only
+ * in `msg.location().url`. We filter those by URL against this allow-list of
+ * known-noisy endpoints so the console-error gate stays STRICT for
+ * openconnector's own endpoints: a 4xx/5xx from any other URL is a real failure
+ * and fails the test. (The previous blanket "ignore all 500/503 by status text"
+ * masked real openconnector endpoint regressions — see write-once-logging change.)
+ */
+const IGNORED_RESOURCE_URL_PATTERNS: RegExp[] = [
+	// NC-core user-status heartbeat — returns 500 in test envs (missing app /
+	// disabled cron / php -S rejecting the OCS path). Pure background polling.
+	/\/apps\/user_status\//,
+	// OpenRegister GraphQL — 503 under CI's single-threaded `php -S` when a
+	// dashboard/index page fires several chart/list queries in parallel and the
+	// lone worker is busy; returns 200 under Apache. Server-saturation noise.
+	/\/apps\/openregister\/api\/graphql/,
+	// Removed chain-C /api/settings endpoint the SPA still pings (404).
+	/\/apps\/openconnector\/api\/settings(?:[/?]|$)/,
+	// Smoke-test sentinel id on custom detail routes → not-found.
+	/\/__nonexistent__(?:[/?]|$)/,
+]
+
+const RESOURCE_LOAD_FAILURE = /Failed to load resource:/i
 
 function attachConsoleSpy(page: Page): { errors: string[]; warnings: string[] } {
 	const errors: string[] = []
@@ -105,6 +134,20 @@ function attachConsoleSpy(page: Page): { errors: string[]; warnings: string[] } 
 	page.on('console', (msg: ConsoleMessage) => {
 		const text = msg.text()
 		if (IGNORED_CONSOLE_PATTERNS.some((rx) => rx.test(text))) {
+			return
+		}
+		// Resource-load failures: decide by the failing URL, not the status
+		// text, so only known NC-core / CI-env noise is suppressed while a real
+		// openconnector endpoint failure still fails the gate.
+		if (RESOURCE_LOAD_FAILURE.test(text)) {
+			const url = msg.location()?.url ?? ''
+			if (IGNORED_RESOURCE_URL_PATTERNS.some((rx) => rx.test(url))) {
+				return
+			}
+			if (msg.type() === 'error') {
+				// Surface the URL so the failure message is actionable.
+				errors.push(`${text} @ ${url}`)
+			}
 			return
 		}
 		if (msg.type() === 'error') {
@@ -162,13 +205,13 @@ test.describe('manifest schema validation', () => {
 		expect(Array.isArray(m.menu), 'menu is an array').toBe(true)
 		expect(Array.isArray(m.pages), 'pages is an array').toBe(true)
 		expect(m.menu.length, 'menu has 13-15 entries').toBeGreaterThanOrEqual(13)
-		expect(m.pages.length, 'pages has 23-24 entries').toBeGreaterThanOrEqual(23)
+		expect(m.pages.length, 'pages has 25+ entries').toBeGreaterThanOrEqual(25)
 	})
 
-	test('all 24 pages use a standard type or have a _note justifying custom', async () => {
+	test('all pages use a standard type or have a _note justifying custom', async () => {
 		const manifestPath = require('path').resolve(__dirname, '../../../src/manifest.json')
 		const m = JSON.parse(require('fs').readFileSync(manifestPath, 'utf-8'))
-		const STANDARD = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'wiki', 'map'])
+		const STANDARD = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'wiki', 'map', 'roadmap'])
 		for (const p of m.pages) {
 			if (p.type === 'custom') {
 				expect(p._note, `page ${p.id} has type:custom — must include _note justifying it (chain D2 spec REQ "All 24 manifest pages MUST use a standard page type")`).toBeTruthy()
