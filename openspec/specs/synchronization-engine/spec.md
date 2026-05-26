@@ -20,6 +20,8 @@ This spec retroactively describes 97 existing methods across
 behavioral retrofit — REQ language matches observed code, and the Notes sections
 flag observed-but-suspicious behavior rather than silently correcting it.
 
+@e2e exclude synchronization engine — backend/Newman, no browser UI; 97 methods covered by PHPUnit
+
 ## Requirements
 
 ### REQ-001: Synchronization orchestration and direction routing

@@ -19,6 +19,8 @@ already exists, and these REQs document it. Target resolution follows the
 polymorphic `targetType` / `targetId` contract in ADR-008. Rule processing
 itself is specified separately under the `rule-pipeline` capability.
 
+@e2e exclude backend endpoint dispatch runtime — covered by Newman/PHPUnit, no browser UI
+
 ## Requirements
 
 ### REQ-EP-001: Generic Path Dispatch and CORS
