@@ -1,8 +1,26 @@
 [
   {
+    "slug": "mapping-and-search",
+    "title": "Mapping and Search",
+    "summary": "OpenConnector transforms inbound/outbound payloads through configurable mappings and exposes a federated catalog search helper. The mapping engine has largely moved to OpenRegister (ADR-022) — `MappingService` now delegates to OpenRegister's `MappingService` when present and only falls back to its own dot-array + Twig engine when OpenRegister is unavailable. The search helper compiles request filters into MongoDB / MySQL query fragments and fans out to peer directory instances. This spec captures the observed behavior of the 24 mapping/search code units retroactively; the code already exists.",
+    "docsUrl": "openspec/specs/mapping-and-search/spec.md"
+  },
+  {
     "slug": "prometheus-metrics",
     "title": "Prometheus Metrics Endpoint",
     "summary": "Expose application metrics in Prometheus text exposition format at `GET /api/metrics` for monitoring, alerting, and operational dashboards. Provide a health check endpoint at `GET /api/health` for liveness/readiness probes in container orchestration environments.",
     "docsUrl": "openspec/specs/prometheus-metrics/spec.md"
+  },
+  {
+    "slug": "synchronization-engine",
+    "title": "Synchronization Engine",
+    "summary": "Synchronize data between OpenConnector and external systems in both directions (extern→intern pull, intern→extern push), event-driven and on-demand, using the ADR-005 Source → Synchronization → SynchronizationContract triad for incremental change detection. Covers orchestration, source fetching with pagination and rate-limiting, mapping/transformation, target writes with deduplication and cascade, file handling, a sync-side rule pipeline, and the REST + ADR-019 integration surface that drives it.",
+    "docsUrl": "openspec/specs/synchronization-engine/spec.md"
+  },
+  {
+    "slug": "user-management-and-login",
+    "title": "User Management and Login",
+    "summary": "OpenConnector exposes a self-contained REST authentication surface (`/api/user/login`, `/api/user/me`, `/api/user/logout`) for browser SPA and external API clients, layered on Nextcloud's `IUserManager` / `IUserSession`. Login is hardened with per-username + per-IP rate limiting, progressive backoff, account/IP lockout, anti-enumeration error messages, memory monitoring, and security event logging (`SecurityService`). The profile surface (`UserService`) composes a comprehensive user payload (groups, quota, language, custom name fields, AccountManager profile properties) and applies capability-gated updates. This spec captures the observed behavior of 31 code units retroactively; the code already exists.",
+    "docsUrl": "openspec/specs/user-management-and-login/spec.md"
   }
 ]
