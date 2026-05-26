@@ -104,7 +104,7 @@ class EventsController extends Controller
         // Get all messages for this event.
         $matches  = $this->orObjectService->findAll(
                 config: [
-                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'eventId' => (string) $id],
+                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'event' => (string) $id],
                     'limit'   => (int) $this->request->getParam('limit', 50),
                     'offset'  => (int) $this->request->getParam('offset', 0),
                 ]
@@ -276,7 +276,7 @@ class EventsController extends Controller
         // Get messages for this subscription.
         $matches  = $this->orObjectService->findAll(
                 config: [
-                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscriptionId' => (string) $subscriptionId],
+                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscription' => (string) $subscriptionId],
                     'limit'   => (int) $this->request->getParam('limit', 50),
                     'offset'  => (int) $this->request->getParam('offset', 0),
                 ]
