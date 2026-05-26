@@ -397,6 +397,429 @@ class CallService
     }//end removeFiles()
 
     /**
+     * Formats a nullable DateTime as an ISO-8601 string, or returns null.
+     *
+     * Extracted from the repeated inline pattern inside call() to avoid duplication.
+     *
+     * @param \DateTime|null $expires The expiry date/time, or null for indefinite retention.
+     *
+     * @return string|null ISO-8601 formatted string, or null.
+     */
+    private function formatExpires(?\DateTime $expires): ?string
+    {
+        if ($expires !== null) {
+            return $expires->format('c');
+        }
+
+        return null;
+
+    }//end formatExpires()
+
+    /**
+     * Builds and persists an early-exit CallLog (before the HTTP request is made).
+     *
+     * Used when the source is disabled, has no location, or the rate limit is exceeded.
+     *
+     * @param ObjectEntity   $source        The source ObjectEntity.
+     * @param integer        $statusCode    HTTP-like status code to record (e.g. 409, 429).
+     * @param string         $statusMessage Human-readable status message.
+     * @param \DateTime|null $expires       Expiry for this log entry.
+     *
+     * @return ObjectEntity The persisted CallLog ObjectEntity.
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     */
+    private function saveEarlyErrorLog(
+        ObjectEntity $source,
+        int $statusCode,
+        string $statusMessage,
+        ?\DateTime $expires,
+    ): ObjectEntity {
+        return $this->objectService->saveObject(
+            object: [
+                'source'        => $source->getUuid(),
+                'statusCode'    => $statusCode,
+                'statusMessage' => $statusMessage,
+                'created'       => (new \DateTime())->format('c'),
+                'expires'       => $this->formatExpires($expires),
+            ],
+            register: 'openconnector',
+            schema: 'call_log'
+        );
+
+    }//end saveEarlyErrorLog()
+
+    /**
+     * Computes error and success expiry DateTimes from source retention settings.
+     *
+     * @param array $sourceData The raw source data array.
+     *
+     * @return array{errorExpires: \DateTime|null, successExpires: \DateTime|null}
+     *
+     * @throws \DateMalformedStringException On invalid datetime string composition.
+     */
+    private function buildExpiryValues(array $sourceData): array
+    {
+        $errorRetention = (int) ($sourceData['errorRetention'] ?? 0);
+        $logRetention   = (int) ($sourceData['logRetention'] ?? 0);
+
+        return [
+            'errorExpires'   => $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]),
+            'successExpires' => $this->calculateExpires(...[($logRetention * 1000), $this->successRetention]),
+        ];
+
+    }//end buildExpiryValues()
+
+    /**
+     * Resets the source rate-limit counters when the reset window has expired.
+     *
+     * If rateLimitReset is set and is in the past, clears rateLimitReset and
+     * rateLimitRemaining on the source and persists the updated source object.
+     *
+     * @param ObjectEntity $source     The source ObjectEntity.
+     * @param array        $sourceData The mutable source data array (modified in place).
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     */
+    private function checkAndResetRateLimit(ObjectEntity $source, array &$sourceData): void
+    {
+        $rateLimitReset     = ($sourceData['rateLimitReset'] ?? null);
+        $rateLimitRemaining = ($sourceData['rateLimitRemaining'] ?? null);
+
+        if ($rateLimitReset !== null
+            && $rateLimitRemaining !== null
+            && $rateLimitReset <= time()
+        ) {
+            $sourceData['rateLimitReset']     = null;
+            $sourceData['rateLimitRemaining'] = null;
+
+            $this->objectService->saveObject(
+                object: $sourceData,
+                register: 'openconnector',
+                schema: 'source',
+                uuid: $source->getUuid()
+            );
+        }
+
+    }//end checkAndResetRateLimit()
+
+    /**
+     * Merges the source-level configuration into the call-level configuration.
+     *
+     * When the source has a non-empty configuration array, it is applied via
+     * applyConfigDot() and merged (recursively) with the call config.
+     *
+     * @param array $config     The call-level configuration.
+     * @param array $sourceData The raw source data array.
+     *
+     * @return array The merged configuration.
+     */
+    private function mergeSourceConfiguration(array $config, array $sourceData): array
+    {
+        if (empty($sourceData['configuration'] ?? []) === false) {
+            $config = array_merge_recursive($config, $this->applyConfigDot(config: $sourceData['configuration']));
+        }
+
+        return $config;
+
+    }//end mergeSourceConfiguration()
+
+    /**
+     * Handles preRequest / postRequest hooks in the config.
+     *
+     * Fires the preRequest sub-call synchronously (unless already in a support request),
+     * strips both keys from config, and returns the captured postRequest data (if any).
+     *
+     * @param ObjectEntity $source               The source ObjectEntity.
+     * @param array        $config               The call configuration (modified in place — preRequest/postRequest removed).
+     * @param boolean      $runningSupportRequest Whether we are already inside a support request.
+     *
+     * @return array|null The postRequest descriptor array, or null if none was set.
+     *
+     * @throws GuzzleException   On HTTP transport failure during the preRequest call.
+     * @throws LoaderError       On Twig loader error.
+     * @throws SyntaxError       On Twig syntax error.
+     * @throws \OCP\DB\Exception On persistence failure.
+     */
+    private function extractAndFirePreRequest(
+        ObjectEntity $source,
+        array &$config,
+        bool $runningSupportRequest,
+    ): ?array {
+        if (isset($config['preRequest']) === true && $runningSupportRequest === false) {
+            $this->call(
+                source: $source,
+                endpoint: $config['preRequest']['endpoint'],
+                config: $config['preRequest']['config'],
+                runningSupportRequest: true
+            );
+            unset($config['preRequest']);
+        }
+
+        $postRequest = null;
+        if (isset($config['postRequest']) === true) {
+            $postRequest = $config['postRequest'];
+            unset($config['postRequest']);
+        }
+
+        return $postRequest;
+
+    }//end extractAndFirePreRequest()
+
+    /**
+     * Normalises request headers, pagination, renders Twig placeholders, filters
+     * authentication keys, writes TLS certificates to disk, and extracts the logBody flag.
+     *
+     * Returns the cleaned config array and a boolean indicating whether the response
+     * body should be included in the CallLog even for non-error responses.
+     *
+     * @param array $config     The call configuration to normalise (modified in place).
+     * @param array $sourceData The raw source data used for Twig rendering.
+     *
+     * @return array{config: array, logBody: boolean} Normalised config and logBody flag.
+     *
+     * @throws LoaderError If there is an error loading a Twig template.
+     * @throws SyntaxError If there is a syntax error in a Twig template.
+     */
+    private function normaliseRequestConfig(array $config, array $sourceData): array
+    {
+        // Check if the config has a Content-Type header and overwrite it if it does.
+        if (isset($config['headers']['Content-Type']) === true) {
+            $overwriteContentType = $config['headers']['Content-Type'];
+        }
+
+        // Decapitalized fall back for content-type.
+        if (isset($config['headers']['content-type']) === true) {
+            $overwriteContentType = $config['headers']['content-type'];
+        }
+
+        // Make sure we do not have an array of accept headers but just one value.
+        if (isset($config['headers']['accept']) === true && is_array($config['headers']['accept']) === true) {
+            $config['headers']['accept'] = $config['headers']['accept'][0];
+        }
+
+        // Check if the config has a headers array and create it if it doesn't.
+        if (isset($config['headers']) === false) {
+            $config['headers'] = [];
+        }
+
+        if (isset($config['pagination']) === true) {
+            $config['query'][$config['pagination']['paginationQuery']] = $config['pagination']['page'];
+            unset($config['pagination']);
+        }
+
+        $config = $this->renderConfiguration(configuration: $config, sourceData: $sourceData);
+
+        // Set authentication if needed.
+        $this->getCertificate(config: $config);
+
+        // Make sure to filter out all the authentication variables / secrets.
+        $config = array_filter(
+          $config,
+          function ($key) {
+            return str_contains(strtolower($key), 'authentication') === false;
+          },
+          ARRAY_FILTER_USE_KEY
+          );
+
+        $logBody = (isset($config['logBody']) === true && (bool) $config['logBody']);
+        unset($config['logBody']);
+
+        // We want to surpress guzzle exceptions and return the response instead.
+        $config['http_errors'] = false;
+
+        return ['config' => $config, 'logBody' => $logBody];
+
+    }//end normaliseRequestConfig()
+
+    /**
+     * Dispatches the HTTP request (SOAP or Guzzle) and returns the response.
+     *
+     * For asynchronous calls this method returns the Guzzle Promise directly
+     * (same behaviour as the original inline code — the caller returns it immediately).
+     * Removes TLS certificate files from disk after the request completes or fails.
+     *
+     * @param ObjectEntity $source       The source ObjectEntity.
+     * @param string       $method       The HTTP method to use.
+     * @param string       $url          The full URL to request (used for Guzzle; SOAP uses $endpoint as the action).
+     * @param string       $endpoint     The raw endpoint path (used as the SOAPAction for SOAP sources).
+     * @param array        $config       The Guzzle request configuration (passed by reference so cert files can be cleaned up).
+     * @param boolean      $asynchronous Whether to dispatch asynchronously.
+     *
+     * @return mixed A Guzzle Response (sync), a Guzzle Promise (async), or a Response from SOAPService.
+     *
+     * @throws GuzzleException On HTTP transport failure.
+     */
+    private function dispatchRequest(
+        ObjectEntity $source,
+        string $method,
+        string $url,
+        string $endpoint,
+        array &$config,
+        bool $asynchronous,
+    ): mixed {
+        $sourceData = $source->getObject();
+        $sourceType = ($sourceData['type'] ?? null);
+
+        if ($sourceType === 'soap') {
+            // If the source type is SOAP, use the soap service.
+            // Warning: This functionality requires ext-soap and ext-xsd.
+            $soapService = new SOAPService($this->cookieJar);
+            $response    = $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
+        }
+
+        if ($sourceType !== 'soap') {
+            try {
+                if ($asynchronous === false) {
+                    $response = $this->client->request($method, $url, $config);
+                }
+
+                if ($asynchronous === true) {
+                    // @todo: we want to get rate limit headers from async calls as well.
+                    return $this->client->requestAsync($method, $url, $config);
+                }
+            } catch (BadResponseException $e) {
+                $this->removeFiles(config: $config);
+                $response = $e->getResponse();
+            } catch (ConnectException $exception) {
+                $this->removeFiles(config: $config);
+                $response = new Response(status: 503, body: $exception->getMessage());
+            }
+        }
+
+        $this->removeFiles(config: $config);
+
+        return $response;
+
+    }//end dispatchRequest()
+
+    /**
+     * Decodes the response body, determines encoding, resolves remote IP, and
+     * assembles the structured $data array that contains both request and response info.
+     *
+     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response.
+     * @param string                              $url      The URL that was called.
+     * @param string                              $method   The HTTP method used.
+     * @param array                               $config   The Guzzle request config that was sent.
+     * @param float                               $timeStart Microtime at request start.
+     * @param float                               $timeEnd   Microtime after response received.
+     *
+     * @return array Structured array with 'request' and 'response' sub-arrays.
+     */
+    private function buildResponseData(
+        \Psr\Http\Message\ResponseInterface $response,
+        string $url,
+        string $method,
+        array $config,
+        float $timeStart,
+        float $timeEnd,
+    ): array {
+        $body = $response->getBody()->getContents();
+
+        $isUtf8 = (mb_check_encoding(value: $body, encoding: 'UTF-8') !== false);
+        if ($isUtf8 === true) {
+            $bodyForLog   = $body;
+            $bodyEncoding = 'UTF-8';
+        } else {
+            $bodyForLog   = base64_encode($body);
+            $bodyEncoding = 'base64';
+        }
+
+        $remoteIp = $response->getHeaderLine('X-Real-IP');
+        if ($remoteIp === '') {
+            $remoteIp = $response->getHeaderLine('X-Forwarded-For');
+        }
+
+        if ($remoteIp === '') {
+            $remoteIp = null;
+        }
+
+        return [
+            'request'  => [
+                'url'    => $url,
+                'method' => $method,
+                ...$config,
+            ],
+            'response' => [
+                'statusCode'    => $response->getStatusCode(),
+                'statusMessage' => $response->getReasonPhrase(),
+                'responseTime'  => (($timeEnd - $timeStart) * 1000),
+                'size'          => $response->getBody()->getSize(),
+                'remoteIp'      => $remoteIp,
+                'headers'       => $response->getHeaders(),
+                'body'          => $bodyForLog,
+                'encoding'      => $bodyEncoding,
+            ],
+        ];
+
+    }//end buildResponseData()
+
+    /**
+     * Applies rate-limit header updates, builds the CallLog payload, persists it, and
+     * stitches the full response body back onto the returned ObjectEntity.
+     *
+     * @param ObjectEntity   $source         The source ObjectEntity.
+     * @param array          $sourceData     The mutable source data array.
+     * @param array          $data           The structured request/response data from buildResponseData().
+     * @param boolean        $logBody        Whether to include the body in the log for non-error responses.
+     * @param \DateTime|null $successExpires Expiry for successful log entries.
+     * @param \DateTime|null $errorExpires   Expiry for error log entries.
+     *
+     * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     */
+    private function buildAndPersistCallLog(
+        ObjectEntity $source,
+        array $sourceData,
+        array $data,
+        bool $logBody,
+        ?\DateTime $successExpires,
+        ?\DateTime $errorExpires,
+    ): ObjectEntity {
+        // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
+        $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
+
+        $statusCode   = $data['response']['statusCode'];
+        $responseData = $data['response'];
+
+        // Only persist response body for 4xx/5xx errors.
+        if ($statusCode < 400 || $statusCode >= 600) {
+            if ($logBody !== true) {
+                unset($responseData['body']);
+            }
+        }
+
+        $expiresChosen = ($statusCode < 400) ? $successExpires : $errorExpires;
+
+        $callLogData = [
+            'source'        => $source->getUuid(),
+            'statusCode'    => $statusCode,
+            'statusMessage' => $data['response']['statusMessage'],
+            'request'       => $data['request'],
+            'response'      => $responseData,
+            'created'       => (new \DateTime())->format('c'),
+            'expires'       => $this->formatExpires($expiresChosen),
+        ];
+
+        $callLog = $this->objectService->saveObject(
+            object: $callLogData,
+            register: 'openconnector',
+            schema: 'call_log'
+        );
+
+        // Set full response (with body) on the returned entity for processing.
+        $callLogFullData = $callLog->getObject();
+        $callLogFullData['response'] = $data['response'];
+        $callLog->setObject($callLogFullData);
+
+        return $callLog;
+
+    }//end buildAndPersistCallLog()
+
+    /**
      * Calls a source according to given configuration.
      *
      * @param ObjectEntity $source                The source ObjectEntity to call.
@@ -431,290 +854,110 @@ class CallService
     ): ObjectEntity {
         $sourceData = $source->getObject();
 
-        $errorRetention = (int) ($sourceData['errorRetention'] ?? 0);
-        $logRetention   = (int) ($sourceData['logRetention'] ?? 0);
-        $errorExpires   = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
-        $successExpires = $this->calculateExpires(...[($logRetention * 1000), $this->successRetention]);
+        // Phase 1: Compute expiry values for log retention.
+        $expiries       = $this->buildExpiryValues($sourceData);
+        $errorExpires   = $expiries['errorExpires'];
+        $successExpires = $expiries['successExpires'];
 
+        // Phase 2: Resolve HTTP method; strip method-override keys from config.
         $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
         unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
+        // Phase 3: Guard — source must be enabled.
         if (($sourceData['isEnabled'] ?? null) === null || ($sourceData['isEnabled'] ?? false) === false) {
-            if ($errorExpires !== null) {
-                $expiresFormatted = $errorExpires->format('c');
-            } else {
-                $expiresFormatted = null;
-            }
-
-            return $this->objectService->saveObject(
-                object: [
-                    'source'        => $source->getUuid(),
-                    'statusCode'    => 409,
-                    'statusMessage' => 'This source is not enabled',
-                    'created'       => (new \DateTime())->format('c'),
-                    'expires'       => $expiresFormatted,
-                ],
-                register: 'openconnector',
-                schema: 'call_log'
-            );
-        }
-
-        if (empty($sourceData['location'] ?? '') === true) {
-            if ($errorExpires !== null) {
-                $expiresFormatted = $errorExpires->format('c');
-            } else {
-                $expiresFormatted = null;
-            }
-
-            return $this->objectService->saveObject(
-                object: [
-                    'source'        => $source->getUuid(),
-                    'statusCode'    => 409,
-                    'statusMessage' => 'This source has no location',
-                    'created'       => (new \DateTime())->format('c'),
-                    'expires'       => $expiresFormatted,
-                ],
-                register: 'openconnector',
-                schema: 'call_log'
-            );
-        }
-
-        // Check if Source has a RateLimit and if we need to reset RateLimit-Reset and RateLimit-Remaining.
-        $rateLimitReset     = ($sourceData['rateLimitReset'] ?? null);
-        $rateLimitRemaining = ($sourceData['rateLimitRemaining'] ?? null);
-        $rateLimitWindow    = ($sourceData['rateLimitWindow'] ?? null);
-        $rateLimitLimit     = ($sourceData['rateLimitLimit'] ?? null);
-
-        if ($rateLimitReset !== null
-            && $rateLimitRemaining !== null
-            && $rateLimitReset <= time()
-        ) {
-            $sourceData['rateLimitReset']     = null;
-            $sourceData['rateLimitRemaining'] = null;
-            $rateLimitReset     = null;
-            $rateLimitRemaining = null;
-
-            $this->objectService->saveObject(
-                object: $sourceData,
-                register: 'openconnector',
-                schema: 'source',
-                uuid: $source->getUuid()
-            );
-        }
-
-        // Check if RateLimit-Remaining is set on this source and if limit has been reached.
-        if ($rateLimitRemaining !== null && $rateLimitRemaining <= 0) {
-            if ($errorExpires !== null) {
-                $expiresFormatted = $errorExpires->format('c');
-            } else {
-                $expiresFormatted = null;
-            }
-
-            return $this->objectService->saveObject(
-                object: [
-                    'source'        => $source->getUuid(),
-                    'statusCode'    => 429,
-                    'statusMessage' => 'The rate limit for this source has been exceeded. Try again later.',
-                    'created'       => (new \DateTime())->format('c'),
-                    'expires'       => $expiresFormatted,
-                ],
-                register: 'openconnector',
-                schema: 'call_log'
-            );
-        }
-
-        // Check if the source has a configuration and merge it with the given config.
-        if (empty($sourceData['configuration'] ?? []) === false) {
-            $config = array_merge_recursive($config, $this->applyConfigDot(config: $sourceData['configuration']));
-        }
-
-        if (isset($config['preRequest']) === true && $runningSupportRequest === false) {
-            $this->call(
+            return $this->saveEarlyErrorLog(
                 source: $source,
-                endpoint: $config['preRequest']['endpoint'],
-                config: $config['preRequest']['config'],
-                runningSupportRequest: true
+                statusCode: 409,
+                statusMessage: 'This source is not enabled',
+                expires: $errorExpires,
             );
-            unset($config['preRequest']);
         }
 
-        if (isset($config['postRequest']) === true) {
-            $postRequest = $config['postRequest'];
-            unset($config['postRequest']);
+        // Phase 4: Guard — source must have a location.
+        if (empty($sourceData['location'] ?? '') === true) {
+            return $this->saveEarlyErrorLog(
+                source: $source,
+                statusCode: 409,
+                statusMessage: 'This source has no location',
+                expires: $errorExpires,
+            );
         }
 
-        // Check if the config has a Content-Type header and overwrite it if it does.
-        if (isset($config['headers']['Content-Type']) === true) {
-            $overwriteContentType = $config['headers']['Content-Type'];
+        // Phase 5: Check if Source has a RateLimit and if we need to reset RateLimit-Reset and RateLimit-Remaining.
+        $this->checkAndResetRateLimit(source: $source, sourceData: $sourceData);
+
+        // Phase 6: Guard — rate-limit remaining must not be exhausted.
+        $rateLimitRemaining = ($sourceData['rateLimitRemaining'] ?? null);
+        if ($rateLimitRemaining !== null && $rateLimitRemaining <= 0) {
+            return $this->saveEarlyErrorLog(
+                source: $source,
+                statusCode: 429,
+                statusMessage: 'The rate limit for this source has been exceeded. Try again later.',
+                expires: $errorExpires,
+            );
         }
 
-        // Decapitalized fall back for content-type.
-        if (isset($config['headers']['content-type']) === true) {
-            $overwriteContentType = $config['headers']['content-type'];
-        }
+        // Phase 7: Merge source-level configuration.
+        $config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
 
-        // Make sure we do not have an array of accept headers but just one value.
-        if (isset($config['headers']['accept']) === true && is_array($config['headers']['accept']) === true) {
-            $config['headers']['accept'] = $config['headers']['accept'][0];
-        }
+        // Phase 8: Handle preRequest hook; capture postRequest descriptor.
+        $postRequest = $this->extractAndFirePreRequest(
+            source: $source,
+            config: $config,
+            runningSupportRequest: $runningSupportRequest,
+        );
 
-        // Check if the config has a headers array and create it if it doesn't.
-        if (isset($config['headers']) === false) {
-            $config['headers'] = [];
-        }
-
-        if (isset($config['pagination']) === true) {
-            $config['query'][$config['pagination']['paginationQuery']] = $config['pagination']['page'];
-            unset($config['pagination']);
-        }
-
-        $config = $this->renderConfiguration(configuration: $config, sourceData: $sourceData);
+        // Phase 9: Normalise headers, pagination, render Twig, filter auth keys, write certs, extract logBody.
+        $normalised = $this->normaliseRequestConfig(config: $config, sourceData: $sourceData);
+        $config     = $normalised['config'];
+        $logBody    = $normalised['logBody'];
 
         // Set the URL to call and add an endpoint if needed.
         $url = (($sourceData['location'] ?? '').$endpoint);
 
-        // Set authentication if needed.
-        $this->getCertificate(config: $config);
-
-        // Make sure to filter out all the authentication variables / secrets.
-        $config = array_filter(
-          $config,
-          function ($key) {
-            return str_contains(strtolower($key), 'authentication') === false;
-          },
-          ARRAY_FILTER_USE_KEY
-          );
-
-        $logBody = (isset($config['logBody']) === true && (bool) $config['logBody']);
-        unset($config['logBody']);
-
-        // We want to surpress guzzle exceptions and return the response instead.
-        $config['http_errors'] = false;
-
         // Let's log the call.
         $sourceData['lastCall'] = (new \DateTime())->format('c');
         // @todo: save the source.
-        // Let's make the call.
+
+        // Phase 10: Dispatch the HTTP request.
         $timeStart = microtime(true);
+        $response  = $this->dispatchRequest(
+            source: $source,
+            method: $method,
+            url: $url,
+            endpoint: $endpoint,
+            config: $config,
+            asynchronous: $asynchronous,
+        );
 
-        $sourceType = ($sourceData['type'] ?? null);
-
-        if ($sourceType === 'soap') {
-            // If the source type is SOAP, use the soap service.
-            // Warning: This functionality requires ext-soap and ext-xsd.
-            $soapService = new SOAPService($this->cookieJar);
-
-            $response = $soapService->callSoapSource(source: $source, soapAction: $endpoint, config: $config);
+        // Async path returns the Promise directly (same as original behaviour).
+        if ($asynchronous === true) {
+            return $response;
         }
-
-        if ($sourceType !== 'soap') {
-            try {
-                if ($asynchronous === false) {
-                    $response = $this->client->request($method, $url, $config);
-                }
-
-                if ($asynchronous === true) {
-                    // @todo: we want to get rate limit headers from async calls as well.
-                    return $this->client->requestAsync($method, $url, $config);
-                }
-            } catch (BadResponseException $e) {
-                $this->removeFiles(config: $config);
-                $response = $e->getResponse();
-            } catch (ConnectException $exception) {
-                $this->removeFiles(config: $config);
-                $response = new Response(status: 503, body: $exception->getMessage());
-            }
-        }
-
-        $this->removeFiles(config: $config);
 
         $timeEnd = microtime(true);
 
-        $body = $response->getBody()->getContents();
-
-        $isUtf8 = (mb_check_encoding(value: $body, encoding: 'UTF-8') !== false);
-        if ($isUtf8 === true) {
-            $bodyForLog   = $body;
-            $bodyEncoding = 'UTF-8';
-        } else {
-            $bodyForLog   = base64_encode($body);
-            $bodyEncoding = 'base64';
-        }
-
-        $remoteIp = $response->getHeaderLine('X-Real-IP');
-        if ($remoteIp === '') {
-            $remoteIp = $response->getHeaderLine('X-Forwarded-For');
-        }
-
-        if ($remoteIp === '') {
-            $remoteIp = null;
-        }
-
-        // Let's create the data array.
-        $data = [
-            'request'  => [
-                'url'    => $url,
-                'method' => $method,
-                ...$config,
-            ],
-            'response' => [
-                'statusCode'    => $response->getStatusCode(),
-                'statusMessage' => $response->getReasonPhrase(),
-                'responseTime'  => (($timeEnd - $timeStart) * 1000),
-                'size'          => $response->getBody()->getSize(),
-                'remoteIp'      => $remoteIp,
-                'headers'       => $response->getHeaders(),
-                'body'          => $bodyForLog,
-                'encoding'      => $bodyEncoding,
-            ],
-        ];
-
-        // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
-        $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
-
-        // Build call log data.
-        $statusCode   = $data['response']['statusCode'];
-        $responseData = $data['response'];
-        // Only persist response body for 4xx/5xx errors.
-        if ($statusCode < 400 || $statusCode >= 600) {
-            if ($logBody !== true) {
-                unset($responseData['body']);
-            }
-        }
-
-        if ($statusCode < 400) {
-            $expiresChosen = $successExpires;
-        } else {
-            $expiresChosen = $errorExpires;
-        }
-
-        if ($expiresChosen !== null) {
-            $expiresFormatted = $expiresChosen->format('c');
-        } else {
-            $expiresFormatted = null;
-        }
-
-        $callLogData = [
-            'source'        => $source->getUuid(),
-            'statusCode'    => $statusCode,
-            'statusMessage' => $data['response']['statusMessage'],
-            'request'       => $data['request'],
-            'response'      => $responseData,
-            'created'       => (new \DateTime())->format('c'),
-            'expires'       => $expiresFormatted,
-        ];
-
-        $callLog = $this->objectService->saveObject(
-            object: $callLogData,
-            register: 'openconnector',
-            schema: 'call_log'
+        // Phase 11: Decode response body and build the structured data array.
+        $data = $this->buildResponseData(
+            response: $response,
+            url: $url,
+            method: $method,
+            config: $config,
+            timeStart: $timeStart,
+            timeEnd: $timeEnd,
         );
 
-        // Set full response (with body) on the returned entity for processing.
-        $callLogFullData = $callLog->getObject();
-        $callLogFullData['response'] = $data['response'];
-        $callLog->setObject($callLogFullData);
+        // Phase 12: Persist CallLog and get back the entity.
+        $callLog = $this->buildAndPersistCallLog(
+            source: $source,
+            sourceData: $sourceData,
+            data: $data,
+            logBody: $logBody,
+            successExpires: $successExpires,
+            errorExpires: $errorExpires,
+        );
 
+        // Phase 13: Fire postRequest hook if present.
         if (isset($postRequest) === true && $runningSupportRequest === false) {
             $this->call(source: $source, endpoint: $postRequest['endpoint'], config: $postRequest['config'], runningSupportRequest: true);
         }
