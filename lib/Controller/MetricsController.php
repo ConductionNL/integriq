@@ -22,6 +22,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TextPlainResponse;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -49,16 +50,18 @@ class MetricsController extends Controller
     /**
      * MetricsController constructor.
      *
-     * @param string          $appName The name of the app
-     * @param IRequest        $request Request object
-     * @param IConfig         $config  The config service
-     * @param IDBConnection   $db      The database connection
-     * @param LoggerInterface $logger  Logger for error handling
+     * @param string          $appName   The name of the app
+     * @param IRequest        $request   Request object
+     * @param IConfig         $config    The config service (retained for getSystemValueString)
+     * @param IAppConfig      $appConfig The typed app config service
+     * @param IDBConnection   $db        The database connection
+     * @param LoggerInterface $logger    Logger for error handling
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly IConfig $config,
+        private readonly IAppConfig $appConfig,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
@@ -81,7 +84,7 @@ class MetricsController extends Controller
     {
         $lines = [];
 
-        $appVersion = $this->config->getAppValue('openconnector', 'installed_version', '0.0.0');
+        $appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '0.0.0');
         $phpVersion = PHP_VERSION;
         $ncVersion  = $this->config->getSystemValueString('version', '0.0.0');
 
