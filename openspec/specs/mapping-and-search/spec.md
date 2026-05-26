@@ -7,6 +7,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude Pure backend service (MappingService Twig/dot engine, cast directives, OR object shim, SearchService filter/facet compilation). All scenarios test internal PHP behaviour with no observable UI-only surface; covered by PHPUnit. The Mappings SPA page (list, add, open detail) is exercised by a separate navigation smoke test that does not map to individual scenarios here.
+
 OpenConnector transforms inbound/outbound payloads through configurable mappings and
 exposes a federated catalog search helper. The mapping engine has largely moved to
 OpenRegister (ADR-022) — `MappingService` now delegates to OpenRegister's

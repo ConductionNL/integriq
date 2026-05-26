@@ -7,6 +7,8 @@ status: implemented
 
 ## Purpose
 
+@e2e exclude Pure REST authentication surface (UserController + SecurityService + UserService). `/api/user/login`, `/api/user/me`, `/api/user/logout` are headless API endpoints — openconnector has no dedicated login SPA page; Nextcloud's own /login handles UI authentication. Rate-limit, lockout, memory-guard, CORS, and input-sanitisation scenarios require controlled infrastructure state that cannot safely be reproduced in a shared Playwright env. Covered by PHPUnit + Newman API tests.
+
 OpenConnector exposes a self-contained REST authentication surface (`/api/user/login`,
 `/api/user/me`, `/api/user/logout`) for browser SPA and external API clients, layered on
 Nextcloud's `IUserManager` / `IUserSession`. Login is hardened with per-username + per-IP
