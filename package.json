@@ -17,7 +17,10 @@
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
     "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
-    "check:manifest": "node -e \"const {validateManifestV2}=require('@conduction/nextcloud-vue/dist/utils.cjs.js');const m=require('./src/manifest.json');const r=validateManifestV2(m);if(!r.valid){console.error(JSON.stringify(r.errors,null,2));process.exit(1)}console.log('manifest.json valid')\"",
+    "check:json-strict": "node tests/validate-json-strict.js",
+    "check:manifest": "node tests/validate-manifest.js",
+    "check:register": "node tests/validate-register.js",
+    "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
     "test:newman": "newman run tests/postman/openconnector.postman_collection.json --environment tests/postman/openconnector.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/newman-report.json",
     "test:regression": "playwright test --project regression"
   },
