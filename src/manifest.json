@@ -161,7 +161,7 @@
         "includeFields": ["name", "description", "type", "isEnabled"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "SourceLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SourceLogs" }
         ],
         "actions": [
           { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
@@ -201,7 +201,7 @@
         "includeFields": ["name", "description", "endpoint", "method", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "EndpointLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "EndpointLogs" }
         ],
         "actions": [
           { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
@@ -280,7 +280,7 @@
         },
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "JobLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "JobLogs" }
         ],
         "actions": [
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
@@ -323,6 +323,7 @@
       "route": "/mappings/:id",
       "type": "custom",
       "component": "MappingDetailPage",
+      "_note": "Custom page: the mapping editor is a bespoke 3-tab rules editor (mapping/cast/unset rules with drag-reorder + per-rule dialogs) that the generic detail page cannot express.",
       "title": "Mapping",
       "config": {
         "register": "openconnector",
@@ -347,6 +348,7 @@
       "route": "/rules/:id",
       "type": "custom",
       "component": "RuleDetailPage",
+      "_note": "Custom page: the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.",
       "title": "Rule",
       "config": {
         "register": "openconnector",
@@ -366,15 +368,15 @@
         "sidebar": { "enabled": true, "showMetadata": true },
         "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "SynchronizationLogs" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SynchronizationLogs" },
+          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
         ],
         "actions": [
           { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
           { "id": "view-synchronization-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
+          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
         ]
       }
     },
@@ -406,6 +408,7 @@
       "type": "custom",
       "title": "Synchronization",
       "component": "SynchronizationDetailPage",
+      "_note": "Custom page: the synchronization editor composes source/target mapping, conditions, follow-ups and run/test controls that the generic detail page cannot express.",
       "config": {
         "register": "openconnector",
         "schema": "synchronization"
@@ -423,7 +426,7 @@
         "includeFields": ["source", "type", "subject", "data"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "navigate", "route": "CloudEventLogs" }
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "CloudEventLogs" }
         ],
         "actions": [
           { "id": "view-cloud-event-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
