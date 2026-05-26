@@ -210,7 +210,12 @@ class UserService
         $result['middleName'] = ($result['middleName'] ?? null);
 
         // Add organization information if available.
-        $organisationStats       = $this->organisationBridgeService->getUserOrganisationStats();
+        if ($this->organisationBridgeService->isOrganisationServiceAvailable() === true) {
+            $organisationStats = $this->organisationBridgeService->getUserOrganisationStats();
+        } else {
+            $organisationStats = [];
+        }
+
         $result['organisations'] = $organisationStats;
 
         return $result;

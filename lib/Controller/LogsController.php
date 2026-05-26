@@ -24,10 +24,14 @@ namespace OCA\OpenConnector\Controller;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\OCS\OCSNotFoundException;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Controller for managing synchronization logs.
@@ -63,12 +67,14 @@ class LogsController extends Controller
      * @param IRequest        $request         The request interface.
      * @param OrObjectService $orObjectService The OR object service.
      * @param IL10N           $l               The localization service.
+     * @param IUserSession    $userSession     The user session.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         OrObjectService $orObjectService,
-        IL10N $l
+        IL10N $l,
+        private readonly IUserSession $userSession,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -97,6 +103,8 @@ class LogsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function index(
         ?int $limit=20,
         ?int $offset=0,
@@ -106,6 +114,10 @@ class LogsController extends Controller
         ?string $dateFrom=null,
         ?string $dateTo=null
     ): JSONResponse {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
         // Build filters array.
         $filters = [];
 
@@ -175,8 +187,14 @@ class LogsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function show(string $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
         $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log');
         if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
@@ -200,8 +218,14 @@ class LogsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function destroy(string $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
         $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log');
         if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
@@ -224,8 +248,14 @@ class LogsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-2
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function statistics(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Get basic counts by level via OR ObjectService.
             $baseFilters    = ['register' => 'openconnector', 'schema' => 'synchronization_log'];
@@ -283,6 +313,8 @@ class LogsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-2
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function export(
         ?string $level=null,
         ?string $message=null,
@@ -290,6 +322,10 @@ class LogsController extends Controller
         ?string $dateFrom=null,
         ?string $dateTo=null
     ): JSONResponse {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
         try {
             // Build filters array (same as index method).
             $filters = [];

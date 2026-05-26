@@ -20,15 +20,20 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
+use OCA\OpenConnector\AppInfo\Application;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Controller for job listing, log retrieval, and ad-hoc job run/test endpoints.
@@ -47,11 +52,13 @@ class JobsController extends Controller
     /**
      * Constructor for the JobController.
      *
-     * @param string          $appName         The name of the app.
-     * @param IRequest        $request         The request object.
-     * @param OrObjectService $orObjectService The OR object service.
-     * @param JobService      $jobService      The job service (used by run/test action methods).
-     * @param IL10N           $l               The localization service.
+     * @param string            $appName         The name of the app.
+     * @param IRequest          $request         The request object.
+     * @param OrObjectService   $orObjectService The OR object service.
+     * @param JobService        $jobService      The job service (used by run/test action methods).
+     * @param IL10N             $l               The localization service.
+     * @param IUserSession      $userSession     The user session.
+     * @param ActionAuthService $actionAuth      The action authorization service.
      *
      * @return void
      */
@@ -60,56 +67,25 @@ class JobsController extends Controller
         IRequest $request,
         private OrObjectService $orObjectService,
         private JobService $jobService,
-        private IL10N $l
+        private IL10N $l,
+        private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
-     * Returns the template of the main app's page.
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @return TemplateResponse The rendered template response.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-    }//end page()
-
-    /**
      * Retrieves job logs with filtering and pagination support.
      *
-     * This method returns job logs based on query parameters,
-     * with support for various filtering parameters to narrow down the results.
-     *
-     * Query Parameters:
-     * - job_id: Filter logs by job ID
-     * - date_from: Filter logs created after this date
-     * - date_to: Filter logs created before this date
-     * - status: Filter logs by status
-     * - slow_executions: Filter logs with execution time > 5000ms
-     * - limit: Number of results per page (default: 20)
-     * - offset: Offset for pagination (default: 0)
+     * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
      * @param SearchService $searchService Service used to strip special query parameters.
      *
      * @return JSONResponse A JSON response containing the filtered job logs and pagination.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-1
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
@@ -214,9 +190,8 @@ class JobsController extends Controller
      * Executes a job.
      *
      * This method executes a job based on its ID and returns the execution results.
-     * The job can be executed with optional parameters provided in the request body.
      *
-     * @param string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints).
+     * @param string $id The UUID of the job to execute.
      *
      * @return JSONResponse A JSON response containing the execution results.
      *
@@ -225,8 +200,17 @@ class JobsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-2
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function run(string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'job.run');
+
         try {
             $job = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'job');
         } catch (DoesNotExistException $e) {
@@ -269,9 +253,8 @@ class JobsController extends Controller
      * Test a job.
      *
      * This method executes a job based on its ID and returns the execution results.
-     * The job can be executed with optional parameters provided in the request body.
      *
-     * @param string $id The UUID of the job to execute (post chain-B/C: OR IDs are UUIDs, not ints).
+     * @param string $id The UUID of the job to execute.
      *
      * @return JSONResponse A JSON response containing the execution results.
      *
@@ -280,8 +263,17 @@ class JobsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-2
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function test(string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'job.test');
+
         try {
             $job = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'job');
         } catch (DoesNotExistException $e) {

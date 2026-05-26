@@ -2,8 +2,9 @@
 /**
  * OpenConnector Rules Controller.
  *
- * Placeholder controller that renders the rules tab of the OpenConnector
- * Vue UI.
+ * Placeholder controller backing the rules tab of the OpenConnector
+ * Vue UI. All UI rendering is delegated to UiController; this class
+ * is retained for Nextcloud's DI container registration only.
  *
  * @category Controller
  * @package  OCA\OpenConnector\Controller
@@ -20,7 +21,6 @@
 namespace OCA\OpenConnector\Controller;
 
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
 /**
@@ -45,27 +45,4 @@ class RulesController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
-    /**
-     * Returns the template of the main app's page.
-     *
-     * This method renders the main page of the application, adding any
-     * necessary data to the template.
-     *
-     * @return TemplateResponse The rendered template response.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-
-    }//end page()
 }//end class

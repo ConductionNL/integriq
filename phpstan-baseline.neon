@@ -4,6 +4,16 @@
 # Remove entries here as the underlying code is fixed.
 parameters:
 	ignoreErrors:
+		# AuthorizedAdminSetting accepts APP_ID string (not a class-string<IDelegatedSettings>)
+		# because NC's middleware resolves admin-gating by app ID at runtime, not by the
+		# IDelegatedSettings interface. This is the fleet-wide usage pattern.
+		# phpstan could not run locally (azjezz/psl v4 / PHP 8.2 incompatibility) — count
+		# validated on CI (PHP 8.3). Tracked in: https://github.com/ConductionNL/openconnector/issues/990
+		-
+			message: "#^Parameter \\#1 \\$settings of attribute class OCP\\\\AppFramework\\\\Http\\\\Attribute\\\\AuthorizedAdminSetting constructor expects class-string<OCP\\\\Settings\\\\IDelegatedSettings>, string given\\.$#"
+			count: 31
+			path: lib/Controller
+
 		-
 			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
 			count: 1

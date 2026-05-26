@@ -30,9 +30,12 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'integration.js'),
 		filename: appId + '-integration.js',
 	},
-	// adminSettings webpack entry removed in chain-C cutover. The
-	// per-app admin-settings UI is now part of the main SPA via the
-	// AppSettings manifest page (type: settings).
+	// ADR-023 admin settings entry — renders the action-authorization matrix
+	// via templates/settings/admin.php (NC admin panel).
+	settings: {
+		import: path.join(__dirname, 'src', 'settings.js'),
+		filename: appId + '-settings.js',
+	},
 	// NC-core Dashboard API widget entries (jobQueueWidget / recentCallsWidget
 	// / sourceSyncWidget) removed alongside lib/Dashboard/*Widget.php: the
 	// widgets were never registered in appinfo/info.xml or Application.php,

@@ -19,18 +19,23 @@
 
 namespace OCA\OpenConnector\Controller;
 
+use OCA\OpenConnector\AppInfo\Application;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IUserSession;
 
 /**
- * Controller for source listing pages and source-test/call-log endpoints.
+ * Controller for source-test and call-log endpoints.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -45,10 +50,12 @@ class SourcesController extends Controller
     /**
      * Constructor for the SourcesController.
      *
-     * @param string          $appName         The name of the app.
-     * @param IRequest        $request         The request object.
-     * @param OrObjectService $orObjectService The OR object service.
-     * @param IL10N           $l               The localization service.
+     * @param string            $appName         The name of the app.
+     * @param IRequest          $request         The request object.
+     * @param OrObjectService   $orObjectService The OR object service.
+     * @param IL10N             $l               The localization service.
+     * @param IUserSession      $userSession     The user session.
+     * @param ActionAuthService $actionAuth      The action authorization service.
      *
      * @return void
      */
@@ -56,57 +63,25 @@ class SourcesController extends Controller
         $appName,
         IRequest $request,
         private readonly OrObjectService $orObjectService,
-        private readonly IL10N $l
+        private readonly IL10N $l,
+        private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
-     * Returns the template of the main app's page.
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response.
-     *
-     * @spec exclude SPA-shell render — returns the index template only, no domain behavior (framework lifecycle).
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-    }//end page()
-
-    /**
      * Retrieves call logs with filtering and pagination support.
      *
-     * This method returns call logs based on query parameters,
-     * with support for various filtering parameters to narrow down the results.
-     *
-     * Query Parameters:
-     * - source_id: Filter logs by source ID
-     * - date_from: Filter logs created after this date
-     * - date_to: Filter logs created before this date
-     * - endpoint: Filter logs by endpoint (partial match)
-     * - status_code: Filter logs by status code range (comma-separated min,max)
-     * - slow_requests: Filter logs with response time > 5000ms
-     * - limit: Number of results per page (default: 20)
-     * - offset: Offset for pagination (default: 0)
+     * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
      * @param SearchService $searchService Service used to strip special query parameters.
      *
      * @return JSONResponse A JSON response containing the filtered call logs and pagination.
      *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
      */
+    #[AuthorizedAdminSetting(Application::APP_ID)]
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
@@ -256,17 +231,8 @@ class SourcesController extends Controller
      *
      * This method fires a test call to the source and returns the response.
      *
-     * Endpoint: /api/source-test/{id}
-     * Properties:
-     *   query: (expected key-value array)
-     *   headers: (expected key-value array)
-     *   method: (string, one of POST, GET, PUT, DELETE) -> defaults to POST
-     *   endpoint: (string) can be empty
-     *   type: (string, one of: json, xml, yaml)
-     *   body: (string)
-     *
      * @param CallService $callService The CallService used to dispatch the outbound test call.
-     * @param string      $id          The UUID of the source to test (post chain-B/C: OR IDs are UUIDs, not ints).
+     * @param string      $id          The UUID of the source to test.
      *
      * @return JSONResponse A JSON response containing the test results.
      *
@@ -275,8 +241,17 @@ class SourcesController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function test(CallService $callService, string $id): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], \OCP\AppFramework\Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'source.test');
+
         // ObjectService::find() throws DoesNotExistException on a missing
         // UUID — catch it so the response is a clean 404 instead of 500.
         try {
@@ -328,9 +303,7 @@ class SourcesController extends Controller
         }
 
         // Fire the call.
-        $timeStart = microtime(true);
-        $callLog   = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
-        $timeEnd   = microtime(true);
+        $callLog = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
 
         return new JSONResponse($callLog->getObject());
     }//end test()

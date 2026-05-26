@@ -60,9 +60,13 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<repair-steps>
 		<install>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<!-- ADR-023: seed the action-authorization matrix (default admin-only). -->
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 		</install>
 		<post-migration>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<!-- ADR-023: seed the action-authorization matrix (default admin-only). -->
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 		</post-migration>
 	</repair-steps>
 </info>
