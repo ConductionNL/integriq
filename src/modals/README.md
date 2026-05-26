@@ -40,5 +40,5 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 | File | Removed in | Replacement |
 |---|---|---|
 | `Mapping/EditMapping.vue` | #874 | `src/views/wrappers/MappingDetailPage.vue` + `MappingRulesEditor.vue` + `EditMappingRuleDialog.vue` (3-tab transformation-rules editor on CnDetailPage) |
-| `Mapping/mappingItem/EditMappingItem.vue` | #874 | `src/views/wrappers/EditMappingRuleDialog.vue` |
+| `Mapping/mappingItem/EditMappingItem.vue` | #874 | `src/dialogs/EditMappingRuleDialog.vue` |
 | `Mapping/mappingItem/DeleteMappingItem.vue` | #874 | CnDetailPage's built-in delete action on the rule row |

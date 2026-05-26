@@ -10,6 +10,7 @@
 	<div class="action-form">
 		<label class="action-form__label">{{ t('openconnector', 'Lock action') }}</label>
 		<NcSelect
+			:aria-label-combobox="t('openconnector', 'Lock action')"
 			:value="selectedAction"
 			:options="actionOptions"
 			:clearable="false"

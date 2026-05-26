@@ -298,7 +298,7 @@ import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import DragVerticalIcon from 'vue-material-design-icons/DragVertical.vue'
 import { VueDraggable } from 'vue-draggable-plus'
 
-import EditMappingRuleDialog from './EditMappingRuleDialog.vue'
+import EditMappingRuleDialog from '../../dialogs/EditMappingRuleDialog.vue'
 
 /**
  * Convert a keyed-rules object into an ordered array of `{ key, value }`

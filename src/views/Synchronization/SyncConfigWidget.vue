@@ -43,6 +43,7 @@
 				</label>
 				<NcSelect
 					:input-id="apiSourceId"
+					:aria-label-combobox="t('openconnector', 'Source (API)')"
 					:value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
@@ -86,6 +87,7 @@
 				</label>
 				<NcSelect
 					:input-id="registerSelectId"
+					:aria-label-combobox="t('openconnector', 'Register')"
 					:value="selectedRegister"
 					:options="registerOptions"
 					:loading="registersLoading"
@@ -99,6 +101,7 @@
 				</label>
 				<NcSelect
 					:input-id="schemaSelectId"
+					:aria-label-combobox="t('openconnector', 'Schema')"
 					:value="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"

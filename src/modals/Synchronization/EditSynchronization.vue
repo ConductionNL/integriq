@@ -94,11 +94,11 @@ import { translate as t } from '@nextcloud/l10n'
 						<!-- Source Type -->
 						<div class="form-group">
 							<NcSelect v-bind="typeOptions"
+								:input-label="t('openconnector', 'Source type')"
 								v-model="typeOptions.value"
 								:selectable="(option) => {
 									return option.id === 'register/schema' ? openRegisterInstalled : true
-								}"
-								:input-label="t('openconnector', 'Source type')" />
+								}" />
 						</div>
 
 						<!-- Source ID -->
@@ -252,11 +252,11 @@ import { translate as t } from '@nextcloud/l10n'
 						<!-- Target Type -->
 						<div class="form-group">
 							<NcSelect v-bind="targetTypeOptions"
+								:input-label="t('openconnector', 'Target type')"
 								v-model="targetTypeOptions.value"
 								:selectable="(option) => {
 									return option.id === 'register/schema' ? openRegisterInstalled : true
-								}"
-								:input-label="t('openconnector', 'Target type')" />
+								}" />
 						</div>
 
 						<!-- Target ID -->

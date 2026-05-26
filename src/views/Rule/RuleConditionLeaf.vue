@@ -36,6 +36,7 @@
 		<NcSelect
 			class="rule-condition-leaf__op"
 			:input-id="'rule-condition-op-' + uid"
+			:input-label="t('openconnector', 'Operator')"
 			:value="selectedOperator"
 			:options="operatorOptions"
 			:clearable="false"

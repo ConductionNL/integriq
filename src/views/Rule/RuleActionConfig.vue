@@ -26,6 +26,7 @@
 			</label>
 			<NcSelect
 				:input-id="'rule-action-type-' + uid"
+				:aria-label-combobox="t('openconnector', 'Action type')"
 				:value="selectedTypeOption"
 				:options="typeOptions"
 				:clearable="false"

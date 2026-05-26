@@ -59,6 +59,7 @@
 					<NcSelect :value="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
+						:aria-label-combobox="t('openconnector', 'Cast type')"
 						input-id="cn-rule-dialog-cast-type"
 						@input="onCastTypeInput" />
 				</label>

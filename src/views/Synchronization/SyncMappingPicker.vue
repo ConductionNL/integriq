@@ -32,6 +32,7 @@
 			</label>
 			<NcSelect
 				:input-id="primaryId"
+				:aria-label-combobox="t('openconnector', 'Source → Target mapping')"
 				:value="selectedPrimary"
 				:options="mappingOptions"
 				:loading="loading"
@@ -49,6 +50,7 @@
 			</label>
 			<NcSelect
 				:input-id="reverseId"
+				:aria-label-combobox="t('openconnector', 'Target → Source mapping')"
 				:value="selectedReverse"
 				:options="mappingOptions"
 				:loading="loading"
@@ -66,6 +68,7 @@
 			</label>
 			<NcSelect
 				:input-id="hashId"
+				:aria-label-combobox="t('openconnector', 'Hash mapping')"
 				:value="selectedHash"
 				:options="mappingOptions"
 				:loading="loading"
