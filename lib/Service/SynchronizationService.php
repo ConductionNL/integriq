@@ -1504,7 +1504,7 @@ class SynchronizationService
                     // a contract's `targetId` UUID accidentally collides with an object in a
                     // foreign register/schema.
                     //
-                    // _rbac / _multitenancy are off because the previous SQL-level guard this
+                    // Note: _rbac / _multitenancy are off because the previous SQL-level guard this
                     // replaces (the JOIN against `openregister_objects` in the pre-cutover code)
                     // did not apply RBAC either — the safety property being restored is scope, not
                     // permission. Ported from #733 (author @rjzondervan).
@@ -4986,6 +4986,15 @@ class SynchronizationService
                 mutationType: $mutationType
             );
 
+            if ($synchronizationContractResult instanceof \Exception) {
+                $this->logger->error(
+                    'synchronizeContract failed (new contract): '.$synchronizationContractResult->getMessage(),
+                    ['exception' => $synchronizationContractResult]
+                );
+                $result['objects']['invalid']++;
+                return ['result' => $result, 'targetId' => null];
+            }
+
             $synchronizationContract = ($synchronizationContractResult['contract'] ?? []);
             $result['contracts'][]   = ($synchronizationContract['uuid'] ?? null);
             if (isset($synchronizationContractResult['log']) === true) {
@@ -5010,6 +5019,15 @@ class SynchronizationService
                 log: $log,
                 mutationType: $mutationType
             );
+
+            if ($synchronizationContractResult instanceof \Exception) {
+                $this->logger->error(
+                    'synchronizeContract failed (existing contract): '.$synchronizationContractResult->getMessage(),
+                    ['exception' => $synchronizationContractResult]
+                );
+                $result['objects']['invalid']++;
+                return ['result' => $result, 'targetId' => null];
+            }
 
             $synchronizationContract = $synchronizationContractResult['contract'];
             if (isset($synchronizationContractResult['contract']['uuid']) === true) {
