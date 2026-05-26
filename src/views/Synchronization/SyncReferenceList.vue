@@ -80,9 +80,11 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		inputId() {
 			return `sync-ref-list-${this.listUid}`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		selectedOptions() {
 			if (!Array.isArray(this.value)) return []
 			return this.value.map((id) => this.options.find((opt) => opt.id === String(id)) ?? {
@@ -95,6 +97,7 @@ export default {
 	watch: {
 		schema: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 			handler() {
 				this.fetchOptions()
 			},
@@ -102,10 +105,12 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		onChange(picked) {
 			const list = Array.isArray(picked) ? picked : []
 			this.$emit('input', list.map((option) => option?.id).filter(Boolean).map(String))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		async fetchOptions() {
 			this.loading = true
 			try {

@@ -70,20 +70,24 @@ export default {
 		}
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		receiveInputObject(value) {
 			this.inputObject = value
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		receiveMappingSelected(value) {
 			value.selected && (this.mapping.selected = value.selected)
 			value.mappings && (this.mapping.mappings = value.mappings)
 			value.loading !== undefined && (this.mapping.loading = value.loading) // boolean
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		receiveMappingTest(value) {
 			value.result && (this.mappingTest.result = value.result)
 			value.success !== undefined && (this.mappingTest.success = value.success) // boolean
 			value.loading !== undefined && (this.mappingTest.loading = value.loading) // boolean
 			value.error !== undefined && (this.mappingTest.error = value.error) // boolean / string
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		receiveSchemaSelected(value) {
 			value?.selected !== undefined && (this.schema.selected = value.selected)
 			value.schemas && (this.schema.schemas = value.schemas)
@@ -91,6 +95,7 @@ export default {
 			value.loading !== undefined && (this.schema.loading = value.loading) // boolean
 			value.error !== undefined && (this.schema.error = value.error) // boolean / string
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},

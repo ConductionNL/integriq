@@ -132,25 +132,30 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		currentOperator() {
 			const keys = Object.keys(this.node || {})
 			const found = keys.find((key) => GROUP_OPERATORS.includes(key))
 			return found || 'and'
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		children() {
 			const value = this.node?.[this.currentOperator]
 			return Array.isArray(value) ? value : []
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		operatorOptions() {
 			return [
 				{ id: 'and', label: this.t('openconnector', 'ALL of (AND)') },
 				{ id: 'or', label: this.t('openconnector', 'ANY of (OR)') },
 			]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		selectedOperator() {
 			return this.operatorOptions.find((option) => option.id === this.currentOperator)
 				?? this.operatorOptions[0]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		operatorHint() {
 			return this.currentOperator === 'and'
 				? this.t('openconnector', 'Every child below must match.')
@@ -159,30 +164,36 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		isGroup(child) {
 			if (!child || typeof child !== 'object' || Array.isArray(child)) return false
 			const keys = Object.keys(child)
 			return keys.length === 1 && GROUP_OPERATORS.includes(keys[0]) && Array.isArray(child[keys[0]])
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		onOperatorPick(option) {
 			if (!option) return
 			this.$emit('update', { [option.id]: this.children.slice() })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		updateChild(index, value) {
 			const next = this.children.slice()
 			next[index] = value
 			this.$emit('update', { [this.currentOperator]: next })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		removeChild(index) {
 			const next = this.children.slice()
 			next.splice(index, 1)
 			this.$emit('update', { [this.currentOperator]: next })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		addLeaf() {
 			const next = this.children.slice()
 			next.push({ '==': [{ var: '' }, ''] })
 			this.$emit('update', { [this.currentOperator]: next })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
 		addGroup() {
 			const next = this.children.slice()
 			next.push({ and: [] })

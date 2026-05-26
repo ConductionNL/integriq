@@ -80,7 +80,7 @@
       "label": "Documentation",
       "icon": "BookOpenVariant",
       "href": "https://openconnector.conduction.nl",
-      "section": "settings",
+      "section": "footer",
       "order": 15
     },
     {
@@ -90,9 +90,26 @@
       "route": "AppSettings",
       "section": "settings",
       "order": 20
+    },
+    {
+      "id": "FeaturesRoadmapMenu",
+      "label": "Features & roadmap",
+      "icon": "icon-toggle",
+      "route": "FeaturesRoadmap",
+      "section": "footer",
+      "order": 16
     }
   ],
   "pages": [
+    {
+      "id": "FeaturesRoadmap",
+      "route": "/features-roadmap",
+      "type": "roadmap",
+      "title": "Features & roadmap",
+      "config": {
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
     {
       "id": "Dashboard",
       "route": "/",

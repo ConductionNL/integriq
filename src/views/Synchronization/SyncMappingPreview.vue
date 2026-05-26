@@ -141,9 +141,11 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		inputId() {
 			return `sync-mapping-preview-${this.previewUid}-input`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		resultJson() {
 			if (this.result === null) return ''
 			try {
@@ -157,6 +159,7 @@ export default {
 	watch: {
 		mappingId: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 			handler(newId, oldId) {
 				if (newId === oldId) return
 				// Clear stale state before loading the new mapping.
@@ -172,6 +175,7 @@ export default {
 				}
 			},
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		expanded(value) {
 			if (value && this.mappingId && !this.mapping) {
 				this.loadAndRun()
@@ -179,6 +183,7 @@ export default {
 		},
 	},
 
+	/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 	beforeDestroy() {
 		if (this.debounceTimer) {
 			window.clearTimeout(this.debounceTimer)
@@ -186,10 +191,12 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		onInput(value) {
 			this.inputJson = value
 			this.scheduleRun()
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		scheduleRun() {
 			if (this.debounceTimer) {
 				window.clearTimeout(this.debounceTimer)
@@ -199,6 +206,7 @@ export default {
 				this.runPreview()
 			}, DEBOUNCE_MS)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		async loadAndRun() {
 			this.loadError = ''
 			try {
@@ -224,6 +232,7 @@ export default {
 					|| t('openconnector', 'Failed to load mapping.')
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		async runPreview() {
 			if (!this.mapping) {
 				// If the panel was just expanded without a cached mapping,

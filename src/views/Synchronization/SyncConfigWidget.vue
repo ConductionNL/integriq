@@ -250,26 +250,33 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		kindLabel() {
 			return this.kind === 'source'
 				? t('openconnector', 'Source')
 				: t('openconnector', 'Target')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		apiSourceId() {
 			return `sync-config-${this.widgetUid}-api-source`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		registerSelectId() {
 			return `sync-config-${this.widgetUid}-register`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		schemaSelectId() {
 			return `sync-config-${this.widgetUid}-schema`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		filePathId() {
 			return `sync-config-${this.widgetUid}-file-path`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		sourceIdValue() {
 			return this.sourceId != null ? String(this.sourceId) : ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		selectedSource() {
 			if (!this.sourceIdValue) return null
 			return this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
@@ -277,11 +284,13 @@ export default {
 				label: this.sourceIdValue,
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		selectedRegister() {
 			const [registerId] = this.sourceIdValue.split('/')
 			if (!registerId) return null
 			return this.registerOptions.find((opt) => String(opt.id) === String(registerId)) ?? null
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		schemaOptions() {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg) return []
@@ -291,6 +300,7 @@ export default {
 				label: schema.title || schema.name || schema.slug || String(schema),
 			}))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		selectedSchema() {
 			const parts = this.sourceIdValue.split('/')
 			if (parts.length < 2) return null
@@ -302,6 +312,7 @@ export default {
 	watch: {
 		type: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 			handler(value) {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
@@ -314,12 +325,14 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		configValue(key) {
 			if (!this.config || typeof this.config !== 'object') return ''
 			const v = this.config[key]
 			if (v == null) return ''
 			return typeof v === 'string' ? v : String(v)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onConfigUpdate(key, value) {
 			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
 				? { ...this.config }
@@ -331,9 +344,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -347,6 +362,7 @@ export default {
 			// the user picks a schema below.
 			this.$emit('update:sourceId', String(option.id) + '/')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onSchemaPick(option) {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg || !option?.id) {
@@ -355,6 +371,7 @@ export default {
 			}
 			this.$emit('update:sourceId', String(reg.id) + '/' + String(option.id))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		async fetchSources() {
 			this.sourcesLoading = true
 			try {
@@ -387,6 +404,8 @@ export default {
 		 * mime-type filter so all files are reachable — sync source files
 		 * are commonly XML/CSV/JSON without consistent mime detection on
 		 * server uploads.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2
 		 */
 		async openFilePicker() {
 			this.pickerError = ''
@@ -418,6 +437,7 @@ export default {
 				this.pickingFile = false
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
