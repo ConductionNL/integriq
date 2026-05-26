@@ -17,6 +17,8 @@ exists today. It is a retrofit spec: the code already exists, and these REQs
 document it rather than prescribe new work. Per ADR-002 the rule engine is an
 openconnector-local concept with no OpenRegister equivalent.
 
+@e2e exclude rule pipeline engine — backend only, covered by PHPUnit, no browser UI
+
 ## Requirements
 
 ### REQ-RULE-001: Ordered Rule Pipeline Execution
