@@ -17,11 +17,34 @@ exists today. It is a retrofit spec: the code already exists, and these REQs
 document it rather than prescribe new work. Per ADR-002 the rule engine is an
 openconnector-local concept with no OpenRegister equivalent.
 
-@e2e exclude rule pipeline engine — backend only, covered by PHPUnit, no browser UI
-
 ## Requirements
 
+### REQ-RULE-UI-001: Rule Management UI
+
+OpenConnector provides a Rules section in its SPA where administrators can
+browse, create, edit, and configure rule objects that are referenced by endpoints.
+
+#### Scenario: rules list page mounts and shows content
+
+- GIVEN an authenticated admin visits the openconnector app
+- WHEN they navigate to the Rules section via the sidebar or direct URL
+- THEN the Rules index page renders inside the app-content area with content visible
+
+#### Scenario: Add Rule button opens the creation modal
+
+- GIVEN the Rules index page is loaded
+- WHEN the user clicks the "Add Rule" button
+- THEN a modal/dialog opens containing the rule creation form
+
+#### Scenario: Rule detail page renders for an existing rule
+
+- GIVEN at least one rule exists in the system
+- WHEN the user clicks on a rule row or card in the Rules list
+- THEN the rule detail view renders without error
+
 ### REQ-RULE-001: Ordered Rule Pipeline Execution
+
+@e2e exclude backend rule pipeline execution — covered by PHPUnit, not browser UI
 
 The system MUST resolve an endpoint's configured rules into rule entities,
 sort them by their numeric `order` field (ascending, default 0), and process
@@ -62,6 +85,8 @@ endpoint name, rule name, rule type, and error message.
 
 ### REQ-RULE-002: Data-Mutation Rules
 
+@e2e exclude backend data-mutation rule internals — covered by PHPUnit, not browser UI
+
 The system MUST provide rules that mutate the request/response data envelope
 against an OpenRegister object or schema. `save_object` MUST persist
 `data['body']` to a configured register/schema (optionally pre-mapping it) via
@@ -100,6 +125,8 @@ OpenRegister `lockObject` / `unlockObject`.
 
 ### REQ-RULE-003: Authentication and Error Rules
 
+@e2e exclude backend authentication and error rule internals — covered by PHPUnit, not browser UI
+
 The system MUST provide an `authentication` rule that enforces per-endpoint
 credential checks and an `error` rule that returns a configured error response.
 The authentication rule MUST read the credential from the `Authorization`
@@ -132,6 +159,8 @@ optionally including the JSON-Logic result as an `errors` array.
 - The authentication rule returns the data envelope **unchanged** on success rather than recording the authenticated principal; downstream rules and the target dispatch run with no record of which credential passed. Documented as observed; flagged as a follow-up for principal propagation.
 
 ### REQ-RULE-004: File, Synchronisation, and Download Rules
+
+@e2e exclude backend file/sync/download rule internals — covered by PHPUnit, not browser UI
 
 The system MUST provide rules that handle file persistence, mid-request
 synchronisation, and file downloads. `write_file` MUST base64-decode payload(s)
@@ -176,6 +205,8 @@ it as a `DataDownloadResponse`.
   blocking `sleep()` calls inside the request thread.
 
 ### REQ-RULE-005: Custom Software-Catalogus Rules
+
+@e2e exclude backend custom-rule engine internals — covered by PHPUnit, not browser UI
 
 The system MUST provide a `custom` rule type that dispatches on a configured
 custom-rule `type`. `softwareCatalogus` MUST build a GEMMA/ArchiMate export

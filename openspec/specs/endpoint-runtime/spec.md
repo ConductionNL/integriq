@@ -19,11 +19,41 @@ already exists, and these REQs document it. Target resolution follows the
 polymorphic `targetType` / `targetId` contract in ADR-008. Rule processing
 itself is specified separately under the `rule-pipeline` capability.
 
-@e2e exclude backend endpoint dispatch runtime — covered by Newman/PHPUnit, no browser UI
-
 ## Requirements
 
+### REQ-EP-UI-001: Endpoint Management UI
+
+OpenConnector provides a Endpoints section in its SPA where administrators can
+browse, create, edit, and delete endpoint configurations. This requirement covers
+the observable browser UI behaviour — navigation, list rendering, and CRUD modals.
+
+#### Scenario: endpoints list page mounts and shows navigation item
+
+- GIVEN an authenticated admin visits the openconnector app
+- WHEN they navigate to the Endpoints section via the sidebar nav or direct URL
+- THEN the Endpoints index page renders inside the app-content area with content visible
+
+#### Scenario: Add Endpoint button opens the creation modal
+
+- GIVEN the Endpoints index page is loaded
+- WHEN the user clicks the "Add Endpoint" button
+- THEN a modal/dialog opens containing the endpoint creation form
+
+#### Scenario: Endpoint detail page renders for an existing endpoint
+
+- GIVEN at least one endpoint exists in the system
+- WHEN the user clicks on an endpoint row or card in the Endpoints list
+- THEN the endpoint detail view renders without error
+
+#### Scenario: Endpoints logs sub-page mounts
+
+- GIVEN an authenticated admin
+- WHEN they navigate to the Endpoint logs page
+- THEN the logs page mounts and renders the app-content area
+
 ### REQ-EP-001: Generic Path Dispatch and CORS
+
+@e2e exclude backend endpoint dispatch runtime — covered by Newman/PHPUnit, not browser UI
 
 The system MUST expose a public generic dispatcher at
 `/api/endpoint/{_path}` that resolves the request path and HTTP method to a
@@ -67,6 +97,8 @@ allowed methods, headers, max-age, and `Access-Control-Allow-Credentials: false`
 
 ### REQ-EP-002: Simple-Endpoint Fast Path
 
+@e2e exclude backend fast-path dispatch — covered by Newman/PHPUnit, not browser UI
+
 The system MUST detect "simple" endpoints — those targeting a single
 register/schema with no rules, conditions, input/output mappings, or
 configurations and using a standard HTTP method — and serve them directly via
@@ -97,6 +129,8 @@ mapper operations, returning HTTP 405 for unsupported methods.
    **WHEN** the fast path runs **THEN** it returns HTTP 400 requiring an id.
 
 ### REQ-EP-003: Full Pipeline and Target Dispatch
+
+@e2e exclude backend pipeline dispatch — covered by Newman/PHPUnit, not browser UI
 
 For non-simple endpoints the system MUST run the full request pipeline:
 evaluate endpoint `conditions` (returning HTTP 400 with offending fields when
@@ -146,6 +180,8 @@ with neither a schema nor a source target MUST raise an error.
 
 ### REQ-EP-004: Endpoint Resolution Cache
 
+@e2e exclude backend cache internals — covered by Newman/PHPUnit, not browser UI
+
 The system MUST cache the registered endpoint set to avoid an OpenRegister
 query on every request. Resolution (`findByPathRegex`) MUST filter cached
 endpoints by compiled `endpointRegex` and method; on a cache miss it MUST
@@ -183,6 +219,8 @@ and a `getCacheStats` diagnostics method.
   Documented as observed duplication.
 
 ### REQ-EP-005: Request and Response Normalisation
+
+@e2e exclude backend normalisation internals — covered by Newman/PHPUnit, not browser UI
 
 The system MUST normalise inbound and outbound payloads. Inbound: parse raw
 `php://input` (`getRawContent`), decode JSON, XML (when the content-type or a
