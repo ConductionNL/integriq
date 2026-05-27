@@ -169,35 +169,54 @@ class ConfigurationServiceTest extends TestCase
 
 
     /**
-     * Test that exportConfiguration returns a JSON-serialisable array with known keys.
+     * Test that exportConfiguration returns a JSON-serialisable array with the
+     * OAS-style 'components' envelope.
+     *
+     * Since `retrofit-2026-05-25-configuration-export-import` the export wraps
+     * the entity-type buckets under a top-level `components` key (so the export
+     * matches the OAS Components Object shape consumers expect). The previous
+     * test asserted the legacy flat shape; this asserts the current contract.
      *
      * @return void
      */
     public function testExportConfigurationReturnsStructuredArray(): void
     {
-        // Arrange — no objects, so export is essentially empty
+        // Arrange — no objects, so export is essentially empty.
         $this->orObjectService->method('findAll')
             ->willReturn(['results' => [], 'total' => 0]);
 
-        // Act
+        // Act.
         $result = $this->service->exportConfiguration('export-config-id');
 
-        // Assert — minimal structural check
+        // Assert — top-level OAS-style envelope.
         $this->assertIsArray($result);
-        // The export should include at minimum the entity type buckets
-        $this->assertArrayHasKey('sources', $result);
-        $this->assertArrayHasKey('synchronizations', $result);
+        $this->assertArrayHasKey('components', $result);
+        $this->assertIsArray($result['components']);
+
+        // Each entity type bucket lives inside `components` and is an array
+        // (empty here because no matching objects, but the keys must exist).
+        foreach (['sources', 'endpoints', 'mappings', 'rules', 'jobs', 'synchronizations'] as $bucket) {
+            $this->assertArrayHasKey($bucket, $result['components'], "missing bucket: $bucket");
+            $this->assertIsArray($result['components'][$bucket], "bucket not array: $bucket");
+        }
     }//end testExportConfigurationReturnsStructuredArray()
 
 
     /**
      * Test that getEntitiesByConfiguration indexes matching entities by slug.
      *
+     * Uses `willReturnCallback` keyed on the schema filter — `getEntitiesByConfiguration`
+     * issues six separate `findAll()` calls (one per schema). PHPUnit's
+     * `->method()->willReturn()` queues a fresh return per invocation, so a
+     * naive `willReturn([$source])` would have the source land in whichever
+     * bucket happens to be the second call (see ObjectServiceMockBuilder's
+     * matcher-queueing note — that was the original test drift).
+     *
      * @return void
      */
     public function testGetEntitiesByConfigurationIndexesBySlug(): void
     {
-        // Arrange — a source whose 'configurations' array contains our config ID
+        // Arrange — a source whose 'configurations' array contains our config ID.
         $targetConfigId = 'config-id-3';
         $sourceEntity   = ObjectServiceMockBuilder::objectEntity(
             $this,
@@ -209,16 +228,50 @@ class ConfigurationServiceTest extends TestCase
             'source-uuid-2'
         );
 
+        // Rebuild the OR mock so we can install a callback-based findAll
+        // without colliding with the empty-default queued in setUp().
+        $this->orObjectService = ObjectServiceMockBuilder::make($this);
         $this->orObjectService->method('findAll')
-            ->willReturn(['results' => [$sourceEntity], 'total' => 1]);
+            ->willReturnCallback(static function (array $config) use ($sourceEntity): array {
+                $schema = ($config['filters']['schema'] ?? '');
+                if ($schema === 'source') {
+                    return ['results' => [$sourceEntity], 'total' => 1];
+                }
 
-        // Act
+                return ['results' => [], 'total' => 0];
+            });
+
+        // Rewire the service with the fresh mock.
+        $endpointHandler        = new EndpointHandler($this->orObjectService);
+        $synchronizationHandler = new SynchronizationHandler($this->orObjectService);
+        $mappingHandler         = new MappingHandler($this->orObjectService);
+        $jobHandler             = new JobHandler($this->orObjectService);
+        $sourceHandler          = new SourceHandler($this->orObjectService);
+        $ruleHandler            = new RuleHandler($this->orObjectService);
+
+        $this->service = new ConfigurationService(
+            $this->orObjectService,
+            $this->registerMapper,
+            $this->schemaMapper,
+            $endpointHandler,
+            $synchronizationHandler,
+            $mappingHandler,
+            $jobHandler,
+            $sourceHandler,
+            $ruleHandler,
+        );
+
+        // Act.
         $result = $this->service->getEntitiesByConfiguration($targetConfigId);
 
-        // Assert — entity indexed under its slug
+        // Assert — entity indexed under its slug in the sources bucket only.
         $this->assertArrayHasKey('source-a', $result['sources']);
         $this->assertSame('Source A', $result['sources']['source-a']['name']);
-    }//end testGetEntitiesByConfigurationIndexesBySlug()
 
+        // Sanity: it must NOT have been mis-bucketed elsewhere.
+        foreach (['endpoints', 'mappings', 'rules', 'jobs', 'synchronizations'] as $otherBucket) {
+            $this->assertArrayNotHasKey('source-a', $result[$otherBucket], "source-a leaked into $otherBucket");
+        }
+    }//end testGetEntitiesByConfigurationIndexesBySlug()
 
 }//end class
