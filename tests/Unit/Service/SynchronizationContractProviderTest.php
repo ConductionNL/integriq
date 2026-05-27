@@ -123,6 +123,12 @@ class SynchronizationContractProviderTest extends TestCase
     /**
      * Test that list queries OR with targetId filter when enabled.
      *
+     * The impl calls `$this->objectService->setRegister(...)->setSchema(...)->findAll(...)`.
+     * PHPUnit's auto-stubbing does NOT return $this for chainable setters with a
+     * `: static` return type — it produces a fresh mock per call — so the test
+     * must explicitly wire setRegister/setSchema to returnSelf, otherwise the
+     * configured findAll() never fires and the result is an empty array.
+     *
      * @return void
      */
     public function testListQueriesORWithTargetIdWhenEnabled(): void
@@ -145,6 +151,12 @@ class SynchronizationContractProviderTest extends TestCase
         );
 
         $this->objectService = ObjectServiceMockBuilder::make($this);
+
+        // The impl chains setRegister(...)->setSchema(...)->findAll(...).
+        // PHPUnit does not auto-returnSelf these mocks; wire it explicitly.
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
         $this->objectService->expects($this->once())
             ->method('findAll')
             ->with(
