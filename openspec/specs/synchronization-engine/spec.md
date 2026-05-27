@@ -20,11 +20,41 @@ This spec retroactively describes 97 existing methods across
 behavioral retrofit — REQ language matches observed code, and the Notes sections
 flag observed-but-suspicious behavior rather than silently correcting it.
 
-@e2e exclude synchronization engine — backend/Newman, no browser UI; 97 methods covered by PHPUnit
-
 ## Requirements
 
+### REQ-UI-001: Synchronization Management UI
+
+OpenConnector provides a Synchronizations section in its SPA where administrators
+can browse, create, edit, and manage synchronization configurations and view their
+contracts and logs.
+
+#### Scenario: synchronizations list page mounts and shows content
+
+- GIVEN an authenticated admin visits the openconnector app
+- WHEN they navigate to the Synchronizations section via the sidebar or direct URL
+- THEN the Synchronizations index page renders inside the app-content area
+
+#### Scenario: Add Synchronization button opens the creation modal
+
+- GIVEN the Synchronizations index page is loaded
+- WHEN the user clicks the "Add Synchronization" button
+- THEN a modal/dialog opens containing the synchronization creation form
+
+#### Scenario: Synchronization contracts sub-page mounts
+
+- GIVEN an authenticated admin
+- WHEN they navigate to the Synchronization contracts page
+- THEN the page mounts and renders the app-content area
+
+#### Scenario: Synchronization logs sub-page mounts
+
+- GIVEN an authenticated admin
+- WHEN they navigate to the Synchronization logs page
+- THEN the page mounts and renders the app-content area
+
 ### REQ-001: Synchronization orchestration and direction routing
+
+@e2e exclude backend sync engine internals — covered by PHPUnit/Newman, not browser UI
 
 The system SHALL run a synchronization given a `Synchronization` object,
 selecting the direction from `sourceType`: when `sourceType` is `register/schema`
@@ -70,6 +100,8 @@ graph where required, and run each matching synchronization with `force: true`.
 
 ### REQ-002: Source object fetching and pagination
 
+@e2e exclude backend source-fetching internals — covered by PHPUnit/Newman, not browser UI
+
 The system SHALL fetch objects from a synchronization's source according to
 `sourceType`. For `api` sources it SHALL resolve the `source` record, enforce the
 source's rate-limit watermark before any call, apply Twig-templated endpoints,
@@ -110,6 +142,8 @@ are recognised but not implemented (no-op).
 
 ### REQ-003: Mapping, transformation and object identity
 
+@e2e exclude backend mapping and identity internals — covered by PHPUnit/Newman, not browser UI
+
 The system SHALL compute a stable identity for each source object: it SHALL
 extract an origin id from a configurable `idPosition` (default `id`, dotted-path
 lookup) and compute an order-independent hash by recursively sorting the
@@ -147,6 +181,8 @@ during transformation.
   `generatePlaceholderValues()`.
 
 ### REQ-004: Target write, deduplication and file handling
+
+@e2e exclude backend target-write internals — covered by PHPUnit/Newman, not browser UI
 
 The system SHALL write each transformed object to its target, branching to an
 OpenRegister-specific write when the target is an OR register/schema, and SHALL
@@ -193,6 +229,8 @@ remove orphaned files/attachments no longer referenced after a sync.
   `synchronizeToTarget()`.
 
 ### REQ-005: Sync rule pipeline and management/integration surface
+
+@e2e exclude backend sync rule pipeline and integration provider — covered by PHPUnit/Newman, not browser UI
 
 The system SHALL run a configurable, ordered rule pipeline at defined timings
 during a sync (mirroring `EndpointService::processRules`): rules are loaded,
