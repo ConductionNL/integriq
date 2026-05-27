@@ -20,6 +20,7 @@ use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
 
 /**
@@ -52,15 +53,24 @@ class CallServiceTest extends TestCase
 
         $authService = $this->createMock(AuthenticationService::class);
         $appConfig   = $this->createMock(IAppConfig::class);
+        $logger      = $this->createMock(LoggerInterface::class);
 
         // IAppConfig::hasKey defaults to false so no retention config is applied.
         $appConfig->method('hasKey')->willReturn(false);
 
+        // CallService constructor signature (5 args): ORObjectService,
+        // ArrayLoader, AuthenticationService, IAppConfig, LoggerInterface.
+        // The previous version passed only 4 — the LoggerInterface arg was
+        // added by #1011 (security-policy warnings) but the test wasn't
+        // updated, causing 5 ArgumentCountErrors that only surfaced once
+        // #1023 unblocked setUp() and the post-#1024 Service-suite peel
+        // (#1026) brought the remaining 3 cited #1025 suites to green.
         $this->service = new CallService(
             $this->objectService,
             new ArrayLoader([]),
             $authService,
             $appConfig,
+            $logger,
         );
     }//end setUp()
 
