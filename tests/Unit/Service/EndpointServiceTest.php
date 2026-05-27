@@ -72,6 +72,14 @@ class EndpointServiceTest extends TestCase
         $syncService     = $this->createMock(SynchronizationService::class);
         $ruleService     = $this->createMock(RuleService::class);
 
+        // EndpointService constructor signature (12 args, no $appConfig):
+        //   objectService, callService, logger, urlGenerator, mappingService,
+        //   orObjectService, config, storageService, authorizationService,
+        //   container, synchronizationService, ruleService.
+        // The previous version slipped $appConfig into position 8 which made
+        // $storageService land on $authService — a pre-existing test bug
+        // surfaced once #1015 unblocked the suite from crashing in setUp.
+        unset($appConfig);
         $this->service = new EndpointService(
             $objectService,
             $callService,
@@ -80,7 +88,6 @@ class EndpointServiceTest extends TestCase
             $mappingService,
             $this->orObjectService,
             $config,
-            $appConfig,
             $storageService,
             $authService,
             $container,
@@ -184,11 +191,19 @@ class EndpointServiceTest extends TestCase
      */
     public function testGenerateEndpointUrlReturnsString(): void
     {
-        // Arrange
+        // Arrange — supply register+schema directly to skip the
+        // ObjectService::getOpenRegisters()->getMapper(...) lookup path.
+        // That path requires a deeper mock graph than the test originally
+        // provided and was crashing once #1015 unblocked the suite.
         $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 
         // Act
-        $url = $this->service->generateEndpointUrl('endpoint-id-1', $schemaMapper);
+        $url = $this->service->generateEndpointUrl(
+            id: 'endpoint-id-1',
+            schemaMapper: $schemaMapper,
+            register: 1,
+            schema: 1,
+        );
 
         // Assert
         $this->assertIsString($url);

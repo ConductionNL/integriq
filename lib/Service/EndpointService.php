@@ -409,20 +409,27 @@ class EndpointService
             $endpointArray
                 );
 
-        try {
-            $pathParams = array_combine(
-                keys: $endpointArrayNormalized,
-                values: $pathParts
-            );
-        } catch (ValueError $error) {
-            array_pop($endpointArrayNormalized);
-            $pathParams = array_combine(
-                keys: $endpointArrayNormalized,
-                values: $pathParts
-            );
+        // Normalise both sides to the SHORTER length so array_combine never
+        // throws even when the request path doesn't match the endpoint
+        // pattern (#1015 follow-up — the existing single array_pop fallback
+        // failed when the size delta was > 1, e.g. EndpointService::419 in
+        // EndpointServiceTest::testHandleRequestReturns404WhenEndpointObjectMissing).
+        $keyCount   = count($endpointArrayNormalized);
+        $valueCount = count($pathParts);
+        if ($keyCount > $valueCount) {
+            $endpointArrayNormalized = array_slice($endpointArrayNormalized, 0, $valueCount);
+        } else if ($valueCount > $keyCount) {
+            $pathParts = array_slice($pathParts, 0, $keyCount);
         }
 
-        return $pathParams;
+        if (count($endpointArrayNormalized) === 0) {
+            return [];
+        }
+
+        return array_combine(
+            keys: $endpointArrayNormalized,
+            values: $pathParts
+        );
     }//end getPathParameters()
 
     /**

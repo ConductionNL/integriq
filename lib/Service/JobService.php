@@ -202,8 +202,21 @@ class JobService
     {
         $jobData = $job->getObject();
 
-        // Let's first check if the job should be disabled.
-        if (($jobData['isEnabled'] ?? true) === false || ($jobData['jobListId'] ?? null) !== null) {
+        // First: if the job is already scheduled (carries a non-null jobListId)
+        // we bail out unchanged. This branch MUST run before the disable check
+        // — the previous condition `isEnabled === false || jobListId !== null`
+        // ate the early-return at the bottom of the method (already-scheduled
+        // jobs had their jobListId cleared on every call). Surfaced by the
+        // JobServiceTest::testScheduleJobSkipsAlreadyScheduledJob suite once
+        // #1015 unblocked it from running.
+        if (isset($jobData['jobListId']) === true && $jobData['jobListId'] !== null
+            && ($jobData['isEnabled'] ?? true) !== false
+        ) {
+            return $job;
+        }
+
+        // Now check if the job should be disabled.
+        if (($jobData['isEnabled'] ?? true) === false) {
             // @todo fix this (call to protected method).
             // $this->jobList->removeById($jobData['jobListId']);
             $jobData['jobListId'] = null;
@@ -213,11 +226,6 @@ class JobService
                 schema: 'job',
                 uuid: $job->getUuid()
             );
-        }
-
-        // Let's not update the job if it's already scheduled @todo we should.
-        if (isset($jobData['jobListId']) === true && $jobData['jobListId'] !== null) {
-            return $job;
         }
 
         // Oke this is a new job let's schedule it.

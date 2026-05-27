@@ -66,8 +66,15 @@ class RuleServiceTest extends TestCase
         $schemaMapper     = $this->createMock(SchemaMapper::class);
         $callService      = $this->createMock(CallService::class);
 
+        // RuleService constructor signature (6 args, no $logger):
+        //   objectService, catalogueService, registerMapper, schemaMapper,
+        //   callService, orObjectService.
+        // The previous version prepended $this->logger which pushed every
+        // dependency one slot to the right (objectService got the logger
+        // instance and crashed). Pre-existing test bug surfaced once #1015
+        // unblocked the suite from crashing in setUp.
+        unset($this->logger);
         $this->service = new RuleService(
-            $this->logger,
             $objectService,
             $catalogueService,
             $registerMapper,

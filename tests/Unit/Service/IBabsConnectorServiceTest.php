@@ -16,8 +16,8 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\IBabsConnectorService;
 use OCA\OpenConnector\Service\CallService;
-use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Db\SourceMapper;
+use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -47,13 +47,16 @@ class IBabsConnectorServiceTest extends TestCase
     {
         parent::setUp();
 
+        // IBabsConnectorService constructor signature (2 args): CallService,
+        // LoggerInterface. The previous version mocked the legacy SourceMapper
+        // and passed it as arg 2 — a pre-existing test bug from before OR
+        // cutover, surfaced once #1015 unblocked the suite from crashing at
+        // the moment SourceMapper was looked up (OR removed that class).
         $this->callService = $this->createMock(CallService::class);
-        $sourceMapper      = $this->createMock(SourceMapper::class);
         $logger            = $this->createMock(LoggerInterface::class);
 
         $this->service = new IBabsConnectorService(
             $this->callService,
-            $sourceMapper,
             $logger
         );
 
@@ -119,8 +122,16 @@ class IBabsConnectorServiceTest extends TestCase
      */
     public function testTestConnectionFailsWithoutOrganisatieId(): void
     {
-        $source = $this->createMock(Source::class);
-        $source->method('getConfiguration')->willReturn('{}');
+        // Real ObjectEntity hydrated with an empty configuration object.
+        // Legacy `OCA\OpenConnector\Db\Source` was removed during the OR
+        // cutover; the impl now consumes OR's ObjectEntity and reads
+        // `configuration` out of the object body (#1015 follow-up to the
+        // engine).
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => []],
+            'ibabs-source-1'
+        );
 
         $result = $this->service->testConnection($source);
 
@@ -137,8 +148,13 @@ class IBabsConnectorServiceTest extends TestCase
      */
     public function testPushVoorstelReturnsPlaceholder(): void
     {
-        $source = $this->createMock(Source::class);
-        $source->method('getConfiguration')->willReturn('{"organisatieId": "test-123"}');
+        // Real ObjectEntity hydrated with a configuration that carries an
+        // organisatieId. Legacy `Source` removed during the OR cutover.
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'test-123']],
+            'ibabs-source-2'
+        );
 
         $result = $this->service->pushVoorstel($source, ['onderwerp' => 'Test voorstel']);
 
