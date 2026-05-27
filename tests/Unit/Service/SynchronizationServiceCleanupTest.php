@@ -113,9 +113,9 @@ class SynchronizationServiceCleanupTest extends TestCase
      * Build a Synchronization OR-object stub with `targetType: register/schema`
      * and `targetId: {registerId}/{schemaId}`.
      *
-     * @return ObjectEntity&MockObject
+     * @return ObjectEntity
      */
-    private function makeSync(): MockObject
+    private function makeSync(): ObjectEntity
     {
         return ObjectServiceMockBuilder::objectEntity(
             $this,
@@ -133,9 +133,9 @@ class SynchronizationServiceCleanupTest extends TestCase
      * @param string $targetId The targetId UUID on the contract.
      * @param string $originId The originId on the contract.
      *
-     * @return ObjectEntity&MockObject
+     * @return ObjectEntity
      */
-    private function makeContract(string $targetId, string $originId='origin-x'): MockObject
+    private function makeContract(string $targetId, string $originId='origin-x'): ObjectEntity
     {
         return ObjectServiceMockBuilder::objectEntity(
             $this,

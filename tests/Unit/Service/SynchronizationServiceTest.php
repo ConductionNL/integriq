@@ -169,15 +169,19 @@ class SynchronizationServiceTest extends TestCase
      */
     public function testHandleObjectEventIgnoresInvalidMutationType(): void
     {
-        // Arrange
+        // Arrange — real ObjectEntity hydrated with register/schema via the
+        // magic setters (the previous test used MockObject->method('getRegister')
+        // which fails against the real entity now that ObjectServiceMockBuilder
+        // returns a real ObjectEntity to dodge the magic-getUuid stub problem,
+        // #1015).
         $objectEntity = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['register' => 'openconnector', 'schema' => 'source'],
+            [],
             'obj-uuid-1'
         );
-
-        $objectEntity->method('getRegister')->willReturn('openconnector');
-        $objectEntity->method('getSchema')->willReturn('source');
+        // Positional args only — Entity::__call's setter uses $args[0].
+        $objectEntity->setRegister('openconnector');
+        $objectEntity->setSchema('source');
 
         // OR findAll must not be called for invalid mutation type
         $this->orObjectService->expects($this->never())->method('findAll');

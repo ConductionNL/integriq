@@ -59,9 +59,17 @@ class IBabsConnectorService
     public function testConnection(ObjectEntity $source): array
     {
         try {
-            $config = $source->getConfiguration();
+            // OR's ObjectEntity does not surface `configuration` as an
+            // addType'd attribute, so the legacy `$source->getConfiguration()`
+            // throws "is not a valid attribute". Read it from the object body
+            // instead (#1015 follow-up).
+            $sourceData = $source->getObject();
+            $config     = ($sourceData['configuration'] ?? []);
             if (is_string($config) === true) {
                 $config = json_decode($config, true);
+            }
+            if (is_array($config) === false) {
+                $config = [];
             }
 
             $organisatieId = $config['organisatieId'] ?? null;
