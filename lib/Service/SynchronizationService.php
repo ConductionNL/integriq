@@ -63,6 +63,7 @@ class SynchronizationService
      *
      * @var integer
      */
+
     /**
      * In-memory accumulator of contract log payloads for the active synchronize() pass.
      *
@@ -78,6 +79,11 @@ class SynchronizationService
      */
     private array $pendingContractLogs = [];
 
+    /**
+     * Retention period in milliseconds for error logs.
+     *
+     * @var integer
+     */
     private int $errorRetention;
 
     /**
@@ -460,7 +466,7 @@ class SynchronizationService
      *
      * @param ObjectEntity                            $synchronization The synchronization configuration.
      * @param \OCA\OpenRegister\Db\ObjectEntity|array $object          The object to be synchronized, also referenced.
-     * @param ObjectEntity                            $log             The log object recording synchronization details.
+     * @param array                                   $logData         The log data accumulator recording synchronization details.
      * @param FlowToken                               $flowToken       The flow token tracking the operation.
      * @param bool|null                               $isTest          Whether this is a test run (does not persist data).
      * @param bool|null                               $force           Whether to force the synchronization regardless of changes.
@@ -681,7 +687,7 @@ class SynchronizationService
      * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
      *
      * @param ObjectEntity $synchronization The synchronization configuration and state.
-     * @param ObjectEntity $log             The log object to record synchronization details and results.
+     * @param array        $logData         The log data accumulator to record synchronization details and results.
      * @param FlowToken    $flowToken       The flow token tracking the operation.
      * @param bool|null    $isTest          Optional flag to run the synchronization in test mode (no deletions, no persistence).
      * @param bool|null    $force           Optional flag to bypass change checks and force synchronization of all objects.
@@ -689,7 +695,7 @@ class SynchronizationService
      * @param array|null   $data            The data to add to synchronize, if not provided, the synchronization's data will be used.
      * @param string|null  $mutationType    The current type of mutation we are doing this::VALID_MUTATION_TYPES.
      *
-     * @return ObjectEntity Returns the updated synchronization log with processing results.
+     * @return array Returns the updated synchronization log data with processing results.
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
      * @throws Exception                    If the source ID is empty or synchronization cannot proceed.
@@ -901,19 +907,19 @@ class SynchronizationService
             // Defensive guard (#1017): only invoke deleteInvalidObjects when
             // this fetch was a definitive success and returned a genuine
             // result set.
-            //   - Skip when the source rate-limited us (rateLimitException !==
-            //     null) — re-throw immediately so the caller learns about the
-            //     429 instead of silently swallowing it.
-            //   - Skip on test runs (no persistent state changes allowed under
-            //     $isTest = true, #1008).
-            //   - Skip when no objects were returned AND no objects were
-            //     processed — an empty fetch from a failing source must NOT
-            //     cause deleteInvalidObjects to wipe every previously-synced
-            //     target via `array_diff(allContractTargetIds, [])`.
-            //   - Findings #1000/#1001/#1002 confirmed deleteInvalidObjects is
-            //     currently INERT at runtime, so this guard is latent
-            //     protection — when that bug is eventually repaired, the
-            //     cascade is already disarmed.
+            // - Skip when the source rate-limited us (rateLimitException !==
+            // null) — re-throw immediately so the caller learns about the
+            // 429 instead of silently swallowing it.
+            // - Skip on test runs (no persistent state changes allowed under
+            // $isTest = true, #1008).
+            // - Skip when no objects were returned AND no objects were
+            // processed — an empty fetch from a failing source must NOT
+            // cause deleteInvalidObjects to wipe every previously-synced
+            // target via `array_diff(allContractTargetIds, [])`.
+            // - Findings #1000/#1001/#1002 confirmed deleteInvalidObjects is
+            // currently INERT at runtime, so this guard is latent
+            // protection — when that bug is eventually repaired, the
+            // cascade is already disarmed.
             if ($rateLimitException !== null) {
                 throw $rateLimitException;
             }
@@ -1120,7 +1126,7 @@ class SynchronizationService
         if (($syncData['sourceType'] ?? '') === 'register/schema' && $object !== null) {
             $logData['result']['type'] = 'internToExtern';
 
-            // synchronizeInternToExtern receives the in-memory log payload
+            // SynchronizeInternToExtern receives the in-memory log payload
             // (no upfront sync_log row) and mutates it directly. Persistence
             // happens once below in finalizeSynchronizationLog() — even on
             // failure (try/finally), to preserve operator visibility (#1007).
@@ -1148,7 +1154,7 @@ class SynchronizationService
 
                 // Single write of the sync log + flush any accumulated contract logs.
                 $this->finalizeSynchronizationLog(logData: $logData);
-            }
+            }//end try
 
             if ($internError !== null) {
                 throw $internError;
@@ -1189,7 +1195,7 @@ class SynchronizationService
                 )?->format('c');
 
             $persisted = $this->finalizeSynchronizationLog(logData: $logData);
-        }
+        }//end try
 
         if ($externError !== null) {
             throw $externError;
@@ -1792,7 +1798,6 @@ class SynchronizationService
      * @param array             $object                  The source object being synchronized.
      * @param bool|null         $isTest                  False by default, currently added for sync-test.
      * @param bool|null         $force                   False by default, force update regardless of changes.
-     * @param ObjectEntity|null $log                     The log to update.
      * @param string|null       $mutationType            Single object mutation type: 'create', 'update' or 'delete'.
      *
      * @return ObjectEntity|Exception|array Returns the updated contract entity, an Exception on mapping failures or the test array.
@@ -1836,7 +1841,7 @@ class SynchronizationService
             }
 
             $contractLogData = [
-                // synchronizationLogId is filled in by finalizeSynchronizationLog()
+                // SynchronizationLogId is filled in by finalizeSynchronizationLog()
                 // once the parent sync_log row is created — see #1007.
                 'synchronizationId'         => $synchronizationId,
                 'synchronizationContractId' => $synchronizationContract->getUuid(),
@@ -1915,7 +1920,7 @@ class SynchronizationService
                     schema: 'synchronization_contract',
                     uuid: $synchronizationContract->getUuid()
                 );
-                $contractData = $synchronizationContract->getObject();
+                $contractData            = $synchronizationContract->getObject();
 
                 if ($contractLogData !== null) {
                     $contractLogData['expiry'] = $this->calculateExpires(
@@ -1923,13 +1928,13 @@ class SynchronizationService
                         )?->format('c');
                     // Buffer the final contract-log payload for write-once flush
                     // — append-only schemas reject UPDATE (#1007).
-                    $this->bufferContractLog($contractLogData);
+                    $this->bufferContractLog(contractLogData: $contractLogData);
                 }
             } else if ($contractLogData !== null) {
                 $contractLogData['expiry'] = $this->calculateExpires(
                         ...[$this->successRetention]
                     )?->format('c');
-            }
+            }//end if
 
             $skipLog = $contractLogData;
 
@@ -1953,7 +1958,7 @@ class SynchronizationService
                 schema: 'synchronization_contract',
                 uuid: $synchronizationContract->getUuid()
             );
-            $contractData = $synchronizationContract->getObject();
+            $contractData            = $synchronizationContract->getObject();
         }
 
         // Execute mapping if found.
@@ -2008,7 +2013,7 @@ class SynchronizationService
                 schema: 'synchronization_contract',
                 uuid: $synchronizationContract->getUuid()
             );
-            $contractData = $synchronizationContract->getObject();
+            $contractData            = $synchronizationContract->getObject();
         }
 
         // Handle synchronization based on test mode.
@@ -2074,7 +2079,7 @@ class SynchronizationService
             $contractLogData['expiry']       = $this->calculateExpires(
                     ...[$this->successRetention]
                 )?->format('c');
-            $this->bufferContractLog($contractLogData);
+            $this->bufferContractLog(contractLogData: $contractLogData);
         }
 
         $synchronizationContract = $this->orObjectService->saveObject(
@@ -2953,10 +2958,10 @@ class SynchronizationService
                 }
 
                 // Update for next iteration.
-                $currentEndpoint      = $nextInfo['endpoint'];
-                $config               = $nextInfo['config'];
-                $currentPage          = $nextInfo['page'];
-                $usesNextEndpoint     = $nextInfo['usesNextEndpoint'];
+                $currentEndpoint  = $nextInfo['endpoint'];
+                $config           = $nextInfo['config'];
+                $currentPage      = $nextInfo['page'];
+                $usesNextEndpoint = $nextInfo['usesNextEndpoint'];
                 $persistedCurrentPage = $currentPage;
             }//end for
         } finally {
@@ -3704,7 +3709,7 @@ class SynchronizationService
         $serializedObject = $object->jsonSerialize();
         $flowToken        = new FlowToken();
 
-        // synchronizeContract no longer accepts a $log arg — it buffers the
+        // SynchronizeContract no longer accepts a $log arg — it buffers the
         // contract-log payload (#1007). When called outside a synchronize()
         // pass we flush the buffer to a synchronizationLogId set from the
         // passed-in $log (if any), then clear the buffer.
@@ -5070,7 +5075,6 @@ class SynchronizationService
      * @param array        $result          The current result tracking data.
      * @param bool         $isTest          Whether this is a test run.
      * @param bool         $force           Whether to force synchronization regardless of changes.
-     * @param ObjectEntity $log             The synchronization log.
      * @param FlowToken    $flowToken       The flow token tracking the operation.
      * @param string|null  $mutationType    The type of object mutation.
      *

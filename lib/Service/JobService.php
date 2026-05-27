@@ -363,8 +363,8 @@ class JobService
         // Capture the prior session user so we can restore it after the job runs
         // — without restoration, the first user-scoped job's identity sticks
         // for every subsequent job in the same cron pass (#1006).
-        $userId               = ($jobData['userId'] ?? null);
-        $priorSessionUser     = $this->userSession->getUser();
+        $userId           = ($jobData['userId'] ?? null);
+        $priorSessionUser = $this->userSession->getUser();
         $sessionUserOverridden = false;
         if (empty($userId) === false) {
             $user = $this->userManager->get($userId);
@@ -386,7 +386,7 @@ class JobService
 
             $this->userSession->setUser($user);
             $sessionUserOverridden = true;
-        }
+        }//end if
 
         // Record execution start time for performance tracking.
         $timeStart = microtime(true);
@@ -655,7 +655,7 @@ class JobService
                 } catch (\Throwable $logError) {
                     // Swallow logging failure — we must continue to the next job.
                     unset($logError);
-                }
+                }//end try
 
                 continue;
             }//end try

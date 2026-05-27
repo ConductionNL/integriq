@@ -103,9 +103,9 @@ class SynchronizationContractsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
         $this->orObjectService = $orObjectService;
-        $this->l               = $l;
-        $this->userSession     = $userSession;
-        $this->actionAuth      = $actionAuth;
+        $this->l           = $l;
+        $this->userSession = $userSession;
+        $this->actionAuth  = $actionAuth;
 
     }//end __construct()
 

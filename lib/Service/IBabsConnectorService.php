@@ -68,6 +68,7 @@ class IBabsConnectorService
             if (is_string($config) === true) {
                 $config = json_decode($config, true);
             }
+
             if (is_array($config) === false) {
                 $config = [];
             }
