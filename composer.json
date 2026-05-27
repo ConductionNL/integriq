@@ -86,6 +86,7 @@
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"symfony/console": "^5.4",
+		"symfony/http-foundation": "^7.4.13",
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4.40",
 		"twig/twig": "^3.26",
