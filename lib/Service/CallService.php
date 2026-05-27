@@ -736,11 +736,21 @@ class CallService
             $remoteIp = null;
         }
 
+        // Security: never persist live secrets to the CallLog. Redact secret-bearing
+        // locations from the config copy that is written into 'request', from the URL
+        // (which may carry query-string secrets), and from the response body (which can
+        // echo the request URL with its query secrets). The actual outbound call has
+        // already been dispatched with the REAL secrets before this method runs.
+        $secretValues   = $this->collectSecretValues($config, $url);
+        $redactedConfig = $this->redactSecretsFromConfig($config);
+        $redactedUrl    = $this->redactSecretsFromUrl($url);
+        $bodyForLog     = $this->redactSecretValuesFromString($bodyForLog, $secretValues);
+
         return [
             'request'  => [
-                'url'    => $url,
+                'url'    => $redactedUrl,
                 'method' => $method,
-                ...$config,
+                ...$redactedConfig,
             ],
             'response' => [
                 'statusCode'    => $response->getStatusCode(),
@@ -755,6 +765,261 @@ class CallService
         ];
 
     }//end buildResponseData()
+
+    /**
+     * Redacts secret-bearing locations from a Guzzle request config before it is
+     * persisted to a CallLog. Operates on a COPY — the caller's config (used for the
+     * real outbound request) is never modified.
+     *
+     * Redacts:
+     *  - headers.Authorization / Proxy-Authorization / Cookie / Set-Cookie (case-insensitive name match)
+     *  - any header whose value pattern-matches a secret token
+     *  - the `auth` basic-auth user/pass array
+     *  - query / form_params keys matching the secret-name pattern
+     *  - TLS `cert` / `ssl_key` path values
+     *
+     * @param array $config The Guzzle request config (passed by value).
+     *
+     * @return array The redacted config copy.
+     */
+    private function redactSecretsFromConfig(array $config): array
+    {
+        $placeholder = '***REDACTED***';
+
+        // Header names that always carry credentials (matched case-insensitively).
+        $secretHeaderNames = [
+            'authorization',
+            'proxy-authorization',
+            'cookie',
+            'set-cookie',
+        ];
+
+        if (isset($config['headers']) === true && is_array($config['headers']) === true) {
+            foreach ($config['headers'] as $headerName => $headerValue) {
+                if (in_array(strtolower((string) $headerName), $secretHeaderNames, true) === true) {
+                    $config['headers'][$headerName] = $placeholder;
+                    continue;
+                }
+
+                // Also redact any header whose name matches the secret-key pattern
+                // (covers X-Api-Key, X-Auth-Token, Api-Key, etc.).
+                if ($this->isSecretKeyName((string) $headerName) === true) {
+                    $config['headers'][$headerName] = $placeholder;
+                }
+            }
+        }
+
+        // Basic-auth array: [user, pass] or [user, pass, type].
+        if (isset($config['auth']) === true) {
+            $config['auth'] = $placeholder;
+        }
+
+        // Query and form parameters with secret-looking keys.
+        foreach (['query', 'form_params'] as $bag) {
+            if (isset($config[$bag]) === true && is_array($config[$bag]) === true) {
+                foreach ($config[$bag] as $paramName => $paramValue) {
+                    if ($this->isSecretKeyName((string) $paramName) === true) {
+                        $config[$bag][$paramName] = $placeholder;
+                    }
+                }
+            }
+        }
+
+        // TLS certificate / private-key paths.
+        foreach (['cert', 'ssl_key'] as $tlsKey) {
+            if (isset($config[$tlsKey]) === true) {
+                $config[$tlsKey] = $placeholder;
+            }
+        }
+
+        return $config;
+
+    }//end redactSecretsFromConfig()
+
+    /**
+     * Returns true when a header/query/form key name looks like it carries a secret.
+     *
+     * @param string $name The key name to test.
+     *
+     * @return boolean Whether the name matches the secret pattern.
+     */
+    private function isSecretKeyName(string $name): bool
+    {
+        return (preg_match('/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token|bearer|auth)/i', $name) === 1);
+
+    }//end isSecretKeyName()
+
+    /**
+     * Redacts secret query-string parameters from a URL before persistence.
+     *
+     * @param string $url The full URL (may contain a query string).
+     *
+     * @return string The URL with secret query values replaced.
+     */
+    private function redactSecretsFromUrl(string $url): string
+    {
+        $queryStart = strpos($url, '?');
+        if ($queryStart === false) {
+            return $url;
+        }
+
+        $base  = substr($url, 0, $queryStart);
+        $query = substr($url, ($queryStart + 1));
+
+        parse_str($query, $params);
+        if (empty($params) === true) {
+            return $url;
+        }
+
+        $changed = false;
+        foreach ($params as $paramName => $paramValue) {
+            if ($this->isSecretKeyName((string) $paramName) === true) {
+                $params[$paramName] = '***REDACTED***';
+                $changed = true;
+            }
+        }
+
+        if ($changed === false) {
+            return $url;
+        }
+
+        return ($base.'?'.http_build_query($params));
+
+    }//end redactSecretsFromUrl()
+
+    /**
+     * Collects the set of live secret values from the request config and URL so they
+     * can be scrubbed from a response body that may echo them back (e.g. an API that
+     * reflects the request, or an error page that includes credentials).
+     *
+     * @param array  $config The Guzzle request config sent for the call.
+     * @param string $url     The full request URL (may contain query-string secrets).
+     *
+     * @return array<int, string> A list of secret string values to redact.
+     */
+    private function collectSecretValues(array $config, string $url): array
+    {
+        $values = [];
+
+        // Secret-bearing headers.
+        if (isset($config['headers']) === true && is_array($config['headers']) === true) {
+            $secretHeaderNames = ['authorization', 'proxy-authorization', 'cookie', 'set-cookie'];
+            foreach ($config['headers'] as $headerName => $headerValue) {
+                $lower = strtolower((string) $headerName);
+                if (in_array($lower, $secretHeaderNames, true) === true || $this->isSecretKeyName((string) $headerName) === true) {
+                    $values = array_merge($values, $this->flattenSecretValue($headerValue));
+                }
+            }
+        }
+
+        // Basic-auth credentials.
+        if (isset($config['auth']) === true) {
+            $values = array_merge($values, $this->flattenSecretValue($config['auth']));
+        }
+
+        // Secret query / form parameters from the config.
+        foreach (['query', 'form_params'] as $bag) {
+            if (isset($config[$bag]) === true && is_array($config[$bag]) === true) {
+                foreach ($config[$bag] as $paramName => $paramValue) {
+                    if ($this->isSecretKeyName((string) $paramName) === true) {
+                        $values = array_merge($values, $this->flattenSecretValue($paramValue));
+                    }
+                }
+            }
+        }
+
+        // Secret query parameters baked into the URL itself.
+        $queryStart = strpos($url, '?');
+        if ($queryStart !== false) {
+            parse_str(substr($url, ($queryStart + 1)), $urlParams);
+            foreach ($urlParams as $paramName => $paramValue) {
+                if ($this->isSecretKeyName((string) $paramName) === true) {
+                    $values = array_merge($values, $this->flattenSecretValue($paramValue));
+                }
+            }
+        }
+
+        // Only keep non-trivial unique string values worth scrubbing.
+        $values = array_filter(
+            array_unique($values),
+            function ($value) {
+                return (is_string($value) === true && strlen($value) >= 4);
+            }
+        );
+
+        return array_values($values);
+
+    }//end collectSecretValues()
+
+    /**
+     * Flattens a header/auth/param value (string or array) into a list of strings.
+     *
+     * @param mixed $value The value to flatten.
+     *
+     * @return array<int, string> The flattened string values.
+     */
+    private function flattenSecretValue($value): array
+    {
+        if (is_array($value) === true) {
+            $out = [];
+            array_walk_recursive(
+                $value,
+                function ($item) use (&$out) {
+                    if (is_scalar($item) === true) {
+                        $out[] = (string) $item;
+                    }
+                }
+            );
+
+            return $out;
+        }
+
+        if (is_scalar($value) === true) {
+            return [(string) $value];
+        }
+
+        return [];
+
+    }//end flattenSecretValue()
+
+    /**
+     * Replaces every verbatim occurrence of the supplied secret values in a string
+     * (typically a response body for logging) with a placeholder. Also redacts the
+     * bare credential after a "Bearer "/"Basic " prefix so reflected Authorization
+     * header values are scrubbed even when echoed without the scheme prefix.
+     *
+     * @param string             $body         The string to scrub.
+     * @param array<int, string> $secretValues The secret values to redact.
+     *
+     * @return string The scrubbed string.
+     */
+    private function redactSecretValuesFromString(string $body, array $secretValues): string
+    {
+        if ($body === '' || empty($secretValues) === true) {
+            return $body;
+        }
+
+        foreach ($secretValues as $secret) {
+            if ($secret === '') {
+                continue;
+            }
+
+            $body = str_replace($secret, '***REDACTED***', $body);
+
+            // Also scrub the credential portion of "Bearer x"/"Basic x" header values.
+            foreach (['Bearer ', 'Basic ', 'bearer ', 'basic '] as $scheme) {
+                if (str_starts_with($secret, $scheme) === true) {
+                    $token = substr($secret, strlen($scheme));
+                    if ($token !== '') {
+                        $body = str_replace($token, '***REDACTED***', $body);
+                    }
+                }
+            }
+        }
+
+        return $body;
+
+    }//end redactSecretValuesFromString()
 
     /**
      * Applies rate-limit header updates, builds the CallLog payload, persists it, and
