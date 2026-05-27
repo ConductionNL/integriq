@@ -63,6 +63,21 @@ class SynchronizationService
      *
      * @var integer
      */
+    /**
+     * In-memory accumulator of contract log payloads for the active synchronize() pass.
+     *
+     * Append-only `synchronization_contract_log` schemas reject UPDATE (#1007). We
+     * therefore build the complete contract log payload in memory across the
+     * synchronizeContract() body and persist it ONCE — at the end of synchronize() —
+     * with the parent `synchronizationLogId` filled in from the sync log row that
+     * is also created exactly once at the same finalize step.
+     *
+     * Cleared on synchronize() entry and after each finalize.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    private array $pendingContractLogs = [];
+
     private int $errorRetention;
 
     /**
@@ -458,7 +473,7 @@ class SynchronizationService
     private function synchronizeInternToExtern(
         ObjectEntity $synchronization,
         \OCA\OpenRegister\Db\ObjectEntity|array &$object,
-        ObjectEntity $log,
+        array &$logData,
         FlowToken &$flowToken,
         ?bool $isTest=false,
         ?bool $force=false,
@@ -596,7 +611,6 @@ class SynchronizationService
                 object: $object,
                 isTest: $isTest,
                 force: $force,
-                log: $log,
                 mutationType: $mutationType
             );
 
@@ -615,7 +629,6 @@ class SynchronizationService
                 object: $object,
                 isTest: $isTest,
                 force: $force,
-                log: $log,
                 mutationType: $mutationType
             );
             if ($isTest === false && $synchronizationContract instanceof ObjectEntity === true) {
@@ -674,21 +687,20 @@ class SynchronizationService
      */
     private function synchronizeExternToIntern(
         ObjectEntity $synchronization,
-        ObjectEntity $log,
+        array &$logData,
         FlowToken &$flowToken,
         ?bool $isTest=false,
         ?bool $force=false,
         ?string $source=null,
         ?array $data=null,
         ?string $mutationType=null
-    ): ObjectEntity {
+    ): array {
         $syncData = $synchronization->getObject();
         // Start overall timing measurement.
         $overallStartTime   = microtime(true);
         $rateLimitException = null;
 
         // Initialize timing data in result.
-        $logData          = $log->getObject();
         $result           = $logData['result'] ?? [];
         $result['timing'] = [
             'stages'   => [],
@@ -735,13 +747,10 @@ class SynchronizationService
         }//end if
 
         if (empty($syncData['sourceId'] ?? null) === true && $source === null) {
+            // Set the failure message in the (by-ref) logData so the single
+            // finalize write in synchronize() records the failure (#1007 —
+            // do NOT issue a mid-flight saveObject UPDATE here).
             $logData['message'] = 'sourceId of synchronization cannot be empty. Canceling synchronization...';
-            $log = $this->orObjectService->saveObject(
-                object: $logData,
-                register: 'openconnector',
-                schema: 'synchronization_log',
-                uuid: $log->getUuid()
-            );
             throw new Exception('sourceId of synchronization cannot be empty. Canceling synchronization...');
         }
 
@@ -757,7 +766,6 @@ class SynchronizationService
                 result: $result,
                 isTest: $isTest,
                 force: $force,
-                log: $log,
                 flowToken: $flowToken,
                 mutationType: $mutationType
             );
@@ -820,8 +828,7 @@ class SynchronizationService
                     object: $object,
                     result: $result,
                     isTest: $isTest,
-                    force: $force,
-                    log: $log
+                    force: $force
                 );
 
                 $objectProcessingTime    = round((microtime(true) - $objectStartTime) * 1000, 2);
@@ -946,23 +953,14 @@ class SynchronizationService
             'objects_per_second' => $objectsPerSecond,
         ];
 
+        // Update the by-ref logData with the accumulated result. No
+        // synchronization_log saveObject here — finalizeSynchronizationLog()
+        // performs the single append-only-safe write at the end of
+        // synchronize() (#1007).
         $logData['result'] = $result;
-        $log = $this->orObjectService->saveObject(
-            object: $logData,
-            register: 'openconnector',
-            schema: 'synchronization_log',
-            uuid: $log->getUuid()
-        );
 
         if ($rateLimitException !== null) {
             $logData['message'] = $rateLimitException->getMessage();
-            $log = $this->orObjectService->saveObject(
-                object: $logData,
-                register: 'openconnector',
-                schema: 'synchronization_log',
-                uuid: $log->getUuid()
-            );
-
             throw new TooManyRequestsHttpException(
                 $rateLimitException->getMessage(),
                 429,
@@ -978,7 +976,7 @@ class SynchronizationService
             uuid: $synchronization->getUuid()
         );
 
-        return $log;
+        return $logData;
 
     }//end synchronizeExternToIntern()
 
@@ -1036,8 +1034,15 @@ class SynchronizationService
         // Start execution time measurement.
         $startTime = microtime(true);
 
-        // Prepare initial log array.
-        $log = [
+        // Reset the contract-log accumulator for this pass. Append-only
+        // synchronization_log / synchronization_contract_log schemas reject
+        // UPDATE (#1007); we accumulate the full sync log payload and any
+        // contract-log payloads in memory and persist each row ONCE at the
+        // end of this method (or in the failure path).
+        $this->pendingContractLogs = [];
+
+        // Prepare initial log array (no persistence yet).
+        $logData = [
             'synchronizationId' => $synchronization->getUuid(),
             'result'            => [
                 'objects'   => [
@@ -1058,61 +1063,159 @@ class SynchronizationService
 
         // Shortcut for intern-to-extern sync.
         if (($syncData['sourceType'] ?? '') === 'register/schema' && $object !== null) {
-            // Always create the log entry first, because we need its uuid later on for contractLogs.
-            $log['result']['type'] = 'internToExtern';
-            $log = $this->orObjectService->saveObject(
-                object: $log,
-                register: 'openconnector',
-                schema: 'synchronization_log'
-            );
+            $logData['result']['type'] = 'internToExtern';
 
-            return $this->synchronizeInternToExtern(
+            // synchronizeInternToExtern receives the in-memory log payload
+            // (no upfront sync_log row) and mutates it directly. Persistence
+            // happens once below in finalizeSynchronizationLog() — even on
+            // failure (try/finally), to preserve operator visibility (#1007).
+            $internResult = null;
+            $internError  = null;
+            try {
+                $internResult = $this->synchronizeInternToExtern(
+                    synchronization: $synchronization,
+                    object: $object,
+                    logData: $logData,
+                    flowToken: $flowToken,
+                    force: $force,
+                    mutationType: $mutationType,
+                );
+            } catch (\Throwable $e) {
+                $internError        = $e;
+                $logData['level']   = 'ERROR';
+                $logData['message'] = $e->getMessage();
+            } finally {
+                $logData['executionTime'] = round((microtime(true) - $startTime) * 1000);
+                $logData['message']       = $logData['message'] ?? 'Success';
+                $logData['expires']       = $this->calculateExpires(
+                        ...[$this->successRetention, $this->successRetention]
+                    )?->format('c');
+
+                // Single write of the sync log + flush any accumulated contract logs.
+                $this->finalizeSynchronizationLog(logData: $logData);
+            }
+
+            if ($internError !== null) {
+                throw $internError;
+            }
+
+            return $internResult;
+        }//end if
+
+        $logData['result']['type'] = 'externToIntern';
+
+        // Run extern-to-intern. The helper mutates $logData (no intermediate
+        // sync_log writes) and accumulates contract-log payloads via
+        // $this->pendingContractLogs. Both are flushed once at the end here
+        // — including the failure path (try/finally) so operators still see
+        // the run in synchronization_log (#1007).
+        $externError = null;
+        try {
+            $this->synchronizeExternToIntern(
                 synchronization: $synchronization,
-                object: $object,
-                log: $log,
+                logData: $logData,
                 flowToken: $flowToken,
+                isTest: $isTest,
                 force: $force,
-                mutationType: $mutationType,
+                source: $source,
+                data: $data,
+                mutationType: $mutationType
             );
+        } catch (\Throwable $e) {
+            $externError        = $e;
+            $logData['level']   = 'ERROR';
+            $logData['message'] = $e->getMessage();
+        } finally {
+            // Finalize log.
+            $logData['executionTime'] = round((microtime(true) - $startTime) * 1000);
+            $logData['message']       = $logData['message'] ?? 'Success';
+            $logData['expires']       = $this->calculateExpires(
+                    ...[$this->successRetention, $this->successRetention]
+                )?->format('c');
+
+            $persisted = $this->finalizeSynchronizationLog(logData: $logData);
         }
 
-        $log['result']['type'] = 'externToIntern';
+        if ($externError !== null) {
+            throw $externError;
+        }
 
-        // Always create the log entry first, because we need its uuid later on for contractLogs.
-        $log = $this->orObjectService->saveObject(
-            object: $log,
+        return $persisted;
+
+    }//end synchronize()
+
+    /**
+     * Persist the synchronization_log row ONCE and flush any accumulated
+     * contract-log payloads with the new sync-log uuid stamped in (#1007).
+     *
+     * Append-only schemas reject UPDATE, so the engine must never call
+     * saveObject(uuid: ...) for these schemas. Every callable that previously
+     * issued progressive updates now accumulates state in memory and the
+     * write-once finalize happens here.
+     *
+     * @param array<string, mixed> $logData The fully assembled sync-log payload.
+     *
+     * @return array<string, mixed> The persisted sync-log object body.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
+     */
+    private function finalizeSynchronizationLog(array $logData): array
+    {
+        $persisted    = $this->orObjectService->saveObject(
+            object: $logData,
             register: 'openconnector',
             schema: 'synchronization_log'
         );
+        $syncLogUuid  = $persisted->getUuid();
+        $persistedRow = $persisted->getObject();
 
-        // Handle full extern-to-intern sync.
-        $log = $this->synchronizeExternToIntern(
-            synchronization: $synchronization,
-            log: $log,
-            flowToken: $flowToken,
-            isTest: $isTest,
-            force: $force,
-            source: $source,
-            data: $data,
-            mutationType: $mutationType
-        );
+        // Flush all accumulated contract-log payloads against the new sync-log uuid.
+        foreach ($this->pendingContractLogs as $contractLogPayload) {
+            $contractLogPayload['synchronizationLogId'] = $syncLogUuid;
+            try {
+                $this->orObjectService->saveObject(
+                    object: $contractLogPayload,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract_log'
+                );
+            } catch (\Throwable $contractLogError) {
+                // Never let a single contract-log write failure mask the sync
+                // result — log it via Nextcloud's logger and move on.
+                $this->logger->error(
+                    'finalizeSynchronizationLog: failed to persist contract log: '
+                        .$contractLogError->getMessage(),
+                    ['exception' => $contractLogError]
+                );
+            }
+        }
 
-        // Finalize log.
-        $executionTime = round((microtime(true) - $startTime) * 1000);
-        $logData       = $log->getObject();
-        $logData['executionTime'] = $executionTime;
-        $logData['message']       = 'Success';
-        $logData['expires']       = $this->calculateExpires(...[$this->successRetention, $this->successRetention])?->format('c');
-        $log = $this->orObjectService->saveObject(
-            object: $logData,
-            register: 'openconnector',
-            schema: 'synchronization_log',
-            uuid: $log->getUuid()
-        );
+        // Clear accumulator now that it's been flushed.
+        $this->pendingContractLogs = [];
 
-        return $log->getObject();
+        return $persistedRow;
 
-    }//end synchronize()
+    }//end finalizeSynchronizationLog()
+
+    /**
+     * Buffer a contract-log payload for write-once flush during
+     * finalizeSynchronizationLog (#1007).
+     *
+     * Returns the payload unchanged so existing call sites that consume the
+     * "log" key in the synchronizeContract return shape continue to work.
+     *
+     * @param array<string, mixed> $contractLogData The accumulated contract log payload.
+     *
+     * @return array<string, mixed> The payload (unchanged).
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-1
+     */
+    private function bufferContractLog(array $contractLogData): array
+    {
+        $this->pendingContractLogs[] = $contractLogData;
+
+        return $contractLogData;
+
+    }//end bufferContractLog()
 
     /**
      * Gets id from object as is in the origin.
@@ -1654,11 +1757,15 @@ class SynchronizationService
         array &$object=[],
         ?bool $isTest=false,
         ?bool $force=false,
-        ?ObjectEntity $log=null,
         ?string $mutationType=null
     ): ObjectEntity|Exception|array {
-        $contractLog  = null;
-        $contractData = $synchronizationContract->getObject();
+        // Append-only synchronization_contract_log schemas reject any UPDATE
+        // (#1007). We assemble the full contract-log payload in memory across
+        // this method and buffer it for write-once flush in finalizeSynchronizationLog().
+        // `$contractLogData` is the running accumulator; null means "no log
+        // expected for this contract" (e.g. unknown uuid).
+        $contractLogData = null;
+        $contractData    = $synchronizationContract->getObject();
         if ($synchronization !== null) {
             $syncData = $synchronization->getObject();
         } else {
@@ -1674,6 +1781,8 @@ class SynchronizationService
             }
 
             $contractLogData = [
+                // synchronizationLogId is filled in by finalizeSynchronizationLog()
+                // once the parent sync_log row is created — see #1007.
                 'synchronizationId'         => $synchronizationId,
                 'synchronizationContractId' => $synchronizationContract->getUuid(),
                 'source'                    => $object,
@@ -1681,23 +1790,7 @@ class SynchronizationService
                 'force'                     => $force,
                 'expiry'                    => $this->calculateExpires(...[$this->errorContractRetention])?->format('c'),
             ];
-            $contractLog     = $this->orObjectService->saveObject(
-                object: $contractLogData,
-                register: 'openconnector',
-                schema: 'synchronization_contract_log'
-            );
         }//end if
-
-        if ($contractLog !== null && $log !== null) {
-            $contractLogData = $contractLog->getObject();
-            $contractLogData['synchronizationLogId'] = $log->getUuid();
-            $contractLog = $this->orObjectService->saveObject(
-                object: $contractLogData,
-                register: 'openconnector',
-                schema: 'synchronization_contract_log',
-                uuid: $contractLog->getUuid()
-            );
-        }
 
         $flowToken->setSyncInputOriginal($object);
 
@@ -1765,22 +1858,16 @@ class SynchronizationService
                 uuid: $synchronizationContract->getUuid()
             );
 
-            if ($contractLog !== null) {
-                $contractLogData           = $contractLog->getObject();
-                $contractLogData['expiry'] = $this->calculateExpires(...[$this->successRetention])?->format('c');
-                $contractLog = $this->orObjectService->saveObject(
-                    object: $contractLogData,
-                    register: 'openconnector',
-                    schema: 'synchronization_contract_log',
-                    uuid: $contractLog->getUuid()
-                );
+            if ($contractLogData !== null) {
+                $contractLogData['expiry'] = $this->calculateExpires(
+                        ...[$this->successRetention]
+                    )?->format('c');
+                // Buffer the final contract-log payload for write-once flush
+                // — append-only schemas reject UPDATE (#1007).
+                $this->bufferContractLog($contractLogData);
             }
 
-            if ($contractLog !== null) {
-                $skipLog = $contractLog->getObject();
-            } else {
-                $skipLog = null;
-            }
+            $skipLog = $contractLogData;
 
             return [
                 'log'          => $skipLog,
@@ -1810,15 +1897,10 @@ class SynchronizationService
             $flowToken->setSyncOutputAmended($object);
         }
 
-        if ($contractLog !== null) {
-            $contractLogData           = $contractLog->getObject();
+        if ($contractLogData !== null) {
+            // Update the in-memory contract-log accumulator only. Persistence
+            // is deferred to the write-once finalize (#1007).
             $contractLogData['target'] = $object;
-            $contractLog = $this->orObjectService->saveObject(
-                object: $contractLogData,
-                register: 'openconnector',
-                schema: 'synchronization_contract_log',
-                uuid: $contractLog->getUuid()
-            );
         }
 
         $object = $this->replaceRelatedOriginIds(
@@ -1856,23 +1938,16 @@ class SynchronizationService
         // Handle synchronization based on test mode.
         if ($isTest === true) {
             // Return test data without updating target.
-            if ($contractLog !== null) {
-                $contractLogData = $contractLog->getObject();
+            if ($contractLogData !== null) {
                 $contractLogData['targetResult'] = 'test';
-                $contractLogData['expiry']       = $this->calculateExpires(...[$this->successRetention])?->format('c');
-                $contractLog = $this->orObjectService->saveObject(
-                    object: $contractLogData,
-                    register: 'openconnector',
-                    schema: 'synchronization_contract_log',
-                    uuid: $contractLog->getUuid()
-                );
+                $contractLogData['expiry']       = $this->calculateExpires(
+                        ...[$this->successRetention]
+                    )?->format('c');
+                // Buffer the final contract-log payload for write-once flush (#1007).
+                $this->bufferContractLog($contractLogData);
             }
 
-            if ($contractLog !== null) {
-                $testLog = $contractLog->getObject();
-            } else {
-                $testLog = null;
-            }
+            $testLog = $contractLogData;
 
             return [
                 'log'          => $testLog,
@@ -1915,17 +1990,15 @@ class SynchronizationService
             );
         }//end if
 
-        // Create log entry for the synchronization.
-        if ($contractLog !== null) {
-            $contractLogData = $contractLog->getObject();
+        // Finalize the accumulated contract-log payload (write-once flush
+        // happens in finalizeSynchronizationLog after the parent sync-log row
+        // is created — #1007).
+        if ($contractLogData !== null) {
             $contractLogData['targetResult'] = ($contractData['targetLastAction'] ?? null);
-            $contractLogData['expiry']       = $this->calculateExpires(...[$this->successRetention])?->format('c');
-            $contractLog = $this->orObjectService->saveObject(
-                object: $contractLogData,
-                register: 'openconnector',
-                schema: 'synchronization_contract_log',
-                uuid: $contractLog->getUuid()
-            );
+            $contractLogData['expiry']       = $this->calculateExpires(
+                    ...[$this->successRetention]
+                )?->format('c');
+            $this->bufferContractLog($contractLogData);
         }
 
         $synchronizationContract = $this->orObjectService->saveObject(
@@ -1935,11 +2008,7 @@ class SynchronizationService
             uuid: $synchronizationContract->getUuid()
         );
 
-        if ($contractLog !== null) {
-            $finalLog = $contractLog->getObject();
-        } else {
-            $finalLog = [];
-        }
+        $finalLog = $contractLogData ?? [];
 
         // Update or create.
         return [
@@ -3539,15 +3608,45 @@ class SynchronizationService
         $serializedObject = $object->jsonSerialize();
         $flowToken        = new FlowToken();
 
+        // synchronizeContract no longer accepts a $log arg — it buffers the
+        // contract-log payload (#1007). When called outside a synchronize()
+        // pass we flush the buffer to a synchronizationLogId set from the
+        // passed-in $log (if any), then clear the buffer.
+        $existingBuffer            = $this->pendingContractLogs;
+        $this->pendingContractLogs = [];
+
         $result = $this->synchronizeContract(
             synchronizationContract: $synchronizationContract,
             synchronization: $synchronization,
             flowToken: $flowToken,
             object: $serializedObject,
             isTest: $test,
-            force: $force,
-            log: $log
+            force: $force
         );
+
+        // Flush any contract-log payloads accumulated during this call.
+        $syncLogUuid = $log?->getUuid();
+        foreach ($this->pendingContractLogs as $contractLogPayload) {
+            if ($syncLogUuid !== null) {
+                $contractLogPayload['synchronizationLogId'] = $syncLogUuid;
+            }
+
+            try {
+                $this->orObjectService->saveObject(
+                    object: $contractLogPayload,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract_log'
+                );
+            } catch (\Throwable $e) {
+                $this->logger->error(
+                    'synchronizeToTarget: failed to persist contract log: '.$e->getMessage(),
+                    ['exception' => $e]
+                );
+            }
+        }
+
+        // Restore any outer-pass buffer so a nested call doesn't drop it.
+        $this->pendingContractLogs = $existingBuffer;
 
         if (isset($result['contract']) === true) {
             $synchronizationContract = $this->orObjectService->saveObject(
@@ -4889,7 +4988,6 @@ class SynchronizationService
         array $result,
         bool $isTest,
         bool $force,
-        ObjectEntity $log,
         FlowToken &$flowToken,
         ?string $mutationType=null
     ): array {
@@ -4982,7 +5080,6 @@ class SynchronizationService
                 object: $object,
                 isTest: $isTest,
                 force: $force,
-                log: $log,
                 mutationType: $mutationType
             );
 
@@ -5016,7 +5113,6 @@ class SynchronizationService
                 object: $object,
                 isTest: $isTest,
                 force: $force,
-                log: $log,
                 mutationType: $mutationType
             );
 
