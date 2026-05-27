@@ -352,10 +352,32 @@ class JobService
         }
 
         // Set user session if job has a specific user configured.
-        $userId = ($jobData['userId'] ?? null);
-        if (empty($userId) === false && $this->userSession->getUser() === null) {
+        // Capture the prior session user so we can restore it after the job runs
+        // — without restoration, the first user-scoped job's identity sticks
+        // for every subsequent job in the same cron pass (#1006).
+        $userId               = ($jobData['userId'] ?? null);
+        $priorSessionUser     = $this->userSession->getUser();
+        $sessionUserOverridden = false;
+        if (empty($userId) === false) {
             $user = $this->userManager->get($userId);
+            if ($user === null) {
+                // Deleted/missing user — skip the job with a WARNING log entry
+                // rather than crashing setUser(null) inside the try/finally below.
+                return $this->saveJobLog(
+                    job: $job,
+                    jobData: $jobData,
+                    logData: [
+                        'level'   => 'WARNING',
+                        'message' => sprintf(
+                            'Configured userId "%s" does not exist; skipping job.',
+                            $userId
+                        ),
+                    ]
+                );
+            }
+
             $this->userSession->setUser($user);
+            $sessionUserOverridden = true;
         }
 
         // Record execution start time for performance tracking.
@@ -368,7 +390,15 @@ class JobService
             $arguments = [];
         }
 
-        $result = $action->run($arguments);
+        try {
+            $result = $action->run($arguments);
+        } finally {
+            // Always restore the prior session user so identity does not bleed
+            // across jobs in the same cron pass (#1006).
+            if ($sessionUserOverridden === true) {
+                $this->userSession->setUser($priorSessionUser);
+            }
+        }
 
         // Calculate execution time in milliseconds.
         $timeEnd       = microtime(true);
@@ -543,11 +573,85 @@ class JobService
                 continue;
             }
 
-            $log = $this->executeJob(job: $job);
-            if ($log !== null) {
-                $results[] = $log;
-            }
-        }
+            // Per-job isolation (#1005): a throw inside executeJob must NOT
+            // skip remaining due jobs in this cron pass, and must NOT leave
+            // the failing job's nextRun unchanged (otherwise it stays "due
+            // immediately" and re-blocks every subsequent tick).
+            try {
+                $log = $this->executeJob(job: $job);
+                if ($log !== null) {
+                    $results[] = $log;
+                }
+            } catch (\Throwable $e) {
+                // Build a stack trace for the error log (truncate per-frame to
+                // avoid pathological size).
+                $stackTrace = [];
+                foreach ($e->getTrace() as $frame) {
+                    if (isset($frame['file']) === true) {
+                        $location = $frame['file'].':'.($frame['line'] ?? '?');
+                    } else if (isset($frame['class']) === true) {
+                        $location = $frame['class'].($frame['type'] ?? '::').($frame['function'] ?? '?');
+                    } else {
+                        $location = ($frame['function'] ?? '?');
+                    }
+
+                    $stackTrace[] = $location;
+                    if (count($stackTrace) >= 50) {
+                        break;
+                    }
+                }
+
+                // Advance nextRun by the job's configured interval so the failing
+                // job no longer blocks siblings on the next cron tick.
+                try {
+                    $intervalSeconds = (int) ($jobData['interval'] ?? 0);
+                    $nextRunDt       = new DateTime('now + '.$intervalSeconds.' seconds');
+                    $nextRunDt->setTime(
+                        hour: (int) $nextRunDt->format('H'),
+                        minute: (int) $nextRunDt->format('i')
+                    );
+                    $jobData['lastRun'] = (new DateTime())->format('c');
+                    $jobData['nextRun'] = $nextRunDt->format('c');
+                    $this->objectService->saveObject(
+                        object: $jobData,
+                        register: 'openconnector',
+                        schema: 'job',
+                        uuid: $job->getUuid()
+                    );
+                } catch (\Throwable $advanceError) {
+                    // Don't let nextRun advancement failure mask the original exception
+                    // — fall through to the error log below.
+                    unset($advanceError);
+                }
+
+                // Write an error-level job_log so operators can see the failure.
+                try {
+                    $errorLog = $this->saveJobLog(
+                        job: $job,
+                        jobData: $jobData,
+                        logData: [
+                            'level'      => 'ERROR',
+                            'message'    => $this->truncateMessage(
+                                message: sprintf(
+                                    '%s: %s',
+                                    get_class($e),
+                                    $e->getMessage()
+                                )
+                            ),
+                            'stackTrace' => $stackTrace,
+                        ]
+                    );
+                    if ($errorLog !== null) {
+                        $results[] = $errorLog;
+                    }
+                } catch (\Throwable $logError) {
+                    // Swallow logging failure — we must continue to the next job.
+                    unset($logError);
+                }
+
+                continue;
+            }//end try
+        }//end foreach
 
         return $results;
 
