@@ -55,6 +55,7 @@ use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
@@ -116,12 +117,14 @@ class CallService
      * @param ArrayLoader           $loader                Twig loader used to render templated config strings.
      * @param AuthenticationService $authenticationService Authentication service exposed to Twig templates.
      * @param IAppConfig            $appConfig             App config used to read global retention overrides.
+     * @param LoggerInterface       $logger                Nextcloud logger used for security-policy warnings (#1011).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
         ArrayLoader $loader,
         AuthenticationService $authenticationService,
-        IAppConfig $appConfig,
+        private readonly IAppConfig $appConfig,
+        private readonly LoggerInterface $logger,
     ) {
         $this->client = new Client([]);
         $this->twig   = new Environment($loader);
@@ -131,9 +134,9 @@ class CallService
 
         $this->errorRetention   = self::DEFAULT_ERROR_LOG_RETENTION;
         $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
-        if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+        if ($this->appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
             $retentionPayload       = json_decode(
-                $appConfig->getValueString(app: 'openconnector', key: 'retention'),
+                $this->appConfig->getValueString(app: 'openconnector', key: 'retention'),
                 true
             );
             $this->errorRetention   = ($retentionPayload['callLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
@@ -295,15 +298,31 @@ class CallService
      */
     private function writeFile(string $baseFileName, string $contents): string
     {
-        $stamp = (microtime().getmypid());
-        $baseFileNameLocation = sprintf($this::BASE_FILENAME_LOCATION, $baseFileName, $stamp);
+        // #1012(a): private keys and certs were previously written to
+        // /var/tmp/<prefix>-<microtime><pid> with default umask perms
+        // (world-readable on shared hosts) and a predictable name. Use
+        // tempnam() in the system temp dir for unpredictable names + chmod 0600
+        // immediately so the bytes are never readable to other local users.
+        $prefix       = 'oc_'.$baseFileName.'_';
+        $tempDir      = sys_get_temp_dir();
+        $tempLocation = tempnam($tempDir, $prefix);
+        if ($tempLocation === false) {
+            // Fall back to legacy path; still chmod 0600 so we don't expand the
+            // exposure window if tempnam genuinely fails.
+            $stamp        = (microtime().getmypid());
+            $tempLocation = sprintf($this::BASE_FILENAME_LOCATION, $baseFileName, $stamp);
+        }
 
         // Replace escaped new lines with actual new lines for certificates.
         $contents = str_replace('\n', "\n", $contents);
 
-        file_put_contents($baseFileNameLocation, $contents);
+        // chmod BEFORE the contents land so the race window between create and
+        // chmod is empty (tempnam creates with 0600 on Linux but we re-assert).
+        @chmod($tempLocation, 0600);
+        file_put_contents($tempLocation, $contents);
+        @chmod($tempLocation, 0600);
 
-        return $baseFileNameLocation;
+        return $tempLocation;
 
     }//end writeFile()
 
@@ -318,7 +337,12 @@ class CallService
      */
     private function removeFile($filename): void
     {
-        unlink($filename);
+        // Silenced — the temp-cert hygiene cleanup must not raise if the file
+        // is already gone (e.g. removed by a previous sync-path or never
+        // written when tempnam returned false). #1012(a).
+        if (is_string($filename) === true && $filename !== '' && file_exists($filename) === true) {
+            @unlink($filename);
+        }
 
     }//end removeFile()
 
@@ -583,8 +607,137 @@ class CallService
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      */
+    /**
+     * Returns true when the source location points at a loopback interface
+     * (localhost, 127.x.x.x, ::1 — including http://, https://, with or
+     * without trailing path/port). Used by the verify:false guard (#1011)
+     * to exempt local-dev configurations from the TLS-verification policy.
+     *
+     * @param string $location The raw source location string.
+     *
+     * @return boolean True when the host portion is loopback.
+     */
+    private function isLoopbackLocation(string $location): bool
+    {
+        if ($location === '') {
+            return false;
+        }
+
+        $host = (string) (parse_url($location, PHP_URL_HOST) ?? '');
+        if ($host === '') {
+            // Some sources carry just `localhost:8080` with no scheme.
+            $location = preg_replace('/^https?:\/\//i', '', $location);
+            $host     = (string) (strstr((string) $location, '/', true) ?: $location);
+            $host     = (string) (strstr($host, ':', true) ?: $host);
+        }
+
+        $host = strtolower(trim($host, "[]"));
+        if ($host === 'localhost' || $host === '::1') {
+            return true;
+        }
+
+        if (str_starts_with($host, '127.') === true) {
+            return true;
+        }
+
+        return false;
+
+    }//end isLoopbackLocation()
+
+    /**
+     * Validates and clamps incoming X-RateLimit-* header values to bounded,
+     * non-hostile ranges before they are persisted on the source. A
+     * misconfigured or malicious upstream that returned an `X-RateLimit-Reset`
+     * decades in the future could otherwise wedge OpenConnector into a
+     * permanent 429 against that source (#1012c).
+     *
+     * @param mixed   $rawValue  The raw value pulled from the response header.
+     * @param string  $kind      One of: 'reset', 'limit', 'remaining', 'window'.
+     *
+     * @return integer|null The clamped integer value, or null if the value cannot be sanely cast.
+     */
+    private function clampRateLimitHeader(mixed $rawValue, string $kind): ?int
+    {
+        if (is_array($rawValue) === true) {
+            $rawValue = reset($rawValue);
+        }
+
+        if (is_scalar($rawValue) === false) {
+            return null;
+        }
+
+        if (is_numeric($rawValue) === false) {
+            return null;
+        }
+
+        $value = (int) $rawValue;
+
+        // Refuse negative values across the board.
+        if ($value < 0) {
+            return null;
+        }
+
+        switch ($kind) {
+            case 'reset':
+                // Reset is a Unix timestamp; clamp to "now + 24h" max — anything
+                // beyond that is treated as adversarial. Anything in the past is
+                // accepted unchanged (already-expired window resets immediately).
+                $maxFuture = (time() + 86400);
+                if ($value > $maxFuture) {
+                    return $maxFuture;
+                }
+
+                return $value;
+
+            case 'limit':
+            case 'remaining':
+            case 'window':
+                // Sane upper bound — a million calls/window is generous.
+                $maxCounter = 1000000;
+                if ($value > $maxCounter) {
+                    return $maxCounter;
+                }
+
+                return $value;
+
+            default:
+                return $value;
+        }
+
+    }//end clampRateLimitHeader()
+
     private function normaliseRequestConfig(array $config, array $sourceData): array
     {
+        // #1011: a source can disable TLS certificate verification by setting
+        // `verify: false` in its configuration. Without a guardrail, Guzzle
+        // honours it silently and the connection is exposed to MITM — which
+        // also leaks any credentials carried in the request. We refuse
+        // `verify: false` unless either:
+        //  - the source location is loopback (localhost / 127.x / [::1]), or
+        //  - the admin has explicitly opted-in via the NC app config flag
+        //    `openconnector.allow_insecure_tls = true`.
+        if (array_key_exists('verify', $config) === true && $config['verify'] === false) {
+            $location           = (string) ($sourceData['location'] ?? '');
+            $isLocalhost        = $this->isLoopbackLocation($location);
+            $allowInsecureTlsRaw = $this->appConfig->getValueString(
+                'openconnector',
+                'allow_insecure_tls',
+                'false'
+            );
+            $allowInsecureTls    = filter_var($allowInsecureTlsRaw, FILTER_VALIDATE_BOOLEAN);
+
+            if ($isLocalhost === false && $allowInsecureTls === false) {
+                // Force TLS verification back on, log the override.
+                $config['verify'] = true;
+                $this->logger->warning(
+                    'CallService: refusing verify:false on non-localhost source — re-enabled TLS '
+                        .'certificate verification. Set IAppConfig openconnector.allow_insecure_tls=true to '
+                        .'opt out (NOT recommended in production). #1011',
+                    ['location' => $location]
+                );
+            }
+        }
+
         // Check if the config has a Content-Type header and overwrite it if it does.
         if (isset($config['headers']['Content-Type']) === true) {
             $overwriteContentType = $config['headers']['Content-Type'];
@@ -677,8 +830,32 @@ class CallService
                 }
 
                 if ($asynchronous === true) {
-                    // @todo: we want to get rate limit headers from async calls as well.
-                    return $this->client->requestAsync($method, $url, $config);
+                    // #1012(b): the async branch previously returned the Promise
+                    // immediately and skipped removeFiles + CallLog + rate-limit
+                    // handling — temp cert/key files leaked on disk and async
+                    // calls were invisible in the log. Attach cleanup to the
+                    // promise's then/otherwise so the same hygiene applies
+                    // regardless of dispatch mode. The promise contract for the
+                    // outer caller remains unchanged: same Promise object,
+                    // same eventual response or rejection.
+                    // We snapshot the certificate paths NOW because the caller
+                    // mutates $config after we return.
+                    $certPaths = $this->snapshotCertPaths($config);
+                    $promise   = $this->client->requestAsync($method, $url, $config);
+                    $promise->then(
+                        function ($asyncResponse) use ($certPaths) {
+                            $this->removeFiles(config: $certPaths);
+
+                            return $asyncResponse;
+                        },
+                        function ($asyncReason) use ($certPaths) {
+                            $this->removeFiles(config: $certPaths);
+
+                            return $asyncReason;
+                        }
+                    );
+
+                    return $promise;
                 }
             } catch (BadResponseException $e) {
                 $this->removeFiles(config: $config);
@@ -694,6 +871,35 @@ class CallService
         return $response;
 
     }//end dispatchRequest()
+
+    /**
+     * Snapshot the cert/key/verify file paths from a Guzzle config so a later
+     * cleanup callback can find them even after the caller has mutated $config.
+     * Used by the async path (#1012b) where the request returns a Promise and
+     * the cleanup runs at promise settle time.
+     *
+     * @param array $config The Guzzle request config.
+     *
+     * @return array A minimal config array carrying only the paths removeFiles knows about.
+     */
+    private function snapshotCertPaths(array $config): array
+    {
+        $snapshot = [];
+        if (isset($config['cert']) === true) {
+            $snapshot['cert'] = $config['cert'];
+        }
+
+        if (isset($config['ssl_key']) === true) {
+            $snapshot['ssl_key'] = $config['ssl_key'];
+        }
+
+        if (isset($config['verify']) === true && is_string($config['verify']) === true) {
+            $snapshot['verify'] = $config['verify'];
+        }
+
+        return $snapshot;
+
+    }//end snapshotCertPaths()
 
     /**
      * Decodes the response body, determines encoding, resolves remote IP, and
@@ -1251,10 +1457,17 @@ class CallService
     {
         $changed = false;
 
-        // Check if RateLimit-Reset is present in response headers. If so, save it in the source.
+        // #1012(c): clamp/validate the rate-limit response headers BEFORE
+        // persisting them. A malicious upstream that returned
+        // `X-RateLimit-Reset: 99999999999` could otherwise wedge this source
+        // into a permanent 429 (the engine's checkRateLimit guard would refuse
+        // every subsequent call until the year 5138).
         if (isset($headers['X-RateLimit-Reset']) === true) {
-            $sourceData['rateLimitReset'] = $headers['X-RateLimit-Reset'];
-            $changed = true;
+            $clampedReset = $this->clampRateLimitHeader($headers['X-RateLimit-Reset'], 'reset');
+            if ($clampedReset !== null) {
+                $sourceData['rateLimitReset'] = $clampedReset;
+                $changed = true;
+            }
         }
 
         $rateLimitReset     = ($sourceData['rateLimitReset'] ?? null);
@@ -1275,16 +1488,22 @@ class CallService
 
         // Check if RateLimit-Limit is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Limit']) === true) {
-            $sourceData['rateLimitLimit'] = $headers['X-RateLimit-Limit'];
-            $rateLimitLimit = $sourceData['rateLimitLimit'];
-            $changed        = true;
+            $clampedLimit = $this->clampRateLimitHeader($headers['X-RateLimit-Limit'], 'limit');
+            if ($clampedLimit !== null) {
+                $sourceData['rateLimitLimit'] = $clampedLimit;
+                $rateLimitLimit = $clampedLimit;
+                $changed        = true;
+            }
         }
 
         // Check if RateLimit-Remaining is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Remaining']) === true) {
-            $sourceData['rateLimitRemaining'] = $headers['X-RateLimit-Remaining'];
-            $rateLimitRemaining = $sourceData['rateLimitRemaining'];
-            $changed            = true;
+            $clampedRemaining = $this->clampRateLimitHeader($headers['X-RateLimit-Remaining'], 'remaining');
+            if ($clampedRemaining !== null) {
+                $sourceData['rateLimitRemaining'] = $clampedRemaining;
+                $rateLimitRemaining = $clampedRemaining;
+                $changed            = true;
+            }
         }
 
         // If RateLimit-Remaining not in headers and source->RateLimit-Limit is set, update source->RateLimit-Remaining.
