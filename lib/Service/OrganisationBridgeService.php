@@ -1,21 +1,25 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * OrganisationBridgeService
+/**
+ * Organisation bridge service.
  *
- * This service acts as a bridge to access the OrganisationService from the OpenRegister app.
- * It provides organization-related functionality for user management including active organization
- * retrieval, organization switching, and user organization statistics.
+ * This service acts as a bridge to access the OrganisationService from the
+ * OpenRegister app. It provides organization-related functionality for user
+ * management including active organization retrieval, organization switching,
+ * and user organization statistics.
  *
  * @category Service
- * @package  OpenConnector
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  1.0.0
- * @link     https://github.com/ConductionNL/opencatalogi
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
@@ -60,19 +64,21 @@ class OrganisationBridgeService
      *
      * @psalm-return   \OCA\OpenRegister\Service\OrganisationService|null
      * @phpstan-return \OCA\OpenRegister\Service\OrganisationService|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-1
      */
     public function getOrganisationService(): ?\OCA\OpenRegister\Service\OrganisationService
     {
-        // Check if OpenRegister app is installed
+        // Check if OpenRegister app is installed.
         if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === false) {
             return null;
         }
 
         try {
-            // Attempt to get the OrganisationService from the container
+            // Attempt to get the OrganisationService from the container.
             return $this->container->get('OCA\OpenRegister\Service\OrganisationService');
         } catch (ContainerExceptionInterface | NotFoundExceptionInterface $e) {
-            // Log the error but don't fail the application
+            // Log the error but don't fail the application.
             $this->logger->warning(
                     'OpenRegister OrganisationService not available',
                     [
@@ -90,6 +96,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-2
      */
     public function isOrganisationServiceAvailable(): bool
     {
@@ -106,13 +114,15 @@ class OrganisationBridgeService
      *
      * @psalm-return   array
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-3
      */
     public function getUserOrganisationStats(): array
     {
         $organisationService = $this->getOrganisationService();
 
         if ($organisationService === null) {
-            // Return empty stats if service not available
+            // Return empty stats if service not available.
             return [
                 'total'     => 0,
                 'active'    => null,
@@ -144,17 +154,15 @@ class OrganisationBridgeService
     }//end getUserOrganisationStats()
 
     /**
-     * Set the active organization for the current user
+     * Set the active organization for the current user.
      *
      * This method allows users to switch their active organization.
      *
-     * @param  string $organisationUuid The organization UUID to set as active
-     * @return array Result with success status and message
+     * @param string $organisationUuid The organization UUID to set as active.
      *
-     * @psalm-param    string $organisationUuid
-     * @psalm-return   array
-     * @phpstan-param  string $organisationUuid
-     * @phpstan-return array
+     * @return array Result with success status and message.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-4
      */
     public function setActiveOrganisation(string $organisationUuid): array
     {
@@ -169,11 +177,16 @@ class OrganisationBridgeService
         }
 
         try {
-            $result = $organisationService->setActiveOrganisation($organisationUuid);
+            $result = $organisationService->setActiveOrganisation(organisationUuid: $organisationUuid);
+
+            $message = 'Failed to update active organization';
+            if ($result === true) {
+                $message = 'Active organization updated successfully';
+            }
 
             return [
                 'success'   => $result,
-                'message'   => $result ? 'Active organization updated successfully' : 'Failed to update active organization',
+                'message'   => $message,
                 'available' => true,
             ];
         } catch (\Exception $e) {
@@ -200,6 +213,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   array|null
      * @phpstan-return array|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-5
      */
     public function getActiveOrganisation(): ?array
     {
@@ -211,7 +226,11 @@ class OrganisationBridgeService
 
         try {
             $activeOrg = $organisationService->getActiveOrganisation();
-            return $activeOrg !== null ? $activeOrg->jsonSerialize() : null;
+            if ($activeOrg === null) {
+                return null;
+            }
+
+            return $activeOrg->jsonSerialize();
         } catch (\Exception $e) {
             $this->logger->error(
                     'Failed to get active organization',
@@ -230,6 +249,8 @@ class OrganisationBridgeService
      *
      * @psalm-return   array
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-organisation-bridge/tasks.md#task-5
      */
     public function getUserOrganisations(): array
     {

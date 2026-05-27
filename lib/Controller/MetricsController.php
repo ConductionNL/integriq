@@ -22,6 +22,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TextPlainResponse;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -34,26 +35,37 @@ use Psr\Log\LoggerInterface;
  * for monitoring sources, calls, and synchronizations.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-2
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-3
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
  */
 class MetricsController extends Controller
 {
     /**
      * MetricsController constructor.
      *
-     * @param string          $appName The name of the app
-     * @param IRequest        $request Request object
-     * @param IConfig         $config  The config service
-     * @param IDBConnection   $db      The database connection
-     * @param LoggerInterface $logger  Logger for error handling
+     * @param string          $appName   The name of the app
+     * @param IRequest        $request   Request object
+     * @param IConfig         $config    The config service (retained for getSystemValueString)
+     * @param IAppConfig      $appConfig The typed app config service
+     * @param IDBConnection   $db        The database connection
+     * @param LoggerInterface $logger    Logger for error handling
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly IConfig $config,
+        private readonly IAppConfig $appConfig,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -63,12 +75,16 @@ class MetricsController extends Controller
      * @return TextPlainResponse Plain text response with Prometheus metrics.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-3
      */
     public function index(): TextPlainResponse
     {
         $lines = [];
 
-        $appVersion = $this->config->getAppValue('openconnector', 'installed_version', '0.0.0');
+        $appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '0.0.0');
         $phpVersion = PHP_VERSION;
         $ncVersion  = $this->config->getSystemValueString('version', '0.0.0');
 
@@ -83,22 +99,22 @@ class MetricsController extends Controller
         $lines[] = 'openconnector_up 1';
 
         // Sources total by type.
-        $this->collectSourceMetrics($lines);
+        $this->collectSourceMetrics(lines: $lines);
 
         // Calls total by status.
-        $this->collectCallMetrics($lines);
+        $this->collectCallMetrics(lines: $lines);
 
         // Synchronizations total by status.
-        $this->collectSyncMetrics($lines);
+        $this->collectSyncMetrics(lines: $lines);
 
         // Endpoints total.
-        $this->collectEndpointMetrics($lines);
+        $this->collectEndpointMetrics(lines: $lines);
 
         // Jobs total and job runs by status.
-        $this->collectJobMetrics($lines);
+        $this->collectJobMetrics(lines: $lines);
 
         // Mappings and rules totals.
-        $this->collectMappingRuleMetrics($lines);
+        $this->collectMappingRuleMetrics(lines: $lines);
 
         $body     = implode("\n", $lines)."\n";
         $response = new TextPlainResponse($body);
@@ -114,6 +130,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
      */
     private function collectSourceMetrics(array &$lines): void
     {
@@ -132,8 +150,17 @@ class MetricsController extends Controller
 
             $counts = [];
             foreach ($rows as $row) {
-                $type          = ($row['type'] !== null && $row['type'] !== '') ? strtolower($row['type']) : 'rest';
-                $counts[$type] = (isset($counts[$type]) === true) ? $counts[$type] + (int) $row['cnt'] : (int) $row['cnt'];
+                if ($row['type'] !== null && $row['type'] !== '') {
+                    $type = strtolower($row['type']);
+                } else {
+                    $type = 'rest';
+                }
+
+                if (isset($counts[$type]) === true) {
+                    $counts[$type] = ($counts[$type] + (int) $row['cnt']);
+                } else {
+                    $counts[$type] = (int) $row['cnt'];
+                }
             }
 
             if (empty($counts) === true) {
@@ -156,6 +183,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-5
      */
     private function collectCallMetrics(array &$lines): void
     {
@@ -193,6 +222,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
      */
     private function collectSyncMetrics(array &$lines): void
     {
@@ -200,7 +231,7 @@ class MetricsController extends Controller
         $lines[] = '# TYPE openconnector_synchronizations_total gauge';
 
         try {
-            $total   = $this->countTable('openconnector_synchronizations');
+            $total   = $this->countTable(tableName: 'openconnector_synchronizations');
             $lines[] = 'openconnector_synchronizations_total '.$total;
         } catch (\Exception $e) {
             $this->logger->warning('Could not count synchronizations for metrics', ['exception' => $e->getMessage()]);
@@ -226,8 +257,13 @@ class MetricsController extends Controller
             }
 
             foreach ($rows as $row) {
-                $resultLabel = ($row['result'] !== null && $row['result'] !== '') ? strtolower($row['result']) : 'unknown';
-                $lines[]     = 'openconnector_synchronization_runs_total{status="'.$resultLabel.'"} '.(int) $row['cnt'];
+                if ($row['result'] !== null && $row['result'] !== '') {
+                    $resultLabel = strtolower($row['result']);
+                } else {
+                    $resultLabel = 'unknown';
+                }
+
+                $lines[] = 'openconnector_synchronization_runs_total{status="'.$resultLabel.'"} '.(int) $row['cnt'];
             }
         } catch (\Exception $e) {
             $this->logger->warning('Could not count sync logs for metrics', ['exception' => $e->getMessage()]);
@@ -251,7 +287,7 @@ class MetricsController extends Controller
         $lines[] = '# TYPE openconnector_endpoints_total gauge';
 
         try {
-            $total   = $this->countTable('openconnector_endpoints');
+            $total   = $this->countTable(tableName: 'openconnector_endpoints');
             $lines[] = 'openconnector_endpoints_total '.$total;
         } catch (\Exception $e) {
             $this->logger->warning('Could not count endpoints for metrics', ['exception' => $e->getMessage()]);
@@ -269,6 +305,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
      */
     private function collectJobMetrics(array &$lines): void
     {
@@ -276,7 +314,7 @@ class MetricsController extends Controller
         $lines[] = '# TYPE openconnector_jobs_total gauge';
 
         try {
-            $total   = $this->countTable('openconnector_jobs');
+            $total   = $this->countTable(tableName: 'openconnector_jobs');
             $lines[] = 'openconnector_jobs_total '.$total;
         } catch (\Exception $e) {
             $this->logger->warning('Could not count jobs for metrics', ['exception' => $e->getMessage()]);
@@ -301,8 +339,13 @@ class MetricsController extends Controller
             }
 
             foreach ($rows as $row) {
-                $statusLabel = ($row['status'] !== null && $row['status'] !== '') ? strtolower($row['status']) : 'unknown';
-                $lines[]     = 'openconnector_job_runs_total{status="'.$statusLabel.'"} '.(int) $row['cnt'];
+                if ($row['status'] !== null && $row['status'] !== '') {
+                    $statusLabel = strtolower($row['status']);
+                } else {
+                    $statusLabel = 'unknown';
+                }
+
+                $lines[] = 'openconnector_job_runs_total{status="'.$statusLabel.'"} '.(int) $row['cnt'];
             }
         } catch (\Exception $e) {
             $this->logger->warning('Could not count job logs for metrics', ['exception' => $e->getMessage()]);
@@ -320,6 +363,8 @@ class MetricsController extends Controller
      * @param array $lines Reference to the metrics output lines.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
      */
     private function collectMappingRuleMetrics(array &$lines): void
     {
@@ -327,7 +372,7 @@ class MetricsController extends Controller
         $lines[] = '# TYPE openconnector_mappings_total gauge';
 
         try {
-            $total   = $this->countTable('openconnector_mappings');
+            $total   = $this->countTable(tableName: 'openconnector_mappings');
             $lines[] = 'openconnector_mappings_total '.$total;
         } catch (\Exception $e) {
             $this->logger->warning('Could not count mappings for metrics', ['exception' => $e->getMessage()]);
@@ -338,7 +383,7 @@ class MetricsController extends Controller
         $lines[] = '# TYPE openconnector_rules_total gauge';
 
         try {
-            $total   = $this->countTable('openconnector_rules');
+            $total   = $this->countTable(tableName: 'openconnector_rules');
             $lines[] = 'openconnector_rules_total '.$total;
         } catch (\Exception $e) {
             $this->logger->warning('Could not count rules for metrics', ['exception' => $e->getMessage()]);
@@ -353,6 +398,11 @@ class MetricsController extends Controller
      * @param string $tableName The table name.
      *
      * @return int The row count.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
      */
     private function countTable(string $tableName): int
     {

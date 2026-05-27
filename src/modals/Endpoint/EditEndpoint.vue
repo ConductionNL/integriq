@@ -51,11 +51,13 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<div>
 						<NcSelect v-bind="methodOptions"
+							:input-label="t('openconnector', 'Method')"
 							v-model="methodOptions.value" />
 					</div>
 
 					<div>
 						<NcSelect v-bind="targetTypeOptions"
+							:input-label="t('openconnector', 'Target Type')"
 							v-model="targetTypeOptions.value" />
 					</div>
 
@@ -200,12 +202,14 @@ export default {
 			this.setSchemaOptions(newVal)
 		},
 	},
+	/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 	mounted() {
 		this.initializeEndpointItem()
 		this.fetchRegisters()
 		this.fetchSchemas()
 		this.fetchConfigurations()
 	},
+	/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 	updated() {
 		if (navigationStore.modal === 'editEndpoint' && !this.hasUpdated) {
 			this.initializeEndpointItem()
@@ -214,6 +218,7 @@ export default {
 		}
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		initializeEndpointItem() {
 			if (endpointStore.endpointItem?.id) {
 				this.endpointItem = {
@@ -245,6 +250,7 @@ export default {
 				}
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeTimeoutFunc)
@@ -268,6 +274,7 @@ export default {
 			this.targetTypeOptions.value = { label: 'register/schema' }
 			this.initialSchemaSet = false
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		async fetchRegisters() {
 			this.registersLoading = true
 
@@ -320,6 +327,7 @@ export default {
 
 			this.registersLoading = false
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		async fetchSchemas() {
 			this.schemasLoading = true
 
@@ -355,6 +363,7 @@ export default {
 
 			this.schemasLoading = false
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		async fetchConfigurations() {
 			this.configurationsLoading = true
 
@@ -398,6 +407,7 @@ export default {
 				this.configurationsLoading = false
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		setSchemaOptions(register) {
 			const schemaId = endpointStore.endpointItem?.targetId.split('/')[1]
 
@@ -423,6 +433,7 @@ export default {
 			this.initialSchemaSet = true
 
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
 		async editEndpoint() {
 			this.loading = true
 

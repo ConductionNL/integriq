@@ -22,13 +22,15 @@
   file path/glob (no picker yet — flagged below).
 
   Open follow-ups:
-    - File mode is currently a plain text field. The legacy modal didn't
-      build it out either; once a real file-source kernel lands we'll
-      revisit with a path picker.
     - Register/Schema picker loads the full schema list for the picked
       register — large registers may benefit from search/pagination, but
       OR caps at `limit: 500` here which mirrors what JobFormFields does
       for synchronizations.
+
+  #878: file mode gained an NcFilePicker via `@nextcloud/dialogs`'s
+  `getFilePickerBuilder()` so users browse the user's Files app rather
+  than typing a free-text path. Manual text entry is still supported (the
+  field stays editable) — the picker is additive, not exclusive.
 -->
 
 <template>
@@ -41,6 +43,7 @@
 				</label>
 				<NcSelect
 					:input-id="apiSourceId"
+					:aria-label-combobox="t('openconnector', 'Source (API)')"
 					:value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
@@ -84,6 +87,7 @@
 				</label>
 				<NcSelect
 					:input-id="registerSelectId"
+					:aria-label-combobox="t('openconnector', 'Register')"
 					:value="selectedRegister"
 					:options="registerOptions"
 					:loading="registersLoading"
@@ -97,6 +101,7 @@
 				</label>
 				<NcSelect
 					:input-id="schemaSelectId"
+					:aria-label-combobox="t('openconnector', 'Schema')"
 					:value="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
@@ -116,13 +121,33 @@
 		<!-- File mode -->
 		<template v-else-if="type === 'file'">
 			<div class="sync-config__field">
-				<NcTextField
-					:label="t('openconnector', 'File path or glob')"
-					:value="sourceIdValue"
-					:placeholder="'/example/path/*.json'"
-					@update:value="(value) => $emit('update:sourceId', value)" />
+				<label :for="filePathId" class="sync-config__label">
+					{{ t('openconnector', 'File path or glob') }}
+				</label>
+				<div class="sync-config__file-row">
+					<NcTextField
+						:input-id="filePathId"
+						class="sync-config__file-field"
+						:value="sourceIdValue"
+						:placeholder="'/example/path/*.json'"
+						@update:value="(value) => $emit('update:sourceId', value)" />
+					<NcButton
+						type="secondary"
+						:aria-label="t('openconnector', 'Browse Files app')"
+						:disabled="pickingFile"
+						@click="openFilePicker">
+						<template #icon>
+							<NcLoadingIcon v-if="pickingFile" :size="18" />
+							<FolderOpenOutline v-else :size="18" />
+						</template>
+						{{ t('openconnector', 'Browse…') }}
+					</NcButton>
+				</div>
 				<span class="sync-config__helper">
-					{{ t('openconnector', 'Stored as the polymorphic id. Use a glob for multiple files.') }}
+					{{ t('openconnector', 'Pick a file from your Nextcloud Files app, or type a path/glob for multiple files.') }}
+				</span>
+				<span v-if="pickerError" class="sync-config__error">
+					{{ pickerError }}
 				</span>
 			</div>
 
@@ -151,9 +176,11 @@
 </template>
 
 <script>
-import { NcSelect, NcTextField } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { getFilePickerBuilder, FilePickerType } from '@nextcloud/dialogs'
+import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
 
 /**
  * Generate a stable input-id suffix so the two SyncConfigWidget
@@ -166,8 +193,11 @@ export default {
 	name: 'SyncConfigWidget',
 
 	components: {
+		NcButton,
+		NcLoadingIcon,
 		NcSelect,
 		NcTextField,
+		FolderOpenOutline,
 	},
 
 	props: {
@@ -217,27 +247,39 @@ export default {
 			registerOptions: [],
 			registersLoading: false,
 			selectedRegisterRecord: null,
+			pickingFile: false,
+			pickerError: '',
 		}
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		kindLabel() {
 			return this.kind === 'source'
 				? t('openconnector', 'Source')
 				: t('openconnector', 'Target')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		apiSourceId() {
 			return `sync-config-${this.widgetUid}-api-source`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		registerSelectId() {
 			return `sync-config-${this.widgetUid}-register`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		schemaSelectId() {
 			return `sync-config-${this.widgetUid}-schema`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		filePathId() {
+			return `sync-config-${this.widgetUid}-file-path`
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		sourceIdValue() {
 			return this.sourceId != null ? String(this.sourceId) : ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		selectedSource() {
 			if (!this.sourceIdValue) return null
 			return this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
@@ -245,11 +287,13 @@ export default {
 				label: this.sourceIdValue,
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		selectedRegister() {
 			const [registerId] = this.sourceIdValue.split('/')
 			if (!registerId) return null
 			return this.registerOptions.find((opt) => String(opt.id) === String(registerId)) ?? null
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		schemaOptions() {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg) return []
@@ -259,6 +303,7 @@ export default {
 				label: schema.title || schema.name || schema.slug || String(schema),
 			}))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		selectedSchema() {
 			const parts = this.sourceIdValue.split('/')
 			if (parts.length < 2) return null
@@ -270,6 +315,7 @@ export default {
 	watch: {
 		type: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 			handler(value) {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
@@ -282,12 +328,14 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		configValue(key) {
 			if (!this.config || typeof this.config !== 'object') return ''
 			const v = this.config[key]
 			if (v == null) return ''
 			return typeof v === 'string' ? v : String(v)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onConfigUpdate(key, value) {
 			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
 				? { ...this.config }
@@ -299,9 +347,11 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -315,6 +365,7 @@ export default {
 			// the user picks a schema below.
 			this.$emit('update:sourceId', String(option.id) + '/')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onSchemaPick(option) {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg || !option?.id) {
@@ -323,6 +374,7 @@ export default {
 			}
 			this.$emit('update:sourceId', String(reg.id) + '/' + String(option.id))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		async fetchSources() {
 			this.sourcesLoading = true
 			try {
@@ -344,6 +396,51 @@ export default {
 				this.sourcesLoading = false
 			}
 		},
+		/**
+		 * Open the Nextcloud Files file picker and write the chosen path
+		 * back through the `update:sourceId` channel — same mutation path
+		 * as typing into the text field, just sourced from a real browse.
+		 *
+		 * The `@nextcloud/dialogs@^3.2.0` API is the builder pattern
+		 * (`getFilePickerBuilder().setX().build().pick()`); the newer 4.x
+		 * `showFilePicker` shape is not installed. We feed an empty
+		 * mime-type filter so all files are reachable — sync source files
+		 * are commonly XML/CSV/JSON without consistent mime detection on
+		 * server uploads.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2
+		 */
+		async openFilePicker() {
+			this.pickerError = ''
+			this.pickingFile = true
+			try {
+				const picker = getFilePickerBuilder(
+					t('openconnector', 'Pick a sync source file'),
+				)
+					.setMultiSelect(false)
+					.setMimeTypeFilter([])
+					.setModal(true)
+					.setType(FilePickerType.Choose)
+					.allowDirectories(false)
+					.build()
+				const path = await picker.pick()
+				if (path) {
+					this.$emit('update:sourceId', String(path))
+				}
+			} catch (err) {
+				// User-cancellation in @nextcloud/dialogs 3.x rejects the
+				// promise — treat any non-string-path error as a soft
+				// dismissal and only surface a real error message.
+				if (err && err.message && !/cancel/i.test(err.message)) {
+					this.pickerError = err.message
+				}
+				// eslint-disable-next-line no-console
+				console.debug('[SyncConfigWidget] file picker closed', err)
+			} finally {
+				this.pickingFile = false
+			}
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {
@@ -404,5 +501,21 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	text-align: center;
+}
+
+.sync-config__file-row {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.sync-config__file-field {
+	flex: 1;
+	min-width: 0;
+}
+
+.sync-config__error {
+	font-size: 12px;
+	color: var(--color-error);
 }
 </style>

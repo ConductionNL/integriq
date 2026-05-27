@@ -1,16 +1,39 @@
 <?php
+/**
+ * OpenConnector Authentication Twig Runtime.
+ *
+ * Runtime class invoked by the AuthenticationExtension Twig functions to
+ * fetch authentication tokens for outbound calls.
+ *
+ * @category Twig
+ * @package  OCA\OpenConnector\Twig
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Twig;
 
 use Adbar\Dot;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenConnector\Service\AuthenticationService;
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
-use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Twig\Extension\RuntimeExtensionInterface;
 
+/**
+ * Authentication runtime that fetches tokens for a given source configuration.
+ */
 class AuthenticationRuntime implements RuntimeExtensionInterface
 {
+    /**
+     * Constructor.
+     *
+     * @param AuthenticationService $authService Service that performs the token fetches.
+     */
     public function __construct(
         private readonly AuthenticationService $authService,
     ) {
@@ -20,10 +43,13 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
     /**
      * Add an oauth token to the configuration.
      *
-     * @param  array $source The source data array (from ObjectEntity::getObject()).
+     * @param array $source The source data array (from ObjectEntity::getObject()).
+     *
      * @return string
      *
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-4
      */
     public function oauthToken(array $source): string
     {
@@ -34,15 +60,19 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
         return $this->authService->fetchOAuthTokens(
             configuration: $authConfig
         );
+
     }//end oauthToken()
 
     /**
      * Add a decos non-oauth token to the configuration.
      *
-     * @param  array $source The source data array (from ObjectEntity::getObject()).
+     * @param array $source The source data array (from ObjectEntity::getObject()).
+     *
      * @return string
      *
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-4
      */
     public function decosToken(array $source): string
     {
@@ -53,14 +83,19 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
         return $this->authService->fetchDecosToken(
             configuration: $authConfig
         );
+
     }//end decosToken()
 
     /**
      * Add a jwt token to the configuration.
      *
-     * @param  array $source The source data array (from ObjectEntity::getObject()).
+     * @param array $source The source data array (from ObjectEntity::getObject()).
+     *
      * @return string
+     *
      * @throws GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-4
      */
     public function jwtToken(array $source): string
     {
@@ -71,5 +106,6 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
         return $this->authService->fetchJWTToken(
             configuration: $authConfig
         );
+
     }//end jwtToken()
 }//end class

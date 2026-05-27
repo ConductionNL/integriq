@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
-use Psr\Log\LoggerInterface;
 
 /**
  * Service for mapping StUF fields to/from OpenRegister object properties.
@@ -61,12 +60,9 @@ class StUFFieldMapper
 
     /**
      * StUFFieldMapper constructor.
-     *
-     * @param LoggerInterface $logger Logger for error handling
      */
-    public function __construct(
-        private readonly LoggerInterface $logger
-    ) {
+    public function __construct()
+    {
 
     }//end __construct()
 
@@ -77,6 +73,8 @@ class StUFFieldMapper
      * @param array|null $mapping Custom field mapping (null uses defaults).
      *
      * @return array Array of StUF field name to value pairs.
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
      */
     public function mapPersonToStUF(array $person, ?array $mapping=null): array
     {
@@ -89,7 +87,7 @@ class StUFFieldMapper
 
                 // Transform dates from ISO 8601 to StUF YYYYMMDD format.
                 if ($stufField === 'geboortedatum' && is_string($value) === true) {
-                    $value = $this->isoDateToStUF($value);
+                    $value = $this->isoDateToStUF(isoDate: $value);
                 }
 
                 $result[$stufField] = $value;
@@ -98,7 +96,7 @@ class StUFFieldMapper
 
         // Map nested verblijfsadres.
         if (isset($person['verblijfsadres']) === true && is_array($person['verblijfsadres']) === true) {
-            $result['verblijfsadres'] = $this->mapAddressToStUF($person['verblijfsadres']);
+            $result['verblijfsadres'] = $this->mapAddressToStUF(address: $person['verblijfsadres']);
         }
 
         return $result;
@@ -112,6 +110,8 @@ class StUFFieldMapper
      * @param array|null $mapping  Custom field mapping (null uses defaults).
      *
      * @return array Array of OpenRegister property name to value pairs.
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
      */
     public function mapStUFToPerson(array $stufData, ?array $mapping=null): array
     {
@@ -125,7 +125,7 @@ class StUFFieldMapper
 
                 // Transform dates from StUF YYYYMMDD to ISO 8601 format.
                 if ($registerField === 'geboortedatum' && is_string($value) === true) {
-                    $value = $this->stufDateToISO($value);
+                    $value = $this->stufDateToISO(stufDate: $value);
                 }
 
                 $result[$registerField] = $value;
@@ -143,6 +143,8 @@ class StUFFieldMapper
      * @param array|null $mapping Custom address field mapping.
      *
      * @return array Array of StUF address field name to value pairs.
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
      */
     public function mapAddressToStUF(array $address, ?array $mapping=null): array
     {
@@ -165,6 +167,8 @@ class StUFFieldMapper
      * @param string $isoDate The ISO 8601 date string (e.g., "1990-05-15").
      *
      * @return string The StUF date string (e.g., "19900515").
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-053
      */
     public function isoDateToStUF(string $isoDate): string
     {
@@ -183,6 +187,8 @@ class StUFFieldMapper
      * @param string $stufDate The StUF date string (e.g., "19900515").
      *
      * @return string The ISO 8601 date string (e.g., "1990-05-15").
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-053
      */
     public function stufDateToISO(string $stufDate): string
     {

@@ -53,13 +53,23 @@ class IBabsConnectorService
      * @param ObjectEntity $source The iBabs source configuration.
      *
      * @return array Result with 'success' boolean and 'message' string.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-001
      */
     public function testConnection(ObjectEntity $source): array
     {
         try {
-            $config = $source->getConfiguration();
+            // OR's ObjectEntity does not surface `configuration` as an
+            // addType'd attribute, so the legacy `$source->getConfiguration()`
+            // throws "is not a valid attribute". Read it from the object body
+            // instead (#1015 follow-up).
+            $sourceData = $source->getObject();
+            $config     = ($sourceData['configuration'] ?? []);
             if (is_string($config) === true) {
                 $config = json_decode($config, true);
+            }
+            if (is_array($config) === false) {
+                $config = [];
             }
 
             $organisatieId = $config['organisatieId'] ?? null;
@@ -110,6 +120,8 @@ class IBabsConnectorService
      * @param array        $voorstel The voorstel data including document path and metadata.
      *
      * @return array Result with 'success' boolean and 'vergaderstukId'.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-002
      */
     public function pushVoorstel(ObjectEntity $source, array $voorstel): array
     {
@@ -148,6 +160,8 @@ class IBabsConnectorService
      * @param ObjectEntity $source The iBabs source configuration.
      *
      * @return array Array of besluit records with zaak references and status.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-031
      */
     public function pollBesluiten(ObjectEntity $source): array
     {
@@ -164,6 +178,8 @@ class IBabsConnectorService
      * @param string $ibabsStatus The iBabs besluit status.
      *
      * @return string The corresponding Procest zaak status.
+     *
+     * @spec openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-004
      */
     public function mapBesluitStatus(string $ibabsStatus): string
     {

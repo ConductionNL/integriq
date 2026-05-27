@@ -14,7 +14,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 
 **Support:** For support, contact support@conduction.nl. For a Service Level Agreement (SLA), contact sales@conduction.nl.
     ]]></description>
-	<version>0.2.8</version>
+	<version>0.2.10</version>
 	<licence>agpl</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -23,8 +23,8 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<bugs>https://github.com/ConductionNL/OpenConnector/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenConnector</repository>
 	<dependencies>
-        <nextcloud min-version="28" max-version="32"/>
-        <php min-version="8.0" min-int-size="64"/>
+        <nextcloud min-version="28" max-version="34"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
@@ -60,9 +60,13 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<repair-steps>
 		<install>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<!-- ADR-023: seed the action-authorization matrix (default admin-only). -->
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 		</install>
 		<post-migration>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<!-- ADR-023: seed the action-authorization matrix (default admin-only). -->
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 		</post-migration>
 	</repair-steps>
 </info>

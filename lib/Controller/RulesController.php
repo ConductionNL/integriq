@@ -1,20 +1,30 @@
 <?php
+/**
+ * OpenConnector Rules Controller.
+ *
+ * Placeholder controller backing the rules tab of the OpenConnector
+ * Vue UI. All UI rendering is delegated to UiController; this class
+ * is retained for Nextcloud's DI container registration only.
+ *
+ * @category Controller
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Controller;
 
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
-use OCP\IL10N;
 use OCP\IRequest;
 
 /**
- * Class RuleController
- *
- * Controller for managing rules in the OpenConnector app
- *
- * @package OCA\OpenConnector\Controller
+ * Controller for managing rules in the OpenConnector app.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -23,38 +33,16 @@ use OCP\IRequest;
 class RulesController extends Controller
 {
     /**
-     * Constructor for the RuleController
+     * Constructor for the RuleController.
      *
-     * @param string     $appName The name of the app
-     * @param IRequest   $request The request object
-     * @param IAppConfig $config  The app configuration object
-     * @param IL10N      $l       The localization service
+     * @param string   $appName The name of the app.
+     * @param IRequest $request The request object.
      */
     public function __construct(
         $appName,
         IRequest $request,
-        private IAppConfig $config,
-        private IL10N $l
     ) {
-        parent::__construct($appName, $request);
-    }//end __construct()
+        parent::__construct(appName: $appName, request: $request);
 
-    /**
-     * Returns the template of the main app's page
-     *
-     * This method renders the main page of the application, adding any necessary data to the template.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse The rendered template response
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(
-            'openconnector',
-            'index',
-            []
-        );
-    }//end page()
+    }//end __construct()
 }//end class

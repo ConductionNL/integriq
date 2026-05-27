@@ -8,98 +8,115 @@
     {
       "id": "Dashboard",
       "label": "Dashboard",
-      "icon": "icon-category-dashboard",
+      "icon": "Finance",
       "route": "Dashboard",
       "order": 10
     },
     {
       "id": "Sources",
       "label": "Sources",
-      "icon": "icon-link",
+      "icon": "DatabaseArrowLeftOutline",
       "route": "Sources",
       "order": 20
     },
     {
       "id": "Endpoints",
       "label": "Endpoints",
-      "icon": "icon-category-integration",
+      "icon": "Api",
       "route": "Endpoints",
       "order": 30
     },
     {
       "id": "Consumers",
       "label": "Consumers",
-      "icon": "icon-group",
+      "icon": "AccountMultipleOutline",
       "route": "Consumers",
       "order": 40
     },
     {
       "id": "Webhooks",
       "label": "Webhooks",
-      "icon": "icon-mail",
+      "icon": "Webhook",
       "route": "Webhooks",
       "order": 50
     },
     {
       "id": "Jobs",
       "label": "Jobs",
-      "icon": "icon-category-workflow",
+      "icon": "Update",
       "route": "Jobs",
       "order": 60
     },
     {
       "id": "Mappings",
       "label": "Mappings",
-      "icon": "icon-category-customization",
+      "icon": "SitemapOutline",
       "route": "Mappings",
       "order": 70
     },
     {
       "id": "Rules",
       "label": "Rules",
-      "icon": "icon-toggle",
+      "icon": "ScaleBalance",
       "route": "Rules",
       "order": 80
     },
     {
       "id": "Synchronizations",
       "label": "Synchronizations",
-      "icon": "icon-history",
+      "icon": "VectorPolylinePlus",
       "route": "Synchronizations",
       "order": 90
     },
     {
       "id": "CloudEvents",
       "label": "Cloud events",
-      "icon": "icon-category-monitoring",
+      "icon": "CloudUploadOutline",
       "route": "CloudEvents",
       "order": 100
     },
     {
       "id": "Documentation",
       "label": "Documentation",
-      "icon": "icon-info",
+      "icon": "BookOpenVariant",
       "href": "https://openconnector.conduction.nl",
-      "section": "settings",
+      "section": "footer",
       "order": 15
     },
     {
       "id": "Settings",
       "label": "Settings",
-      "icon": "icon-settings",
+      "icon": "Cog",
       "route": "AppSettings",
       "section": "settings",
       "order": 20
+    },
+    {
+      "id": "FeaturesRoadmapMenu",
+      "label": "Features & roadmap",
+      "icon": "icon-toggle",
+      "route": "FeaturesRoadmap",
+      "section": "footer",
+      "order": 16
     }
   ],
   "pages": [
+    {
+      "id": "FeaturesRoadmap",
+      "route": "/features-roadmap",
+      "type": "roadmap",
+      "title": "Features & roadmap",
+      "config": {
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
     {
       "id": "Dashboard",
       "route": "/",
       "type": "dashboard",
       "title": "Dashboard",
       "config": {
-        "dateRange": { "enabled": true, "persistKey": "openconnector-dashboard" },
+        "dateRange": { "enabled": true, "showHeaderPicker": false, "persistKey": "openconnector-dashboard" },
         "widgets": [
           { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "props": { "route": { "name": "Sources" } },                  "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" } },
           { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "props": { "route": { "name": "Mappings" } },                 "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" } },
@@ -143,9 +160,12 @@
         "columns": ["name", "type", "status", "isEnabled", "lastSync", "dateModified"],
         "includeFields": ["name", "description", "type", "isEnabled"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "headerActions": [
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SourceLogs" }
+        ],
         "actions": [
           { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
-          { "id": "view-source-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       }
     },
@@ -180,9 +200,12 @@
         "columns": ["name", "method", "endpoint", "targetType", "updated"],
         "includeFields": ["name", "description", "endpoint", "method", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "headerActions": [
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "EndpointLogs" }
+        ],
         "actions": [
           { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
-          { "id": "view-endpoint-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-endpoint-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       }
     },
@@ -256,10 +279,13 @@
           "arguments": { "widget": "json" }
         },
         "sidebar": { "enabled": true, "showMetadata": true },
+        "headerActions": [
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "JobLogs" }
+        ],
         "actions": [
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
-          { "id": "view-job-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-job-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       },
       "slots": {
@@ -297,6 +323,7 @@
       "route": "/mappings/:id",
       "type": "custom",
       "component": "MappingDetailPage",
+      "_note": "Custom page: the mapping editor is a bespoke 3-tab rules editor (mapping/cast/unset rules with drag-reorder + per-rule dialogs) that the generic detail page cannot express.",
       "title": "Mapping",
       "config": {
         "register": "openconnector",
@@ -321,6 +348,7 @@
       "route": "/rules/:id",
       "type": "custom",
       "component": "RuleDetailPage",
+      "_note": "Custom page: the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.",
       "title": "Rule",
       "config": {
         "register": "openconnector",
@@ -339,12 +367,16 @@
         "includeFields": ["name", "description", "sourceType", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
+        "headerActions": [
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SynchronizationLogs" },
+          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
+        ],
         "actions": [
           { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
-          { "id": "view-synchronization-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "handler": "navigate", "route": "SynchronizationContracts" }
+          { "id": "view-synchronization-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" },
+          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
         ]
       }
     },
@@ -376,6 +408,7 @@
       "type": "custom",
       "title": "Synchronization",
       "component": "SynchronizationDetailPage",
+      "_note": "Custom page: the synchronization editor composes source/target mapping, conditions, follow-ups and run/test controls that the generic detail page cannot express.",
       "config": {
         "register": "openconnector",
         "schema": "synchronization"
@@ -392,8 +425,11 @@
         "columns": ["source", "type", "subject", "status", "time"],
         "includeFields": ["source", "type", "subject", "data"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "headerActions": [
+          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "CloudEventLogs" }
+        ],
         "actions": [
-          { "id": "view-cloud-event-logs", "label": "View logs", "icon": "icon-history", "handler": "viewLogsHandler" }
+          { "id": "view-cloud-event-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ]
       }
     },

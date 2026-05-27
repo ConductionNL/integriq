@@ -43,7 +43,7 @@ class PdokUpstreamException extends RuntimeException
         string $message,
         private readonly int $statusCode
     ) {
-        parent::__construct($message);
+        parent::__construct(message: $message);
 
     }//end __construct()
 

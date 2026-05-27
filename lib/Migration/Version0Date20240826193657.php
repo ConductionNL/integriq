@@ -1,11 +1,24 @@
 <?php
+/**
+ * Initial schema migration creating the OpenConnector tables.
+ *
+ * Creates the endpoints, jobs, mappings, sources, synchronizations,
+ * synchronization contracts, consumers, call logs, job logs, and
+ * synchronization contract logs tables used by the app.
+ *
+ * @category Migration
+ * @package  OCA\OpenConnector\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
 
 namespace OCA\OpenConnector\Migration;
 
@@ -17,7 +30,7 @@ use OCP\Migration\SimpleMigrationStep;
 
 
 /**
- * FIXME Auto-generated migration step: Please modify to your needs!
+ * Creates the initial OpenConnector table set on first install.
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -27,28 +40,36 @@ use OCP\Migration\SimpleMigrationStep;
 class Version0Date20240826193657 extends SimpleMigrationStep
 {
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Pre-schema change callback.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
     }//end preSchemaChange()
 
     /**
-     * @param  IOutput                   $output
-     * @param  Closure(): ISchemaWrapper $schemaClosure
-     * @param  array                     $options
-     * @return null|ISchemaWrapper
+     * Creates the OpenConnector tables when they do not yet exist.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return ISchemaWrapper|null The modified schema wrapper.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('openconnector_endpoints')) {
+        if ($schema->hasTable('openconnector_endpoints') === false) {
             $table = $schema->createTable('openconnector_endpoints');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -70,7 +91,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['endpoint_regex'], 'openconnector_endpoints_endpoint_regex_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_jobs')) {
+        if ($schema->hasTable('openconnector_jobs') === false) {
             $table = $schema->createTable('openconnector_jobs');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -98,7 +119,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['uuid'], 'openconnector_jobs_uuid_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_mappings')) {
+        if ($schema->hasTable('openconnector_mappings') === false) {
             $table = $schema->createTable('openconnector_mappings');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -116,7 +137,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['uuid'], 'openconnector_mappings_uuid_index');
         }
 
-        if (!$schema->hasTable('openconnector_sources')) {
+        if ($schema->hasTable('openconnector_sources') === false) {
             $table = $schema->createTable('openconnector_sources');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -160,14 +181,14 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['uuid'], 'openconnector_sources_uuid_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_synchronizations')) {
+        if ($schema->hasTable('openconnector_synchronizations') === false) {
             $table = $schema->createTable('openconnector_synchronizations');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
             $table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
             $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
             $table->addColumn('description', Types::TEXT, ['notnull' => false]);
-            // Source
+            // Source.
             $table->addColumn('source_id', Types::STRING, ['notnull' => true, 'length' => 255]);
             $table->addColumn('source_type', Types::STRING, ['notnull' => true, 'length' => 255]);
             $table->addColumn('source_hash', Types::STRING, ['notnull' => false, 'length' => 255]);
@@ -176,7 +197,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addColumn('source_last_changed', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('source_last_checked', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('source_last_synced', Types::DATETIME, ['notnull' => false]);
-            // Target
+            // Target.
             $table->addColumn('target_id', Types::STRING, ['notnull' => true, 'length' => 255]);
             $table->addColumn('target_type', Types::STRING, ['notnull' => true, 'length' => 255]);
             $table->addColumn('target_hash', Types::STRING, ['notnull' => false, 'length' => 255]);
@@ -185,7 +206,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addColumn('target_last_changed', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('target_last_checked', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('target_last_synced', Types::DATETIME, ['notnull' => false]);
-            // General
+            // General.
             $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
             $table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
             $table->setPrimaryKey(['id']);
@@ -194,25 +215,25 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['target_id'], 'openconnector_synchronizations_target_id_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_synchronization_contracts')) {
+        if ($schema->hasTable('openconnector_synchronization_contracts') === false) {
             $table = $schema->createTable('openconnector_synchronization_contracts');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
             $table->addColumn('version', Types::STRING, ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
             $table->addColumn('synchronization_id', Types::STRING, ['notnull' => true, 'length' => 255]);
-            // Source
+            // Source.
             $table->addColumn('source_id', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('source_hash', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('source_last_changed', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('source_last_checked', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('source_last_synced', Types::DATETIME, ['notnull' => false]);
-            // Target
+            // Target.
             $table->addColumn('target_id', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('target_hash', Types::STRING, ['notnull' => false, 'length' => 255]);
             $table->addColumn('target_last_changed', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('target_last_checked', Types::DATETIME, ['notnull' => false]);
             $table->addColumn('target_last_synced', Types::DATETIME, ['notnull' => false]);
-            // General
+            // General.
             $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
             $table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
@@ -225,33 +246,35 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['synchronization_id', 'target_id'], 'openconnector_sync_contracts_sync_target_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_consumers')) {
+        if ($schema->hasTable('openconnector_consumers') === false) {
             $table = $schema->createTable('openconnector_consumers');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
-            // The id of the consumer
+            // The id of the consumer.
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-            // The uuid of the consumer
+            // The uuid of the consumer.
             $table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 255]);
-            // The name of the consumer
+            // The name of the consumer.
             $table->addColumn('description', Types::TEXT, ['notnull' => false]);
-            // The description of the consumer
+            // The description of the consumer.
             $table->addColumn('domains', Types::JSON, ['notnull' => false]);
-            // The domains the consumer is allowed to run from
+            // The domains the consumer is allowed to run from.
             $table->addColumn('ips', Types::JSON, ['notnull' => false]);
-            // The ips the consumer is allowed to run from
+            // The ips the consumer is allowed to run from.
             $table->addColumn('authorization_type', Types::STRING, ['notnull' => false, 'length' => 255]);
-            // The authorization type of the consumer, should be one of the following: 'none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt'. Keep in mind that the consumer needs to be able to handle the authorization type.
+            // The authorization type of the consumer, should be one of the following:
+            // 'none', 'basic', 'bearer', 'apiKey', 'oauth2', 'jwt'.
+            // Keep in mind that the consumer needs to be able to handle the authorization type.
             $table->addColumn('authorization_configuration', Types::TEXT, ['notnull' => false]);
-            // The authorization configuration of the consumer
+            // The authorization configuration of the consumer.
             $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
-            // the date and time the consumer was created
+            // The date and time the consumer was created.
             $table->addColumn('updated', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
-            // the date and time the consumer was updated
+            // The date and time the consumer was updated.
             $table->setPrimaryKey(['id']);
             $table->addIndex(['uuid'], 'openconnector_consumers_uuid_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_call_logs')) {
+        if ($schema->hasTable('openconnector_call_logs') === false) {
             $table = $schema->createTable('openconnector_call_logs');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -275,7 +298,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['status_code'], 'openconnector_call_logs_status_code_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_job_logs')) {
+        if ($schema->hasTable('openconnector_job_logs') === false) {
             $table = $schema->createTable('openconnector_job_logs');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -300,7 +323,7 @@ class Version0Date20240826193657 extends SimpleMigrationStep
             $table->addIndex(['user_id'], 'openconnector_job_logs_user_id_index');
         }//end if
 
-        if (!$schema->hasTable('openconnector_synchronization_contract_logs')) {
+        if ($schema->hasTable('openconnector_synchronization_contract_logs') === false) {
             $table = $schema->createTable('openconnector_synchronization_contract_logs');
             $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'length' => 20]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
@@ -319,12 +342,17 @@ class Version0Date20240826193657 extends SimpleMigrationStep
         }
 
         return $schema;
+
     }//end changeSchema()
 
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Post-schema change callback.
+     *
+     * @param IOutput                   $output        Migration output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array<string, mixed>      $options       Migration options.
+     *
+     * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "x-openregister": {
     "type": "application",
@@ -189,6 +189,20 @@
       },
       "event_message": {
         "slug": "event_message",
+        "x-openregister-notifications": {
+          "delivery-retries-exhausted": {
+            "trigger": {"type": "threshold", "aggregation": "max", "field": "retryCount", "op": "gte", "value": 5},
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Event-bezorging faalt herhaaldelijk (retry {{retryCount}})",
+              "en": "Event delivery failing repeatedly (retry {{retryCount}})"
+            }
+          }
+        },
         "title": "EventMessage",
         "icon": "EmailFast",
         "version": "1.0.0",
@@ -249,6 +263,21 @@
       },
       "job": {
         "slug": "job",
+        "x-openregister-notifications": {
+          "job-overdue": {
+            "trigger": {"type": "scheduled", "intervalSec": 3600, "filter": {"isEnabled": {"op": "equals", "value": true}, "nextRun": {"op": "lt", "value": "now"}}},
+            "enabled": false,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Geplande job loopt achter: {{name}}",
+              "en": "Scheduled job overdue: {{name}}"
+            }
+          }
+        },
         "title": "Job",
         "icon": "ClockOutline",
         "version": "1.0.0",
@@ -319,7 +348,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": ["name", "action"],
@@ -332,7 +361,7 @@
           "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
           "action": { "type": "string", "description": "Action verb (e.g. `error`, `replace`, `appendHeader`)" },
           "timing": { "type": "string", "description": "Pipeline timing slot (pre-request, post-request, pre-response, post-response)" },
-          "conditions": { "type": "array", "items": { "type": "object" }, "description": "Conditional expression list (all-of by default)" },
+          "conditions": { "type": "object", "description": "JsonLogic expression tree (canonical top-level object shape, e.g. {\"and\": [{\"var\": [\"user.email\"]}]}). Backend evaluator (jwadhams/json-logic-php) accepts either object or array; the schema mandates object to match what the visual builder emits." },
           "type": { "type": "string", "description": "Rule kind (authorization, transformation, validation, audit)" },
           "configuration": { "type": "object", "description": "Action-specific configuration" },
           "order": { "type": "integer", "description": "Execution order within its timing slot", "default": 100 },
@@ -427,6 +456,21 @@
       },
       "call_log": {
         "slug": "call_log",
+        "x-openregister-notifications": {
+          "call-failed": {
+            "trigger": {"type": "created", "filter": {"statusCode": {"op": "gte", "value": 400}}},
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Mislukte API-aanroep ({{statusCode}}) op bron {{sourceId}}",
+              "en": "Failed API call ({{statusCode}}) on source {{sourceId}}"
+            }
+          }
+        },
         "title": "CallLog",
         "icon": "PhoneLog",
         "version": "1.0.0",
@@ -466,6 +510,21 @@
       },
       "job_log": {
         "slug": "job_log",
+        "x-openregister-notifications": {
+          "job-error": {
+            "trigger": {"type": "created", "filter": {"level": {"op": "equals", "value": "ERROR"}}},
+            "enabled": true,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Job-fout: {{message}}",
+              "en": "Job error: {{message}}"
+            }
+          }
+        },
         "title": "JobLog",
         "icon": "ClockTimeFour",
         "version": "1.0.0",
@@ -507,6 +566,21 @@
       },
       "synchronization_log": {
         "slug": "synchronization_log",
+        "x-openregister-notifications": {
+          "sync-failed": {
+            "trigger": {"type": "created"},
+            "enabled": false,
+            "channels": ["nc-notification"],
+            "recipients": [
+              {"kind": "field", "field": "userId"},
+              {"kind": "groups", "groups": ["openconnector-ops"]}
+            ],
+            "subject": {
+              "nl": "Synchronisatie-uitkomst: {{message}}",
+              "en": "Synchronization result: {{message}}"
+            }
+          }
+        },
         "title": "SynchronizationLog",
         "icon": "SyncCircle",
         "version": "1.0.0",

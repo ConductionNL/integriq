@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector MongoDB Object Service.
+ *
+ * Thin wrapper over the MongoDB Data API used by OpenConnector to persist and
+ * query freeform JSON objects when OpenRegister is not the storage backend.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -14,6 +31,8 @@ use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
+ * MongoDB Data API client wrapper for OpenConnector's optional Mongo backend.
+ *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -23,11 +42,22 @@ use Symfony\Component\Uid\Uuid;
 class ObjectService
 {
 
+    /**
+     * Default MongoDB action payload skeleton.
+     *
+     * @var array<string, string>
+     */
     public const BASE_OBJECT = [
         'database'   => 'objects',
         'collection' => 'json',
     ];
 
+    /**
+     * Constructor.
+     *
+     * @param IAppManager        $appManager Used to detect whether the OpenRegister app is installed.
+     * @param ContainerInterface $container  PSR-11 container used to resolve OpenRegister services.
+     */
     public function __construct(
         private readonly IAppManager $appManager,
         private readonly ContainerInterface $container,
@@ -38,8 +68,11 @@ class ObjectService
     /**
      * Gets a guzzle client based upon given config.
      *
-     * @param  array $config The config to be used for the client.
-     * @return Client
+     * @param array $config The config to be used for the client.
+     *
+     * @return Client The configured Guzzle client.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function getClient(array $config): Client
     {
@@ -47,16 +80,21 @@ class ObjectService
         unset($guzzleConf['mongodbCluster']);
 
         return new Client($config);
+
     }//end getClient()
 
     /**
-     * Save an object to MongoDB
+     * Save an object to MongoDB.
      *
      * @param array $data   The data to be saved.
      * @param array $config The configuration that should be used by the call.
      *
      * @return array The resulting object.
-     * @throws GuzzleException
+     *
+     * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-2
      */
     public function saveObject(array $data, array $config): array
     {
@@ -78,6 +116,7 @@ class ObjectService
         $id         = $resultData['insertedId'];
 
         return $this->findObject(filters: ['_id' => $id], config: $config);
+
     }//end saveObject()
 
     /**
@@ -88,7 +127,9 @@ class ObjectService
      *
      * @return array The objects found for given filters.
      *
-     * @throws GuzzleException
+     * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function findObjects(array $filters, array $config): array
     {
@@ -98,10 +139,10 @@ class ObjectService
         $object['dataSource'] = $config['mongodbCluster'];
         $object['filter']     = $filters;
 
-        // @todo Fix mongodb sort
+        // @todo Fix mongodb sort.
         // if (empty($sort) === false) {
         // $object['filter'][] = ['$sort' => $sort];
-        // }
+        // }.
         $returnData = $client->post(
             uri: 'action/find',
             options: ['json' => $object]
@@ -111,17 +152,20 @@ class ObjectService
             json: $returnData->getBody()->getContents(),
             associative: true
         );
+
     }//end findObjects()
 
     /**
-     * Finds an object based upon a set of filters (usually the id)
+     * Finds an object based upon a set of filters (usually the id).
      *
      * @param array $filters The filters to compare the objects to.
      * @param array $config  The config to be used by the call.
      *
      * @return array The resulting object.
      *
-     * @throws GuzzleException
+     * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function findObject(array $filters, array $config): array
     {
@@ -142,18 +186,21 @@ class ObjectService
         );
 
         return $result['document'];
+
     }//end findObject()
 
     /**
-     * Updates an object in MongoDB
+     * Updates an object in MongoDB.
      *
-     * @param array $filters The filter to search the object with (id)
+     * @param array $filters The filter to search the object with (id).
      * @param array $update  The fields that should be updated.
      * @param array $config  The configuration to be used by the call.
      *
      * @return array The updated object.
      *
-     * @throws GuzzleException
+     * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function updateObject(array $filters, array $update, array $config): array
     {
@@ -172,18 +219,21 @@ class ObjectService
                 options: ['json' => $object]
             );
 
-        return $this->findObject($filters, $config);
+        return $this->findObject(filters: $filters, config: $config);
+
     }//end updateObject()
 
     /**
-     * Delete an object according to a filter (id specifically)
+     * Delete an object according to a filter (id specifically).
      *
      * @param array $filters The filters to use.
      * @param array $config  The config to be used by the call.
      *
      * @return array An empty array.
      *
-     * @throws GuzzleException
+     * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
      */
     public function deleteObject(array $filters, array $config): array
     {
@@ -199,16 +249,21 @@ class ObjectService
         );
 
         return [];
+
     }//end deleteObject()
 
     /**
      * Aggregates objects for search facets.
      *
-     * @param  array $filters  The filters apply to the search request.
-     * @param  array $pipeline The pipeline to use.
-     * @param  array $config   The configuration to use in the call.
-     * @return array
-     * @throws GuzzleException
+     * @param array $filters  The filters apply to the search request.
+     * @param array $pipeline The pipeline to use.
+     * @param array $config   The configuration to use in the call.
+     *
+     * @return array The aggregation result.
+     *
+     * @throws GuzzleException When the HTTP request fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-3
      */
     public function aggregateObjects(array $filters, array $pipeline, array $config):array
     {
@@ -234,36 +289,46 @@ class ObjectService
     /**
      * Attempts to retrieve the OpenRegister service from the container.
      *
-     * @return mixed|null The OpenRegister service if available, null otherwise.
-     * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+     * @return \OCA\OpenRegister\Service\ObjectService|null The OpenRegister service if available, null otherwise.
+     *
+     * @throws ContainerExceptionInterface When the container fails.
+     * @throws NotFoundExceptionInterface  When the service is not bound.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-4
      */
     public function getOpenRegisters(): ?\OCA\OpenRegister\Service\ObjectService
     {
         if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
             try {
-                // Attempt to get the OpenRegister service from the container
+                // Attempt to get the OpenRegister service from the container.
                 return $this->container->get('OCA\OpenRegister\Service\ObjectService');
             } catch (Exception $e) {
-                // If the service is not available, return null
+                // If the service is not available, return null.
                 return null;
             }
         }
 
         return null;
+
     }//end getOpenRegisters()
 
     /**
      * Gets the appropriate mapper based on the object type.
-     * (This can be a objectType for OpenRegister, by using an instantiation of the objectService of OpenRegister).
      *
-     * @param string|null $objectType The objectType as string
-     * @param int|null    $schema     The openregister schema
-     * @param int|null    $register   The openregister register
+     * Either resolves an OpenRegister mapper by register + schema, or throws when
+     * an unknown object type is requested.
+     *
+     * @param string|null $objectType The objectType as string.
+     * @param int|null    $schema     The openregister schema.
+     * @param int|null    $register   The openregister register.
      *
      * @return mixed The appropriate mapper.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvalidArgumentException If an unknown object type is provided.
+     *
+     * @throws ContainerExceptionInterface When the container fails.
+     * @throws NotFoundExceptionInterface  When the service is not bound.
+     * @throws InvalidArgumentException    If an unknown object type is provided.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-5
      */
     public function getMapper(?string $objectType=null, ?int $schema=null, ?int $register=null): mixed
     {

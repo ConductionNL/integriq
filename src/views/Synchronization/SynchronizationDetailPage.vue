@@ -31,11 +31,12 @@
   exposes a Save button in the header actions slot — no auto-save on
   every keystroke, mirroring the legacy modal's two-phase flow.
 
-  Closes #834. Open follow-ups:
-    - Conditions array editor (legacy JSON-Logic textarea) — re-add in a
-      future bespoke widget if/when the visual condition builder lands.
-    - Mapping preview (legacy "test mapping" surface) — out of scope here;
-      tracked separately under the test-mapping modal work.
+  Closes #834. Follow-ups landed in #878:
+    - Visual JsonLogic condition builder + raw-JSON toggle (reuses
+      RuleConditionGroup from the Rule editor).
+    - Inline mapping preview pane on the picker (debounce-fires
+      `/api/mappings/test`).
+    - NcFilePicker swap for `sourceType: 'file'` (in SyncConfigWidget).
 -->
 
 <template>
@@ -92,6 +93,7 @@
 						</label>
 						<NcSelect
 							:input-id="'sync-source-type'"
+							:aria-label-combobox="t('openconnector', 'Source type')"
 							:value="selectedSourceType"
 							:options="typeOptions"
 							:clearable="false"
@@ -169,6 +171,7 @@
 						</label>
 						<NcSelect
 							:input-id="'sync-target-type'"
+							:aria-label-combobox="t('openconnector', 'Target type')"
 							:value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
@@ -244,6 +247,47 @@
 				</section>
 			</div>
 
+			<!-- Conditions row -->
+			<div class="sync-detail__row sync-detail__row--single">
+				<section class="sync-detail__card sync-detail__conditions">
+					<header class="sync-detail__card-header">
+						<FilterVariant :size="22" />
+						<h3>{{ t('openconnector', 'Conditions') }}</h3>
+						<div class="sync-detail__card-header-spacer" />
+						<NcButton
+							type="tertiary"
+							:aria-label="rawConditions ? t('openconnector', 'Switch back to visual builder') : t('openconnector', 'Edit conditions as raw JSON')"
+							@click="toggleRawConditions">
+							<template #icon>
+								<CodeJson :size="18" />
+							</template>
+							{{ rawConditions ? t('openconnector', 'Visual builder') : t('openconnector', 'Raw JSON') }}
+						</NcButton>
+					</header>
+					<p class="sync-detail__hint">
+						{{ t('openconnector', 'JSON Logic predicates that gate which source records are synchronised. Leave empty to sync everything.') }}
+					</p>
+					<RuleConditionGroup
+						v-if="!rawConditions"
+						:node="rootConditionGroup"
+						:removable="false"
+						@update="onConditionsUpdate" />
+					<div v-else class="sync-detail__raw-conditions">
+						<textarea
+							class="sync-detail__textarea sync-detail__textarea--code"
+							:value="rawConditionsDraft"
+							spellcheck="false"
+							rows="10"
+							@input="onRawConditionsInput($event.target.value)" />
+						<span
+							class="sync-detail__helper"
+							:class="{ 'sync-detail__helper--error': rawConditionsError }">
+							{{ rawConditionsError || t('openconnector', 'Edit the JSON Logic directly. Saved into the synchronization conditions field exactly as typed.') }}
+						</span>
+					</div>
+				</section>
+			</div>
+
 			<NcNoteCard v-if="saveError" type="error">
 				<p>{{ saveError }}</p>
 			</NcNoteCard>
@@ -265,20 +309,32 @@ import {
 } from '@conduction/nextcloud-vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import CallSplit from 'vue-material-design-icons/CallSplit.vue'
+import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
+import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 
+import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'openconnector'
+
+/**
+ * Default empty root-group used when a synchronization has no conditions
+ * (or when the persisted value isn't a recognisable JsonLogic group node).
+ * Centralised so the visual builder and the raw-JSON textarea always agree
+ * on the round-trip default shape — mirrors the EMPTY_ROOT_GROUP used in
+ * RuleDetailPage so power-users can copy/paste between rules and syncs.
+ */
+const EMPTY_ROOT_GROUP = { and: [] }
 
 /**
  * Polymorphic type discriminator options shared between source and
@@ -312,6 +368,7 @@ function emptyDraft() {
 		targetSourceMapping: '',
 		actions: [],
 		followUps: [],
+		conditions: { ...EMPTY_ROOT_GROUP },
 	}
 }
 
@@ -327,13 +384,16 @@ export default {
 		NcNoteCard,
 		ArrowRight,
 		CallSplit,
+		CodeJson,
 		CogOutline,
 		ContentSaveOutline,
 		DatabaseArrowLeftOutline,
 		DatabaseArrowRightOutline,
+		FilterVariant,
 		PlayCircleOutline,
 		SwapHorizontal,
 		UndoIcon,
+		RuleConditionGroup,
 		SyncConfigWidget,
 		SyncMappingPicker,
 		SyncReferenceList,
@@ -351,6 +411,7 @@ export default {
 		schema: { type: String, default: SCHEMA_SLUG },
 	},
 
+	/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 	setup(props) {
 		const objectStore = useObjectStore()
 		// Register the type so objectStore.fetchObject/saveObject can resolve
@@ -371,60 +432,104 @@ export default {
 			loadError: '',
 			draft: null,
 			original: null,
+			/** Toggles the conditions editor between visual builder and raw JSON. */
+			rawConditions: false,
+			rawConditionsDraft: '',
+			rawConditionsError: '',
 		}
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		objectIdString() {
 			return this.id != null ? String(this.id) : ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		registerSlug() {
 			return this.register || REGISTER_SLUG
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		schemaSlug() {
 			return this.schema || SCHEMA_SLUG
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		title() {
 			if (this.draft?.name) return this.draft.name
 			return this.original?.name || t('openconnector', 'Synchronization')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		description() {
 			return this.original?.description || ''
 		},
 		hasError() {
 			return Boolean(this.loadError) && !this.draft
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		errorMessage() {
 			return this.loadError || t('openconnector', 'Failed to load synchronization')
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		typeOptions() {
 			return TYPE_OPTIONS
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedSourceType() {
 			return TYPE_OPTIONS.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedTargetType() {
 			return TYPE_OPTIONS.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		dirty() {
 			if (!this.draft || !this.original) return false
+			// `normalizeForDiff` shapes both sides identically (conditions
+			// always rendered as the group-node object), so a JSON.stringify
+			// diff compares apples-to-apples even though the wire-format
+			// stores conditions as `array<object>`.
 			return JSON.stringify(this.draft) !== JSON.stringify(this.normalizeForDiff(this.original))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		canSave() {
 			return Boolean(this.draft?.name && this.draft.name.trim().length > 0)
+		},
+		/**
+		 * Coerce persisted `conditions` into a JsonLogic group node so the
+		 * visual RuleConditionGroup always renders. Mirrors the
+		 * `normaliseConditions` helper in RuleDetailPage — same legacy shapes
+		 * (string, array, single leaf, group) end up as `{and:[...]}` /
+		 * `{or:[...]}`.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 */
+		rootConditionGroup() {
+			return this.normaliseConditions(this.draft?.conditions)
 		},
 	},
 
 	watch: {
 		id: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 			handler() {
 				this.loadObject()
 			},
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		rawConditions(value) {
+			if (value) {
+				try {
+					this.rawConditionsDraft = JSON.stringify(this.rootConditionGroup, null, 2)
+					this.rawConditionsError = ''
+				} catch (_e) {
+					this.rawConditionsDraft = ''
+				}
+			}
+		},
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		async loadObject() {
 			if (!this.objectIdString) {
 				// New-create surface — start with empty draft.
@@ -460,6 +565,8 @@ export default {
 		 *
 		 * @param {object} obj Raw object from the store.
 		 * @return {object} Plain draft with all editable fields filled.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
 		 */
 		normalizeForDiff(obj) {
 			const base = emptyDraft()
@@ -468,6 +575,12 @@ export default {
 				if (obj && obj[key] !== undefined && obj[key] !== null) {
 					if (Array.isArray(base[key])) {
 						out[key] = Array.isArray(obj[key]) ? [...obj[key]] : []
+					} else if (key === 'conditions') {
+						// Conditions has three valid storage shapes (string,
+						// array, object) thanks to legacy rows — funnel them
+						// all through the JsonLogic coercer so the visual
+						// builder sees a consistent group node.
+						out[key] = this.normaliseConditions(obj[key])
 					} else if (typeof base[key] === 'object') {
 						out[key] = (typeof obj[key] === 'object' && !Array.isArray(obj[key]))
 							? { ...obj[key] }
@@ -479,10 +592,100 @@ export default {
 			}
 			return out
 		},
+		/**
+		 * Coerce a persisted `conditions` value into a top-level JsonLogic
+		 * group node. Accepts null/undefined/string/array/leaf/group and
+		 * always returns `{and:[...]}` or `{or:[...]}` so the visual builder
+		 * never receives a malformed shape.
+		 *
+		 * The register schema (`openconnector_register.json`) declares
+		 * `conditions` as `array<object>` — legacy data wraps the JsonLogic
+		 * group in a single-element array. We unwrap on load and re-wrap on
+		 * save (see `serializeConditions`) so the UI gets to work with the
+		 * intuitive object shape while the wire format stays array-typed.
+		 *
+		 * @param {*} raw Persisted conditions value.
+		 * @return {object} JsonLogic group node.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 */
+		normaliseConditions(raw) {
+			if (raw === null || raw === undefined || raw === '') {
+				return { ...EMPTY_ROOT_GROUP }
+			}
+			if (typeof raw === 'string') {
+				try { return this.normaliseConditions(JSON.parse(raw)) } catch (_e) { return { ...EMPTY_ROOT_GROUP } }
+			}
+			if (Array.isArray(raw)) {
+				if (raw.length === 0) return { ...EMPTY_ROOT_GROUP }
+				// Single-item array wrapping a group → unwrap and recurse.
+				if (raw.length === 1 && raw[0] && typeof raw[0] === 'object' && !Array.isArray(raw[0])) {
+					return this.normaliseConditions(raw[0])
+				}
+				// Multi-item array of leaves → wrap with AND.
+				return { and: raw }
+			}
+			if (typeof raw === 'object') {
+				const keys = Object.keys(raw)
+				if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or') && Array.isArray(raw[keys[0]])) {
+					return raw
+				}
+				return { and: [raw] }
+			}
+			return { ...EMPTY_ROOT_GROUP }
+		},
+		/**
+		 * Inverse of `normaliseConditions`: serialise the visual builder's
+		 * group node into the array-of-objects shape the register schema
+		 * expects. An empty AND/OR group becomes the empty array so the
+		 * field stays "unset" on the wire and doesn't carry noise.
+		 *
+		 * @param {object} group JsonLogic group node from the builder.
+		 * @return {Array} Schema-conformant `array<object>` for persistence.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 */
+		serializeConditions(group) {
+			if (!group || typeof group !== 'object') return []
+			const keys = Object.keys(group)
+			if (keys.length === 1 && (keys[0] === 'and' || keys[0] === 'or')) {
+				const children = Array.isArray(group[keys[0]]) ? group[keys[0]] : []
+				if (children.length === 0) return []
+			}
+			return [group]
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		onConditionsUpdate(node) {
+			if (!this.draft) return
+			this.$set(this.draft, 'conditions', node)
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		toggleRawConditions() {
+			this.rawConditions = !this.rawConditions
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		onRawConditionsInput(value) {
+			this.rawConditionsDraft = value
+			const trimmed = value.trim()
+			if (trimmed.length === 0) {
+				this.rawConditionsError = ''
+				this.onConditionsUpdate({ ...EMPTY_ROOT_GROUP })
+				return
+			}
+			try {
+				const parsed = JSON.parse(trimmed)
+				this.rawConditionsError = ''
+				this.onConditionsUpdate(parsed)
+			} catch (parseErr) {
+				this.rawConditionsError = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
+			}
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		updateDraft(key, value) {
 			if (!this.draft) return
 			this.$set(this.draft, key, value)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		onSourceTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			// Type changed — clear the kind-specific blob + id so we don't
@@ -491,12 +694,14 @@ export default {
 			this.$set(this.draft, 'sourceId', '')
 			this.$set(this.draft, 'sourceConfig', {})
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		onTargetTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			this.$set(this.draft, 'targetType', option.id)
 			this.$set(this.draft, 'targetId', '')
 			this.$set(this.draft, 'targetConfig', {})
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		async save() {
 			if (!this.draft || this.saving) return
 			this.saving = true
@@ -505,6 +710,10 @@ export default {
 				const payload = {
 					...this.original,
 					...this.draft,
+					// The register schema declares `conditions` as
+					// `array<object>` — serialise the builder's group node
+					// into a single-element array so OR validation passes.
+					conditions: this.serializeConditions(this.draft.conditions),
 				}
 				const saved = await this.objectStore.saveObject(this.schemaSlug, payload)
 				if (!saved) {
@@ -519,6 +728,7 @@ export default {
 				this.saving = false
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		resetEdits() {
 			if (!this.original) return
 			this.draft = this.normalizeForDiff(this.original)
@@ -615,5 +825,33 @@ export default {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
+}
+
+.sync-detail__row--single {
+	grid-template-columns: 1fr;
+}
+
+.sync-detail__card-header-spacer {
+	flex: 1;
+}
+
+.sync-detail__textarea--code {
+	font-family: var(--font-face-monospace, monospace);
+	font-size: 13px;
+}
+
+.sync-detail__raw-conditions {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.sync-detail__helper {
+	color: var(--color-text-maxcontrast);
+	font-size: 12px;
+}
+
+.sync-detail__helper--error {
+	color: var(--color-error);
 }
 </style>

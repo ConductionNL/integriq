@@ -1,4 +1,22 @@
 <?php
+/**
+ * OpenConnector UI controller.
+ *
+ * UI Controller that serves the SPA entry template for history-mode deep
+ * links. Every public method returns the same SPA shell so the client-side
+ * Vue router can take over.
+ *
+ * @category Controller
+ * @package  OCA\OpenConnector\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Controller;
 
@@ -19,30 +37,36 @@ use OCP\IRequest;
 class UiController extends Controller
 {
     /**
-     * @param string   $appName
-     * @param IRequest $request
+     * Constructor for the UiController.
+     *
+     * @param string   $appName The name of the app.
+     * @param IRequest $request The current request object.
+     *
+     * @return void
      */
     public function __construct(string $appName, IRequest $request)
     {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
      * Returns the base SPA template response with permissive connect-src for API calls.
+     *
+     * @return TemplateResponse The SPA index template with a permissive CSP.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
      */
     private function makeSpaResponse(): TemplateResponse
     {
-        // Create the SPA template response
+        // Create the SPA template response.
         $response = new TemplateResponse(
             $this->appName,
             'index',
             []
         );
 
-        // Allow connections to any domain so the app can call APIs as configured
+        // Allow connections to any domain so the app can call APIs as configured.
         $csp = new ContentSecurityPolicy();
         $csp->addAllowedConnectDomain('*');
         $response->setContentSecurityPolicy($csp);
@@ -51,11 +75,17 @@ class UiController extends Controller
     }//end makeSpaResponse()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the dashboard route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function dashboard(): TemplateResponse
     {
@@ -63,11 +93,17 @@ class UiController extends Controller
     }//end dashboard()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the sources list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function sources(): TemplateResponse
     {
@@ -75,11 +111,17 @@ class UiController extends Controller
     }//end sources()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the source logs route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function sourcesLogs(): TemplateResponse
     {
@@ -87,11 +129,17 @@ class UiController extends Controller
     }//end sourcesLogs()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the endpoints list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function endpoints(): TemplateResponse
     {
@@ -99,11 +147,17 @@ class UiController extends Controller
     }//end endpoints()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the endpoint logs route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function endpointsLogs(): TemplateResponse
     {
@@ -111,11 +165,19 @@ class UiController extends Controller
     }//end endpointsLogs()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the single endpoint detail route.
+     *
+     * @param string $id The endpoint identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function endpointsId(string $id): TemplateResponse
     {
@@ -123,11 +185,17 @@ class UiController extends Controller
     }//end endpointsId()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the consumers list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function consumers(): TemplateResponse
     {
@@ -135,11 +203,19 @@ class UiController extends Controller
     }//end consumers()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the single consumer detail route.
+     *
+     * @param string $id The consumer identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function consumersId(string $id): TemplateResponse
     {
@@ -147,11 +223,17 @@ class UiController extends Controller
     }//end consumersId()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the webhooks list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function webhooks(): TemplateResponse
     {
@@ -159,11 +241,17 @@ class UiController extends Controller
     }//end webhooks()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the jobs list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function jobs(): TemplateResponse
     {
@@ -171,11 +259,17 @@ class UiController extends Controller
     }//end jobs()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the job logs route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function jobsLogs(): TemplateResponse
     {
@@ -183,11 +277,17 @@ class UiController extends Controller
     }//end jobsLogs()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the mappings list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function mappings(): TemplateResponse
     {
@@ -195,11 +295,19 @@ class UiController extends Controller
     }//end mappings()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the single mapping detail route.
+     *
+     * @param string $id The mapping identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function mappingsId(string $id): TemplateResponse
     {
@@ -207,11 +315,17 @@ class UiController extends Controller
     }//end mappingsId()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the rules list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function rules(): TemplateResponse
     {
@@ -219,11 +333,19 @@ class UiController extends Controller
     }//end rules()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the single rule detail route.
+     *
+     * @param string $id The rule identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function rulesId(string $id): TemplateResponse
     {
@@ -231,11 +353,17 @@ class UiController extends Controller
     }//end rulesId()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the synchronizations list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function synchronizations(): TemplateResponse
     {
@@ -243,11 +371,17 @@ class UiController extends Controller
     }//end synchronizations()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the synchronization contracts route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function synchronizationsContracts(): TemplateResponse
     {
@@ -255,11 +389,17 @@ class UiController extends Controller
     }//end synchronizationsContracts()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the synchronization logs route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function synchronizationsLogs(): TemplateResponse
     {
@@ -267,11 +407,17 @@ class UiController extends Controller
     }//end synchronizationsLogs()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the cloud events list route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEvents(): TemplateResponse
     {
@@ -279,11 +425,17 @@ class UiController extends Controller
     }//end cloudEvents()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the cloud events events route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEventsEvents(): TemplateResponse
     {
@@ -291,11 +443,19 @@ class UiController extends Controller
     }//end cloudEventsEvents()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the single cloud event detail route.
+     *
+     * @param string $id The cloud event identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEventsEventsId(string $id): TemplateResponse
     {
@@ -303,11 +463,17 @@ class UiController extends Controller
     }//end cloudEventsEventsId()
 
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
+     * Serves the SPA shell for the cloud events logs route.
+     *
+     * @return TemplateResponse The SPA index template.
      *
      * @phpstan-return TemplateResponse
      * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
      */
     public function cloudEventsLogs(): TemplateResponse
     {

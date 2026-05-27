@@ -17,11 +17,13 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						<NcSelect
 							id="method"
 							v-bind="methodOptions"
+							:input-label="t('openconnector', 'Method')"
 							v-model="methodOptions.value" />
 
 						<NcSelect
 							id="type"
 							v-bind="typeOptions"
+							:input-label="t('openconnector', 'Type')"
 							v-model="typeOptions.value" />
 
 						<NcTextField
@@ -135,6 +137,7 @@ export default {
 		}
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-5 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.succes = false
@@ -147,6 +150,7 @@ export default {
 				type: '',
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-5 */
 		async testSource() {
 			this.loading = true
 
@@ -167,6 +171,7 @@ export default {
 				sourceStore.setSourceTest(false)
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-5 */
 		prettifyJson(json) {
 			if (!json) return ''
 			try {

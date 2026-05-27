@@ -1,20 +1,23 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * JobLogMessageColumnMigration
+/**
+ * Job-logs message column migration.
  *
- * Migration step to increase the message column size in the openconnector_job_logs table
- * to handle longer job execution messages and prevent truncation errors.
+ * Migration step to increase the message column size in the openconnector_job_logs
+ * table to handle longer job execution messages and prevent truncation errors.
  *
  * @category Migration
  * @package  OCA\OpenConnector\Migration
- * @author   OpenConnector Development Team
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openconnector
- * @version  1.0.0
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenConnector\Migration;
 
@@ -62,7 +65,7 @@ class Version1Date20250826103500 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes needed
+        // No pre-schema changes needed.
     }//end preSchemaChange()
 
     /**
@@ -92,30 +95,31 @@ class Version1Date20250826103500 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Check if the job_logs table exists
-        if (!$schema->hasTable('openconnector_job_logs')) {
+        // Check if the job_logs table exists.
+        if ($schema->hasTable('openconnector_job_logs') === false) {
             $output->warning('openconnector_job_logs table not found');
             return $schema;
         }
 
         $table = $schema->getTable('openconnector_job_logs');
 
-        // Check if the message column exists
-        if (!$table->hasColumn('message')) {
+        // Check if the message column exists.
+        if ($table->hasColumn('message') === false) {
             $output->warning('Message column not found in openconnector_job_logs table');
             return $schema;
         }
 
-        // Drop the existing column and recreate it with TEXT type
+        // Drop the existing column and recreate it with TEXT type.
         // Nextcloud migrations work better with drop/add pattern for type changes — Doctrine's
         // changeColumn silently no-ops the type change in some DB backends, leaving the column
         // stuck at VARCHAR(255) and causing job-log truncation errors at runtime.
         $table->dropColumn('message');
         $table->addColumn('message', Types::TEXT)
-                ->setNotnull(true)
-                ->setDefault('success');
+            ->setNotnull(true)
+            ->setDefault('success');
 
         $output->info('Updated message column in openconnector_job_logs table to TEXT type');
 
@@ -137,7 +141,7 @@ class Version1Date20250826103500 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No post-schema changes needed
+        // No post-schema changes needed.
         $output->info('Job logs message column migration completed successfully');
     }//end postSchemaChange()
 }//end class

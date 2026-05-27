@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector authentication service.
+ *
+ * Service class for handling authentication on other services. Builds
+ * OAuth/JWT/Decos call options and signs JWT tokens used by outbound calls.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -59,6 +76,13 @@ class AuthenticationService
     ];
 
     /**
+     * Twig environment used for template rendering in authentication flows.
+     *
+     * @var Environment
+     */
+    private Environment $twig;
+
+    /**
      * Setting up the class with required service.
      *
      * @param ArrayLoader $loader The ArrayLoader for Twig.
@@ -75,6 +99,8 @@ class AuthenticationService
      * @param array $configuration Configuration array for authentication.
      *
      * @return array|array[] The call options for OAuth with Client Credentials.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
      */
     private function createClientCredentialConfig(array $configuration): array
     {
@@ -100,16 +126,19 @@ class AuthenticationService
             ];
         }
 
-        // @todo: check for off-cases, i.e. camelCase (not according to OAuth standards)
-        if (isset($configuration['client_assertion_type']) === true && $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') {
+        // @todo: check for off-cases, i.e. camelCase (not according to OAuth standards).
+        $jwtBearer = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+        if (isset($configuration['client_assertion_type']) === true
+            && $configuration['client_assertion_type'] === $jwtBearer
+        ) {
             $callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
             $callConfig['form_params']['client_assertion']      = $this->fetchJWTToken(
-            [
-                'algorithm' => 'PS256',
-                'secret'    => $configuration['private_key'],
-                'x5t'       => $configuration['x5t'],
-                'payload'   => $configuration['payload'],
-            ]
+                configuration: [
+                    'algorithm' => 'PS256',
+                    'secret'    => $configuration['private_key'],
+                    'x5t'       => $configuration['x5t'],
+                    'payload'   => $configuration['payload'],
+                ]
             );
         }
 
@@ -122,6 +151,8 @@ class AuthenticationService
      * @param array $configuration Configuration array for authentication.
      *
      * @return array|array[] The call options for OAuth with Password Credentials
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
      */
     private function createPasswordConfig(array $configuration): array
     {
@@ -160,6 +191,8 @@ class AuthenticationService
      * @throws BadRequestException                     Thrown if the configuration is not compatible with OAuth.
      * @throws \GuzzleHttp\Exception\GuzzleException Thrown if the token endpoint does not respond with an access token.
      * @todo   Convert GuzzleException to another error.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
      */
     public function fetchOAuthTokens(array $configuration): string
     {
@@ -203,6 +236,8 @@ class AuthenticationService
      * @return string The access token
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-3
      */
     public function fetchDecosToken(array $configuration): string
     {
@@ -227,26 +262,43 @@ class AuthenticationService
     /**
      * Get RSA key for RS and PS (asymmetrical) encryption.
      *
-     * @param  array $configuration
-     * @return JWK|null
+     * @param array $configuration The auth configuration for the source.
+     *
+     * @return JWK|null The resulting JWK key, or null when the secret cannot be parsed.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getRSJWK(array $configuration): ?JWK
     {
-        $stamp    = microtime().getmypid();
-        $filename = "/var/tmp/privatekey-$stamp";
+        // #1012(a): private keys were previously written to
+        // /var/tmp/privatekey-<microtime><pid> with default-umask perms (often
+        // world-readable on shared hosting) and a predictable name derived
+        // from process metadata. If the process died between
+        // file_put_contents and unlink, the key leaked indefinitely.
+        // Use tempnam() + chmod 0600 + try/finally so:
+        //   - the filename is unpredictable,
+        //   - the bytes are never readable to other local users,
+        //   - cleanup runs even when JWKFactory::createFromKeyFile throws.
+        $filename = tempnam(sys_get_temp_dir(), 'oc_privatekey_');
+        if ($filename === false) {
+            throw new Exception('Could not allocate a temp file for the private key.');
+        }
+
+        @chmod($filename, 0600);
         file_put_contents($filename, base64_decode($configuration['secret']));
-        $jwk = null;
+        @chmod($filename, 0600);
+
         try {
             $jwk = JWKFactory::createFromKeyFile(
                 $filename,
                 null,
                 ['use' => 'sig']
             );
-        } catch (Exception $exception) {
-            throw $exception;
+        } finally {
+            if (file_exists($filename) === true) {
+                @unlink($filename);
+            }
         }
-
-        unlink($filename);
 
         return $jwk;
     }//end getRSJWK()
@@ -257,6 +309,8 @@ class AuthenticationService
      * @param array $configuration The source configuration.
      *
      * @return JWK|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getHSJWK(array $configuration): ?JWK
     {
@@ -274,8 +328,11 @@ class AuthenticationService
      * @param array $configuration The source auth configuration.
      *
      * @return array The resulting JWT payload.
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\SyntaxError
+     *
+     * @throws \Twig\Error\LoaderError When the template cannot be loaded.
+     * @throws \Twig\Error\SyntaxError When the template has invalid syntax.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getJWTPayload(array $configuration): array
     {
@@ -287,16 +344,19 @@ class AuthenticationService
     /**
      * Gets the JWK key based upon algorithm and secret in the configuration.
      *
-     * @param  array $configuration The auth configuration for the source.
+     * @param array $configuration The auth configuration for the source.
+     *
      * @return JWK|null The resulting JWK key.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function getJWK(array $configuration): ?JWK
     {
         $jwk = null;
         if (in_array(needle: $configuration['algorithm'], haystack: ['HS256', 'HS512']) === true) {
-            return $this->getHSJWK($configuration);
+            return $this->getHSJWK(configuration: $configuration);
         } else if (in_array(needle: $configuration['algorithm'], haystack: ['RS256', 'RS384', 'RS512', 'PS256']) === true) {
-            return $this->getRSJWK($configuration);
+            return $this->getRSJWK(configuration: $configuration);
         }
 
         throw new BadRequestException('Algorithm not supported by key generator');
@@ -305,11 +365,14 @@ class AuthenticationService
     /**
      * Generates a signed JWT token based on key, payload and algorithm.
      *
-     * @param  array       $payload   The payload for the JWT token
-     * @param  JWK         $jwk       The JWT Key for the token.
-     * @param  string      $algorithm The algorithm.
-     * @param  string|null $x5t       If applicable: The Base64 encoded SHA-1 thumbprint of the used certificate.
-     * @return string
+     * @param array       $payload   The payload for the JWT token.
+     * @param JWK         $jwk       The JWT Key for the token.
+     * @param string      $algorithm The algorithm.
+     * @param string|null $x5t       If applicable: the Base64 encoded SHA-1 thumbprint of the used certificate.
+     *
+     * @return string The serialised JWT token.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
     {
@@ -351,6 +414,8 @@ class AuthenticationService
      * @param array $configuration The auth configuration for the JWT token. Must at least contain payload, algorithm and secret.
      *
      * @return string The generated JWT token
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     public function fetchJWTToken(array $configuration): string
     {
@@ -359,18 +424,23 @@ class AuthenticationService
             throw new BadRequestException(message: 'Some required parameters are not set: ['.implode(separator: ',', array: $diff).']');
         }
 
-        $payload = $this->getJWTPayload($configuration);
+        $payload = $this->getJWTPayload(configuration: $configuration);
 
-        $jwk = $this->getJWK($configuration);
+        $jwk = $this->getJWK(configuration: $configuration);
 
         if ($jwk === null) {
             throw new BadRequestException('No JWK key could be formed with given data');
         }
 
         if (isset($configuration['x5t']) === true) {
-            return $this->generateJWT($payload, $jwk, $configuration['algorithm'], x5t: $configuration['x5t']);
+            return $this->generateJWT(
+                payload: $payload,
+                jwk: $jwk,
+                algorithm: $configuration['algorithm'],
+                x5t: $configuration['x5t']
+            );
         }
 
-        return $this->generateJWT($payload, $jwk, $configuration['algorithm']);
+        return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
     }//end fetchJWTToken()
 }//end class

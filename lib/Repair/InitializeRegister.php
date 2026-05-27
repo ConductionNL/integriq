@@ -15,14 +15,13 @@
  * @category Repair
  * @package  OCA\OpenConnector\Repair
  *
- * @author  Conduction Development Team <info@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V. <info@conduction.nl>
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.OpenConnector.nl
  */
 
-// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>.
-// SPDX-License-Identifier: EUPL-1.2.
 declare(strict_types=1);
 
 namespace OCA\OpenConnector\Repair;
@@ -49,6 +48,8 @@ use Psr\Log\LoggerInterface;
 class InitializeRegister implements IRepairStep
 {
     /**
+     * Constructor.
+     *
      * @param ContainerInterface $container Server DI container (used to
      *                                      resolve OR's ConfigurationService
      *                                      lazily so the class_exists guard
@@ -86,6 +87,8 @@ class InitializeRegister implements IRepairStep
      * @param IOutput $output progress/info channel piped to occ stdout
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-repair-and-app-boot/tasks.md#task-1
      */
     public function run(IOutput $output): void
     {

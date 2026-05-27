@@ -8,6 +8,8 @@ status: implemented
 
 Expose application metrics in Prometheus text exposition format at `GET /api/metrics` for monitoring, alerting, and operational dashboards. Provide a health check endpoint at `GET /api/health` for liveness/readiness probes in container orchestration environments.
 
+@e2e exclude metrics and health-check endpoints — no browser UI, verified by Newman/API tests
+
 ## Requirements
 
 ### REQ-PROM-001: Metrics Endpoint

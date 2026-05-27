@@ -22,6 +22,7 @@
 	<div class="sync-ref-list">
 		<NcSelect
 			:input-id="inputId"
+			:input-label="inputLabel"
 			:value="selectedOptions"
 			:options="options"
 			:loading="loading"
@@ -38,6 +39,7 @@
 
 <script>
 import { NcSelect } from '@nextcloud/vue'
+import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
@@ -68,6 +70,8 @@ export default {
 		excludeId: { type: String, default: '' },
 		placeholder: { type: String, default: '' },
 		emptyLabel: { type: String, default: '' },
+		/** Accessible label for the combobox input. */
+		inputLabel: { type: String, default: () => t('openconnector', 'References') },
 	},
 
 	data() {
@@ -80,9 +84,11 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		inputId() {
 			return `sync-ref-list-${this.listUid}`
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		selectedOptions() {
 			if (!Array.isArray(this.value)) return []
 			return this.value.map((id) => this.options.find((opt) => opt.id === String(id)) ?? {
@@ -95,6 +101,7 @@ export default {
 	watch: {
 		schema: {
 			immediate: true,
+			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 			handler() {
 				this.fetchOptions()
 			},
@@ -102,10 +109,12 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		onChange(picked) {
 			const list = Array.isArray(picked) ? picked : []
 			this.$emit('input', list.map((option) => option?.id).filter(Boolean).map(String))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		async fetchOptions() {
 			this.loading = true
 			try {

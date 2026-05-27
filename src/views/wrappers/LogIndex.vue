@@ -79,24 +79,31 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		config() {
 			return LOG_TYPE_CONFIG[this.logType]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		title() {
 			return t('openconnector', this.config.titleKey)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		description() {
 			return t('openconnector', this.config.descriptionKey)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		rows() {
 			return this.config.list()
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		total() {
 			return this.config.total()
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		loading() {
 			return logStore.loading || false
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		paginationProp() {
 			return {
 				page: this.page,
@@ -108,6 +115,8 @@ export default {
 		/**
 		 * Manual column definitions. CnIndexPage uses these when no `schema`
 		 * is provided (openconnector log records are not OpenRegister-backed).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3
 		 */
 		columns() {
 			return [
@@ -153,17 +162,21 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		refresh() {
 			return this.config.fetch(logStore.logFilters || {})
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		openDetail(row) {
 			logStore.setViewLogItem(row)
 			navigationStore.setModal(this.config.modalName)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		onPageChanged(page) {
 			this.page = page
 			this.refresh()
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-3 */
 		onPageSizeChanged(limit) {
 			this.limit = limit
 			this.page = 1

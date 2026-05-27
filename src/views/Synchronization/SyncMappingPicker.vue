@@ -17,6 +17,11 @@
   `lib/Settings/openconnector_register.json` ("Mapping slug for
   source-to-target field transformation"). We render the human label
   but emit the slug back up.
+
+  #878 follow-up: a collapsible SyncMappingPreview is attached under the
+  primary picker so users can verify the picked transformation against a
+  sample object without leaving the page (legacy flow was a separate
+  "Test mapping" modal accessed from the mapping detail page).
 -->
 
 <template>
@@ -27,6 +32,7 @@
 			</label>
 			<NcSelect
 				:input-id="primaryId"
+				:aria-label-combobox="t('openconnector', 'Source → Target mapping')"
 				:value="selectedPrimary"
 				:options="mappingOptions"
 				:loading="loading"
@@ -35,6 +41,7 @@
 			<span class="sync-mapping__helper">
 				{{ t('openconnector', 'Transforms each source record into the target shape.') }}
 			</span>
+			<SyncMappingPreview :mapping-id="value" />
 		</div>
 
 		<div class="sync-mapping__field">
@@ -43,6 +50,7 @@
 			</label>
 			<NcSelect
 				:input-id="reverseId"
+				:aria-label-combobox="t('openconnector', 'Target → Source mapping')"
 				:value="selectedReverse"
 				:options="mappingOptions"
 				:loading="loading"
@@ -60,6 +68,7 @@
 			</label>
 			<NcSelect
 				:input-id="hashId"
+				:aria-label-combobox="t('openconnector', 'Hash mapping')"
 				:value="selectedHash"
 				:options="mappingOptions"
 				:loading="loading"
@@ -78,6 +87,8 @@ import { NcSelect } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+import SyncMappingPreview from './SyncMappingPreview.vue'
+
 let pickerSeq = 0
 
 export default {
@@ -85,6 +96,7 @@ export default {
 
 	components: {
 		NcSelect,
+		SyncMappingPreview,
 	},
 
 	props: {
@@ -106,15 +118,21 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		primaryId() { return `sync-mapping-${this.pickerUid}-primary` },
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		reverseId() { return `sync-mapping-${this.pickerUid}-reverse` },
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		hashId() { return `sync-mapping-${this.pickerUid}-hash` },
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		selectedPrimary() {
 			return this.resolveOption(this.value)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		selectedReverse() {
 			return this.resolveOption(this.targetSourceValue)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		selectedHash() {
 			return this.resolveOption(this.hashValue)
 		},
@@ -125,6 +143,7 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		resolveOption(id) {
 			if (!id) return null
 			return this.mappingOptions.find((opt) => opt.id === String(id)) ?? {
@@ -132,6 +151,7 @@ export default {
 				label: String(id),
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
 		async fetchMappings() {
 			this.loading = true
 			try {

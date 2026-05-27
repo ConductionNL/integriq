@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector MappingService.
+ *
+ * Mapping service that delegates core execution to OpenRegister's MappingService
+ * when available, falling back to its own implementation.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -73,7 +90,14 @@ class MappingService
     ) {
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new MappingExtension());
-        $this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, callService: $callService, fileService: $fileService, objectService: $objectService));
+        $this->twig->addRuntimeLoader(
+            new MappingRuntimeLoader(
+                mappingService: $this,
+                callService: $callService,
+                fileService: $fileService,
+                objectService: $objectService
+            )
+        );
 
         // Try to load OpenRegister's MappingService for delegation.
         try {
@@ -98,6 +122,8 @@ class MappingService
      * @param string $replacement The encoded character.
      *
      * @return array The array with encoded array keys
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -106,7 +132,7 @@ class MappingService
             $newKey = str_replace($toReplace, $replacement, $key);
 
             if (\is_array($value) === true && $value !== []) {
-                $result[$newKey] = $this->encodeArrayKeys($value, $toReplace, $replacement);
+                $result[$newKey] = $this->encodeArrayKeys(array: $value, toReplace: $toReplace, replacement: $replacement);
                 continue;
             }
 
@@ -128,6 +154,8 @@ class MappingService
      * @throws LoaderError|SyntaxError Twig exceptions.
      *
      * @psalm-param array<string, mixed> $context
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     public function renderTemplateString(string $template, array $context=[]): string
     {
@@ -147,6 +175,8 @@ class MappingService
      *
      * @return array The result (output) of the mapping process
      * @throws LoaderError|SyntaxError Twig Exceptions
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     public function executeMapping(\OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping, array $input, bool $list=false): array
     {
@@ -166,7 +196,8 @@ class MappingService
             );
         }
 
-        return $this->executeMappingLocal($mapping, $input, $list);
+        return $this->executeMappingLocal(mapping: $mapping, input: $input, list: $list);
+
     }//end executeMapping()
 
     /**
@@ -181,10 +212,12 @@ class MappingService
      * @throws Exception When mapping fails
      *
      * @SuppressWarnings(PHPMD.ElseExpression)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
      */
     private function executeMappingLocal(\OCA\OpenRegister\Db\Mapping $mapping, array $input, bool $list=false): array
     {
-        // Check for list
+        // Check for list.
         if ($list === true) {
             $list        = [];
             $extraValues = [];
@@ -199,22 +232,22 @@ class MappingService
             foreach ($input as $key => $value) {
                 // Mapping function expects an array for $input, make sure we always pass an array to this function.
                 if (is_array($value) === false || empty($extraValues) === false) {
-                    // todo: we want to remove ['value' => $value] from this at some point, for now required for DOWR to work
+                    // Todo: we want to remove ['value' => $value] from this at some point, for now required for DOWR to work.
                     $value = array_merge((array) $value, ['value' => $value], $extraValues);
                 }
 
-                $list[$key] = $this->executeMapping($mapping, $value);
+                $list[$key] = $this->executeMapping(mapping: $mapping, input: $value);
             }
 
             return $list;
         }//end if
 
         $originalInput = $input;
-        $input         = $this->encodeArrayKeys($input, '.', '&#46;');
+        $input         = $this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;');
 
         // Determine pass through.
         // Let's get the dot array based on https://github.com/adbario/php-dot-notation.
-        if ($mapping->getPassThrough()) {
+        if ($mapping->getPassThrough() === true) {
             $dotArray = new Dot($input);
         } else {
             $dotArray = new Dot();
@@ -225,7 +258,7 @@ class MappingService
         // Let's do the actual mapping.
         foreach ($mapping->getMapping() as $key => $value) {
             // If the value exists in the input dot take it from there.
-            if ($dotInput->has($value)) {
+            if ($dotInput->has($value) === true) {
                 $dotArray->set($key, $dotInput->get($value));
                 continue;
             }
@@ -237,7 +270,7 @@ class MappingService
             }
 
             try {
-                $dotArray->set($key, $this->renderTemplateString($value, $originalInput));
+                $dotArray->set($key, $this->renderTemplateString(template: $value, context: $originalInput));
             } catch (Throwable $e) {
                 throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
             }
@@ -265,34 +298,37 @@ class MappingService
                 $cast = explode(',', $cast);
             }
 
-            if ($cast === false) {
-                continue;
-            }
-
             foreach ($cast as $singleCast) {
-                $this->handleCast($dotArray, $key, $singleCast);
+                $this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
             }
         }
 
         // Back to array.
         $output = $dotArray->all();
 
-        $output = $this->encodeArrayKeys($output, '&#46;', '.');
+        $output = $this->encodeArrayKeys(array: $output, toReplace: '&#46;', replacement: '.');
 
         // If something has been defined to work on root level (i.e. the object lives on root level), we can use # to define writing the root object.
         $keys = array_keys($output);
         if (count($keys) === 1 && $keys[0] === '#') {
-            // Ensure we always return an array, even if the value is null
+            // Ensure we always return an array, even if the value is null.
             $rootValue = $output['#'];
-            $output    = is_array($rootValue) ? $rootValue : [$rootValue];
+            if (is_array($rootValue) === true) {
+                $output = $rootValue;
+            } else {
+                $output = [$rootValue];
+            }
+
             if ($rootValue === null) {
                 $output = [];
             }
         }
 
-        // Ensure output is always an array
+        // Defensive coercion: prior branches set $output from $dotArray->all() (always array)
+        // or from the # root-level extraction (always array). The is_array() guard is dead
+        // per static analysis but kept for safety against future refactors.
         if (is_array($output) === false) {
-            $output = $output === null ? [] : [$output];
+            $output = [];
         }
 
         return $output;
@@ -307,10 +343,15 @@ class MappingService
      * @param string $cast     The type of cast we want to do.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
      */
     private function handleCast(Dot $dotArray, string $key, string $cast)
     {
-        $value = $dotArray->get($key);
+        $value          = $dotArray->get($key);
+        $unsetIfValue   = null;
+        $setNullIfValue = null;
+        $countValue     = null;
 
         if (str_starts_with($cast, 'unsetIfValue==') === true) {
             $unsetIfValue = substr($cast, 14);
@@ -404,7 +445,7 @@ class MappingService
                 $value = json_decode($value, true);
                 break;
             case 'utf8':
-                // https://www.php.net/manual/en/function.iconv.php
+                // See https://www.php.net/manual/en/function.iconv.php.
                 setlocale(LC_CTYPE, 'cs_CZ');
                 $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
                 break;
@@ -414,36 +455,36 @@ class MappingService
                 }
                 break;
             case 'coordinateStringToArray':
-                $value = $this->coordinateStringToArray($value);
+                $value = $this->coordinateStringToArray(coordinates: $value);
                 break;
             case 'keyCantBeValue':
-                if ($key == $value) {
+                if ($key === $value) {
                     $dotArray->delete($key);
                 }
                 break;
             case 'unsetIfValue':
                 if (isset($unsetIfValue) === true
-                    && $value == $unsetIfValue
-                    || ($unsetIfValue === '' && empty($value))
+                    && $value === $unsetIfValue
+                    || ($unsetIfValue === '' && empty($value) === true)
                     || ($unsetIfValue === '' && $value === null)
                 ) {
                     $dotArray->delete($key);
                 }
 
-                if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
                     $dotArray->delete($key);
                 }
                 break;
             case 'setNullIfValue':
                 if (isset($setNullIfValue) === true
-                    && $value == $setNullIfValue
-                    || ($setNullIfValue === '' && empty($value))
+                    && $value === $setNullIfValue
+                    || ($setNullIfValue === '' && empty($value) === true)
                     || ($setNullIfValue === '' && $value === null)
                 ) {
                     $value = null;
                 }
 
-                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
                     $value = null;
                 }
                 break;
@@ -469,7 +510,7 @@ class MappingService
         }//end switch
 
         // Don't reset key that was deleted on purpose.
-        if ($dotArray->has($key)) {
+        if ($dotArray->has($key) === true) {
             $dotArray->set($key, $value);
         }
 
@@ -481,6 +522,8 @@ class MappingService
      * @param array $array Array to check.
      *
      * @return bool True if array keys are null else false.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
      */
     private function areAllArrayKeysNull(array $array): bool
     {
@@ -490,7 +533,7 @@ class MappingService
 
         foreach ($array as $value) {
             if (is_array($value) === true) {
-                if ($this->areAllArrayKeysNull($value) === false) {
+                if ($this->areAllArrayKeysNull(array: $value) === false) {
                     return false;
                 }
 
@@ -512,6 +555,8 @@ class MappingService
      * @param string $coordinates A string containing coordinates.
      *
      * @return array An array of coordinates.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
      */
     public function coordinateStringToArray(string $coordinates): array
     {
@@ -545,12 +590,16 @@ class MappingService
      * mappings through this service layer, rather than accessing the storage directly.
      * This maintains proper encapsulation and separation of concerns.
      *
-     * @param  string $mappingId The unique identifier of the mapping to retrieve
-     * @return ObjectEntity The requested mapping entity
+     * @param string $mappingId The unique identifier of the mapping to retrieve.
+     *
+     * @return ObjectEntity The requested mapping entity.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-3
      */
     public function getMapping(string $mappingId): ObjectEntity
     {
         return $this->orObjectService->find(id: $mappingId, register: 'openconnector', schema: 'mapping');
+
     }//end getMapping()
 
     /**
@@ -562,10 +611,13 @@ class MappingService
      * This maintains proper encapsulation and separation of concerns.
      *
      * @return array<ObjectEntity> An array containing all mapping entities
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-3
      */
     public function getMappings(): array
     {
         $result = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'mapping']]);
-        return $result['results'] ?? $result;
+        return ($result['results'] ?? $result);
+
     }//end getMappings()
 }//end class

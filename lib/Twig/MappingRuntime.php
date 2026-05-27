@@ -1,4 +1,21 @@
 <?php
+/**
+ * OpenConnector Mapping Twig Runtime.
+ *
+ * Runtime class invoked by the MappingExtension Twig filters/functions to
+ * perform encoding, mapping execution and source/file lookups.
+ *
+ * @category Twig
+ * @package  OCA\OpenConnector\Twig
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Twig;
 
@@ -11,13 +28,15 @@ use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\DB\Exception;
+use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Uid\UuidV4;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 use Twig\Extension\RuntimeExtensionInterface;
-use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Uid\UuidV4;
 
 /**
+ * Runtime that backs the mapping Twig filters and functions.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.CamelCaseMethodName)
@@ -26,19 +45,31 @@ use Symfony\Component\Uid\UuidV4;
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {
+    /**
+     * Constructor.
+     *
+     * @param MappingService $mappingService Service that executes mappings.
+     * @param CallService    $callService    Service that performs outbound calls.
+     * @param FileService    $fileService    Service that resolves file metadata.
+     * @param ObjectService  $objectService  Service that resolves OR objects.
+     */
     public function __construct(
         private readonly MappingService $mappingService,
         private readonly CallService $callService,
         private readonly FileService $fileService,
         private readonly ObjectService $objectService,
     ) {
+
     }//end __construct()
 
     /**
      * Encodes a string to base64.
      *
-     * @param  string $input The unencoded input.
+     * @param string $input The unencoded input.
+     *
      * @return string The encoded output.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function b64enc(string $input): string
     {
@@ -49,8 +80,11 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Decodes a base64 encoded string to an unencoded string.
      *
-     * @param  string $input The encoded input.
+     * @param string $input The encoded input.
+     *
      * @return string The decoded output.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function b64dec(string $input): string
     {
@@ -59,24 +93,29 @@ class MappingRuntime implements RuntimeExtensionInterface
     }//end b64dec()
 
     /**
-     * Decodes a json encoded string to an unencoded array.
+     * Decodes a JSON encoded string to an associative array.
      *
-     * @param  string $input The encoded input.
+     * @param string $input The encoded input.
+     *
      * @return array The decoded output.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function json_decode(string $input): array
     {
         return json_decode(json: $input, associative: true);
+
     }//end json_decode()
 
     /**
      * Call source of given id or reference and return the result.
      *
-     * @param  string $sourceId      The source to call
-     * @param  string $endpoint      The endpoint to call
-     * @param  string $method        The method to use
-     * @param  array  $configuration The configuration to use
-     * @param  bool   $decode        Whether or not the output should be decoded (default true)
+     * @param string $sourceId      The source to call.
+     * @param string $endpoint      The endpoint to call.
+     * @param string $method        The method to use.
+     * @param array  $configuration The configuration to use.
+     * @param bool   $decode        Whether the output should be decoded (default true).
+     *
      * @return array|string The resulting response.
      *
      * @throws GuzzleException
@@ -85,6 +124,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @throws Exception
      * @throws LoaderError
      * @throws SyntaxError
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function callSource(string $sourceId, string $endpoint, string $method='GET', array $configuration=[], bool $decode=true): array|string
     {
@@ -106,11 +147,13 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Execute a mapping with given parameters.
      *
-     * @param \OCA\OpenRegister\Db\Mapping|array|string|int $mapping The mapping to execute
-     * @param array                                         $input   The input to run the mapping on
+     * @param \OCA\OpenRegister\Db\Mapping|array|string|int $mapping The mapping to execute.
+     * @param array                                         $input   The input to run the mapping on.
      * @param bool                                          $list    Whether the mapping runs on multiple instances of the object.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function executeMapping(\OCA\OpenRegister\Db\Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
@@ -136,16 +179,20 @@ class MappingRuntime implements RuntimeExtensionInterface
             input: $input,
             list: $list
         );
+
     }//end executeMapping()
 
     /**
-     * Generate a uuid.
+     * Generate a UUID v4.
      *
      * @return UuidV4
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function generateUuid(): UuidV4
     {
         return Uuid::v4();
+
     }//end generateUuid()
 
     /**
@@ -155,6 +202,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param string     $objectId The object ID that owns the file.
      *
      * @return string|null The file contents when found, otherwise null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function getFileContents(string|int $fileId, string $objectId): ?string
     {
@@ -168,6 +217,7 @@ class MappingRuntime implements RuntimeExtensionInterface
         }
 
         return null;
+
     }//end getFileContents()
 
     /**
@@ -176,6 +226,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param string $objectId The object ID to fetch files for.
      *
      * @return array The formatted file metadata list.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function getFiles(string $objectId): array
     {
@@ -187,6 +239,7 @@ class MappingRuntime implements RuntimeExtensionInterface
         }
 
         return $formattedFiles;
+
     }//end getFiles()
 
     /**
@@ -202,6 +255,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param string $text The text to convert to a slug.
      *
      * @return string The generated slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
      */
     public function createSlug(string $text): string
     {
@@ -221,5 +276,6 @@ class MappingRuntime implements RuntimeExtensionInterface
         $slug = trim($slug, '-');
 
         return $slug;
+
     }//end createSlug()
 }//end class

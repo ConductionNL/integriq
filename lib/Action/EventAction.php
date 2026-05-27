@@ -1,23 +1,35 @@
 <?php
+/**
+ * OpenConnector Event Action.
+ *
+ * Placeholder action that can be hooked into the cron job list and invoked
+ * when an event-driven job fires.
+ *
+ * @category Action
+ * @package  OCA\OpenConnector\Action
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Action;
 
-use OCA\OpenConnector\Service\CallService;
-
 /**
- * This class is used to run the action tasks for the OpenConnector app. It hooks into the cron job list and runs the classes that are set as the job class in the job.
- *
- * @package OCA\OpenConnector\Cron
+ * Runs event-driven actions wired into the OpenConnector cron job list.
  */
 class EventAction
 {
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
 
-    private CallService $callService;
-
-    public function __construct(
-        CallService $callService,
-    ) {
-        $this->callService = $callService;
     }//end __construct()
 
     /**
@@ -31,8 +43,9 @@ class EventAction
      */
     public function run(array $argument=[]): array
     {
-        // @todo: implement this
-        // Let's report back about what we have just done
+        // @todo Implement this.
+        // Let's report back about what we have just done.
         return [];
+
     }//end run()
 }//end class

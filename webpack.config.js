@@ -19,9 +19,23 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'main.js'),
 		filename: appId + '-main.js',
 	},
-	// adminSettings webpack entry removed in chain-C cutover. The
-	// per-app admin-settings UI is now part of the main SPA via the
-	// AppSettings manifest page (type: settings).
+	// Path-2 leaf bundle: a tiny entry that registers OpenConnector's
+	// "Synced from" component on the OpenRegister integration registry.
+	// Loaded GLOBALLY on every NC page via \OCP\Util::addInitScript
+	// (lib/AppInfo/Application.php) so the component is present when a
+	// foreign app (e.g. OpenCatalogi) renders its object detail page —
+	// the main SPA bundle is never loaded there. Kept separate so the
+	// global script stays small.
+	integration: {
+		import: path.join(__dirname, 'src', 'integration.js'),
+		filename: appId + '-integration.js',
+	},
+	// ADR-023 admin settings entry — renders the action-authorization matrix
+	// via templates/settings/admin.php (NC admin panel).
+	settings: {
+		import: path.join(__dirname, 'src', 'settings.js'),
+		filename: appId + '-settings.js',
+	},
 	// NC-core Dashboard API widget entries (jobQueueWidget / recentCallsWidget
 	// / sourceSyncWidget) removed alongside lib/Dashboard/*Widget.php: the
 	// widgets were never registered in appinfo/info.xml or Application.php,

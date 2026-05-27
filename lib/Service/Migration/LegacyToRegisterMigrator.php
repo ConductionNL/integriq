@@ -1,10 +1,6 @@
 <?php
-
-declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
+/**
+ * OpenConnector Legacy → OR Storage Migrator.
  *
  * Chain B (openconnector-register-storage) — legacy → OR row migrator.
  *
@@ -32,7 +28,20 @@ declare(strict_types=1);
  * `openconnector.storage_migrated` to 'true' and emits ONE audit-trail entry.
  *
  * Cross-ref: openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md REQ-001..REQ-012
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service\Migration;
 
@@ -44,6 +53,9 @@ use OCP\AppFramework\Services\IAppConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Migrates legacy oc_openconnector_* tables into oc_openregister_objects.
+ */
 class LegacyToRegisterMigrator
 {
 
@@ -84,32 +96,82 @@ class LegacyToRegisterMigrator
     /**
      * 6 integer FK rewrites — post-INSERT UPDATE pass.
      *
-     * Each entry: source schema slug, legacy column name, JSON target field, target schema slug, onDelete behaviour.
+     * Each entry: source schema slug, legacy column name, JSON target field,
+     * target schema slug, onDelete behaviour.
      */
     public const FK_REWRITES = [
-        ['fromSchema' => 'call_log',                     'legacyCol' => 'source_id',         'jsonField' => 'source',                  'toSchema' => 'source',                  'onDelete' => 'SET NULL'],
-        ['fromSchema' => 'call_log',                     'legacyCol' => 'synchronization_id', 'jsonField' => 'synchronization',         'toSchema' => 'synchronization',         'onDelete' => 'SET NULL'],
-        ['fromSchema' => 'event_message',                'legacyCol' => 'event_id',           'jsonField' => 'event',                   'toSchema' => 'event',                   'onDelete' => 'CASCADE'],
-        ['fromSchema' => 'event_message',                'legacyCol' => 'consumer_id',        'jsonField' => 'consumer',                'toSchema' => 'consumer',                'onDelete' => 'SET NULL'],
-        ['fromSchema' => 'event_message',                'legacyCol' => 'subscription_id',    'jsonField' => 'subscription',            'toSchema' => 'event_subscription',      'onDelete' => 'CASCADE'],
-        ['fromSchema' => 'synchronization_contract_log', 'legacyCol' => 'synchronization_contract_id', 'jsonField' => 'synchronization_contract', 'toSchema' => 'synchronization_contract', 'onDelete' => 'CASCADE'],
+        [
+            'fromSchema' => 'call_log',
+            'legacyCol'  => 'source_id',
+            'jsonField'  => 'source',
+            'toSchema'   => 'source',
+            'onDelete'   => 'SET NULL',
+        ],
+        [
+            'fromSchema' => 'call_log',
+            'legacyCol'  => 'synchronization_id',
+            'jsonField'  => 'synchronization',
+            'toSchema'   => 'synchronization',
+            'onDelete'   => 'SET NULL',
+        ],
+        [
+            'fromSchema' => 'event_message',
+            'legacyCol'  => 'event_id',
+            'jsonField'  => 'event',
+            'toSchema'   => 'event',
+            'onDelete'   => 'CASCADE',
+        ],
+        [
+            'fromSchema' => 'event_message',
+            'legacyCol'  => 'consumer_id',
+            'jsonField'  => 'consumer',
+            'toSchema'   => 'consumer',
+            'onDelete'   => 'SET NULL',
+        ],
+        [
+            'fromSchema' => 'event_message',
+            'legacyCol'  => 'subscription_id',
+            'jsonField'  => 'subscription',
+            'toSchema'   => 'event_subscription',
+            'onDelete'   => 'CASCADE',
+        ],
+        [
+            'fromSchema' => 'synchronization_contract_log',
+            'legacyCol'  => 'synchronization_contract_id',
+            'jsonField'  => 'synchronization_contract',
+            'toSchema'   => 'synchronization_contract',
+            'onDelete'   => 'CASCADE',
+        ],
     ];
 
     /**
-     * Cached PKs resolved once via openconnector register lookup.
+     * Cached openconnector register PK resolved at startup.
+     *
+     * @var integer|null
      */
     private ?int $registerPk = null;
 
     /**
      * Schema slug → PK map, populated at startup.
+     *
+     * @var array<string, int>
      */
     private array $schemaPks = [];
 
     /**
      * Detected platform — 'pgsql' | 'mysql'.
+     *
+     * @var string
      */
     private string $platform = 'mysql';
 
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection   $db        Database connection used for legacy + OR queries.
+     * @param IAppConfig      $appConfig App config used to flip storage_migrated on success.
+     * @param LoggerInterface $logger    Logger for per-batch progress and warnings.
+     */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly IAppConfig $appConfig,
@@ -124,10 +186,13 @@ class LegacyToRegisterMigrator
      *  - entitySlug non-null: run a single entity (no flag flip)
      *  - entitySlug=null: full run; flip storage_migrated on success
      *
-     * @param  bool        $dryRun
-     * @param  string|null $entitySlug Single-entity override (slug from ENTITY_ORDER)
-     * @param  int         $batchSize  Default 10,000; valid range [100, 100000]
+     * @param boolean     $dryRun     Run without writing, only counting.
+     * @param string|null $entitySlug Single-entity override (slug from ENTITY_ORDER).
+     * @param integer     $batchSize  Default 10,000; valid range [100, 100000].
+     *
      * @return array<array{slug:string,legacyCount:int,migratedCount:int,skipped:int,fkRewrites:int,elapsedMs:int}>
+     *
+     * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
      */
     public function migrateAll(bool $dryRun=false, ?string $entitySlug=null, int $batchSize=10000): array
     {
@@ -163,7 +228,7 @@ class LegacyToRegisterMigrator
         foreach ($entitiesToRun as $entity) {
             $start = microtime(true);
             try {
-                $perEntity = $this->migrateEntity($entity, $dryRun, $batchSize);
+                $perEntity = $this->migrateEntity(entity: $entity, dryRun: $dryRun, batchSize: $batchSize);
             } catch (\Throwable $e) {
                 $this->logger->error(
                         sprintf(
@@ -192,9 +257,9 @@ class LegacyToRegisterMigrator
             $results[] = $perEntity;
         }//end foreach
 
-        // FK rewrite pass — run only on full migration (single-entity runs skip)
+        // FK rewrite pass — run only on full migration (single-entity runs skip).
         if ($entitySlug === null && $dryRun === false) {
-            $this->runFkRewritePass($results);
+            $this->runFkRewritePass(results: $results);
         }
 
         // Flip flag only on full, clean, non-dry-run.
@@ -203,15 +268,18 @@ class LegacyToRegisterMigrator
             $this->logger->info('chain-B: storage_migrated flag set to true (clean full run)');
         }
 
-        $this->emitSummaryAuditTrail($results, $dryRun, $entitySlug);
+        $this->emitSummaryAuditTrail(results: $results, dryRun: $dryRun, entitySlug: $entitySlug);
 
         return $results;
+
     }//end migrateAll()
 
     /**
      * Resolve register PK + 15 schema PKs once at startup. Detect platform.
      *
-     * @throws LogicException if the openconnector register has not been imported yet.
+     * @return void
+     *
+     * @throws LogicException If the openconnector register has not been imported yet.
      */
     private function resolveStartupState(): void
     {
@@ -242,10 +310,10 @@ class LegacyToRegisterMigrator
 
         if ($row === false) {
             throw new LogicException(
-                    sprintf(
-                'chain-B: openconnector register not found in oc_openregister_registers; run the chain-B migration class (which calls ConfigurationService::importFromApp) before invoking the migrator directly.'
-            )
-                    );
+                'chain-B: openconnector register not found in oc_openregister_registers;'
+                .' run the chain-B migration class (which calls ConfigurationService::importFromApp)'
+                .' before invoking the migrator directly.'
+            );
         }
 
         $this->registerPk = (int) $row['id'];
@@ -260,12 +328,16 @@ class LegacyToRegisterMigrator
         }
 
         $result->closeCursor();
+
     }//end resolveStartupState()
 
     /**
      * Assert the codebase is in the plaintext-credentials state documented by ADR-007.
+     *
      * If an EncryptionService class is found, abort: the chain-B verbatim copy strategy
      * is no longer valid and the migration spec MUST be revised before proceeding.
+     *
+     * @return void
      */
     private function assertPlaintextCredentialsState(): void
     {
@@ -273,17 +345,22 @@ class LegacyToRegisterMigrator
             || class_exists('OCA\\OpenConnector\\Service\\EncryptionService', true) === true
         ) {
             throw new LogicException(
-                'chain-B: OCA\\OpenConnector\\Service\\EncryptionService class has been introduced since this spec was written — the verbatim-copy strategy no longer applies. Revise openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md before re-running.'
+                'chain-B: OCA\\OpenConnector\\Service\\EncryptionService class has been introduced'
+                .' since this spec was written — the verbatim-copy strategy no longer applies.'
+                .' Revise openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md'
+                .' before re-running.'
             );
         }
+
     }//end assertPlaintextCredentialsState()
 
     /**
      * Migrate a single entity. Returns per-entity result counts.
      *
-     * @param  array{slug:string,legacyTable:string,hasSyncBranching?:bool} $entity
-     * @param  bool                                                         $dryRun
-     * @param  int                                                          $batchSize
+     * @param array{slug:string,legacyTable:string,hasSyncBranching?:bool} $entity    Entity descriptor from ENTITY_ORDER.
+     * @param boolean                                                      $dryRun    Run without writing.
+     * @param integer                                                      $batchSize Batch size for legacy reads.
+     *
      * @return array{slug:string,legacyCount:int,migratedCount:int,skipped:int,fkRewrites:int}
      */
     private function migrateEntity(array $entity, bool $dryRun, int $batchSize): array
@@ -299,12 +376,12 @@ class LegacyToRegisterMigrator
         }
 
         // Skip cleanly if the legacy table does not exist (fresh install with no pre-chain-B data).
-        if ($this->tableExists($table) === false) {
+        if ($this->tableExists(tableName: $table) === false) {
             $this->logger->info(sprintf('chain-B: legacy table %s not present — fresh install, skipping entity %s', $table, $slug));
             return ['slug' => $slug, 'legacyCount' => 0, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
         }
 
-        $count = $this->countLegacyRows($tableShort);
+        $count = $this->countLegacyRows(tableShort: $tableShort);
         if ($count === 0) {
             return ['slug' => $slug, 'legacyCount' => 0, 'migratedCount' => 0, 'skipped' => 0, 'fkRewrites' => 0];
         }
@@ -319,13 +396,13 @@ class LegacyToRegisterMigrator
         $syncBranchCounts = ['integer-pk' => 0, 'register-schema' => 0, 'uuid' => 0, 'unrecognised' => 0];
 
         while ($offset < $count) {
-            $rows = $this->fetchLegacyBatch($tableShort, $offset, $batchSize);
+            $rows = $this->fetchLegacyBatch(tableShort: $tableShort, offset: $offset, batchSize: $batchSize);
             if ($rows === []) {
                 break;
             }
 
             foreach ($rows as $row) {
-                $jsonBody = $this->buildJsonBody($row, $hasSyncBranching, $syncBranchCounts);
+                $jsonBody = $this->buildJsonBody(row: $row, hasSyncBranching: $hasSyncBranching, syncBranchCounts: $syncBranchCounts);
                 $uuid     = (string) ($row['uuid'] ?? '');
                 if ($uuid === '') {
                     $this->logger->warning(sprintf('chain-B: %s row id=%s has no uuid — skipping', $slug, (string) ($row['id'] ?? '?')));
@@ -374,17 +451,31 @@ class LegacyToRegisterMigrator
                     );
         }
 
+        if ($hasSyncBranching === true) {
+            $branching = $syncBranchCounts;
+        } else {
+            $branching = null;
+        }
+
         return [
             'slug'          => $slug,
             'legacyCount'   => $count,
             'migratedCount' => $migrated,
             'skipped'       => $skipped,
+            // Populated by FK rewrite pass.
             'fkRewrites'    => 0,
-        // populated by FK rewrite pass
-            'branching'     => $hasSyncBranching ? $syncBranchCounts : null,
+            'branching'     => $branching,
         ];
+
     }//end migrateEntity()
 
+    /**
+     * Probe information_schema for the presence of a legacy table.
+     *
+     * @param string $tableName Fully qualified table name (oc_openconnector_*).
+     *
+     * @return boolean
+     */
     private function tableExists(string $tableName): bool
     {
         try {
@@ -395,8 +486,16 @@ class LegacyToRegisterMigrator
         } catch (\Throwable) {
             return false;
         }
+
     }//end tableExists()
 
+    /**
+     * Count rows in a legacy table.
+     *
+     * @param string $tableShort Table name without the oc_ prefix.
+     *
+     * @return integer
+     */
     private function countLegacyRows(string $tableShort): int
     {
         $qb = $this->db->getQueryBuilder();
@@ -406,8 +505,18 @@ class LegacyToRegisterMigrator
         $row    = $result->fetchAssociative();
         $result->closeCursor();
         return (int) ($row['c'] ?? 0);
+
     }//end countLegacyRows()
 
+    /**
+     * Fetch a batch of legacy rows ordered by id.
+     *
+     * @param string  $tableShort Table name without the oc_ prefix.
+     * @param integer $offset     Offset.
+     * @param integer $batchSize  Max rows to return.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function fetchLegacyBatch(string $tableShort, int $offset, int $batchSize): array
     {
         $qb = $this->db->getQueryBuilder();
@@ -420,39 +529,47 @@ class LegacyToRegisterMigrator
         $rows   = $result->fetchAllAssociative();
         $result->closeCursor();
         return $rows;
+
     }//end fetchLegacyBatch()
 
     /**
      * Build the JSON object body for a single legacy row.
-     * Preserves field names verbatim (legacy snake_case → snake_case in JSON);
+     *
+     * Preserves field names verbatim (legacy snake_case → camelCase in JSON);
      * casts JSON columns to native arrays/objects; applies Sync.sourceId/targetId
      * branching when hasSyncBranching=true.
+     *
+     * @param array<string, mixed> $row              Legacy row.
+     * @param boolean              $hasSyncBranching Whether to apply sourceId/targetId branching.
+     * @param array<string, int>   $syncBranchCounts Per-variant counts, mutated by reference.
+     *
+     * @return array<string, mixed>
      */
     private function buildJsonBody(array $row, bool $hasSyncBranching, array &$syncBranchCounts): array
     {
         $body = [];
         foreach ($row as $col => $value) {
             // Skip OR-managed columns — those go in oc_openregister_objects directly, not in the JSON body.
-            if (in_array($col, ['id', 'uuid', 'owner', 'register', 'schema'], true)) {
+            if (in_array($col, ['id', 'uuid', 'owner', 'register', 'schema'], true) === true) {
                 continue;
             }
 
             // Detect JSON-typed columns by attempted decode (legacy mappers used $this->addType($field, 'json')).
-            if (is_string($value) && $value !== '' && ($value[0] === '{' || $value[0] === '[')) {
+            if (is_string($value) === true && $value !== '' && ($value[0] === '{' || $value[0] === '[')) {
                 $decoded = json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    $body[$this->toCamelCase($col)] = $decoded;
+                    $body[$this->toCamelCase(snake: $col)] = $decoded;
                     continue;
                 }
             }
 
-            $body[$this->toCamelCase($col)] = $value;
+            $body[$this->toCamelCase(snake: $col)] = $value;
         }
 
         if ($hasSyncBranching === true) {
             foreach (['sourceId', 'targetId'] as $field) {
-                if (isset($body[$field]) && is_string($body[$field])) {
-                    $resolved     = $this->resolveSyncRef($body[$field]);
+                if (isset($body[$field]) === true && is_string($body[$field]) === true) {
+                    $resolved     = $this->resolveSyncRef(value: $body[$field]);
                     $body[$field] = $resolved['value'];
                     $syncBranchCounts[$resolved['variant']]++;
                 }
@@ -460,27 +577,35 @@ class LegacyToRegisterMigrator
         }
 
         return $body;
+
     }//end buildJsonBody()
 
     /**
      * Translate snake_case column names to camelCase JSON keys
      * (matching the openconnector entity property names + chain-A JSON schema).
+     *
+     * @param string $snake Snake-case input.
+     *
+     * @return string
      */
     private function toCamelCase(string $snake): string
     {
         return lcfirst(str_replace('_', '', ucwords($snake, '_')));
+
     }//end toCamelCase()
 
     /**
      * Resolve a Synchronization.sourceId / .targetId value across 3 formats.
+     *
+     * @param string $value The raw legacy value.
      *
      * @return array{value: string, variant: 'integer-pk'|'register-schema'|'uuid'|'unrecognised'}
      */
     private function resolveSyncRef(string $value): array
     {
         if (preg_match('/^\d+$/', $value) === 1) {
-            // integer-PK: resolve to source uuid via lookup
-            $uuid = $this->lookupSourceUuidByInt((int) $value);
+            // Integer-PK: resolve to source uuid via lookup.
+            $uuid = $this->lookupSourceUuidByInt(id: (int) $value);
             return ['value' => $uuid ?? $value, 'variant' => 'integer-pk'];
         }
 
@@ -492,10 +617,24 @@ class LegacyToRegisterMigrator
             return ['value' => $value, 'variant' => 'uuid'];
         }
 
-        $this->logger->warning(sprintf('chain-B: Synchronization sourceId/targetId value "%s" matches no known format — preserved as-is, marked unrecognised', $value));
+        $this->logger->warning(
+            sprintf(
+                'chain-B: Synchronization sourceId/targetId value "%s" matches no known format'
+                .' — preserved as-is, marked unrecognised',
+                $value
+            )
+        );
         return ['value' => $value, 'variant' => 'unrecognised'];
+
     }//end resolveSyncRef()
 
+    /**
+     * Look up a source UUID by its legacy integer PK.
+     *
+     * @param integer $id Legacy integer PK.
+     *
+     * @return string|null
+     */
     private function lookupSourceUuidByInt(int $id): ?string
     {
         try {
@@ -506,15 +645,31 @@ class LegacyToRegisterMigrator
             $result = $qb->executeQuery();
             $row    = $result->fetchAssociative();
             $result->closeCursor();
-            return $row !== false ? (string) $row['uuid'] : null;
+            if ($row !== false) {
+                return (string) $row['uuid'];
+            }
+
+            return null;
         } catch (\Throwable) {
             return null;
         }
+
     }//end lookupSourceUuidByInt()
 
     /**
      * Bulk INSERT one row into oc_openregister_objects.
+     *
      * Dual-platform JSON build per spec REQ-002.
+     *
+     * @param integer              $registerPk OR register PK.
+     * @param integer              $schemaPk   OR schema PK.
+     * @param string               $uuid       Row UUID.
+     * @param integer              $legacyId   Legacy integer PK.
+     * @param array<string, mixed> $jsonBody   JSON body to insert.
+     * @param string               $created    Created timestamp.
+     * @param string               $updated    Updated timestamp.
+     *
+     * @return void
      */
     private function insertObjectRow(
         int $registerPk,
@@ -525,7 +680,7 @@ class LegacyToRegisterMigrator
         string $created,
         string $updated
     ): void {
-        $jsonString = json_encode($jsonBody, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $jsonString = json_encode($jsonBody, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
         // Insert via QueryBuilder for portability; the `object` column receives
         // the raw JSON string — Doctrine handles the JSON encoding on both
@@ -544,23 +699,29 @@ class LegacyToRegisterMigrator
                    ]
                    );
         $qb->executeStatement();
+
     }//end insertObjectRow()
 
     /**
      * Pass 2: rewrite 6 integer FK columns to OR uuids.
+     *
      * For each FK descriptor, JOIN back to the legacy target table to find each
      * target row's uuid, then UPDATE the openregister_objects.object JSON via
      * jsonb_set / JSON_SET (platform-specific).
      *
      * Each entity's fkRewrites tally is incremented as rewrites complete.
+     *
+     * @param array<int, array<string, mixed>> $results Per-entity results, mutated by reference.
+     *
+     * @return void
      */
     private function runFkRewritePass(array &$results): void
     {
         foreach (self::FK_REWRITES as $fk) {
-            $count = $this->applyOneFkRewrite($fk);
+            $count = $this->applyOneFkRewrite(fk: $fk);
             foreach ($results as &$perEntity) {
                 if ($perEntity['slug'] === $fk['fromSchema']) {
-                    $perEntity['fkRewrites'] = (int) ($perEntity['fkRewrites'] ?? 0) + $count;
+                    $perEntity['fkRewrites'] = ((int) ($perEntity['fkRewrites'] ?? 0) + $count);
                     break;
                 }
             }
@@ -578,10 +739,15 @@ class LegacyToRegisterMigrator
             )
                     );
         }//end foreach
+
     }//end runFkRewritePass()
 
     /**
      * Apply a single FK rewrite. Returns the count of rows updated.
+     *
+     * @param array<string, string> $fk FK descriptor from FK_REWRITES.
+     *
+     * @return integer
      */
     private function applyOneFkRewrite(array $fk): int
     {
@@ -593,7 +759,7 @@ class LegacyToRegisterMigrator
         }
 
         // The source-side JSON body has the integer FK in camelCase form.
-        $jsonFkField = $this->toCamelCase($fk['legacyCol']);
+        $jsonFkField = $this->toCamelCase(snake: $fk['legacyCol']);
 
         $count = 0;
         try {
@@ -648,13 +814,21 @@ SQL;
         }//end try
 
         return $count;
+
     }//end applyOneFkRewrite()
 
     /**
      * Emit ONE audit-trail row covering the full migration.
+     *
      * Per spec REQ-012: do NOT route writes through ObjectService::saveObject
      * during INSERT pass (that would emit per-object audit entries). This is
      * the single summary written explicitly to oc_openregister_audit_trail.
+     *
+     * @param array<int, array<string, mixed>> $results    Per-entity results.
+     * @param boolean                          $dryRun     Whether this was a dry-run.
+     * @param string|null                      $entitySlug Single-entity override (if any).
+     *
+     * @return void
      */
     private function emitSummaryAuditTrail(array $results, bool $dryRun, ?string $entitySlug): void
     {
@@ -688,5 +862,6 @@ SQL;
             )
                     );
         }//end try
+
     }//end emitSummaryAuditTrail()
 }//end class

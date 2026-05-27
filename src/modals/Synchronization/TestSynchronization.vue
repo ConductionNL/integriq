@@ -114,10 +114,12 @@ export default {
 		this.testSynchronization()
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5 */
 		closeModal() {
 			navigationStore.setModal(false)
 			synchronizationStore.synchronizationTest = null
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5 */
 		async testSynchronization() {
 			this.success = null
 			this.loading = true

@@ -126,9 +126,9 @@ import { translate as t } from '@nextcloud/l10n'
 					:input-label="t('openconnector', 'Action')" />
 
 				<NcSelect v-bind="typeOptions"
+					:input-label="t('openconnector', 'Type')"
 					v-model="typeOptions.value"
-					:selectable="(option) => option.label === 'Fileparts Create' || option.label === 'Filepart Upload' ? openRegister?.isInstalled : true"
-					:input-label="t('openconnector', 'Type')" />
+					:selectable="(option) => option.label === 'Fileparts Create' || option.label === 'Filepart Upload' ? openRegister?.isInstalled : true" />
 
 				<!-- Add mapping select -->
 				<NcSelect v-if="typeOptions.value?.id === 'mapping' || typeOptions.value?.id === 'save_object'"
@@ -263,6 +263,7 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Extends (dot array)') }}</label>
 								<NcSelect
+									:aria-label-combobox="t('openconnector', 'Extends (dot array)')"
 									v-model="item.extends"
 									:taggable="true"
 									:multiple="true"
@@ -832,6 +833,7 @@ export default {
 	},
 	watch: {
 		apiKeys: {
+			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 			handler(newVal) {
 				const currentApiKeysLength = newVal.length
 
@@ -851,6 +853,7 @@ export default {
 		},
 		// Auto-add empty extend_input item when last one is filled
 		'ruleItem.configuration.extend_input.items': {
+			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -873,6 +876,7 @@ export default {
 		},
 		// Auto-add empty extend_external_input property when last one is filled
 		'ruleItem.configuration.extend_external_input.properties': {
+			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -897,6 +901,7 @@ export default {
 			deep: true,
 		},
 	},
+	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 	mounted() {
 
 		if (this.IS_EDIT) {
@@ -1039,6 +1044,7 @@ export default {
 		}
 	},
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async getMappings() {
 			try {
 				this.mappingOptions.loading = true
@@ -1101,6 +1107,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		getSources() {
 			this.sourcesLoading = true
 
@@ -1128,6 +1135,7 @@ export default {
 					this.sourcesLoading = false
 				})
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async getSchemas() {
 			this.schemasLoading = true
 
@@ -1181,6 +1189,7 @@ export default {
 			this.schemasLoading = false
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async getSynchronizations() {
 			try {
 				this.syncOptions.loading = true
@@ -1211,6 +1220,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async getAllowedUsers() {
 			this.usersLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/users/details', {
@@ -1257,6 +1267,7 @@ export default {
 			this.usersLoading = false
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async getApiKeysUsers() {
 			this.usersLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/users/details', {
@@ -1315,6 +1326,7 @@ export default {
 
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async getGroups() {
 			this.groupsLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/groups/details', {
@@ -1356,6 +1368,7 @@ export default {
 			this.groupsLoading = false
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		setMethodOptions() {
 			const options = [
 				{ label: 'GET' },
@@ -1371,6 +1384,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		setActionOptions() {
 			const options = [
 				{ label: 'Post (Create)', id: 'post' },
@@ -1385,6 +1399,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		setTimingOptions() {
 			const options = [
 				{ label: 'Before', id: 'before' },
@@ -1397,32 +1412,38 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		addExtendExternalItem() {
 			if (!this.ruleItem.configuration.extend_external_input) {
 				this.ruleItem.configuration.extend_external_input = { validate: true, properties: [] }
 			}
 			this.ruleItem.configuration.extend_external_input.properties.push({ property: '', schema: '' })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		removeExtendExternalItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_external_input.properties.splice(index, 1)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		addExtendInputItem() {
 			if (!this.ruleItem.configuration.extend_input) {
 				this.ruleItem.configuration.extend_input = { items: [] }
 			}
 			this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		removeExtendInputItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_input.items.splice(index, 1)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeTimeoutFunc)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		isValidJson(str) {
 			if (!str) return true
 			try {
@@ -1433,6 +1454,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		formatJSONCondictions() {
 			try {
 				if (this.ruleItem.conditions) {
@@ -1445,6 +1467,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		formatJSONSourceConfiguration() {
 			try {
 				if (this.ruleItem.configuration.fetch_file.sourceConfiguration) {
@@ -1456,6 +1479,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		async installOpenRegister() {
 			console.info('Installing Open Register')
 			const token = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
@@ -1487,6 +1511,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
 		editRule() {
 			this.loading = true
 

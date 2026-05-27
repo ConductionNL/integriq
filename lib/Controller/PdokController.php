@@ -28,12 +28,15 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenConnector\Connectors\PdokConnector;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * PDOK Locatieserver proxy controller.
@@ -43,16 +46,22 @@ class PdokController extends Controller
     /**
      * Constructor.
      *
-     * @param string        $appName       App identifier ("openconnector").
-     * @param IRequest      $request       Current request.
-     * @param PdokConnector $pdokConnector Connector providing PDOK access.
+     * @param string            $appName       App identifier ("openconnector").
+     * @param IRequest          $request       Current request.
+     * @param PdokConnector     $pdokConnector Connector providing PDOK access.
+     * @param IUserSession      $userSession   The user session.
+     * @param ActionAuthService $actionAuth    The action authorization service.
+     * @param IL10N             $l             The localization service.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly PdokConnector $pdokConnector
+        private readonly PdokConnector $pdokConnector,
+        private readonly IUserSession $userSession,
+        private readonly ActionAuthService $actionAuth,
+        private readonly IL10N $l,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
 
@@ -62,11 +71,20 @@ class PdokController extends Controller
      * @param string $q Partial address text (min 1 char).
      *
      * @return JSONResponse Normalised suggestion documents or a 400 / 503 error envelope.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function suggestAction(string $q=''): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'pdok.suggest');
+
         if (trim($q) === '') {
             return new JSONResponse(
                 ['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
@@ -84,11 +102,20 @@ class PdokController extends Controller
      * @param string $id PDOK identifier.
      *
      * @return JSONResponse Normalised lookup payload, or 400 / 404 / 503.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function lookupAction(string $id=''): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'pdok.lookup');
+
         if (trim($id) === '') {
             return new JSONResponse(
                 ['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
@@ -123,11 +150,20 @@ class PdokController extends Controller
      * @param int    $start Page offset.
      *
      * @return JSONResponse Normalised results or 400 / 503.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function freeAction(string $q='', int $rows=10, int $start=0): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'pdok.free');
+
         if (trim($q) === '') {
             return new JSONResponse(
                 ['error' => 'missing_query', 'message_key' => 'pdok.error.missing_query'],
@@ -146,11 +182,20 @@ class PdokController extends Controller
      * @param float|null $lng Longitude (WGS84).
      *
      * @return JSONResponse Normalised address or 400 / 503.
+     *
+     * @spec openspec/changes/add-pdok-adapter/tasks.md#OC-8
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function reverseAction(?float $lat=null, ?float $lng=null): JSONResponse
     {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'pdok.reverse');
+
         if ($lat === null || $lng === null) {
             return new JSONResponse(
                 ['error' => 'missing_coordinates', 'message_key' => 'pdok.error.missing_coordinates'],

@@ -17,6 +17,11 @@
   updated collection so the parent can persist it through `useObjectStore`
   in one call. We never mutate the props directly.
 
+  Rule order matters for cascading transformations. Each row carries a
+  drag handle (MDI drag-vertical) on the left and is `tabindex="0"` so
+  ArrowUp/ArrowDown can move it within its tab. Reordering rebuilds the
+  collection in the new order and emits it like any other mutation.
+
   Unset rules are only meaningful when `passThrough` is enabled on the
   parent mapping (otherwise there's nothing to remove). The Add button on
   the Unset tab is disabled in that case, mirroring the legacy behaviour.
@@ -39,11 +44,12 @@
 		<!-- Mapping rules tab -->
 		<section v-if="activeTab === 'mapping'" class="cn-rules-editor__panel">
 			<p class="cn-rules-editor__help">
-				{{ t('openconnector', 'Each mapping rule maps a target property to a Twig template that produces its value from the input object.') }}
+				{{ t('openconnector', 'Each mapping rule maps a target property to a Twig template that produces its value from the input object. Drag the handle to change rule order — order matters for cascading transformations.') }}
 			</p>
 			<table v-if="mappingRowList.length" class="cn-rules-editor__table">
 				<thead>
 					<tr>
+						<th class="cn-rules-editor__col-handle" aria-hidden="true" />
 						<th>{{ t('openconnector', 'Target property') }}</th>
 						<th>{{ t('openconnector', 'Template') }}</th>
 						<th class="cn-rules-editor__col-actions">
@@ -51,8 +57,29 @@
 						</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="row in mappingRowList" :key="row.key">
+				<VueDraggable v-model="mappingDraft"
+					tag="tbody"
+					handle=".cn-rules-editor__drag-handle"
+					:disabled="saving"
+					:animation="150"
+					ghost-class="cn-rules-editor__row--ghost"
+					drag-class="cn-rules-editor__row--dragging"
+					@end="onMappingReorder">
+					<tr v-for="(row, index) in mappingDraft"
+						:key="row.key"
+						tabindex="0"
+						class="cn-rules-editor__row"
+						@keydown.up.prevent="moveRow('mapping', index, -1)"
+						@keydown.down.prevent="moveRow('mapping', index, 1)">
+						<td class="cn-rules-editor__col-handle">
+							<button type="button"
+								class="cn-rules-editor__drag-handle"
+								:aria-label="t('openconnector', 'Drag to reorder')"
+								:disabled="saving"
+								tabindex="-1">
+								<DragVerticalIcon :size="18" />
+							</button>
+						</td>
 						<td class="cn-rules-editor__cell-key">
 							{{ row.key }}
 						</td>
@@ -78,7 +105,7 @@
 							</NcButton>
 						</td>
 					</tr>
-				</tbody>
+				</VueDraggable>
 			</table>
 			<p v-else class="cn-rules-editor__empty">
 				{{ t('openconnector', 'No mapping rules yet. Add one to start shaping the output.') }}
@@ -101,6 +128,7 @@
 			<table v-if="castRowList.length" class="cn-rules-editor__table">
 				<thead>
 					<tr>
+						<th class="cn-rules-editor__col-handle" aria-hidden="true" />
 						<th>{{ t('openconnector', 'Property') }}</th>
 						<th>{{ t('openconnector', 'Cast type') }}</th>
 						<th class="cn-rules-editor__col-actions">
@@ -108,8 +136,29 @@
 						</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="row in castRowList" :key="row.key">
+				<VueDraggable v-model="castDraft"
+					tag="tbody"
+					handle=".cn-rules-editor__drag-handle"
+					:disabled="saving"
+					:animation="150"
+					ghost-class="cn-rules-editor__row--ghost"
+					drag-class="cn-rules-editor__row--dragging"
+					@end="onCastReorder">
+					<tr v-for="(row, index) in castDraft"
+						:key="row.key"
+						tabindex="0"
+						class="cn-rules-editor__row"
+						@keydown.up.prevent="moveRow('cast', index, -1)"
+						@keydown.down.prevent="moveRow('cast', index, 1)">
+						<td class="cn-rules-editor__col-handle">
+							<button type="button"
+								class="cn-rules-editor__drag-handle"
+								:aria-label="t('openconnector', 'Drag to reorder')"
+								:disabled="saving"
+								tabindex="-1">
+								<DragVerticalIcon :size="18" />
+							</button>
+						</td>
 						<td class="cn-rules-editor__cell-key">
 							{{ row.key }}
 						</td>
@@ -135,7 +184,7 @@
 							</NcButton>
 						</td>
 					</tr>
-				</tbody>
+				</VueDraggable>
 			</table>
 			<p v-else class="cn-rules-editor__empty">
 				{{ t('openconnector', 'No cast rules yet.') }}
@@ -155,17 +204,39 @@
 			<p class="cn-rules-editor__help">
 				{{ t('openconnector', 'Unset rules remove a property from the output object. They only apply when pass-through is enabled.') }}
 			</p>
-			<table v-if="unsetRules.length" class="cn-rules-editor__table">
+			<table v-if="unsetDraft.length" class="cn-rules-editor__table">
 				<thead>
 					<tr>
+						<th class="cn-rules-editor__col-handle" aria-hidden="true" />
 						<th>{{ t('openconnector', 'Property') }}</th>
 						<th class="cn-rules-editor__col-actions">
 							{{ t('openconnector', 'Actions') }}
 						</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="(property, index) in unsetRules" :key="property + '-' + index">
+				<VueDraggable v-model="unsetDraft"
+					tag="tbody"
+					handle=".cn-rules-editor__drag-handle"
+					:disabled="saving"
+					:animation="150"
+					ghost-class="cn-rules-editor__row--ghost"
+					drag-class="cn-rules-editor__row--dragging"
+					@end="onUnsetReorder">
+					<tr v-for="(property, index) in unsetDraft"
+						:key="property + '-' + index"
+						tabindex="0"
+						class="cn-rules-editor__row"
+						@keydown.up.prevent="moveRow('unset', index, -1)"
+						@keydown.down.prevent="moveRow('unset', index, 1)">
+						<td class="cn-rules-editor__col-handle">
+							<button type="button"
+								class="cn-rules-editor__drag-handle"
+								:aria-label="t('openconnector', 'Drag to reorder')"
+								:disabled="saving"
+								tabindex="-1">
+								<DragVerticalIcon :size="18" />
+							</button>
+						</td>
 						<td class="cn-rules-editor__cell-key">
 							{{ property }}
 						</td>
@@ -188,7 +259,7 @@
 							</NcButton>
 						</td>
 					</tr>
-				</tbody>
+				</VueDraggable>
 			</table>
 			<p v-else class="cn-rules-editor__empty">
 				{{ t('openconnector', 'No unset rules yet.') }}
@@ -224,8 +295,40 @@ import { NcButton } from '@nextcloud/vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
+import DragVerticalIcon from 'vue-material-design-icons/DragVertical.vue'
+import { VueDraggable } from 'vue-draggable-plus'
 
-import EditMappingRuleDialog from './EditMappingRuleDialog.vue'
+import EditMappingRuleDialog from '../../dialogs/EditMappingRuleDialog.vue'
+
+/**
+ * Convert a keyed-rules object into an ordered array of `{ key, value }`
+ * row records the drag-and-drop component can mutate in place.
+ *
+ * @param {object} obj Source keyed object.
+ * @return {Array<{key: string, value: any}>} Ordered row list.
+ */
+function objectToRowList(obj) {
+	if (!obj || typeof obj !== 'object') return []
+	return Object.keys(obj).map((key) => ({ key, value: obj[key] }))
+}
+
+/**
+ * Rebuild a keyed-rules object from an ordered row list. JS object key
+ * iteration is insertion-ordered for string keys, so the returned object
+ * serialises in the row list's order.
+ *
+ * @param {Array<{key: string, value: any}>} rows Ordered row list.
+ * @return {object} Rebuilt keyed-rules object.
+ */
+function rowListToObject(rows) {
+	const out = {}
+	for (const row of rows) {
+		if (row && typeof row.key === 'string') {
+			out[row.key] = row.value
+		}
+	}
+	return out
+}
 
 export default {
 	name: 'MappingRulesEditor',
@@ -235,6 +338,8 @@ export default {
 		PlusIcon,
 		PencilIcon,
 		DeleteIcon,
+		DragVerticalIcon,
+		VueDraggable,
 		EditMappingRuleDialog,
 	},
 
@@ -270,6 +375,17 @@ export default {
 		return {
 			activeTab: 'mapping',
 			/**
+			 * Local draft copies of the three rule collections. Drag-and-drop
+			 * mutates these arrays in place; we then commit a reconstructed
+			 * collection back to the parent via the existing update events.
+			 *
+			 * Kept in sync with the props via the watcher below — parent
+			 * persists are the source of truth.
+			 */
+			mappingDraft: objectToRowList(this.mappingRules),
+			castDraft: objectToRowList(this.castRules),
+			unsetDraft: [...this.unsetRules],
+			/**
 			 * @type {null|{
 			 *   kind: 'mapping'|'cast'|'unset',
 			 *   property: string|null,
@@ -281,6 +397,7 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		tabs() {
 			return [
 				{
@@ -300,12 +417,14 @@ export default {
 				},
 			]
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		mappingRowList() {
 			return Object.keys(this.mappingRules).map((key) => ({
 				key,
 				value: this.mappingRules[key],
 			}))
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		castRowList() {
 			return Object.keys(this.castRules).map((key) => ({
 				key,
@@ -314,7 +433,32 @@ export default {
 		},
 	},
 
+	watch: {
+		mappingRules: {
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+			handler(next) {
+				this.mappingDraft = objectToRowList(next)
+			},
+			deep: true,
+		},
+		castRules: {
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+			handler(next) {
+				this.castDraft = objectToRowList(next)
+			},
+			deep: true,
+		},
+		unsetRules: {
+			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+			handler(next) {
+				this.unsetDraft = [...next]
+			},
+			deep: true,
+		},
+	},
+
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		formatTemplate(value) {
 			if (value == null) return ''
 			if (typeof value === 'string') return value
@@ -324,6 +468,7 @@ export default {
 				return String(value)
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		existingKeysFor(kind, currentProperty) {
 			let keys = []
 			if (kind === 'mapping') keys = Object.keys(this.mappingRules)
@@ -335,6 +480,7 @@ export default {
 			return keys
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		openCreate(kind) {
 			this.editing = {
 				kind,
@@ -342,6 +488,7 @@ export default {
 				value: kind === 'cast' ? 'string' : '',
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		openEdit(kind, property) {
 			const source = kind === 'mapping' ? this.mappingRules : this.castRules
 			this.editing = {
@@ -350,6 +497,7 @@ export default {
 				value: source[property] ?? (kind === 'cast' ? 'string' : ''),
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		openEditUnset(property) {
 			this.editing = {
 				kind: 'unset',
@@ -358,6 +506,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		onSubmitDialog(payload) {
 			const { kind, property, value } = payload
 			if (kind === 'mapping') {
@@ -370,6 +519,7 @@ export default {
 			this.editing = null
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		commitMapping(oldKey, newKey, newValue) {
 			const next = { ...this.mappingRules }
 			if (oldKey && oldKey !== newKey) {
@@ -378,6 +528,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-mapping', next)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		commitCast(oldKey, newKey, newValue) {
 			const next = { ...this.castRules }
 			if (oldKey && oldKey !== newKey) {
@@ -386,6 +537,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-cast', next)
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		commitUnset(oldProperty, newProperty) {
 			const next = [...this.unsetRules]
 			if (oldProperty) {
@@ -410,6 +562,7 @@ export default {
 			this.$emit('update-unset', deduped)
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		deleteRule(kind, key) {
 			if (kind === 'mapping') {
 				const next = { ...this.mappingRules }
@@ -421,9 +574,69 @@ export default {
 				this.$emit('update-cast', next)
 			}
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
 		deleteUnset(property) {
 			const next = this.unsetRules.filter((entry) => entry !== property)
 			this.$emit('update-unset', next)
+		},
+
+		/**
+		 * Drag-end handler: emit a rebuilt object in the new order.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2
+		 */
+		onMappingReorder() {
+			this.$emit('update-mapping', rowListToObject(this.mappingDraft))
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		onCastReorder() {
+			this.$emit('update-cast', rowListToObject(this.castDraft))
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		onUnsetReorder() {
+			this.$emit('update-unset', [...this.unsetDraft])
+		},
+
+		/**
+		 * Keyboard reorder. Swaps the focused row with its neighbour in the
+		 * given direction and commits via the same reorder path the drag
+		 * handler uses.
+		 *
+		 * @param {'mapping'|'cast'|'unset'} kind Which collection.
+		 * @param {number} index Current row index.
+		 * @param {number} direction -1 to move up, 1 to move down.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2
+		 */
+		moveRow(kind, index, direction) {
+			let list
+			if (kind === 'mapping') list = this.mappingDraft
+			else if (kind === 'cast') list = this.castDraft
+			else list = this.unsetDraft
+			const target = index + direction
+			if (target < 0 || target >= list.length) return
+			const next = [...list]
+			const [moved] = next.splice(index, 1)
+			next.splice(target, 0, moved)
+			if (kind === 'mapping') {
+				this.mappingDraft = next
+				this.onMappingReorder()
+			} else if (kind === 'cast') {
+				this.castDraft = next
+				this.onCastReorder()
+			} else {
+				this.unsetDraft = next
+				this.onUnsetReorder()
+			}
+			// Restore focus on the new row position so successive arrow
+			// presses keep moving the same logical row.
+			this.$nextTick(() => {
+				const rows = this.$el.querySelectorAll(
+					'section.cn-rules-editor__panel .cn-rules-editor__row',
+				)
+				const row = rows[target]
+				if (row && typeof row.focus === 'function') row.focus()
+			})
 		},
 	},
 }
@@ -501,6 +714,63 @@ export default {
 .cn-rules-editor__table th {
 	font-weight: 600;
 	background: var(--color-background-hover);
+}
+
+.cn-rules-editor__row {
+	transition: background-color 0.1s ease, box-shadow 0.1s ease;
+	outline: none;
+}
+
+.cn-rules-editor__row:hover {
+	background: var(--color-background-hover);
+}
+
+.cn-rules-editor__row:focus {
+	background: var(--color-background-hover);
+	box-shadow: inset 2px 0 0 var(--color-primary-element, var(--color-primary));
+}
+
+.cn-rules-editor__row--ghost {
+	opacity: 0.4;
+	background: var(--color-primary-element-light, var(--color-background-dark));
+}
+
+.cn-rules-editor__row--dragging {
+	background: var(--color-main-background);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cn-rules-editor__col-handle {
+	width: 32px;
+	padding-right: 0;
+	padding-left: 8px;
+	vertical-align: middle;
+}
+
+.cn-rules-editor__drag-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	padding: 4px;
+	cursor: grab;
+	color: var(--color-text-maxcontrast);
+	border-radius: var(--border-radius);
+}
+
+.cn-rules-editor__drag-handle:hover {
+	background: var(--color-background-dark);
+	color: var(--color-main-text);
+}
+
+.cn-rules-editor__drag-handle:active {
+	cursor: grabbing;
+}
+
+.cn-rules-editor__drag-handle:disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
 }
 
 .cn-rules-editor__cell-key {

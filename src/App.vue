@@ -21,7 +21,6 @@
 <script>
 import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot } from '@conduction/nextcloud-vue'
-import { useSettingsStore } from './store/store.js'
 import ModalHost from './modals/v2/ModalHost.vue'
 
 export default {
@@ -47,6 +46,7 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1 */
 		permissions() {
 			const base = window.OC?.currentUser?.permissions ?? []
 			// CnAppNav's permission filter is an array-includes check; Nextcloud
@@ -59,14 +59,6 @@ export default {
 		},
 	},
 
-	async created() {
-		// Initialise Pinia stores so the existing custom-component views keep
-		// working through the manifest transition. CnAppRoot itself does not
-		// depend on them, but the views in registry.js do.
-		const settingsStore = useSettingsStore()
-		await settingsStore.fetchSettings()
-	},
-
 	methods: {
 		/**
 		 * Translate function passed down to CnAppRoot / CnAppNav /
@@ -75,6 +67,8 @@ export default {
 		 *
 		 * @param {string} key Translation key.
 		 * @return {string} Translated string (or the key on miss).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1
 		 */
 		translateForApp(key) {
 			return ncT('openconnector', key)

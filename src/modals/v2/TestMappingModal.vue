@@ -47,6 +47,7 @@
 						{{ t('openconnector', 'Validate against schema (optional)') }}
 					</label>
 					<NcSelect id="cn-test-mapping-schema"
+						:aria-label-combobox="t('openconnector', 'Validate against schema (optional)')"
 						v-model="selectedSchema"
 						:options="schemaOptions"
 						:loading="schemasLoading"
@@ -146,18 +147,22 @@ export default {
 	},
 
 	computed: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		mappingName() {
 			return this.mapping?.name || ''
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		placeholder() {
 			return '{\n  "key": "value"\n}'
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		canRun() {
 			return !!this.mapping && this.inputJson.trim().length > 0
 		},
 		hasResult() {
 			return this.result !== null
 		},
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		resultJson() {
 			try {
 				return JSON.stringify(this.result, null, 2)
@@ -168,6 +173,7 @@ export default {
 	},
 
 	watch: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -177,10 +183,12 @@ export default {
 	},
 
 	methods: {
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		onClose() {
 			this.$emit('close')
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		resetState() {
 			this.runError = ''
 			this.inputError = ''
@@ -188,6 +196,7 @@ export default {
 			this.validation = { isValid: true, errors: [] }
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		async fetchSchemas() {
 			this.schemasLoading = true
 			try {
@@ -214,6 +223,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		async runTest() {
 			this.resetState()
 			let parsedInput = null
@@ -259,6 +269,7 @@ export default {
 			}
 		},
 
+		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
 		formatValidationError(err) {
 			if (typeof err === 'string') return err
 			return err?.message || err?.error || JSON.stringify(err)

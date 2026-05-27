@@ -1,0 +1,19 @@
+# Retrofit annotation commit (opsx-annotate, 2026-05-24)
+78b6624686d0c027295843e24b5c8e1a2ed3458b
+884adc749c8b76de06dd5d520f099164d979f917
+
+# Retrofit annotation commit (reverse-spec rule-pipeline, 2026-05-25)
+d27c6ef22f885f835143f95296ef94a424ab1aba
+
+# Retrofit reverse-spec configuration-export-import annotations (opsx-reverse-spec, 2026-05-25)
+d448e03e646bdac6b1f4c144773585ed51c9634c
+
+# Retrofit annotation commit (reverse-spec user-management-and-login, 2026-05-25)
+263e579134d9d5c2c9f1b1c7a4b3392a3a59ea7b
+
+# Retrofit annotation commit (reverse-spec endpoint-runtime, 2026-05-25)
+8564b07120d45a195ba4ad9aa602ab0d700a9ac2
+
+# Retrofit reverse-spec annotation commits (synchronization-engine, 2026-05-25)
+a2ae936a2e58ac16c5a4076a0b3ab32954b55aee
+9f90f9873c423883455fd6918aefef1e380fdc57

@@ -1,32 +1,34 @@
 <?php
-
 /**
- * JobTask
+ * OpenConnector JobTask.
  *
  * Background job task for executing jobs in the OpenConnector application.
  * This task runs scheduled jobs by delegating execution to the JobService.
  *
  * @category Cron
  * @package  OCA\OpenConnector\Cron
- * @author   OpenConnector Development Team
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openconnector
- * @version  1.0.0
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
  */
 
 namespace OCA\OpenConnector\Cron;
 
 use OCA\OpenConnector\Service\JobService;
-use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
+use OCP\BackgroundJob\TimedJob;
 
 /**
- * Background job task for executing scheduled jobs
+ * Background job task for executing scheduled jobs.
  *
- * This task serves as a simple wrapper around the JobService,
- * handling the execution of individual jobs based on their
- * scheduled intervals and configurations.
+ * This task serves as a simple wrapper around the JobService, handling the
+ * execution of individual jobs based on their scheduled intervals.
  *
  * @psalm-api
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -35,56 +37,58 @@ class JobTask extends TimedJob
 {
 
     /**
-     * Job service for handling job execution logic
+     * Job service for handling job execution logic.
+     *
+     * @var JobService
      */
     private readonly JobService $jobService;
 
     /**
-     * JobTask constructor
+     * Constructor.
      *
-     * Initializes the job task with required dependencies and
-     * configures the background job settings.
+     * Initializes the job task with required dependencies and configures the
+     * background job settings.
      *
-     * @param ITimeFactory $time       Time factory for job scheduling
-     * @param JobService   $jobService Service for handling job execution
-     *
-     * @psalm-param ITimeFactory $time
-     * @psalm-param JobService $jobService
+     * @param ITimeFactory $time       Time factory for job scheduling.
+     * @param JobService   $jobService Service for handling job execution.
      */
     public function __construct(
         ITimeFactory $time,
         JobService $jobService
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         $this->jobService = $jobService;
 
-        // Run every 5 minutes
-        $this->setInterval(300);
+        // Run every 5 minutes.
+        $this->setInterval(seconds: 300);
 
-        // Set as time insensitive to run during low-load periods
-        $this->setTimeSensitivity(IJob::TIME_SENSITIVE);
+        // Set as time sensitive to honour the cron schedule.
+        $this->setTimeSensitivity(sensitivity: IJob::TIME_SENSITIVE);
 
-        // Only run one instance of this job at a time
-        $this->setAllowParallelRuns(false);
+        // Only run one instance of this job at a time.
+        $this->setAllowParallelRuns(allow: false);
+
     }//end __construct()
 
     /**
-     * Execute the job task
+     * Execute the job task.
      *
-     * This method delegates job execution to the JobService,
-     * which handles all the complex business logic for job
-     * validation, execution, and logging.
+     * This method delegates job execution to the JobService, which handles
+     * all the complex business logic for job validation and logging.
      *
-     * @param mixed $argument The job arguments containing jobId and optional parameters
+     * @param mixed $argument The job arguments containing jobId and optional parameters.
      *
      * @return void
      *
      * @psalm-param   array{jobId?: int, forceRun?: bool} $argument
      * @phpstan-param mixed $argument
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-3
      */
     public function run(mixed $argument): void
     {
-        // Delegate job execution to the service layer
+        // Delegate job execution to the service layer.
         $this->jobService->run();
+
     }//end run()
 }//end class
