@@ -221,10 +221,6 @@ class ActionAuthService
         // Normalize on write — same shape as getMatrix returns.
         $normalized = [];
         foreach ($matrix as $action => $groups) {
-            if (is_string($action) === false || is_array($groups) === false) {
-                continue;
-            }
-
             $clean = [];
             foreach ($groups as $g) {
                 if (is_string($g) === true && $g !== '') {

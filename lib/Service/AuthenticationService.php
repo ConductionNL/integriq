@@ -276,9 +276,9 @@ class AuthenticationService
         // from process metadata. If the process died between
         // file_put_contents and unlink, the key leaked indefinitely.
         // Use tempnam() + chmod 0600 + try/finally so:
-        //   - the filename is unpredictable,
-        //   - the bytes are never readable to other local users,
-        //   - cleanup runs even when JWKFactory::createFromKeyFile throws.
+        // - the filename is unpredictable,
+        // - the bytes are never readable to other local users,
+        // - cleanup runs even when JWKFactory::createFromKeyFile throws.
         $filename = tempnam(sys_get_temp_dir(), 'oc_privatekey_');
         if ($filename === false) {
             throw new Exception('Could not allocate a temp file for the private key.');

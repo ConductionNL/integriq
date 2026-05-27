@@ -5,10 +5,18 @@
  *
  * CI guard for chain A (openconnector-register-schema-declaration) — REQ-A-002.
  *
- * Asserts that every protected property on each of the 15 openconnector entity
- * classes appears as a property on the matching schema in
- * lib/Settings/openconnector_register.json. A missing or typo'd property
- * fails the test with a diagnostic naming the entity, field, and schema slug.
+ * Asserts structural integrity of lib/Settings/openconnector_register.json:
+ * - All 15 schema slugs are declared in the register
+ * - All 15 schemas are defined in components.schemas
+ * - Log schemas carry appendOnly/immutable/archival markers
+ * - Mutable schemas do NOT carry appendOnly/immutable
+ * - FK relations carry $ref and x-openregister-onDelete
+ * - sourceId/targetId on synchronization are plain string (no $ref)
+ *
+ * NOTE: The original REQ-A-002 test used Reflection on OCA\OpenConnector\Db\*
+ * entity classes to verify schema completeness. Those entity classes were
+ * deleted in chain C (all state now lives in OpenRegister). The Reflection
+ * assertions have been removed; the structural JSON checks below remain.
  *
  * Cross-ref: openspec/changes/openconnector-register-schema-declaration/specs/openconnector-register-schema/spec.md#req-a-002
  */
@@ -18,41 +26,36 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Settings;
 
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionProperty;
 
 class RegisterDescriptorTest extends TestCase
 {
     /**
-     * Map of entity FQCN → schema slug in openconnector_register.json.
+     * The 15 schema slugs that MUST be declared in the register.
+     * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
+     *
+     * @var array<string, string>
      */
-    private const ENTITY_TO_SCHEMA = [
-        'OCA\\OpenConnector\\Db\\Source'                      => 'source',
-        'OCA\\OpenConnector\\Db\\Consumer'                    => 'consumer',
-        'OCA\\OpenConnector\\Db\\Endpoint'                    => 'endpoint',
-        'OCA\\OpenConnector\\Db\\Event'                       => 'event',
-        'OCA\\OpenConnector\\Db\\EventMessage'                => 'event_message',
-        'OCA\\OpenConnector\\Db\\EventSubscription'           => 'event_subscription',
-        'OCA\\OpenConnector\\Db\\Job'                         => 'job',
-        'OCA\\OpenConnector\\Db\\Mapping'                     => 'mapping',
-        'OCA\\OpenConnector\\Db\\Rule'                        => 'rule',
-        'OCA\\OpenConnector\\Db\\Synchronization'             => 'synchronization',
-        'OCA\\OpenConnector\\Db\\SynchronizationContract'     => 'synchronization_contract',
-        'OCA\\OpenConnector\\Db\\CallLog'                     => 'call_log',
-        'OCA\\OpenConnector\\Db\\JobLog'                      => 'job_log',
-        'OCA\\OpenConnector\\Db\\SynchronizationLog'          => 'synchronization_log',
-        'OCA\\OpenConnector\\Db\\SynchronizationContractLog'  => 'synchronization_contract_log',
+    private const SCHEMA_SLUGS = [
+        'Source'                     => 'source',
+        'Consumer'                   => 'consumer',
+        'Endpoint'                   => 'endpoint',
+        'Event'                      => 'event',
+        'EventMessage'               => 'event_message',
+        'EventSubscription'          => 'event_subscription',
+        'Job'                        => 'job',
+        'Mapping'                    => 'mapping',
+        'Rule'                       => 'rule',
+        'Synchronization'            => 'synchronization',
+        'SynchronizationContract'    => 'synchronization_contract',
+        'CallLog'                    => 'call_log',
+        'JobLog'                     => 'job_log',
+        'SynchronizationLog'         => 'synchronization_log',
+        'SynchronizationContractLog' => 'synchronization_contract_log',
     ];
 
     /**
-     * Fields that exist on the entity but are intentionally NOT in the schema
-     * (OR-managed metadata that OR auto-applies — `id` is the legacy integer PK
-     * superseded by `uuid` for OR-stored objects).
+     * @var array<string, mixed>
      */
-    private const ENTITY_FIELDS_EXCLUDED_FROM_SCHEMA = [
-        'id',
-    ];
-
     private array $descriptor;
 
     protected function setUp(): void
@@ -68,11 +71,11 @@ class RegisterDescriptorTest extends TestCase
         $this->assertSame(JSON_ERROR_NONE, json_last_error(), 'JSON parse error: ' . json_last_error_msg());
 
         $this->descriptor = $parsed;
-    }
+    }//end setUp()
 
     public function testRegisterDeclaresAllFifteenSchemaSlugs(): void
     {
-        $expected = array_values(self::ENTITY_TO_SCHEMA);
+        $expected = array_values(self::SCHEMA_SLUGS);
         $actual = $this->descriptor['components']['registers']['openconnector']['schemas'] ?? [];
 
         sort($expected);
@@ -84,61 +87,39 @@ class RegisterDescriptorTest extends TestCase
             $actualSorted,
             'register.openconnector.schemas[] MUST list exactly the 15 schema slugs'
         );
-    }
+    }//end testRegisterDeclaresAllFifteenSchemaSlugs()
 
     public function testAllFifteenSchemasAreDefined(): void
     {
         $schemas = $this->descriptor['components']['schemas'] ?? [];
 
-        foreach (self::ENTITY_TO_SCHEMA as $entityFqcn => $schemaSlug) {
+        foreach (self::SCHEMA_SLUGS as $label => $schemaSlug) {
             $this->assertArrayHasKey(
                 $schemaSlug,
                 $schemas,
-                sprintf('Schema "%s" (for entity %s) MUST be declared in components.schemas', $schemaSlug, $entityFqcn)
+                sprintf('Schema "%s" (formerly entity %s) MUST be declared in components.schemas', $schemaSlug, $label)
             );
         }
-    }
+    }//end testAllFifteenSchemasAreDefined()
 
     /**
-     * @dataProvider entityProvider
+     * Each schema MUST declare a non-empty properties block.
+     *
+     * @dataProvider schemaSlugProvider
      */
-    public function testEveryProtectedEntityPropertyAppearsInSchema(string $entityFqcn, string $schemaSlug): void
+    public function testEachSchemaDeclaresSomeProperties(string $schemaSlug): void
     {
-        $this->assertTrue(
-            class_exists($entityFqcn),
-            sprintf('Entity class %s MUST exist', $entityFqcn)
-        );
-
         $schemas = $this->descriptor['components']['schemas'] ?? [];
         $schema = $schemas[$schemaSlug] ?? null;
         $this->assertIsArray($schema, sprintf('Schema "%s" MUST be defined', $schemaSlug));
 
-        $schemaProperties = $schema['properties'] ?? [];
-        $this->assertIsArray($schemaProperties, sprintf('Schema "%s" MUST declare a properties block', $schemaSlug));
-
-        $reflection = new ReflectionClass($entityFqcn);
-        $entityFields = [];
-        foreach ($reflection->getProperties(ReflectionProperty::IS_PROTECTED) as $prop) {
-            $name = $prop->getName();
-            if (in_array($name, self::ENTITY_FIELDS_EXCLUDED_FROM_SCHEMA, true)) {
-                continue;
-            }
-            $entityFields[] = $name;
-        }
-
-        $missing = array_diff($entityFields, array_keys($schemaProperties));
-
-        $this->assertEmpty(
-            $missing,
-            sprintf(
-                'Entity %s has %d protected field(s) missing from schema "%s": %s',
-                $entityFqcn,
-                count($missing),
-                $schemaSlug,
-                implode(', ', $missing)
-            )
+        $properties = $schema['properties'] ?? [];
+        $this->assertIsArray($properties, sprintf('Schema "%s" MUST declare a properties block', $schemaSlug));
+        $this->assertNotEmpty(
+            $properties,
+            sprintf('Schema "%s" properties block MUST NOT be empty', $schemaSlug)
         );
-    }
+    }//end testEachSchemaDeclaresSomeProperties()
 
     public function testLogSchemasAreAppendOnlyAndImmutable(): void
     {
@@ -162,7 +143,7 @@ class RegisterDescriptorTest extends TestCase
                 sprintf('Log schema "%s" MUST carry x-openregister-archival annotation (REQ-A-004)', $slug)
             );
         }
-    }
+    }//end testLogSchemasAreAppendOnlyAndImmutable()
 
     public function testMutableSchemasAreNotAppendOnly(): void
     {
@@ -170,7 +151,7 @@ class RegisterDescriptorTest extends TestCase
         $schemas = $this->descriptor['components']['schemas'] ?? [];
 
         foreach ($schemas as $slug => $schema) {
-            if (in_array($slug, $logSchemas, true)) {
+            if (in_array($slug, $logSchemas, true) === true) {
                 continue;
             }
             $this->assertFalse(
@@ -182,18 +163,18 @@ class RegisterDescriptorTest extends TestCase
                 sprintf('Mutable schema "%s" MUST NOT set immutable: true', $slug)
             );
         }
-    }
+    }//end testMutableSchemasAreNotAppendOnly()
 
     public function testFkRelationsCarryRefAndOnDelete(): void
     {
         $schemas = $this->descriptor['components']['schemas'] ?? [];
 
         $expectedRelations = [
-            ['schema' => 'call_log',      'property' => 'source',                    'target' => 'source',                    'onDelete' => 'SET NULL'],
-            ['schema' => 'call_log',      'property' => 'synchronization',          'target' => 'synchronization',          'onDelete' => 'SET NULL'],
-            ['schema' => 'event_message', 'property' => 'event',                    'target' => 'event',                    'onDelete' => 'CASCADE'],
-            ['schema' => 'event_message', 'property' => 'consumer',                 'target' => 'consumer',                 'onDelete' => 'SET NULL'],
-            ['schema' => 'event_message', 'property' => 'subscription',             'target' => 'event_subscription',        'onDelete' => 'CASCADE'],
+            ['schema' => 'call_log',      'property' => 'source',                       'target' => 'source',                  'onDelete' => 'SET NULL'],
+            ['schema' => 'call_log',      'property' => 'synchronization',              'target' => 'synchronization',         'onDelete' => 'SET NULL'],
+            ['schema' => 'event_message', 'property' => 'event',                        'target' => 'event',                   'onDelete' => 'CASCADE'],
+            ['schema' => 'event_message', 'property' => 'consumer',                     'target' => 'consumer',                'onDelete' => 'SET NULL'],
+            ['schema' => 'event_message', 'property' => 'subscription',                 'target' => 'event_subscription',      'onDelete' => 'CASCADE'],
             ['schema' => 'synchronization_contract_log', 'property' => 'synchronization_contract', 'target' => 'synchronization_contract', 'onDelete' => 'CASCADE'],
         ];
 
@@ -214,7 +195,7 @@ class RegisterDescriptorTest extends TestCase
                 sprintf('Relation %s.%s MUST set x-openregister-onDelete=%s', $rel['schema'], $rel['property'], $rel['onDelete'])
             );
         }
-    }
+    }//end testFkRelationsCarryRefAndOnDelete()
 
     public function testSynchronizationSourceIdAndTargetIdAreStringWithoutRef(): void
     {
@@ -229,14 +210,18 @@ class RegisterDescriptorTest extends TestCase
         $this->assertIsArray($targetId, 'synchronization.targetId MUST be declared');
         $this->assertSame('string', $targetId['type'] ?? null, 'synchronization.targetId MUST be type:string (REQ-A-006)');
         $this->assertArrayNotHasKey('$ref', $targetId, 'synchronization.targetId MUST NOT carry $ref — overloaded format');
-    }
+    }//end testSynchronizationSourceIdAndTargetIdAreStringWithoutRef()
 
-    public function entityProvider(): array
+    /**
+     * @return array<string, array<string>>
+     */
+    public function schemaSlugProvider(): array
     {
         $cases = [];
-        foreach (self::ENTITY_TO_SCHEMA as $entityFqcn => $schemaSlug) {
-            $cases[$schemaSlug] = [$entityFqcn, $schemaSlug];
+        foreach (self::SCHEMA_SLUGS as $label => $schemaSlug) {
+            $cases[$schemaSlug] = [$schemaSlug];
         }
+
         return $cases;
-    }
-}
+    }//end schemaSlugProvider()
+}//end class
