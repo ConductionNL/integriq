@@ -270,21 +270,35 @@ class AuthenticationService
      */
     private function getRSJWK(array $configuration): ?JWK
     {
-        $stamp    = microtime().getmypid();
-        $filename = "/var/tmp/privatekey-$stamp";
+        // #1012(a): private keys were previously written to
+        // /var/tmp/privatekey-<microtime><pid> with default-umask perms (often
+        // world-readable on shared hosting) and a predictable name derived
+        // from process metadata. If the process died between
+        // file_put_contents and unlink, the key leaked indefinitely.
+        // Use tempnam() + chmod 0600 + try/finally so:
+        //   - the filename is unpredictable,
+        //   - the bytes are never readable to other local users,
+        //   - cleanup runs even when JWKFactory::createFromKeyFile throws.
+        $filename = tempnam(sys_get_temp_dir(), 'oc_privatekey_');
+        if ($filename === false) {
+            throw new Exception('Could not allocate a temp file for the private key.');
+        }
+
+        @chmod($filename, 0600);
         file_put_contents($filename, base64_decode($configuration['secret']));
-        $jwk = null;
+        @chmod($filename, 0600);
+
         try {
             $jwk = JWKFactory::createFromKeyFile(
                 $filename,
                 null,
                 ['use' => 'sig']
             );
-        } catch (Exception $exception) {
-            throw $exception;
+        } finally {
+            if (file_exists($filename) === true) {
+                @unlink($filename);
+            }
         }
-
-        unlink($filename);
 
         return $jwk;
     }//end getRSJWK()
