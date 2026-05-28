@@ -28,6 +28,7 @@ use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Response;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -58,6 +59,8 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-4
  */
 class SOAPService
 {
@@ -188,6 +191,13 @@ class SOAPService
     /**
      * Parse an XML snippet with its own dynamic XSD.
      *
+     * Both the DOMDocument load (used for optional schema validation) and the
+     * SimpleXML parse are delegated to SafeXmlParser so that the external-entity
+     * loader is pinned to null for each parse, even when this method is called
+     * from inside the permissive-loader window that callSoapSource opens for
+     * WSDL resolution (C2 partial-fix: the permissive loader was only restored
+     * in finally but the parse calls inside the try block were still exposed).
+     *
      * @param string $xmlString The XML split in two parts: the XSD and the data to parse.
      *
      * @return \SimpleXMLElement|null The resulting XML element, or null when no document element is present.
@@ -199,8 +209,11 @@ class SOAPService
         // @TODO: This is awfully specific, to be replaced by a more generic fix for faulty XSD.
         $xmlString = '<any>'.str_replace('NewDataSet', 'DocumentElement', $xmlString).'</any>';
 
+        // Load via SafeXmlParser so the entity loader is pinned to null for the
+        // duration of the load, regardless of any permissive-loader window opened
+        // by callSoapSource for WSDL resolution.
         $dom = new DOMDocument();
-        $dom->loadXML($xmlString);
+        SafeXmlParser::loadDom($dom, $xmlString);
 
         // OPTIONAL: Validate against schema in the XML itself (or use an external .xsd file).
         libxml_use_internal_errors(true);
@@ -208,21 +221,21 @@ class SOAPService
             libxml_clear_errors();
         }
 
-        // Parse the data inside diffgram.
-        $simpleXml = simplexml_load_string(
-            $xmlString,
-            'SimpleXMLElement',
-            0,
-            'diffgr',
-            true
-        );
+        // Parse the data inside diffgram via SafeXmlParser (pins entity loader + LIBXML_NONET).
+        $simpleXml = SafeXmlParser::parse($xmlString, 'SimpleXMLElement', 0);
 
-        // The diffgram will be under the 'diffgram' namespace.
+        if ($simpleXml === false) {
+            return null;
+        }
+
+        // The diffgram will be under the 'diffgram' namespace (unused directly — kept for
+        // explicit namespace resolution; DocumentElement is retrieved via xpath below).
         $namespaces = $simpleXml->getNamespaces(true);
-        $diffgram   = $simpleXml->children($namespaces['diffgr'])->diffgram;
+        // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter,SlevomatCodingStandard.Variables.UnusedVariable -- retained for namespace context.
+        $diffgram = $simpleXml->children($namespaces['diffgr'] ?? '')->diffgram;
 
         // Or just get the DocumentElement directly.
-        $documentElement = $simpleXml->xpath('//DocumentElement')[0];
+        $documentElement = $simpleXml->xpath('//DocumentElement')[0] ?? null;
 
         if ($documentElement === null) {
             return null;

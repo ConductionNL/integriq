@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Util;
 
+use DOMDocument;
 use SimpleXMLElement;
 
 /**
@@ -76,4 +77,39 @@ class SafeXmlParser
             libxml_set_external_entity_loader($previousLoader);
         }
     }//end parse()
+
+    /**
+     * Load an XML string into a DOMDocument safely.
+     *
+     * Guarantees:
+     *   1. The libxml external-entity loader is set to null for the duration
+     *      of the load — preventing file-read and SSRF via entity expansion,
+     *      including during any permissive-loader window opened by the caller.
+     *   2. LIBXML_NONET is always added to the options so libxml cannot open
+     *      network connections while resolving entities.
+     *   3. The previous entity loader is unconditionally restored via finally.
+     *
+     * @param DOMDocument $dom     The DOMDocument instance to load the XML into.
+     * @param string      $data    The XML string to load.
+     * @param int         $options Additional LIBXML_* flags (LIBXML_NONET always added).
+     *
+     * @return bool Returns true on success, false on failure (mirrors DOMDocument::loadXML).
+     *
+     * @psalm-suppress MixedMethodCall
+     *
+     * @spec openspec/changes/retrofit-2026-05-28-xml-xxe-hardening/tasks.md#task-1
+     */
+    public static function loadDom(DOMDocument $dom, string $data, int $options=0): bool
+    {
+        // Pin the external-entity loader to null before loading.
+        $previousLoader = libxml_get_external_entity_loader();
+        libxml_set_external_entity_loader(static fn (): null => null);
+
+        try {
+            return $dom->loadXML($data, ($options | LIBXML_NONET));
+        } finally {
+            // Restore whatever loader was in place before.
+            libxml_set_external_entity_loader($previousLoader);
+        }
+    }//end loadDom()
 }//end class
