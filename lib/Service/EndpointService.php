@@ -1452,17 +1452,26 @@ class EndpointService
     private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $configuration = $rule->getObject()['configuration'] ?? [];
-        $header        = $data['headers']['Authorization'] ?? $data['headers']['authorization'] ?? '';
+
+        // Normalise all incoming header keys to lowercase once so all subsequent
+        // lookups are case-insensitive without multiple fallback variants.
+        $normalisedHeaders = [];
+        foreach (($data['headers'] ?? []) as $key => $value) {
+            $normalisedHeaders[strtolower((string) $key)] = $value;
+        }
+
+        // Default to the Authorization header (lowercase-normalised lookup).
+        $header = ($normalisedHeaders['authorization'] ?? '');
 
         if (isset($configuration['authentication']) === false) {
             return $data;
         }
 
         if (isset($configuration['authentication']['header']) === true) {
-            $headerName    = $configuration['authentication']['header'];
-            $lowerName     = strtolower($headerName);
-            $underscoreKey = str_replace(search: '-', replace: '_', subject: $lowerName);
-            $header        = ($data['headers'][$headerName] ?? $data['headers'][$lowerName] ?? $data['headers'][$underscoreKey] ?? null);
+            // Convert configured header name to lowercase + underscore variant
+            // for a single normalised lookup against $normalisedHeaders.
+            $lookupKey = strtolower((string) $configuration['authentication']['header']);
+            $header    = ($normalisedHeaders[$lookupKey] ?? null);
         }
 
         if ($header === '' || $header === null) {
