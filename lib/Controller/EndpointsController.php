@@ -249,29 +249,55 @@ class EndpointsController extends Controller
     /**
      * Check if an endpoint is simple (no rules, conditions, mappings, configurations).
      *
+     * An endpoint must also carry `isPublic: true` to be eligible for the simple
+     * path — without an explicit opt-in the request is routed through the full
+     * EndpointService which runs the authentication-rule pipeline.  Only GET
+     * requests are allowed on the simple path; write methods (POST/PUT/PATCH/
+     * DELETE) are always routed through EndpointService so that OR's write RBAC
+     * layer (OR #1949) is respected.
+     *
      * @param ObjectEntity $endpoint The endpoint to check.
      *
-     * @return boolean True if the endpoint is simple and can be optimized.
+     * @return boolean True if the endpoint qualifies for the optimised simple path.
      *
      * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
      */
     private function isSimpleEndpoint(ObjectEntity $endpoint): bool
     {
         $data = $endpoint->getObject();
+
+        // Only GET is allowed on the simple path — writes must go through the
+        // full EndpointService so OR's write RBAC (OR #1949/#1951) is honoured.
+        if ($this->request->getMethod() !== 'GET') {
+            return false;
+        }
+
+        // The endpoint must explicitly declare isPublic:true to opt in to
+        // anonymous access via the simple path.
+        if (($data['isPublic'] ?? false) !== true) {
+            return false;
+        }
+
         // Check if endpoint has no complex processing requirements.
-        $allowedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
         return empty($data['rules']) === true
             && empty($data['conditions']) === true
             && empty($data['inputMapping']) === true
             && empty($data['outputMapping']) === true
             && empty($data['configurations']) === true
-            && ($data['targetType'] ?? '') === 'register/schema'
-            && in_array($this->request->getMethod(), $allowedMethods) === true;
+            && ($data['targetType'] ?? '') === 'register/schema';
 
     }//end isSimpleEndpoint()
 
     /**
-     * Handle simple schema requests directly without EndpointService overhead.
+     * Handle simple GET-only schema requests directly without EndpointService overhead.
+     *
+     * Only reachable when isSimpleEndpoint() returns true, which requires:
+     *   - HTTP method = GET
+     *   - endpoint.isPublic = true
+     *   - no rules / conditions / mappings / configurations
+     * Write methods (POST/PUT/PATCH/DELETE) are always routed through the full
+     * EndpointService so OR's ObjectService write RBAC (OR #1949/#1951) is
+     * honoured end-to-end.
      *
      * @param ObjectEntity $endpoint The endpoint configuration.
      * @param string       $path     The request path.
@@ -311,7 +337,6 @@ class EndpointsController extends Controller
             $endpointArray = ($endpointData['endpointArray'] ?? explode('/', $endpointData['endpoint'] ?? ''));
             $pathParams    = $this->getPathParameters(endpointArray: $endpointArray, path: $path);
             $parameters    = $this->request->getParams();
-            $method        = $this->request->getMethod();
 
             // Get the ObjectService mapper for this register/schema.
             try {
@@ -329,90 +354,55 @@ class EndpointsController extends Controller
                 return new JSONResponse(['error' => $this->l->t('Schema or register not found: %s', [$e->getMessage()])], 404);
             }
 
-            // Handle different HTTP methods.
-            switch ($method) {
-                case 'GET':
-                    // Handle single object request (has ID in path).
-                    if (isset($pathParams['id']) === true && $pathParams['id'] === end($pathParams)) {
-                        $object = $mapper->find($pathParams['id']);
-                        return new JSONResponse($object->jsonSerialize());
-                    }
+            // Only GET is handled here.  isSimpleEndpoint() guarantees this but
+            // we guard defensively so a future refactor cannot silently open write
+            // access without going through OR's RBAC layer.
+            if ($this->request->getMethod() !== 'GET') {
+                return new JSONResponse(['error' => $this->l->t('Method not supported on simple endpoint')], 405);
+            }
 
-                    // Remove _path as parameters (not needed and breaks things).
-                    unset($parameters['_path']);
+            // Handle single object request (has ID in path).
+            if (isset($pathParams['id']) === true && $pathParams['id'] === end($pathParams)) {
+                $object = $mapper->find($pathParams['id']);
+                return new JSONResponse($object->jsonSerialize());
+            }
 
-                    // Handle collection request (list objects).
-                    $result = $mapper->findAllPaginated(requestParams: $parameters);
+            // Remove _path as parameters (not needed and breaks things).
+            unset($parameters['_path']);
 
-                    // Debug: log the register and schema we're querying.
-                    $this->logger->info(
-                    'Simple endpoint query',
-                    [
-                        'endpoint'     => $endpointData['endpoint'] ?? '',
-                        'register'     => $register,
-                        'schema'       => $schema,
-                        'targetId'     => $targetId,
-                        'parameters'   => $parameters,
-                        'result_total' => $result['total'] ?? 0,
-                    ]
-                    );
+            // Handle collection request (list objects).
+            $result = $mapper->findAllPaginated(requestParams: $parameters);
 
-                    // Use the existing structure with minimal changes: serialize objects and rename 'total' to 'count'.
-                    $returnArray            = $result;
-                    $returnArray['count']   = $result['total'];
-                    $returnArray['results'] = array_map(fn($obj) => $obj->jsonSerialize(), $result['results']);
-                    unset($returnArray['total']);
-                    // Remove 'total' since we renamed it to 'count'.
-                    // Add pagination links if needed.
-                    if ($result['page'] < $result['pages']) {
-                        $parameters['page']  = ($result['page'] + 1);
-                        $returnArray['next'] = $this->buildPaginationUrl(parameters: $parameters, path: $path);
-                    }
+            $this->logger->info(
+            'Simple endpoint query',
+            [
+                'endpoint'     => $endpointData['endpoint'] ?? '',
+                'register'     => $register,
+                'schema'       => $schema,
+                'targetId'     => $targetId,
+                'parameters'   => $parameters,
+                'result_total' => $result['total'] ?? 0,
+            ]
+            );
 
-                    if ($result['page'] > 1) {
-                        $parameters['page']      = ($result['page'] - 1);
-                        $returnArray['previous'] = $this->buildPaginationUrl(parameters: $parameters, path: $path);
-                    }
-                    return new JSONResponse($returnArray);
+            // Serialize objects and rename 'total' to 'count'.
+            $returnArray            = $result;
+            $returnArray['count']   = $result['total'];
+            $returnArray['results'] = array_map(fn($obj) => $obj->jsonSerialize(), $result['results']);
+            unset($returnArray['total']);
 
-                case 'POST':
-                    // Create new object.
-                    $object = $mapper->createFromArray(object: $parameters);
-                    return new JSONResponse($object->jsonSerialize(), 201);
+            // Add pagination links if needed.
+            if ($result['page'] < $result['pages']) {
+                $parameters['page']  = ($result['page'] + 1);
+                $returnArray['next'] = $this->buildPaginationUrl(parameters: $parameters, path: $path);
+            }
 
-                case 'PUT':
-                    // Full update of existing object.
-                    if (isset($pathParams['id']) === false) {
-                        return new JSONResponse(['error' => $this->l->t('ID required for PUT request')], 400);
-                    }
+            if ($result['page'] > 1) {
+                $parameters['page']      = ($result['page'] - 1);
+                $returnArray['previous'] = $this->buildPaginationUrl(parameters: $parameters, path: $path);
+            }
 
-                    $object = $mapper->updateFromArray($pathParams['id'], $parameters, true, false);
-                    return new JSONResponse($object->jsonSerialize());
-
-                case 'PATCH':
-                    // Partial update of existing object.
-                    if (isset($pathParams['id']) === false) {
-                        return new JSONResponse(['error' => $this->l->t('ID required for PATCH request')], 400);
-                    }
-
-                    $object = $mapper->updateFromArray($pathParams['id'], $parameters, true, true);
-                    return new JSONResponse($object->jsonSerialize());
-
-                case 'DELETE':
-                    // Delete object.
-                    if (isset($pathParams['id']) === false) {
-                        return new JSONResponse(['error' => $this->l->t('ID required for DELETE request')], 400);
-                    }
-
-                    $success = $mapper->delete(['id' => $pathParams['id']]);
-                    if ($success === false) {
-                        return new JSONResponse(['error' => $this->l->t('Failed to delete object')], 500);
-                    }
-                    return new JSONResponse([], 204);
-
-                default:
-                    return new JSONResponse(['error' => $this->l->t('Method not supported')], 405);
-            }//end switch
+            return new JSONResponse($returnArray);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Simple endpoint error: %s', [$e->getMessage()])], 500);
         }//end try

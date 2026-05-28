@@ -162,11 +162,33 @@ class AuthorizationService
         if (in_array(needle: $algorithm, haystack: self::PKCS1_ALGORITHMS) === true
             || in_array(needle: $algorithm, haystack: self::PSS_ALGORITHMS) === true
         ) {
-            $stamp    = microtime().getmypid();
-            $filename = "/var/tmp/publickey-$stamp";
+            // Write to a secure temp file with a random, unpredictable name and
+            // restricted permissions; always unlink in finally.
+            $filename = tempnam(sys_get_temp_dir(), 'oc-jwk-');
+            if ($filename === false) {
+                throw new AuthenticationException(message: 'Could not allocate temp file for public key', details: []);
+            }
+
+            @chmod($filename, 0600);
             file_put_contents($filename, base64_decode($publicKey));
-            $jwk = new JWKSet([JWKFactory::createFromKeyFile(file: $filename)]);
-            unlink($filename);
+            @chmod($filename, 0600);
+
+            try {
+                // Pin the algorithm in the JWK so the library cannot be tricked
+                // into accepting a different algorithm via a crafted token header.
+                $jwk = new JWKSet([
+                    JWKFactory::createFromKeyFile(
+                        file: $filename,
+                        password: null,
+                        additional_values: ['alg' => $algorithm, 'use' => 'sig']
+                    )
+                ]);
+            } finally {
+                if (file_exists($filename) === true) {
+                    @unlink($filename);
+                }
+            }
+
             return $jwk;
         }
 
@@ -269,6 +291,18 @@ class AuthorizationService
         $algorithm  = $authConfig['algorithm'] ?? '';
 
         $jwkSet = $this->getJWK(publicKey: $publicKey, algorithm: $algorithm);
+
+        // Reject tokens whose protected header `alg` does not match the
+        // algorithm configured for the consumer.  Without this check a
+        // crafted token could switch to HMAC (HS*) against the RSA public
+        // key as the HMAC secret — the classic algorithm-confusion attack.
+        $headerAlg = $jws->getSignature(0)->getProtectedHeader()['alg'] ?? '';
+        if ($headerAlg !== $algorithm) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Token algorithm does not match configured algorithm']
+            );
+        }
 
         if ($verifier->verifyWithKeySet(jws: $jws, jwkset: $jwkSet, signatureIndex: 0) === false) {
             throw new AuthenticationException(

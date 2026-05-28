@@ -28,6 +28,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -46,10 +47,11 @@ class DSOController extends Controller
     /**
      * DSOController constructor.
      *
-     * @param string           $appName The name of the app.
-     * @param IRequest         $request Request object.
-     * @param DSOParserService $parser  The DSO payload parser service.
-     * @param LoggerInterface  $logger  Logger for error handling.
+     * @param string           $appName   The name of the app.
+     * @param IRequest         $request   Request object.
+     * @param DSOParserService $parser    The DSO payload parser service.
+     * @param LoggerInterface  $logger    Logger for error handling.
+     * @param IAppConfig       $appConfig Application config for feature flags.
      *
      * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
      */
@@ -57,7 +59,8 @@ class DSOController extends Controller
         string $appName,
         IRequest $request,
         private readonly DSOParserService $parser,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IAppConfig $appConfig
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -86,13 +89,16 @@ class DSOController extends Controller
         // Validate webhook signature.
         $signatureHeader = $this->request->getHeader('X-DSO-Signature');
         if ($this->validateSignature(signature: $signatureHeader, body: $body) === false) {
-            $this->logger->warning('DSO STAM: Invalid webhook signature');
+            $this->logger->warning(
+                'DSO STAM: Webhook signature validation failed',
+                ['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
+            );
             return new JSONResponse(
                 data: [
                     'error'   => 'invalid_signature',
                     'message' => 'Webhook signature validation failed',
                 ],
-                statusCode: Http::STATUS_BAD_REQUEST
+                statusCode: Http::STATUS_FORBIDDEN
             );
         }
 
@@ -142,31 +148,57 @@ class DSOController extends Controller
     /**
      * Validate the DSO-LV webhook signature.
      *
-     * Validates the signature header against the request body. When no signature
-     * header is present the request is accepted (allows dev/test without certificates).
-     * Full PKIoverheid certificate-chain validation is a runtime concern handled
-     * outside this controller.
+     * When the feature flag `dso_signature_enforcement` is OFF (default) the
+     * endpoint rejects requests that carry NO signature header — accepting an
+     * absent header would allow any anonymous caller to inject verzoeken.
+     * When the flag is ON the full PKIoverheid HMAC/RSA body-signature check
+     * must be implemented (REQ-DSO-050) before enabling production traffic.
+     *
+     * Gate behaviour:
+     *   flag = false (default): reject missing header (403), accept present header
+     *                           without cryptographic verification (safe placeholder).
+     *   flag = true:            full PKIoverheid verification — NOT YET IMPLEMENTED;
+     *                           enabling returns false for all requests until the
+     *                           real verifier lands.
      *
      * @param string|null $signature The X-DSO-Signature header value.
-     * @param mixed       $body      The request body.
+     * @param mixed       $body      The request body (reserved for PKIoverheid HMAC).
      *
-     * @return bool True if the signature is valid (or absent).
+     * @return bool True if the signature check passes.
      *
      * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
      *
-     * @psalm-suppress UnusedParam $body is needed for the full HMAC validation
+     * @psalm-suppress UnusedParam $body is reserved for the full HMAC validation
      *                              once REQ-DSO-050 lands.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function validateSignature(?string $signature, mixed $body): bool
     {
-        if ($signature === null || $signature === '') {
-            return true;
+        // Read feature flag: dso_signature_enforcement = '1' enables the full
+        // PKIoverheid check (not yet implemented). Default is off.
+        $signatureEnforcementEnabled = $this->appConfig->getValueBool(
+            app: 'openconnector',
+            key: 'dso_signature_enforcement',
+            default: false
+        );
+
+        if ($signatureEnforcementEnabled === true) {
+            // Full PKIoverheid certificate-chain verification (REQ-DSO-050) is
+            // not yet implemented. Reject ALL requests until the real verifier
+            // ships so the flag cannot be accidentally enabled in production.
+            $this->logger->warning('DSO STAM: dso_signature_enforcement enabled but verifier not implemented — rejecting request');
+            return false;
         }
 
-        // Signature validation uses the DSO-LV public certificate to verify the
-        // HMAC/RSA signature of the request body (PKIoverheid chain, REQ-DSO-050).
+        // Default (enforcement OFF): reject requests with a missing signature
+        // header so anonymous callers cannot inject verzoeken without at least
+        // providing a token. Present-but-unverified signatures are accepted as a
+        // safe placeholder until REQ-DSO-050 lands.
+        if ($signature === null || $signature === '') {
+            return false;
+        }
+
         return true;
 
     }//end validateSignature()
