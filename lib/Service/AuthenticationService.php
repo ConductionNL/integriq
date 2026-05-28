@@ -76,6 +76,13 @@ class AuthenticationService
     ];
 
     /**
+     * Twig environment used for template rendering in authentication flows.
+     *
+     * @var Environment
+     */
+    private Environment $twig;
+
+    /**
      * Setting up the class with required service.
      *
      * @param ArrayLoader $loader The ArrayLoader for Twig.

@@ -216,13 +216,18 @@ class EventService
 
         return $this->objectService->saveObject(
             object: [
-                'eventId'        => $event->getUuid(),
-                'consumerId'     => ($subscriptionData['consumerId'] ?? null),
-                'subscriptionId' => $subscription->getUuid(),
-                'status'         => 'pending',
-                'payload'        => $event->jsonSerialize(),
-                'created'        => (new DateTime())->format('c'),
-                'updated'        => (new DateTime())->format('c'),
+                // Post-cutover links are the UUID reference fields
+                // (event/subscription/consumer). The legacy integer FK
+                // columns (eventId/subscriptionId/consumerId) are vestigial
+                // and MUST NOT receive UUIDs — Postgres rejects a UUID in an
+                // integer column, which 500'd the pull/messages endpoints.
+                'event'        => $event->getUuid(),
+                'consumer'     => ($subscriptionData['consumer'] ?? null),
+                'subscription' => $subscription->getUuid(),
+                'status'       => 'pending',
+                'payload'      => $event->jsonSerialize(),
+                'created'      => (new DateTime())->format('c'),
+                'updated'      => (new DateTime())->format('c'),
             ],
             register: 'openconnector',
             schema: 'event_message'
@@ -368,10 +373,12 @@ class EventService
     public function pullEvents(ObjectEntity $subscription, ?int $limit=100, ?string $cursor=null): array
     {
         $filters = [
-            'register'       => 'openconnector',
-            'schema'         => 'event_message',
-            'subscriptionId' => $subscription->getUuid(),
-            'status'         => 'pending',
+            'register'     => 'openconnector',
+            'schema'       => 'event_message',
+            // Match on the UUID `subscription` reference, NOT the legacy
+            // integer `subscriptionId` column (a UUID there → SQL type error).
+            'subscription' => $subscription->getUuid(),
+            'status'       => 'pending',
         ];
 
         if ($cursor !== null) {
