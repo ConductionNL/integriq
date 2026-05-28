@@ -388,3 +388,11 @@ parameters:
 			message: "#^Class OC\\\\Files\\\\Node\\\\File not found\\.$#"
 			count: 1
 			path: lib/Twig/MappingRuntime.php
+
+		# False positive: $this->pendingContractLogs is populated as a side effect of
+		# synchronizeContract() (line 1269). PHPStan sees only the reset to [] at line
+		# 3711 and cannot track the inter-method side-effect on the property.
+		-
+			message: "#^Empty array passed to foreach\\.$#"
+			count: 1
+			path: lib/Service/SynchronizationService.php

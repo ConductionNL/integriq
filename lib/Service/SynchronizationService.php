@@ -1020,15 +1020,8 @@ class SynchronizationService
         // synchronize() (#1007).
         $logData['result'] = $result;
 
-        if ($rateLimitException !== null) {
-            $logData['message'] = $rateLimitException->getMessage();
-            throw new TooManyRequestsHttpException(
-                $rateLimitException->getMessage(),
-                429,
-                $rateLimitException->getHeaders()
-            );
-        }
-
+        // Note: $rateLimitException is re-thrown at line 923 inside the else
+        // branch before reaching this point, so no second check is needed here.
         $syncData['targetLastSynced'] = (new DateTime())->format('c');
         $this->orObjectService->saveObject(
             object: $syncData,
