@@ -46,6 +46,7 @@ use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCP\AppFramework\Http\Attribute\CORS;
 use OCP\AppFramework\Http\Response;
 use OCP\IGroup;
+use OCP\IGroupManager;
 use OCP\ISession;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -72,11 +73,13 @@ class AuthorizationService
      * @param IUserManager                            $userManager     The user manager.
      * @param IUserSession                            $userSession     The user session.
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR ObjectService used to resolve consumers.
+     * @param IGroupManager                           $groupManager    The group manager for users/groups ACL checks.
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
+        private readonly IGroupManager $groupManager,
     ) {
 
     }//end __construct()
@@ -384,21 +387,27 @@ class AuthorizationService
             throw new AuthenticationException(message: 'Invalid username or password', details: []);
         }
 
-        // @TODO: This code can be enabled once the frontend can properly set users and usergroups
-        // $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
-        //
-        // $userGroups = array_map(function(IGroup $group) {
-        // return $group->getGID();
-        // }, $this->groupManager->getUserGroups($user));
-        //
-        // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
-        //
-        // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        // throw new AuthenticationException(
-        // message: 'Not authorized',
-        // details: ['reason' => 'The selected user is not allowed to login on this endpoint']
-        // );
-        // }
+        // Enforce users/groups ACL when the rule has an explicit allow-list.
+        // Empty lists mean "any authenticated user is allowed".
+        if (empty($users) === false || empty($groups) === false) {
+            $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
+
+            $userGroups         = array_map(
+                static function (IGroup $group): string {
+                    return $group->getGID();
+                },
+                $this->groupManager->getUserGroups($user)
+            );
+            $userInAllowedGroups = (array_intersect($groups, $userGroups) !== []);
+
+            if ($userInAllowedUsers === false && $userInAllowedGroups === false) {
+                throw new AuthenticationException(
+                    message: 'Not authorized',
+                    details: ['reason' => 'The selected user is not allowed to login on this endpoint']
+                );
+            }
+        }
+
         $this->userSession->setUser($user);
 
     }//end authorizeBasic()
@@ -438,18 +447,27 @@ class AuthorizationService
             throw new AuthenticationException(message: 'Invalid token', details: []);
         }
 
-        // @TODO: This code can be enabled once the frontend can properly set users and usergroups
-        // $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
-        //
-        // $userGroups = array_map(function(IGroup $group) {
-        // return $group->getGID();
-        // }, $this->groupManager->getUserGroups($user));
-        //
-        // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
-        //
-        // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        // throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to view endpoint']);
-        // }
+        // Enforce users/groups ACL when the rule has an explicit allow-list.
+        // Empty lists mean "any authenticated user is allowed".
+        if (empty($users) === false || empty($groups) === false) {
+            $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
+
+            $userGroups         = array_map(
+                static function (IGroup $group): string {
+                    return $group->getGID();
+                },
+                $this->groupManager->getUserGroups($user)
+            );
+            $userInAllowedGroups = (array_intersect($groups, $userGroups) !== []);
+
+            if ($userInAllowedUsers === false && $userInAllowedGroups === false) {
+                throw new AuthenticationException(
+                    message: 'Not authorized',
+                    details: ['reason' => 'The selected user is not allowed to view endpoint']
+                );
+            }
+        }
+
     }//end authorizeOAuth()
 
     /**
