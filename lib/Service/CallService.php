@@ -61,7 +61,9 @@ use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Executes outbound API calls against configured Sources and persists CallLog entries.
@@ -128,6 +130,17 @@ class CallService
     ) {
         $this->client = new Client([]);
         $this->twig   = new Environment($loader);
+
+        // Sandbox the call Twig environment — authentication templates should
+        // only need to call the declared auth-helper functions; no PHP method
+        // calls on arbitrary objects are permitted.
+        $callSandboxPolicy = new SecurityPolicy(
+            allowedTags: ['if', 'for', 'set', 'block'],
+            allowedFilters: ['upper', 'lower', 'trim', 'default', 'escape', 'raw', 'replace'],
+            allowedFunctions: ['oauthToken', 'decosToken', 'jwtToken', 'date', 'max', 'min', 'random'],
+        );
+        $this->twig->addExtension(new SandboxExtension(policy: $callSandboxPolicy, sandboxed: true));
+
         $this->twig->addExtension(new AuthenticationExtension());
         $this->twig->addRuntimeLoader(new AuthenticationRuntimeLoader(authenticationService: $authenticationService));
         $this->cookieJar = new CookieJar();

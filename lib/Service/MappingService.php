@@ -30,7 +30,9 @@ use Adbar\Dot;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 use Throwable;
 use Exception;
 use Psr\Container\ContainerInterface;
@@ -89,6 +91,80 @@ class MappingService
         private readonly LoggerInterface $logger,
     ) {
         $this->twig = new Environment($loader);
+
+        // Sandbox the mapping Twig environment so template authors cannot call
+        // arbitrary PHP methods on objects or use undeclared functions.
+        // Allowed functions mirror MappingExtension::getFunctions(); allowed
+        // filters mirror MappingExtension::getFilters().
+        // NOTE: `callSource` and `executeMapping` are deliberately excluded —
+        // see MappingExtension::getFunctions() for the security rationale.
+        $sandboxPolicy = new SecurityPolicy(
+            allowedTags: [
+                'if',
+                'for',
+                'set',
+                'block',
+                'extends',
+                'include',
+                'macro',
+                'import',
+                'from',
+                'with',
+            ],
+            allowedFilters: [
+                'b64enc',
+                'b64dec',
+                'json_decode',
+                'slugify',
+                'upper',
+                'lower',
+                'trim',
+                'replace',
+                'default',
+                'join',
+                'split',
+                'keys',
+                'merge',
+                'slice',
+                'first',
+                'last',
+                'reverse',
+                'sort',
+                'length',
+                'abs',
+                'round',
+                'date',
+                'date_modify',
+                'escape',
+                'raw',
+                'nl2br',
+                'number_format',
+                'title',
+                'capitalize',
+                'striptags',
+                'format',
+                'batch',
+            ],
+            allowedFunctions: [
+                'generateUuid',
+                'getFileContents',
+                'getFiles',
+                'range',
+                'cycle',
+                'random',
+                'date',
+                'include',
+                'source',
+                'max',
+                'min',
+                'attribute',
+                'block',
+                'parent',
+                'dump',
+            ],
+        );
+        $this->twig->addExtension(new SandboxExtension(policy: $sandboxPolicy, sandboxed: true));
+
         $this->twig->addExtension(new MappingExtension());
         $this->twig->addRuntimeLoader(
             new MappingRuntimeLoader(

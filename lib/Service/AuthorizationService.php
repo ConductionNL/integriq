@@ -41,6 +41,8 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IRequest;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCP\AppFramework\Http\Attribute\CORS;
@@ -68,19 +70,40 @@ class AuthorizationService
     const PSS_ALGORITHMS   = ['PS256', 'PS384', 'PS512'];
 
     /**
+     * Maximum allowed token lifetime in seconds (1 hour).
+     *
+     * A consumer MUST NOT issue a token whose `exp - iat` span exceeds this
+     * value.  Tokens with longer lifetimes are rejected to limit the window of
+     * a stolen/leaked token.
+     *
+     * @var integer
+     */
+    private const MAX_TOKEN_LIFETIME_SECONDS = 3600;
+
+    /**
+     * APCu/distributed cache used for jti replay detection.
+     *
+     * @var ICache
+     */
+    private readonly ICache $jtiCache;
+
+    /**
      * Constructor.
      *
      * @param IUserManager                            $userManager     The user manager.
      * @param IUserSession                            $userSession     The user session.
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR ObjectService used to resolve consumers.
      * @param IGroupManager                           $groupManager    The group manager for users/groups ACL checks.
+     * @param ICacheFactory                           $cacheFactory    Cache factory used for jti replay detection.
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
         private readonly IGroupManager $groupManager,
+        ICacheFactory $cacheFactory,
     ) {
+        $this->jtiCache = $cacheFactory->createDistributed('openconnector.jti');
 
     }//end __construct()
 
@@ -214,13 +237,16 @@ class AuthorizationService
      * Checks:
      *   - iat is present and not in the future (beyond clock skew)
      *   - exp (default iat+1h) has not passed
+     *   - exp - iat does not exceed MAX_TOKEN_LIFETIME_SECONDS (prevents
+     *     infinite-lifetime tokens via a caller-supplied exp claim)
      *   - nbf (not-before), if present, has been reached
+     *   - jti, if present, has not been seen before (replay prevention)
      *
      * @param array $payload The payload of the JWT token.
      *
      * @return void
      *
-     * @throws AuthenticationException If the token is missing/expired/not-yet-valid.
+     * @throws AuthenticationException If the token is missing/expired/not-yet-valid/replayed.
      *
      * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
@@ -251,8 +277,26 @@ class AuthorizationService
         $exp = clone $iat;
         $exp->modify('+1 Hour');
         if (isset($payload['exp']) === true) {
-            $exp = new DateTime('@'.$payload['exp']);
-        }
+            $callerExp = new DateTime('@'.$payload['exp']);
+
+            // Clamp the caller-supplied expiry so a consumer cannot self-issue
+            // tokens with an arbitrarily long (or infinite) lifetime.  The
+            // maximum allowed span is MAX_TOKEN_LIFETIME_SECONDS relative to iat.
+            $maxExp = clone $iat;
+            $maxExp->modify('+'.self::MAX_TOKEN_LIFETIME_SECONDS.' seconds');
+            if ($callerExp > $maxExp) {
+                throw new AuthenticationException(
+                    message: 'The token lifetime exceeds the maximum allowed duration',
+                    details: [
+                        'iat'                  => $iat->getTimestamp(),
+                        'exp'                  => $callerExp->getTimestamp(),
+                        'max_lifetime_seconds' => self::MAX_TOKEN_LIFETIME_SECONDS,
+                    ]
+                );
+            }//end if
+
+            $exp = $callerExp;
+        }//end if
 
         if ($exp->diff($now)->format('%R') === '+') {
             throw new AuthenticationException(
@@ -279,6 +323,24 @@ class AuthorizationService
                     ]
                 );
             }
+        }
+
+        // JWT ID (jti) replay prevention: if the token carries a jti claim,
+        // record it in the distributed cache for the remaining token lifetime
+        // plus the clock-skew window.  A second request with the same jti is
+        // rejected immediately.
+        if (isset($payload['jti']) === true && $payload['jti'] !== '') {
+            $cacheKey = 'jti:'.hash('sha256', (string) $payload['jti']);
+            $ttl      = max(1, ($exp->getTimestamp() - $now->getTimestamp()) + self::CLOCK_SKEW_SECONDS);
+
+            if ($this->jtiCache->get($cacheKey) !== null) {
+                throw new AuthenticationException(
+                    message: 'The token has already been used (jti replay)',
+                    details: ['jti' => $payload['jti']]
+                );
+            }
+
+            $this->jtiCache->set($cacheKey, 1, $ttl);
         }
 
     }//end validatePayload()

@@ -39,7 +39,9 @@ use OAuthException;
 use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Service class for handling authentication on other services.
@@ -91,6 +93,17 @@ class AuthenticationService
         ArrayLoader $loader
     ) {
         $this->twig = new Environment(loader: $loader);
+
+        // Sandbox the authentication Twig environment — templates here expand
+        // OAuth/JWT configuration tokens and should not call any PHP methods on
+        // injected objects.  Only basic control-flow tags and string filters are
+        // needed.
+        $authSandboxPolicy = new SecurityPolicy(
+            allowedTags: ['if', 'for', 'set'],
+            allowedFilters: ['upper', 'lower', 'trim', 'default', 'escape', 'raw', 'replace'],
+            allowedFunctions: ['date', 'max', 'min', 'random'],
+        );
+        $this->twig->addExtension(new SandboxExtension(policy: $authSandboxPolicy, sandboxed: true));
     }//end __construct()
 
     /**

@@ -48,13 +48,28 @@ class MappingExtension extends AbstractExtension
      * Return the Twig functions registered by this extension.
      *
      * @return array<int, TwigFunction>
+     *
+     * SECURITY NOTE: `callSource` and `executeMapping` are intentionally NOT
+     * registered here.  They were removed from the template surface in the
+     * wave-3 security hardening pass because:
+     *   - `callSource` performs an outbound HTTP call from within a mapping
+     *     template; any admin that can author a mapping could exfiltrate data
+     *     through SSRF-style calls to internal services.
+     *   - `executeMapping` allows arbitrary mapping chaining, which makes it
+     *     impossible to reason about the maximum blast radius of a mapping.
+     *
+     * If either function is genuinely needed in future, it must be gated behind
+     * an explicit "trusted-ops" feature flag that is documented in the OpenSpec
+     * and reviewed for SSRF/RCE blast radius before re-enabling.
+     *
+     * `getFileContents` and `getFiles` are kept because they are already
+     * scoped to a specific objectId — files returned are those attached to the
+     * given object, so they cannot be used to read arbitrary filesystem paths.
      */
     public function getFunctions(): array
     {
         return [
-            new TwigFunction(name: 'executeMapping', callable: [MappingRuntime::class, 'executeMapping']),
             new TwigFunction(name: 'generateUuid', callable: [MappingRuntime::class, 'generateUuid']),
-            new TwigFunction(name: 'callSource', callable: [MappingRuntime::class, 'callSource']),
             new TwigFunction(name: 'getFileContents', callable: [MappingRuntime::class, 'getFileContents']),
             new TwigFunction(name: 'getFiles', callable: [MappingRuntime::class, 'getFiles']),
         ];

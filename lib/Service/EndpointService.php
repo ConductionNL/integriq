@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -2401,7 +2402,7 @@ class EndpointService
             || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($content);
+            $xml = SafeXmlParser::parse($content);
             libxml_clear_errors();
 
             if ($xml !== false) {
@@ -2427,8 +2428,8 @@ class EndpointService
         // Suppress XML errors.
         libxml_use_internal_errors(true);
 
-        // Attempt to parse the content as XML.
-        $result = simplexml_load_string($content) !== false;
+        // Use the safe parser so the XXE loader cannot leak in from SOAPService.
+        $result = SafeXmlParser::parse($content) !== false;
 
         // Clear any XML errors.
         libxml_clear_errors();
