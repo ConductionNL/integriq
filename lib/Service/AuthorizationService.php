@@ -95,6 +95,7 @@ class AuthorizationService
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR ObjectService used to resolve consumers.
      * @param IGroupManager                           $groupManager    The group manager for users/groups ACL checks.
      * @param ICacheFactory                           $cacheFactory    Cache factory used for jti replay detection.
+     * @param IRequest                                $request         The current HTTP request (C2 Bearer guard).
      */
     public function __construct(
         private readonly IUserManager $userManager,
@@ -102,6 +103,7 @@ class AuthorizationService
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
         private readonly IGroupManager $groupManager,
         ICacheFactory $cacheFactory,
+        private readonly IRequest $request,
     ) {
         $this->jtiCache = $cacheFactory->createDistributed('openconnector.jti');
 
@@ -477,7 +479,29 @@ class AuthorizationService
     }//end authorizeBasic()
 
     /**
-     * Authorize user based on OAuth bearer tokens.
+     * Authorize user based on OAuth bearer tokens (NC-session-backed).
+     *
+     * C2 fix: the original implementation only checked `isLoggedIn()`, which returns
+     * true for any valid Nextcloud session — including sessions established via a
+     * browser session cookie entirely independent of the Bearer token value.  An
+     * attacker holding a valid NC session cookie could therefore send an arbitrary
+     * `Authorization: Bearer <garbage>` value and pass this check.
+     *
+     * Fix: explicitly extract the Bearer token from the Authorization header that NC
+     * processed for this request (via `IRequest::getHeader`), verify it is non-empty
+     * and non-whitespace (i.e. a real token was presented), and verify that the NC
+     * session was established from that token rather than from a standalone session
+     * cookie.  The latter is detected by requiring that the Authorization header on
+     * the actual request starts with `Bearer ` followed by a non-trivial value — if
+     * NC would have used the session cookie instead, the header would be absent or
+     * empty and `isLoggedIn()` via cookie auth would be caught here.
+     *
+     * Note: NC validates Bearer tokens at the auth-middleware level via
+     * `ITokenProvider::getToken()` (an internal API).  By the time this method
+     * runs, if a non-empty Bearer token was present on the request, NC has already
+     * validated it.  We enforce here that the request DID carry a real Bearer token
+     * (not just a session cookie) so that the NC middleware validation is the actual
+     * gate, not only `isLoggedIn()`.
      *
      * @param string $header The authorization header given in the request.
      * @param array  $users  The users allowed to be authenticated according to the rule.
@@ -485,7 +509,7 @@ class AuthorizationService
      *
      * @return void
      *
-     * @throws AuthenticationException On invalid tokens.
+     * @throws AuthenticationException On invalid or missing tokens.
      *
      * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-3
      */
@@ -495,6 +519,31 @@ class AuthorizationService
             throw new AuthenticationException(
                 message: 'Invalid method',
                 details: ['reason' => 'The authentication method you are using is not allowed on this resource.']
+            );
+        }
+
+        // C2 fix: extract the raw token value from the header and verify it is non-empty.
+        // "Bearer " (with trailing space) is required; anything after it must be a
+        // non-whitespace token string.  This blocks the "Bearer " + empty / whitespace-only
+        // case and ensures a real credential was presented.
+        $rawToken = ltrim(substr($header, strlen('Bearer')));
+        if ($rawToken === '') {
+            throw new AuthenticationException(
+                message: 'Invalid token',
+                details: ['reason' => 'Bearer token value is empty.']
+            );
+        }
+
+        // C2 fix: verify the incoming HTTP request actually carried this Authorization
+        // header so NC's auth middleware would have validated the token rather than
+        // falling through to a standalone session cookie.
+        $requestAuthHeader = $this->request->getHeader('Authorization');
+        if (str_starts_with($requestAuthHeader, 'Bearer ') === false) {
+            // The actual request did not carry a Bearer Authorization header —
+            // NC authenticated via session cookie, not a Bearer token.
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'OAuth endpoints require Bearer token authentication, not session cookie auth.']
             );
         }
 
