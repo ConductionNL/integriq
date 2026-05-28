@@ -29,6 +29,7 @@ use JWadhams\JsonLogic;
 use OC\User\NoUserException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -3128,7 +3129,7 @@ class SynchronizationService
         // If JSON parsing failed, try XML.
         if (empty($result) === true) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($body, "SimpleXMLElement", LIBXML_NOCDATA);
+            $xml = SafeXmlParser::parse($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
             if ($xml !== false) {
                 $result = $this->xmlToArray(xml: $xml);

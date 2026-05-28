@@ -17,11 +17,21 @@ return [
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
-		// DSO / Omgevingsloket STAM koppelvlak — inbound webhook for
-		// vergunningaanvragen, meldingen, informatieverzoeken, vooroverleg.
-		// Re-enabled with the post-OR-cutover surface (issue #881).
-		// Route name uses camelCase-slug convention (dSO = lowercase-first of DSO).
-		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// DSO / Omgevingsloket STAM koppelvlak — route REMOVED (wave-3 security fix).
+		//
+		// The `validateSignature` method that backs this endpoint accepts any
+		// non-empty X-DSO-Signature header without cryptographic verification
+		// (the PKIoverheid HMAC/RSA verifier, REQ-DSO-050, was never implemented).
+		// Leaving a #[PublicPage]+#[NoCSRFRequired] webhook with only a
+		// string-presence check in production is a CRITICAL vulnerability.
+		//
+		// The route is held here as a commented-out placeholder so that the
+		// controller, openspec spec, and TODO are not lost.  Re-enable only after
+		// the real verifier has been implemented and reviewed.
+		//
+		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1047
+		//
+		// ['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
