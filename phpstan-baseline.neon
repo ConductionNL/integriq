@@ -191,6 +191,21 @@ parameters:
 
 		-
 			message: "#^Offset 'interval' on array\\{lastRun\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 2
+			path: lib/Service/JobService.php
+
+		-
+			message: "#^Offset 'isSingleRun' on array\\{lastRun\\: non\\-falsy\\-string, nextRun\\?\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/JobService.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 2
+			path: lib/Service/JobService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/JobService.php
 
