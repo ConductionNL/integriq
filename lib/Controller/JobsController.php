@@ -243,7 +243,14 @@ class JobsController extends Controller
                 return new JSONResponse(null);
             }
 
-            return new JSONResponse($result->jsonSerialize());
+            // L4: Surface the real error code when the job failed.
+            // executeJob() now always returns a log entry — check its level.
+            $resultData = $result->jsonSerialize();
+            if (($resultData['level'] ?? '') === 'ERROR') {
+                return new JSONResponse($resultData, 500);
+            }
+
+            return new JSONResponse($resultData);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
@@ -302,7 +309,13 @@ class JobsController extends Controller
                 return new JSONResponse(null);
             }
 
-            return new JSONResponse($result->jsonSerialize());
+            // L4: Surface the real error code when the job failed.
+            $resultData = $result->jsonSerialize();
+            if (($resultData['level'] ?? '') === 'ERROR') {
+                return new JSONResponse($resultData, 500);
+            }
+
+            return new JSONResponse($resultData);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try

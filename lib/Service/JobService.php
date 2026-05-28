@@ -398,8 +398,19 @@ class JobService
             $arguments = [];
         }
 
+        // H3: wrap execution in a catch so executeJob writes a job_log on any
+        // thrown exception, not just when called from run().  Without this, a
+        // controller-invoked run (JobsController::run/test) swallows the
+        // exception and writes no evidence of the failure.
+        $result         = null;
+        $executionThrew = false;
+        $thrownException = null;
+
         try {
             $result = $action->run($arguments);
+        } catch (\Throwable $e) {
+            $executionThrew  = true;
+            $thrownException = $e;
         } finally {
             // Always restore the prior session user so identity does not bleed
             // across jobs in the same cron pass (#1006).
@@ -412,36 +423,117 @@ class JobService
         $timeEnd       = microtime(true);
         $executionTime = (($timeEnd - $timeStart) * 1000);
 
-        // Handle single run jobs by disabling them after execution.
-        $isSingleRun = ($jobData['isSingleRun'] ?? false);
-        if ($forceRun === false && $isSingleRun === true) {
-            $jobData['isEnabled'] = false;
-        }
-
-        // Update job with last run time and calculate next run time.
+        // Pre-compute lastRun/nextRun so the job log reflects the correct
+        // timeline even though we write the log BEFORE advancing the job row
+        // (M1 fix: log first, then advance the timeline).
         $jobData['lastRun'] = (new DateTime())->format('c');
         if ($forceRun === false) {
-            $nextRun = new DateTime('now + '.($jobData['interval'] ?? 0).' seconds');
+            if ($executionThrew === false) {
+                $nextRunDt = new DateTime('now + '.($jobData['interval'] ?? 0).' seconds');
 
-            // Handle rate limiting if specified in result.
-            if (isset($result['nextRun']) === true) {
-                $nextRunRateLimit = DateTime::createFromFormat('U', $result['nextRun'], $nextRun->getTimezone());
-                // Check if the current seconds part is not zero, and if so, round up to the next minute.
-                if ($nextRunRateLimit->format('s') !== '00') {
-                    $nextRunRateLimit->modify('next minute');
-                }
+                // Handle rate limiting if specified in result.
+                if (isset($result['nextRun']) === true) {
+                    $nextRunRateLimit = DateTime::createFromFormat('U', (string) $result['nextRun'], $nextRunDt->getTimezone());
+                    if ($nextRunRateLimit !== false) {
+                        // Check if the current seconds part is not zero, and if so, round up to the next minute.
+                        if ($nextRunRateLimit->format('s') !== '00') {
+                            $nextRunRateLimit->modify('next minute');
+                        }
 
-                if ($nextRunRateLimit > $nextRun) {
-                    $nextRun = $nextRunRateLimit;
+                        if ($nextRunRateLimit > $nextRunDt) {
+                            $nextRunDt = $nextRunRateLimit;
+                        }
+                    }
                 }
+            } else {
+                // On failure advance by the job's interval so it doesn't block
+                // the next cron tick (same logic as run()'s catch block).
+                $nextRunDt = new DateTime('now + '.((int) ($jobData['interval'] ?? 0)).' seconds');
             }
 
             // Set time to the current hour and minute (remove seconds).
-            $nextRun->setTime(hour: $nextRun->format('H'), minute: $nextRun->format('i'));
-            $jobData['nextRun'] = $nextRun->format('c');
+            $nextRunDt->setTime(hour: (int) $nextRunDt->format('H'), minute: (int) $nextRunDt->format('i'));
+            $jobData['nextRun'] = $nextRunDt->format('c');
+        }//end if
+
+        // Handle single run jobs by disabling them after execution.
+        $isSingleRun = ($jobData['isSingleRun'] ?? false);
+        if ($forceRun === false && $isSingleRun === true && $executionThrew === false) {
+            $jobData['isEnabled'] = false;
         }
 
-        // Persist job updates to database.
+        // M1: Build and write the job log BEFORE persisting lastRun/nextRun so
+        // that any DB failure writing the job row cannot leave the timeline
+        // advanced with no log entry as evidence.
+        $logRetention   = (int) ($jobData['logRetention'] ?? 0);
+        $errorRetention = (int) ($jobData['errorRetention'] ?? 0);
+
+        if ($executionThrew === true && $thrownException !== null) {
+            // H3: write an error log for exceptions thrown during executeJob.
+            $throwableFrames = [];
+            foreach ($thrownException->getTrace() as $frame) {
+                if (isset($frame['file']) === true) {
+                    $throwableFrames[] = $frame['file'].':'.($frame['line'] ?? '?');
+                } else if (isset($frame['class']) === true) {
+                    $throwableFrames[] = $frame['class'].($frame['type'] ?? '::').$frame['function'];
+                } else {
+                    $throwableFrames[] = $frame['function'];
+                }
+
+                if (count($throwableFrames) >= 50) {
+                    break;
+                }
+            }
+
+            $stackTrace   = array_merge($stackTrace, $throwableFrames);
+            $expiresDate  = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
+            $errorLogData = [
+                'level'         => 'ERROR',
+                'message'       => $this->truncateMessage(
+                    message: sprintf('%s: %s', get_class($thrownException), $thrownException->getMessage())
+                ),
+                'executionTime' => $executionTime,
+                'stackTrace'    => $stackTrace,
+                'expires'       => ($expiresDate !== null ? $expiresDate->format('c') : null),
+            ];
+
+            $logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $errorLogData);
+        } else {
+            // Build success/non-error log.
+            $successExpiry = $this->calculateExpires(...[($logRetention * 1000), $this->successRetention]);
+
+            $logData = [
+                'level'         => 'SUCCESS',
+                'message'       => 'Success',
+                'executionTime' => $executionTime,
+                'expires'       => ($successExpiry !== null ? $successExpiry->format('c') : null),
+            ];
+
+            // Process job execution result and update log accordingly.
+            if (is_array($result) === true) {
+                if (isset($result['level']) === true) {
+                    $logData['level'] = $result['level'];
+
+                    if ($result['level'] !== 'SUCCESS') {
+                        $expiresDate = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
+                        $logData['expires'] = ($expiresDate !== null ? $expiresDate->format('c') : null);
+                    }
+                }
+
+                if (isset($result['message']) === true) {
+                    $logData['message'] = $this->truncateMessage(message: $result['message']);
+                }
+
+                if (isset($result['stackTrace']) === true) {
+                    $stackTrace = array_merge($stackTrace, $result['stackTrace']);
+                }
+            }//end if
+
+            $logData['stackTrace'] = $stackTrace;
+            $logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
+        }//end if
+
+        // M1: Advance the job's timeline only AFTER the log entry is safely written.
         $this->objectService->saveObject(
             object: $jobData,
             register: 'openconnector',
@@ -449,52 +541,7 @@ class JobService
             uuid: $job->getUuid()
         );
 
-        $logRetention   = (int) ($jobData['logRetention'] ?? 0);
-        $errorRetention = (int) ($jobData['errorRetention'] ?? 0);
-
-        // Build initial job log data with success status.
-        $successExpiry = $this->calculateExpires(...[($logRetention * 1000), $this->successRetention]);
-        if ($successExpiry !== null) {
-            $successExpiryFormatted = $successExpiry->format('c');
-        } else {
-            $successExpiryFormatted = null;
-        }
-
-        $logData = [
-            'level'         => 'SUCCESS',
-            'message'       => 'Success',
-            'executionTime' => $executionTime,
-            'expires'       => $successExpiryFormatted,
-        ];
-
-        // Process job execution result and update log accordingly.
-        if (is_array($result) === true) {
-            if (isset($result['level']) === true) {
-                $logData['level'] = $result['level'];
-
-                if ($result['level'] !== 'SUCCESS') {
-                    $expiresDate = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
-                    if ($expiresDate !== null) {
-                        $logData['expires'] = $expiresDate->format('c');
-                    } else {
-                        $logData['expires'] = null;
-                    }
-                }
-            }
-
-            if (isset($result['message']) === true) {
-                // Truncate message if it's too long for database safety.
-                $logData['message'] = $this->truncateMessage(message: $result['message']);
-            }
-
-            if (isset($result['stackTrace']) === true) {
-                $stackTrace = array_merge($stackTrace, $result['stackTrace']);
-            }
-        }//end if
-
-        $logData['stackTrace'] = $stackTrace;
-
-        return $this->saveJobLog(job: $job, jobData: $jobData, logData: $logData);
+        return $logEntry;
     }//end executeJob()
 
     /**
@@ -591,72 +638,11 @@ class JobService
                     $results[] = $log;
                 }
             } catch (\Throwable $e) {
-                // Build a stack trace for the error log (truncate per-frame to
-                // avoid pathological size).
-                $stackTrace = [];
-                foreach ($e->getTrace() as $frame) {
-                    if (isset($frame['file']) === true) {
-                        $location = $frame['file'].':'.($frame['line'] ?? '?');
-                    } else if (isset($frame['class']) === true) {
-                        $location = $frame['class'].($frame['type'] ?? '::').($frame['function'] ?? '?');
-                    } else {
-                        $location = ($frame['function'] ?? '?');
-                    }
-
-                    $stackTrace[] = $location;
-                    if (count($stackTrace) >= 50) {
-                        break;
-                    }
-                }
-
-                // Advance nextRun by the job's configured interval so the failing
-                // job no longer blocks siblings on the next cron tick.
-                try {
-                    $intervalSeconds = (int) ($jobData['interval'] ?? 0);
-                    $nextRunDt       = new DateTime('now + '.$intervalSeconds.' seconds');
-                    $nextRunDt->setTime(
-                        hour: (int) $nextRunDt->format('H'),
-                        minute: (int) $nextRunDt->format('i')
-                    );
-                    $jobData['lastRun'] = (new DateTime())->format('c');
-                    $jobData['nextRun'] = $nextRunDt->format('c');
-                    $this->objectService->saveObject(
-                        object: $jobData,
-                        register: 'openconnector',
-                        schema: 'job',
-                        uuid: $job->getUuid()
-                    );
-                } catch (\Throwable $advanceError) {
-                    // Don't let nextRun advancement failure mask the original exception
-                    // — fall through to the error log below.
-                    unset($advanceError);
-                }
-
-                // Write an error-level job_log so operators can see the failure.
-                try {
-                    $errorLog = $this->saveJobLog(
-                        job: $job,
-                        jobData: $jobData,
-                        logData: [
-                            'level'      => 'ERROR',
-                            'message'    => $this->truncateMessage(
-                                message: sprintf(
-                                    '%s: %s',
-                                    get_class($e),
-                                    $e->getMessage()
-                                )
-                            ),
-                            'stackTrace' => $stackTrace,
-                        ]
-                    );
-                    if ($errorLog !== null) {
-                        $results[] = $errorLog;
-                    }
-                } catch (\Throwable $logError) {
-                    // Swallow logging failure — we must continue to the next job.
-                    unset($logError);
-                }//end try
-
+                // executeJob() handles its own error logging and timeline advancement
+                // (H3 fix).  This catch only fires if executeJob itself throws due to
+                // an infrastructure failure (e.g. saveObject/saveJobLog DB error).
+                // Swallow and continue so remaining jobs still execute this cron pass.
+                unset($e);
                 continue;
             }//end try
         }//end foreach
