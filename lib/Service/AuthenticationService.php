@@ -319,7 +319,7 @@ class AuthenticationService
      */
     private function getHSJWK(array $configuration): ?JWK
     {
-        // base64url: replace +/ with -_, strip trailing =
+        // Base64url: replace +/ with -_, strip trailing =.
         $base64url = rtrim(strtr(base64_encode($configuration['secret']), '+/', '-_'), '=');
         return new JWK(
             [

@@ -1070,7 +1070,9 @@ class CallService
      */
     private function isSecretKeyName(string $name): bool
     {
-        return (preg_match('/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret)/i', $name) === 1);
+        $pattern = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
+            .'|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret)/i';
+        return (preg_match($pattern, $name) === 1);
 
     }//end isSecretKeyName()
 

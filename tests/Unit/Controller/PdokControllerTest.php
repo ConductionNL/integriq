@@ -24,8 +24,14 @@ namespace OCA\OpenConnector\Tests\Unit\Controller;
 
 use OCA\OpenConnector\Connectors\PdokConnector;
 use OCA\OpenConnector\Controller\PdokController;
+use OCA\OpenConnector\Service\ActionAuthService;
 use OCP\AppFramework\Http;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -95,7 +101,10 @@ class PdokControllerTest extends TestCase
         $connector = $this->createMock(PdokConnector::class);
         $connector->method('suggest')->willReturn($payload);
 
-        $controller = new PdokController('openconnector', $this->createMock(IRequest::class), $connector);
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('testadmin');
+
+        $controller = $this->buildController($connector, $user, true);
         $response   = $controller->suggestAction('Lauriergracht');
 
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
@@ -105,7 +114,8 @@ class PdokControllerTest extends TestCase
 
 
     /**
-     * Build a controller with a permissive default connector mock.
+     * Build a controller with a permissive default connector mock and an
+     * admin-flagged test user so all action-auth checks pass.
      *
      * @return PdokController
      */
@@ -117,9 +127,56 @@ class PdokControllerTest extends TestCase
         $connector->method('free')->willReturn(['docs' => [], 'numFound' => 0]);
         $connector->method('reverse')->willReturn(['docs' => [], 'numFound' => 0]);
 
-        return new PdokController('openconnector', $this->createMock(IRequest::class), $connector);
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('testadmin');
+
+        return $this->buildController($connector, $user, true);
 
     }//end makeController()
+
+
+    /**
+     * Instantiate PdokController with all required constructor arguments.
+     *
+     * PdokController checks userSession->getUser() before every action. Pass a
+     * mock IUser (or null) via $authenticatedUser to control that check.
+     * ActionAuthService is wired with mocks whose IGroupManager returns no groups,
+     * so non-admin users may fail requireAction() — pass $isAdmin=true to skip.
+     *
+     * @param  PdokConnector $connector         The connector mock to inject.
+     * @param  IUser|null    $authenticatedUser  User returned by userSession->getUser().
+     * @param  bool          $isAdmin            Whether IUser::isAdmin should return true.
+     * @return PdokController
+     */
+    private function buildController(PdokConnector $connector, ?IUser $authenticatedUser = null, bool $isAdmin = true): PdokController
+    {
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($authenticatedUser);
+
+        $appConfig   = $this->createMock(IAppConfig::class);
+        // Allow any action key by returning null (no config = default-open or admin-only).
+        $appConfig->method('getValueArray')->willReturn([]);
+
+        $groupMgr   = $this->createMock(IGroupManager::class);
+        // Make the test user be in the admin group so requireAction() passes.
+        if ($authenticatedUser !== null && $isAdmin === true) {
+            $groupMgr->method('isAdmin')->willReturn(true);
+        }
+
+        $actionAuth  = new ActionAuthService($appConfig, $groupMgr);
+        $l10n        = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+
+        return new PdokController(
+            'openconnector',
+            $this->createMock(IRequest::class),
+            $connector,
+            $userSession,
+            $actionAuth,
+            $l10n
+        );
+
+    }//end buildController()
 
 
 }//end class

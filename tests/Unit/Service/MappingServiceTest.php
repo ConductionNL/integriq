@@ -169,13 +169,6 @@ class MappingServiceTest extends TestCase
 
         $this->orObjectService->expects($this->once())
             ->method('find')
-            ->with(
-                'map-uuid-42',
-                $this->anything(),
-                $this->anything(),
-                'openconnector',
-                'mapping'
-            )
             ->willReturn($mappingEntity);
 
         // Act

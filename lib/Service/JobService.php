@@ -402,8 +402,8 @@ class JobService
         // thrown exception, not just when called from run().  Without this, a
         // controller-invoked run (JobsController::run/test) swallows the
         // exception and writes no evidence of the failure.
-        $result         = null;
-        $executionThrew = false;
+        $result          = null;
+        $executionThrew  = false;
         $thrownException = null;
 
         try {
@@ -449,7 +449,7 @@ class JobService
                 // On failure advance by the job's interval so it doesn't block
                 // the next cron tick (same logic as run()'s catch block).
                 $nextRunDt = new DateTime('now + '.((int) ($jobData['interval'] ?? 0)).' seconds');
-            }
+            }//end if
 
             // Set time to the current hour and minute (remove seconds).
             $nextRunDt->setTime(hour: (int) $nextRunDt->format('H'), minute: (int) $nextRunDt->format('i'));
@@ -494,8 +494,12 @@ class JobService
                 ),
                 'executionTime' => $executionTime,
                 'stackTrace'    => $stackTrace,
-                'expires'       => ($expiresDate !== null ? $expiresDate->format('c') : null),
+                'expires'       => null,
             ];
+
+            if ($expiresDate !== null) {
+                $errorLogData['expires'] = $expiresDate->format('c');
+            }
 
             $logEntry = $this->saveJobLog(job: $job, jobData: $jobData, logData: $errorLogData);
         } else {
@@ -506,8 +510,12 @@ class JobService
                 'level'         => 'SUCCESS',
                 'message'       => 'Success',
                 'executionTime' => $executionTime,
-                'expires'       => ($successExpiry !== null ? $successExpiry->format('c') : null),
+                'expires'       => null,
             ];
+
+            if ($successExpiry !== null) {
+                $logData['expires'] = $successExpiry->format('c');
+            }
 
             // Process job execution result and update log accordingly.
             if (is_array($result) === true) {
@@ -516,7 +524,11 @@ class JobService
 
                     if ($result['level'] !== 'SUCCESS') {
                         $expiresDate = $this->calculateExpires(...[($errorRetention * 1000), $this->errorRetention]);
-                        $logData['expires'] = ($expiresDate !== null ? $expiresDate->format('c') : null);
+                        if ($expiresDate !== null) {
+                            $logData['expires'] = $expiresDate->format('c');
+                        } else {
+                            $logData['expires'] = null;
+                        }
                     }
                 }
 
@@ -638,8 +650,8 @@ class JobService
                     $results[] = $log;
                 }
             } catch (\Throwable $e) {
-                // executeJob() handles its own error logging and timeline advancement
-                // (H3 fix).  This catch only fires if executeJob itself throws due to
+                // ExecuteJob() handles its own error logging and timeline advancement
+                // (H3 fix). This catch only fires if executeJob itself throws due to
                 // an infrastructure failure (e.g. saveObject/saveJobLog DB error).
                 // Swallow and continue so remaining jobs still execute this cron pass.
                 unset($e);

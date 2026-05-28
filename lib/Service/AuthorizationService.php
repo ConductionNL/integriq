@@ -180,13 +180,15 @@ class AuthorizationService
             try {
                 // Pin the algorithm in the JWK so the library cannot be tricked
                 // into accepting a different algorithm via a crafted token header.
-                $jwk = new JWKSet([
-                    JWKFactory::createFromKeyFile(
+                $jwk = new JWKSet(
+                        [
+                            JWKFactory::createFromKeyFile(
                         file: $filename,
                         password: null,
                         additional_values: ['alg' => $algorithm, 'use' => 'sig']
                     )
-                ]);
+                        ]
+                        );
             } finally {
                 if (file_exists($filename) === true) {
                     @unlink($filename);
@@ -194,7 +196,7 @@ class AuthorizationService
             }
 
             return $jwk;
-        }
+        }//end if
 
         throw new AuthenticationException(message: 'The token algorithm is not supported', details: ['algorithm' => $algorithm]);
     }//end getJWK()
@@ -392,7 +394,7 @@ class AuthorizationService
         if (empty($users) === false || empty($groups) === false) {
             $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
 
-            $userGroups         = array_map(
+            $userGroups          = array_map(
                 static function (IGroup $group): string {
                     return $group->getGID();
                 },
@@ -452,7 +454,7 @@ class AuthorizationService
         if (empty($users) === false || empty($groups) === false) {
             $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
 
-            $userGroups         = array_map(
+            $userGroups          = array_map(
                 static function (IGroup $group): string {
                     return $group->getGID();
                 },

@@ -16,9 +16,10 @@ namespace OCA\OpenConnector\Tests\Unit\Controller;
 
 use OCA\OpenConnector\Controller\HealthController;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IDBConnection;
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -69,6 +70,42 @@ class HealthControllerTest extends TestCase
 
 
     /**
+     * Build a fluent IQueryBuilder mock that stubs the full query chain used by
+     * HealthController::index(): select / from / innerJoin / where / andWhere /
+     * createFunction / createNamedParameter / expr() / executeQuery.
+     *
+     * @param  IResult|\PHPUnit\Framework\MockObject\MockObject|null $result
+     *         The IResult to return from executeQuery(). Pass null to make it throw.
+     * @param  \Throwable|null                                       $exception
+     *         When non-null, executeQuery() throws this instead.
+     * @return IQueryBuilder|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function buildQbMock($result = null, ?\Throwable $exception = null)
+    {
+        $expr = $this->createMock(IExpressionBuilder::class);
+        $expr->method('eq')->willReturn('1=1');
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('innerJoin')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('createFunction')->willReturn('COUNT(*) AS cnt');
+        $qb->method('createNamedParameter')->willReturnArgument(0);
+        $qb->method('expr')->willReturn($expr);
+
+        if ($exception !== null) {
+            $qb->method('executeQuery')->willThrowException($exception);
+        } elseif ($result !== null) {
+            $qb->method('executeQuery')->willReturn($result);
+        }
+
+        return $qb;
+    }//end buildQbMock()
+
+
+    /**
      * Test that healthy database returns ok status.
      *
      * @return void
@@ -78,11 +115,7 @@ class HealthControllerTest extends TestCase
         $result = $this->createMock(IResult::class);
         $result->method('closeCursor')->willReturn(true);
 
-        $qb = $this->createMock(IQueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('createFunction')->willReturn('1');
-        $qb->method('executeQuery')->willReturn($result);
+        $qb = $this->buildQbMock($result);
 
         $this->db->method('getQueryBuilder')
             ->willReturn($qb);
@@ -101,18 +134,24 @@ class HealthControllerTest extends TestCase
     /**
      * Test that database failure returns error status.
      *
+     * HealthController::index() issues two separate queries (database check +
+     * sources_table check). When only the first query fails the status is 'error'.
+     * We return a throwing QB for the first call and a succeeding QB for the
+     * second call so we can assert 'error' rather than the 'degraded' override
+     * that happens when BOTH queries throw.
+     *
      * @return void
      */
     public function testDatabaseFailureReturnsError(): void
     {
-        $qb = $this->createMock(IQueryBuilder::class);
-        $qb->method('select')->willReturnSelf();
-        $qb->method('from')->willReturnSelf();
-        $qb->method('createFunction')->willReturn('1');
-        $qb->method('executeQuery')->willThrowException(new \Exception('Connection refused'));
+        $result  = $this->createMock(IResult::class);
+        $result->method('closeCursor')->willReturn(true);
+
+        $qbFail    = $this->buildQbMock(null, new \Exception('Connection refused'));
+        $qbSuccess = $this->buildQbMock($result);
 
         $this->db->method('getQueryBuilder')
-            ->willReturn($qb);
+            ->willReturnOnConsecutiveCalls($qbFail, $qbSuccess);
 
         $response = $this->controller->index();
 
