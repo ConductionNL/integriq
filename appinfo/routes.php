@@ -29,7 +29,7 @@ return [
 		// controller, openspec spec, and TODO are not lost.  Re-enable only after
 		// the real verifier has been implemented and reviewed.
 		//
-		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1047
+		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1041
 		//
 		// ['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
