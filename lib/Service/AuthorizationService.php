@@ -28,6 +28,7 @@ use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\Algorithm\HS384;
+use Jose\Component\Signature\Algorithm\HS512;
 use Jose\Component\Signature\Algorithm\PS256;
 use Jose\Component\Signature\Algorithm\PS384;
 use Jose\Component\Signature\Algorithm\PS512;
@@ -196,13 +197,25 @@ class AuthorizationService
     }//end getJWK()
 
     /**
+     * Allowed clock skew in seconds for iat/nbf checks.
+     *
+     * @var integer
+     */
+    private const CLOCK_SKEW_SECONDS = 60;
+
+    /**
      * Validate data in the payload.
+     *
+     * Checks:
+     *   - iat is present and not in the future (beyond clock skew)
+     *   - exp (default iat+1h) has not passed
+     *   - nbf (not-before), if present, has been reached
      *
      * @param array $payload The payload of the JWT token.
      *
      * @return void
      *
-     * @throws AuthenticationException If the token is missing/expired.
+     * @throws AuthenticationException If the token is missing/expired/not-yet-valid.
      *
      * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
@@ -215,6 +228,20 @@ class AuthorizationService
         }
 
         $iat = new DateTime('@'.$payload['iat']);
+
+        // Reject tokens issued in the future (beyond the clock skew window).
+        // This prevents replay attacks using pre-generated tokens.
+        $maxAllowedIat = clone $now;
+        $maxAllowedIat->modify('+'.self::CLOCK_SKEW_SECONDS.' seconds');
+        if ($iat > $maxAllowedIat) {
+            throw new AuthenticationException(
+                message: 'The token has an invalid issue time',
+                details: [
+                    'iat'          => $iat->getTimestamp(),
+                    'time checked' => $now->getTimestamp(),
+                ]
+            );
+        }
 
         $exp = clone $iat;
         $exp->modify('+1 Hour');
@@ -231,6 +258,22 @@ class AuthorizationService
                     'time checked' => $now->getTimestamp(),
                 ]
             );
+        }
+
+        // Honour the not-before (nbf) claim if present.
+        if (isset($payload['nbf']) === true) {
+            $nbf        = new DateTime('@'.$payload['nbf']);
+            $nbfAllowed = clone $nbf;
+            $nbfAllowed->modify('-'.self::CLOCK_SKEW_SECONDS.' seconds');
+            if ($now < $nbfAllowed) {
+                throw new AuthenticationException(
+                    message: 'The token is not yet valid',
+                    details: [
+                        'nbf'          => $nbf->getTimestamp(),
+                        'time checked' => $now->getTimestamp(),
+                    ]
+                );
+            }
         }
 
     }//end validatePayload()
@@ -258,7 +301,7 @@ class AuthorizationService
           [
               new HS256(),
               new HS384(),
-              new HS256(),
+              new HS512(),
               new RS256(),
               new RS384(),
               new RS512(),
@@ -456,11 +499,21 @@ class AuthorizationService
      */
     public function authorizeApiKey(string $header, array $keys): void
     {
-        if (array_key_exists(key: $header, array: $keys) === false) {
+        // Use hash_equals for constant-time comparison to prevent timing attacks
+        // when iterating over the configured API keys.
+        $matchedUserId = null;
+        foreach ($keys as $key => $userId) {
+            if (hash_equals((string) $key, $header) === true) {
+                $matchedUserId = $userId;
+                break;
+            }
+        }
+
+        if ($matchedUserId === null) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);
         }
 
-        $user = $this->userManager->get(uid: $keys[$header]);
+        $user = $this->userManager->get(uid: $matchedUserId);
 
         if ($user === null) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);

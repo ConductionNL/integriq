@@ -306,6 +306,11 @@ class AuthenticationService
     /**
      * Get OCT key for HS (symmetrical) encryption.
      *
+     * The `k` parameter in an oct JWK must be the raw secret encoded as
+     * base64url (RFC 4648 §5) — NOT base64 with `addslashes` applied.
+     * `addslashes` would corrupt binary secrets and produce non-standard
+     * padding, breaking HMAC verification.
+     *
      * @param array $configuration The source configuration.
      *
      * @return JWK|null
@@ -314,10 +319,12 @@ class AuthenticationService
      */
     private function getHSJWK(array $configuration): ?JWK
     {
+        // base64url: replace +/ with -_, strip trailing =
+        $base64url = rtrim(strtr(base64_encode($configuration['secret']), '+/', '-_'), '=');
         return new JWK(
             [
                 'kty' => 'oct',
-                'k'   => rtrim(string: base64_encode(addslashes($configuration['secret'])), characters: '='),
+                'k'   => $base64url,
             ]
         );
     }//end getHSJWK()
