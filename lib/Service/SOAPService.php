@@ -255,57 +255,61 @@ class SOAPService
             unset($config['json']);
         }
 
+        // Allow the SOAP/WSDL engine to resolve schema imports during this call
+        // window only.  The permissive loader is ALWAYS restored in the finally
+        // block so that an exception inside the call cannot leave the process-
+        // global entity loader open (XXE prevention).
         libxml_set_external_entity_loader(
-            static function ($public, $system) {
+            static function (string $public, string $system): string {
                 return $system;
             }
         );
 
-        /*
-         * @var $engine Engine
-         */
+        try {
+            /*
+             * @var $engine Engine
+             */
 
-        $engine = $this->setupEngine(source: $source, passedConfig: $config);
+            $engine = $this->setupEngine(source: $source, passedConfig: $config);
 
-        if (isset($body['edcLk01']['object']['inhoud']) === true) {
-            if (is_array($body['edcLk01']['object']['inhoud']) === false) {
-                $body['edcLk01']['object']['inhoud'] = base64_decode($body['edcLk01']['object']['inhoud']);
+            if (isset($body['edcLk01']['object']['inhoud']) === true) {
+                if (is_array($body['edcLk01']['object']['inhoud']) === false) {
+                    $body['edcLk01']['object']['inhoud'] = base64_decode($body['edcLk01']['object']['inhoud']);
+                }
+
+                if (is_array($body['edcLk01']['object']['inhoud']) === true
+                    && isset($body['edcLk01']['object']['inhoud']['_']) === true
+                ) {
+                    $body['edcLk01']['object']['inhoud']['_'] = base64_decode($body['edcLk01']['object']['inhoud']['_']);
+                }
             }
 
-            if (is_array($body['edcLk01']['object']['inhoud']) === true
-                && isset($body['edcLk01']['object']['inhoud']['_']) === true
+            // In SOAP the endpoint is decided by the WSDL, however, the SOAP method
+            // can be derived from the endpoint property of the call.
+            $result = $engine->request($soapAction, $body);
+
+            // @TODO: This must be replaced by a generic detector of fields that should be parsed in the parseDynamicXsd-function.
+            if (isset($result->{'QueryExecute2Result'}) === true
+                && isset($result->{'QueryExecute2Result'}->any) === true
             ) {
-                $body['edcLk01']['object']['inhoud']['_'] = base64_decode($body['edcLk01']['object']['inhoud']['_']);
-            }
-        }
+                $result->{'QueryExecute2Result'} = $this->parseDynamicXsd(xmlString: $result->{'QueryExecute2Result'}->any);
 
-        // In SOAP the endpoint is decided by the WSDL, however, the SOAP method
-        // can be derived from the endpoint property of the call.
-        $result = $engine->request($soapAction, $body);
+                if ($result->{'QueryExecute2Result'} === null) {
+                    $result->{'QueryExecute2Result'} = [];
+                }
+            }//end if
 
-        // @TODO: This must be replaced by a generic detector of fields that should be parsed in the parseDynamicXsd-function.
-        if (isset($result->{'QueryExecute2Result'}) === true
-            && isset($result->{'QueryExecute2Result'}->any) === true
-        ) {
-            $result->{'QueryExecute2Result'} = $this->parseDynamicXsd(xmlString: $result->{'QueryExecute2Result'}->any);
-
-            if ($result->{'QueryExecute2Result'} === null) {
-                $result->{'QueryExecute2Result'} = [];
-            }
-        }
-
-        // @TODO: The detection of binary data fields should be dynamic.
-        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
-        if (isset($result->FileBytes) === true && json_encode($result) === false) {
+            // @TODO: The detection of binary data fields should be dynamic.
             // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
-            $result->FileBytes = base64_encode($result->FileBytes);
-        }
-
-        libxml_set_external_entity_loader(
-            static function () {
-                return null;
+            if (isset($result->FileBytes) === true && json_encode($result) === false) {
+                // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- External SOAP XML element name.
+                $result->FileBytes = base64_encode($result->FileBytes);
             }
-        );
+        } finally {
+            // Restore the safe null-resolver regardless of success or failure so
+            // the permissive loader cannot leak into subsequent simplexml calls.
+            libxml_set_external_entity_loader(static fn (): null => null);
+        }//end try
 
         return new Response(status: 200, body: json_encode($result));
 

@@ -19,6 +19,7 @@
 
 namespace OCA\OpenConnector\Service\Helper;
 
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
 
@@ -188,8 +189,8 @@ class FlowToken
         // Suppress XML errors.
         libxml_use_internal_errors(true);
 
-        // Attempt to parse the content as XML.
-        $result = (simplexml_load_string($content) !== false);
+        // Use the safe parser so the XXE loader cannot leak in from SOAPService.
+        $result = (SafeXmlParser::parse($content) !== false);
 
         // Clear any XML errors.
         libxml_clear_errors();
@@ -237,7 +238,7 @@ class FlowToken
             || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($content);
+            $xml = SafeXmlParser::parse($content);
             libxml_clear_errors();
 
             if ($xml !== false) {

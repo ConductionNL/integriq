@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -409,20 +410,27 @@ class EndpointService
             $endpointArray
                 );
 
-        try {
-            $pathParams = array_combine(
-                keys: $endpointArrayNormalized,
-                values: $pathParts
-            );
-        } catch (ValueError $error) {
-            array_pop($endpointArrayNormalized);
-            $pathParams = array_combine(
-                keys: $endpointArrayNormalized,
-                values: $pathParts
-            );
+        // Normalise both sides to the SHORTER length so array_combine never
+        // throws even when the request path doesn't match the endpoint
+        // pattern (#1015 follow-up — the existing single array_pop fallback
+        // failed when the size delta was > 1, e.g. EndpointService::419 in
+        // EndpointServiceTest::testHandleRequestReturns404WhenEndpointObjectMissing).
+        $keyCount   = count($endpointArrayNormalized);
+        $valueCount = count($pathParts);
+        if ($keyCount > $valueCount) {
+            $endpointArrayNormalized = array_slice($endpointArrayNormalized, 0, $valueCount);
+        } else if ($valueCount > $keyCount) {
+            $pathParts = array_slice($pathParts, 0, $keyCount);
         }
 
-        return $pathParams;
+        if (count($endpointArrayNormalized) === 0) {
+            return [];
+        }
+
+        return array_combine(
+            keys: $endpointArrayNormalized,
+            values: $pathParts
+        );
     }//end getPathParameters()
 
     /**
@@ -1445,17 +1453,26 @@ class EndpointService
     private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $configuration = $rule->getObject()['configuration'] ?? [];
-        $header        = $data['headers']['Authorization'] ?? $data['headers']['authorization'] ?? '';
+
+        // Normalise all incoming header keys to lowercase once so all subsequent
+        // lookups are case-insensitive without multiple fallback variants.
+        $normalisedHeaders = [];
+        foreach (($data['headers'] ?? []) as $key => $value) {
+            $normalisedHeaders[strtolower((string) $key)] = $value;
+        }
+
+        // Default to the Authorization header (lowercase-normalised lookup).
+        $header = ($normalisedHeaders['authorization'] ?? '');
 
         if (isset($configuration['authentication']) === false) {
             return $data;
         }
 
         if (isset($configuration['authentication']['header']) === true) {
-            $headerName    = $configuration['authentication']['header'];
-            $lowerName     = strtolower($headerName);
-            $underscoreKey = str_replace(search: '-', replace: '_', subject: $lowerName);
-            $header        = ($data['headers'][$headerName] ?? $data['headers'][$lowerName] ?? $data['headers'][$underscoreKey] ?? null);
+            // Convert configured header name to lowercase + underscore variant
+            // for a single normalised lookup against $normalisedHeaders.
+            $lookupKey = strtolower((string) $configuration['authentication']['header']);
+            $header    = ($normalisedHeaders[$lookupKey] ?? null);
         }
 
         if ($header === '' || $header === null) {
@@ -2385,7 +2402,7 @@ class EndpointService
             || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($content);
+            $xml = SafeXmlParser::parse($content);
             libxml_clear_errors();
 
             if ($xml !== false) {
@@ -2411,8 +2428,8 @@ class EndpointService
         // Suppress XML errors.
         libxml_use_internal_errors(true);
 
-        // Attempt to parse the content as XML.
-        $result = simplexml_load_string($content) !== false;
+        // Use the safe parser so the XXE loader cannot leak in from SOAPService.
+        $result = SafeXmlParser::parse($content) !== false;
 
         // Clear any XML errors.
         libxml_clear_errors();

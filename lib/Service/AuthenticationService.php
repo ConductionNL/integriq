@@ -39,7 +39,9 @@ use OAuthException;
 use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Service class for handling authentication on other services.
@@ -91,6 +93,17 @@ class AuthenticationService
         ArrayLoader $loader
     ) {
         $this->twig = new Environment(loader: $loader);
+
+        // Sandbox the authentication Twig environment — templates here expand
+        // OAuth/JWT configuration tokens and should not call any PHP methods on
+        // injected objects.  Only basic control-flow tags and string filters are
+        // needed.
+        $authSandboxPolicy = new SecurityPolicy(
+            allowedTags: ['if', 'for', 'set'],
+            allowedFilters: ['upper', 'lower', 'trim', 'default', 'escape', 'raw', 'replace'],
+            allowedFunctions: ['date', 'max', 'min', 'random'],
+        );
+        $this->twig->addExtension(new SandboxExtension(policy: $authSandboxPolicy, sandboxed: true));
     }//end __construct()
 
     /**
@@ -270,27 +283,46 @@ class AuthenticationService
      */
     private function getRSJWK(array $configuration): ?JWK
     {
-        $stamp    = microtime().getmypid();
-        $filename = "/var/tmp/privatekey-$stamp";
+        // #1012(a): private keys were previously written to
+        // /var/tmp/privatekey-<microtime><pid> with default-umask perms (often
+        // world-readable on shared hosting) and a predictable name derived
+        // from process metadata. If the process died between
+        // file_put_contents and unlink, the key leaked indefinitely.
+        // Use tempnam() + chmod 0600 + try/finally so:
+        // - the filename is unpredictable,
+        // - the bytes are never readable to other local users,
+        // - cleanup runs even when JWKFactory::createFromKeyFile throws.
+        $filename = tempnam(sys_get_temp_dir(), 'oc_privatekey_');
+        if ($filename === false) {
+            throw new Exception('Could not allocate a temp file for the private key.');
+        }
+
+        @chmod($filename, 0600);
         file_put_contents($filename, base64_decode($configuration['secret']));
-        $jwk = null;
+        @chmod($filename, 0600);
+
         try {
             $jwk = JWKFactory::createFromKeyFile(
                 $filename,
                 null,
                 ['use' => 'sig']
             );
-        } catch (Exception $exception) {
-            throw $exception;
+        } finally {
+            if (file_exists($filename) === true) {
+                @unlink($filename);
+            }
         }
-
-        unlink($filename);
 
         return $jwk;
     }//end getRSJWK()
 
     /**
      * Get OCT key for HS (symmetrical) encryption.
+     *
+     * The `k` parameter in an oct JWK must be the raw secret encoded as
+     * base64url (RFC 4648 §5) — NOT base64 with `addslashes` applied.
+     * `addslashes` would corrupt binary secrets and produce non-standard
+     * padding, breaking HMAC verification.
      *
      * @param array $configuration The source configuration.
      *
@@ -300,10 +332,12 @@ class AuthenticationService
      */
     private function getHSJWK(array $configuration): ?JWK
     {
+        // Base64url: replace +/ with -_, strip trailing =.
+        $base64url = rtrim(strtr(base64_encode($configuration['secret']), '+/', '-_'), '=');
         return new JWK(
             [
                 'kty' => 'oct',
-                'k'   => rtrim(string: base64_encode(addslashes($configuration['secret'])), characters: '='),
+                'k'   => $base64url,
             ]
         );
     }//end getHSJWK()

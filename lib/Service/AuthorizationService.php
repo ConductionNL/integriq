@@ -28,6 +28,7 @@ use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\Algorithm\HS384;
+use Jose\Component\Signature\Algorithm\HS512;
 use Jose\Component\Signature\Algorithm\PS256;
 use Jose\Component\Signature\Algorithm\PS384;
 use Jose\Component\Signature\Algorithm\PS512;
@@ -40,11 +41,14 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IRequest;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCP\AppFramework\Http\Attribute\CORS;
 use OCP\AppFramework\Http\Response;
 use OCP\IGroup;
+use OCP\IGroupManager;
 use OCP\ISession;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -66,17 +70,40 @@ class AuthorizationService
     const PSS_ALGORITHMS   = ['PS256', 'PS384', 'PS512'];
 
     /**
+     * Maximum allowed token lifetime in seconds (1 hour).
+     *
+     * A consumer MUST NOT issue a token whose `exp - iat` span exceeds this
+     * value.  Tokens with longer lifetimes are rejected to limit the window of
+     * a stolen/leaked token.
+     *
+     * @var integer
+     */
+    private const MAX_TOKEN_LIFETIME_SECONDS = 3600;
+
+    /**
+     * APCu/distributed cache used for jti replay detection.
+     *
+     * @var ICache
+     */
+    private readonly ICache $jtiCache;
+
+    /**
      * Constructor.
      *
      * @param IUserManager                            $userManager     The user manager.
      * @param IUserSession                            $userSession     The user session.
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR ObjectService used to resolve consumers.
+     * @param IGroupManager                           $groupManager    The group manager for users/groups ACL checks.
+     * @param ICacheFactory                           $cacheFactory    Cache factory used for jti replay detection.
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
+        private readonly IGroupManager $groupManager,
+        ICacheFactory $cacheFactory,
     ) {
+        $this->jtiCache = $cacheFactory->createDistributed('openconnector.jti');
 
     }//end __construct()
 
@@ -162,25 +189,64 @@ class AuthorizationService
         if (in_array(needle: $algorithm, haystack: self::PKCS1_ALGORITHMS) === true
             || in_array(needle: $algorithm, haystack: self::PSS_ALGORITHMS) === true
         ) {
-            $stamp    = microtime().getmypid();
-            $filename = "/var/tmp/publickey-$stamp";
+            // Write to a secure temp file with a random, unpredictable name and
+            // restricted permissions; always unlink in finally.
+            $filename = tempnam(sys_get_temp_dir(), 'oc-jwk-');
+            if ($filename === false) {
+                throw new AuthenticationException(message: 'Could not allocate temp file for public key', details: []);
+            }
+
+            @chmod($filename, 0600);
             file_put_contents($filename, base64_decode($publicKey));
-            $jwk = new JWKSet([JWKFactory::createFromKeyFile(file: $filename)]);
-            unlink($filename);
+            @chmod($filename, 0600);
+
+            try {
+                // Pin the algorithm in the JWK so the library cannot be tricked
+                // into accepting a different algorithm via a crafted token header.
+                $jwk = new JWKSet(
+                        [
+                            JWKFactory::createFromKeyFile(
+                        file: $filename,
+                        password: null,
+                        additional_values: ['alg' => $algorithm, 'use' => 'sig']
+                    )
+                        ]
+                        );
+            } finally {
+                if (file_exists($filename) === true) {
+                    @unlink($filename);
+                }
+            }
+
             return $jwk;
-        }
+        }//end if
 
         throw new AuthenticationException(message: 'The token algorithm is not supported', details: ['algorithm' => $algorithm]);
     }//end getJWK()
 
     /**
+     * Allowed clock skew in seconds for iat/nbf checks.
+     *
+     * @var integer
+     */
+    private const CLOCK_SKEW_SECONDS = 60;
+
+    /**
      * Validate data in the payload.
+     *
+     * Checks:
+     *   - iat is present and not in the future (beyond clock skew)
+     *   - exp (default iat+1h) has not passed
+     *   - exp - iat does not exceed MAX_TOKEN_LIFETIME_SECONDS (prevents
+     *     infinite-lifetime tokens via a caller-supplied exp claim)
+     *   - nbf (not-before), if present, has been reached
+     *   - jti, if present, has not been seen before (replay prevention)
      *
      * @param array $payload The payload of the JWT token.
      *
      * @return void
      *
-     * @throws AuthenticationException If the token is missing/expired.
+     * @throws AuthenticationException If the token is missing/expired/not-yet-valid/replayed.
      *
      * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
      */
@@ -194,11 +260,43 @@ class AuthorizationService
 
         $iat = new DateTime('@'.$payload['iat']);
 
+        // Reject tokens issued in the future (beyond the clock skew window).
+        // This prevents replay attacks using pre-generated tokens.
+        $maxAllowedIat = clone $now;
+        $maxAllowedIat->modify('+'.self::CLOCK_SKEW_SECONDS.' seconds');
+        if ($iat > $maxAllowedIat) {
+            throw new AuthenticationException(
+                message: 'The token has an invalid issue time',
+                details: [
+                    'iat'          => $iat->getTimestamp(),
+                    'time checked' => $now->getTimestamp(),
+                ]
+            );
+        }
+
         $exp = clone $iat;
         $exp->modify('+1 Hour');
         if (isset($payload['exp']) === true) {
-            $exp = new DateTime('@'.$payload['exp']);
-        }
+            $callerExp = new DateTime('@'.$payload['exp']);
+
+            // Clamp the caller-supplied expiry so a consumer cannot self-issue
+            // tokens with an arbitrarily long (or infinite) lifetime.  The
+            // maximum allowed span is MAX_TOKEN_LIFETIME_SECONDS relative to iat.
+            $maxExp = clone $iat;
+            $maxExp->modify('+'.self::MAX_TOKEN_LIFETIME_SECONDS.' seconds');
+            if ($callerExp > $maxExp) {
+                throw new AuthenticationException(
+                    message: 'The token lifetime exceeds the maximum allowed duration',
+                    details: [
+                        'iat'                  => $iat->getTimestamp(),
+                        'exp'                  => $callerExp->getTimestamp(),
+                        'max_lifetime_seconds' => self::MAX_TOKEN_LIFETIME_SECONDS,
+                    ]
+                );
+            }//end if
+
+            $exp = $callerExp;
+        }//end if
 
         if ($exp->diff($now)->format('%R') === '+') {
             throw new AuthenticationException(
@@ -209,6 +307,40 @@ class AuthorizationService
                     'time checked' => $now->getTimestamp(),
                 ]
             );
+        }
+
+        // Honour the not-before (nbf) claim if present.
+        if (isset($payload['nbf']) === true) {
+            $nbf        = new DateTime('@'.$payload['nbf']);
+            $nbfAllowed = clone $nbf;
+            $nbfAllowed->modify('-'.self::CLOCK_SKEW_SECONDS.' seconds');
+            if ($now < $nbfAllowed) {
+                throw new AuthenticationException(
+                    message: 'The token is not yet valid',
+                    details: [
+                        'nbf'          => $nbf->getTimestamp(),
+                        'time checked' => $now->getTimestamp(),
+                    ]
+                );
+            }
+        }
+
+        // JWT ID (jti) replay prevention: if the token carries a jti claim,
+        // record it in the distributed cache for the remaining token lifetime
+        // plus the clock-skew window.  A second request with the same jti is
+        // rejected immediately.
+        if (isset($payload['jti']) === true && $payload['jti'] !== '') {
+            $cacheKey = 'jti:'.hash('sha256', (string) $payload['jti']);
+            $ttl      = max(1, ($exp->getTimestamp() - $now->getTimestamp()) + self::CLOCK_SKEW_SECONDS);
+
+            if ($this->jtiCache->get($cacheKey) !== null) {
+                throw new AuthenticationException(
+                    message: 'The token has already been used (jti replay)',
+                    details: ['jti' => $payload['jti']]
+                );
+            }
+
+            $this->jtiCache->set($cacheKey, 1, $ttl);
         }
 
     }//end validatePayload()
@@ -236,7 +368,7 @@ class AuthorizationService
           [
               new HS256(),
               new HS384(),
-              new HS256(),
+              new HS512(),
               new RS256(),
               new RS384(),
               new RS512(),
@@ -269,6 +401,18 @@ class AuthorizationService
         $algorithm  = $authConfig['algorithm'] ?? '';
 
         $jwkSet = $this->getJWK(publicKey: $publicKey, algorithm: $algorithm);
+
+        // Reject tokens whose protected header `alg` does not match the
+        // algorithm configured for the consumer.  Without this check a
+        // crafted token could switch to HMAC (HS*) against the RSA public
+        // key as the HMAC secret — the classic algorithm-confusion attack.
+        $headerAlg = $jws->getSignature(0)->getProtectedHeader()['alg'] ?? '';
+        if ($headerAlg !== $algorithm) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Token algorithm does not match configured algorithm']
+            );
+        }
 
         if ($verifier->verifyWithKeySet(jws: $jws, jwkset: $jwkSet, signatureIndex: 0) === false) {
             throw new AuthenticationException(
@@ -307,21 +451,27 @@ class AuthorizationService
             throw new AuthenticationException(message: 'Invalid username or password', details: []);
         }
 
-        // @TODO: This code can be enabled once the frontend can properly set users and usergroups
-        // $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
-        //
-        // $userGroups = array_map(function(IGroup $group) {
-        // return $group->getGID();
-        // }, $this->groupManager->getUserGroups($user));
-        //
-        // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
-        //
-        // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        // throw new AuthenticationException(
-        // message: 'Not authorized',
-        // details: ['reason' => 'The selected user is not allowed to login on this endpoint']
-        // );
-        // }
+        // Enforce users/groups ACL when the rule has an explicit allow-list.
+        // Empty lists mean "any authenticated user is allowed".
+        if (empty($users) === false || empty($groups) === false) {
+            $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
+
+            $userGroups          = array_map(
+                static function (IGroup $group): string {
+                    return $group->getGID();
+                },
+                $this->groupManager->getUserGroups($user)
+            );
+            $userInAllowedGroups = (array_intersect($groups, $userGroups) !== []);
+
+            if ($userInAllowedUsers === false && $userInAllowedGroups === false) {
+                throw new AuthenticationException(
+                    message: 'Not authorized',
+                    details: ['reason' => 'The selected user is not allowed to login on this endpoint']
+                );
+            }
+        }
+
         $this->userSession->setUser($user);
 
     }//end authorizeBasic()
@@ -361,18 +511,27 @@ class AuthorizationService
             throw new AuthenticationException(message: 'Invalid token', details: []);
         }
 
-        // @TODO: This code can be enabled once the frontend can properly set users and usergroups
-        // $userInAllowedUsers = array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== [];
-        //
-        // $userGroups = array_map(function(IGroup $group) {
-        // return $group->getGID();
-        // }, $this->groupManager->getUserGroups($user));
-        //
-        // $userInAllowedGroups = array_intersect($groups, $userGroups) !== [];
-        //
-        // if($userInAllowedUsers === false && $userInAllowedGroups === false) {
-        // throw new AuthenticationException(message: 'Not authorized', details: ['reason' => 'The selected user is not allowed to view endpoint']);
-        // }
+        // Enforce users/groups ACL when the rule has an explicit allow-list.
+        // Empty lists mean "any authenticated user is allowed".
+        if (empty($users) === false || empty($groups) === false) {
+            $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
+
+            $userGroups          = array_map(
+                static function (IGroup $group): string {
+                    return $group->getGID();
+                },
+                $this->groupManager->getUserGroups($user)
+            );
+            $userInAllowedGroups = (array_intersect($groups, $userGroups) !== []);
+
+            if ($userInAllowedUsers === false && $userInAllowedGroups === false) {
+                throw new AuthenticationException(
+                    message: 'Not authorized',
+                    details: ['reason' => 'The selected user is not allowed to view endpoint']
+                );
+            }
+        }
+
     }//end authorizeOAuth()
 
     /**
@@ -422,11 +581,21 @@ class AuthorizationService
      */
     public function authorizeApiKey(string $header, array $keys): void
     {
-        if (array_key_exists(key: $header, array: $keys) === false) {
+        // Use hash_equals for constant-time comparison to prevent timing attacks
+        // when iterating over the configured API keys.
+        $matchedUserId = null;
+        foreach ($keys as $key => $userId) {
+            if (hash_equals((string) $key, $header) === true) {
+                $matchedUserId = $userId;
+                break;
+            }
+        }
+
+        if ($matchedUserId === null) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);
         }
 
-        $user = $this->userManager->get(uid: $keys[$header]);
+        $user = $this->userManager->get(uid: $matchedUserId);
 
         if ($user === null) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);

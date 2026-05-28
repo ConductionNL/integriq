@@ -29,6 +29,7 @@ use JWadhams\JsonLogic;
 use OC\User\NoUserException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -63,6 +64,7 @@ class SynchronizationService
      *
      * @var integer
      */
+
     /**
      * In-memory accumulator of contract log payloads for the active synchronize() pass.
      *
@@ -78,6 +80,11 @@ class SynchronizationService
      */
     private array $pendingContractLogs = [];
 
+    /**
+     * Retention period in milliseconds for error logs.
+     *
+     * @var integer
+     */
     private int $errorRetention;
 
     /**
@@ -460,7 +467,7 @@ class SynchronizationService
      *
      * @param ObjectEntity                            $synchronization The synchronization configuration.
      * @param \OCA\OpenRegister\Db\ObjectEntity|array $object          The object to be synchronized, also referenced.
-     * @param ObjectEntity                            $log             The log object recording synchronization details.
+     * @param array                                   $logData         The log data accumulator recording synchronization details.
      * @param FlowToken                               $flowToken       The flow token tracking the operation.
      * @param bool|null                               $isTest          Whether this is a test run (does not persist data).
      * @param bool|null                               $force           Whether to force the synchronization regardless of changes.
@@ -593,16 +600,27 @@ class SynchronizationService
         }
 
         if ($synchronizationContract instanceof ObjectEntity === false) {
+            // Cast originId to string — the synchronization_contract schema
+            // declares originId as string|null but it can also be an integer
+            // from numeric source ids.
             $contractPayload = [
                 'synchronizationId' => $synchronization->getUuid(),
-                'originId'          => $originId,
+                'originId'          => (string) $originId,
             ];
-            // Only persist if not test.
-            $synchronizationContract = $this->orObjectService->saveObject(
-                object: $contractPayload,
-                register: 'openconnector',
-                schema: 'synchronization_contract',
-            );
+            // The controller docblock for sync-test guarantees zero persistent
+            // writes (#1008). Build the contract in-memory only under $isTest.
+            if ($isTest === true) {
+                $synchronizationContract = new ObjectEntity();
+                // Positional arg only — Entity::__call's setter() uses $args[0].
+                // Named args on Entity magic setters silently miscompose (memory rule).
+                $synchronizationContract->setObject($contractPayload);
+            } else {
+                $synchronizationContract = $this->orObjectService->saveObject(
+                    object: $contractPayload,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract',
+                );
+            }
 
             $synchronizationContract = $this->synchronizeContract(
                 synchronizationContract: $synchronizationContract,
@@ -670,7 +688,7 @@ class SynchronizationService
      * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
      *
      * @param ObjectEntity $synchronization The synchronization configuration and state.
-     * @param ObjectEntity $log             The log object to record synchronization details and results.
+     * @param array        $logData         The log data accumulator to record synchronization details and results.
      * @param FlowToken    $flowToken       The flow token tracking the operation.
      * @param bool|null    $isTest          Optional flag to run the synchronization in test mode (no deletions, no persistence).
      * @param bool|null    $force           Optional flag to bypass change checks and force synchronization of all objects.
@@ -678,7 +696,7 @@ class SynchronizationService
      * @param array|null   $data            The data to add to synchronize, if not provided, the synchronization's data will be used.
      * @param string|null  $mutationType    The current type of mutation we are doing this::VALID_MUTATION_TYPES.
      *
-     * @return ObjectEntity Returns the updated synchronization log with processing results.
+     * @return array Returns the updated synchronization log data with processing results.
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
      * @throws Exception                    If the source ID is empty or synchronization cannot proceed.
@@ -712,6 +730,13 @@ class SynchronizationService
         $sourceConfig   = $this->callService->applyConfigDot($syncData['sourceConfig'] ?? []);
 
         // If a source is provided, use it instead of the synchronization's source.
+        // Auto-creating Source records from a request-supplied location combined
+        // with the SSRF risk on `location` is dangerous (#1009): a caller who can
+        // control the `source` parameter could otherwise register an arbitrary
+        // URL as a first-class, permanently-enabled Source without going through
+        // the normal admin source-creation workflow. We require explicit
+        // provisioning instead — if no matching Source row exists we refuse the
+        // request with a descriptive error.
         if ($source !== null) {
             $srcFilters = [
                 'register' => 'openconnector',
@@ -720,22 +745,13 @@ class SynchronizationService
             ];
             $srcMatches = $this->orObjectService->findAll(config: ['filters' => $srcFilters]);
             $srcList    = $srcMatches['results'] ?? $srcMatches;
-            if (count($srcList) > 0) {
-                $sourceEntity = $srcList[0];
-            } else {
-                $sourceObject = [
-                    'location'  => $source,
-                    'name'      => basename($source),
-                    'type'      => 'api',
-                    'isEnabled' => true,
-                ];
-                $sourceEntity = $this->orObjectService->saveObject(
-                    object: $sourceObject,
-                    register: 'openconnector',
-                    schema: 'source'
-                );
+            if (count($srcList) === 0) {
+                $logData['message'] = 'No Source registered for location "'.$source.'". '
+                    .'Create the Source explicitly via the Sources API before triggering this sync (#1009).';
+                throw new Exception($logData['message']);
             }
 
+            $sourceEntity         = $srcList[0];
             $syncData['sourceId'] = $sourceEntity->getUuid();
             $synchronization      = $this->orObjectService->saveObject(
                 object: $syncData,
@@ -889,6 +905,26 @@ class SynchronizationService
             ];
 
             // Stage 5: Cleanup - Delete invalid objects.
+            // Defensive guard (#1017): only invoke deleteInvalidObjects when
+            // this fetch was a definitive success and returned a genuine
+            // result set.
+            // - Skip when the source rate-limited us (rateLimitException !==
+            // null) — re-throw immediately so the caller learns about the
+            // 429 instead of silently swallowing it.
+            // - Skip on test runs (no persistent state changes allowed under
+            // $isTest = true, #1008).
+            // - Skip when no objects were returned AND no objects were
+            // processed — an empty fetch from a failing source must NOT
+            // cause deleteInvalidObjects to wipe every previously-synced
+            // target via `array_diff(allContractTargetIds, [])`.
+            // - Findings #1000/#1001/#1002 confirmed deleteInvalidObjects is
+            // currently INERT at runtime, so this guard is latent
+            // protection — when that bug is eventually repaired, the
+            // cascade is already disarmed.
+            if ($rateLimitException !== null) {
+                throw $rateLimitException;
+            }
+
             $stageStartTime    = microtime(true);
             $deleteRestriction = (isset($sourceConfig['restrictDeletion']) === true && (bool) $sourceConfig['restrictDeletion']);
             if (isset($data) === true) {
@@ -897,18 +933,44 @@ class SynchronizationService
                 $deleteData = [];
             }
 
-            $deletedCount = $this->deleteInvalidObjects(
-                synchronization: $synchronization,
-                synchronizedTargetIds: $synchronizedTargetIds,
-                deleteRestriction: $deleteRestriction,
-                data: $deleteData
-            );
+            $shouldRunCleanup = true;
+            if ($isTest === true) {
+                $shouldRunCleanup = false;
+            } else if (count($objectList) === 0 && count($synchronizedTargetIds) === 0) {
+                // No fetched objects and nothing processed → no signal to
+                // distinguish "source returned a genuinely empty list" from
+                // "every page failed and silently yielded []". Skip cleanup.
+                $shouldRunCleanup = false;
+            }
+
+            if ($shouldRunCleanup === true) {
+                $deletedCount = $this->deleteInvalidObjects(
+                    synchronization: $synchronization,
+                    synchronizedTargetIds: $synchronizedTargetIds,
+                    deleteRestriction: $deleteRestriction,
+                    data: $deleteData
+                );
+            } else {
+                $deletedCount = 0;
+                $this->logger->info(
+                    'Skipping deleteInvalidObjects stage — fetch did not provide a '
+                        .'definitive success signal (#1017).',
+                    [
+                        'synchronizationId' => $synchronization->getUuid(),
+                        'isTest'            => $isTest,
+                        'objectsFetched'    => count($objectList),
+                        'objectsProcessed'  => count($synchronizedTargetIds),
+                    ]
+                );
+            }
+
             $result['objects']['deleted'] = $deletedCount;
 
             $result['timing']['stages']['cleanup_invalid'] = [
                 'duration_ms'     => round((microtime(true) - $stageStartTime) * 1000, 2),
                 'description'     => 'Deleting invalid/orphaned objects',
                 'objects_deleted' => $deletedCount,
+                'skipped'         => ($shouldRunCleanup === false),
             ];
         }//end if
 
@@ -959,15 +1021,8 @@ class SynchronizationService
         // synchronize() (#1007).
         $logData['result'] = $result;
 
-        if ($rateLimitException !== null) {
-            $logData['message'] = $rateLimitException->getMessage();
-            throw new TooManyRequestsHttpException(
-                $rateLimitException->getMessage(),
-                429,
-                $rateLimitException->getHeaders()
-            );
-        }
-
+        // Note: $rateLimitException is re-thrown at line 923 inside the else
+        // branch before reaching this point, so no second check is needed here.
         $syncData['targetLastSynced'] = (new DateTime())->format('c');
         $this->orObjectService->saveObject(
             object: $syncData,
@@ -1065,7 +1120,7 @@ class SynchronizationService
         if (($syncData['sourceType'] ?? '') === 'register/schema' && $object !== null) {
             $logData['result']['type'] = 'internToExtern';
 
-            // synchronizeInternToExtern receives the in-memory log payload
+            // SynchronizeInternToExtern receives the in-memory log payload
             // (no upfront sync_log row) and mutates it directly. Persistence
             // happens once below in finalizeSynchronizationLog() — even on
             // failure (try/finally), to preserve operator visibility (#1007).
@@ -1093,7 +1148,7 @@ class SynchronizationService
 
                 // Single write of the sync log + flush any accumulated contract logs.
                 $this->finalizeSynchronizationLog(logData: $logData);
-            }
+            }//end try
 
             if ($internError !== null) {
                 throw $internError;
@@ -1134,7 +1189,7 @@ class SynchronizationService
                 )?->format('c');
 
             $persisted = $this->finalizeSynchronizationLog(logData: $logData);
-        }
+        }//end try
 
         if ($externError !== null) {
             throw $externError;
@@ -1737,7 +1792,6 @@ class SynchronizationService
      * @param array             $object                  The source object being synchronized.
      * @param bool|null         $isTest                  False by default, currently added for sync-test.
      * @param bool|null         $force                   False by default, force update regardless of changes.
-     * @param ObjectEntity|null $log                     The log to update.
      * @param string|null       $mutationType            Single object mutation type: 'create', 'update' or 'delete'.
      *
      * @return ObjectEntity|Exception|array Returns the updated contract entity, an Exception on mapping failures or the test array.
@@ -1781,7 +1835,7 @@ class SynchronizationService
             }
 
             $contractLogData = [
-                // synchronizationLogId is filled in by finalizeSynchronizationLog()
+                // SynchronizationLogId is filled in by finalizeSynchronizationLog()
                 // once the parent sync_log row is created — see #1007.
                 'synchronizationId'         => $synchronizationId,
                 'synchronizationContractId' => $synchronizationContract->getUuid(),
@@ -1851,27 +1905,36 @@ class SynchronizationService
         ) {
             // We checked the source so let log that.
             $contractData['sourceLastChecked'] = (new DateTime())->format('c');
-            $synchronizationContract           = $this->orObjectService->saveObject(
-                object: $contractData,
-                register: 'openconnector',
-                schema: 'synchronization_contract',
-                uuid: $synchronizationContract->getUuid()
-            );
+            // Test-mode no-write contract (#1008): skip the saveObject and the
+            // contract-log buffer entry on the unchanged-skip path.
+            if ($isTest === false) {
+                $synchronizationContract = $this->orObjectService->saveObject(
+                    object: $contractData,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract',
+                    uuid: $synchronizationContract->getUuid()
+                );
+                $contractData            = $synchronizationContract->getObject();
 
-            if ($contractLogData !== null) {
+                if ($contractLogData !== null) {
+                    $contractLogData['expiry'] = $this->calculateExpires(
+                            ...[$this->successRetention]
+                        )?->format('c');
+                    // Buffer the final contract-log payload for write-once flush
+                    // — append-only schemas reject UPDATE (#1007).
+                    $this->bufferContractLog(contractLogData: $contractLogData);
+                }
+            } else if ($contractLogData !== null) {
                 $contractLogData['expiry'] = $this->calculateExpires(
                         ...[$this->successRetention]
                     )?->format('c');
-                // Buffer the final contract-log payload for write-once flush
-                // — append-only schemas reject UPDATE (#1007).
-                $this->bufferContractLog($contractLogData);
-            }
+            }//end if
 
             $skipLog = $contractLogData;
 
             return [
                 'log'          => $skipLog,
-                'contract'     => $synchronizationContract->getObject(),
+                'contract'     => $contractData,
                 'resultAction' => 'skip',
             ];
         }//end if
@@ -1880,13 +1943,17 @@ class SynchronizationService
         $contractData['originHash']        = $originHash;
         $contractData['sourceLastChanged'] = (new DateTime())->format('c');
         $contractData['sourceLastChecked'] = (new DateTime())->format('c');
-        $synchronizationContract           = $this->orObjectService->saveObject(
-            object: $contractData,
-            register: 'openconnector',
-            schema: 'synchronization_contract',
-            uuid: $synchronizationContract->getUuid()
-        );
-        $contractData = $synchronizationContract->getObject();
+        // Test-mode no-write contract (#1008): keep the mid-flight metadata
+        // update in-memory only.
+        if ($isTest === false) {
+            $synchronizationContract = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $synchronizationContract->getUuid()
+            );
+            $contractData            = $synchronizationContract->getObject();
+        }
 
         // Execute mapping if found.
         $objectBeforeMapping = $object;
@@ -1927,31 +1994,39 @@ class SynchronizationService
         $contractData['targetLastChanged'] = (new DateTime())->format('c');
         $contractData['targetLastSynced']  = (new DateTime())->format('c');
         $contractData['sourceLastSynced']  = (new DateTime())->format('c');
-        $synchronizationContract           = $this->orObjectService->saveObject(
-            object: $contractData,
-            register: 'openconnector',
-            schema: 'synchronization_contract',
-            uuid: $synchronizationContract->getUuid()
-        );
-        $contractData = $synchronizationContract->getObject();
+
+        // The controller docblock for sync-test guarantees zero persistent writes
+        // (#1008). Under $isTest=true we keep the freshly computed contract data
+        // in-memory only — no saveObject, no contract-log buffering — so neither
+        // a synchronization_contract row nor a synchronization_contract_log row
+        // is created.
+        if ($isTest === false) {
+            $synchronizationContract = $this->orObjectService->saveObject(
+                object: $contractData,
+                register: 'openconnector',
+                schema: 'synchronization_contract',
+                uuid: $synchronizationContract->getUuid()
+            );
+            $contractData            = $synchronizationContract->getObject();
+        }
 
         // Handle synchronization based on test mode.
         if ($isTest === true) {
-            // Return test data without updating target.
+            // Return test data without updating target. Deliberately DO NOT
+            // bufferContractLog here — that would persist a contract-log row at
+            // finalize() in violation of the documented test-run contract (#1008).
             if ($contractLogData !== null) {
                 $contractLogData['targetResult'] = 'test';
                 $contractLogData['expiry']       = $this->calculateExpires(
                         ...[$this->successRetention]
                     )?->format('c');
-                // Buffer the final contract-log payload for write-once flush (#1007).
-                $this->bufferContractLog($contractLogData);
             }
 
             $testLog = $contractLogData;
 
             return [
                 'log'          => $testLog,
-                'contract'     => $synchronizationContract->getObject(),
+                'contract'     => $contractData,
                 'resultAction' => 'skip',
             ];
         }//end if
@@ -1998,7 +2073,7 @@ class SynchronizationService
             $contractLogData['expiry']       = $this->calculateExpires(
                     ...[$this->successRetention]
                 )?->format('c');
-            $this->bufferContractLog($contractLogData);
+            $this->bufferContractLog(contractLogData: $contractLogData);
         }
 
         $synchronizationContract = $this->orObjectService->saveObject(
@@ -2822,63 +2897,83 @@ class SynchronizationService
         $sourceConfig    = $syncData['sourceConfig'] ?? [];
         $maxPages        = $sourceConfig['maxPages'] ?? $this::DEFAULT_MAX_PAGES;
         $pageCount       = 0;
+        $startPage       = $currentPage;
+        // Resume cursor — track the highest currentPage we have stepped to so
+        // we can write it back ONCE (on rate-limit / exception or at the end of
+        // the loop) instead of issuing one saveObject per page (#1010).
+        $persistedCurrentPage = $currentPage;
 
-        for ($i = 0; $i < $maxPages; $i++) {
-            // Fetch the current page.
-            $pageData    = $this->fetchSinglePageData(
-                source: $source,
-                endpoint: $currentEndpoint,
-                config: $config,
-                synchronization: $synchronization
-            );
-            $pageObjects = $pageData['objects'];
-            $pageCount++;
+        try {
+            for ($i = 0; $i < $maxPages; $i++) {
+                // Fetch the current page.
+                $pageData    = $this->fetchSinglePageData(
+                    source: $source,
+                    endpoint: $currentEndpoint,
+                    config: $config,
+                    synchronization: $synchronization
+                );
+                $pageObjects = $pageData['objects'];
+                $pageCount++;
 
-            // If test mode is enabled, return only the first object from the first page.
-            if ($isTest === true && empty($pageObjects) === false) {
-                return [$pageObjects[0]];
+                // If test mode is enabled, return only the first object from the first page.
+                if ($isTest === true && empty($pageObjects) === false) {
+                    return [$pageObjects[0]];
+                }
+
+                // If no objects found, we've reached the end.
+                if (empty($pageObjects) === true) {
+                    break;
+                }
+
+                // Add objects to our collection.
+                // Note: we still accumulate the full set across pages so the
+                // existing extern-to-intern pipeline (which iterates the
+                // returned array in synchronizeExternToIntern) keeps working
+                // unchanged. The legacy "page-by-page upsert" architectural
+                // change is out of scope for this fix — #1010 punts that to a
+                // follow-up; here we eliminate the per-page write amplification
+                // which is the actively-painful half of the bug.
+                $allObjects = array_merge($allObjects, $pageObjects);
+
+                // Determine the next page URL/config.
+                $nextInfo = $this->getNextPageInfo(
+                    source: $source,
+                    currentEndpoint: $currentEndpoint,
+                    config: $config,
+                    synchronization: $synchronization,
+                    currentPage: $currentPage,
+                    result: $pageData['result'],
+                    usesNextEndpoint: $usesNextEndpoint
+                );
+
+                if ($nextInfo === null) {
+                    // No more pages.
+                    break;
+                }
+
+                // Update for next iteration.
+                $currentEndpoint  = $nextInfo['endpoint'];
+                $config           = $nextInfo['config'];
+                $currentPage      = $nextInfo['page'];
+                $usesNextEndpoint = $nextInfo['usesNextEndpoint'];
+                $persistedCurrentPage = $currentPage;
+            }//end for
+        } finally {
+            // Persist the final currentPage ONCE for resume semantics — only
+            // when it actually advanced. This collapses what was previously N
+            // OR write round-trips into a single write per sync pass (#1010).
+            // The finally block also covers the rate-limit / exception paths so
+            // an interrupted run still records its resume point.
+            if ($persistedCurrentPage !== $startPage) {
+                $syncData['currentPage'] = $persistedCurrentPage;
+                $this->orObjectService->saveObject(
+                    object: $syncData,
+                    register: 'openconnector',
+                    schema: 'synchronization',
+                    uuid: $synchronization->getUuid()
+                );
             }
-
-            // If no objects found, we've reached the end.
-            if (empty($pageObjects) === true) {
-                break;
-            }
-
-            // Add objects to our collection.
-            $allObjects = array_merge($allObjects, $pageObjects);
-
-            // Determine the next page URL/config.
-            $nextInfo = $this->getNextPageInfo(
-                source: $source,
-                currentEndpoint: $currentEndpoint,
-                config: $config,
-                synchronization: $synchronization,
-                currentPage: $currentPage,
-                result: $pageData['result'],
-                usesNextEndpoint: $usesNextEndpoint
-            );
-
-            if ($nextInfo === null) {
-                // No more pages.
-                break;
-            }
-
-            // Update for next iteration.
-            $currentEndpoint  = $nextInfo['endpoint'];
-            $config           = $nextInfo['config'];
-            $currentPage      = $nextInfo['page'];
-            $usesNextEndpoint = $nextInfo['usesNextEndpoint'];
-
-            // Update synchronization current page.
-            $syncData['currentPage'] = $currentPage;
-            $synchronization         = $this->orObjectService->saveObject(
-                object: $syncData,
-                register: 'openconnector',
-                schema: 'synchronization',
-                uuid: $synchronization->getUuid()
-            );
-            $syncData = $synchronization->getObject();
-        }//end for
+        }//end try
 
         return $allObjects;
 
@@ -3034,7 +3129,7 @@ class SynchronizationService
         // If JSON parsing failed, try XML.
         if (empty($result) === true) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($body, "SimpleXMLElement", LIBXML_NOCDATA);
+            $xml = SafeXmlParser::parse($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
             if ($xml !== false) {
                 $result = $this->xmlToArray(xml: $xml);
@@ -3608,7 +3703,7 @@ class SynchronizationService
         $serializedObject = $object->jsonSerialize();
         $flowToken        = new FlowToken();
 
-        // synchronizeContract no longer accepts a $log arg — it buffers the
+        // SynchronizeContract no longer accepts a $log arg — it buffers the
         // contract-log payload (#1007). When called outside a synchronize()
         // pass we flush the buffer to a synchronizationLogId set from the
         // passed-in $log (if any), then clear the buffer.
@@ -4974,7 +5069,6 @@ class SynchronizationService
      * @param array        $result          The current result tracking data.
      * @param bool         $isTest          Whether this is a test run.
      * @param bool         $force           Whether to force synchronization regardless of changes.
-     * @param ObjectEntity $log             The synchronization log.
      * @param FlowToken    $flowToken       The flow token tracking the operation.
      * @param string|null  $mutationType    The type of object mutation.
      *
@@ -5044,7 +5138,12 @@ class SynchronizationService
             $findContractByOriginId = true;
         }
 
-        // Find sync contract by originId.
+        // Find sync contract by originId. Re-syncs MUST route the write through
+        // the existing target object (UPDATE) instead of creating a fresh
+        // ObjectEntity — otherwise mirrored registers fill with N copies after
+        // N runs (#1016). The OR `findAll` body-field filter is not guaranteed
+        // to strictly match `originId` (it depends on schema indexing); we
+        // therefore re-verify the match in PHP before adopting the contract.
         $contractFilters = [
             'register' => 'openconnector',
             'schema'   => 'synchronization_contract',
@@ -5056,6 +5155,35 @@ class SynchronizationService
 
         $contractMatches = $this->orObjectService->findAll(config: ['filters' => $contractFilters]);
         $contractList    = $contractMatches['results'] ?? $contractMatches;
+
+        // Defensive re-filter: ensure originId (and synchronizationId when not
+        // findContractByOriginIdOnly) match exactly. Casting to string covers
+        // numeric origin ids retrieved as int from OR.
+        $originIdString = (string) $originId;
+        $contractList   = array_values(
+            array_filter(
+                $contractList,
+                function ($candidate) use ($originIdString, $findContractByOriginId, $synchronization) {
+                    if ($candidate instanceof ObjectEntity === false) {
+                        return false;
+                    }
+
+                    $candidateData = $candidate->getObject();
+                    if ((string) ($candidateData['originId'] ?? '') !== $originIdString) {
+                        return false;
+                    }
+
+                    if ($findContractByOriginId === false
+                        && (string) ($candidateData['synchronizationId'] ?? '') !== $synchronization->getUuid()
+                    ) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            )
+        );
+
         if (empty($contractList) === false) {
             $synchronizationContract = $contractList[0];
         } else {
@@ -5063,15 +5191,31 @@ class SynchronizationService
         }
 
         if ($synchronizationContract === null) {
-            // Only persist if not test.
-            $synchronizationContract = $this->orObjectService->saveObject(
-                object: [
-                    'synchronizationId' => $synchronization->getUuid(),
-                    'originId'          => $originId,
-                ],
-                register: 'openconnector',
-                schema: 'synchronization_contract'
-            );
+            // The controller docblock for sync-test guarantees zero persistent
+            // writes (#1008). Under $isTest=true we build an in-memory
+            // ObjectEntity instead of issuing a saveObject so neither a
+            // synchronization_contract nor (downstream) a synchronization_contract_log
+            // row is created.
+            // Cast originId to string — the synchronization_contract schema
+            // declares originId as string|null but getOriginId returns
+            // int|string (numeric source ids like jsonplaceholder posts ids
+            // are common).
+            $contractPayload = [
+                'synchronizationId' => $synchronization->getUuid(),
+                'originId'          => (string) $originId,
+            ];
+            if ($isTest === true) {
+                $synchronizationContract = new ObjectEntity();
+                // Positional arg only — Entity::__call's setter() uses $args[0].
+                // Named args on Entity magic setters silently miscompose (memory rule).
+                $synchronizationContract->setObject($contractPayload);
+            } else {
+                $synchronizationContract = $this->orObjectService->saveObject(
+                    object: $contractPayload,
+                    register: 'openconnector',
+                    schema: 'synchronization_contract'
+                );
+            }
 
             $synchronizationContractResult = $this->synchronizeContract(
                 synchronizationContract: $synchronizationContract,

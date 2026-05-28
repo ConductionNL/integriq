@@ -17,41 +17,56 @@ return [
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
-		// DSO / Omgevingsloket STAM koppelvlak — inbound webhook for
-		// vergunningaanvragen, meldingen, informatieverzoeken, vooroverleg.
-		// Re-enabled with the post-OR-cutover surface (issue #881).
-		['name' => 'DSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// DSO / Omgevingsloket STAM koppelvlak — route REMOVED (wave-3 security fix).
+		//
+		// The `validateSignature` method that backs this endpoint accepts any
+		// non-empty X-DSO-Signature header without cryptographic verification
+		// (the PKIoverheid HMAC/RSA verifier, REQ-DSO-050, was never implemented).
+		// Leaving a #[PublicPage]+#[NoCSRFRequired] webhook with only a
+		// string-presence check in production is a CRITICAL vulnerability.
+		//
+		// The route is held here as a commented-out placeholder so that the
+		// controller, openspec spec, and TODO are not lost.  Re-enable only after
+		// the real verifier has been implemented and reviewed.
+		//
+		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1041
+		//
+		// ['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
+
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#logs', 'url' => '/api/jobs/logs', 'verb' => 'GET'],
 		// jobs#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Stats now come from manifest widgets.
+
 		// Endpoint endpoints
 		// endpoints#test route removed — controller method was deleted by agent.
 		['name' => 'endpoints#logs', 'url' => '/api/endpoints/logs', 'verb' => 'GET'],
 		// endpoints#statistics route removed — controller method was deleted by agent.
+
 		// Synchronization endpoints
 		['name' => 'synchronizations#run', 'url' => '/api/synchronizations/{id}/run', 'verb' => 'POST'],
 		['name' => 'synchronizations#test', 'url' => '/api/synchronizations/{id}/test', 'verb' => 'POST'],
 		['name' => 'synchronizations#logs', 'url' => '/api/synchronizations/logs', 'verb' => 'GET'],
 		['name' => 'synchronizations#statistics', 'url' => '/api/synchronizations/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#contracts', 'url' => '/api/synchronizations/contracts/{id}', 'verb' => 'GET'],
+
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],
 		['name' => 'mappings#getObjects', 'url' => '/api/mappings/objects', 'verb' => 'GET'],
 
 		// Running endpoints - allow any path after /api/endpoints/
-        // endpoints#preflighted_cors removed — agent deleted the CORS preflight method.
-        // If cross-origin clients need preflight on /api/endpoint/*, re-add the
-        // method on EndpointsController and restore this route.
+        // endpoints#preflightedCors was restored with the DSO/CORS runtime fix.
+		['name' => 'endpoints#preflightedCors', 'url' => '/api/endpoint/{_path}', 'verb' => 'OPTIONS', 'requirements' => ['_path' => '.+']],
 		['name' => 'endpoints#handlePath', 'postfix' => 'read', 'url' => '/api/endpoint/{_path}', 'verb' => 'GET', 'requirements' => ['_path' => '.+']],
 		['name' => 'endpoints#handlePath', 'postfix' => 'update', 'url' => '/api/endpoint/{_path}', 'verb' => 'PUT', 'requirements' => ['_path' => '.+']],
 		['name' => 'endpoints#handlePath', 'postfix' => 'partialupdate', 'url' => '/api/endpoint/{_path}', 'verb' => 'PATCH', 'requirements' => ['_path' => '.+']],
@@ -82,7 +97,14 @@ return [
 		// Pull-based delivery
 		['name' => 'events#pull', 'url' => '/api/events/subscriptions/{subscriptionId}/pull', 'verb' => 'GET'],
 
-		// Logs endpoints
+		// Logs endpoints (LogsController — synchronization_log schema)
+		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
+		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
+		['name' => 'logs#destroy', 'url' => '/api/logs/{id}', 'verb' => 'DELETE'],
+		['name' => 'logs#statistics', 'url' => '/api/logs/statistics', 'verb' => 'GET'],
+		['name' => 'logs#export', 'url' => '/api/logs/export', 'verb' => 'GET'],
+
+		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#logsExport', 'url' => '/api/synchronizations/logs/export', 'verb' => 'GET'],
 		['name' => 'synchronizations#deleteLog', 'url' => '/api/synchronizations/logs/{id}', 'verb' => 'DELETE'],
@@ -94,6 +116,12 @@ return [
 		['name' => 'synchronizationContracts#activate', 'url' => '/api/synchronization-contracts/{id}/activate', 'verb' => 'POST'],
 		['name' => 'synchronizationContracts#deactivate', 'url' => '/api/synchronization-contracts/{id}/deactivate', 'verb' => 'POST'],
 		['name' => 'synchronizationContracts#execute', 'url' => '/api/synchronization-contracts/{id}/execute', 'verb' => 'POST'],
+
+		// PDOK Locatieserver proxy endpoints (auth: #[NoAdminRequired])
+		['name' => 'pdok#suggestAction', 'url' => '/api/pdok/suggest', 'verb' => 'GET'],
+		['name' => 'pdok#lookupAction', 'url' => '/api/pdok/lookup/{id}', 'verb' => 'GET'],
+		['name' => 'pdok#freeAction', 'url' => '/api/pdok/free', 'verb' => 'GET'],
+		['name' => 'pdok#reverseAction', 'url' => '/api/pdok/reverse', 'verb' => 'GET'],
 
 		// User CORS preflight endpoints
 		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],
@@ -110,7 +138,12 @@ return [
 		// - GET /api/settings/stats — replaced by manifest dashboard widgets resolving against OR's aggregate endpoint
 		// - GET /api/settings + PUT /api/settings — replaced by OR's /api/settings/* surface
 		// Only the connector-specific rebase action remains. Postgres portability tracked at #822.
+		// rebase is admin-only (AuthorizedAdminSetting).
 		['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
+
+		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
+		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
+		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog).
 		['name' => 'preferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
