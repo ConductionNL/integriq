@@ -107,6 +107,81 @@ class AuthenticationService
     }//end __construct()
 
     /**
+     * Assert that a token endpoint URL is safe to call (C4: SSRF guard).
+     *
+     * Blocks URLs that resolve to RFC-1918 private ranges, loopback addresses,
+     * the AWS Instance Metadata Service (169.254.169.254), and cloud-internal
+     * metadata endpoints.  An admin who can set `tokenUrl` on a source could
+     * otherwise pivot to internal services (IMDS, internal APIs, etc.).
+     *
+     * Allowed schemes: https only (http is rejected to prevent credential
+     * exposure in transit and to limit the SSRF blast radius).
+     *
+     * @param string $url The token endpoint URL to validate.
+     *
+     * @return void
+     *
+     * @throws BadRequestException When the URL is missing, uses a disallowed
+     *                             scheme, or resolves to a private/loopback host.
+     */
+    private function assertSafeTokenUrl(string $url): void
+    {
+        if ($url === '') {
+            throw new BadRequestException(message: 'Token URL must not be empty');
+        }
+
+        $scheme = strtolower((string) (parse_url($url, PHP_URL_SCHEME) ?? ''));
+        if ($scheme !== 'https') {
+            throw new BadRequestException(
+                message: 'Token URL scheme not allowed: only https is permitted (got "'.$scheme.'")'
+            );
+        }
+
+        $host = strtolower(trim((string) (parse_url($url, PHP_URL_HOST) ?? ''), '[]'));
+        if ($host === '') {
+            throw new BadRequestException(message: 'Token URL does not contain a valid host');
+        }
+
+        // Block loopback.
+        if ($host === 'localhost' || $host === '::1' || str_starts_with($host, '127.')) {
+            throw new BadRequestException(message: 'Token URL resolves to a loopback address - SSRF blocked');
+        }
+
+        // Block link-local (AWS IMDS: 169.254.169.254, Azure: 169.254.169.254, GCP: metadata.google.internal).
+        if (str_starts_with($host, '169.254.')) {
+            throw new BadRequestException(message: 'Token URL resolves to a link-local address - SSRF blocked');
+        }
+
+        if ($host === 'metadata.google.internal' || $host === 'metadata') {
+            throw new BadRequestException(message: 'Token URL resolves to a cloud metadata endpoint - SSRF blocked');
+        }
+
+        // Block RFC-1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
+        if (str_starts_with($host, '10.') || str_starts_with($host, '192.168.')) {
+            throw new BadRequestException(message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked');
+        }
+
+        // 172.16.0.0 – 172.31.255.255 (second octet 16..31).
+        if (str_starts_with($host, '172.') === true) {
+            $parts = explode('.', $host);
+            if (count($parts) >= 2) {
+                $secondOctet = (int) $parts[1];
+                if ($secondOctet >= 16 && $secondOctet <= 31) {
+                    throw new BadRequestException(
+                        message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked'
+                    );
+                }
+            }
+        }
+
+        // Block the unroutable 0.0.0.0 address.
+        if ($host === '0.0.0.0' || $host === '::') {
+            throw new BadRequestException(message: 'Token URL resolves to an unroutable address - SSRF blocked');
+        }
+
+    }//end assertSafeTokenUrl()
+
+    /**
      * Create call options for OAuth with Client Credentials
      *
      * @param array $configuration Configuration array for authentication.
@@ -201,7 +276,8 @@ class AuthenticationService
 
      * @return string The resulting access token
      *
-     * @throws BadRequestException                     Thrown if the configuration is not compatible with OAuth.
+     * @throws BadRequestException                     Thrown if the configuration is not compatible with OAuth,
+     *                                                 or if the tokenUrl is unsafe (C4: SSRF guard).
      * @throws \GuzzleHttp\Exception\GuzzleException Thrown if the token endpoint does not respond with an access token.
      * @todo   Convert GuzzleException to another error.
      *
@@ -216,6 +292,9 @@ class AuthenticationService
         if (isset($configuration['tokenUrl']) === false) {
             throw new BadRequestException(message: 'Token URL not set, cannot request token');
         }
+
+        // C4: SSRF guard — validate the token endpoint before making the outbound call.
+        $this->assertSafeTokenUrl(url: (string) $configuration['tokenUrl']);
 
         switch ($configuration['grant_type']) {
             case 'client_credentials':
@@ -248,6 +327,7 @@ class AuthenticationService
      *
      * @return string The access token
      *
+     * @throws BadRequestException                    When the tokenUrl is unsafe (C4: SSRF guard).
      * @throws \GuzzleHttp\Exception\GuzzleException
      *
      * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-3
@@ -257,6 +337,9 @@ class AuthenticationService
         $url           = $configuration['tokenUrl'];
         $tokenLocation = $configuration['tokenLocation'];
         unset($configuration['tokenUrl']);
+
+        // C4: SSRF guard — validate the token endpoint before making the outbound call.
+        $this->assertSafeTokenUrl(url: (string) $url);
 
         $callConfig['json'] = $configuration;
 
@@ -392,6 +475,10 @@ class AuthenticationService
      *
      * @return string The serialised JWT token.
      *
+     * @throws BadRequestException When JWS building fails — callers must NOT silently swallow this.
+     *                             Returning the error message as a Bearer token would send the raw
+     *                             exception text to a third-party endpoint (C1).
+     *
      * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
@@ -415,15 +502,16 @@ class AuthenticationService
             $header['x5t'] = $x5t;
         }
 
-        try {
-            $jws = $jwsBuilder
-                ->create()
-                ->withPayload(json_encode($payload))
-                ->addSignature($jwk, $header)
-                ->build();
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
+        // C1 fix: rethrow instead of returning the error message as a JWT string.
+        // Previously `catch (Exception $e) { return $e->getMessage(); }` would hand the
+        // raw error text to the caller as the Bearer token value, silently sending it to
+        // the remote service.  Now we let the exception propagate so callers can log and
+        // surface a proper error response.
+        $jws = $jwsBuilder
+            ->create()
+            ->withPayload(json_encode($payload))
+            ->addSignature($jwk, $header)
+            ->build();
 
         return $jwsSerializer->serialize($jws, 0);
     }//end generateJWT()
@@ -434,6 +522,9 @@ class AuthenticationService
      * @param array $configuration The auth configuration for the JWT token. Must at least contain payload, algorithm and secret.
      *
      * @return string The generated JWT token
+     *
+     * @throws BadRequestException When required parameters are missing or the JWK cannot be formed.
+     * @throws Exception           When JWS signing fails (propagated from generateJWT — C1 fix).
      *
      * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */

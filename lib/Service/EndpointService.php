@@ -374,12 +374,15 @@ class EndpointService
             // Invalid endpoint configuration.
             throw new Exception('Endpoint must specify either a schema or source connection');
         } catch (Exception $e) {
-            $this->logger->error('Error handling endpoint request: '.$e->getMessage());
+            // C3 fix: never disclose the stack trace in the response body.
+            // This endpoint is @PublicPage — unauthenticated callers must not see internal file
+            // paths or class names.  Log the full trace server-side for support lookup.
+            $this->logger->error(
+                'Error handling endpoint request: '.$e->getMessage(),
+                ['exception' => $e]
+            );
             return new JSONResponse(
-                [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTrace(),
-                ],
+                ['error' => $e->getMessage()],
                 400
             );
         }//end try
