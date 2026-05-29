@@ -69,7 +69,7 @@ const config = createConfig({
             'administrators-legacy/mapping/mapping.md',
           ],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/ConductionNL/openconnector/tree/main/docs/',
+          editUrl: 'https://codeberg.org/Conduction/openconnector/src/branch/main/docs/',
         },
         blog: false,
         theme: {
@@ -94,8 +94,8 @@ const config = createConfig({
         label: 'Documentation',
       },
       {
-        href: 'https://github.com/ConductionNL/openconnector',
-        label: 'GitHub',
+        href: 'https://codeberg.org/Conduction/openconnector',
+        label: 'Codeberg',
         position: 'right',
       },
     ],
