@@ -29,7 +29,7 @@ Before installing OpenConnector, ensure your system meets these requirements:
 
 If you prefer manual installation:
 
-1. Download the latest release from our [GitHub repository](https://github.com/conductionnl/openconnector)
+1. Download the latest release from our [GitHub repository](https://codeberg.org/Conduction/openconnector)
 2. Extract the downloaded file
 3. Move the extracted directory to your Nextcloud's `apps` directory
 4. Enable the app through Nextcloud's Apps menu

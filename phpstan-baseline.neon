@@ -1,6 +1,6 @@
 # PHPStan baseline — tracked lint debt for openconnector
 #
-# Burndown tracked at: https://github.com/ConductionNL/openconnector/issues/848
+# Burndown tracked at: https://codeberg.org/Conduction/openconnector/issues/848
 # Remove entries here as the underlying code is fixed.
 parameters:
 	ignoreErrors:

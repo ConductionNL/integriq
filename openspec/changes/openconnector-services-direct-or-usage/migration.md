@@ -12,7 +12,7 @@ introduced by this change:
 - The `oc_openconnector_*` legacy tables (e.g. `oc_openconnector_sources`,
   `oc_openconnector_jobs`) remain on disk, untouched. They become fully inert
   after chain C ships — no in-process code path reads from or writes to them
-  after this change. Their removal is chain B's cleanup follow-up ([#820](https://github.com/ConductionNL/openconnector/issues/820)),
+  after this change. Their removal is chain B's cleanup follow-up ([#820](https://codeberg.org/Conduction/openconnector/issues/820)),
   not chain C's responsibility.
 - No new Nextcloud migration class (`lib/Migration/Version*.php`) is shipped
   with this change. The existing chain B migration class is unchanged.
@@ -69,7 +69,7 @@ pre-cutover code or fail at the PHP class-load boundary. Mitigation:
 
 **Risk: Rollback is destructive if chain B cleanup has run.** Chain C itself is
 fully reversible (`git revert` restores the 31 files). However, if chain B's
-cleanup change ([#820](https://github.com/ConductionNL/openconnector/issues/820), which drops `oc_openconnector_*` tables) has
+cleanup change ([#820](https://codeberg.org/Conduction/openconnector/issues/820), which drops `oc_openconnector_*` tables) has
 already been applied when a chain C rollback is needed, the legacy tables will
 be gone and the reverted code will fail to read from them. Release notes for
 chain B's cleanup change MUST document this irreversibility gate.

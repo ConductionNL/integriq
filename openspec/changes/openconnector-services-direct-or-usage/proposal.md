@@ -38,7 +38,7 @@ cron jobs, configuration export.
 
 - `lib/Migration/Version2Date20260520000001.php` (already on `feature/i18n-complete-translations`) is the upgrade-time entrypoint: calls `ConfigurationService::importFromApp()` to materialise the openconnector register, then runs `LegacyToRegisterMigrator::migrateAll()` to copy every row out of `oc_openconnector_*` tables into `oc_openregister_objects`.
 - `lib/Service/Migration/LegacyToRegisterMigrator.php` (already on branch) handles the actual row copy + FK rewrite + `Synchronization.sourceId/targetId` 3-format branching + plaintext-credentials assertion + summary audit-trail entry.
-- After upgrade the `openconnector.storage_migrated` IAppConfig flag flips to `true`. After that, the legacy tables are read-only and slated for deletion in follow-up issue [#820](https://github.com/ConductionNL/openconnector/issues/820).
+- After upgrade the `openconnector.storage_migrated` IAppConfig flag flips to `true`. After that, the legacy tables are read-only and slated for deletion in follow-up issue [#820](https://codeberg.org/Conduction/openconnector/issues/820).
 - An admin OCC command (`occ openconnector:migrate-storage [--dry-run] [--entity <slug>] [--batch-size N]`) wraps the migrator for retry + per-entity inspection.
 
 ### 2. Delete the per-schema CRUD layer
@@ -58,7 +58,7 @@ Investigation of 2026-05-20 showed that several openconnector controllers + serv
 - **`lib/Controller/ImportController.php` + `lib/Service/ImportService.php` (433 LOC total)** — replaced by OR's `POST /api/registers/{id}/import`, `POST /api/configurations/{id}/import`, and `POST /api/objects/{register}/{schema}/` endpoints. Openconnector's YAML support, if still needed, is preserved by a small format-shim — NOT by reimplementing the entire import service.
 - **`lib/Controller/ExportController.php` + `lib/Service/ExportService.php` (217 LOC total)** — replaced by OR's `GET /api/registers/{id}/export`, `GET /api/objects/{register}/{schema}/export`, and `GET /api/objects/{register}/{schema}/{id}` endpoints. Slug-translation logic (per local ADR-015) survives as a thin decorator on OR's ConfigurationService (see § 2b below).
 - **`lib/Controller/DashboardController.php` (187 LOC)** — replaced by declarative dashboard widgets in `src/manifest.json` of type `stats-block` / `chart` / `info` with `dataSource: { register, schema, filter, aggregate }` blocks. `CnStatsBlockWidget` (and friends from nc-vue) resolve the dataSource against OR's generic aggregate endpoint. Decidesk's manifest (which references the same nc-vue widget set) demonstrates the pattern.
-- **`lib/Controller/SettingsController.php` shrinks** (~200 LOC → ~80 LOC) — drop `stats()` (replaced by manifest widgets), drop `getSettings()`/`updateSettings()` (replaced by OR's `/api/settings/*` endpoints), drop `rebase()` (replaced by re-running the migrator via the new `MigrateStorageController`). Keep ONLY the openconnector-specific `applyRetention` action — itself deprecated pending [#822](https://github.com/ConductionNL/openconnector/issues/822) Postgres portability fix.
+- **`lib/Controller/SettingsController.php` shrinks** (~200 LOC → ~80 LOC) — drop `stats()` (replaced by manifest widgets), drop `getSettings()`/`updateSettings()` (replaced by OR's `/api/settings/*` endpoints), drop `rebase()` (replaced by re-running the migrator via the new `MigrateStorageController`). Keep ONLY the openconnector-specific `applyRetention` action — itself deprecated pending [#822](https://codeberg.org/Conduction/openconnector/issues/822) Postgres portability fix.
 
 ### 2b. Shrink openconnector's ConfigurationService to a slug-translation decorator
 
@@ -107,7 +107,7 @@ A `composer check:strict` gate (PHPCS custom sniff or grep-based scripts entry) 
 - **Code rewritten**: 8 connector-specific services (~2000 LOC adjusted, not rewritten).
 - **Code added**: migrator + Version2Date + OCC command + quality gate = ~1500 LOC.
 - **Net diff**: **strongly negative** — the refactor primarily removes code.
-- **DB schema changes**: none post-migration. Legacy tables stay read-only one release, then drop per [#820](https://github.com/ConductionNL/openconnector/issues/820).
+- **DB schema changes**: none post-migration. Legacy tables stay read-only one release, then drop per [#820](https://codeberg.org/Conduction/openconnector/issues/820).
 - **Public API**: no breaking change for OR-style CRUD (URLs change from `/api/sources` to `/api/objects/openconnector/source` but the new path was already available). Connector-specific action endpoints (run-job, test-source, etc.) keep their existing URLs.
 
 ## Affected Projects
@@ -118,17 +118,17 @@ A `composer check:strict` gate (PHPCS custom sniff or grep-based scripts entry) 
 ## Open Questions
 
 - Which controllers under `lib/Controller/` qualify as "per-schema CRUD only" vs "connector-specific actions"? Need an explicit per-file audit during apply. Initial assessment: `SourcesController`, `EndpointsController`, `ConsumersController`, `EventsController`, `MappingsController`, `RulesController`, `JobsController`, `SynchronizationsController` are mostly CRUD over their entity — delete. `CallController`, `ExportController`, `ImportController`, `SettingsController`, `DashboardController`, `MigrateStorageController` (new), `EndpointController` (the inbound dispatch one, not the CRUD one) — keep.
-- Does `SettingsService::applyRetention()` continue to exist post-chain-C, or is its role taken over by OR's archival workflow? Tracked at [#822](https://github.com/ConductionNL/openconnector/issues/822) (Postgres portability) which may co-resolve when the function is rewritten or dropped.
+- Does `SettingsService::applyRetention()` continue to exist post-chain-C, or is its role taken over by OR's archival workflow? Tracked at [#822](https://codeberg.org/Conduction/openconnector/issues/822) (Postgres portability) which may co-resolve when the function is rewritten or dropped.
 - Custom widgets registered in `src/registry.js` (MappingEditor, RuleConditions, CronBuilder, EventSubscriptionsManager, SourceTester, JobRunner) are kept as **widget slots** in standard-type manifest pages (chain D2), not as entire custom pages.
 
 ## Risks
 
-- **Risk**: legacy `oc_openconnector_*` tables stay populated but read-only for one release window. Mitigation: the migrator is idempotent + auditable; [#820](https://github.com/ConductionNL/openconnector/issues/820) tracks the drop as a follow-up.
+- **Risk**: legacy `oc_openconnector_*` tables stay populated but read-only for one release window. Mitigation: the migrator is idempotent + auditable; [#820](https://codeberg.org/Conduction/openconnector/issues/820) tracks the drop as a follow-up.
 - **Risk**: cross-app consumers that imported `OCA\OpenConnector\Db\Source` (or similar) directly will break. Mitigation: known consumers are decidesk, pipelinq, openbuilt — all under our control; they'll be notified to switch to `ObjectEntity`.
 - **Risk**: any service we forget to refactor crashes at runtime when a mapper is gone. Mitigation: quality gate fails CI; `composer test:coverage` flags uncovered call sites.
 
 ## Cleanup follow-ups
 
-- [#820](https://github.com/ConductionNL/openconnector/issues/820) — drop `oc_openconnector_*` tables
-- [#821](https://github.com/ConductionNL/openconnector/issues/821) — rename legacy `*Id` fields to target-schema-name
-- [#822](https://github.com/ConductionNL/openconnector/issues/822) — `SettingsService::applyRetention()` Postgres portability fix (or removal if absorbed by OR archival)
+- [#820](https://codeberg.org/Conduction/openconnector/issues/820) — drop `oc_openconnector_*` tables
+- [#821](https://codeberg.org/Conduction/openconnector/issues/821) — rename legacy `*Id` fields to target-schema-name
+- [#822](https://codeberg.org/Conduction/openconnector/issues/822) — `SettingsService::applyRetention()` Postgres portability fix (or removal if absorbed by OR archival)

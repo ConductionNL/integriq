@@ -118,10 +118,10 @@ and chain B (this change) builds on it.
 
 - **Dropping `oc_openconnector_*` tables.** Kept read-only for one release as a
   rollback buffer. Follow-up cleanup change drops them and removes the
-  `storage_migrated` flag — tracked at [#820](https://github.com/ConductionNL/openconnector/issues/820).
+  `storage_migrated` flag — tracked at [#820](https://codeberg.org/Conduction/openconnector/issues/820).
 - **Renaming FK fields `*Id` → target-schema name** in the descriptor or in
   call sites. Chain-A REQ-008 preserves both forms; a follow-up change does the
-  rename once frontend Vue stores are updated — tracked at [#821](https://github.com/ConductionNL/openconnector/issues/821).
+  rename once frontend Vue stores are updated — tracked at [#821](https://codeberg.org/Conduction/openconnector/issues/821).
 - **The hardcoded retention constants** in `JobService`, `CallService`,
   `SynchronizationService`. Handled by `openconnector-adopt-or-abstractions`,
   declared in `depends_on`.

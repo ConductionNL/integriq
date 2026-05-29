@@ -13,7 +13,7 @@ declare(strict_types=1);
  * @author    Conduction <info@conduction.nl>
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   1.0.0
- * @link      https://github.com/ConductionNL/opencatalogi
+ * @link      https://codeberg.org/Conduction/opencatalogi
  */
 
 namespace OCA\OpenConnector\Tests\Unit\Service;

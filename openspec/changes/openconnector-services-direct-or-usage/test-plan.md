@@ -296,7 +296,7 @@ wire-format guarantee and cross-ADR obligations. Coverage thresholds:
 | `SettingsService::applyRetention()` MySQL-only SQL | Pre-existing ADR-009 violation; not introduced by chain C | ADR-009 follow-up ticket |
 | EncryptionService full wiring | ADR-007 states credentials are stored as plaintext today; chain C adds explicit call sites but does not wire the encryption layer | Issue to be filed separately |
 | Vue store / frontend changes | Out of scope per proposal.md; frontend `openconnector-frontend-vue-rewrite` is a separate change | `openconnector-frontend-vue-rewrite` |
-| Dropping `oc_openconnector_*` legacy tables | Chain B cleanup ([#820](https://github.com/ConductionNL/openconnector/issues/820)), gated on chain C shipping | [#820](https://github.com/ConductionNL/openconnector/issues/820) |
+| Dropping `oc_openconnector_*` legacy tables | Chain B cleanup ([#820](https://codeberg.org/Conduction/openconnector/issues/820)), gated on chain C shipping | [#820](https://codeberg.org/Conduction/openconnector/issues/820) |
 | DTO auto-generation from chain A schemas | Issue C-001 filed as follow-up | Issue C-001 |
 
 ---

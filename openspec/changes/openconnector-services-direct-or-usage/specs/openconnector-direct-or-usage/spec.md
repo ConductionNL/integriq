@@ -500,7 +500,7 @@ AND the page's widgets MUST resolve their counts via `dataSource` blocks pointin
 
 ### Requirement: SettingsController MUST shrink to connector-specific actions only
 
-`lib/Controller/SettingsController.php` MUST be reduced from ~200 LOC to ~80 LOC. The methods `stats()`, `getSettings()`, `updateSettings()`, and `rebase()` MUST be deleted — they reimplement OR's `/api/settings/*` surface or are superseded by other chain-C deliverables. The ONLY method preserved on the controller is the openconnector-specific `applyRetention()` action (itself flagged for follow-up replacement per [#822](https://github.com/ConductionNL/openconnector/issues/822) Postgres portability).
+`lib/Controller/SettingsController.php` MUST be reduced from ~200 LOC to ~80 LOC. The methods `stats()`, `getSettings()`, `updateSettings()`, and `rebase()` MUST be deleted — they reimplement OR's `/api/settings/*` surface or are superseded by other chain-C deliverables. The ONLY method preserved on the controller is the openconnector-specific `applyRetention()` action (itself flagged for follow-up replacement per [#822](https://codeberg.org/Conduction/openconnector/issues/822) Postgres portability).
 
 #### Scenario: SettingsController only exposes the applyRetention action
 

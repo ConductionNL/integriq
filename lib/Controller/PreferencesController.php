@@ -17,7 +17,7 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://github.com/ConductionNL/openconnector
+ * @link https://codeberg.org/Conduction/openconnector
  */
 
 declare(strict_types=1);
