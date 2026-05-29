@@ -124,7 +124,7 @@ A `composer check:strict` gate (PHPCS custom sniff or grep-based scripts entry) 
 ## Risks
 
 - **Risk**: legacy `oc_openconnector_*` tables stay populated but read-only for one release window. Mitigation: the migrator is idempotent + auditable; [#820](https://codeberg.org/Conduction/openconnector/issues/820) tracks the drop as a follow-up.
-- **Risk**: cross-app consumers that imported `OCA\OpenConnector\Db\Source` (or similar) directly will break. Mitigation: known consumers are decidesk, pipelinq, openbuilt — all under our control; they'll be notified to switch to `ObjectEntity`.
+- **Risk**: cross-app consumers that imported `OCA\OpenConnector\Db\Source` (or similar) directly will break. Mitigation: known consumers are decidesk, pipelinq, openbuild — all under our control; they'll be notified to switch to `ObjectEntity`.
 - **Risk**: any service we forget to refactor crashes at runtime when a mapper is gone. Mitigation: quality gate fails CI; `composer test:coverage` flags uncovered call sites.
 
 ## Cleanup follow-ups
