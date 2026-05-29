@@ -29,7 +29,7 @@ Two parties consume it:
 
 The manifest must conform to:
 ```
-https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json
+https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest.schema.json
 ```
 
 Top-level structure:

@@ -35,7 +35,7 @@
 
   ```json
   {
-    "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+    "$schema": "https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json",
     "version": "1.0.0",
     "dependencies": ["openregister"],
     "menu": [

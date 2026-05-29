@@ -44,12 +44,12 @@ and `src/App.vue`. The file MUST be valid JSON parseable without errors.
 
 The manifest file MUST contain a `$schema` field set to the published URL of the
 canonical schema:
-`"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json"`
+`"https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json"`
 
 #### Scenario: $schema field is present and correct
 - GIVEN the manifest file is loaded
 - WHEN inspecting the `$schema` top-level key
-- THEN it MUST equal `"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json"`
+- THEN it MUST equal `"https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json"`
 
 ---
 

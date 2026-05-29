@@ -27,7 +27,7 @@
 - **type**: regression
 - **preconditions**: `src/manifest.json` exists
 - **steps**: Parse `src/manifest.json`; read the `$schema` key
-- **expected result**: Value equals `"https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest.schema.json"`
+- **expected result**: Value equals `"https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest.schema.json"`
 - **test command**: `node -e "const m=require('./src/manifest.json'); console.assert(m['\$schema'].includes('app-manifest.schema.json'), 'wrong $schema')"`
 
 ---
