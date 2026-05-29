@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ConductionNL/openconnector/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/openconnector" alt="Latest release"></a>
-  <a href="https://github.com/ConductionNL/openconnector/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://github.com/ConductionNL/openconnector/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openconnector/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://codeberg.org/Conduction/openconnector/releases"><img src="https://img.shields.io/gitea/v/release/Conduction/openconnector?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Latest release"></a>
+  <a href="https://codeberg.org/Conduction/openconnector/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://ci.codeberg.org/repos/Conduction/openconnector"><img src="https://ci.codeberg.org/api/badges/Conduction/openconnector/status.svg" alt="Code quality"></a>
   <a href="https://conductionnl.github.io/openconnector/"><img src="https://img.shields.io/badge/docs-openconnector-green" alt="Documentation"></a>
 </p>
 
@@ -182,7 +182,7 @@ No additional Nextcloud apps are required. OpenConnector works as a standalone a
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://github.com/ConductionNL/openconnector.git
+git clone https://codeberg.org/Conduction/openconnector.git
 cd openconnector
 composer install --no-dev
 npm install
@@ -275,10 +275,10 @@ Full documentation is available at **[conductionnl.github.io/openconnector](http
 
 ## Related Apps
 
-- **[OpenRegister](https://github.com/ConductionNL/openregister)** -- Object storage layer (optional; used as sync target when installed)
-- **[OpenCatalogi](https://github.com/ConductionNL/opencatalogi)** -- Publication and catalog management
-- **[DocuDesk](https://github.com/ConductionNL/docudesk)** -- Document generation
-- **[NL Design](https://github.com/ConductionNL/nldesign)** -- Design token theming for government compliance
+- **[OpenRegister](https://codeberg.org/Conduction/openregister)** -- Object storage layer (optional; used as sync target when installed)
+- **[OpenCatalogi](https://codeberg.org/Conduction/opencatalogi)** -- Publication and catalog management
+- **[DocuDesk](https://codeberg.org/Conduction/docudesk)** -- Document generation
+- **[NL Design](https://codeberg.org/Conduction/nldesign)** -- Design token theming for government compliance
 
 ## License
 
