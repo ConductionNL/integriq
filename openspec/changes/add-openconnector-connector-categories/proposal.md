@@ -65,7 +65,7 @@ categories. Without a shared contract:
 - Every per-adapter change re-derives the same registration
   shape (manifest entry, credential storage rules, mutative-action
   gating) by copy-paste from an arbitrary predecessor.
-- Sibling apps (mydash, decidesk, opencatalogi, shillinq, ...)
+- Sibling apps (launchpad, decidesk, opencatalogi, shillinq, ...)
   have no single place to read "what shape do I consume an
   openconnector adapter as?" — they read individual adapter
   classes and guess the intended pattern.
@@ -122,7 +122,7 @@ per-leaf implementations following separately.
   `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`
   MAY need an additive extension to validate it — tracked as a
   follow-up issue, not blocking.
-- [ ] Project: sibling apps (mydash, decidesk, opencatalogi,
+- [ ] Project: sibling apps (launchpad, decidesk, opencatalogi,
   shillinq, procest, pipelinq, larpingapp, zaakafhandelapp) —
   no source changes from this change. Per ADR-022, these apps
   consume connector slot slugs at runtime; nothing about that
