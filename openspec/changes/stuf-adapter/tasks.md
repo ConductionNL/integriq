@@ -10,7 +10,7 @@
   - GIVEN BSN not found WHEN searched THEN empty npsLa01 returned (no error)
   - GIVEN malformed XML WHEN received THEN Fo01 fault returned
 - Implement StUFBGService (npsLv01/npsLa01 handling, SOAP XML parsing, scope field filtering), tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 2: StUF-BG Field Mapping (REQ-STUF-002)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-002`
@@ -20,7 +20,7 @@
   - GIVEN custom field mapping WHEN configured THEN custom mapping used
   - GIVEN ISO date WHEN mapped THEN converted to YYYYMMDD format
 - Implement StUFFieldMapper (configurable mappings, date format transformation, nested object mapping verblijfsadres), tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 3: StUF-BG Address Query (REQ-STUF-004)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-004`
@@ -29,7 +29,7 @@
   - GIVEN adrLv01 with postcode WHEN searched THEN matching addresses returned
   - GIVEN no match WHEN searched THEN empty adrLa01 returned
 - Implement adrLv01/adrLa01 handling, tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 4: StUF XML Builder (REQ-STUF-001, REQ-STUF-002)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-001`
@@ -38,7 +38,7 @@
   - GIVEN person data WHEN building npsLa01 THEN valid StUF-BG 3.10 XML produced
   - GIVEN error condition WHEN building Fo01 THEN valid SOAP fault produced
 - Implement StUFXMLBuilder for response generation + namespace management for StUF-BG 3.10 + Fo01 fault message generation, tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 5: StUF-BG Outbound Query (REQ-STUF-010)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-010`
@@ -47,7 +47,7 @@
   - GIVEN StUF source configured WHEN BSN queried THEN npsLv01 sent via SOAPService
   - GIVEN Fo01 fault returned WHEN processed THEN mapped to CallLog entry
 - Implement outbound npsLv01 query via SOAPService + response parsing + SynchronizationService integration, tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 6: PKIoverheid mTLS Authentication (REQ-STUF-011)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-011`
@@ -56,7 +56,7 @@
   - GIVEN PKIoverheid certificate in source WHEN SOAP request made THEN mTLS used
   - GIVEN expired certificate WHEN connection attempted THEN error logged
 - Verify existing CallService certificate handling works for StUF, tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 7: WS-Security UsernameToken (REQ-STUF-012)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-012`
@@ -65,7 +65,7 @@
   - GIVEN WS-Security configured WHEN SOAP sent THEN wsse:Security header included
   - GIVEN PasswordDigest mode WHEN building header THEN Base64(SHA1(Nonce+Created+Password))
 - Add WS-Security UsernameToken auth type + implement PasswordDigest hashing, tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 8: StUF-ZKN Inbound Zaak Management (REQ-STUF-020)
 - **spec_ref**: `specs/stuf-adapter/spec.md#req-stuf-020`
@@ -74,16 +74,16 @@
   - GIVEN zakLk01 message WHEN processed THEN zaak created in OpenRegister
   - GIVEN zakLv01 query WHEN processed THEN zaak data returned in StUF-ZKN format
 - Implement StUFZKNService (zakLk01 create/update + zakLv01/zakLa01 query handling), tests
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 9: Unit Tests
 - **spec_ref**: ADR-009
 - **files**: `tests/Unit/Service/StUFFieldMapperTest.php`, `tests/Unit/Service/StUFXMLBuilderTest.php`
 - Field mapper tests (BRP mapping, date conversion, nested objects); XML builder tests (valid StUF-BG output, Fo01 fault); service tests (query handling, response parsing)
-- [ ] Task complete
+- [x] Task complete
 
 ## Task 10: API Documentation
 - **spec_ref**: ADR-010
 - **files**: `docs/features/stuf-adapter.md`
 - WSDL endpoint documentation + field mapping configuration guide + WS-Security setup guide
-- [ ] Task complete
+- [x] Task complete
