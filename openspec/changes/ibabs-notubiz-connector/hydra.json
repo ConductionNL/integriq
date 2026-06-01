@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "ibabs-notubiz-connector",
+  "repo": "https://codeberg.org/Conduction/openconnector",
+  "issue": 7,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-01T13:33:27Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
