@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "openconnector-adopt-or-abstractions",
+  "repo": "https://codeberg.org/Conduction/openconnector",
+  "issue": 8,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-01T13:46:19Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
