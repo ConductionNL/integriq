@@ -212,12 +212,12 @@ npm run build      # Production build
 
 ```bash
 # PHP
-composer phpcs          # Check coding standards
+composer phpcs          # Check coding standards (0 errors required)
 composer cs:fix         # Auto-fix PHPCS issues
-composer phpmd          # Mess detection
+composer phpmd          # Mess detection (runs with phpmd.baseline.xml; new violations fail)
 composer phpmetrics     # HTML metrics report
 composer psalm          # Static analysis
-composer phpstan        # PHPStan analysis
+composer phpstan        # PHPStan analysis (runs with phpstan-baseline.neon)
 composer check:strict   # Run all checks (lint, phpcs, phpmd, psalm, phpstan, tests)
 
 # Frontend
@@ -225,6 +225,13 @@ npm run lint            # ESLint
 npm run stylelint       # CSS/SCSS linting
 npm run test            # Jest unit tests
 ```
+
+**Quality baseline notes:**
+
+- `phpmd.baseline.xml` — captures 173 pre-existing PHPMD violations. New violations
+  (code not in the baseline) fail the build. Burn-down tracked in issue #14.
+- `phpstan-baseline.neon` — captures pre-existing PHPStan errors. New errors fail the
+  build. Burn-down tracked in phpstan-baseline.neon comments.
 
 ## Tech Stack
 
