@@ -1,0 +1,49 @@
+{
+  "spec": "openspec/changes/openconnector-legacy-quality-cleanup",
+  "verified": [
+    {
+      "task": "Phase 1 — complete",
+      "file": "N/A (inventory + planning)",
+      "ok": true,
+      "notes": "PHPCS: 0 errors; PHPMD: 173 violations → baseline; PHPStan: 0 errors (existing baseline)"
+    },
+    {
+      "task": "Phase 2 — PHPCS",
+      "file": "lib/Service/AuthenticationService.php",
+      "ok": true,
+      "notes": "Fixed 4 implicit-bool comparison errors (str_starts_with calls)"
+    },
+    {
+      "task": "Phase 3 — PHPMD baseline",
+      "file": "phpmd.baseline.xml",
+      "ok": true,
+      "notes": "107 lines, 173 violations captured; composer.json phpmd script updated"
+    },
+    {
+      "task": "Phase 4 — PHPStan",
+      "file": "phpstan-baseline.neon",
+      "ok": true,
+      "notes": "Pre-existing, passes clean. No new work required."
+    },
+    {
+      "task": "Phase 5 — CI integration",
+      "file": "composer.json",
+      "ok": true,
+      "notes": "phpmd script now uses vendor/bin/phpmd with --baseline-file; audit.abandoned=report"
+    },
+    {
+      "task": "Phase 6 — Documentation",
+      "file": "README.md",
+      "ok": true,
+      "notes": "Quality gates section updated with baseline notes"
+    },
+    {
+      "task": "EndpointService parse fix",
+      "file": "lib/Service/EndpointService.php",
+      "ok": true,
+      "notes": "Simplified complex isset() expression to fix pdepend parser error"
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
