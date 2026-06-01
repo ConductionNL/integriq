@@ -8,7 +8,7 @@ on:
 
 jobs:
   sync:
-    uses: ConductionNL/.github/.github/workflows/openspec-sync.yml@feature/openspec-project-sync
+    uses: Conduction/.github/.github/workflows/openspec-sync.yml@feature/openspec-project-sync
     with:
       app-name: openconnector
     secrets:
