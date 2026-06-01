@@ -358,7 +358,7 @@ class EndpointService
                         break;
                 }
 
-                if (isset(($endpointData['configurations'] ?? [])['defaultStatusCode']) === true) {
+                if (isset($endpointData['configurations']['defaultStatusCode']) === true) {
                     $statusCode = $endpointData['configurations']['defaultStatusCode'];
                 }
 
