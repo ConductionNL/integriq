@@ -147,7 +147,7 @@
 
 ## Documentation (company-wide ADR-010)
 
-- [ ] Feature documentation updated in `docs/` — add
+- [x] Feature documentation updated in `docs/` — add
   `docs/architecture/register-schema.md` describing the descriptor layout, the
   declarative `appendOnly` + `immutable` flags, and the chain split with the
   storage change
