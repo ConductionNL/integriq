@@ -146,7 +146,7 @@
 ## Verification
 
 - [x] All buildable tasks checked off (DTO tests + SourceServiceTest deferred — production classes absent; see task notes)
-- [ ] `openspec validate` passes <!-- run by Hydra; see local validation -->
+- [x] `openspec validate` passes <!-- `openspec validate openconnector-comprehensive-tests` → "Change is valid" -->
 - [~] `composer test:coverage` exits 0 with ≥ 80% line / ≥ 70% branch <!-- gate logic implemented + unit-validated against synthetic clover; actual ≥80% denominator depends on the full Xdebug coverage run in CI (not run locally — needs xdebug.mode=coverage + full server bootstrap). Threshold enforcement is correct. -->
 - [~] `newman run ...` exits 0 <!-- collection shipped on development; requires live seeded container + OR -->
 - [x] `playwright test --project regression --workers=4 --list` succeeds; migration-round-trip registered
