@@ -23,7 +23,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OC\Files\Node\File;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -57,7 +57,7 @@ class MappingRuntime implements RuntimeExtensionInterface
         private readonly MappingService $mappingService,
         private readonly CallService $callService,
         private readonly FileService $fileService,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
     ) {
 
     }//end __construct()

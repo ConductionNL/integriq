@@ -84,7 +84,7 @@ class EndpointService
     /**
      * Constructor for EndpointService.
      *
-     * @param ObjectService          $objectService          Service for handling object operations.
+     * @param SourceMappingService   $objectService          Service for handling object operations.
      * @param CallService            $callService            Service for making external API calls.
      * @param LoggerInterface        $logger                 Logger interface for error logging.
      * @param IURLGenerator          $urlGenerator           Nextcloud URL generator used for absolute links.
@@ -100,7 +100,7 @@ class EndpointService
      * @return void
      */
     public function __construct(
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly CallService $callService,
         private readonly LoggerInterface $logger,
         private readonly IURLGenerator $urlGenerator,

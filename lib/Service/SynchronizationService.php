@@ -117,27 +117,28 @@ class SynchronizationService
     const VALID_MUTATION_TYPES = ['create', 'update', 'delete'];
     // Safety limit to prevent infinite page requesting loop.
     const DEFAULT_MAX_PAGES = 50;
-    private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-    private const DEFAULT_ERROR_LOG_RETENTION   = 259200000;
+    // Retention defaults moved to synchronization_log x-openregister-archival annotation (adr-004).
+    // Previous DEFAULT_ERROR_LOG_RETENTION was 259200000 (3 days) — bug vs 2592000000 (30 days)
+    // in JobService/CallService; unified to 2592000000 (P30D) matching the schema annotation.
 
     /**
      * Constructor.
      *
-     * @param CallService        $callService        Service used to perform HTTP calls.
-     * @param MappingService     $mappingService     Service used to map source data to target shape.
-     * @param ContainerInterface $containerInterface Service container for lazy resolution.
-     * @param ORObjectService    $orObjectService    OpenRegister object service.
-     * @param ObjectService      $objectService      Local object service.
-     * @param StorageService     $storageService     Storage service for file persistence.
-     * @param LoggerInterface    $logger             Logger used for error reporting.
-     * @param IAppConfig         $appConfig          App configuration provider.
+     * @param CallService          $callService        Service used to perform HTTP calls.
+     * @param MappingService       $mappingService     Service used to map source data to target shape.
+     * @param ContainerInterface   $containerInterface Service container for lazy resolution.
+     * @param ORObjectService      $orObjectService    OpenRegister object service.
+     * @param SourceMappingService $objectService      Local object service.
+     * @param StorageService       $storageService     Storage service for file persistence.
+     * @param LoggerInterface      $logger             Logger used for error reporting.
+     * @param IAppConfig           $appConfig          App configuration provider.
      */
     public function __construct(
         private readonly CallService $callService,
         private readonly MappingService $mappingService,
         private readonly ContainerInterface $containerInterface,
         private readonly ORObjectService $orObjectService,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly StorageService $storageService,
         private readonly LoggerInterface $logger,
         IAppConfig $appConfig,
@@ -145,13 +146,13 @@ class SynchronizationService
         if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
             $retentionRaw         = $appConfig->getValueString(app: 'openconnector', key: 'retention');
             $retentionDecoded     = json_decode($retentionRaw, true);
-            $this->errorRetention = $retentionDecoded['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = $retentionDecoded['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention       = $retentionDecoded['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;
+            $this->errorRetention = $retentionDecoded['syncLogRetention'] ?? 2592000000;
+            $this->errorContractRetention = $retentionDecoded['syncContractLogRetention'] ?? 2592000000;
+            $this->successRetention       = $retentionDecoded['successLogRetention'] ?? 3600000;
         } else {
-            $this->errorRetention         = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention       = self::DEFAULT_SUCCESS_LOG_RETENTION;
+            $this->errorRetention         = 2592000000;
+            $this->errorContractRetention = 2592000000;
+            $this->successRetention       = 3600000;
         }
 
     }//end __construct()

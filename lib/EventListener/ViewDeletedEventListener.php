@@ -22,7 +22,7 @@
 
 namespace OCA\OpenConnector\EventListener;
 
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -46,7 +46,7 @@ class ViewDeletedEventListener implements IEventListener
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
     ) {
 
     }//end __construct()

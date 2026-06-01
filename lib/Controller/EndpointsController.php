@@ -27,7 +27,7 @@ use OCA\OpenConnector\Http\XMLResponse;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\EndpointCacheService;
 use OCA\OpenConnector\Service\EndpointService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -100,7 +100,7 @@ class EndpointsController extends Controller
         IRequest $request,
         private EndpointService $endpointService,
         private AuthorizationService $authorizationService,
-        private ObjectService $objectService,
+        private SourceMappingService $objectService,
         private EndpointCacheService $endpointCacheService,
         private LoggerInterface $logger,
         private IL10N $l,

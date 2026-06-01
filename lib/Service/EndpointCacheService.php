@@ -24,6 +24,7 @@
 namespace OCA\OpenConnector\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -47,9 +48,11 @@ class EndpointCacheService
     private const CACHE_KEY = 'openconnector_endpoints_cache';
 
     /**
-     * Cache TTL in seconds (1 hour).
+     * Cache TTL in seconds — read from admin-config `openconnector.endpoint_cache.ttl_seconds`.
+     *
+     * @var integer
      */
-    private const CACHE_TTL = 3600;
+    private int $cacheTtl;
 
     /**
      * In-memory cache for request lifetime.
@@ -71,12 +74,21 @@ class EndpointCacheService
      * @param ICacheFactory                           $cacheFactory    Factory for creating cache instances.
      * @param \OCA\OpenRegister\Service\ObjectService $orObjectService OR object service for endpoint lookups.
      * @param LoggerInterface                         $logger          Logger for error handling.
+     * @param IAppConfig                              $appConfig       App config to read admin-tunable TTL.
+     *
+     * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#task-7
      */
     public function __construct(
         private readonly ICacheFactory $cacheFactory,
         private readonly \OCA\OpenRegister\Service\ObjectService $orObjectService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        IAppConfig $appConfig,
     ) {
+        $this->cacheTtl = (int) $appConfig->getValueString(
+            app: 'openconnector',
+            key: 'endpoint_cache.ttl_seconds',
+            default: '3600'
+        );
 
     }//end __construct()
 
@@ -265,7 +277,7 @@ class EndpointCacheService
             );
 
             $cache = $this->cacheFactory->createDistributed('openconnector');
-            $cache->set(self::CACHE_KEY, $serialisable, self::CACHE_TTL);
+            $cache->set(self::CACHE_KEY, $serialisable, $this->cacheTtl);
 
             $this->logger->info('Endpoint cache refreshed with '.count($endpoints).' endpoints');
         } catch (\Exception $e) {
@@ -364,7 +376,7 @@ class EndpointCacheService
                 'memory_cached'  => ($this->memoryCache !== null),
                 'endpoint_count' => $endpointCount,
                 'cache_key'      => self::CACHE_KEY,
-                'cache_ttl'      => self::CACHE_TTL,
+                'cache_ttl'      => $this->cacheTtl,
                 'cache_dirty'    => $this->cacheDirty,
             ];
         } catch (\Exception $e) {

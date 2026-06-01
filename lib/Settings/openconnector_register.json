@@ -160,6 +160,14 @@
       },
       "event": {
         "slug": "event",
+        "x-openregister-lifecycle": {
+          "states": ["pending", "processed", "failed"],
+          "initial": "pending",
+          "transitions": {
+            "process": { "from": ["pending"], "to": "processed" },
+            "fail":    { "from": ["pending", "processed"], "to": "failed" }
+          }
+        },
         "title": "Event",
         "icon": "BellRing",
         "version": "1.0.0",
@@ -422,6 +430,15 @@
       },
       "synchronization_contract": {
         "slug": "synchronization_contract",
+        "x-openregister-lifecycle": {
+          "states": ["active", "inactive", "error"],
+          "initial": "active",
+          "transitions": {
+            "deactivate": { "from": ["active", "error"], "to": "inactive" },
+            "activate":   { "from": ["inactive", "error"], "to": "active" },
+            "fail":       { "from": ["active", "inactive"], "to": "error" }
+          }
+        },
         "title": "SynchronizationContract",
         "icon": "FileDocumentOutline",
         "version": "1.0.0",
@@ -568,16 +585,16 @@
         "slug": "synchronization_log",
         "x-openregister-notifications": {
           "sync-failed": {
-            "trigger": {"type": "created"},
-            "enabled": false,
+            "trigger": {"type": "created", "filter": {"level": {"op": "in", "value": ["error", "warning"]}}},
+            "enabled": true,
             "channels": ["nc-notification"],
             "recipients": [
               {"kind": "field", "field": "userId"},
               {"kind": "groups", "groups": ["openconnector-ops"]}
             ],
             "subject": {
-              "nl": "Synchronisatie-uitkomst: {{message}}",
-              "en": "Synchronization result: {{message}}"
+              "nl": "Synchronisatie mislukt: {{message}}",
+              "en": "Synchronization failed: {{message}}"
             }
           }
         },
@@ -590,6 +607,7 @@
         "type": "object",
         "properties": {
           "uuid": { "type": "string", "description": "Canonical UUID" },
+          "level": { "type": "string", "enum": ["success", "warning", "info", "debug", "error"], "description": "Log-level filter value (NOT a lifecycle state — see openconnector-adopt-or-abstractions Decision 4)" },
           "message": { "type": "string", "description": "Free-form log message" },
           "synchronizationId": { "type": "string", "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)" },
           "synchronization": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization", "description": "FK to executing Synchronization (UUID; many-to-one)" },

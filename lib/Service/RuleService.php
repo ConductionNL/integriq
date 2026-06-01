@@ -171,7 +171,7 @@ class RuleService
     /**
      * Constructor for RuleService.
      *
-     * @param ObjectService            $objectService    OpenConnector object-service facade.
+     * @param SourceMappingService     $objectService    OpenConnector object-service facade.
      * @param SoftwareCatalogueService $catalogueService Software-catalog rule helper.
      * @param RegisterMapper           $registerMapper   Mapper used to resolve register IDs.
      * @param SchemaMapper             $schemaMapper     Mapper used to resolve schema IDs.
@@ -181,7 +181,7 @@ class RuleService
      * @return void
      */
     public function __construct(
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly SoftwareCatalogueService $catalogueService,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
