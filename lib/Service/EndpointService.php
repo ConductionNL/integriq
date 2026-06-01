@@ -63,6 +63,8 @@ use function React\Promise\all;
  * connecting to a schema within a register or by proxying to a source.
  *
  * @SuppressWarnings(PHPMD)
+ *
+ * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-2
  */
 class EndpointService
 {
