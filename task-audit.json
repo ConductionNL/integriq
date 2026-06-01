@@ -1,0 +1,17 @@
+{
+  "spec": "openspec/changes/openconnector-adopt-or-abstractions",
+  "verified": [
+    {"task": "7.1", "file": "lib/Service/SourceMappingService.php", "ok": true},
+    {"task": "7.1-alias", "file": "lib/Service/ObjectService.php", "ok": true},
+    {"task": "7.2", "file": "lib/Service/EndpointCacheService.php", "ok": true},
+    {"task": "7.3", "file": "lib/Service/SoftwareCatalogueService.php", "ok": true},
+    {"task": "4.1", "file": "lib/Service/JobService.php", "ok": true},
+    {"task": "4.2", "file": "lib/Service/CallService.php", "ok": true},
+    {"task": "4.3", "file": "lib/Service/SynchronizationService.php", "ok": true},
+    {"task": "2.schema", "file": "lib/Settings/openconnector_register.json", "ok": true},
+    {"task": "8.1", "file": "openspec/manifest.yaml", "ok": true},
+    {"task": "test", "file": "tests/Unit/Service/SourceMappingServiceTest.php", "ok": true}
+  ],
+  "stubs": [],
+  "missing_routes": []
+}
