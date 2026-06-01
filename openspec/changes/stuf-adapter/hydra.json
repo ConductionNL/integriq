@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "stuf-adapter",
+  "repo": "https://codeberg.org/Conduction/openconnector",
+  "issue": 17,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-06-01T14:26:34Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
