@@ -6,4 +6,4 @@ on:
 
 jobs:
   sync:
-    uses: ConductionNL/.github/.github/workflows/sync-to-beta.yml@main
+    uses: Conduction/.github/.github/workflows/sync-to-beta.yml@main
