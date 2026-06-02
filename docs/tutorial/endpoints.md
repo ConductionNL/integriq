@@ -13,7 +13,7 @@ An endpoint requires three key attributes:
 
 ### Path Formatting Guidelines
 - The `endpoint` **must not start with `/`**, but should begin with the first path segment as text (e.g., `api/v1/zaken`).
-- If your endpoint needs to support fetching **a single item**, append `{{id}}` at the end:
+- If your endpoint needs to support fetching **a single item**, append `\{\{id\}\}` at the end:
   ```plaintext
   api/v1/zaken/{{id}}
   ```
