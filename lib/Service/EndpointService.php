@@ -384,7 +384,7 @@ class EndpointService
                 ['exception' => $e]
             );
             return new JSONResponse(
-                ['error' => $e->getMessage()],
+                ['error' => 'Internal server error'],
                 400
             );
         }//end try
@@ -1363,7 +1363,7 @@ class EndpointService
                         .' of type '.($ruleData['type'] ?? '')
                         .'. With error message: '.$e->getMessage();
                     $this->logger->error($message);
-                    return new JSONResponse(['error' => $message], 500);
+                    return new JSONResponse(['error' => 'Rule processing failed'], 500);
                 }//end try
 
                 // If result is JSONResponse, return error immediately.
@@ -1386,7 +1386,7 @@ class EndpointService
             return $data;
         } catch (Exception $e) {
             $this->logger->error('Error processing rules: '.$e->getMessage());
-            return new JSONResponse(['error' => 'Rule processing failed: '.$e->getMessage()], 500);
+            return new JSONResponse(['error' => 'Rule processing failed'], 500);
         }//end try
     }//end processRules()
 
@@ -1832,7 +1832,7 @@ class EndpointService
                     }
 
                     if (isset($value['filename']) === true) {
-                        $fileName = $value['filename'];
+                        $fileName = basename($value['filename']);
                     }
                 } else {
                     $content = $value;
@@ -1862,7 +1862,7 @@ class EndpointService
             $dataDot[$config['filePath']] = $result;
         } else {
             $content = $files;
-            $fileName = $dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']];
+            $fileName = basename($dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']]);
 
             try {
                 // Write file with OpenRegister ObjectService.
