@@ -80,6 +80,8 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        $this->assertStorageMigrated();
+
         // Register services.
         $context->registerService(
           SettingsService::class,
@@ -119,6 +121,55 @@ class Application extends App implements IBootstrap
             }
         );
     }//end register()
+
+    /**
+     * Pre-flight assertion: the legacy→OpenRegister storage migration MUST have run.
+     *
+     * Chain C removed every `lib/Db/*Mapper.php` and entity class; all domain data
+     * now lives in OpenRegister objects (ADR-001). The connector-specific services
+     * that inject OpenRegister's `ObjectService` only have data to operate on once
+     * the one-shot `LegacyToRegisterMigrator` has copied every legacy row across and
+     * flipped the `openconnector.storage_migrated` IAppConfig flag to `'true'`. Until
+     * that flag flips, booting the rewritten services would silently operate on an
+     * empty register, so we fail fast with an operator runbook command instead.
+     *
+     * The check is bypassable in CI/test environments — where no real upgrade has
+     * run — via the `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` environment
+     * variable, and is soft-skipped if `IAppConfig` cannot be resolved (e.g. during
+     * very early bootstrap) so the assertion never itself crashes app loading.
+     *
+     * @return void
+     *
+     * @throws \LogicException When the migration has not run and the bypass env var is unset.
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-applicationphp-di-bindings-must-be-updated
+     */
+    private function assertStorageMigrated(): void
+    {
+        // CI / test bypass — no real upgrade has run in those environments.
+        if (getenv('OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
+            return;
+        }
+
+        try {
+            $appConfig = $this->getContainer()->get(\OCP\IAppConfig::class);
+        } catch (\Throwable) {
+            // IAppConfig not resolvable this early — don't crash boot over the guard.
+            return;
+        }
+
+        if ($appConfig->getValueString(self::APP_ID, 'storage_migrated', 'false') === 'true') {
+            return;
+        }
+
+        throw new \LogicException(
+            'openconnector: legacy storage has not been migrated to OpenRegister. '
+            .'Run "occ openconnector:migrate-storage" to materialise the register and copy '
+            .'legacy rows, then retry. Set OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1 to '
+            .'bypass this check in CI/test environments.'
+        );
+
+    }//end assertStorageMigrated()
 
     /**
      * Boot the app and wire integration providers.

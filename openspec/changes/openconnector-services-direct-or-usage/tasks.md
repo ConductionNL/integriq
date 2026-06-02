@@ -21,8 +21,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - GIVEN `openconnector.storage_migrated` is absent or `'false'` WHEN the app boots THEN `\LogicException` is thrown with a message containing `occ openconnector:migrate-storage`
   - GIVEN the env var `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` is set WHEN the app boots THEN no exception is thrown regardless of the flag value
   - GIVEN `storage_migrated === 'true'` WHEN the app boots THEN `Application::register()` completes normally
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ---
 
