@@ -87,7 +87,9 @@
 		"react/promise": "^3.2",
 		"symfony/console": "^5.4",
 		"symfony/http-foundation": "^7.4.13",
+		"symfony/options-resolver": "^7.0",
 		"symfony/uid": "^6.4",
+		"symfony/var-exporter": "^7.2.5",
 		"symfony/yaml": "^6.4.40",
 		"twig/twig": "^3.27.0",
 		"web-token/jwt-framework": "^3"

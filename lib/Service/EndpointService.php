@@ -1351,7 +1351,7 @@ class EndpointService
                         'extend_input' => $this->processExtendInputRule(rule: $rule, data: $data),
                         'extend_external_input' => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
                         'audit_trail' => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
-                        'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId),
+                        'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
                         'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
                         'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
                         'custom' => $this->processCustomRule(rule: $rule, data: $data),
@@ -1797,7 +1797,7 @@ class EndpointService
      *
      * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
-    private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId): array
+    private function processWriteFileRule(Rule $rule, array $data, string $objectId, FlowToken $flowToken): array
     {
         $ruleConfig = $rule->getObject()['configuration'] ?? [];
         if (isset($ruleConfig['write_file']) === false) {
@@ -1806,7 +1806,12 @@ class EndpointService
 
         $config  = $ruleConfig['write_file'];
         $dataDot = new Dot($data);
-        $files   = $dataDot[$config['filePath']];
+		$flowTokenArray = $flowToken->getRequestOriginal();
+		$flowTokenArray['body'] = $flowTokenArray['parameters'];
+		$flowTokenDot = new Dot($flowTokenArray);
+
+
+        $files = $dataDot[$config['filePath']] ?? $flowTokenDot[$config['filePath']];
         if (isset($files) === false || empty($files) === true) {
             return $dataDot->jsonSerialize();
         }
@@ -1856,8 +1861,8 @@ class EndpointService
 
             $dataDot[$config['filePath']] = $result;
         } else {
-            $content  = $files;
-            $fileName = $dataDot[$config['fileNamePath']];
+            $content = $files;
+            $fileName = $dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']];
 
             try {
                 // Write file with OpenRegister ObjectService.
