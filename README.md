@@ -212,12 +212,12 @@ npm run build      # Production build
 
 ```bash
 # PHP
-composer phpcs          # Check coding standards
+composer phpcs          # Check coding standards (no errors, 0 legacy exclusions)
 composer cs:fix         # Auto-fix PHPCS issues
-composer phpmd          # Mess detection
+composer phpmd          # Mess detection (enforced against phpmd.baseline.xml)
 composer phpmetrics     # HTML metrics report
 composer psalm          # Static analysis
-composer phpstan        # PHPStan analysis
+composer phpstan        # PHPStan analysis (enforced against phpstan-baseline.neon)
 composer check:strict   # Run all checks (lint, phpcs, phpmd, psalm, phpstan, tests)
 
 # Frontend
@@ -225,6 +225,19 @@ npm run lint            # ESLint
 npm run stylelint       # CSS/SCSS linting
 npm run test            # Jest unit tests
 ```
+
+#### Quality-gate baselines
+
+`composer check:strict` is the unified gate run by CI on every PR (`.forgejo/workflows/pre-merge-check-strict.yaml`).
+
+| Gate | Status | Baseline file |
+|------|--------|---------------|
+| PHPCS | ✓ Clean — 0 errors, no legacy excludes | n/a |
+| PHPMD | Tracked — `phpmd.baseline.xml` suppresses pre-existing debt; new violations fail CI | `phpmd.baseline.xml` |
+| PHPStan | Tracked — `phpstan-baseline.neon` suppresses known stubs; new errors fail CI | `phpstan-baseline.neon` |
+| Psalm | ✓ Clean | n/a |
+
+To add a new baseline entry legitimately: fix or document the violation, then run `./vendor/bin/phpmd lib xml phpmd.xml --update-baseline` (PHPMD) or `./vendor/bin/phpstan --generate-baseline` (PHPStan) and commit both changes together. Silencing a real bug without a fix comment is a reviewer-blocking finding.
 
 ## Tech Stack
 

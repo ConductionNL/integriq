@@ -63,6 +63,8 @@ use function React\Promise\all;
  * connecting to a schema within a register or by proxying to a source.
  *
  * @SuppressWarnings(PHPMD)
+ *
+ * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-2
  */
 class EndpointService
 {
@@ -358,7 +360,7 @@ class EndpointService
                         break;
                 }
 
-                if (isset(($endpointData['configurations'] ?? [])['defaultStatusCode']) === true) {
+                if (isset($endpointData['configurations']['defaultStatusCode']) === true) {
                     $statusCode = $endpointData['configurations']['defaultStatusCode'];
                 }
 
@@ -382,7 +384,7 @@ class EndpointService
                 ['exception' => $e]
             );
             return new JSONResponse(
-                ['error' => $e->getMessage()],
+                ['error' => 'Internal server error'],
                 400
             );
         }//end try
@@ -1349,7 +1351,7 @@ class EndpointService
                         'extend_input' => $this->processExtendInputRule(rule: $rule, data: $data),
                         'extend_external_input' => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
                         'audit_trail' => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
-                        'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId),
+                        'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
                         'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
                         'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
                         'custom' => $this->processCustomRule(rule: $rule, data: $data),
@@ -1361,7 +1363,7 @@ class EndpointService
                         .' of type '.($ruleData['type'] ?? '')
                         .'. With error message: '.$e->getMessage();
                     $this->logger->error($message);
-                    return new JSONResponse(['error' => $message], 500);
+                    return new JSONResponse(['error' => 'Rule processing failed'], 500);
                 }//end try
 
                 // If result is JSONResponse, return error immediately.
@@ -1384,7 +1386,7 @@ class EndpointService
             return $data;
         } catch (Exception $e) {
             $this->logger->error('Error processing rules: '.$e->getMessage());
-            return new JSONResponse(['error' => 'Rule processing failed: '.$e->getMessage()], 500);
+            return new JSONResponse(['error' => 'Rule processing failed'], 500);
         }//end try
     }//end processRules()
 
@@ -1795,7 +1797,7 @@ class EndpointService
      *
      * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
-    private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId): array
+    private function processWriteFileRule(Rule $rule, array $data, string $objectId, FlowToken $flowToken): array
     {
         $ruleConfig = $rule->getObject()['configuration'] ?? [];
         if (isset($ruleConfig['write_file']) === false) {
@@ -1804,7 +1806,12 @@ class EndpointService
 
         $config  = $ruleConfig['write_file'];
         $dataDot = new Dot($data);
-        $files   = $dataDot[$config['filePath']];
+		$flowTokenArray = $flowToken->getRequestOriginal();
+		$flowTokenArray['body'] = $flowTokenArray['parameters'];
+		$flowTokenDot = new Dot($flowTokenArray);
+
+
+        $files = $dataDot[$config['filePath']] ?? $flowTokenDot[$config['filePath']];
         if (isset($files) === false || empty($files) === true) {
             return $dataDot->jsonSerialize();
         }
@@ -1825,7 +1832,7 @@ class EndpointService
                     }
 
                     if (isset($value['filename']) === true) {
-                        $fileName = $value['filename'];
+                        $fileName = basename($value['filename']);
                     }
                 } else {
                     $content = $value;
@@ -1854,8 +1861,8 @@ class EndpointService
 
             $dataDot[$config['filePath']] = $result;
         } else {
-            $content  = $files;
-            $fileName = $dataDot[$config['fileNamePath']];
+            $content = $files;
+            $fileName = basename($dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']]);
 
             try {
                 // Write file with OpenRegister ObjectService.
