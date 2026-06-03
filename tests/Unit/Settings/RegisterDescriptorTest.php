@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 class RegisterDescriptorTest extends TestCase
 {
     /**
-     * The 15 schema slugs that MUST be declared in the register.
+     * The 16 schema slugs that MUST be declared in the register.
      * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
      *
      * @var array<string, string>
@@ -51,6 +51,8 @@ class RegisterDescriptorTest extends TestCase
         'JobLog'                     => 'job_log',
         'SynchronizationLog'         => 'synchronization_log',
         'SynchronizationContractLog' => 'synchronization_contract_log',
+        // RIS connector sync record — added by ibabs-notubiz-connector spec.
+        'RISSyncRecord'              => 'ris_sync_record',
     ];
 
     /**
@@ -73,7 +75,7 @@ class RegisterDescriptorTest extends TestCase
         $this->descriptor = $parsed;
     }//end setUp()
 
-    public function testRegisterDeclaresAllFifteenSchemaSlugs(): void
+    public function testRegisterDeclaresAllSchemaSlugs(): void
     {
         $expected = array_values(self::SCHEMA_SLUGS);
         $actual = $this->descriptor['components']['registers']['openconnector']['schemas'] ?? [];
@@ -85,11 +87,11 @@ class RegisterDescriptorTest extends TestCase
         $this->assertSame(
             $expected,
             $actualSorted,
-            'register.openconnector.schemas[] MUST list exactly the 15 schema slugs'
+            'register.openconnector.schemas[] MUST list exactly all schema slugs'
         );
-    }//end testRegisterDeclaresAllFifteenSchemaSlugs()
+    }//end testRegisterDeclaresAllSchemaSlugs()
 
-    public function testAllFifteenSchemasAreDefined(): void
+    public function testAllSchemasAreDefined(): void
     {
         $schemas = $this->descriptor['components']['schemas'] ?? [];
 
@@ -100,7 +102,7 @@ class RegisterDescriptorTest extends TestCase
                 sprintf('Schema "%s" (formerly entity %s) MUST be declared in components.schemas', $schemaSlug, $label)
             );
         }
-    }//end testAllFifteenSchemasAreDefined()
+    }//end testAllSchemasAreDefined()
 
     /**
      * Each schema MUST declare a non-empty properties block.

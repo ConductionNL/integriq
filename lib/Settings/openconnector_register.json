@@ -34,7 +34,8 @@
           "call_log",
           "job_log",
           "synchronization_log",
-          "synchronization_contract_log"
+          "synchronization_contract_log",
+          "ris_sync_record"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -657,6 +658,91 @@
         },
         "appendOnly": true,
         "immutable": true
+      },
+      "ris_sync_record": {
+        "slug": "ris_sync_record",
+        "title": "RIS Sync Record",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for iBabs/NotuBiz synchronisation operations",
+        "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-033.",
+        "required": ["zaakId", "risType", "direction", "status"],
+        "type": "object",
+        "properties": {
+          "zaakId": { "type": "string", "format": "uuid", "description": "Source zaak UUID in Procest" },
+          "risType": { "type": "string", "enum": ["ibabs", "notubiz"], "description": "Which RIS was used" },
+          "risDocumentId": { "type": "string", "description": "Document or vergaderstuk ID in the RIS" },
+          "risVergaderingId": { "type": "string", "description": "Vergadering ID in the RIS" },
+          "direction": { "type": "string", "enum": ["outbound", "inbound"], "description": "Push (outbound) or pull (inbound)" },
+          "status": { "type": "string", "enum": ["pending", "synced", "failed", "conflict"], "description": "Current sync state" },
+          "syncedAt": { "type": "string", "format": "date-time", "description": "Timestamp of last successful sync" },
+          "retryCount": { "type": "integer", "default": 0, "description": "Number of retries attempted" },
+          "nextRetryAt": { "type": "string", "format": "date-time", "description": "Scheduled time for next retry" },
+          "errorMessage": { "type": "string", "description": "Error details if status is failed" },
+          "documents": { "type": "array", "items": { "type": "object" }, "description": "List of document references (Nextcloud file ID + RIS doc ID)" },
+          "besluitStatus": { "type": "string", "enum": ["aangenomen", "verworpen", "aangehouden", "doorgeschoven"], "description": "Besluit result from the RIS" },
+          "paraferingStatus": { "type": "object", "description": "Current parafering progress (completed/total, current step)" },
+          "sourceId": { "type": "string", "format": "uuid", "description": "UUID of the Source entity used for this sync" },
+          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
+          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-1" },
+            "zaakId": "a1b2c3d4-0001-4001-8001-aabbccdd0001",
+            "risType": "ibabs",
+            "direction": "outbound",
+            "status": "synced",
+            "risVergaderingId": "verg-2026-001",
+            "risDocumentId": "doc-ibabs-2026-001",
+            "syncedAt": "2026-06-01T10:00:00+00:00",
+            "retryCount": 0,
+            "besluitStatus": "aangenomen"
+          },
+          {
+            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-2" },
+            "zaakId": "a1b2c3d4-0002-4002-8002-aabbccdd0002",
+            "risType": "ibabs",
+            "direction": "inbound",
+            "status": "synced",
+            "risVergaderingId": "verg-2026-001",
+            "risDocumentId": "besluitenlijst-2026-001",
+            "syncedAt": "2026-06-01T11:30:00+00:00",
+            "retryCount": 0,
+            "besluitStatus": "verworpen"
+          },
+          {
+            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-3" },
+            "zaakId": "a1b2c3d4-0003-4003-8003-aabbccdd0003",
+            "risType": "notubiz",
+            "direction": "outbound",
+            "status": "pending",
+            "retryCount": 0
+          },
+          {
+            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-4" },
+            "zaakId": "a1b2c3d4-0004-4004-8004-aabbccdd0004",
+            "risType": "notubiz",
+            "direction": "outbound",
+            "status": "failed",
+            "retryCount": 3,
+            "errorMessage": "NotuBiz API unavailable after 3 retries"
+          },
+          {
+            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-5" },
+            "zaakId": "a1b2c3d4-0005-4005-8005-aabbccdd0005",
+            "risType": "ibabs",
+            "direction": "outbound",
+            "status": "synced",
+            "risVergaderingId": "verg-2026-002",
+            "risDocumentId": "doc-ibabs-2026-005",
+            "syncedAt": "2026-05-15T09:00:00+00:00",
+            "retryCount": 1,
+            "besluitStatus": "aangehouden"
+          }
+        ],
+        "appendOnly": false,
+        "immutable": false
       }
     }
   }

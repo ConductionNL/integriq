@@ -1,5 +1,7 @@
 # Design: iBabs & NotuBiz Connector
 
+<!-- status: pr-created -->
+
 ## Architecture
 
 The RIS connector follows the existing OpenConnector synchronization pattern:
