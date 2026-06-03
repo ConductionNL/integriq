@@ -12,8 +12,8 @@
     `add-json-manifest-renderer`)
   - IF the pin is below the required version THEN open a separate PR to bump it BEFORE
     implementing Task 2
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Author src/manifest.json
 - **spec_ref**: `openspec/changes/openconnector-app-manifest/specs/openconnector-app-manifest/spec.md`
@@ -83,8 +83,8 @@
 
   **NOTE for apply agent**: if `type: "logs"` fails schema validation (pin too old),
   replace all `"type": "logs"` occurrences with `"type": "custom"` for D1.
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Add useAppManifest bootstrap call to src/main.js
 - **spec_ref**: `openspec/changes/openconnector-app-manifest/specs/openconnector-app-manifest/spec.md#requirement-mainjsmustimportandregisterthemani`
@@ -104,8 +104,8 @@
   ```
   Store `manifest` in module scope so chain D2 can reference it from `App.vue` or
   a composable.
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Add check:manifest script to package.json
 - **spec_ref**: `openspec/changes/openconnector-app-manifest/specs/openconnector-app-manifest/spec.md#requirement-packagejsonmustincludeacheckmanifest-script`
@@ -123,8 +123,8 @@
   ```
   Adjust the script form if `validateManifest` is ES module only (use `import()` in an
   async IIFE or a small wrapper script at `scripts/check-manifest.js`).
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Run check:manifest and fix any validation errors
 - **spec_ref**: `openspec/changes/openconnector-app-manifest/specs/openconnector-app-manifest/spec.md#requirement-manifestmustvalidateagainstthecanonicalschemawithout-errors`
@@ -133,35 +133,35 @@
   - GIVEN `npm run check:manifest` is executed THEN it exits 0
   - GIVEN the spec validator runs THEN `validateManifest(manifest)` returns
     `{ valid: true }`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## Verification
 
-- [ ] All tasks checked off
-- [ ] `openspec validate openconnector-app-manifest` passes
-- [ ] `npm run check:manifest` exits 0
-- [ ] Manual inspection: `src/manifest.json` parsed, menu/pages counts correct
-- [ ] Code review against spec requirements
+- [x] All tasks checked off
+- [x] `openspec validate openconnector-app-manifest` passes
+- [x] `npm run check:manifest` exits 0 (Ajv validation PASS against app-manifest-v2.schema.json v2.7.0)
+- [x] Manual inspection: `src/manifest.json` parsed, menu/pages counts correct (13 menu / 25 pages, post-#811+chain-E baseline; menu route refs all resolve to pages, no dup page ids)
+- [x] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests — N/A (no PHP changes in D1)
-- [ ] Newman/Postman tests — N/A (no HTTP endpoints added in D1)
-- [ ] Browser tests (Playwright MCP) — N/A (no UI rendering change in D1; D2 owns this)
-- [ ] `npm run check:manifest` passes (the CI gate for this change)
+- [x] PHPUnit unit tests — N/A (no PHP changes in D1)
+- [x] Newman/Postman tests — N/A (no HTTP endpoints added in D1)
+- [x] Browser tests (Playwright MCP) — N/A (no UI rendering change in D1; D2 owns this)
+- [x] `npm run check:manifest` passes (the CI gate for this change)
 
 ## Documentation (company-wide ADR-010)
 
-- [ ] N/A for D1 — manifest file is self-documenting JSON. D2 documents the
+- [x] N/A for D1 — manifest file is self-documenting JSON. D2 documents the
   manifest-driven navigation in the app's user guide when the UI ships.
 
 ## i18n (company-wide hydra ADR-007)
 
-- [ ] N/A — no new user-facing strings are rendered by D1. All `label`/`title` values
-  in `manifest.json` are i18n key strings; the translations for these keys already
-  exist in `l10n/` (they mirror existing navigation and page labels). D2 adds any
-  new keys when implementing new pages.
+- [x] nl + en both present (`l10n/nl.json`, `l10n/en.json`). Manifest `label`/`title`
+  values resolve through `translateForApp` → `ncT('openconnector', key)` (App.vue),
+  which returns the key on a miss so plain-label entries render as-is and keyed entries
+  translate. D2 adds any new keys when implementing new pages.
 
 ## DEFERRED_QUESTIONS
 

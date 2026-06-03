@@ -115,7 +115,11 @@ function structuralLint(manifest) {
 	}
 	if (!Array.isArray(manifest.menu)) errors.push('top-level: menu (array) is required')
 	if (!Array.isArray(manifest.pages)) errors.push('top-level: pages (array) is required')
-	const allowedTypes = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'custom'])
+	// Mirror the v2 schema's `$defs.page.properties.type` enum
+	// (app-manifest-v2.schema.json). This fallback only runs when Ajv or the
+	// schema file can't be resolved; keeping the enum in sync avoids
+	// false-negative failures on valid v2 page types (roadmap/search/form/map).
+	const allowedTypes = new Set(['index', 'detail', 'dashboard', 'logs', 'settings', 'chat', 'files', 'form', 'map', 'roadmap', 'search', 'custom'])
 	const seenIds = new Set()
 	for (let i = 0; i < (manifest.pages || []).length; i++) {
 		const page = manifest.pages[i]
