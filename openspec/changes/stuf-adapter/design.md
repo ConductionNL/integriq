@@ -1,5 +1,7 @@
 # Design: StUF Adapter
 
+> **status: pr-created**
+
 ## Architecture
 
 The StUF adapter provides bidirectional translation between REST/ZGW APIs and legacy StUF-BG/StUF-ZKN SOAP interfaces.

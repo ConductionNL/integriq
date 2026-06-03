@@ -26,6 +26,8 @@ namespace OCA\OpenConnector\Service;
  *
  * Supports configurable field mappings stored as OpenRegister objects,
  * date format transformation, and nested object mapping for addresses.
+ *
+ * @spec openspec/changes/stuf-adapter/tasks.md#task-2
  */
 class StUFFieldMapper
 {
@@ -60,8 +62,10 @@ class StUFFieldMapper
 
     /**
      * StUFFieldMapper constructor.
+     *
+     * @param \Psr\Log\LoggerInterface $logger PSR-3 logger.
      */
-    public function __construct()
+    public function __construct(private readonly \Psr\Log\LoggerInterface $logger)
     {
 
     }//end __construct()
