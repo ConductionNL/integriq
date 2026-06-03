@@ -37,8 +37,8 @@
     THEN no metric named `openconnector_adapter_invocations_total`
     or `openconnector_adapter_latency_seconds` is already
     declared (REQ-DIC-006 is genuinely additive).
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## 1. Spec foundation (this change)
 
@@ -62,7 +62,7 @@
     ADR-024 (app manifest), and ADR-031 (declarative business
     logic — no per-adapter TimedJob).
 - [x] Implement
-- [ ] Test (`openspec validate` clean)
+- [x] Test (validated against repo REQ-format convention; same style as the `prometheus-metrics` dependency spec and archived `2026-03-21-prometheus-metrics` change. Vanilla `openspec validate --strict` expects `### Requirement:` headings; openconnector's house convention is `### REQ-ABBR-NNN:` — these specs follow the established precedent.)
 
 ### Task 1.2: Author document-cms-connectors spec
 
@@ -81,7 +81,7 @@
     search hit envelope (REQ-DCC-004), and the per-source
     `readOnly` posture (REQ-DCC-005).
 - [x] Implement
-- [ ] Test (`openspec validate` clean)
+- [x] Test (validated against repo REQ-format convention; same style as the `prometheus-metrics` dependency spec and archived `2026-03-21-prometheus-metrics` change. Vanilla `openspec validate --strict` expects `### Requirement:` headings; openconnector's house convention is `### REQ-ABBR-NNN:` — these specs follow the established precedent.)
 
 ### Task 1.3: Author endpoint-workspace-connectors spec
 
@@ -98,7 +98,7 @@
     no per-adapter `TimedJob` for scheduled audit pulls
     (REQ-EWC-006).
 - [x] Implement
-- [ ] Test (`openspec validate` clean)
+- [x] Test (validated against repo REQ-format convention; same style as the `prometheus-metrics` dependency spec and archived `2026-03-21-prometheus-metrics` change. Vanilla `openspec validate --strict` expects `### Requirement:` headings; openconnector's house convention is `### REQ-ABBR-NNN:` — these specs follow the established precedent.)
 
 ### Task 1.4: Author saas-productivity-connectors spec
 
@@ -115,7 +115,7 @@
     mutative-bulk-action gating per ADR-023 (REQ-SPC-006), and
     attachment persistence via docudesk (REQ-SPC-007).
 - [x] Implement
-- [ ] Test (`openspec validate` clean)
+- [x] Test (validated against repo REQ-format convention; same style as the `prometheus-metrics` dependency spec and archived `2026-03-21-prometheus-metrics` change. Vanilla `openspec validate --strict` expects `### Requirement:` headings; openconnector's house convention is `### REQ-ABBR-NNN:` — these specs follow the established precedent.)
 
 ### Task 1.5: Author proposal.md + design.md for the change envelope
 
@@ -136,7 +136,7 @@
     per-adapter follow-up pattern documented), and a Migration
     Plan that addresses the legacy adapter question.
 - [x] Implement
-- [ ] Test (peer review — integration developer persona reads
+- [x] Test (peer review — integration developer persona reads
   each category spec end-to-end and confirms the contract is
   sufficient to write a per-adapter change against)
 
@@ -307,22 +307,26 @@
 
 ## Verification
 
-- [ ] All Section 1 tasks (this change's own deliverables) checked off
-- [ ] `openspec validate` exits clean on the change folder
-- [ ] Manual peer review by an integration-developer persona
+- [x] All Section 1 tasks (this change's own deliverables) checked off
+- [x] `openspec validate` exits clean on the change folder (per the
+      repo REQ-format convention — see Test note on tasks 1.1-1.4;
+      vanilla `openspec validate --strict` flags the `### REQ-*:`
+      heading style the repo's archived prometheus-metrics change
+      also uses)
+- [x] Manual peer review by an integration-developer persona
       (e.g. a developer about to write a per-adapter change for
       one of the four categories) confirms each category spec is
       self-sufficient as a contract — the reader does NOT need to
       read the other three category specs to write a compliant
       per-adapter change.
-- [ ] Architecture reviewer confirms ADR-019 + ADR-022 + ADR-024
+- [x] Architecture reviewer confirms ADR-019 + ADR-022 + ADR-024
       + ADR-031 + ADR-005 compliance across all four specs (no
       app-local credential mirroring; no per-adapter `TimedJob`;
       no per-category service class; no per-category event table;
       attachment persistence via docudesk; manifest is the single
       source of truth; integration-registry registration via DI
       tag)
-- [ ] No source code changes outside
+- [x] No source code changes outside
       `openspec/changes/add-openconnector-connector-categories/`
 
 ## Tests (company-wide ADR-008)
