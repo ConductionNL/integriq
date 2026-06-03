@@ -54,6 +54,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/Doctrine/DBAL/ArrayParameterType.php';
         }
 
+        if (class_exists('Doctrine\\DBAL\\Types\\Types') === false) {
+            require_once $stubsDir . '/Doctrine/DBAL/Types/Types.php';
+        }
+
         if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder') === false) {
             require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
         }

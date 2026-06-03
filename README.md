@@ -293,6 +293,22 @@ Full documentation is available at **[conductionnl.github.io/openconnector](http
 - **[DocuDesk](https://github.com/ConductionNL/docudesk)** -- Document generation
 - **[NL Design](https://github.com/ConductionNL/nldesign)** -- Design token theming for government compliance
 
+## Running the tests
+
+OpenConnector ships three test suites, all wired into CI (`.github/workflows/tests.yml`):
+
+| Suite | Command | What it covers |
+|---|---|---|
+| **PHPUnit (unit)** | `composer test:unit` | Services + the chain-B `LegacyToRegisterMigrator` branching paths, mocking OpenRegister's `ObjectService` via `tests/Helpers/ObjectServiceMockBuilder.php`. Runs against PHP 8.3. |
+| **PHPUnit coverage gate** | `composer test:coverage && composer coverage:check` | Emits `coverage/clover.xml` + `coverage/html/`, then enforces the **merge-blocking** thresholds: **≥ 80% line** and **≥ 70% branch** (`tests/scripts/check-coverage.php`). 100% is the aspirational quarterly tech-debt target, not enforced. |
+| **Newman (API)** | `npm run test:newman` | Postman collection at `tests/postman/openconnector.postman_collection.json` against a running dev container (happy path + auth error paths per endpoint). Uses placeholder `admin`/`admin` credentials — never commit real secrets. |
+| **Playwright (E2E)** | `npm run test:regression` | The `regression` project (runs with `--workers=4`): per-resource page journeys, the OR-cutover smoke test, and the migration round-trip invariant. Excludes the docs-screenshot capture spec. |
+
+Coverage requires Xdebug 3 with `xdebug.mode=coverage`; the dev container leaves
+coverage off by default, so set `XDEBUG_MODE=coverage` (CI does this in the
+`phpunit` job). Newman and Playwright both require a live Nextcloud with
+OpenRegister installed and seeded.
+
 ## License
 
 This project is licensed under the [EUPL-1.2](LICENSE).
