@@ -6,9 +6,34 @@
      deviates because the seed set IS the migrated live data; deviation
      rationale lives in design.md "Seed Data" section. -->
 
+<!-- BUILD STATUS (hydra-build #16, 2026-06-01):
+     This change was MERGED INTO chain C (openconnector-services-direct-or-usage)
+     on 2026-05-20 (see proposal.md header). The strangler-fig ObjectMapperFacade
+     was deemed over-engineering: OR + nc-vue already deliver per-schema CRUD
+     generically, so the 15 mappers + entities + per-schema controllers were
+     DELETED outright by chain C rather than preserved through a transitional
+     facade.
+
+     - Tasks 1–8 (migration class, LegacyToRegisterMigrator: INSERT pass, FK
+       rewrite, sourceId/targetId branching, owner-null + encryption assertion,
+       flag-on-success, summary audit-trail) are DONE on origin/development
+       (lib/Migration/Version2Date20260520000001.php + 000099.php,
+       lib/Service/Migration/LegacyToRegisterMigrator.php). Marked [x].
+     - Tasks 9–14 + 16 (ObjectMapperFacade + 15 flag-gated mapper rewrites +
+       HTTP MigrateStorageController) are SUPERSEDED by the chain-C pivot. The
+       mappers no longer exist; building facades over deleted mappers would
+       violate the architecture decision. DEFERRED-SUPERSEDED.
+     - Tasks 15 + 17 (OCC command + verifyRowCounts helper) were NOT shipped by
+       either chain yet, and the chain-B migration class itself points operators
+       at `occ openconnector:migrate-storage` for per-entity retry. Implemented
+       here as the genuine, ADR-aligned, non-conflicting gap-closure. Marked [x].
+     - Task 18 (follow-up issues) is a Hydra-coordination concern (the parent
+       agent / opsx-no-process-tasks rule); the referenced #820/#821 already
+       exist. Left for coordination, not built here. -->
+
 ## Implementation Tasks
 
-### Task 1: Add Nextcloud migration class Version2Date20260520xxxxxx
+### Task 1: Add Nextcloud migration class Version2Date20260520xxxxxx — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-001-migration-class-must-provision-the-register-via-importfromapp`
 - **files**: `lib/Migration/Version2Date20260520xxxxxx.php`
@@ -17,10 +42,10 @@
   - GIVEN the register already exists WHEN the migration re-runs THEN it completes without error and creates no duplicate rows (idempotent)
   - The migration class implements `OCP\Migration\IMigrationStep`, returns `null` from `changeSchema` (no schema diff), and in `postSchemaChange` calls `LegacyToRegisterMigrator::migrateAll(dryRun=false, entitySlug=null, batchSize=10000)` then sets the `openconnector.storage_migrated` flag on full success only
   - Constructor injects: `IDBConnection`, `IAppConfig`, `IConfig`, `LoggerInterface`, `OCA\OpenRegister\Service\ConfigurationService`, `LegacyToRegisterMigrator`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 2: Add LegacyToRegisterMigrator service skeleton + entity registry
+### Task 2: Add LegacyToRegisterMigrator service skeleton + entity registry — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-002-migrator-must-copy-all-legacy-rows-preserving-uuids`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`
@@ -30,10 +55,10 @@
   - GIVEN `$entitySlug` is non-null WHEN it is not one of the 15 valid slugs THEN the migrator raises `InvalidArgumentException`
   - GIVEN `$batchSize` is outside [100, 100000] WHEN passed in THEN the migrator raises `InvalidArgumentException`
   - Returns a per-entity result array: `slug, legacyCount, migratedCount, skipped, skippedReason, fkRewrites, elapsedMs`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 3: Implement bulk INSERT pass with dual-platform JSON builder
+### Task 3: Implement bulk INSERT pass with dual-platform JSON builder — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-002-migrator-must-copy-all-legacy-rows-preserving-uuids`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`
@@ -44,10 +69,10 @@
   - The INSERT preserves `uuid` byte-for-byte from the legacy row; populates `register` = openconnector register PK (cached at startup), `schema` = matching schema PK (cached at startup), `created`/`updated` from legacy row, `owner` per Task 6
   - Rows are streamed in batches of `$batchSize` (default 10,000); per-batch progress logged at INFO level
   - GIVEN `$dryRun=true` WHEN the migrator runs THEN no INSERT statements execute; row counts are still computed and returned
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 4: Implement FK rewrite pass for 6 integer FK columns
+### Task 4: Implement FK rewrite pass for 6 integer FK columns — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-003-fk-rewrite-pass-must-translate-6-integer-fk-columns-to-uuids`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`
@@ -57,10 +82,10 @@
   - `call_log.action_id` is migrated as opaque integer; a parallel `action` string field is added with no `$ref` (per Notes in spec.md and DEFERRED Q2). No FK rewrite is attempted for `action_id`.
   - GIVEN a legacy row has a FK pointing to a missing target WHEN the rewrite runs THEN the relation-named field is left unset, the migration log records `"<entity> row {uuid}: <fk>=<int> has no target — skipped FK rewrite, legacy <fkId> preserved"`, and the entity's `fkRewrites` tally is NOT incremented for that row
   - GIVEN a successful rewrite WHEN the rewrite runs THEN BOTH the legacy `*Id` field (integer) AND the relation-named field (uuid) are present in the resulting OR object (per chain-A REQ-008)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 5: Implement Synchronization.sourceId/targetId branching
+### Task 5: Implement Synchronization.sourceId/targetId branching — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-004-synchronization-sourceid-targetid-branching-must-handle-3-formats`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`
@@ -71,10 +96,10 @@
   - GIVEN `source_id` is a valid uuid WHEN the migrator processes it THEN the OR object's `sourceId` field is unchanged
   - GIVEN `source_id='not-a-recognised-format'` WHEN the migrator processes it THEN the OR object's `sourceId` field is set to the raw legacy value, the migration log records the skip with the row uuid + raw value, and the `unrecognised` counter increments
   - Both `source_id` and `target_id` columns are branched identically; per-variant counts are accumulated separately and logged at the end of the synchronization migration (e.g. `"synchronization: integer-PK→uuid: 4, register/schema: 2, uuid: 1, unrecognised: 1 (skipped)"`)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 6: Set owner null + encryption layer assertion
+### Task 6: Set owner null + encryption layer assertion — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#requirement-encrypted-columns-on-source-must-be-preserved-byte-for-byte`, `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#requirement-owner-field-must-be-left-null-on-every-migrated-object`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`
@@ -83,10 +108,10 @@
   - GIVEN a legacy row with a non-null `userId` column (CallLog/JobLog/EventMessage/Consumer/etc.) WHEN inserted THEN the object JSON body retains `userId` as a regular property (not promoted to `owner`)
   - GIVEN the migrator starts up WHEN it inspects `lib/Db/Source.php` setters and any `OCA\OpenConnector\Service\EncryptionService` references THEN it concludes either "column-level" (verbatim copy — provisional default) or "storage-level" (decrypt+re-encrypt required)
   - GIVEN the migrator detects storage-level encryption AND no decrypt+re-encrypt code path has been wired WHEN startup runs THEN it raises `\LogicException("storage-level encryption requires decrypt+re-encrypt path; abort")` BEFORE writing any rows to OR storage
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 7: Set storage_migrated flag on full success only
+### Task 7: Set storage_migrated flag on full success only — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-005-migrator-must-set-the-storage-migrated-app-config-flag-on-success`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`, `lib/Migration/Version2Date20260520xxxxxx.php`
@@ -94,10 +119,10 @@
   - GIVEN all 15 entities migrate without skip/error AND `$entitySlug=null` WHEN `migrateAll()` returns THEN `IAppConfig::setValue('openconnector', 'storage_migrated', 'true')` has been called
   - GIVEN any entity raises an exception OR a per-entity row-count assertion fails WHEN `migrateAll()` returns or throws THEN `storage_migrated` is NOT set to `'true'` (remains unset or `'false'`)
   - GIVEN `$entitySlug` is non-null (single-entity retry) WHEN `migrateAll()` succeeds for that one entity THEN the flag is NOT flipped (full-run still required)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 8: Emit single summary audit-trail entry
+### Task 8: Emit single summary audit-trail entry — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-012-migrator-must-not-emit-per-object-audit-trail-entries`
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php`
@@ -105,10 +130,10 @@
   - GIVEN the migrator completes a full or partial run WHEN it emits audit output THEN exactly ONE audit-trail entry is written to `oc_openregister_audit_trail` for the entire run
   - That entry's payload contains a `perEntity` JSON summary listing each entity's `legacyCount, migratedCount, skipped, fkRewrites, elapsedMs`
   - GIVEN the migrator processes any number of OR objects WHEN bulk INSERTs execute THEN OR's per-object audit-trail emission is bypassed (the migrator does NOT route through `ObjectService::saveObject`)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 9: Add ObjectMapperFacade service
+### Task 9: Add ObjectMapperFacade service — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-006-objectmapperfacade-must-translate-the-mapper-api-to-objectservice`
 - **files**: `lib/Service/Storage/ObjectMapperFacade.php`
@@ -122,7 +147,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 10: Rewrite SourceMapper, ConsumerMapper, EndpointMapper as flag-gated facades
+### Task 10: Rewrite SourceMapper, ConsumerMapper, EndpointMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-007-15-mappers-must-delegate-to-the-facade-behind-a-flag`
 - **files**: `lib/Db/SourceMapper.php`, `lib/Db/ConsumerMapper.php`, `lib/Db/EndpointMapper.php`
@@ -134,7 +159,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 11: Rewrite EventMapper, EventMessageMapper, EventSubscriptionMapper as flag-gated facades
+### Task 11: Rewrite EventMapper, EventMessageMapper, EventSubscriptionMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-007-15-mappers-must-delegate-to-the-facade-behind-a-flag`
 - **files**: `lib/Db/EventMapper.php`, `lib/Db/EventMessageMapper.php`, `lib/Db/EventSubscriptionMapper.php`
@@ -145,7 +170,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 12: Rewrite JobMapper, MappingMapper, RuleMapper as flag-gated facades
+### Task 12: Rewrite JobMapper, MappingMapper, RuleMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-007-15-mappers-must-delegate-to-the-facade-behind-a-flag`
 - **files**: `lib/Db/JobMapper.php`, `lib/Db/MappingMapper.php`, `lib/Db/RuleMapper.php`
@@ -157,7 +182,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 13: Rewrite Synchronization* mappers (3 entities) as flag-gated facades
+### Task 13: Rewrite Synchronization* mappers (3 entities) as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-007-15-mappers-must-delegate-to-the-facade-behind-a-flag`
 - **files**: `lib/Db/SynchronizationMapper.php`, `lib/Db/SynchronizationContractMapper.php`, `lib/Db/SynchronizationLogMapper.php`
@@ -170,7 +195,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 14: Rewrite log mappers (CallLogMapper, JobLogMapper, SynchronizationContractLogMapper) as flag-gated facades
+### Task 14: Rewrite log mappers (CallLogMapper, JobLogMapper, SynchronizationContractLogMapper) as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-007-15-mappers-must-delegate-to-the-facade-behind-a-flag`
 - **files**: `lib/Db/CallLogMapper.php`, `lib/Db/JobLogMapper.php`, `lib/Db/SynchronizationContractLogMapper.php`
@@ -182,7 +207,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 15: Add MigrateToOpenRegister OCC command
+### Task 15: Add MigrateToOpenRegister OCC command — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md#req-008-occ-command-must-allow-manual-re-runnability`
 - **files**: `lib/Command/MigrateToOpenRegister.php`, `appinfo/info.xml` (register command)
@@ -192,10 +217,10 @@
   - GIVEN `--entity=<slug>` is passed WHEN the value is not one of the 15 valid slugs THEN the command prints an error listing the valid slugs and exits non-zero
   - GIVEN `--batch-size=<n>` is passed WHEN `n` is outside [100, 100000] THEN the command prints an error and exits non-zero
   - Command output uses Symfony Console formatters; verbosity controlled by `-v`/`-vv`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 16: Add MigrateStorageController for admin HTTP trigger
+### Task 16: Add MigrateStorageController for admin HTTP trigger — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/contract.md`
 - **files**: `lib/Controller/MigrateStorageController.php`, `appinfo/routes.php`
@@ -210,7 +235,7 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 17: Verify post-migration row counts match (seed-data deviation per ADR-001)
+### Task 17: Verify post-migration row counts match (seed-data deviation per ADR-001) — [STATUS: DONE]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/design.md` (Seed Data section), `openspec/changes/openconnector-register-storage/migration.md` (Validation table)
 - **files**: `lib/Service/Migration/LegacyToRegisterMigrator.php` (verification helper), `tests/Unit/Service/Migration/LegacyToRegisterMigratorTest.php`
@@ -220,10 +245,10 @@
   - GIVEN the migration completed WHEN `verifyRowCounts()` runs THEN every entity reports `equal === true` (modulo skipped rows accounted in the migrator return tally — those rows count toward `legacy` but NOT `register`, and the helper subtracts skipped to confirm parity)
   - The OCC command surfaces this via `occ openconnector:migrate-storage --verify-only`
   - In the dev container, after running the migration against chain-A's 33 seed objects, all 15 entity counts MUST match
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
-### Task 18: File follow-up GitHub issues for deferred work
+### Task 18: File follow-up GitHub issues for deferred work — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
 - **spec_ref**: `openspec/changes/openconnector-register-storage/proposal.md` (Out of Scope), `openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md` (Notes section)
 - **files**: GitHub issues (no repo files)

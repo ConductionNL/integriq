@@ -38,6 +38,12 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
 	</background-jobs>
 
+	<commands>
+		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
+		     row migration (dry-run, per-entity retry, verify). -->
+		<command>OCA\OpenConnector\Command\MigrateToOpenRegister</command>
+	</commands>
+
 	<navigations>
 		<navigation>
 			<id>openconnector</id>
