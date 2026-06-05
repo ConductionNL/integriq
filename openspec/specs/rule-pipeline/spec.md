@@ -19,6 +19,8 @@ openconnector-local concept with no OpenRegister equivalent.
 
 ## Requirements
 
+@e2e exclude The before/after rule execution engine (ordered pipeline, data-mutation, auth/error, file/sync/download, custom software-catalogus rules) in EndpointService/RuleService is backend request-pipeline logic with no in-app Vue page-render surface; covered by PHPUnit (EndpointService rule methods + RuleService) plus Newman HTTP-contract tests exercising rule-bearing endpoints.
+
 ### REQ-RULE-001: Ordered Rule Pipeline Execution
 
 The system MUST resolve an endpoint's configured rules into rule entities,

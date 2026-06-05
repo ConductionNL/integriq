@@ -25,6 +25,9 @@ requirement Notes record it rather than silently "fixing" it. See ADR-015
 for the governing decisions.
 
 ## Requirements
+
+@e2e exclude Configuration export/import is a backend transform — slug-translation, dependency-closure traversal, and credential stripping over OAS documents in ConfigurationService with no in-app Vue page-render surface; covered by PHPUnit (ConfigurationService/ConfigurationHandlers) plus Newman HTTP-contract tests on the import/export endpoints.
+
 ### Requirement: REQ-001 — Export a configuration set as a slug-referenced OAS document
 
 The system SHALL export every OpenConnector entity tagged with a given

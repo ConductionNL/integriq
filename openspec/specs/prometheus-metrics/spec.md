@@ -10,6 +10,8 @@ Expose application metrics in Prometheus text exposition format at `GET /api/met
 
 ## Requirements
 
+@e2e exclude Prometheus /api/metrics text-exposition gauges/counters plus the /api/health liveness probe are a machine-readable HTTP contract with no in-app Vue page-render surface; covered by Newman HTTP-contract tests asserting the exposition format plus PHPUnit on the metrics builder.
+
 ### REQ-PROM-001: Metrics Endpoint
 
 The app MUST expose `GET /index.php/apps/openconnector/api/metrics` returning `text/plain; version=0.0.4; charset=utf-8`. The endpoint MUST require admin authentication (Nextcloud admin session or API token). All metrics MUST follow the Prometheus text exposition format with `# HELP`, `# TYPE`, and metric lines.

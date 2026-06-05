@@ -18,6 +18,8 @@ spec captures the observed behavior of 31 code units retroactively; the code alr
 
 ## ADDED Requirements
 
+@e2e exclude The /api/user REST auth surface (login, profile read/update, logout, rate-limiting, lockout, anti-enumeration, CORS preflight, payload sanitisation, hardening headers) in UserService/SecurityService is a headless HTTP authentication contract with no in-app Vue page-render surface; covered by PHPUnit (UserService/SecurityService) plus Newman HTTP-contract tests on the /api/user endpoints.
+
 ### REQ-001: Read and update the authenticated user's own profile
 
 The system MUST expose `@NoAdminRequired @NoCSRFRequired` endpoints for a user to read and

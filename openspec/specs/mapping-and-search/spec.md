@@ -18,6 +18,8 @@ code already exists.
 
 ## ADDED Requirements
 
+@e2e exclude Mapping and search is the executeMapping/handleCast transform engine plus the mappings controller status/query-compile endpoints — server-side data transformation with no in-app Vue page-render surface; covered by PHPUnit (MappingService cast/Twig/list-mode + query compilation) plus Newman HTTP-contract tests on the mapping test/list endpoints.
+
 ### REQ-001: Apply a mapping recipe to an input payload
 
 The system MUST transform an input array into an output array according to a mapping

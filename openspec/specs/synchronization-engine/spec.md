@@ -22,6 +22,8 @@ flag observed-but-suspicious behavior rather than silently correcting it.
 
 ## Requirements
 
+@e2e exclude The synchronization engine (orchestration, direction routing, source fetching/pagination, mapping/transformation/object-identity, target write/deduplication/file handling, sync rule pipeline) in SynchronizationService is headless server-side orchestration with no in-app Vue page-render surface; covered by PHPUnit (SynchronizationService) plus Newman HTTP-contract tests on the synchronization trigger/run endpoints.
+
 ### REQ-001: Synchronization orchestration and direction routing
 
 The system SHALL run a synchronization given a `Synchronization` object,

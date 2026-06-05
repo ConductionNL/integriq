@@ -21,6 +21,8 @@ itself is specified separately under the `rule-pipeline` capability.
 
 ## Requirements
 
+@e2e exclude Endpoint runtime is the headless /api/endpoint/{path} dispatch pipeline (path resolution, CORS, simple-endpoint fast path, request/response normalisation, target dispatch) in EndpointService/EndpointsController — an HTTP gateway with no in-app Vue page-render surface; covered by PHPUnit (EndpointService dispatch + EndpointCacheService) plus Newman HTTP-contract tests against the dispatch endpoints.
+
 ### REQ-EP-001: Generic Path Dispatch and CORS
 
 The system MUST expose a public generic dispatcher at
