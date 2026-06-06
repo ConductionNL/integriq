@@ -1,6 +1,8 @@
 <?php
-
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * CI guard for chain A (openconnector-register-schema-declaration) — REQ-A-002.
  *
  * Asserts structural integrity of lib/Settings/openconnector_register.json.
