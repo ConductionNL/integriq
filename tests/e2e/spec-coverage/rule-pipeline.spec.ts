@@ -16,8 +16,6 @@
 
 import { test, expect } from '@playwright/test'
 
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-const API_BASE = '/index.php/apps/openconnector/api'
 // /index.php/apps/openconnector/* strips the path on redirect; use /apps/ prefix.
 const APP_BASE = '/apps/openconnector'
 
@@ -66,26 +64,8 @@ test.describe('REQ-RULE-UI-001: Rule detail page', () => {
 })
 
 // ---------------------------------------------------------------------------
-// API surface helpers (no @e2e spec tag — backend scenarios carry @e2e exclude)
+// HTTP-contract assertions for the rule OR list + endpoint dispatch surfaces
+// are API-direct (no @e2e tag) and have been relocated to
+// tests/e2e/api-direct/rule-pipeline.api.spec.ts (Newman-equivalent, excluded
+// from the gate-19 UI run). gate-19: API-direct → Newman.
 // ---------------------------------------------------------------------------
-
-test.describe('Rules OR API — list', () => {
-	test('GET rules list from OR returns rule objects', async ({ request }) => {
-		const resp = await request.get(`${OR_BASE}/rule?_limit=20`, {
-			failOnStatusCode: false,
-		})
-		expect(resp.status()).toBe(200)
-		const body = await resp.json()
-		expect(body).toHaveProperty('results')
-		expect(Array.isArray(body.results)).toBe(true)
-	})
-})
-
-test.describe('Rule pipeline dispatch — 404 on no-match', () => {
-	test('Endpoint dispatch with non-matching path returns 404 (pipeline not reached)', async ({ request }) => {
-		const resp = await request.get(`${API_BASE}/endpoint/pw-rule-no-endpoint-${Date.now()}`, {
-			failOnStatusCode: false,
-		})
-		expect(resp.status()).toBe(404)
-	})
-})

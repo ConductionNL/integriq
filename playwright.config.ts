@@ -66,7 +66,17 @@ export default defineConfig({
 		// PR pipelines don't reshoot screenshots on every push.
 		{
 			name: 'chromium',
-			testIgnore: ['**/docs-screenshots.spec.ts', '**/regression/**'],
+			// NOTE: a project-level testIgnore REPLACES the top-level testIgnore
+			// for this project (Playwright does not merge them), so the
+			// api-direct exclusion must be repeated here. The api-direct specs
+			// are API/HTTP-contract assertions covered by the Newman suite
+			// (tests/postman/openconnector.postman_collection.json), NOT real
+			// UI-driving Playwright tests — gate-19: API-direct → Newman.
+			testIgnore: [
+				'**/docs-screenshots.spec.ts',
+				'**/regression/**',
+				'**/api-direct/**',
+			],
 			use: { ...devices['Desktop Chrome'] },
 		},
 		// Chain-E regression project — schema-driven page smoke tests for the
@@ -79,6 +89,10 @@ export default defineConfig({
 		{
 			name: 'regression',
 			testMatch: /(regression|spec-coverage)\/.*\.spec\.ts$/,
+			// api-direct specs live under tests/e2e/api-direct/ and are Newman
+			// equivalents (HTTP-contract assertions) — never run them in the UI
+			// gate. gate-19: API-direct → Newman.
+			testIgnore: ['**/api-direct/**'],
 			use: { ...devices['Desktop Chrome'] },
 			fullyParallel: true,
 			retries: process.env.CI ? 2 : 0,
@@ -97,4 +111,11 @@ export default defineConfig({
 			timeout: 90_000,
 		},
 	],
+
+	// API-direct specs are API/HTTP-contract assertions (Newman equivalents),
+	// not real UI-driving Playwright tests. They live under tests/e2e/api-direct/
+	// for reference but are excluded from the UI test run (gate-19: API-direct →
+	// Newman). Each project that needs the exclusion repeats it above, since a
+	// project-level testIgnore replaces (does not merge with) this top-level one.
+	testIgnore: ['**/api-direct/**'],
 })
