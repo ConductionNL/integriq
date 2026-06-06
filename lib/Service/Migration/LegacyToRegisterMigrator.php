@@ -55,6 +55,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Migrates legacy oc_openconnector_* tables into oc_openregister_objects.
+ *
+ * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
  */
 class LegacyToRegisterMigrator
 {
@@ -273,6 +275,95 @@ class LegacyToRegisterMigrator
         return $results;
 
     }//end migrateAll()
+
+    /**
+     * Verify post-migration row-count parity per entity (Task 17 / ADR-001 seed-data deviation).
+     *
+     * For each of the 15 entities, compares the legacy table row count against the
+     * count of OR objects in oc_openregister_objects for the matching register +
+     * schema. Skipped rows (recorded in a prior migrateAll() run) count toward the
+     * legacy tally but NOT the register tally, so callers that pass the per-entity
+     * `skipped` figures get a true parity check rather than a false mismatch.
+     *
+     * The legacy seed for openconnector IS the migrated live data (no hand-crafted
+     * seed set), so this method is the canonical verification surface in place of a
+     * static seed-fixture comparison.
+     *
+     * @param array<string, int> $skippedBySlug Optional per-slug skipped counts from a
+     *                                          prior migrateAll() result, subtracted from
+     *                                          the legacy tally before the equality check.
+     *
+     * @return array<int, array{slug:string,legacy:int,register:int,skipped:int,equal:bool}>
+     *
+     * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
+     */
+    public function verifyRowCounts(array $skippedBySlug=[]): array
+    {
+        $this->resolveStartupState();
+
+        $report = [];
+        foreach (self::ENTITY_ORDER as $entity) {
+            $slug     = $entity['slug'];
+            $legacy   = $this->countLegacyOrZero(table: $entity['legacyTable']);
+            $register = $this->countRegisterObjects(slug: $slug);
+            $skipped  = (int) ($skippedBySlug[$slug] ?? 0);
+
+            $report[] = [
+                'slug'     => $slug,
+                'legacy'   => $legacy,
+                'register' => $register,
+                'skipped'  => $skipped,
+                'equal'    => (($legacy - $skipped) === $register),
+            ];
+        }//end foreach
+
+        return $report;
+
+    }//end verifyRowCounts()
+
+    /**
+     * Count rows in a legacy table, returning 0 when the table is already dropped.
+     *
+     * @param string $table Fully qualified legacy table name (oc_openconnector_*).
+     *
+     * @return integer
+     */
+    private function countLegacyOrZero(string $table): int
+    {
+        if ($this->tableExists(tableName: $table) === false) {
+            // Legacy table already dropped (cleanup migration ran) — treat as zero.
+            return 0;
+        }
+
+        return $this->countLegacyRows(tableShort: str_replace('oc_', '', $table));
+
+    }//end countLegacyOrZero()
+
+    /**
+     * Count OR objects for the openconnector register and the given schema slug.
+     *
+     * @param string $slug Schema slug from ENTITY_ORDER.
+     *
+     * @return integer Row count, or 0 if the schema is not yet provisioned.
+     */
+    private function countRegisterObjects(string $slug): int
+    {
+        $schemaPk = $this->schemaPks[$slug] ?? null;
+        if ($schemaPk === null || $this->registerPk === null) {
+            return 0;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('*', 'c'))
+            ->from('openregister_objects')
+            ->where($qb->expr()->eq('register', $qb->createNamedParameter($this->registerPk, \PDO::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaPk, \PDO::PARAM_INT)));
+        $result = $qb->executeQuery();
+        $row    = $result->fetchAssociative();
+        $result->closeCursor();
+        return (int) ($row['c'] ?? 0);
+
+    }//end countRegisterObjects()
 
     /**
      * Resolve register PK + 15 schema PKs once at startup. Detect platform.

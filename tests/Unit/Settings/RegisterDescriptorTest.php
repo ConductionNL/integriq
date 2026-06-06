@@ -45,7 +45,7 @@ class RegisterDescriptorTest extends TestCase
 {
 
     /**
-     * The 15 schema slugs that MUST be declared in the register.
+     * The 16 schema slugs that MUST be declared in the register.
      * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
      *
      * @var array<string, string>
@@ -66,6 +66,8 @@ class RegisterDescriptorTest extends TestCase
         'JobLog'                     => 'job_log',
         'SynchronizationLog'         => 'synchronization_log',
         'SynchronizationContractLog' => 'synchronization_contract_log',
+        // RIS connector sync record — added by ibabs-notubiz-connector spec.
+        'RISSyncRecord'              => 'ris_sync_record',
     ];
 
     /**
@@ -110,11 +112,11 @@ class RegisterDescriptorTest extends TestCase
     }//end setUp()
 
     /**
-     * Asserts the register declares all 15 schema slugs.
+     * Asserts the register declares all schema slugs (15 base + 1 RIS connector = 16).
      *
      * @return void
      */
-    public function testRegisterDeclaresAllFifteenSchemaSlugs(): void
+    public function testRegisterDeclaresAllSchemaSlugs(): void
     {
         $expected = array_values(self::SCHEMA_SLUGS);
         $actual   = $this->descriptor['components']['registers']['openconnector']['schemas'] ?? [];
@@ -125,17 +127,17 @@ class RegisterDescriptorTest extends TestCase
         $this->assertSame(
             expected: $expected,
             actual:   $actual,
-            message:  'register.openconnector.schemas[] MUST list exactly the 15 schema slugs'
+            message:  'register.openconnector.schemas[] MUST list exactly the declared schema slugs'
         );
 
-    }//end testRegisterDeclaresAllFifteenSchemaSlugs()
+    }//end testRegisterDeclaresAllSchemaSlugs()
 
     /**
-     * Asserts all 15 schemas are defined in components.schemas.
+     * Asserts all schemas are defined in components.schemas.
      *
      * @return void
      */
-    public function testAllFifteenSchemasAreDefined(): void
+    public function testAllSchemasAreDefined(): void
     {
         $schemas = $this->descriptor['components']['schemas'] ?? [];
 
@@ -151,7 +153,7 @@ class RegisterDescriptorTest extends TestCase
             );
         }
 
-    }//end testAllFifteenSchemasAreDefined()
+    }//end testAllSchemasAreDefined()
 
     /**
      * Asserts each schema declares a non-empty properties block.

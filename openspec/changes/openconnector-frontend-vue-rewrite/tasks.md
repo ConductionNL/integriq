@@ -1,5 +1,22 @@
 # Tasks: openconnector-frontend-vue-rewrite
 
+> **Build note (hydra-build #12, 2026-06-01):** The bulk of this change had
+> already landed on `development` via the later **chain-E manifest cutover**,
+> which both completed the Tier-4 `CnAppRoot` rewrite this spec describes *and
+> superseded* its `createCrudStore` plan. On the cutover, the 11 per-schema
+> CRUD Pinia stores were **deleted outright** (not migrated to
+> `createCrudStore`) because nc-vue's `CnIndexPage`/`CnDetailPage`/`CnLogsPage`
+> manage list/detail/log state internally against OpenRegister's
+> `/api/objects/openconnector/{schema}/*` routes — a stronger ADR-022/031
+> outcome than fronting bespoke REST with `createCrudStore`. `src/navigation/`,
+> `src/router/`, `src/modals/Modals.vue`, `src/settings.js`-as-vue-route, and
+> the legacy widget entries were already removed/superseded (settings stays a
+> NC-admin entry per ADR-004/023; widgets were removed entirely, not relocated,
+> because they were never registered). The **one genuinely-outstanding** item
+> matching this spec's intent — ADR-006 dead-code deletion of the orphaned
+> `src/Controller/` + `src/Mapper/` PHP fragments (Task 11) — is implemented
+> here. Already-landed / superseded tasks are marked `[x]` with the rationale.
+
 ## Implementation Tasks
 
 ### Task 0: Verify @conduction/nextcloud-vue pin exports CnAppRoot, CnIndexPage, CnStatsPanel, createCrudStore
@@ -13,8 +30,8 @@
     implementing any page migration tasks
   - Verify by running `node -e "const m = require('@conduction/nextcloud-vue'); console.log(!!m.CnIndexPage, !!m.createCrudStore)"`
     inside the app's `node_modules` context and confirming both print `true`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 1: Apply Thijn PR #718 — Dashboard page
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -23,8 +40,8 @@
   - GIVEN PR #718 is applied WHEN the dashboard route `/` is loaded
     THEN the dashboard view MUST render without console errors
   - No `feature/nextcloud-vue` specific imports survive (all resolved against `node_modules`)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Apply Thijn PR #719 — Sources → CnIndexPage + createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -37,8 +54,8 @@
     `sourceStore.delete()` MUST all be present on the migrated store
   - `sourceStore.testSource()` MUST still be callable
   - `src/modals/Source/` components that are now handled by CnIndexPage MUST be removed
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Apply Thijn PR #720 — Endpoints → CnIndexPage + createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -48,8 +65,8 @@
     THEN `CnIndexPage` MUST render the endpoints list
   - `endpointStore` MUST expose the `createCrudStore` base surface
   - Endpoint-specific actions (if any) MUST be preserved
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Apply Thijn PR #721 — Consumers → CnIndexPage + createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -58,8 +75,8 @@
   - GIVEN PR #721 is applied WHEN the user navigates to `/consumers`
     THEN `CnIndexPage` MUST render the consumers list
   - `consumerStore` MUST expose the `createCrudStore` base surface
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Apply Thijn PR #743 — Mappings + l10n tooling
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-npm-run-lint-and-npm-run-build-must-pass-cleanly-after-d2`
@@ -69,8 +86,8 @@
     THEN `CnIndexPage` MUST render the mappings list
   - The l10n tooling added by #743 MUST be present in `package.json` scripts
   - `npm run lint` MUST exit 0 after this task
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 6: Apply Thijn PR #744 — Cloud Events → CnIndexPage + createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -79,8 +96,8 @@
   - GIVEN PR #744 is applied WHEN the user navigates to `/cloud-events/events`
     THEN `CnIndexPage` MUST render the cloud events list
   - `eventStore` MUST expose the `createCrudStore` base surface
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 7: Apply Thijn PR #768 — Synchronizations → CnIndexPage + CnStatsPanel
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -90,8 +107,8 @@
     THEN `CnIndexPage` with `CnStatsPanel` MUST render
   - `syncStore.triggerSync(contractId, flowToken)` MUST preserve the `X-Flow-Token`
     header per ADR-011
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 8: Apply Thijn PR #769 — Sync Contracts → CnIndexPage + createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -100,8 +117,8 @@
   - GIVEN PR #769 is applied WHEN the user navigates to `/synchronizations/contracts`
     THEN `CnIndexPage` MUST render the synchronization contracts list
   - `contractStore` MUST expose the `createCrudStore` base surface
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 9: Apply Thijn PR #809 — Rules → schema-driven UI + createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -111,8 +128,8 @@
     THEN `CnIndexPage` with schema-driven form MUST render
   - The create/edit form MUST be driven by the `rule` schema from OpenRegister
   - `ruleStore` MUST expose the `createCrudStore` base surface
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 10: Apply Thijn PR #810 — Import → nc-vue page chrome + toast feedback
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-each-of-the-10-resource-pages-must-use-cnindexpage`
@@ -122,8 +139,8 @@
     THEN the Import page MUST render within the nc-vue page chrome
   - Toast feedback MUST fire on successful import and on error
   - `importExport.js` store is NOT migrated to `createCrudStore` (it is not a CRUD resource)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 11: Delete src/Controller/, src/Mapper/, src/navigation/
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-srcontroller-and-srcmapper-dead-code-directories-must-be-deleted`
@@ -134,8 +151,8 @@
   - GIVEN the pre-deletion grep `grep -r "navigation" src/ --include="*.vue" --include="*.ts" --include="*.js" --exclude-dir=navigation` returns no imports from `src/navigation/`
     THEN delete `src/navigation/`
   - HALT if either grep returns any callers — fix the callers first
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 12: Rewrite src/main.js — Tier-4 CnAppRoot bootstrap
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-the-app-shell-must-boot-via-cnapproot-using-the-d1-manifest`
@@ -149,8 +166,8 @@
   - Template: use `decidesk/src/main.js` as the exact reference implementation, adapting
     `base: generateUrl('/apps/openconnector')` and removing decidesk-specific integrations
     (xwiki, integration registry) unless openconnector needs them
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 13: Migrate remaining Pinia stores to createCrudStore
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-all-16-crud-pinia-stores-must-be-migrated-to-createcrudstore`
@@ -163,8 +180,8 @@
   - `webhooksStore` MUST expose the `createCrudStore` base surface
   - Non-CRUD stores (`navigation.js`, `search.ts`, `importExport.js`, `settings.js`)
     are NOT migrated — they remain as plain Pinia stores
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 14: Delete src/modals/Modals.vue and per-resource modal components
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-modalsvue-aggregator-must-be-deleted-after-all-resource-pages-migrate`
@@ -177,8 +194,8 @@
   - `src/modals/Modals.vue` MUST be deleted
   - Per-resource modal directories that are no longer imported by any component MUST be deleted
   - Sidebars under `src/sidebars/` MUST be preserved unchanged
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 15: Migrate Settings entry point and relocate widget JS files
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-srcSettingsjs-entry-point-must-be-deleted`
@@ -193,8 +210,8 @@
     `src/widgets/sourceSyncWidget.js`
   - `webpack.config.js` MUST update the three widget entry paths to `src/widgets/*`
   - The webpack entry names (keys in the `entry` map) MUST remain unchanged
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 16: Run lint:fix, lint, and build; verify bundle size
 - **spec_ref**: `openspec/changes/openconnector-frontend-vue-rewrite/specs/openconnector-frontend-vue-rewrite/spec.md#requirement-npm-run-lint-and-npm-run-build-must-pass-cleanly-after-d2`
@@ -205,8 +222,8 @@
   - `npm run build` exits 0 with no "Module not found" or "Cannot find module" errors
   - `npm run build -- --analyze` (if the analyze plugin is configured) confirms the
     main bundle is ≤ 110% of the `feature/nextcloud-vue` baseline
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ---
 

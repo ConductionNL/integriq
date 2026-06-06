@@ -1,0 +1,27 @@
+# Weekly smoke-test — runs composer check:strict on development to surface
+# quality drift before it accumulates into PR-blocking debt.
+# Baseline burn-down tracked at: https://codeberg.org/Conduction/openconnector/issues/13
+
+name: weekly-quality-smoke-test
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: docker
+    container:
+      image: code.forgejo.org/oci/ci-php:8.3
+    steps:
+      - name: Checkout development
+        uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          ref: development
+
+      - name: Install composer deps
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run composer check:strict
+        run: composer check:strict

@@ -132,6 +132,46 @@ class InitializeRegister implements IRepairStep
 
         $appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '1.0.0');
 
+        // ADR-037: merge modular register fragments from Settings/register.d/*.json.
+        // Each OpenSpec change drops its own fragment file instead of editing this
+        // monolith, so concurrent builds touch disjoint files (no merge conflicts).
+        // OpenAPI `components.schemas` / `paths` are keyed objects, so disjoint
+        // fragments union cleanly by key.
+        $fragmentDir = __DIR__.'/../Settings/register.d';
+        $fragmentSig = '';
+        if (is_dir($fragmentDir) === true) {
+            $fragmentFiles = glob($fragmentDir.'/*.json');
+            sort($fragmentFiles);
+            foreach ($fragmentFiles as $fragmentFile) {
+                $fragmentContent = file_get_contents($fragmentFile);
+                if ($fragmentContent === false) {
+                    continue;
+                }
+
+                $fragmentData = json_decode($fragmentContent, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $output->warning(
+                        'OpenConnector: skipping malformed register fragment '.basename($fragmentFile)
+                        .': '.json_last_error_msg()
+                    );
+                    $this->logger->warning(
+                        'OpenConnector: skipping malformed register fragment '.basename($fragmentFile)
+                        .': '.json_last_error_msg()
+                    );
+                    continue;
+                }
+
+                $descriptor   = self::deepMergeConfig($descriptor, $fragmentData);
+                $fragmentSig .= basename($fragmentFile).':'.md5($fragmentContent).';';
+            }
+        }//end if
+
+        // Fold the fragment signature into the version so OpenRegister's
+        // version-gated importFromApp re-imports whenever fragments change.
+        if ($fragmentSig !== '') {
+            $appVersion .= '+frag.'.substr(md5($fragmentSig), 0, 8);
+        }
+
         try {
             $configurationService->importFromApp(
                 appId: Application::APP_ID,
@@ -148,4 +188,39 @@ class InitializeRegister implements IRepairStep
         }
 
     }//end run()
+
+    /**
+     * Deep-merge a register fragment onto the base config (ADR-037).
+     *
+     * Associative arrays (OpenAPI objects like `components.schemas`, `paths`) are
+     * merged by key union (recursing on shared keys); list arrays are concatenated;
+     * scalars in the fragment overwrite the base. Disjoint fragments never collide.
+     *
+     * @param array<mixed> $base    The accumulated config.
+     * @param array<mixed> $overlay The fragment to merge in.
+     *
+     * @return array<mixed> The merged config.
+     */
+    private static function deepMergeConfig(array $base, array $overlay): array
+    {
+        foreach ($overlay as $key => $value) {
+            if (is_array($value) === true
+                && isset($base[$key]) === true
+                && is_array($base[$key]) === true
+            ) {
+                $baseIsList    = ($base[$key] === [] || array_keys($base[$key]) === range(0, (count($base[$key]) - 1)));
+                $overlayIsList = ($value === [] || array_keys($value) === range(0, (count($value) - 1)));
+                if ($baseIsList === true && $overlayIsList === true) {
+                    $base[$key] = array_merge($base[$key], $value);
+                } else {
+                    $base[$key] = self::deepMergeConfig($base[$key], $value);
+                }
+            } else {
+                $base[$key] = $value;
+            }
+        }
+
+        return $base;
+
+    }//end deepMergeConfig()
 }//end class

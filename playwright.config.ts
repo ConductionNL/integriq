@@ -39,7 +39,15 @@ export default defineConfig({
 	expect: { timeout: 10_000 },
 	fullyParallel: false,
 	retries: process.env.CI ? 1 : 0,
-	workers: 1,
+	// Default to a single worker so the serial default (`chromium`) and the
+	// docs-capture screenshot project stay deterministic. The chain-E
+	// `regression` project opts into 4 parallel workers via the
+	// `PLAYWRIGHT_REGRESSION_WORKERS` override (set by `npm run test:regression`
+	// → `--workers=4`) to keep its wall time under the 10-minute budget the
+	// openconnector-comprehensive-tests spec mandates (REQ-009).
+	workers: process.env.PLAYWRIGHT_REGRESSION_WORKERS
+		? Number(process.env.PLAYWRIGHT_REGRESSION_WORKERS)
+		: 1,
 	reporter: [
 		['html', { open: 'never', outputFolder: 'tests/e2e/playwright-report' }],
 		['list'],
@@ -62,9 +70,12 @@ export default defineConfig({
 			use: { ...devices['Desktop Chrome'] },
 		},
 		// Chain-E regression project — schema-driven page smoke tests for the
-		// 24 manifest pages post OR-cutover, plus spec coverage tests.
-		// Opt-in: npm run test:regression  (or: npx playwright test --project regression)
-		// 4 parallel workers per chain-E spec requirement.
+		// 24 manifest pages post OR-cutover, the migration round-trip invariant,
+		// plus spec coverage tests.
+		// Opt-in: npm run test:regression  (runs with --workers=4 per REQ-009),
+		//   or: PLAYWRIGHT_REGRESSION_WORKERS=4 npx playwright test --project regression
+		// `fullyParallel: true` lets the 4 workers spread tests across files AND
+		// within files, keeping wall time under the spec's 10-minute budget.
 		{
 			name: 'regression',
 			testMatch: /(regression|spec-coverage)\/.*\.spec\.ts$/,

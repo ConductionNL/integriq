@@ -554,4 +554,60 @@ class AuthenticationService
 
         return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
     }//end fetchJWTToken()
+
+    /**
+     * Build a WS-Security UsernameToken SOAP header XML string.
+     *
+     * Supports PasswordText (plaintext) and PasswordDigest
+     * (Base64(SHA1(Nonce + Created + Password))) authentication modes per the
+     * WS-Security UsernameToken 1.0 profile.
+     *
+     * @param array $configuration Auth configuration. Required keys: username, password.
+     *                             Optional: passwordType ('PasswordText'|'PasswordDigest'), nonce.
+     *
+     * @return string The wsse:Security SOAP header XML fragment.
+     *
+     * @throws BadRequestException When required username or password is missing.
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-012
+     */
+    public function buildWsSecurityHeader(array $configuration): string
+    {
+        if (isset($configuration['username']) === false || isset($configuration['password']) === false) {
+            throw new BadRequestException(message: 'WS-Security requires username and password in configuration.');
+        }
+
+        $username     = (string) $configuration['username'];
+        $password     = (string) $configuration['password'];
+        $passwordType = (string) ($configuration['passwordType'] ?? 'PasswordText');
+        $created      = (new \DateTime())->format('Y-m-d\TH:i:s\Z');
+
+        $wsseNs = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd';
+        $wsuNs  = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd';
+        $pwNs   = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0';
+
+        if ($passwordType === 'PasswordDigest') {
+            $nonce         = base64_encode(random_bytes(length: 16));
+            $rawNonce      = base64_decode($nonce);
+            $digestInput   = $rawNonce.$created.$password;
+            $passwordValue = base64_encode(sha1(string: $digestInput, binary: true));
+            $pwTypeUri     = $pwNs.'#PasswordDigest';
+        } else {
+            $nonce         = base64_encode(random_bytes(length: 16));
+            $passwordValue = $password;
+            $pwTypeUri     = $pwNs.'#PasswordText';
+        }
+
+        return '<wsse:Security xmlns:wsse="'.$wsseNs.'" xmlns:wsu="'.$wsuNs.'">'
+            .'<wsse:UsernameToken>'
+            .'<wsse:Username>'.htmlspecialchars(string: $username, flags: ENT_XML1).'</wsse:Username>'
+            .'<wsse:Password Type="'.$pwTypeUri.'">'
+            .htmlspecialchars(string: $passwordValue, flags: ENT_XML1)
+            .'</wsse:Password>'
+            .'<wsse:Nonce>'.htmlspecialchars(string: $nonce, flags: ENT_XML1).'</wsse:Nonce>'
+            .'<wsu:Created>'.$created.'</wsu:Created>'
+            .'</wsse:UsernameToken>'
+            .'</wsse:Security>';
+
+    }//end buildWsSecurityHeader()
 }//end class

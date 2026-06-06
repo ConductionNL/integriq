@@ -54,6 +54,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/Doctrine/DBAL/ArrayParameterType.php';
         }
 
+        if (class_exists('Doctrine\\DBAL\\Types\\Types') === false) {
+            require_once $stubsDir . '/Doctrine/DBAL/Types/Types.php';
+        }
+
         if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder') === false) {
             require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
         }
@@ -81,6 +85,11 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
         if (class_exists('OCA\\OpenRegister\\Service\\FileService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/FileService.php';
+        }
+
+        // OC\Hooks\Emitter — required by OCP\Files\IRootFolder at interface-load time.
+        if (interface_exists('OC\\Hooks\\Emitter') === false) {
+            require_once $stubsDir . '/OC/Hooks/Emitter.php';
         }
 
         if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
