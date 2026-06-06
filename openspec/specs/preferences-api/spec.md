@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-26-preferences-api. Update Purpose after archive.
+
+@e2e exclude backend per-user preferences API (controller auth + key sanitization, no browser UI) — covered by Newman/PHPUnit
+
 ## Requirements
 ### Requirement: Get user preference (REQ-PREF-001)
 The system SHALL return a stored per-user preference value for a given key (scoped to the current user), or a default when unset. The get-preference endpoint MUST require an authenticated user, MUST sanitize the requested key to a safe charset within the `pref_` namespace, and MUST return the stored value (or null when unset). An unauthenticated request MUST be rejected and an invalid key MUST yield a bad-request response.

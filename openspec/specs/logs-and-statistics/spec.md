@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-logs-and-statistics. Update Purpose after archive.
+
+@e2e exclude backend logs/statistics API (LogsController + StatisticsService aggregation + CSV export, no browser UI) — covered by Newman/PHPUnit; the log sub-pages render is covered by manifest-pages e2e
+
 ## Requirements
 ### Requirement: Synchronization log listing, retrieval and deletion (REQ-001)
 
