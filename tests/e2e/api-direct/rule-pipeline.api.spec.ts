@@ -11,9 +11,10 @@
  * Newman). The UI scenarios for rule-pipeline carry @e2e tags and remain in
  * tests/e2e/spec-coverage/rule-pipeline.spec.ts.
  *
- * KNOWN APP STATE: dispatch on a non-matching path returns 500 (not 404) while
- * the missing OCA\OpenConnector\Db\SynchronizationMapper breakage persists
- * (flagged real-app-bug).
+ * APP STATE: dispatch on a non-matching path returns a clean 404. The former
+ * 500 (the removed OCA\OpenConnector\Db\SynchronizationMapper was still injected
+ * into SynchronizationService) is fixed; synchronizations now resolve through
+ * OpenRegister.
  */
 
 import { test, expect } from '@playwright/test'
@@ -38,8 +39,8 @@ test.describe('Rule pipeline dispatch — no-match', () => {
 		const resp = await request.get(`${API_BASE}/endpoint/pw-rule-no-endpoint-${Date.now()}`, {
 			failOnStatusCode: false,
 		})
-		// 404 once the dispatch pipeline is healthy; 500 while the missing
-		// SynchronizationMapper breakage persists (flagged real-app-bug).
-		expect([404, 500]).toContain(resp.status())
+		// The dispatch pipeline is healthy: a no-match returns a clean 404.
+		expect(resp.status()).not.toBe(500)
+		expect([404]).toContain(resp.status())
 	})
 })

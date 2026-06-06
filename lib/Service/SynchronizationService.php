@@ -21,9 +21,9 @@ use OCA\OpenConnector\Db\SynchronizationContractLogMapper;
 use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Db\SynchronizationLog;
 use OCA\OpenConnector\Db\SynchronizationLogMapper;
-use OCA\OpenConnector\Db\SynchronizationMapper;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -82,33 +82,333 @@ class SynchronizationService
     private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
     private const DEFAULT_ERROR_LOG_RETENTION = 259200000;
 
-	public function __construct(
-		private readonly CallService                      $callService,
-		private readonly MappingService                   $mappingService,
-		private readonly ContainerInterface               $containerInterface,
-		private readonly SourceMapper                     $sourceMapper,
-		private readonly MappingMapper                    $mappingMapper,
-		private readonly SynchronizationMapper            $synchronizationMapper,
-		private readonly SynchronizationLogMapper         $synchronizationLogMapper,
-		private readonly SynchronizationContractMapper    $synchronizationContractMapper,
-		private readonly SynchronizationContractLogMapper $synchronizationContractLogMapper,
-		private readonly ObjectService                    $objectService,
-        private readonly StorageService                   $storageService,
-        private readonly RuleMapper                       $ruleMapper,
-        private readonly LoggerInterface                  $logger,
+    /**
+     * The source mapper.
+     *
+     * @var SourceMapper
+     */
+    private SourceMapper $sourceMapper;
+
+    /**
+     * The mapping mapper.
+     *
+     * @var MappingMapper
+     */
+    private MappingMapper $mappingMapper;
+
+    /**
+     * The synchronization log mapper.
+     *
+     * @var SynchronizationLogMapper
+     */
+    private SynchronizationLogMapper $synchronizationLogMapper;
+
+    /**
+     * The synchronization contract mapper.
+     *
+     * @var SynchronizationContractMapper
+     */
+    private SynchronizationContractMapper $synchronizationContractMapper;
+
+    /**
+     * The synchronization contract log mapper.
+     *
+     * @var SynchronizationContractLogMapper
+     */
+    private SynchronizationContractLogMapper $synchronizationContractLogMapper;
+
+    /**
+     * The rule mapper.
+     *
+     * @var RuleMapper
+     */
+    private RuleMapper $ruleMapper;
+
+    /**
+     * Constructor.
+     *
+     * Post OpenRegister-cutover, synchronizations are resolved through the
+     * OpenRegister object service (register `openconnector`, schema
+     * `synchronization`); the legacy SynchronizationMapper was removed. The
+     * surviving QBMappers (sources, mappings, rules, contract/log) are resolved
+     * from the container so the public constructor stays aligned with the
+     * OpenRegister-based wiring.
+     *
+     * @param CallService        $callService        The call service.
+     * @param MappingService     $mappingService     The mapping service.
+     * @param ContainerInterface $containerInterface The PSR-11 container.
+     * @param OrObjectService    $orObjectService    The OpenRegister object service.
+     * @param ObjectService      $objectService      The OpenConnector object service.
+     * @param StorageService     $storageService     The storage service.
+     * @param LoggerInterface    $logger             The logger.
+     * @param IAppConfig         $appConfig          The app configuration.
+     */
+    public function __construct(
+        private readonly CallService $callService,
+        private readonly MappingService $mappingService,
+        private readonly ContainerInterface $containerInterface,
+        private readonly OrObjectService $orObjectService,
+        private readonly ObjectService $objectService,
+        private readonly StorageService $storageService,
+        private readonly LoggerInterface $logger,
         IAppConfig $appConfig,
-	)
-	{
-        if($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
-            $this->errorRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true)['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION;;
-        } else {
-            $this->errorRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->errorContractRetention = self::DEFAULT_ERROR_LOG_RETENTION;
-            $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
+    ) {
+        // Resolve the surviving QBMappers from the container so the constructor
+        // signature mirrors the OpenRegister-based wiring (and the unit suite).
+        // Guarded against a bare container mock that returns null in tests which
+        // only exercise the OpenRegister-backed paths.
+        $sourceMapper = $this->containerInterface->get(SourceMapper::class);
+        if ($sourceMapper instanceof SourceMapper) {
+            $this->sourceMapper = $sourceMapper;
         }
-	}
+
+        $mappingMapper = $this->containerInterface->get(MappingMapper::class);
+        if ($mappingMapper instanceof MappingMapper) {
+            $this->mappingMapper = $mappingMapper;
+        }
+
+        $ruleMapper = $this->containerInterface->get(RuleMapper::class);
+        if ($ruleMapper instanceof RuleMapper) {
+            $this->ruleMapper = $ruleMapper;
+        }
+
+        $synchronizationLogMapper = $this->containerInterface->get(SynchronizationLogMapper::class);
+        if ($synchronizationLogMapper instanceof SynchronizationLogMapper) {
+            $this->synchronizationLogMapper = $synchronizationLogMapper;
+        }
+
+        $synchronizationContractMapper = $this->containerInterface->get(SynchronizationContractMapper::class);
+        if ($synchronizationContractMapper instanceof SynchronizationContractMapper) {
+            $this->synchronizationContractMapper = $synchronizationContractMapper;
+        }
+
+        $synchronizationContractLogMapper = $this->containerInterface->get(SynchronizationContractLogMapper::class);
+        if ($synchronizationContractLogMapper instanceof SynchronizationContractLogMapper) {
+            $this->synchronizationContractLogMapper = $synchronizationContractLogMapper;
+        }
+
+        if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
+            $retention = json_decode($appConfig->getValueString(app: 'openconnector', key: 'retention'), true);
+
+            $this->errorRetention         = ($retention['syncLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
+            $this->errorContractRetention = ($retention['syncContractLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
+            $this->successRetention       = ($retention['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION);
+        } else {
+            $this->errorRetention         = self::DEFAULT_ERROR_LOG_RETENTION;
+            $this->errorContractRetention = self::DEFAULT_ERROR_LOG_RETENTION;
+            $this->successRetention       = self::DEFAULT_SUCCESS_LOG_RETENTION;
+        }
+
+    }//end __construct()
+
+    /**
+     * Normalise a synchronization argument into the typed value object.
+     *
+     * Accepts either an already-hydrated Synchronization or an OpenRegister
+     * ObjectEntity (as handed in by controllers/cron) and returns a Synchronization.
+     *
+     * @param Synchronization|ObjectEntity $synchronization The synchronization to normalise.
+     *
+     * @return Synchronization The typed synchronization value object.
+     */
+    private function toSynchronization(Synchronization|ObjectEntity $synchronization): Synchronization
+    {
+        if ($synchronization instanceof Synchronization) {
+            return $synchronization;
+        }
+
+        $entity = new Synchronization();
+        $entity->hydrate($synchronization->jsonSerialize());
+
+        return $entity;
+    }//end toSynchronization()
+
+    /**
+     * Find a single synchronization OpenRegister object by its id/uuid.
+     *
+     * @param string|int $id The OpenRegister id (UUID) of the synchronization.
+     *
+     * @return ObjectEntity The OpenRegister synchronization object.
+     *
+     * @throws DoesNotExistException When no synchronization matches the id.
+     */
+    private function findSynchronizationObject(string|int $id): ObjectEntity
+    {
+        $object = $this->orObjectService->find(
+            id: (string) $id,
+            register: 'openconnector',
+            schema: 'synchronization'
+        );
+
+        if ($object === null) {
+            throw new DoesNotExistException('The synchronization you are looking for does not exist');
+        }
+
+        return $object;
+    }//end findSynchronizationObject()
+
+    /**
+     * Find a single synchronization by id and hydrate it into the value object.
+     *
+     * @param string|int $id The OpenRegister id (UUID) of the synchronization.
+     *
+     * @return Synchronization The hydrated synchronization.
+     *
+     * @throws DoesNotExistException When no synchronization matches the id.
+     */
+    private function findSynchronization(string|int $id): Synchronization
+    {
+        return $this->toSynchronization(synchronization: $this->findSynchronizationObject(id: $id));
+    }//end findSynchronization()
+
+    /**
+     * Find all synchronization OpenRegister objects matching the given filters.
+     *
+     * @param array $filters Filters keyed by synchronization field (e.g. `sourceId`, `sourceType`).
+     *
+     * @return ObjectEntity[] The OpenRegister synchronization objects.
+     */
+    private function findAllSynchronizationObjects(array $filters=[]): array
+    {
+        $config  = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization'], $filters)];
+        $matches = $this->orObjectService->findAll(config: $config);
+
+        return array_values(($matches['results'] ?? $matches));
+    }//end findAllSynchronizationObjects()
+
+    /**
+     * Find all synchronizations matching the given filters and hydrate them.
+     *
+     * @param array $filters Filters keyed by synchronization field (e.g. `sourceId`, `sourceType`).
+     *
+     * @return Synchronization[] The hydrated synchronizations.
+     */
+    private function findAllSynchronizations(array $filters=[]): array
+    {
+        return array_map(
+            fn ($object): Synchronization => $this->toSynchronization(synchronization: $object),
+            $this->findAllSynchronizationObjects(filters: $filters)
+        );
+    }//end findAllSynchronizations()
+
+    /**
+     * Persist mutations made to a synchronization back to OpenRegister.
+     *
+     * @param Synchronization $synchronization The synchronization to persist.
+     *
+     * @return void
+     */
+    private function persistSynchronization(Synchronization $synchronization): void
+    {
+        $this->orObjectService->saveObject(
+            object: $synchronization->jsonSerialize(),
+            register: 'openconnector',
+            schema: 'synchronization'
+        );
+    }//end persistSynchronization()
+
+    /**
+     * Find synchronizations triggered by a mutation on a related object.
+     *
+     * Reimplements the removed SynchronizationMapper::findAllByRelatedObjectTrigger
+     * over OpenRegister-stored synchronizations.
+     *
+     * @param string|int $register     The register id of the mutated object.
+     * @param string|int $schema       The schema id of the mutated object.
+     * @param string     $mutationType The mutation type: create|update|delete.
+     *
+     * @return Synchronization[] The synchronizations whose related-object trigger matches.
+     */
+    private function findAllByRelatedObjectTrigger(string|int $register, string|int $schema, string $mutationType): array
+    {
+        if (in_array($mutationType, self::VALID_MUTATION_TYPES, true) === false) {
+            return [];
+        }
+
+        $relatedSourceId  = "$register/$schema";
+        $synchronizations = $this->findAllSynchronizations(filters: ['sourceType' => 'register/schema']);
+
+        return array_values(
+            array_filter(
+                $synchronizations,
+                function (Synchronization $synchronization) use ($relatedSourceId, $mutationType): bool {
+                    $sourceConfig  = $synchronization->getSourceConfig();
+                    $triggerConfig = ($sourceConfig['triggerFromRelatedObjects'] ?? null);
+
+                    if (is_array($triggerConfig) === false || isset($triggerConfig[$relatedSourceId]) === false) {
+                        return false;
+                    }
+
+                    return $this->isRelatedTriggerConfigAllowed(triggerSourceConfig: $triggerConfig[$relatedSourceId], mutationType: $mutationType);
+                }
+            )
+        );
+    }//end findAllByRelatedObjectTrigger()
+
+    /**
+     * Validates trigger configuration for one related source entry.
+     *
+     * Expected shape: {"<relationKey>": ["create","update","delete"]}.
+     *
+     * @param mixed  $triggerSourceConfig Config value for one register/schema key.
+     * @param string $mutationType        Current mutation type to validate.
+     *
+     * @return bool True when the config allows the given mutation type.
+     */
+    private function isRelatedTriggerConfigAllowed(mixed $triggerSourceConfig, string $mutationType): bool
+    {
+        if (is_array($triggerSourceConfig) === false) {
+            return false;
+        }
+
+        if ($this->isAssociativeArray(array: $triggerSourceConfig) === true) {
+            $firstRelationKey = array_key_first($triggerSourceConfig);
+            if (is_string($firstRelationKey) === false || trim($firstRelationKey) === '') {
+                return false;
+            }
+
+            return $this->isRelatedObjectMutationAllowed(
+                mutationConfig: ($triggerSourceConfig[$firstRelationKey] ?? []),
+                mutationType: $mutationType
+            );
+        }
+
+        return false;
+    }//end isRelatedTriggerConfigAllowed()
+
+    /**
+     * Checks whether a mutation list allows the given mutation type.
+     *
+     * @param mixed  $mutationConfig Array of allowed mutations.
+     * @param string $mutationType   Current mutation type.
+     *
+     * @return bool True when allowed (or "all" is present), false otherwise.
+     */
+    private function isRelatedObjectMutationAllowed(mixed $mutationConfig, string $mutationType): bool
+    {
+        if (is_array($mutationConfig) === false) {
+            return false;
+        }
+
+        $normalizedMutations = array_map(
+            static fn (mixed $mutation): string => strtolower((string) $mutation),
+            $mutationConfig
+        );
+
+        if (in_array('all', $normalizedMutations, true) === true) {
+            return true;
+        }
+
+        $normalMutation = strtolower($mutationType);
+
+        // Create and update are treated as one "upsert" group for trigger checks.
+        if ($normalMutation === 'create' || $normalMutation === 'update') {
+            return in_array('create', $normalizedMutations, true) || in_array('update', $normalizedMutations, true);
+        }
+
+        // Delete remains strict and must be explicitly configured.
+        return $normalMutation === 'delete' && in_array('delete', $normalizedMutations, true);
+    }//end isRelatedObjectMutationAllowed()
 
     /**
      * Calculates the used retention for created logs. Consists of the maximum of the retention from the source, and the global retention, unless either of both is 0, in which case retention is indefinite.
@@ -138,7 +438,7 @@ class SynchronizationService
 	 */
 	public function findAllBySourceId($register, $schema) {
 		$sourceId = "$register/$schema";
-		return $this->synchronizationMapper->findAll(limit: null, offset: null, filters: ['source_id' => $sourceId]);
+		return $this->findAllSynchronizationObjects(filters: ['sourceId' => $sourceId]);
 	}
 
     /**
@@ -199,7 +499,8 @@ class SynchronizationService
         $processedSynchronizationIds = [];
 
         $directSynchronizations = $this->findAllBySourceId(register: $register, schema: $schema);
-        foreach ($directSynchronizations as $synchronization) {
+        foreach ($directSynchronizations as $synchronizationObject) {
+            $synchronization = $this->toSynchronization(synchronization: $synchronizationObject);
             if ($this->shouldTriggerOnEvent($synchronization, $eventMutationType) === false) {
                 continue;
             }
@@ -232,7 +533,7 @@ class SynchronizationService
             }
         }
 
-        $triggeredSynchronizations = $this->synchronizationMapper->findAllByRelatedObjectTrigger(
+        $triggeredSynchronizations = $this->findAllByRelatedObjectTrigger(
             register: $register,
             schema: $schema,
             mutationType: $eventMutationType
@@ -701,7 +1002,7 @@ class SynchronizationService
         $stageStartTime = microtime(true);
         $followUpCount = 0;
         foreach ($synchronization->getFollowUps() as $followUp) {
-            $followUpSynchronization = $this->synchronizationMapper->find($followUp);
+            $followUpSynchronization = $this->findSynchronization(id: $followUp);
             $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
             $followUpCount++;
         }
@@ -740,7 +1041,7 @@ class SynchronizationService
         }
 
         $synchronization->setTargetLastSynced(new DateTime());
-        $this->synchronizationMapper->update($synchronization);
+        $this->persistSynchronization(synchronization: $synchronization);
 
         return $log;
     }
@@ -768,17 +1069,21 @@ class SynchronizationService
 	 * @throws Exception
 	 * @throws TooManyRequestsHttpException
 	 */
-	public function synchronize(
-		Synchronization $synchronization,
-		?bool $isTest = false,
-		?bool $force = false,
-        array|\OCA\OpenRegister\Db\ObjectEntity|null &$object = null,
-		?string $mutationType = null,
-		?string $source = null,
-		?array $data = null,
-        ?FlowToken &$flowToken = null,
-	): array|SynchronizationContract|null
-	{
+    public function synchronize(
+        Synchronization|ObjectEntity $synchronization,
+        ?bool $isTest=false,
+        ?bool $force=false,
+        array|\OCA\OpenRegister\Db\ObjectEntity|null &$object=null,
+        ?string $mutationType=null,
+        ?string $source=null,
+        ?array $data=null,
+        ?FlowToken &$flowToken=null,
+    ): array|SynchronizationContract|null {
+        // Controllers and cron jobs fetch the synchronization as an OpenRegister
+        // object (register `openconnector`, schema `synchronization`); hydrate it
+        // into the typed value object the engine operates on.
+        $synchronization = $this->toSynchronization(synchronization: $synchronization);
+
         if($flowToken === null) {
             $flowToken = new FlowToken();
         }
@@ -1142,8 +1447,9 @@ class SynchronizationService
 	 * @return int The count of objects that were deleted.
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface|\OCP\DB\Exception If any database or object deletion errors occur during execution.
 	 */
-	public function deleteInvalidObjects(Synchronization $synchronization, ?array $synchronizedTargetIds = [], bool $deleteRestriction = false, array $data = []): int
+	public function deleteInvalidObjects(Synchronization|ObjectEntity $synchronization, ?array $synchronizedTargetIds = [], bool $deleteRestriction = false, array $data = []): int
 	{
+		$synchronization = $this->toSynchronization(synchronization: $synchronization);
 		$deletedObjectsCount = 0;
 		$type = $synchronization->getTargetType();
 
@@ -1792,7 +2098,7 @@ class SynchronizationService
 	{
 		// The function can be called solo set let's make sure we have the full synchronization object
 		if (isset($synchronization) === false) {
-			$synchronization = $this->synchronizationMapper->find($synchronizationContract->getSynchronizationId());
+			$synchronization = $this->findSynchronization(id: $synchronizationContract->getSynchronizationId());
 		}
 
 		// Let's check if we need to create or update
@@ -1961,7 +2267,7 @@ class SynchronizationService
 		// Reset the current page after synchronization if not a test
 		if ($isTest === false) {
 			$synchronization->setCurrentPage(1);
-			$this->synchronizationMapper->update($synchronization);
+			$this->persistSynchronization(synchronization: $synchronization);
 		}
 
 		return $objects;
@@ -2075,7 +2381,7 @@ class SynchronizationService
 
 			// Update synchronization current page
 			$synchronization->setCurrentPage($currentPage);
-			$this->synchronizationMapper->update($synchronization);
+			$this->persistSynchronization(synchronization: $synchronization);
 		}
 
 		return $allObjects;
@@ -2626,9 +2932,9 @@ class SynchronizationService
 			$synchronizationContract = $this->synchronizationContractMapper->findByOriginId($objectId);
 		}
 
-		$synchronizations = $this->synchronizationMapper->findAll(filters: [
-			'source_type' => 'register/schema',
-			'source_id' => "{$object->getRegister()}/{$object->getSchema()}",
+		$synchronizations = $this->findAllSynchronizations(filters: [
+			'sourceType' => 'register/schema',
+			'sourceId' => "{$object->getRegister()}/{$object->getSchema()}",
 		]);
 		if (count($synchronizations) === 0) {
 			return [];
@@ -3894,23 +4200,27 @@ class SynchronizationService
 	}
 
     /**
-     * Fetch an synchronization by id or other characteristics.
-     * Prevents other services from having to interact with the synchronizationmapper directly.
+     * Fetch a synchronization OpenRegister object by id or other characteristics.
      *
-     * @param string|int|null $id The id of the synchronization.
-     * @param array $filters Other filters to find the synchronization by.
-     * @return Synchronization The resulting synchronization
+     * Post-cutover, synchronizations are OpenRegister objects (register
+     * `openconnector`, schema `synchronization`); this resolves them without any
+     * caller needing to touch the OpenRegister object service directly.
+     *
+     * @param string|int|null $id      The OpenRegister id (UUID) of the synchronization.
+     * @param array           $filters Other filters to find the synchronization by.
+     *
+     * @return ObjectEntity The resulting synchronization object.
+     *
      * @throws DoesNotExistException Thrown if the synchronization does not exist.
      */
-    public function getSynchronization(null|string|int $id = null, array $filters = []) :Synchronization
+    public function getSynchronization(null|string|int $id = null, array $filters = []) :ObjectEntity
     {
         if ($id !== null) {
-            $id = intval($id);
-            return $this->synchronizationMapper->find($id);
+            // OpenRegister ids are UUID strings; pass through unchanged.
+            return $this->findSynchronizationObject(id: (string) $id);
         }
 
-        /** @var Synchronization[] $synchronizations */
-        $synchronizations = $this->synchronizationMapper->findAll(filters: $filters);
+        $synchronizations = $this->findAllSynchronizationObjects(filters: $filters);
 
         if(count($synchronizations) === 0) {
             throw new DoesNotExistException('The synchronization you are looking for does not exist');

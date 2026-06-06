@@ -14,11 +14,11 @@
  * The UI scenarios for endpoint-runtime (list/modal/detail/logs) carry @e2e
  * tags and remain in tests/e2e/spec-coverage/endpoint-runtime.spec.ts.
  *
- * KNOWN APP STATE: the endpoint gateway dispatch path currently returns 500
- * (not 404) on a no-match path because the post-OR-cutover SynchronizationService
- * references a removed OCA\OpenConnector\Db\SynchronizationMapper class. The
- * Newman dispatch test accepts [200, 400, 404, 500] to reflect that. See the
- * gate-19 report for the flagged real-app-bug.
+ * APP STATE: the endpoint gateway dispatch path returns a clean 404 on a
+ * no-match path. The former 500 (the post-OR-cutover SynchronizationService
+ * injected the removed OCA\OpenConnector\Db\SynchronizationMapper, so the
+ * service — and any controller depending on it — could not be constructed) is
+ * fixed: synchronizations now resolve through OpenRegister.
  */
 
 import { test, expect } from '@playwright/test'
@@ -31,9 +31,9 @@ test.describe('Endpoint dispatch HTTP surface — no-match', () => {
 		const resp = await request.get(`${API_BASE}/endpoint/pw-e2e-no-match-${Date.now()}`, {
 			failOnStatusCode: false,
 		})
-		// 404 once the dispatch pipeline is healthy; 500 while the missing
-		// SynchronizationMapper breakage persists (flagged real-app-bug).
-		expect([404, 500]).toContain(resp.status())
+		// The dispatch pipeline is healthy: a no-match returns a clean 404.
+		expect(resp.status()).not.toBe(500)
+		expect([404]).toContain(resp.status())
 	})
 
 	test('PUT /api/endpoint/{path} with no matching endpoint is routable (not a 2xx)', async ({ request }) => {
@@ -41,7 +41,8 @@ test.describe('Endpoint dispatch HTTP surface — no-match', () => {
 			data: {},
 			failOnStatusCode: false,
 		})
-		expect([404, 500]).toContain(resp.status())
+		expect(resp.status()).not.toBe(500)
+		expect([404]).toContain(resp.status())
 	})
 })
 
