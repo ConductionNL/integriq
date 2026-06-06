@@ -43,12 +43,7 @@ test.describe('REQ-CON-UI-001: Consumers list page mounts', () => {
 test.describe('REQ-CON-UI-001: Add Consumer modal', () => {
 	// @e2e consumer-management::add-consumer-button-opens-the-creation-modal
 	test('Add Item button on Consumers page opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'networkidle' })
-		// Switch to Cards view to ensure the add button is accessible
-		const cardsRadio = page.getByRole('radio', { name: /Cards/i })
-		if (await cardsRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
-			await cardsRadio.click()
-		}
+		await page.goto(`${APP_BASE}/consumers`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Consumer)/i })
 		await expect(addBtn, 'Add Item button must be visible on Consumers page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
@@ -81,12 +76,7 @@ test.describe('REQ-WBHK-UI-001: Webhooks list page mounts', () => {
 test.describe('REQ-WBHK-UI-001: Add Webhook modal', () => {
 	// @e2e consumer-management::add-webhook-button-opens-the-creation-modal
 	test('Add Item button on Webhooks page opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'networkidle' })
-		// Switch to Cards view to ensure the add button is accessible
-		const cardsRadio = page.getByRole('radio', { name: /Cards/i })
-		if (await cardsRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
-			await cardsRadio.click()
-		}
+		await page.goto(`${APP_BASE}/webhooks`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Webhook|Consumer)/i })
 		await expect(addBtn, 'Add Item button must be visible on Webhooks page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
