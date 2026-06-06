@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-http-call-engine. Update Purpose after archive.
+
+@e2e exclude backend outbound HTTP call engine + CallLog persistence (no browser UI) — covered by PHPUnit/Newman
+
 ## Requirements
 ### Requirement: Outbound HTTP call orchestration with CallLog persistence (REQ-001)
 

@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-organisation-bridge. Update Purpose after archive.
+
+@e2e exclude backend OR OrganisationService bridge accessor (no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: Soft-fail lazy accessor for OR OrganisationService (REQ-001)
 

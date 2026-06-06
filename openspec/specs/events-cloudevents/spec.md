@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-events-cloudevents. Update Purpose after archive.
+
+@e2e exclude backend CloudEvent fan-out service (event dispatch, no browser UI) — covered by PHPUnit/Newman
+
 ## Requirements
 ### Requirement: CloudEvent fan-out to matching subscriptions (REQ-001)
 

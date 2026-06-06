@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-authorization-jwt. Update Purpose after archive.
+
+@e2e exclude backend JWT authorization service (token verification, no browser UI) — covered by PHPUnit/Newman
+
 ## Requirements
 ### Requirement: JWT Bearer authorization with consumer-registered public keys (REQ-001)
 

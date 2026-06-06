@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-storage-uploads. Update Purpose after archive.
+
+@e2e exclude backend multipart upload storage service (no browser UI) — covered by PHPUnit/Newman
+
 ## Requirements
 ### Requirement: Multi-part upload initialisation with cache-tracked parts (REQ-001)
 

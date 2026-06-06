@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-xml-response. Update Purpose after archive.
+
+@e2e exclude backend XML serialisation helper (array→XML rendering, no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: Data accessor and render-callback override (REQ-001)
 

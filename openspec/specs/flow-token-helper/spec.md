@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-flow-token-helper. Update Purpose after archive.
+
+@e2e exclude backend flow-token request/response snapshot helper (no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: Request snapshot ingestion with content parsing (REQ-001)
 

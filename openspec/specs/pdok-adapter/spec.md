@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-pdok-adapter. Update Purpose after archive.
+
+@e2e exclude backend PDOK connector PHP class (HTTP adapter, no browser UI) — covered by PHPUnit/Newman
+
 ## Requirements
 ### Requirement: PDOK Connector Class
 
