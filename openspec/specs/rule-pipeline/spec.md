@@ -252,6 +252,8 @@ type MUST throw.
 
 ### Requirement: Ordered Rule Pipeline Execution (REQ-RULE-001)
 
+@e2e exclude backend rule pipeline execution — covered by PHPUnit, not browser UI
+
 The system MUST resolve an endpoint's configured rules into rule entities,
 sort them by their numeric `order` field (ascending, default 0), and process
 each rule in turn for the requested timing phase. For each rule the system MUST
@@ -291,6 +293,8 @@ endpoint name, rule name, rule type, and error message.
 
 ### Requirement: Data-Mutation Rules (REQ-RULE-002)
 
+@e2e exclude backend data-mutation rule internals — covered by PHPUnit, not browser UI
+
 The system MUST provide rules that mutate the request/response data envelope
 against an OpenRegister object or schema. `save_object` MUST persist
 `data['body']` to a configured register/schema (optionally pre-mapping it) via
@@ -329,6 +333,8 @@ OpenRegister `lockObject` / `unlockObject`.
 
 ### Requirement: Authentication and Error Rules (REQ-RULE-003)
 
+@e2e exclude backend authentication and error rule internals — covered by PHPUnit, not browser UI
+
 The system MUST provide an `authentication` rule that enforces per-endpoint
 credential checks and an `error` rule that returns a configured error response.
 The authentication rule MUST read the credential from the `Authorization`
@@ -361,6 +367,8 @@ optionally including the JSON-Logic result as an `errors` array.
 - The authentication rule returns the data envelope **unchanged** on success rather than recording the authenticated principal; downstream rules and the target dispatch run with no record of which credential passed. Documented as observed; flagged as a follow-up for principal propagation.
 
 ### Requirement: File, Synchronisation, and Download Rules (REQ-RULE-004)
+
+@e2e exclude backend file/sync/download rule internals — covered by PHPUnit, not browser UI
 
 The system MUST provide rules that handle file persistence, mid-request
 synchronisation, and file downloads. `write_file` MUST base64-decode payload(s)
@@ -405,6 +413,8 @@ it as a `DataDownloadResponse`.
   blocking `sleep()` calls inside the request thread.
 
 ### Requirement: Custom Software-Catalogus Rules (REQ-RULE-005)
+
+@e2e exclude backend custom-rule engine internals — covered by PHPUnit, not browser UI
 
 The system MUST provide a `custom` rule type that dispatches on a configured
 custom-rule `type`. `softwareCatalogus` MUST build a GEMMA/ArchiMate export
