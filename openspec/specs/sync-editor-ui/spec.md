@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-25-sync-editor-ui. Update Purpose after archive.
+
+@e2e exclude Vue component-internal method/computed behaviour (updateDraft, normalizeForDiff dirty flag, normaliseConditions/serializeConditions round-trip, save guards) reverse-engineered from the synchronization detail-page .vue components — unit-level (vitest), not browser-observable; the synchronization detail-page render surface is covered by manifest-pages e2e under synchronization-engine
+
 ## Requirements
 ### Requirement: Synchronization detail page load, edit, conditions, and save (REQ-SYNCUI-001)
 

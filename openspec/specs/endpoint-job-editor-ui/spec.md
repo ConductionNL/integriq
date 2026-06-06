@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-25-endpoint-job-editor-ui. Update Purpose after archive.
+
+@e2e exclude Vue component-internal method/computed behaviour (editEndpoint/setSchemaOptions derived selectors, draft init, modal close/re-derive) reverse-engineered from the endpoint/job edit-modal .vue components — unit-level (vitest), not browser-observable; the endpoint/job detail-page renders + Add modal surfaces are covered by manifest-pages e2e under endpoint-runtime and job-management
+
 ## Requirements
 ### Requirement: Endpoint edit modal (REQ-EPJOBUI-001)
 

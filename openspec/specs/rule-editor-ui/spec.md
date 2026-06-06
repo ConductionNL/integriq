@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-25-rule-editor-ui. Update Purpose after archive.
+
+@e2e exclude Vue component-internal method/computed behaviour (dirty flag, normaliseConditions, argsForKind, onTypePick/formComponent, dynamic-row prune, onSave guard) reverse-engineered from RuleDetailPage/RuleConditionGroup/RuleConditionLeaf/RuleActionConfig/EditRule/AddEndpointRule .vue files — unit-level (vitest), not browser-observable; the rule detail-page render + Add Rule modal surfaces are covered by manifest-pages e2e under rule-pipeline
+
 ## Requirements
 ### Requirement: Rule detail page load, edit, and save lifecycle (REQ-RULEUI-001)
 
