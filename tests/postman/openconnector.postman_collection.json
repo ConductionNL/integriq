@@ -613,6 +613,98 @@
       ]
     },
     {
+      "name": "12 — OR cutover smoke (migrated from Playwright or-cutover-smoke.spec.ts)",
+      "description": "HTTP-contract assertions migrated from the API-direct Playwright spec tests/e2e/regression/or-cutover-smoke.spec.ts (Playwright is UI-only per ADR/policy; API contract belongs in Newman). Asserts the post chain-B/C OR-cutover state: register schema count, graceful 4xx on a non-existent source uuid, and that deleted legacy routes 404.",
+      "item": [
+        {
+          "name": "GET /api/registers — openconnector register references 15 schemas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php", "apps", "openregister", "api", "registers"] },
+            "header": [{ "key": "Accept", "value": "application/json" }]
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "const registers = body.results || body;",
+            "const oc = (Array.isArray(registers) ? registers : []).find(r => r.slug === 'openconnector');",
+            "pm.test('openconnector register exists', () => pm.expect(oc, 'openconnector register').to.be.ok);",
+            "pm.test('openconnector register references 15 schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.eql(15));"
+          ] }}]
+        },
+        {
+          "name": "POST /sources/test/{non-existent-uuid} — 4xx, not 500",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/sources/test/00000000-0000-0000-0000-000000000000", "host": ["{{ocBase}}"], "path": ["sources", "test", "00000000-0000-0000-0000-000000000000"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('non-existent uuid is handled gracefully (4xx, not 500)', () => pm.expect([400, 404, 422]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /api/import — deleted route returns 404 (not orphan controller)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ocBase}}/import", "host": ["{{ocBase}}"], "path": ["import"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('route is gone after chain-C cutover', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /api/export/source/x — deleted route returns 404",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ocBase}}/export/source/x", "host": ["{{ocBase}}"], "path": ["export", "source", "x"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('route is gone after chain-C cutover', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /api/dashboard/callstats — deleted route returns 404",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ocBase}}/dashboard/callstats", "host": ["{{ocBase}}"], "path": ["dashboard", "callstats"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('route is gone after chain-C cutover', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /api/dashboard/jobstats — deleted route returns 404",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ocBase}}/dashboard/jobstats", "host": ["{{ocBase}}"], "path": ["dashboard", "jobstats"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('route is gone after chain-C cutover', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /api/dashboard/syncstats — deleted route returns 404",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ocBase}}/dashboard/syncstats", "host": ["{{ocBase}}"], "path": ["dashboard", "syncstats"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('route is gone after chain-C cutover', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ] }}]
+        },
+        {
+          "name": "GET /api/settings/stats — deleted route returns 404",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ocBase}}/settings/stats", "host": ["{{ocBase}}"], "path": ["settings", "stats"] }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('route is gone after chain-C cutover', () => pm.expect([404, 405]).to.include(pm.response.code));"
+          ] }}]
+        }
+      ]
+    },
+    {
       "name": "13 — User journeys (E2E)",
       "description": "End-to-end scenarios that span multiple controllers and OR. Each journey owns its own fixtures and cleans up.",
       "item": [
