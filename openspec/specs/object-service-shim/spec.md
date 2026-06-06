@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-object-service-shim. Update Purpose after archive.
+
+@e2e exclude backend MongoDB Data API CRUD shim service (no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: MongoDB Data API CRUD wrapper (REQ-001)
 

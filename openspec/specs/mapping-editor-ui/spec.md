@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-25-mapping-editor-ui. Update Purpose after archive.
+
+@e2e exclude Vue component-internal method/computed behaviour (ensureRegistered, persistPatch, derived rule collections, load-error state) reverse-engineered from the mapping detail-page .vue components — unit-level (vitest), not browser-observable; the mapping detail-page render + Add Mapping modal surfaces are covered by manifest-pages e2e under mapping-and-search
+
 ## Requirements
 ### Requirement: Mapping detail page load, edit, and persistence (REQ-MAPUI-001)
 

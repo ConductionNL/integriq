@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-job-scheduling. Update Purpose after archive.
+
+@e2e exclude backend job log API + cron scheduling internals (no browser UI) — covered by PHPUnit/Newman
+
 ## Requirements
 ### Requirement: Job log listing with pagination and filter parameters (REQ-001)
 

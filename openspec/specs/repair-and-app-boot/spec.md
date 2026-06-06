@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-repair-and-app-boot. Update Purpose after archive.
+
+@e2e exclude backend install/upgrade repair steps + provider registration (OR import, runs at app boot, no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: Register descriptor import via OR ConfigurationService on install/upgrade (REQ-001)
 

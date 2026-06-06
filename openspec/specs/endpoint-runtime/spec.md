@@ -261,6 +261,8 @@ OpenRegister `extend` syntax (`reduceExtendKeys`).
 
 ### Requirement: Generic Path Dispatch and CORS (REQ-EP-001)
 
+@e2e exclude backend endpoint dispatch runtime — covered by Newman/PHPUnit, not browser UI
+
 The system MUST expose a public generic dispatcher at
 `/api/endpoint/{_path}` that resolves the request path and HTTP method to a
 single registered endpoint via the endpoint cache, returning HTTP 404 when no
@@ -303,6 +305,8 @@ allowed methods, headers, max-age, and `Access-Control-Allow-Credentials: false`
 
 ### Requirement: Simple-Endpoint Fast Path (REQ-EP-002)
 
+@e2e exclude backend fast-path dispatch — covered by Newman/PHPUnit, not browser UI
+
 The system MUST detect "simple" endpoints — those targeting a single
 register/schema with no rules, conditions, input/output mappings, or
 configurations and using a standard HTTP method — and serve them directly via
@@ -333,6 +337,8 @@ mapper operations, returning HTTP 405 for unsupported methods.
    **WHEN** the fast path runs **THEN** it returns HTTP 400 requiring an id.
 
 ### Requirement: Full Pipeline and Target Dispatch (REQ-EP-003)
+
+@e2e exclude backend pipeline dispatch — covered by Newman/PHPUnit, not browser UI
 
 For non-simple endpoints the system MUST run the full request pipeline:
 evaluate endpoint `conditions` (returning HTTP 400 with offending fields when
@@ -382,6 +388,8 @@ with neither a schema nor a source target MUST raise an error.
 
 ### Requirement: Endpoint Resolution Cache (REQ-EP-004)
 
+@e2e exclude backend cache internals — covered by Newman/PHPUnit, not browser UI
+
 The system MUST cache the registered endpoint set to avoid an OpenRegister
 query on every request. Resolution (`findByPathRegex`) MUST filter cached
 endpoints by compiled `endpointRegex` and method; on a cache miss it MUST
@@ -419,6 +427,8 @@ and a `getCacheStats` diagnostics method.
   Documented as observed duplication.
 
 ### Requirement: Request and Response Normalisation (REQ-EP-005)
+
+@e2e exclude backend normalisation internals — covered by Newman/PHPUnit, not browser UI
 
 The system MUST normalise inbound and outbound payloads. Inbound: parse raw
 `php://input` (`getRawContent`), decode JSON, XML (when the content-type or a

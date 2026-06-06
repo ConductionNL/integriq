@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-software-catalogus-events. Update Purpose after archive.
+
+@e2e exclude backend ReactPHP ArchiMate model-graph extension service (async promises, no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: ReactPHP promise-based ArchiMate model graph extension (REQ-001)
 

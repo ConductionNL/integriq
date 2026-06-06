@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-24-authentication-twig. Update Purpose after archive.
+
+@e2e exclude backend authentication service (OAuth token fetch + Twig config rendering, no browser UI) — covered by PHPUnit
+
 ## Requirements
 ### Requirement: OAuth Client Credentials and Password token fetch (REQ-001)
 

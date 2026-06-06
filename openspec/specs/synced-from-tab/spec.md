@@ -2,6 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change retrofit-2026-05-26-integration-synced-from. Update Purpose after archive.
+
+@e2e exclude integration-helper internals (endpoint-URL resolution, response normalisation, quiet-degrade flag) for a sub-resource tab rendered inside OpenRegister — not an openconnector SPA surface; covered by Vue component/unit tests
+
 ## Requirements
 ### Requirement: Resolve synced-from source endpoint (REQ-SYNC-001)
 The system SHALL resolve the per-object synchronization sub-resource endpoint for the synced-from tab, preferring an injected `apiBase` when present and otherwise falling back to the OpenRegister API path, scoped to the current object's register, schema, and id under the `sync-contract` integration.
