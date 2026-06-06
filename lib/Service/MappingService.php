@@ -49,7 +49,7 @@ class MappingService
     ) {
         $this->twig = new Environment($loader);
 		$this->twig->addExtension(new MappingExtension());
-		$this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper, callService: $callService, sourceMapper: $sourceMapper, fileService: $fileService, objectService: $objectService->getOpenRegisters()));
+		$this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, callService: $callService, fileService: $fileService, objectService: $objectService));
 
     }//end __construct()
 
