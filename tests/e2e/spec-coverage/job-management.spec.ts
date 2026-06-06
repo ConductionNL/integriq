@@ -40,12 +40,7 @@ test.describe('REQ-JOB-UI-001: Jobs list page mounts', () => {
 test.describe('REQ-JOB-UI-001: Add Job modal', () => {
 	// @e2e job-management::add-job-button-opens-the-creation-modal
 	test('Add Item button on Jobs page opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/jobs`, { waitUntil: 'networkidle' })
-		// Switch to Cards view to ensure the add button is accessible
-		const cardsRadio = page.getByRole('radio', { name: /Cards/i })
-		if (await cardsRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
-			await cardsRadio.click()
-		}
+		await page.goto(`${APP_BASE}/jobs`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Job)/i })
 		await expect(addBtn, 'Add Item button must be visible on Jobs page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()

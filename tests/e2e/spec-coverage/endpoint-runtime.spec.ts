@@ -17,8 +17,6 @@
 
 import { test, expect } from '@playwright/test'
 
-const API_BASE = '/index.php/apps/openconnector/api'
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 // /index.php/apps/openconnector/* strips the path on redirect; use /apps/ prefix.
 const APP_BASE = '/apps/openconnector'
 
@@ -76,34 +74,8 @@ test.describe('REQ-EP-UI-001: Endpoint logs sub-page', () => {
 })
 
 // ---------------------------------------------------------------------------
-// HTTP surface helpers (no @e2e spec tag — backend scenarios carry @e2e exclude)
+// HTTP-contract assertions for the endpoint dispatch / OR list surfaces are
+// API-direct (no @e2e tag) and have been relocated to
+// tests/e2e/api-direct/endpoint-runtime.api.spec.ts (Newman-equivalent,
+// excluded from the gate-19 UI run). gate-19: API-direct → Newman.
 // ---------------------------------------------------------------------------
-
-test.describe('Endpoint dispatch HTTP surface — 404 on no-match', () => {
-	test('GET /api/endpoint/{path} with no matching endpoint returns 404', async ({ request }) => {
-		const resp = await request.get(`${API_BASE}/endpoint/pw-e2e-no-match-${Date.now()}`, {
-			failOnStatusCode: false,
-		})
-		expect(resp.status()).toBe(404)
-	})
-
-	test('PUT /api/endpoint/{path} with no matching endpoint returns 404', async ({ request }) => {
-		const resp = await request.put(`${API_BASE}/endpoint/pw-e2e-no-match-put-${Date.now()}`, {
-			data: {},
-			failOnStatusCode: false,
-		})
-		expect(resp.status()).toBe(404)
-	})
-})
-
-test.describe('Endpoints OR API — list', () => {
-	test('OR returns endpoint objects for the openconnector register', async ({ request }) => {
-		const resp = await request.get(`${OR_BASE}/endpoint?_limit=10`, {
-			failOnStatusCode: false,
-		})
-		expect(resp.status()).toBe(200)
-		const body = await resp.json()
-		expect(body).toHaveProperty('results')
-		expect(Array.isArray(body.results)).toBe(true)
-	})
-})

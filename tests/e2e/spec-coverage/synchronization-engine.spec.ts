@@ -19,8 +19,6 @@
 
 import { test, expect } from '@playwright/test'
 
-const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-const API_BASE = '/index.php/apps/openconnector/api'
 // /index.php/apps/openconnector/* strips the path on redirect; use /apps/ prefix.
 const APP_BASE = '/apps/openconnector'
 
@@ -74,26 +72,8 @@ test.describe('REQ-UI-001: Synchronization logs sub-page', () => {
 })
 
 // ---------------------------------------------------------------------------
-// API surface helpers (no @e2e spec tag — backend scenarios carry @e2e exclude)
+// HTTP-contract assertions for the synchronization OR list + run surfaces are
+// API-direct (no @e2e tag) and have been relocated to
+// tests/e2e/api-direct/synchronization-engine.api.spec.ts (Newman-equivalent,
+// excluded from the gate-19 UI run). gate-19: API-direct → Newman.
 // ---------------------------------------------------------------------------
-
-test.describe('Synchronizations OR API — list', () => {
-	test('GET synchronizations list from OR returns synchronization objects', async ({ request }) => {
-		const resp = await request.get(`${OR_BASE}/synchronization?_limit=20`, {
-			failOnStatusCode: false,
-		})
-		expect(resp.status()).toBe(200)
-		const body = await resp.json()
-		expect(body).toHaveProperty('results')
-		expect(Array.isArray(body.results)).toBe(true)
-	})
-
-	test('POST run on a non-existent sync UUID returns 400 or 404 (not 500)', async ({ request }) => {
-		const resp = await request.post(
-			`${API_BASE}/synchronizations/00000000-0000-0000-0000-000000000000/run`,
-			{ failOnStatusCode: false },
-		)
-		expect(resp.status()).toBeLessThan(500)
-		expect(resp.status()).toBeGreaterThanOrEqual(400)
-	})
-})

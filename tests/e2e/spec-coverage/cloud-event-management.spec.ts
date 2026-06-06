@@ -40,12 +40,7 @@ test.describe('REQ-CE-UI-001: Cloud Events list page mounts', () => {
 test.describe('REQ-CE-UI-001: Add Cloud Event modal', () => {
 	// @e2e cloud-event-management::add-cloud-event-button-opens-the-creation-modal
 	test('Add Item button on Cloud Events page opens modal/dialog', async ({ page }) => {
-		await page.goto(`${APP_BASE}/cloud-events/events`, { waitUntil: 'networkidle' })
-		// Switch to Cards view to ensure the add button is accessible
-		const cardsRadio = page.getByRole('radio', { name: /Cards/i })
-		if (await cardsRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
-			await cardsRadio.click()
-		}
+		await page.goto(`${APP_BASE}/cloud-events/events`, { waitUntil: 'domcontentloaded' })
 		const addBtn = page.getByRole('button', { name: /Add (Item|Cloud Event|Event)/i })
 		await expect(addBtn, 'Add Item button must be visible on Cloud Events page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
