@@ -21,10 +21,10 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
@@ -246,7 +246,7 @@ class MappingsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function saveObject(): ?JSONResponse
     {
         // Check if the OpenRegister service is available.
@@ -285,7 +285,7 @@ class MappingsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function getObjects(): JSONResponse
     {
         // Check if the OpenRegister service is available.

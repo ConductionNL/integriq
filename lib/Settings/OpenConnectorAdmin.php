@@ -20,12 +20,17 @@ namespace OCA\OpenConnector\Settings;
 
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IConfig;
-use OCP\Settings\ISettings;
+use OCP\Settings\IDelegatedSettings;
 
 /**
  * Admin settings panel for OpenConnector.
+ *
+ * Implements IDelegatedSettings (extends ISettings) so the form can be guarded
+ * by #[AuthorizedAdminSetting(OpenConnectorAdmin::class)] on the controllers
+ * that mutate OpenConnector configuration. NC's middleware resolves the
+ * admin-gating from the class-string of the delegated settings section.
  */
-class OpenConnectorAdmin implements ISettings
+class OpenConnectorAdmin implements IDelegatedSettings
 {
 
     /**
@@ -86,4 +91,30 @@ class OpenConnectorAdmin implements ISettings
         return 10;
 
     }//end getPriority()
+
+    /**
+     * Human-readable name of the delegated settings section.
+     *
+     * @return string|null The section name, or null to use the section default.
+     */
+    public function getName(): ?string
+    {
+        return null;
+
+    }//end getName()
+
+    /**
+     * App config keys an authorized (delegated) admin may manage.
+     *
+     * Returned as a map of appId => list of allowed config keys. OpenConnector
+     * exposes no delegatable sub-keys yet, so this is intentionally empty; the
+     * attribute still scopes the endpoints to full admins.
+     *
+     * @return array<string,string[]> Map of appId to allowed config keys.
+     */
+    public function getAuthorizedAppConfig(): array
+    {
+        return [];
+
+    }//end getAuthorizedAppConfig()
 }//end class

@@ -25,6 +25,7 @@ namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -69,7 +70,7 @@ class ActionMatrixController extends Controller
      *
      * @spec openspec/architecture/adr-023-action-authorization.md
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function getMatrix(): JSONResponse
     {
         $matrix = $this->actionAuth->getMatrix();
@@ -108,7 +109,7 @@ class ActionMatrixController extends Controller
      *
      * @spec openspec/architecture/adr-023-action-authorization.md
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function setMatrix(): JSONResponse
     {
         $matrix = $this->request->getParam('matrix');

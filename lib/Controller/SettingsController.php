@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -78,7 +78,7 @@ class SettingsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function rebase(): JSONResponse
     {
         try {

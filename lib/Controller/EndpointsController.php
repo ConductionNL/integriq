@@ -28,8 +28,8 @@ use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\EndpointCacheService;
 use OCA\OpenConnector\Service\EndpointService;
 use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SearchService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -226,7 +226,7 @@ class EndpointsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
     {
         // Endpoint logging is not yet wired to the OR call_log schema.

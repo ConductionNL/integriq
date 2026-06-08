@@ -21,10 +21,10 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -94,7 +94,7 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function contracts(int $id): JSONResponse
     {
         $matches   = $this->orObjectService->findAll(
@@ -132,7 +132,7 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
@@ -401,7 +401,7 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function statistics(): JSONResponse
     {
         try {
@@ -467,7 +467,7 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logsStatistics(): JSONResponse
     {
         try {
@@ -554,7 +554,7 @@ class SynchronizationsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logsExport(): JSONResponse
     {
         try {

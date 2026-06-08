@@ -20,10 +20,10 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -85,7 +85,7 @@ class JobsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-1
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
