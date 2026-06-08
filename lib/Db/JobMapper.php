@@ -37,8 +37,7 @@ class JobMapper extends QBMapper
 			$qb->where(
 				$qb->expr()->orX(
 					$qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('slug', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('id', $qb->createNamedParameter($id))
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id))
 				)
 			);
 		} else {
@@ -215,8 +214,14 @@ class JobMapper extends QBMapper
      */
     public function findByConfiguration(string $configurationId): array
     {
-        $sql = 'SELECT * FROM `' . $this->getTableName() . '` WHERE JSON_CONTAINS(configurations, ?)';
-        return $this->findEntities($sql, [$configurationId]);
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->like('configurations', $qb->createNamedParameter('%"' . $configurationId . '"%'))
+            );
+
+        return $this->findEntities(query: $qb);
     }
 
     /**

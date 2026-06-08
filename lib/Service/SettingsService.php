@@ -118,23 +118,25 @@ class SettingsService
 
             // **OPTIMIZED QUERIES**: Use direct SQL COUNT queries for maximum performance
 
-            // All tables - simple counts (OpenConnector tables don't have size/expires columns like OpenRegister)
+            // All tables - simple counts (OpenConnector tables don't have size/expires columns like OpenRegister).
+            // Table names are left unquoted so the count works across MySQL/MariaDB, PostgreSQL and SQLite
+            // (backtick quoting is MySQL-only and errors on PostgreSQL).
             $allTables = [
-                'callLogs' => '`*PREFIX*openconnector_call_logs`',
-                'consumers' => '`*PREFIX*openconnector_consumers`',
-                'endpoints' => '`*PREFIX*openconnector_endpoints`',
-                'eventMessages' => '`*PREFIX*openconnector_event_messages`',
-                'eventSubscriptions' => '`*PREFIX*openconnector_event_subscriptions`',
-                'events' => '`*PREFIX*openconnector_events`',
-                'jobLogs' => '`*PREFIX*openconnector_job_logs`',
-                'jobs' => '`*PREFIX*openconnector_jobs`',
-                'mappings' => '`*PREFIX*openconnector_mappings`',
-                'rules' => '`*PREFIX*openconnector_rules`',
-                'sources' => '`*PREFIX*openconnector_sources`',
-                'synchronizationContractLogs' => '`*PREFIX*openconnector_synchronization_contract_logs`',
-                'synchronizationContracts' => '`*PREFIX*openconnector_synchronization_contracts`',
-                'synchronizationLogs' => '`*PREFIX*openconnector_synchronization_logs`',
-                'synchronizations' => '`*PREFIX*openconnector_synchronizations`',
+                'callLogs' => '*PREFIX*openconnector_call_logs',
+                'consumers' => '*PREFIX*openconnector_consumers',
+                'endpoints' => '*PREFIX*openconnector_endpoints',
+                'eventMessages' => '*PREFIX*openconnector_event_messages',
+                'eventSubscriptions' => '*PREFIX*openconnector_event_subscriptions',
+                'events' => '*PREFIX*openconnector_events',
+                'jobLogs' => '*PREFIX*openconnector_job_logs',
+                'jobs' => '*PREFIX*openconnector_jobs',
+                'mappings' => '*PREFIX*openconnector_mappings',
+                'rules' => '*PREFIX*openconnector_rules',
+                'sources' => '*PREFIX*openconnector_sources',
+                'synchronizationContractLogs' => '*PREFIX*openconnector_synchronization_contract_logs',
+                'synchronizationContracts' => '*PREFIX*openconnector_synchronization_contracts',
+                'synchronizationLogs' => '*PREFIX*openconnector_synchronization_logs',
+                'synchronizations' => '*PREFIX*openconnector_synchronizations',
             ];
 
             foreach ($allTables as $key => $tableName) {
@@ -285,15 +287,10 @@ class SettingsService
             // 0. Update successful logs expiry dates
             if (isset($retention['successLogRetention']) === true && $retention['successLogRetention'] > 0) {
                 try {
-                    $retentionMs = $retention['successLogRetention'];
-                    $expiryQuery = "
-                        UPDATE `*PREFIX*openconnector_call_logs`
-                        SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
-                        WHERE expires IS NULL OR expires = ''
-                    ";
-                    $stmt = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]); // Convert ms to microseconds
-                    $results['retentionResults']['callLogsUpdated'] = $stmt->rowCount();
+                    $results['retentionResults']['callLogsUpdated'] = $this->setExpiryDates(
+                        'openconnector_call_logs',
+                        (int) $retention['successLogRetention']
+                    );
                 } catch (\Exception $e) {
                     $error = 'Failed to set call logs expiry dates: '.$e->getMessage();
                     $results['errors'][] = $error;
@@ -304,15 +301,10 @@ class SettingsService
             // 1. Update call logs expiry dates
             if (isset($retention['callLogRetention']) && $retention['callLogRetention'] > 0) {
                 try {
-                    $retentionMs = $retention['callLogRetention'];
-                    $expiryQuery = "
-                        UPDATE `*PREFIX*openconnector_call_logs`
-                        SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
-                        WHERE expires IS NULL OR expires = ''
-                    ";
-                    $stmt = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]); // Convert ms to microseconds
-                    $results['retentionResults']['callLogsUpdated'] = $stmt->rowCount();
+                    $results['retentionResults']['callLogsUpdated'] = $this->setExpiryDates(
+                        'openconnector_call_logs',
+                        (int) $retention['callLogRetention']
+                    );
                 } catch (\Exception $e) {
                     $error = 'Failed to set call logs expiry dates: '.$e->getMessage();
                     $results['errors'][] = $error;
@@ -323,19 +315,11 @@ class SettingsService
             // 2. Update event messages expiry dates (skip if expires column doesn't exist)
             if (isset($retention['eventMessageRetention']) && $retention['eventMessageRetention'] > 0) {
                 try {
-                    $retentionMs = $retention['eventMessageRetention'];
-                    // Check if expires column exists before updating
-                    $checkQuery = "SHOW COLUMNS FROM `*PREFIX*openconnector_event_messages` LIKE 'expires'";
-                    $checkResult = $this->db->executeQuery($checkQuery);
-                    if ($checkResult->fetchColumn() !== false) {
-                        $expiryQuery = "
-                            UPDATE `*PREFIX*openconnector_event_messages`
-                            SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
-                            WHERE expires IS NULL OR expires = ''
-                        ";
-                        $stmt = $this->db->prepare($expiryQuery);
-                        $stmt->execute([$retentionMs * 1000]);
-                        $results['retentionResults']['eventMessagesUpdated'] = $stmt->rowCount();
+                    if ($this->columnExists('openconnector_event_messages', 'expires') === true) {
+                        $results['retentionResults']['eventMessagesUpdated'] = $this->setExpiryDates(
+                            'openconnector_event_messages',
+                            (int) $retention['eventMessageRetention']
+                        );
                     } else {
                         $results['retentionResults']['eventMessagesUpdated'] = 'Column expires not found - skipped';
                     }
@@ -349,15 +333,10 @@ class SettingsService
             // 3. Update job logs expiry dates
             if (isset($retention['jobLogRetention']) && $retention['jobLogRetention'] > 0) {
                 try {
-                    $retentionMs = $retention['jobLogRetention'];
-                    $expiryQuery = "
-                        UPDATE `*PREFIX*openconnector_job_logs`
-                        SET expires = DATE_ADD(created, INTERVAL ? MICROSECOND)
-                        WHERE expires IS NULL OR expires = ''
-                    ";
-                    $stmt = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]);
-                    $results['retentionResults']['jobLogsUpdated'] = $stmt->rowCount();
+                    $results['retentionResults']['jobLogsUpdated'] = $this->setExpiryDates(
+                        'openconnector_job_logs',
+                        (int) $retention['jobLogRetention']
+                    );
                 } catch (\Exception $e) {
                     $error = 'Failed to set job logs expiry dates: '.$e->getMessage();
                     $results['errors'][] = $error;
@@ -365,18 +344,15 @@ class SettingsService
                 }
             }
 
-            // 4. Update synchronization contract logs expiry dates (handle empty expires values)
+            // 4. Update synchronization contract logs expiry dates (handle empty/missing created values)
             if (isset($retention['syncContractLogRetention']) && $retention['syncContractLogRetention'] > 0) {
                 try {
-                    $retentionMs = $retention['syncContractLogRetention'];
-                    $expiryQuery = "
-                        UPDATE `*PREFIX*openconnector_synchronization_contract_logs`
-                        SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND)
-                        WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL
-                    ";
-                    $stmt = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]);
-                    $results['retentionResults']['syncContractLogsUpdated'] = $stmt->rowCount();
+                    $results['retentionResults']['syncContractLogsUpdated'] = $this->setExpiryDates(
+                        'openconnector_synchronization_contract_logs',
+                        (int) $retention['syncContractLogRetention'],
+                        coalesceCreatedWithNow: true,
+                        rebaseExisting: true
+                    );
                 } catch (\Exception $e) {
                     $error = 'Failed to set sync contract logs expiry dates: '.$e->getMessage();
                     $results['errors'][] = $error;
@@ -384,18 +360,15 @@ class SettingsService
                 }
             }
 
-            // 5. Update synchronization logs expiry dates (handle empty expires values)
+            // 5. Update synchronization logs expiry dates (handle empty/missing created values)
             if (isset($retention['syncLogRetention']) && $retention['syncLogRetention'] > 0) {
                 try {
-                    $retentionMs = $retention['syncLogRetention'];
-                    $expiryQuery = "
-                        UPDATE `*PREFIX*openconnector_synchronization_logs`
-                        SET expires = DATE_ADD(COALESCE(created, NOW()), INTERVAL ? MICROSECOND)
-                        WHERE expires IS NULL OR expires = '' OR expires = '0000-00-00 00:00:00' OR created IS NOT NULL
-                    ";
-                    $stmt = $this->db->prepare($expiryQuery);
-                    $stmt->execute([$retentionMs * 1000]);
-                    $results['retentionResults']['syncLogsUpdated'] = $stmt->rowCount();
+                    $results['retentionResults']['syncLogsUpdated'] = $this->setExpiryDates(
+                        'openconnector_synchronization_logs',
+                        (int) $retention['syncLogRetention'],
+                        coalesceCreatedWithNow: true,
+                        rebaseExisting: true
+                    );
                 } catch (\Exception $e) {
                     $error = 'Failed to set sync logs expiry dates: '.$e->getMessage();
                     $results['errors'][] = $error;
@@ -424,6 +397,105 @@ class SettingsService
         }//end try
 
     }//end rebase()
+
+
+    /**
+     * Set expiry dates on a log table in a database-agnostic way.
+     *
+     * Computes `expires = <base> + retention` for rows that still need an expiry,
+     * using the correct date-arithmetic syntax for the active database platform
+     * (MySQL/MariaDB, PostgreSQL or SQLite). Replaces the previous MySQL-only
+     * DATE_ADD/backtick query so the rebase works on PostgreSQL too.
+     *
+     * @param string $table                  Unprefixed table name.
+     * @param int    $retentionMs            Retention period in milliseconds.
+     * @param bool   $coalesceCreatedWithNow Fall back to the current time when `created` is null.
+     * @param bool   $rebaseExisting         Also (re)set rows that already have a `created` value.
+     *
+     * @return int Number of affected rows.
+     *
+     * @throws \OCP\DB\Exception On query failure.
+     */
+    private function setExpiryDates(
+        string $table,
+        int $retentionMs,
+        bool $coalesceCreatedWithNow = false,
+        bool $rebaseExisting = false
+    ): int {
+        $provider = $this->db->getDatabaseProvider();
+        $micros   = $retentionMs * 1000;
+
+        // PostgreSQL and SQLite cannot compare a timestamp column to '' or a zero-date,
+        // so those legacy MySQL conditions are only added for the MySQL family.
+        $isMysqlFamily = in_array(
+            $provider,
+            [IDBConnection::PLATFORM_POSTGRES, IDBConnection::PLATFORM_SQLITE],
+            true
+        ) === false;
+
+        // Current-time expression for tables whose `created` may be null.
+        $now  = $provider === IDBConnection::PLATFORM_SQLITE ? "datetime('now')" : 'NOW()';
+        $base = $coalesceCreatedWithNow === true ? "COALESCE(created, $now)" : 'created';
+
+        // Platform-specific "base + retention" date arithmetic. The retention value is
+        // always bound as a single parameter; only the surrounding syntax differs.
+        switch ($provider) {
+            case IDBConnection::PLATFORM_POSTGRES:
+                // Cast the bound parameter so PostgreSQL multiplies a number, not text.
+                $expiresExpr = "$base + (CAST(? AS bigint) * INTERVAL '1 microsecond')";
+                break;
+            case IDBConnection::PLATFORM_SQLITE:
+                $expiresExpr = "datetime($base, '+' || (? / 1000000.0) || ' seconds')";
+                break;
+            default: // MySQL / MariaDB
+                $expiresExpr = "DATE_ADD($base, INTERVAL ? MICROSECOND)";
+                break;
+        }
+
+        // `expires IS NULL` is portable; the empty-string and zero-date checks are MySQL-only.
+        $conditions = ['expires IS NULL'];
+        if ($isMysqlFamily === true) {
+            $conditions[] = "expires = ''";
+            $conditions[] = "expires = '0000-00-00 00:00:00'";
+        }
+        if ($rebaseExisting === true) {
+            $conditions[] = 'created IS NOT NULL';
+        }
+
+        $sql  = 'UPDATE *PREFIX*'.$table.' SET expires = '.$expiresExpr.' WHERE '.implode(' OR ', $conditions);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$micros]);
+
+        return $stmt->rowCount();
+
+    }//end setExpiryDates()
+
+
+    /**
+     * Check whether a column exists on a table, portably across database platforms.
+     *
+     * Runs a guarded `SELECT <column> ... LIMIT 1`; if the column is absent the query
+     * throws and we report it as missing. This replaces the MySQL-only `SHOW COLUMNS`.
+     *
+     * @param string $table  Unprefixed table name.
+     * @param string $column Column name to check.
+     *
+     * @return bool True when the column exists.
+     */
+    private function columnExists(string $table, string $column): bool
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($column)
+                ->from($table)
+                ->setMaxResults(1);
+            $qb->executeQuery()->closeCursor();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+
+    }//end columnExists()
 
 
 }//end class
