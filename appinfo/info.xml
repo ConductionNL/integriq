@@ -13,7 +13,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 - 🆓 Map and translate API calls
 
     ]]></description>
-	<version>0.2.14</version>
+	<version>0.2.15</version>
 	<licence>agpl</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "dependencies": [
     "openregister"
   ],
@@ -257,11 +257,13 @@
       "route": "/webhooks",
       "type": "index",
       "title": "Webhooks",
+      "_note": "A webhook is an EventSubscription with a delivery sink URL (push/pull). The register has no separate 'webhook' schema — per ADR-013 the EventSubscription entity (sink + protocol + style) IS the webhook. addLabel overrides the schema-title-derived default so the create button reads 'Add Webhook' rather than 'Add EventSubscription'.",
       "config": {
         "register": "openconnector",
-        "schema": "consumer",
-        "columns": ["name", "authorizationType", "domains", "updated"],
-        "includeFields": ["name", "description", "authorizationType"],
+        "schema": "event_subscription",
+        "addLabel": "Add Webhook",
+        "columns": ["sink", "protocol", "style", "status", "updated"],
+        "includeFields": ["source", "types", "sink", "protocol", "style", "status"],
         "sidebar": { "enabled": true, "showMetadata": true }
       }
     },

@@ -4,17 +4,16 @@
  *
  * Genuine behavioral UI coverage for the openconnector Webhooks page.
  *
- * BUG (flagged, not fixed): src/manifest.json's "Webhooks" page is a
- * schema-driven index bound to schema "consumer" (the SAME schema as the
- * Consumers page). There is no "webhook" schema in OpenRegister (the OR
- * endpoint /api/objects/openconnector/webhook returns 404). As a result
- * the Webhooks index:
- *   - lists consumer objects, not webhooks, and
- *   - renders its create button as "Add Consumer" instead of "Add Webhook".
- *
- * The page heading is correct ("Webhooks") because that comes from the
- * page title, but the create-button label + underlying data are wrong.
- * See the test.fixme below documenting the expected correct behaviour.
+ * FIXED: src/manifest.json's "Webhooks" page used to be a schema-driven index
+ * bound to schema "consumer" (the SAME schema as the Consumers page) — an exact
+ * copy. There is no "webhook" schema in OpenRegister (the OR endpoint
+ * /api/objects/openconnector/webhook returns 404). Per ADR-013 the event-bus
+ * model has no separate webhook entity: a webhook IS an EventSubscription with a
+ * delivery `sink` URL + `protocol` + push/pull `style`. The page is now bound to
+ * schema "event_subscription" with an `addLabel: "Add Webhook"` override (the
+ * schema title is "EventSubscription", so the default would read
+ * "Add EventSubscription"). The Webhooks index now lists webhook subscriptions —
+ * a distinct surface from Consumers — and its create button reads "Add Webhook".
  */
 import { test, expect } from '@playwright/test'
 import { navTo, trackErrors, assertNoAppErrors } from './_helpers'
@@ -26,19 +25,23 @@ test.describe('Webhooks — index surface', () => {
 		await navTo(page, 'Webhooks', '/webhooks')
 		await expect(page.getByRole('heading', { name: /^Webhooks$/ }).first())
 			.toBeVisible({ timeout: 15_000 })
-		// A create button is present (currently mislabeled — see fixme).
-		const addBtn = page.getByRole('button', { name: /Add (Webhook|Consumer)/i }).first()
+		// A create button is present and correctly labelled (see below).
+		const addBtn = page.getByRole('button', { name: /Add Webhook/i }).first()
 		await expect(addBtn, 'Webhooks page must offer a create action').toBeVisible({ timeout: 15_000 })
 		assertNoAppErrors(sink)
 	})
 
-	// Documents the manifest mis-binding. Remove .fixme once the Webhooks
-	// page is bound to a real "webhook" schema and labels its create button
-	// "Add Webhook".
-	test.fixme('Webhooks create button should read "Add Webhook" (manifest binds wrong schema)', async ({ page }) => {
+	// @e2e openconnector-comprehensive-tests::webhooks-create-button-label
+	// The Webhooks page is now bound to the "event_subscription" schema (the real
+	// webhook entity per ADR-013) with addLabel "Add Webhook". The create button
+	// MUST read "Add Webhook" and MUST NOT read "Add Consumer" (the old mis-binding).
+	test('Webhooks create button reads "Add Webhook" (bound to event_subscription)', async ({ page }) => {
 		await navTo(page, 'Webhooks', '/webhooks')
 		const addWebhook = page.getByRole('button', { name: /Add Webhook/i }).first()
-		await expect(addWebhook, 'BUG: Webhooks page is bound to the "consumer" schema → button reads "Add Consumer"')
-			.toBeVisible({ timeout: 10_000 })
+		await expect(addWebhook, 'Webhooks page create button must read "Add Webhook"')
+			.toBeVisible({ timeout: 15_000 })
+		// Guard against regression to the old "consumer" binding.
+		await expect(page.getByRole('button', { name: /Add Consumer/i }))
+			.toHaveCount(0)
 	})
 })
