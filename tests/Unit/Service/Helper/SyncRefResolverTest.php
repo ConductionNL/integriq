@@ -26,8 +26,16 @@ final class SyncRefResolverTest extends TestCase
         $objectService = $this->createMock(ObjectService::class);
         $objectService
             ->method('findAll')
-            ->with('openconnector', 'source', null, null, ['id' => 42])
-            ->willReturn([['uuid' => '00000000-0000-0000-0000-000000000042']]);
+            ->with(
+                config: [
+                    'filters' => [
+                        'register' => 'openconnector',
+                        'schema'   => 'source',
+                        'id'       => 42,
+                    ],
+                ]
+            )
+            ->willReturn(['results' => [['uuid' => '00000000-0000-0000-0000-000000000042']]]);
 
         $resolver = new SyncRefResolver($objectService, $this->createMock(LoggerInterface::class));
 

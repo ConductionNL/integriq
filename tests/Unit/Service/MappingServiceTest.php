@@ -14,15 +14,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
+use OCA\OpenConnector\Db\Mapping;
+use OCA\OpenConnector\Db\MappingMapper;
+use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
 
 /**
@@ -37,9 +37,9 @@ class MappingServiceTest extends TestCase
     private MappingService $service;
 
     /**
-     * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
+     * @var MappingMapper&MockObject
      */
-    private $orObjectService;
+    private MappingMapper $mappingMapper;
 
 
     /**
@@ -51,26 +51,23 @@ class MappingServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->orObjectService = ObjectServiceMockBuilder::make($this);
+        // The MappingMapper is itself an OpenRegister-backed adapter; here it is
+        // mocked so the delegation contract of MappingService can be asserted.
+        $this->mappingMapper = $this->createMock(MappingMapper::class);
 
         $loader        = new ArrayLoader([]);
         $callService   = $this->createMock(CallService::class);
+        $sourceMapper  = $this->createMock(SourceMapper::class);
         $fileService   = $this->createMock(FileService::class);
         $objectService = $this->createMock(ObjectService::class);
-        $container     = $this->createMock(ContainerInterface::class);
-        $logger        = $this->createMock(LoggerInterface::class);
-
-        // Container::get throws so the service falls back to local implementation.
-        $container->method('get')->willThrowException(new \RuntimeException('not available'));
 
         $this->service = new MappingService(
             $loader,
+            $this->mappingMapper,
             $callService,
+            $sourceMapper,
             $fileService,
             $objectService,
-            $this->orObjectService,
-            $container,
-            $logger,
         );
     }//end setUp()
 
@@ -127,21 +124,17 @@ class MappingServiceTest extends TestCase
 
 
     /**
-     * Test that getMappings returns the results array from OR findAll.
+     * Test that getMappings delegates to the (OR-backed) MappingMapper::findAll.
      *
      * @return void
      */
     public function testGetMappingsReturnsResultsFromFindAll(): void
     {
         // Arrange
-        $mappingEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['name' => 'test-mapping', 'mapping' => []],
-            'mapping-uuid-1'
-        );
-
-        $this->orObjectService->method('findAll')
-            ->willReturn(['results' => [$mappingEntity], 'total' => 1]);
+        $mapping = new Mapping();
+        $this->mappingMapper->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$mapping]);
 
         // Act
         $result = $this->service->getMappings();
@@ -149,33 +142,29 @@ class MappingServiceTest extends TestCase
         // Assert
         $this->assertIsArray($result);
         $this->assertCount(1, $result);
-        $this->assertSame($mappingEntity, $result[0]);
+        $this->assertSame($mapping, $result[0]);
     }//end testGetMappingsReturnsResultsFromFindAll()
 
 
     /**
-     * Test that getMapping delegates to OR find with the correct register and schema.
+     * Test that getMapping delegates to the (OR-backed) MappingMapper::find.
      *
      * @return void
      */
     public function testGetMappingDelegatesToORFind(): void
     {
         // Arrange
-        $mappingEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['name' => 'my-map'],
-            'map-uuid-42'
-        );
-
-        $this->orObjectService->expects($this->once())
+        $mapping = new Mapping();
+        $this->mappingMapper->expects($this->once())
             ->method('find')
-            ->willReturn($mappingEntity);
+            ->with('map-uuid-42')
+            ->willReturn($mapping);
 
         // Act
         $result = $this->service->getMapping('map-uuid-42');
 
         // Assert
-        $this->assertSame($mappingEntity, $result);
+        $this->assertSame($mapping, $result);
     }//end testGetMappingDelegatesToORFind()
 
 
