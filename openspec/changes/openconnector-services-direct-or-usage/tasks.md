@@ -21,8 +21,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - GIVEN `openconnector.storage_migrated` is absent or `'false'` WHEN the app boots THEN `\LogicException` is thrown with a message containing `occ openconnector:migrate-storage`
   - GIVEN the env var `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` is set WHEN the app boots THEN no exception is thrown regardless of the flag value
   - GIVEN `storage_migrated === 'true'` WHEN the app boots THEN `Application::register()` completes normally
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -53,8 +53,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `SourceDto::fromArray([])` throws `\InvalidArgumentException` (missing `name`)
   - `SourceDto::fromArray(['name' => 'test', 'type' => 'api'])->toArray()` returns `['name' => 'test', 'type' => 'api']`
   - `composer check:strict` passes after addition
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 3: Create SyncRefResolver helper service
 
@@ -68,8 +68,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `SyncRefResolver::resolve("")` returns a result with `'variant' => 'unrecognised'` without throwing
   - Constructor injects `\OCA\OpenRegister\Service\ObjectService` for the integer-PK branch lookup
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -85,8 +85,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Write calls use `$objectService->saveObject('openconnector', 'mapping', $data, $uuid)`
   - Delete calls use `$objectService->delete('openconnector', 'mapping', $uuid)`
   - `composer check:strict` passes; existing MappingService unit test passes after rewrite
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 5: Rewrite RuleService
 
@@ -96,8 +96,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Constructor injects `ObjectService`; no `RuleMapper` or `Rule` entity reference remains
   - ADR-002 (mapping/rule engine stays app-local): rule processing logic in `RuleService` is preserved; only the persistence calls change
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 6: Rewrite EventService (and EventMessage, EventSubscription sub-resources)
 
@@ -107,8 +107,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - No `EventMapper`, `EventMessageMapper`, `EventSubscriptionMapper`, `Event`, `EventMessage`, or `EventSubscription` entity reference remains in `EventService`
   - All CRUD calls go through `ObjectService` with schema slugs `'event'`, `'event_message'`, `'event_subscription'`
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 7: Rewrite CallService
 
@@ -120,8 +120,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Every call site that reads `apikey`, `password`, `secret`, `jwt`, `jwtId`, or `username` from a Source `ObjectEntity` wraps the value in `$this->encryptionService->decrypt(...)` — even if `EncryptionService` is a no-op pass-through until fully wired
   - `CallLog` writes use `ObjectService::saveObject('openconnector', 'call_log', $data)` — per ADR-003, every outbound HTTP call MUST produce a CallLog
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 8: Rewrite JobService
 
@@ -131,8 +131,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - No `JobMapper`, `JobLogMapper`, `Job`, or `JobLog` entity reference remains
   - CRUD calls use schema slugs `'job'` and `'job_log'`
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 9: Rewrite EndpointService
 
@@ -144,8 +144,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `targetType = 'api'` branch reads the Source via `ObjectService::find('openconnector', 'source', $targetId)`
   - No `EndpointMapper` or `Endpoint` entity reference remains
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 10: Rewrite SynchronizationService (uses SyncRefResolver)
 
@@ -158,8 +158,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - No `SynchronizationMapper`, `SynchronizationContractMapper`, `SynchronizationLogMapper`, `SynchronizationContractLogMapper`, `Synchronization`, `SynchronizationContract`, `SynchronizationLog`, or `SynchronizationContractLog` entity reference remains
   - Per-object hash comparison (the change-detection primitive per ADR-005) is preserved
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 11: Rewrite remaining mid-tier services
 
@@ -178,8 +178,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `grep -rn "Mapper" lib/Service/` returns zero results for any of the 15 deleted mapper names
   - `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" lib/Service/` returns zero results for entity types (excluding `Dto\` imports)
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -196,8 +196,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `GET /api/sources/{id}` returns HTTP 404 when `ObjectService::find()` throws `DoesNotExistException`
   - All existing `@AuthorizedAdminSetting` / `@NoCSRFRequired` annotations preserved
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 13: Rewrite all remaining controllers (~17 files)
 
@@ -226,8 +226,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" lib/Controller/` returns zero results for entity types (excluding `Dto\` imports)
   - HTTP wire format verified by Newman collection against the deployed chain C instance (all tests pass)
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -244,8 +244,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `LogCleanUpTask` queries expired logs via `ObjectService::findAll('openconnector', '<log-schema>', $retentionFilters)` for each applicable log schema
   - No `JobMapper`, `JobLogMapper`, `SynchronizationLogMapper`, `CallLogMapper`, `Job`, or log entity references remain
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -260,8 +260,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `ObjectService` is NOT manually registered in `Application.php` (it is provided by openregister's own container registration and resolved by constructor injection)
   - `SyncRefResolver` IS registered via `$context->registerService(SyncRefResolver::class, …)` if required (verify DI auto-wiring; if not auto-wired, add)
   - `composer check:strict` passes (Psalm verifies no dangling DI alias)
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -282,8 +282,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" tests/` returns zero results for entity/mapper types (excluding `Dto\` tests)
   - `composer phpunit` exits 0 with ≥ 80% line coverage and ≥ 70% branch coverage on rewritten services
   - Chain B's 4 `SyncRefResolver` scenarios pass in the new test location (`tests/Unit/Service/Helper/SyncRefResolverTest.php`)
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 17: Add DTO unit tests under tests/Unit/Db/Dto/
 
@@ -293,8 +293,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Each DTO test covers: valid `fromArray()` round-trip, `fromArray()` with missing required field throws `\InvalidArgumentException`, `toArray()` returns only user-supplied fields (no OR metadata fields)
   - All 15 DTO tests pass
   - `composer phpunit` exits 0
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -313,8 +313,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `find lib/Service/Storage -name 'ObjectMapperFacade.php' 2>/dev/null` returns zero results
   - `composer check:strict` exits 0 after deletion (autoload regenerated, no dangling class references)
   - `composer dump-autoload --dry-run` lists no deleted class names
-- [ ] Implement (delete files, update composer.json autoload, psalm.xml/phpstan.neon exclusion entries)
-- [ ] Test
+- [~] Implement (delete files, update composer.json autoload, psalm.xml/phpstan.neon exclusion entries) — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ### Task 19: Add quality gate to composer check:strict
 
@@ -326,8 +326,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Introducing `use OCA\OpenConnector\Db\Source;` into any file under `lib/` causes `composer check:strict` to exit non-zero with a human-readable error
   - Introducing `use OCA\OpenConnector\Db\Dto\SourceDto;` does NOT cause a failure (DTOs are permitted)
   - CI pipeline runs `composer check:strict` on every push to the chain C branch
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -343,8 +343,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Newman collection exits 0 (all REST endpoint tests pass, wire format unchanged)
   - The pre-flight assertion test passes in both `storage_migrated=true` and `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` modes
   - No match for deleted type names in `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" lib/ tests/` (excluding `Dto\`)
-- [ ] Implement
-- [ ] Test
+- [~] Implement — deferred to downstream cycle (handoff)
+- [~] Test — deferred to downstream cycle (handoff)
 
 ---
 
@@ -352,17 +352,17 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
 
 ### ADR Compliance
 
-- [ ] **ADR-001**: No `lib/Db/<Entity>.php` domain-data classes remain after this change
-- [ ] **ADR-002**: Mapping and rule engine logic in `MappingService`/`RuleService` preserved; only the persistence layer changes
-- [ ] **ADR-003**: Every outbound HTTP call in `CallService` still produces a `CallLog` write via `ObjectService::saveObject('openconnector', 'call_log', ...)`
-- [ ] **ADR-005**: `Source → Synchronization → SynchronizationContract` triad preserved; per-object hash comparison logic intact in `SynchronizationService`
-- [ ] **ADR-007**: Every read of a credential field (`apikey`, `password`, `secret`, `jwt`, `jwtId`, `username`) from a Source `ObjectEntity` is wrapped in `EncryptionService::decrypt(...)`
-- [ ] **ADR-008**: `EndpointService` `targetType`/`targetId` polymorphic dispatch branches preserved for all four known `targetType` values
-- [ ] **ADR-009**: No new MySQL-specific raw SQL introduced; known pre-existing violations in `SettingsService` left in place (separate follow-up)
-- [ ] **ADR-011**: `FlowToken` usage in endpoint and sync pipelines preserved; only underlying persistence calls change
+- [~] **ADR-001**: No `lib/Db/<Entity>.php` domain-data classes remain after this change — deferred to downstream cycle (handoff)
+- [~] **ADR-002**: Mapping and rule engine logic in `MappingService`/`RuleService` preserved; only the persistence layer changes — deferred to downstream cycle (handoff)
+- [~] **ADR-003**: Every outbound HTTP call in `CallService` still produces a `CallLog` write via `ObjectService::saveObject('openconnector', 'call_log', ...)` — deferred to downstream cycle (handoff)
+- [~] **ADR-005**: `Source → Synchronization → SynchronizationContract` triad preserved; per-object hash comparison logic intact in `SynchronizationService` — deferred to downstream cycle (handoff)
+- [~] **ADR-007**: Every read of a credential field (`apikey`, `password`, `secret`, `jwt`, `jwtId`, `username`) from a Source `ObjectEntity` is wrapped in `EncryptionService::decrypt(...)` — deferred to downstream cycle (handoff)
+- [~] **ADR-008**: `EndpointService` `targetType`/`targetId` polymorphic dispatch branches preserved for all four known `targetType` values — deferred to downstream cycle (handoff)
+- [~] **ADR-009**: No new MySQL-specific raw SQL introduced; known pre-existing violations in `SettingsService` left in place (separate follow-up) — deferred to downstream cycle (handoff)
+- [~] **ADR-011**: `FlowToken` usage in endpoint and sync pipelines preserved; only underlying persistence calls change — deferred to downstream cycle (handoff)
 
 ### Spec Compliance
 
-- [ ] All 13 requirements in `specs/openconnector-direct-or-usage/spec.md` have at least one passing test scenario
-- [ ] Wire-format parity verified by Newman collection: same JSON in/out for all 15 resources × 5 CRUD methods
-- [ ] Quality gate (Task 19) is active in CI
+- [~] All 13 requirements in `specs/openconnector-direct-or-usage/spec.md` have at least one passing test scenario — deferred to downstream cycle (handoff)
+- [~] Wire-format parity verified by Newman collection: same JSON in/out for all 15 resources × 5 CRUD methods — deferred to downstream cycle (handoff)
+- [~] Quality gate (Task 19) is active in CI — deferred to downstream cycle (handoff)
