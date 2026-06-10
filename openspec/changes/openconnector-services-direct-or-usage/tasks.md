@@ -68,8 +68,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `SyncRefResolver::resolve("")` returns a result with `'variant' => 'unrecognised'` without throwing
   - Constructor injects `\OCA\OpenRegister\Service\ObjectService` for the integer-PK branch lookup
   - `composer check:strict` passes
-- [ ] Implement
-- [ ] Test
+- [x] Implement <!-- lib/Service/Helper/SyncRefResolver.php extracted from LegacyToRegisterMigrator::resolveSyncRef; covers all 4 variants with ObjectService injection -->
+- [x] Test <!-- tests/Unit/Service/Helper/SyncRefResolverTest.php — 7 tests covering integer-pk (resolved+unresolved+OS-failure), register-schema, uuid, empty-string, unknown-shape -->
 
 ---
 
