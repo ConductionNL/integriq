@@ -333,7 +333,7 @@
 
 <!-- Spec-only change. Implementation-cycle tests are pre-declared on tasks 2.1-2.5 above per adapter. -->
 
-- [ ] N/A for the spec change itself — no business logic ships
+- [x] N/A for the spec change itself — no business logic ships
 - [ ] PHPUnit unit tests for new/changed business logic
       (`tests/Unit/`) — declared on tasks 2.1-2.5; land with
       per-adapter implementation cycles
@@ -351,7 +351,7 @@
 
 <!-- User-facing tutorial pages land with the per-adapter cycle, not the category spec. -->
 
-- [ ] N/A for the spec change itself
+- [x] N/A for the spec change itself
 - [ ] Feature documentation updated in `docs/` — per-adapter
       `docs/integrations/{slug}/` pages authored during
       implementation cycles per ADR-030 journeydoc convention
@@ -363,7 +363,7 @@
 
 <!-- No user-facing strings in the category specs; translation work lands with each per-adapter cycle. -->
 
-- [ ] N/A for the spec change itself
+- [x] N/A for the spec change itself
 - [ ] Dutch (`nl_NL`) and English (`en_US`) translation strings
       added during per-adapter implementation cycles — each
       adapter's manifest `label` / `description` / capability
