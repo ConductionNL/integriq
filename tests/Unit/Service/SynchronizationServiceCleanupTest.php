@@ -23,6 +23,7 @@ use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\StorageService;
+use OCA\OpenConnector\Service\SynchronizationLogService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -82,12 +83,13 @@ class SynchronizationServiceCleanupTest extends TestCase
         $this->orObjectService = ObjectServiceMockBuilder::make($this);
         $this->logger          = $this->createMock(LoggerInterface::class);
 
-        $callService    = $this->createMock(CallService::class);
-        $mappingService = $this->createMock(MappingService::class);
-        $container      = $this->createMock(ContainerInterface::class);
-        $objectService  = $this->createMock(ObjectService::class);
-        $storageService = $this->createMock(StorageService::class);
-        $appConfig      = $this->createMock(IAppConfig::class);
+        $callService               = $this->createMock(CallService::class);
+        $mappingService            = $this->createMock(MappingService::class);
+        $container                 = $this->createMock(ContainerInterface::class);
+        $objectService             = $this->createMock(ObjectService::class);
+        $storageService            = $this->createMock(StorageService::class);
+        $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
+        $appConfig                 = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
 
         // Partial-mock `updateTarget` so we can assert whether the delete path
@@ -102,6 +104,7 @@ class SynchronizationServiceCleanupTest extends TestCase
                     $objectService,
                     $storageService,
                     $this->logger,
+                    $synchronizationLogService,
                     $appConfig,
                 ]
             )

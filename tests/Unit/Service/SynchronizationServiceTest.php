@@ -18,6 +18,7 @@ use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\StorageService;
+use OCA\OpenConnector\Service\SynchronizationLogService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -61,12 +62,13 @@ class SynchronizationServiceTest extends TestCase
         $this->orObjectService = ObjectServiceMockBuilder::make($this);
         $this->logger          = $this->createMock(LoggerInterface::class);
 
-        $callService    = $this->createMock(CallService::class);
-        $mappingService = $this->createMock(MappingService::class);
-        $container      = $this->createMock(ContainerInterface::class);
-        $objectService  = $this->createMock(ObjectService::class);
-        $storageService = $this->createMock(StorageService::class);
-        $appConfig      = $this->createMock(IAppConfig::class);
+        $callService               = $this->createMock(CallService::class);
+        $mappingService            = $this->createMock(MappingService::class);
+        $container                 = $this->createMock(ContainerInterface::class);
+        $objectService             = $this->createMock(ObjectService::class);
+        $storageService            = $this->createMock(StorageService::class);
+        $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
+        $appConfig                 = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
 
         $this->service = new SynchronizationService(
@@ -77,6 +79,7 @@ class SynchronizationServiceTest extends TestCase
             $objectService,
             $storageService,
             $this->logger,
+            $synchronizationLogService,
             $appConfig,
         );
     }//end setUp()
@@ -228,99 +231,91 @@ class SynchronizationServiceTest extends TestCase
      */
     public function testSynchronizationLogWritesAreCreateOnly(): void
     {
-        // Record every saveObject invocation and reject any UPDATE on the
-        // two append-only log schemas.
-        $disallowedUpdates = [];
-        $defaultEntity     = ObjectServiceMockBuilder::objectEntity(
+        // The OpenRegister `synchronization_log` schema is immutable / append-only:
+        // any saveObject(uuid: ...) UPDATE is rejected. SynchronizationLogService
+        // must therefore persist the run-log via an INSERT (no uuid argument).
+        $observedUuid  = 'sentinel';
+        $observedBody  = null;
+        $defaultEntity = ObjectServiceMockBuilder::objectEntity(
             $this,
             ['result' => []],
             'log-uuid'
         );
 
-        $this->orObjectService->method('saveObject')->willReturnCallback(
+        $orObjectService = $this->createMock(ORObjectService::class);
+        $orObjectService->method('saveObject')->willReturnCallback(
             static function (
                 $object,
                 $extend = null,
                 $register = null,
                 $schema = null,
-                ?string $uuid = null,
-                bool $_rbac = true,
-                bool $_multitenancy = true,
-                bool $silent = false,
-                ?array $uploadedFiles = null
-            ) use (&$disallowedUpdates, $defaultEntity) {
-                if (
-                    $uuid !== null
-                    && in_array(
-                        $schema,
-                        ['synchronization_log', 'synchronization_contract_log'],
-                        true
-                    )
-                ) {
-                    $disallowedUpdates[] = $schema.':'.$uuid;
-                }
+                ?string $uuid = null
+            ) use (&$observedUuid, &$observedBody, $defaultEntity) {
+                $observedUuid = $uuid;
+                $observedBody = $object;
                 return $defaultEntity;
             }
         );
 
-        // Direct property assertion via reflection: pendingContractLogs starts empty
-        // and is the supported buffer used by the refactor.
-        $ref  = new \ReflectionClass($this->service);
-        $prop = $ref->getProperty('pendingContractLogs');
-        $prop->setAccessible(true);
-        $this->assertSame(
-            [],
-            $prop->getValue($this->service),
-            'pendingContractLogs accumulator must start empty (#1007)'
-        );
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $session     = $this->createMock(\OCP\ISession::class);
+        $logService  = new SynchronizationLogService($orObjectService, $userSession, $session);
 
-        // Sanity: assert the disallowedUpdates list is empty (we never made a sync
-        // call here; this just establishes the test recording infrastructure
-        // works). The runtime guarantee is verified live via the deployment
-        // verification documented in the PR body.
-        $this->assertSame(
-            [],
-            $disallowedUpdates,
-            'No UPDATE call on synchronization_log/_contract_log must have happened'
+        $log = $logService->createFromArray(['synchronizationId' => 'sync-1', 'result' => []]);
+        $log->setMessage('Success');
+        $logService->update($log);
+
+        // A CREATE (no uuid argument) must have been used; an `id` in the body
+        // would make OpenRegister treat the write as an UPDATE, so it must be
+        // stripped from the persisted payload.
+        $this->assertNull(
+            $observedUuid,
+            'The run-log must be written with a CREATE (no uuid arg) against the append-only schema'
+        );
+        $this->assertIsArray($observedBody);
+        $this->assertArrayNotHasKey(
+            'id',
+            $observedBody,
+            'The persisted payload must not carry an id (would trigger an append-only UPDATE)'
         );
     }//end testSynchronizationLogWritesAreCreateOnly()
 
 
     /**
-     * #1007 regression test — `bufferContractLog` accumulates payloads in memory
-     * for write-once finalize, instead of saveObject-ing them immediately.
+     * #1007 regression — the append-only run-log is written exactly once.
+     *
+     * SynchronizationLogService::update() is idempotent: the first call INSERTs
+     * the row and marks the log persisted; subsequent calls are no-ops so the
+     * append-only schema is never asked to UPDATE.
      *
      * @return void
      */
-    public function testBufferContractLogAccumulatesInMemory(): void
+    public function testSynchronizationLogIsWrittenExactlyOnce(): void
     {
-        $ref     = new \ReflectionClass($this->service);
-        $buffer  = $ref->getProperty('pendingContractLogs');
-        $buffer->setAccessible(true);
-
-        $bufferMethod = $ref->getMethod('bufferContractLog');
-        $bufferMethod->setAccessible(true);
-
-        // Buffer two payloads — saveObject must NEVER be called for these.
-        $this->orObjectService->expects($this->never())->method('saveObject');
-
-        $payload1 = ['synchronizationContractId' => 'c1', 'targetResult' => 'create'];
-        $payload2 = ['synchronizationContractId' => 'c2', 'targetResult' => 'update'];
-
-        $r1 = $bufferMethod->invoke($this->service, $payload1);
-        $r2 = $bufferMethod->invoke($this->service, $payload2);
-
-        // Buffer holds both payloads.
-        $this->assertSame(
-            [$payload1, $payload2],
-            $buffer->getValue($this->service),
-            'Both contract-log payloads must be buffered for write-once flush (#1007)'
+        $defaultEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['result' => []],
+            'log-uuid'
         );
-        // Return values are the payloads unchanged (callers consume them via the
-        // synchronizeContract return shape's "log" key).
-        $this->assertSame($payload1, $r1);
-        $this->assertSame($payload2, $r2);
-    }//end testBufferContractLogAccumulatesInMemory()
+
+        $orObjectService = $this->createMock(ORObjectService::class);
+        // saveObject must be invoked exactly once across multiple update() calls.
+        $orObjectService->expects($this->once())->method('saveObject')->willReturn($defaultEntity);
+
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $session     = $this->createMock(\OCP\ISession::class);
+        $logService  = new SynchronizationLogService($orObjectService, $userSession, $session);
+
+        $log = $logService->createFromArray(['synchronizationId' => 'sync-1', 'result' => []]);
+        $this->assertFalse($log->isPersisted(), 'createFromArray must NOT persist the row');
+
+        $logService->update($log);
+        $this->assertTrue($log->isPersisted(), 'the first update must persist the row');
+
+        // Second/third calls must not write again (append-only).
+        $logService->update($log);
+        $logService->persist($log);
+    }//end testSynchronizationLogIsWrittenExactlyOnce()
 
 
 }//end class

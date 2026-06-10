@@ -19,8 +19,6 @@ use OCA\OpenConnector\Db\Synchronization;
 use OCA\OpenConnector\Db\SynchronizationContract;
 use OCA\OpenConnector\Db\SynchronizationContractLogMapper;
 use OCA\OpenConnector\Db\SynchronizationContractMapper;
-use OCA\OpenConnector\Db\SynchronizationLog;
-use OCA\OpenConnector\Db\SynchronizationLogMapper;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -97,11 +95,15 @@ class SynchronizationService
     private MappingMapper $mappingMapper;
 
     /**
-     * The synchronization log mapper.
+     * The OpenRegister-backed synchronization run-log write service.
      *
-     * @var SynchronizationLogMapper
+     * Post OpenRegister-cutover the SynchronizationLog entity + its QBMapper were
+     * deleted; the run-log is now persisted to OpenRegister (schema
+     * `synchronization_log`) through this service.
+     *
+     * @var SynchronizationLogService
      */
-    private SynchronizationLogMapper $synchronizationLogMapper;
+    private readonly SynchronizationLogService $synchronizationLogService;
 
     /**
      * The synchronization contract mapper.
@@ -139,9 +141,10 @@ class SynchronizationService
      * @param ContainerInterface $containerInterface The PSR-11 container.
      * @param OrObjectService    $orObjectService    The OpenRegister object service.
      * @param ObjectService      $objectService      The OpenConnector object service.
-     * @param StorageService     $storageService     The storage service.
-     * @param LoggerInterface    $logger             The logger.
-     * @param IAppConfig         $appConfig          The app configuration.
+     * @param StorageService            $storageService            The storage service.
+     * @param LoggerInterface           $logger                    The logger.
+     * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
+     * @param IAppConfig                $appConfig                 The app configuration.
      */
     public function __construct(
         private readonly CallService $callService,
@@ -151,8 +154,11 @@ class SynchronizationService
         private readonly ObjectService $objectService,
         private readonly StorageService $storageService,
         private readonly LoggerInterface $logger,
+        SynchronizationLogService $synchronizationLogService,
         IAppConfig $appConfig,
     ) {
+        $this->synchronizationLogService = $synchronizationLogService;
+
         // Resolve the surviving QBMappers from the container so the constructor
         // signature mirrors the OpenRegister-based wiring (and the unit suite).
         // Guarded against a bare container mock that returns null in tests which
@@ -170,11 +176,6 @@ class SynchronizationService
         $ruleMapper = $this->containerInterface->get(RuleMapper::class);
         if ($ruleMapper instanceof RuleMapper) {
             $this->ruleMapper = $ruleMapper;
-        }
-
-        $synchronizationLogMapper = $this->containerInterface->get(SynchronizationLogMapper::class);
-        if ($synchronizationLogMapper instanceof SynchronizationLogMapper) {
-            $this->synchronizationLogMapper = $synchronizationLogMapper;
         }
 
         $synchronizationContractMapper = $this->containerInterface->get(SynchronizationContractMapper::class);
@@ -683,7 +684,7 @@ class SynchronizationService
 	 *
 	 * @param Synchronization $synchronization The synchronization configuration.
 	 * @param \OCA\OpenRegister\Db\ObjectEntity|array $object The object to be synchronized, also referenced so its updated in parent objects.
-     * @param SynchronizationLog $log The log object to record synchronization details and results.
+     * @param SynchronizationRunLog $log The log object to record synchronization details and results.
 	 * @param bool 		      $isTest Whether this is a test run (does not persist data if true).
 	 * @param bool|null       $force Whether to force the synchronization regardless of changes.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
@@ -693,7 +694,7 @@ class SynchronizationService
 	private function synchronizeInternToExtern(
 		Synchronization $synchronization,
 		\OCA\OpenRegister\Db\ObjectEntity|array &$object,
-		SynchronizationLog $log,
+		SynchronizationRunLog $log,
         FlowToken &$flowToken,
 		?bool $isTest = false,
 		?bool $force = false,
@@ -840,28 +841,28 @@ class SynchronizationService
      * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
      *
      * @param Synchronization     $synchronization The synchronization configuration and state.
-     * @param SynchronizationLog  $log             The log object to record synchronization details and results.
+     * @param SynchronizationRunLog $log           The log object to record synchronization details and results.
      * @param bool|null           $isTest          Optional flag to run the synchronization in test mode (no deletions, no persistence).
      * @param bool|null           $force           Optional flag to bypass change checks and force synchronization of all objects.
      * @param string|null         $source          The source to synchronize, if not provided, the synchronization's source will be used
      * @param array|null          $data            The data to add to synchronize, if not provided, the synchronization's data will be used
      * @param string|null         $mutationType    The current type of mutation we are doing this::VALID_MUTATION_TYPES
      *
-     * @return SynchronizationLog Returns the updated synchronization log with processing results.
+     * @return SynchronizationRunLog Returns the updated synchronization log with processing results.
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
      * @throws Exception If the source ID is empty or synchronization cannot proceed.
      */
     private function synchronizeExternToIntern(
         Synchronization $synchronization,
-        SynchronizationLog $log,
+        SynchronizationRunLog $log,
         FlowToken &$flowToken,
         ?bool $isTest = false,
         ?bool $force = false,
         ?string $source = null,
         ?array $data = null,
         ?string $mutationType = null
-    ): SynchronizationLog {
+    ): SynchronizationRunLog {
         // Start overall timing measurement
         $overallStartTime = microtime(true);
         $rateLimitException = null;
@@ -885,7 +886,7 @@ class SynchronizationService
 
         if (empty($synchronization->getSourceId()) === true && $source === null) {
             $log->setMessage('sourceId of synchronization cannot be empty. Canceling synchronization...');
-            $this->synchronizationLogMapper->update($log);
+            $log = $this->synchronizationLogService->update($log);
             throw new Exception('sourceId of synchronization cannot be empty. Canceling synchronization...');
         }
 
@@ -1031,7 +1032,7 @@ class SynchronizationService
 
         if ($rateLimitException !== null) {
             $log->setMessage($rateLimitException->getMessage());
-            $this->synchronizationLogMapper->update($log);
+            $log = $this->synchronizationLogService->update($log);
 
             throw new TooManyRequestsHttpException(
                 $rateLimitException->getMessage(),
@@ -1119,11 +1120,12 @@ class SynchronizationService
 
         // Shortcut for intern-to-extern sync
         if ($synchronization->getSourceType() === 'register/schema' && $object !== null) {
-            // lets always create the log entry first, because we need its uuid later on for contractLogs
+            // Build the in-memory log first so it carries a stable uuid for the
+            // contract logs; the append-only row is persisted once at the end.
             $log['result']['type'] = 'internToExtern';
-            $log = $this->synchronizationLogMapper->createFromArray($log);
+            $log = $this->synchronizationLogService->createFromArray($log);
 
-            return $this->synchronizeInternToExtern(
+            $contract = $this->synchronizeInternToExtern(
                 synchronization: $synchronization,
                 object: $object,
                 log: $log,
@@ -1131,12 +1133,18 @@ class SynchronizationService
                 force: $force,
                 mutationType: $mutationType,
             );
+
+            // Write-once finalize of the (append-only) run-log for this branch.
+            $this->synchronizationLogService->persist($log);
+
+            return $contract;
         }
 
         $log['result']['type'] = 'externToIntern';
 
-        // lets always create the log entry first, because we need its uuid later on for contractLogs
-		$log = $this->synchronizationLogMapper->createFromArray($log);
+        // Build the in-memory log first so it carries a stable uuid for the
+        // contract logs; the append-only row is persisted once at the end.
+		$log = $this->synchronizationLogService->createFromArray($log);
 
         // Handle full extern-to-intern sync
         $log = $this->synchronizeExternToIntern(
@@ -1155,7 +1163,7 @@ class SynchronizationService
         $log->setExecutionTime($executionTime);
         $log->setMessage('Success');
         $log->setExpires($this->calculateExpires($this->successRetention, $this->successRetention));
-        $this->synchronizationLogMapper->update($log);
+        $log = $this->synchronizationLogService->update($log);
 
         return $log->jsonSerialize();
     }
@@ -1541,7 +1549,7 @@ class SynchronizationService
 	 * @param array $object
 	 * @param bool|null $isTest False by default, currently added for synchronization-test endpoint
 	 * @param bool|null $force False by default, if true, the object will be updated regardless of changes
-	 * @param SynchronizationLog|null $log The log to update
+	 * @param SynchronizationRunLog|null $log The log to update
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
      *
 	 * @return SynchronizationContract|Exception|array
@@ -1558,7 +1566,7 @@ class SynchronizationService
         array &$object = [],
         ?bool $isTest = false,
         ?bool $force = false,
-        ?SynchronizationLog $log = null,
+        ?SynchronizationRunLog $log = null,
 		?string $mutationType = null
 		): SynchronizationContract|Exception|array
 	{
@@ -2923,7 +2931,7 @@ class SynchronizationService
 		?SynchronizationContract $synchronizationContract = null,
 		?bool $force = false,
 		?bool $test = false,
-		?SynchronizationLog $log = null
+		?SynchronizationRunLog $log = null
 	): array
 	{
 		$objectId = $object->getUuid();
@@ -4070,7 +4078,7 @@ class SynchronizationService
 	 * @param array $result The current result tracking data
 	 * @param bool $isTest Whether this is a test run
 	 * @param bool $force Whether to force synchronization regardless of changes
-	 * @param SynchronizationLog $log The synchronization log
+	 * @param SynchronizationRunLog $log The synchronization log
 	 * @param string|null $mutationType The type of object mutation
 	 *
 	 * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null]
@@ -4081,7 +4089,7 @@ class SynchronizationService
 		array $result,
 		bool $isTest,
 		bool $force,
-		SynchronizationLog $log,
+		SynchronizationRunLog $log,
         FlowToken &$flowToken,
         ?string $mutationType = null
 	): array {

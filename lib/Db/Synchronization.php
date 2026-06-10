@@ -85,9 +85,9 @@ use RuntimeException;
  * @method void          setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void          setUpdated(?DateTime $updated)
- * @method void          setConditions(array $conditions)
- * @method void          setFollowUps(array $followUps)
- * @method void          setActions(array $actions)
+ * @method void          setConditions(?array $conditions)
+ * @method void          setFollowUps(?array $followUps)
+ * @method void          setActions(?array $actions)
  * @method array|null    getConfigurations()
  * @method void          setConfigurations(?array $configurations)
  * @method string|null   getStatus()
@@ -277,23 +277,30 @@ class Synchronization extends Entity implements JsonSerializable
     /**
      * The conditions that gate the synchronization.
      *
-     * @var array
+     * Nullable-safe: an OpenRegister synchronization object created without this
+     * key serialises `null`; hydration must not type-error on it (see hydrate()).
+     *
+     * @var array|null
      */
-    protected array $conditions = [];
+    protected ?array $conditions = [];
 
     /**
      * The follow-up synchronizations to run afterwards.
      *
-     * @var array
+     * Nullable-safe: see $conditions.
+     *
+     * @var array|null
      */
-    protected array $followUps = [];
+    protected ?array $followUps = [];
 
     /**
      * The actions to run as part of the synchronization.
      *
-     * @var array
+     * Nullable-safe: see $conditions.
+     *
+     * @var array|null
      */
-    protected array $actions = [];
+    protected ?array $actions = [];
 
     /**
      * Configuration IDs that this synchronization belongs to.
@@ -485,7 +492,12 @@ class Synchronization extends Entity implements JsonSerializable
         }
 
         foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields, true) === true && $value === []) {
+            // OpenRegister synchronization objects created without an optional
+            // array key (conditions/followUps/actions/...) serialise that key as
+            // null. Coerce any null JSON-typed field to an empty array so the
+            // non-nullable getters/jsonSerialize stay well-typed and hydration
+            // does not type-error on a missing-but-present null key.
+            if (in_array($key, $jsonFields, true) === true && $value === null) {
                 $value = [];
             }
 
@@ -536,9 +548,9 @@ class Synchronization extends Entity implements JsonSerializable
             'targetLastSynced'    => $this->formatDate(date: $this->targetLastSynced),
             'created'             => $this->formatDate(date: $this->created),
             'updated'             => $this->formatDate(date: $this->updated),
-            'conditions'          => $this->conditions,
-            'followUps'           => $this->followUps,
-            'actions'             => $this->actions,
+            'conditions'          => $this->getConditions(),
+            'followUps'           => $this->getFollowUps(),
+            'actions'             => $this->getActions(),
             'configurations'      => $this->configurations,
             'status'              => $this->status,
             'slug'                => $this->getSlug(),

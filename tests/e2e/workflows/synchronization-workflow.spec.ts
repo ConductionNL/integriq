@@ -186,29 +186,25 @@ test.describe('Synchronization workflow — pipeline setup & linking', () => {
 
 test.describe('Synchronization workflow — data movement (the high-value check)', () => {
 	/*
-	 * BUG A (BLOCKING — sync run 500): SynchronizationService always creates a
-	 * SynchronizationLog first via SynchronizationLogMapper::createFromArray(),
-	 * which does `new SynchronizationLog()`. The `SynchronizationLog` entity
-	 * class was DELETED by commit 7df241bc ("feat(or-cutover): delete 15
-	 * entities + 15 mappers") but the mapper + its injection into
-	 * SynchronizationService were left behind, so every run throws
-	 *   Error: Class "OCA\OpenConnector\Db\SynchronizationLog" not found
-	 *          (lib/Db/SynchronizationLogMapper.php:107)
-	 * and POST /api/synchronizations/{id}/run returns HTTP 500. The READ path
-	 * for logs already migrated to OR (schema `synchronization_log`), but the
-	 * WRITE path did not — the or-cutover for synchronization-log is incomplete.
+	 * BUG A (FIXED): SynchronizationService created its run-log via the orphaned
+	 * SynchronizationLogMapper (`new SynchronizationLog()` — entity deleted in the
+	 * or-cutover 7df241bc), so every run threw a 500. The write path now goes
+	 * through SynchronizationLogService → OpenRegister (schema `synchronization_log`,
+	 * write-once because the schema is append-only), matching the read path.
 	 *
-	 * BUG B (robustness — hydrate 500): Synchronization::$conditions (and
-	 * $followUps/$actions) are non-nullable `array` properties. When a sync OR
-	 * object is created WITHOUT those keys, OR serializes them as null and
-	 * Synchronization::hydrate() throws
-	 *   Cannot assign null to property ...Synchronization::$conditions of type array
-	 * → another 500 before the run even starts. (This fixture works around B by
-	 * setting [] explicitly; A still blocks regardless.)
+	 * BUG B (FIXED): Synchronization::$conditions/$followUps/$actions are now
+	 * nullable-safe and hydrate() coerces a null JSON field to []; a sync object
+	 * created without those keys no longer 500s on hydrate.
 	 *
-	 * Both make the core data-movement feature unrunnable headlessly today, so
-	 * the transfer assertion is test.fixme. The body is written to PASS once the
-	 * run succeeds, doubling as a regression guard.
+	 * REMAINING BLOCKER (separate, larger incomplete-cutover — NOT bug A/B): the
+	 * engine's surviving QBMappers (SourceMapper / MappingMapper / RuleMapper /
+	 * SynchronizationContractMapper / SynchronizationContractLogMapper) still read
+	 * and write the legacy `oc_openconnector_*` tables, which the cutover DROPPED
+	 * (sources/mappings/rules/contracts now live in OpenRegister schemas). A real
+	 * run therefore now reaches the engine and fails resolving the source with
+	 *   relation "oc_openconnector_sources" does not exist
+	 * (HTTP 400, no longer 500). Data movement stays test.fixme until those
+	 * mappers are migrated to OpenRegister too; the body below PASSES once they are.
 	 */
 	test.fixme('running the sync transfers the 2 source objects into the target register', async () => {
 		const { api, syncId, registerId, tgtSchemaId } = fx!
@@ -232,10 +228,11 @@ test.describe('Synchronization workflow — data movement (the high-value check)
 	})
 
 	/*
-	 * Same blocking bugs (A/B): a run must record a SynchronizationLog with a
-	 * success status, readable through the logs endpoint
-	 * (GET /api/synchronizations/logs, backed by OR schema `synchronization_log`).
-	 * Today the write-path crash (BUG A) means no log is ever recorded.
+	 * The run-log write path (BUG A) is fixed — a successful run now records a
+	 * SynchronizationLog in OpenRegister (schema `synchronization_log`), readable
+	 * through GET /api/synchronizations/logs. This stays test.fixme only because a
+	 * full run cannot yet complete end-to-end (the legacy-table blocker above), so
+	 * a "Success" log is not produced headlessly; it PASSES once a run completes.
 	 */
 	test.fixme('the run records a synchronization log with a success status', async () => {
 		const { api, syncId } = fx!
@@ -257,19 +254,19 @@ test.describe('Synchronization workflow — data movement (the high-value check)
 	})
 
 	/*
-	 * ACTIVE regression guard for BUG A. While the bug is present this asserts
-	 * the run currently 500s for the documented reason. When BUG A is fixed the
-	 * run will no longer 500 and THIS test will fail loudly, prompting whoever
-	 * fixed it to un-fixme the two transfer tests above. (Kept deliberately
-	 * narrow: it only asserts the *current* broken contract.)
+	 * REGRESSION GUARD for BUG A (run-log write path) + BUG B (hydrate). These are
+	 * fixed: the run no longer throws the missing-entity / null-array 500. The run
+	 * still cannot complete a transfer because of the SEPARATE legacy-table gap
+	 * documented above (it returns 400 "relation oc_openconnector_sources does not
+	 * exist"), but it must NEVER 500 again on the run-log/hydrate path. This guard
+	 * asserts exactly that: a 500 here is a regression of BUG A/B.
 	 */
-	test('REGRESSION GUARD: sync run currently 500s (missing SynchronizationLog entity — BUG A)', async () => {
+	test('REGRESSION GUARD: sync run no longer 500s on the run-log/hydrate path (BUG A/B fixed)', async () => {
 		const { api, syncId } = fx!
 		const resp = await api.request.post(`${OC_API}/synchronizations/${syncId}/run`, { data: {}, failOnStatusCode: false })
 		expect(
 			resp.status(),
-			'If this is no longer 500, BUG A (missing SynchronizationLog entity) is fixed — ' +
-			'remove this guard and un-fixme the data-movement tests above.',
-		).toBe(500)
+			'A 500 means BUG A (orphaned SynchronizationLog write path) or BUG B (hydrate null arrays) has regressed.',
+		).not.toBe(500)
 	})
 })
