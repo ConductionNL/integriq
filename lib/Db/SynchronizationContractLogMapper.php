@@ -1,231 +1,314 @@
 <?php
+/**
+ * OpenConnector SynchronizationContractLog mapper (OpenRegister-backed adapter).
+ *
+ * Post OpenRegister-cutover the `openconnector_synchronization_contract_logs`
+ * table was dropped. This mapper is no longer a QBMapper: it is a thin adapter
+ * over `\OCA\OpenRegister\Service\ObjectService` (register `openconnector`,
+ * schema `synchronization_contract_log`).
+ *
+ * The OpenRegister `synchronization_contract_log` schema is APPEND-ONLY
+ * (write-once): OR rejects any UPDATE/DELETE on it with an AppendOnlyException.
+ * The engine builds a contract log in memory via createFromArray(), mutates it
+ * during the run (setTarget / setTargetResult / setExpires / ...), and then
+ * persists it exactly once via update(). To honour the append-only schema this
+ * adapter therefore DEFERS the write: createFromArray() only builds the in-memory
+ * value object (auto-filling system fields + a stable uuid), and the first
+ * update()/insert() performs the single INSERT. Any subsequent update() for an
+ * already-persisted log is a no-op.
+ *
+ * @category Db
+ * @package  OCA\OpenConnector\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Db;
 
-use DateInterval;
-use DatePeriod;
 use DateTime;
-use OCA\OpenConnector\Db\SynchronizationContractLog;
-use OCP\AppFramework\Db\Entity;
-use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\Exception;
-use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IDBConnection;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\ISession;
 use OCP\IUserSession;
-use Symfony\Component\Uid\Uuid;
 use OCP\Session\Exceptions\SessionNotAvailableException;
+use Symfony\Component\Uid\Uuid;
 
 /**
- * Class SynchronizationContractLogMapper
+ * OpenRegister-backed, append-only adapter for synchronization contract log objects.
  *
- * Mapper class for handling SynchronizationContractLog entities
+ * @package OCA\OpenConnector\Db
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SynchronizationContractLogMapper extends QBMapper
+class SynchronizationContractLogMapper
 {
-	public function __construct(
-		IDBConnection $db,
-		private readonly IUserSession $userSession,
-		private readonly ISession $session
-	) {
-		parent::__construct($db, 'openconnector_synchronization_contract_logs');
-	}
 
-	public function find(int $id): SynchronizationContractLog
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * The OpenRegister register contract logs live in.
+     *
+     * @var string
+     */
+    private const REGISTER = 'openconnector';
 
-		$qb->select('*')
-			->from('openconnector_synchronization_contract_logs')
-			->where(
-				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
-			);
+    /**
+     * The OpenRegister schema for synchronization contract log objects.
+     *
+     * @var string
+     */
+    private const SCHEMA = 'synchronization_contract_log';
 
-		return $this->findEntity(query: $qb);
-	}
+    /**
+     * Tracks the uuids of contract logs already persisted in this request so a
+     * repeated update() on an append-only log is a safe no-op.
+     *
+     * @var array<string,bool>
+     */
+    private array $persisted = [];
 
-	public function findOnSynchronizationId(string $synchronizationId): ?SynchronizationContractLog
-	{
-		$qb = $this->db->getQueryBuilder();
+    /**
+     * Constructor.
+     *
+     * @param OrObjectService $orObjectService The OpenRegister object service.
+     * @param IUserSession    $userSession     The current user session.
+     * @param ISession        $session         The PHP session.
+     */
+    public function __construct(
+        private readonly OrObjectService $orObjectService,
+        private readonly IUserSession $userSession,
+        private readonly ISession $session
+    ) {
 
-		$qb->select('*')
-			->from('openconnector_synchronization_contract_logs')
-			->where(
-				$qb->expr()->eq('synchronization_id', $qb->createNamedParameter($synchronizationId))
-			);
+    }//end __construct()
 
-		try {
-			return $this->findEntity($qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
-		}
-	}
+    /**
+     * Find a contract log by id/uuid.
+     *
+     * @param int|string $id The id/uuid of the contract log to find.
+     *
+     * @return SynchronizationContractLog The found contract log value object.
+     *
+     * @throws DoesNotExistException When the contract log is not found.
+     */
+    public function find(int | string $id): SynchronizationContractLog
+    {
+        $object = $this->orObjectService->find(
+            id: (string) $id,
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
 
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $searchConditions = [], ?array $searchParams = []): array
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openconnector_synchronization_contract_logs')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
-
-        foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-			} elseif ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-			} else {
-				$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-			}
+        if ($object === null) {
+            throw new DoesNotExistException('The synchronization contract log you are looking for does not exist');
         }
 
-        if (empty($searchConditions) === false) {
-            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-            foreach ($searchParams as $param => $value) {
-                $qb->setParameter($param, $value);
+        return (new SynchronizationContractLog())->hydrate($object->jsonSerialize());
+
+    }//end find()
+
+    /**
+     * Find a contract log by synchronization ID.
+     *
+     * @param string $synchronizationId The synchronization ID.
+     *
+     * @return SynchronizationContractLog|null The found contract log or null.
+     */
+    public function findOnSynchronizationId(string $synchronizationId): ?SynchronizationContractLog
+    {
+        $matches = $this->searchObjects(filters: ['synchronizationId' => $synchronizationId], limit: 1);
+        if (empty($matches) === true) {
+            return null;
+        }
+
+        return (new SynchronizationContractLog())->hydrate($matches[0]->jsonSerialize());
+
+    }//end findOnSynchronizationId()
+
+    /**
+     * Find all contract logs with optional filtering and pagination.
+     *
+     * @param int|null   $limit            Maximum number of results to return.
+     * @param int|null   $offset           Number of results to skip.
+     * @param array|null $filters          Associative array of field => value filters.
+     * @param array|null $searchConditions Unused (kept for signature compatibility).
+     * @param array|null $searchParams     Unused (kept for signature compatibility).
+     *
+     * @return array<SynchronizationContractLog> Array of found contract logs.
+     */
+    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $searchConditions=[], ?array $searchParams=[]): array
+    {
+        $objects = $this->searchObjects(filters: ($filters ?? []), limit: $limit, offset: $offset);
+
+        return array_map(
+            fn ($object): SynchronizationContractLog => (new SynchronizationContractLog())->hydrate($object->jsonSerialize()),
+            $objects
+        );
+
+    }//end findAll()
+
+    /**
+     * Build a new in-memory contract log handle (does NOT write yet).
+     *
+     * The append-only schema means the row must be written exactly once, in its
+     * final state. The engine mutates the returned handle during the run and then
+     * calls update()/insert() to perform the single INSERT.
+     *
+     * @param array $object The contract log data.
+     *
+     * @return SynchronizationContractLog The (unpersisted) contract log value object.
+     */
+    public function createFromArray(array $object): SynchronizationContractLog
+    {
+        // Auto-fill a stable uuid the engine can reference before persistence.
+        if (empty($object['uuid']) === true) {
+            $object['uuid'] = (string) Uuid::v4();
+        }
+
+        // Auto-fill userId from the current user session.
+        if (empty($object['userId']) === true && $this->userSession->getUser() !== null) {
+            $object['userId'] = $this->userSession->getUser()->getUID();
+        }
+
+        // Auto-fill sessionId from the current session (guarded for job context).
+        if (isset($object['sessionId']) === false) {
+            try {
+                $object['sessionId'] = $this->session->getId();
+            } catch (SessionNotAvailableException $exception) {
+                $object['sessionId'] = null;
             }
         }
 
-		return $this->findEntities(query: $qb);
-	}
+        // Default the linked run-log id when running a contract directly.
+        if (empty($object['synchronizationLogId']) === true) {
+            $object['synchronizationLogId'] = 'n.a.';
+        }
 
-	public function createFromArray(array $object): SynchronizationContractLog
-	{
-		$obj = new SynchronizationContractLog();
-		$obj->hydrate($object);
+        // Default expiry to +3 days unless the caller provided one.
+        if (isset($object['expires']) === false) {
+            $object['expires'] = (new DateTime('+3 days'))->format('c');
+        }
 
-		// Set uuid if not provided
-		if ($obj->getUuid() === null) {
-			$obj->setUuid(Uuid::v4());
-		}
+        return (new SynchronizationContractLog())->hydrate($object);
 
-		// Auto-fill userId from current user session
-		if ($obj->getUserId() === null && $this->userSession->getUser() !== null) {
-			$obj->setUserId($this->userSession->getUser()->getUID());
-		}
-
-		// Auto-fill sessionId from current session
-		if ($obj->getSessionId() === null) {
-			// Try catch because we could run this from a Job and in that case have no session.
-			try {
-				$obj->setSessionId($this->session->getId());
-			} catch (SessionNotAvailableException $exception) {
-				$obj->setSessionId(null);
-			}
-		}
-
-		// If no synchronizationLogId is provided, we assume that the contract is run directly from the synchronization log and set the synchronizationLogId to n.a.
-		if ($obj->getSynchronizationLogId() === null) {
-			$obj->setSynchronizationLogId('n.a.');
-		}
-
-        $obj->setExpires(new DateTime('+3 days'));
-
-		return $this->insert($obj);
-	}
-
-	public function updateFromArray(int $id, array $object): SynchronizationContractLog
-	{
-		$obj = $this->find($id);
-		$obj->hydrate($object);
-
-		return $this->update($obj);
-	}
-
-	/**
-	 * Get synchronization execution counts by date for a specific date range
-	 *
-	 * @param DateTime $from Start date
-	 * @param DateTime $to End date
-	 *
-	 * @return array Array of daily execution counts
-	 * @throws Exception
-	 */
-	public function getSyncStatsByDateRange(DateTime $from, DateTime $to): array
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select(
-				$qb->createFunction('DATE(created) as date'),
-				$qb->createFunction('COUNT(*) as executions')
-			)
-			->from('openconnector_synchronization_contract_logs')
-			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
-			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
-			->groupBy('date')
-			->orderBy('date', 'ASC');
-
-		$result = $qb->executeQuery();
-		$stats = [];
-
-		// Create DatePeriod to iterate through all dates
-		$period = new DatePeriod(
-			$from,
-			new DateInterval('P1D'),
-			$to->modify('+1 day')
-		);
-
-		// Initialize all dates with zero values
-		foreach ($period as $date) {
-			$dateStr = $date->format('Y-m-d');
-			$stats[$dateStr] = 0;
-		}
-
-		// Fill in actual values where they exist
-		while ($row = $result->fetch()) {
-			$stats[$row['date']] = (int)$row['executions'];
-		}
-
-		return $stats;
-	}
-
-	/**
-	 * Get synchronization execution counts by hour for a specific date range
-	 *
-	 * @param DateTime $from Start date
-	 * @param DateTime $to End date
-	 *
-	 * @return array Array of hourly execution counts
-	 * @throws Exception
-	 */
-	public function getSyncStatsByHourRange(DateTime $from, DateTime $to): array
-	{
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select(
-				$qb->createFunction('HOUR(created) as hour'),
-				$qb->createFunction('COUNT(*) as executions')
-			)
-			->from('openconnector_synchronization_contract_logs')
-			->where($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))))
-			->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))))
-			->groupBy('hour')
-			->orderBy('hour', 'ASC');
-
-		$result = $qb->executeQuery();
-		$stats = [];
-
-		while ($row = $result->fetch()) {
-			$stats[$row['hour']] = (int)$row['executions'];
-		}
-
-		return $stats;
-	}
-
+    }//end createFromArray()
 
     /**
-     * Cleans up expired log entries
+     * Persist a contract log to OpenRegister, write-once.
      *
-     * @return int Number of deleted entries
+     * Honours the append-only schema: the row is INSERTed exactly once (no uuid
+     * parameter, so OpenRegister treats it as a CREATE). A repeated call for an
+     * already-persisted log is a no-op that returns the handle unchanged.
+     *
+     * @param SynchronizationContractLog $log The contract log value object to persist.
+     *
+     * @return SynchronizationContractLog The persisted (or unchanged) value object.
      */
-    public function clearLogs(): int
+    public function update(SynchronizationContractLog $log): SynchronizationContractLog
     {
-        $qb = $this->db->getQueryBuilder();
+        $object = $log->jsonSerialize();
+        $uuid   = (string) ($object['uuid'] ?? '');
 
-        $qb->delete('openconnector_synchronization_contract_logs')
-            ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
+        // Append-only: never issue a second write for the same log.
+        if ($uuid !== '' && isset($this->persisted[$uuid]) === true) {
+            return $log;
+        }
 
-        return $qb->executeStatement();
-    }
-}
+        // INSERT only (no uuid parameter): OpenRegister treats this as a CREATE,
+        // which the append-only schema permits.
+        $saved = $this->orObjectService->saveObject(
+            object: $this->normalize($object),
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        if ($uuid !== '') {
+            $this->persisted[$uuid] = true;
+        }
+
+        return (new SynchronizationContractLog())->hydrate($saved->jsonSerialize());
+
+    }//end update()
+
+    /**
+     * Persist a contract log to OpenRegister, write-once (alias of update()).
+     *
+     * @param SynchronizationContractLog $log The contract log value object to persist.
+     *
+     * @return SynchronizationContractLog The persisted value object.
+     */
+    public function insert(SynchronizationContractLog $log): SynchronizationContractLog
+    {
+        return $this->update($log);
+
+    }//end insert()
+
+    /**
+     * Update an existing contract log from array data (write-once create).
+     *
+     * @param int|string $id     Ignored for the append-only schema (kept for compatibility).
+     * @param array      $object Array of contract log data.
+     *
+     * @return SynchronizationContractLog The persisted value object.
+     */
+    public function updateFromArray(int | string $id, array $object): SynchronizationContractLog
+    {
+        return $this->update($this->createFromArray($object));
+
+    }//end updateFromArray()
+
+    /**
+     * Strip null/system keys OpenRegister manages itself before saving.
+     *
+     * @param array $object The contract log data.
+     *
+     * @return array The cleaned payload for OpenRegister.
+     */
+    private function normalize(array $object): array
+    {
+        unset($object['id'], $object['created']);
+
+        return array_filter(
+            $object,
+            static function ($value) {
+                return $value !== null;
+            }
+        );
+
+    }//end normalize()
+
+    /**
+     * Run an OpenRegister object search scoped to the contract-log register/schema.
+     *
+     * @param array    $filters Field filters keyed by contract-log property.
+     * @param int|null $limit   Optional result limit.
+     * @param int|null $offset  Optional result offset.
+     *
+     * @return array<\OCA\OpenRegister\Db\ObjectEntity> The matched OpenRegister objects.
+     */
+    private function searchObjects(array $filters=[], ?int $limit=null, ?int $offset=null): array
+    {
+        $config = [
+            'filters' => array_merge(
+                ['register' => self::REGISTER, 'schema' => self::SCHEMA],
+                $filters
+            ),
+        ];
+
+        if ($limit !== null) {
+            $config['limit'] = $limit;
+        }
+
+        if ($offset !== null) {
+            $config['offset'] = $offset;
+        }
+
+        $matches = $this->orObjectService->findAll(config: $config);
+
+        return array_values(($matches['results'] ?? $matches));
+
+    }//end searchObjects()
+}//end class

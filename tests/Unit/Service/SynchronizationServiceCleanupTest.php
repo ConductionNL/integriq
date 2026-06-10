@@ -201,9 +201,11 @@ class SynchronizationServiceCleanupTest extends TestCase
                 }
             );
 
+        // updateTarget returns the typed contract value object the engine then
+        // persists; hydrate one from the contract OR-object stub.
         $this->service->expects($this->once())
             ->method('updateTarget')
-            ->willReturn($contract);
+            ->willReturn((new \OCA\OpenConnector\Db\SynchronizationContract())->hydrate($contract->jsonSerialize()));
 
         $deleted = $this->service->deleteInvalidObjects($sync, []);
 
@@ -353,7 +355,7 @@ class SynchronizationServiceCleanupTest extends TestCase
 
         $this->service->expects($this->once())
             ->method('updateTarget')
-            ->willReturn($inScope);
+            ->willReturn((new \OCA\OpenConnector\Db\SynchronizationContract())->hydrate($inScope->jsonSerialize()));
 
         $deleted = $this->service->deleteInvalidObjects($sync, []);
 

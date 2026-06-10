@@ -301,12 +301,44 @@ class SynchronizationService
      */
     private function persistSynchronization(Synchronization $synchronization): void
     {
+        $object = $synchronization->jsonSerialize();
+
+        // OpenRegister keys the upsert on the `uuid` parameter; the value object's
+        // legacy int `id` is not an OpenRegister identifier and would break OR's
+        // `trim($object['id'])` upsert probe, so address by uuid and drop the id.
+        $uuid = ($synchronization->getUuid() ?? null);
+        if (($uuid === null || $uuid === '') && isset($object['id']) === true && is_string($object['id']) === true) {
+            $uuid = $object['id'];
+        }
+
+        unset($object['id']);
+
         $this->orObjectService->saveObject(
-            object: $synchronization->jsonSerialize(),
+            object: $object,
             register: 'openconnector',
-            schema: 'synchronization'
+            schema: 'synchronization',
+            uuid: ($uuid !== null && $uuid !== '' ? (string) $uuid : null)
         );
     }//end persistSynchronization()
+
+    /**
+     * Find all synchronization contract OpenRegister objects matching the filters.
+     *
+     * Reads contracts straight from OpenRegister (register `openconnector`, schema
+     * `synchronization_contract`) so the cleanup path can scope-check each target
+     * object itself, rather than relying on the retired QBMapper JOIN.
+     *
+     * @param array $filters Filters keyed by contract field (e.g. `synchronizationId`).
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity[] The OpenRegister contract objects.
+     */
+    private function findAllContractObjects(array $filters=[]): array
+    {
+        $config  = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters)];
+        $matches = $this->orObjectService->findAll(config: $config);
+
+        return array_values(($matches['results'] ?? $matches));
+    }//end findAllContractObjects()
 
     /**
      * Find synchronizations triggered by a mutation on a related object.
@@ -787,7 +819,7 @@ class SynchronizationService
 		$synchronizationContract = null;
 		// Get the synchronization contract for this object
 		if ($originId !== null) {
-			$synchronizationContract = $this->synchronizationContractMapper->findSyncContractByOriginId(synchronizationId: $synchronization->id, originId: $originId);
+			$synchronizationContract = $this->synchronizationContractMapper->findSyncContractByOriginId(synchronizationId: (string) ($synchronization->getId() ?? $synchronization->getUuid()), originId: $originId);
 		}
 
 		if ($synchronizationContract instanceof SynchronizationContract === false) {
@@ -966,9 +998,13 @@ class SynchronizationService
 
                 $result = $processResult['result'];
                 $result['_embed']['contracts'] = array_map(function($contractId) {
-                    $contracts = $this->synchronizationContractMapper->findAll(filters: ['uuid' => $contractId]);
-                    $contract = array_shift($contracts);
-                    return $contract !== null ? $contract->jsonSerialize() : null;
+                    // Contracts are addressed by their OpenRegister id/uuid; resolve
+                    // directly via find() (a missing contract is tolerated as null).
+                    try {
+                        return $this->synchronizationContractMapper->find($contractId)->jsonSerialize();
+                    } catch (DoesNotExistException $exception) {
+                        return null;
+                    }
                 }, $result['contracts']);
 
                 if ($processResult['targetId'] !== null) {
@@ -1245,7 +1281,7 @@ class SynchronizationService
 		}
 
 		// Make the initial API call, read denotes that we call an endpoint for a single object (for config variations).
-		$response = $this->callService->call(source: $source, endpoint: $endpoint, config: $config, read: true)->getResponse();
+		$response = $this->callLogResponse($this->callSourceObject(source: $source, endpoint: $endpoint, config: $config, read: true));
 
 		return json_decode($response['body'], true);
 	}
@@ -1464,15 +1500,42 @@ class SynchronizationService
 		switch ($type) {
 			case 'register/schema':
 
-				$targetIdsToDelete = [];
-				[$registerId, $schemaId] = explode(separator: '/', string: $synchronization->getTargetId());
-				$allContracts = $this->synchronizationContractMapper->findAllBySynchronizationAndSchema(synchronizationId: $synchronization->getId(), schemaId: $schemaId);
+				// The targetId must be `{registerId}/{schemaId}`; bail out (and warn)
+				// when it is not, so a malformed sync can never enter the scoped
+				// delete path with an undefined register/schema.
+				$targetIdParts = explode(separator: '/', string: (string) $synchronization->getTargetId());
+				if (count($targetIdParts) !== 2 || $targetIdParts[0] === '' || $targetIdParts[1] === '') {
+					$this->logger->warning(
+						'deleteInvalidObjects: targetId not in register/schema format',
+						[
+							'synchronizationId' => ($synchronization->getId() ?? $synchronization->getUuid()),
+							'targetId'          => $synchronization->getTargetId(),
+						]
+					);
+					break;
+				}
+
+				[$registerId, $schemaId] = $targetIdParts;
+
+				// The synchronization identifier is the OpenRegister id, falling
+				// back to the uuid when the id is not separately populated.
+				$synchronizationId = ($synchronization->getId() ?? $synchronization->getUuid());
+
+				// Enumerate this synchronization's contracts straight from
+				// OpenRegister (register `openconnector`, schema
+				// `synchronization_contract`). The legacy QBMapper JOIN against
+				// `openregister_objects` to scope by the target object's schema is
+				// replaced by an explicit per-target scope-check via find() below.
+				$contractObjects      = $this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]);
 				$allContractTargetIds = [];
-                $allContractSourceIds = [];
-				foreach ($allContracts as $contract) {
+				$allContractSourceIds = [];
+				$contractsByTargetId  = [];
+				foreach ($contractObjects as $contractObject) {
+					$contract = (new SynchronizationContract())->hydrate($contractObject->jsonSerialize());
 					if ($contract->getTargetId() !== null) {
 						$allContractTargetIds[] = $contract->getTargetId();
-                        $allContractSourceIds[$contract->getTargetId()] = $contract->getOriginId();
+						$allContractSourceIds[$contract->getTargetId()] = $contract->getOriginId();
+						$contractsByTargetId[$contract->getTargetId()]  = $contract;
 					}
 				}
 
@@ -1492,17 +1555,52 @@ class SynchronizationService
                 }
 
 				foreach ($targetIdsToDelete as $targetIdToDelete) {
+					// Scope-check: only delete when the target object actually lives
+					// in this synchronization's register/schema. This prevents a
+					// UUID collision across magic tables from silently deleting a
+					// foreign-scope object (OR#1638 / hydra#309). _rbac and
+					// _multitenancy are disabled to mirror the prior unscoped-JOIN
+					// reachability.
 					try {
-						$synchronizationContract = $this->synchronizationContractMapper->findOnTarget(synchronization: $synchronization->getId(), targetId: $targetIdToDelete);
-						if ($synchronizationContract === null) {
-							continue;
-						}
-						$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
-						$this->synchronizationContractMapper->update($synchronizationContract);
-						$deletedObjectsCount++;
+						$targetObject = $this->orObjectService->find(
+							id: (string) $targetIdToDelete,
+							register: $registerId,
+							schema: $schemaId,
+							_rbac: false,
+							_multitenancy: false
+						);
 					} catch (DoesNotExistException $exception) {
-						// @todo log
+						// Target object is gone — nothing to delete, skip silently.
+						continue;
+					} catch (\Throwable $throwable) {
+						$this->logger->warning(
+							'deleteInvalidObjects: Scope check failed',
+							[
+								'synchronizationId' => $synchronizationId,
+								'targetId'          => $targetIdToDelete,
+								'error'             => $throwable->getMessage(),
+							]
+						);
+						continue;
 					}
+
+					// Out of scope (different register/schema, or not found).
+					if ($targetObject === null) {
+						continue;
+					}
+
+					$synchronizationContract = ($contractsByTargetId[$targetIdToDelete] ?? null);
+					if ($synchronizationContract === null) {
+						continue;
+					}
+
+					$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
+					/** @psalm-suppress RedundantPropertyInitializationCheck */
+					if ($synchronizationContract instanceof SynchronizationContract && isset($this->synchronizationContractMapper) === true) {
+						$this->synchronizationContractMapper->update($synchronizationContract);
+					}
+
+					$deletedObjectsCount++;
 				}
 				break;
 		}
@@ -2482,12 +2580,13 @@ class SynchronizationService
 	 */
 	private function fetchSinglePageData(Source $source, string $endpoint, array $config, Synchronization $synchronization): array
 	{
-		// Make the API call
-		$callLog = $this->callService->call(source: $source, endpoint: $endpoint, config: $config);
-		$response = $callLog->getResponse();
+		// Make the API call (CallService is OpenRegister-native; callSourceObject
+		// resolves the source's OpenRegister object before invoking it).
+		$callLog = $this->callSourceObject(source: $source, endpoint: $endpoint, config: $config);
+		$response = $this->callLogResponse($callLog);
 
 		// Check for rate limiting
-		if ($response === null && $callLog->getStatusCode() === 429) {
+		if ($response === null && $this->callLogStatusCode($callLog) === 429) {
 			throw new TooManyRequestsHttpException(
 				message: "Rate Limit on Source exceeded.",
 				code: 429,
@@ -2625,6 +2724,84 @@ class SynchronizationService
 	 *               - 'X-RateLimit-Reset' (int|null): The Unix timestamp when the rate limit resets.
 	 *               - 'X-RateLimit-Used' (int|null): The number of requests used so far.
 	 *               - 'X-RateLimit-Window' (int|null): The duration of the rate limit window in seconds.
+	 */
+	/**
+	 * Invoke CallService::call() for a Source value object.
+	 *
+	 * The migrated CallService is OpenRegister-native: it consumes the raw source
+	 * `ObjectEntity` (reading the source body via ->getObject()). The engine,
+	 * however, threads a typed Source value object around for its rate-limit and
+	 * location logic. This helper bridges the two by resolving the source's
+	 * OpenRegister object and delegating the call.
+	 *
+	 * @param Source $source       The source value object to call with.
+	 * @param string $endpoint     The endpoint to call.
+	 * @param string $method       The HTTP method.
+	 * @param array  $config       The call configuration.
+	 * @param bool   $read         Whether this is a single-object read call.
+	 *
+	 * @return ObjectEntity The resulting call log (an OpenRegister object).
+	 */
+	private function callSourceObject(Source $source, string $endpoint = '', string $method = 'GET', array $config = [], bool $read = false): ObjectEntity
+	{
+		// Address the source by its OpenRegister uuid (the canonical identifier);
+		// the legacy int `id` is not the OpenRegister object key.
+		$sourceIdentifier = $source->getUuid();
+		if ($sourceIdentifier === null || $sourceIdentifier === '') {
+			$sourceIdentifier = (string) $source->getId();
+		}
+
+		$sourceObject = $this->sourceMapper->findObject(id: (string) $sourceIdentifier);
+
+		return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read);
+	}//end callSourceObject()
+
+	/**
+	 * Read the response payload from a CallService call-log object.
+	 *
+	 * The migrated CallService returns the call-log as an OpenRegister ObjectEntity
+	 * whose body carries the `response` array (CallService sets it on the returned
+	 * entity). The legacy `CallLog::getResponse()` accessor no longer exists, so
+	 * read it from the object body instead.
+	 *
+	 * @param ObjectEntity $callLog The call-log object returned by CallService::call().
+	 *
+	 * @return array|null The response array, or null when absent.
+	 */
+	private function callLogResponse(ObjectEntity $callLog): ?array
+	{
+		$body = $callLog->getObject();
+
+		return ($body['response'] ?? null);
+	}//end callLogResponse()
+
+	/**
+	 * Read the HTTP status code from a CallService call-log object.
+	 *
+	 * @param ObjectEntity $callLog The call-log object returned by CallService::call().
+	 *
+	 * @return int|null The status code, or null when absent.
+	 */
+	private function callLogStatusCode(ObjectEntity $callLog): ?int
+	{
+		$body = $callLog->getObject();
+		if (isset($body['statusCode']) === true) {
+			return (int) $body['statusCode'];
+		}
+
+		if (isset($body['response']['statusCode']) === true) {
+			return (int) $body['response']['statusCode'];
+		}
+
+		return null;
+	}//end callLogStatusCode()
+
+	/**
+	 * Returns the rate limit headers for a given source object.
+	 *
+	 * @param Source $source The source object containing rate limit details, such as limits, remaining requests, and reset times.
+	 *
+	 * @return array An associative array of rate limit headers.
 	 */
 	private function getRateLimitHeaders(Source $source): array
 	{
@@ -2840,7 +3017,7 @@ class SynchronizationService
 				$targetConfig['json'] = $this->mappingService->executeMapping(mapping: $deleteMapping, input: $object);
 			}
 
-			$response = $this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig)->getResponse();
+			$response = $this->callLogResponse($this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig));
 
 
 			$contract->setTargetHash(md5(serialize($response['body'])));
@@ -2856,7 +3033,7 @@ class SynchronizationService
             if (isset($targetConfig['idInRequestBody']) === true) {
                 $targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
             }
-			$response = $this->callService->call(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig)->getResponse();
+			$response = $this->callLogResponse($this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig));
 
 			$body = json_decode($response['body'], true);
 
@@ -2896,7 +3073,7 @@ class SynchronizationService
             $targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
 		}
 
-			$response = $this->callService->call(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig)->getResponse();
+			$response = $this->callLogResponse($this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig));
 
             $decodedResponseBody = json_decode($response['body'] ?? '', true);
             if (is_array($decodedResponseBody) === false) {
@@ -3239,13 +3416,13 @@ class SynchronizationService
 
 		$config['sourceConfiguration'] = $sourceConfig;
 
-		$result = $this->callService->call(
+		$result = $this->callSourceObject(
 			source: $source,
 			endpoint: $endpoint,
 			method: $config['method'] ?? 'GET',
 			config: $config['sourceConfiguration'] ?? []
 		);
-		$response = $result->getResponse();
+		$response = $this->callLogResponse($result);
 
 		$body = $response['body'];
 

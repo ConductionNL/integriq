@@ -196,15 +196,22 @@ test.describe('Synchronization workflow — data movement (the high-value check)
 	 * nullable-safe and hydrate() coerces a null JSON field to []; a sync object
 	 * created without those keys no longer 500s on hydrate.
 	 *
-	 * REMAINING BLOCKER (separate, larger incomplete-cutover — NOT bug A/B): the
-	 * engine's surviving QBMappers (SourceMapper / MappingMapper / RuleMapper /
-	 * SynchronizationContractMapper / SynchronizationContractLogMapper) still read
-	 * and write the legacy `oc_openconnector_*` tables, which the cutover DROPPED
-	 * (sources/mappings/rules/contracts now live in OpenRegister schemas). A real
-	 * run therefore now reaches the engine and fails resolving the source with
-	 *   relation "oc_openconnector_sources" does not exist
-	 * (HTTP 400, no longer 500). Data movement stays test.fixme until those
-	 * mappers are migrated to OpenRegister too; the body below PASSES once they are.
+	 * MAPPER CUTOVER (FIXED): the engine's surviving QBMappers (SourceMapper /
+	 * MappingMapper / RuleMapper / SynchronizationContractMapper /
+	 * SynchronizationContractLogMapper) were migrated onto the OpenRegister object
+	 * API (registers/schemas `source` / `mapping` / `rule` /
+	 * `synchronization_contract` / `synchronization_contract_log`). A real run now
+	 * resolves its source/mapping (no more `relation "oc_openconnector_sources"
+	 * does not exist`), executes the full engine and returns HTTP 200 with a
+	 * `message: "Success"` run-log (verified live).
+	 *
+	 * REMAINING BLOCKER for this specific assertion (NOT the mapper cutover): the
+	 * Source in this fixture points at OpenRegister's own REST endpoint, and the
+	 * in-container CallService request reaches it UNAUTHENTICATED (no admin
+	 * session), so OR answers 200 with a ~322-byte session/redirect body instead
+	 * of the 2 seeded objects → the run reports found:0 and transfers nothing.
+	 * Authenticating the in-container source fetch is a separate concern. The body
+	 * below PASSES once the source fetch returns the seeded objects.
 	 */
 	test.fixme('running the sync transfers the 2 source objects into the target register', async () => {
 		const { api, syncId, registerId, tgtSchemaId } = fx!
@@ -228,11 +235,14 @@ test.describe('Synchronization workflow — data movement (the high-value check)
 	})
 
 	/*
-	 * The run-log write path (BUG A) is fixed — a successful run now records a
-	 * SynchronizationLog in OpenRegister (schema `synchronization_log`), readable
-	 * through GET /api/synchronizations/logs. This stays test.fixme only because a
-	 * full run cannot yet complete end-to-end (the legacy-table blocker above), so
-	 * a "Success" log is not produced headlessly; it PASSES once a run completes.
+	 * The run now completes and the SynchronizationService returns a
+	 * `message: "Success"` run-log object for the run (verified live, HTTP 200).
+	 * This assertion stays test.fixme because it reads the log back through GET
+	 * /api/synchronizations/logs, which is subject to OpenRegister's in-request
+	 * object-search visibility limit: an object written during the same request is
+	 * not always returned by a subsequent search in that window (a known OR
+	 * constraint being addressed separately). It PASSES once the just-written log
+	 * is searchable.
 	 */
 	test.fixme('the run records a synchronization log with a success status', async () => {
 		const { api, syncId } = fx!
