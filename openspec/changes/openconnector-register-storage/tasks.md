@@ -144,8 +144,8 @@
   - GIVEN the cache contains `42 → U` WHEN `find(…, 'source', 42)` is called again THEN no new OR query is issued — the cache returns the uuid directly
   - GIVEN the cache contains `42 → U` WHEN `delete(…, 'source', U)` or `createFromArray(…, 'source', …)` is called THEN the int-id→uuid cache for that register/schema is invalidated (cleared, not selectively dropped — simpler and rare write pattern)
   - GIVEN OR raises `DoesNotExistException` WHEN a `find*` method runs THEN the facade re-raises the same exception class so callers' catch blocks keep working
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 10: Rewrite SourceMapper, ConsumerMapper, EndpointMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -156,8 +156,8 @@
   - GIVEN `$useFacade === false` WHEN any public method is called THEN the existing legacy `QBMapper` SQL path runs unchanged
   - GIVEN `$useFacade === true` WHEN any public method is called THEN it delegates to the injected `ObjectMapperFacade` with the mapper's register slug `'openconnector'` and its bound schema slug (`'source'`, `'consumer'`, `'endpoint'`)
   - Public method signatures, exception types, and return types are byte-for-byte preserved (see contract.md for the canonical list — `find`, `findAll`, `findByUuid`, `findBySlug` where applicable, `createFromArray`, `updateFromArray`, `delete`)
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 11: Rewrite EventMapper, EventMessageMapper, EventSubscriptionMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -167,8 +167,8 @@
   - Same flag/facade pattern as Task 10
   - `EventMessageMapper` preserves the bespoke helpers `findPending()` and `findByEventId(int)`; on the facade path these translate to `ObjectMapperFacade::findAll` calls with the appropriate filter array
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 12: Rewrite JobMapper, MappingMapper, RuleMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -179,8 +179,8 @@
   - `JobMapper::findDueJobs()` translates to `ObjectMapperFacade::findAll` with a `nextRun <= now` filter
   - `RuleMapper::findByTiming(string)` and `findByAction(string)` translate to single-filter `findAll` calls
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 13: Rewrite Synchronization* mappers (3 entities) as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -192,8 +192,8 @@
   - `SynchronizationContractMapper::findByOriginId(string)` and `findBySynchronizationId(string)` translate to single-filter `findAll`
   - `SynchronizationLogMapper` UPDATE/DELETE paths propagate OR's `AppendOnlyException` unchanged when the facade is active (chain A declared `appendOnly: true` on log schemas)
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 14: Rewrite log mappers (CallLogMapper, JobLogMapper, SynchronizationContractLogMapper) as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -204,8 +204,8 @@
   - `CallLogMapper::findExpired()` translates to a `findAll` with an `expires < now` filter (note: chain A declared `x-openregister-archival` on the call_log schema; this method's data is fed by that workflow post-migration but the method itself remains callable for legacy listing)
   - UPDATE / DELETE paths on all three log mappers propagate OR's `AppendOnlyException` when the facade is active. The facade MAY translate `AppendOnlyException` to `LogicException` so that callers that today catch `LogicException` keep working — document the chosen translation in the facade's PHPDoc
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 15: Add MigrateToOpenRegister OCC command — [STATUS: DONE]
 
@@ -232,8 +232,8 @@
   - GIVEN `storage_migrated === 'true'` AND `entity` is null in the body WHEN posts THEN response is 409 with a hint about using `entity` for targeted retry
   - GIVEN the migrator raises mid-run WHEN posts THEN response is 500 with a per-entity tally up to the failure point AND an `error` field with a stack-trace-truncated message
   - `GET /api/admin/openconnector/migrate-storage/status` returns `storageMigrated`, `flagSetAt`, `perEntityRowCounts`, `readOnlyLockActive` per contract.md
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ### Task 17: Verify post-migration row counts match (seed-data deviation per ADR-001) — [STATUS: DONE]
 
@@ -259,39 +259,39 @@
     3. **CallLog.actionId resolution**: inspect `lib/Service/CallService.php` and `EndpointService.php` to determine the target schema for `actionId`; promote `action` to a real `$ref` relation
     4. **Frontend Vue store audit**: confirm no store relies on the legacy `*Id` form once the FK rename above is scheduled
   - Each issue links back to this change's slug and to the DEFERRED_QUESTIONS entry it resolves
-- [~] Implement — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement
+- [ ] Test
 
 ## Verification
 
-- [~] All tasks checked off — deferred to downstream cycle (handoff)
-- [~] `openspec validate openconnector-register-storage` passes — deferred to downstream cycle (handoff)
-- [~] Manual testing against acceptance criteria in the dev container (see test-plan.md "Manual verification" section) — deferred to downstream cycle (handoff)
-- [~] Code review against spec requirements (REQ-001 through REQ-012) — deferred to downstream cycle (handoff)
-- [~] Cross-check with chain A (`openconnector-register-schema-declaration`): register descriptor + 15 schemas present on disk; this change's migration class consumes them via `importFromApp` — deferred to downstream cycle (handoff)
-- [~] All 4 follow-up issues from Task 18 are filed and linked — deferred to downstream cycle (handoff)
+- [ ] All tasks checked off
+- [ ] `openspec validate openconnector-register-storage` passes
+- [ ] Manual testing against acceptance criteria in the dev container (see test-plan.md "Manual verification" section)
+- [ ] Code review against spec requirements (REQ-001 through REQ-012)
+- [ ] Cross-check with chain A (`openconnector-register-schema-declaration`): register descriptor + 15 schemas present on disk; this change's migration class consumes them via `importFromApp`
+- [ ] All 4 follow-up issues from Task 18 are filed and linked
 
 ## Tests (company-wide ADR-009)
 
 <!-- Required for all changes. -->
 
-- [~] PHPUnit unit tests for new/changed business logic in `tests/Unit/Service/Migration/LegacyToRegisterMigratorTest.php` and `tests/Unit/Service/Storage/ObjectMapperFacadeTest.php` — deferred to downstream cycle (handoff)
-- [~] PHPUnit integration tests for the facade in `tests/Integration/Service/Storage/ObjectMapperFacadeTest.php` — deferred to downstream cycle (handoff)
-- [~] Newman/Postman tests for the new admin HTTP endpoints (`POST /api/admin/openconnector/migrate-storage`, `GET /api/admin/openconnector/migrate-storage/status`) — deferred to downstream cycle (handoff)
-- [~] Browser tests (Playwright MCP) — N/A: this change ships no Vue/UI surface (admin-only HTTP + OCC + migration class). Documented in test-plan.md "Out of Scope". — deferred to downstream cycle (handoff)
-- [~] All tests pass (`composer test`, `newman run tests/Postman/<collection>.json`) — deferred to downstream cycle (handoff)
+- [ ] PHPUnit unit tests for new/changed business logic in `tests/Unit/Service/Migration/LegacyToRegisterMigratorTest.php` and `tests/Unit/Service/Storage/ObjectMapperFacadeTest.php`
+- [ ] PHPUnit integration tests for the facade in `tests/Integration/Service/Storage/ObjectMapperFacadeTest.php`
+- [ ] Newman/Postman tests for the new admin HTTP endpoints (`POST /api/admin/openconnector/migrate-storage`, `GET /api/admin/openconnector/migrate-storage/status`)
+- [ ] Browser tests (Playwright MCP) — N/A: this change ships no Vue/UI surface (admin-only HTTP + OCC + migration class). Documented in test-plan.md "Out of Scope".
+- [ ] All tests pass (`composer test`, `newman run tests/Postman/<collection>.json`)
 
 ## Documentation (company-wide ADR-010)
 
 <!-- See `.claude/docs/writing-docs.md` for documentation principles. -->
 
-- [~] Migrator + OCC command documented in `docs/admin/storage-migration.md` (new file) — explains when to run, dry-run flow, retry pattern, rollback procedure (mirrors migration.md) — deferred to downstream cycle (handoff)
-- [~] Operator runbook entry in `docs/admin/rollback.md` covering the flag-flip rollback within the one-release transition window — deferred to downstream cycle (handoff)
-- [~] Screenshot N/A — no UI surface in this change — deferred to downstream cycle (handoff)
-- [~] Release notes for the cleanup change (one release out) must call out the "operators MUST run the migration in release N before upgrading to release N+1" gate per contract.md "Breaking Change Policy" — deferred to downstream cycle (handoff)
+- [ ] Migrator + OCC command documented in `docs/admin/storage-migration.md` (new file) — explains when to run, dry-run flow, retry pattern, rollback procedure (mirrors migration.md)
+- [ ] Operator runbook entry in `docs/admin/rollback.md` covering the flag-flip rollback within the one-release transition window
+- [ ] Screenshot N/A — no UI surface in this change
+- [ ] Release notes for the cleanup change (one release out) must call out the "operators MUST run the migration in release N before upgrading to release N+1" gate per contract.md "Breaking Change Policy"
 
 ## i18n (company-wide hydra ADR-007)
 
 <!-- Required when adding user-facing strings. -->
 
-- [~] N/A — this change adds no user-facing strings. The OCC command outputs in English only (operator audience); the admin HTTP endpoints return JSON consumed programmatically. Justification documented in spec.md "Non-Functional Requirements → Internationalization". — deferred to downstream cycle (handoff)
+- [ ] N/A — this change adds no user-facing strings. The OCC command outputs in English only (operator audience); the admin HTTP endpoints return JSON consumed programmatically. Justification documented in spec.md "Non-Functional Requirements → Internationalization".

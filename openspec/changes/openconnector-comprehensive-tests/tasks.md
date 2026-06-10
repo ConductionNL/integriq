@@ -58,8 +58,8 @@
 - **acceptance_criteria**:
   - GIVEN each DTO's `fromArray([])` is called WHEN required fields are absent THEN `\InvalidArgumentException` is thrown
   - GIVEN `fromArray($data)->toArray()` is called WHEN `$data` contains only domain fields THEN returned array equals `$data` with no injected `id/uuid/created/updated/owner` keys
-- [~] Implement <!-- DEFERRED (cannot fake): lib/Dto/ does not exist in this repo. The A→D2 chain never introduced write-side DTO classes — chain-C services write domain payloads directly through OR's ObjectService::saveObject (validation happens against the OR schema, ADR-001/ADR-031), so there are no SourceDto/EndpointDto/... classes to test. Writing 15 DTO test files against non-existent classes would be fabrication. Tracking note in remarks; reopen if DTOs land (chain C-001 'DTO auto-generation' is itself out-of-scope per proposal). --> — deferred to downstream cycle (handoff)
-- [~] Test — deferred to downstream cycle (handoff)
+- [ ] Implement <!-- DEFERRED (cannot fake): lib/Dto/ does not exist in this repo. The A→D2 chain never introduced write-side DTO classes — chain-C services write domain payloads directly through OR's ObjectService::saveObject (validation happens against the OR schema, ADR-001/ADR-031), so there are no SourceDto/EndpointDto/... classes to test. Writing 15 DTO test files against non-existent classes would be fabrication. Tracking note in remarks; reopen if DTOs land (chain C-001 'DTO auto-generation' is itself out-of-scope per proposal). -->
+- [ ] Test
 
 ### Task 7: Update phpunit.xml and composer.json coverage threshold
 - **spec_ref**: `openspec/changes/openconnector-comprehensive-tests/specs/openconnector-comprehensive-tests/spec.md#req-004-ci-must-enforce-80-line-and-70-branch-coverage-as-merge-blocking-gates`

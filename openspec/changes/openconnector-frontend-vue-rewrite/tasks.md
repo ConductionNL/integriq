@@ -229,37 +229,37 @@
 
 ## Verification
 
-- [~] All tasks checked off — deferred to downstream cycle (handoff)
-- [~] `openspec validate openconnector-frontend-vue-rewrite` passes — deferred to downstream cycle (handoff)
-- [~] All 13 nav items render in a running Nextcloud instance — deferred to downstream cycle (handoff)
-- [~] Sources, Mappings, and Rules create/edit/delete flows work end-to-end — deferred to downstream cycle (handoff)
-- [~] `npm run lint && npm run build` exits 0 — deferred to downstream cycle (handoff)
-- [~] Bundle size within 10% threshold — deferred to downstream cycle (handoff)
-- [~] No PHP files remain under `src/` — deferred to downstream cycle (handoff)
-- [~] `src/Controller/`, `src/Mapper/`, `src/navigation/`, `src/router/index.js` are all deleted — deferred to downstream cycle (handoff)
-- [~] Playwright smoke test: navigate to each of the 10 resource pages without a 404 or console error — deferred to downstream cycle (handoff)
+- [ ] All tasks checked off
+- [ ] `openspec validate openconnector-frontend-vue-rewrite` passes
+- [ ] All 13 nav items render in a running Nextcloud instance
+- [ ] Sources, Mappings, and Rules create/edit/delete flows work end-to-end
+- [ ] `npm run lint && npm run build` exits 0
+- [ ] Bundle size within 10% threshold
+- [ ] No PHP files remain under `src/`
+- [ ] `src/Controller/`, `src/Mapper/`, `src/navigation/`, `src/router/index.js` are all deleted
+- [ ] Playwright smoke test: navigate to each of the 10 resource pages without a 404 or console error
 
 ## Tests (company-wide ADR-009)
 
-- [~] PHPUnit unit tests — N/A (no PHP changes in D2) — deferred to downstream cycle (handoff)
-- [~] Newman/Postman tests — N/A (no HTTP endpoint changes in D2) — deferred to downstream cycle (handoff)
-- [~] Browser tests (Playwright MCP) — YES: smoke navigation through all 13 menu items; — deferred to downstream cycle (handoff)
+- [ ] PHPUnit unit tests — N/A (no PHP changes in D2)
+- [ ] Newman/Postman tests — N/A (no HTTP endpoint changes in D2)
+- [ ] Browser tests (Playwright MCP) — YES: smoke navigation through all 13 menu items;
   create/edit/delete flow for Sources (highest-risk) and Mappings (most complex)
-- [~] `npm run lint && npm run build` passes (CI gate for this change) — deferred to downstream cycle (handoff)
+- [ ] `npm run lint && npm run build` passes (CI gate for this change)
 
 ## Documentation (company-wide ADR-010)
 
-- [~] Update `src/` tree references in any developer-facing docs if `src/navigation/` — deferred to downstream cycle (handoff)
+- [ ] Update `src/` tree references in any developer-facing docs if `src/navigation/`
   or `src/router/` are mentioned
-- [~] No user-facing documentation needed (D2 is a code refactor with no UX changes — deferred to downstream cycle (handoff)
+- [ ] No user-facing documentation needed (D2 is a code refactor with no UX changes
   visible to end users — all pages render the same data via CnIndexPage)
 
 ## i18n (company-wide hydra ADR-007)
 
-- [~] After Task 14 (modal deletion), run `npm run lint` to catch orphan l10n keys — deferred to downstream cycle (handoff)
+- [ ] After Task 14 (modal deletion), run `npm run lint` to catch orphan l10n keys
   introduced by deleting modal components
-- [~] Thijn's #743 l10n tooling (applied in Task 5) provides the lint gate for orphan keys — deferred to downstream cycle (handoff)
-- [~] No new translation strings are added by D2 (all page/modal labels already exist — deferred to downstream cycle (handoff)
+- [ ] Thijn's #743 l10n tooling (applied in Task 5) provides the lint gate for orphan keys
+- [ ] No new translation strings are added by D2 (all page/modal labels already exist
   in `l10n/` from the pre-D2 modal components)
 
 ---

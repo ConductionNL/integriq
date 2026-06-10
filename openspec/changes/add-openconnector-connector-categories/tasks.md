@@ -168,8 +168,8 @@
     records (REQ-EWC-003), EWC destructive-action gating
     (REQ-EWC-005), SPC OAuth default (REQ-SPC-003), SPC
     mutative-bulk gating (REQ-SPC-006).
-- [~] Implement (per adapter) — deferred to downstream cycle (handoff)
-- [~] Test (per adapter: PHPUnit for adapter contract; integration — deferred to downstream cycle (handoff)
+- [ ] Implement (per adapter)
+- [ ] Test (per adapter: PHPUnit for adapter contract; integration
   test for the relevant capability subset; reviewer-gate grep on
   the scenarios in the category spec)
 
@@ -193,8 +193,8 @@
     `oauth2` first per REQ-SPC-003; `basicAuth` MUST NOT appear
     in any SPC entry without a `"deprecated": true` flag and
     ADR-005 exception reference).
-- [~] Implement (per adapter) — deferred to downstream cycle (handoff)
-- [~] Test (per adapter: `npm run check:manifest`; browser smoke — deferred to downstream cycle (handoff)
+- [ ] Implement (per adapter)
+- [ ] Test (per adapter: `npm run check:manifest`; browser smoke
   in the dev container confirming the adapter appears in the
   integration-registry admin UI)
 
@@ -209,8 +209,8 @@
   - GIVEN the dev-container is rebuilt WHEN `OCA.OpenRegister`
     integration registry is queried THEN the new adapter's id
     is present in `IntegrationRegistry::listIds()`.
-- [~] Implement (per adapter) — deferred to downstream cycle (handoff)
-- [~] Test (per adapter: integration-registry list-ids assertion; — deferred to downstream cycle (handoff)
+- [ ] Implement (per adapter)
+- [ ] Test (per adapter: integration-registry list-ids assertion;
   browser smoke)
 
 ### Task 2.4 (per adapter, optional): Ship a paused seed source for dev/test
@@ -224,8 +224,8 @@
     design.md's seed convention.
   - GIVEN a fresh dev install WHEN the repair step runs THEN the
     seed appears in the `Source` registry; idempotent on re-run.
-- [~] Implement (per adapter, optional) — deferred to downstream cycle (handoff)
-- [~] Test (per adapter: PHPUnit load + import + paused-state — deferred to downstream cycle (handoff)
+- [ ] Implement (per adapter, optional)
+- [ ] Test (per adapter: PHPUnit load + import + paused-state
   assertion)
 
 ### Task 2.5 (per adapter, optional): Author the journeydoc tutorial page
@@ -238,8 +238,8 @@
     renders under `/integrations/{slug}/` with at least one
     real screenshot of the integration-registry admin surface
     showing the adapter.
-- [~] Implement (per adapter, optional) — deferred to downstream cycle (handoff)
-- [~] Test (per adapter: docs site build + capture-spec test — deferred to downstream cycle (handoff)
+- [ ] Implement (per adapter, optional)
+- [ ] Test (per adapter: docs site build + capture-spec test
   passes)
 
 ## 3. Cross-cutting follow-ups (separate change candidates)
@@ -259,8 +259,8 @@
     nextcloud-vue change ships the schema extension THEN every
     `connectors[]` block in any consuming app validates via
     `npm run check:manifest`.
-- [~] Implement (separate change in nextcloud-vue) — deferred to downstream cycle (handoff)
-- [~] Test (per nextcloud-vue's existing schema test pattern) — deferred to downstream cycle (handoff)
+- [ ] Implement (separate change in nextcloud-vue)
+- [ ] Test (per nextcloud-vue's existing schema test pattern)
 
 ### Task 3.2 (separate change): File the OR issue for per-user OAuth token storage
 
@@ -272,8 +272,8 @@
     need for per-user OAuth tokens THEN an OR issue is opened
     capturing the required surface; the per-adapter manifest
     entry omits `oauth-userlevel` until OR ships.
-- [~] Implement (separate change — file issue) — deferred to downstream cycle (handoff)
-- [~] Test (per issue triage) — deferred to downstream cycle (handoff)
+- [ ] Implement (separate change — file issue)
+- [ ] Test (per issue triage)
 
 ### Task 3.3 (separate change, optional): Author `add-openconnector-federated-search` for the cross-category orchestration entrypoint
 
@@ -284,8 +284,8 @@
     search across DCC + SPC sources WHEN the consuming need
     surfaces THEN a new change defines the orchestration
     entrypoint; until then the openquestion remains deferred.
-- [~] Implement (separate change, optional) — deferred to downstream cycle (handoff)
-- [~] Test (per new change) — deferred to downstream cycle (handoff)
+- [ ] Implement (separate change, optional)
+- [ ] Test (per new change)
 
 ### Task 3.4 (separate change, optional): Author `openconnector-legacy-adapter-cleanup` to retrofit `pdok` / `stuf` / `dso-omgevingsloket` / `ibabs-notubiz-connector`
 
@@ -301,9 +301,9 @@
   - GIVEN the cleanup change WHEN reviewed THEN per-adapter
     diffs are bounded; no functional regression on the legacy
     adapters' existing consumers.
-- [~] Implement (separate change, optional — recommendation in — deferred to downstream cycle (handoff)
+- [ ] Implement (separate change, optional — recommendation in
   `proposal.md` Risk 6 is to defer)
-- [~] Test (per legacy-adapter regression suite) — deferred to downstream cycle (handoff)
+- [ ] Test (per legacy-adapter regression suite)
 
 ## Verification
 
@@ -333,29 +333,29 @@
 
 <!-- Spec-only change. Implementation-cycle tests are pre-declared on tasks 2.1-2.5 above per adapter. -->
 
-- [~] N/A for the spec change itself — no business logic ships — deferred to downstream cycle (handoff)
-- [~] PHPUnit unit tests for new/changed business logic — deferred to downstream cycle (handoff)
+- [ ] N/A for the spec change itself — no business logic ships
+- [ ] PHPUnit unit tests for new/changed business logic
       (`tests/Unit/`) — declared on tasks 2.1-2.5; land with
       per-adapter implementation cycles
-- [~] Newman/Postman tests for new/changed API endpoints — no — deferred to downstream cycle (handoff)
+- [ ] Newman/Postman tests for new/changed API endpoints — no
       new endpoints in the category specs (the integration
       registry exposes adapter invocation generically per
       ADR-019)
-- [~] Browser tests (Playwright MCP) for UI changes — declared — deferred to downstream cycle (handoff)
+- [ ] Browser tests (Playwright MCP) for UI changes — declared
       on tasks 2.2-2.3; lands with implementation cycles via
       the integration-registry admin UI
-- [~] All tests pass (`composer test`) — enforced at the — deferred to downstream cycle (handoff)
+- [ ] All tests pass (`composer test`) — enforced at the
       per-adapter PR's CI gate
 
 ## Documentation (company-wide ADR-009)
 
 <!-- User-facing tutorial pages land with the per-adapter cycle, not the category spec. -->
 
-- [~] N/A for the spec change itself — deferred to downstream cycle (handoff)
-- [~] Feature documentation updated in `docs/` — per-adapter — deferred to downstream cycle (handoff)
+- [ ] N/A for the spec change itself
+- [ ] Feature documentation updated in `docs/` — per-adapter
       `docs/integrations/{slug}/` pages authored during
       implementation cycles per ADR-030 journeydoc convention
-- [~] Screenshot captured and committed to `docs/images/` — — deferred to downstream cycle (handoff)
+- [ ] Screenshot captured and committed to `docs/images/` —
       per-adapter, ≥1 per adapter showing the integration-registry
       admin entry
 
@@ -363,8 +363,8 @@
 
 <!-- No user-facing strings in the category specs; translation work lands with each per-adapter cycle. -->
 
-- [~] N/A for the spec change itself — deferred to downstream cycle (handoff)
-- [~] Dutch (`nl_NL`) and English (`en_US`) translation strings — deferred to downstream cycle (handoff)
+- [ ] N/A for the spec change itself
+- [ ] Dutch (`nl_NL`) and English (`en_US`) translation strings
       added during per-adapter implementation cycles — each
       adapter's manifest `label` / `description` / capability
       surface strings are translation keys consumed by the

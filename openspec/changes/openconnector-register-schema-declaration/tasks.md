@@ -130,31 +130,31 @@
 
 ## Verification
 
-- [~] All tasks checked off — deferred to downstream cycle (handoff)
-- [~] `openspec validate` passes — deferred to downstream cycle (handoff)
-- [~] Manual testing against acceptance criteria (Task 7 dev-env smoke test) — deferred to downstream cycle (handoff)
-- [~] Code review against spec requirements — deferred to downstream cycle (handoff)
-- [~] CI green (lint, schema validation) — deferred to downstream cycle (handoff)
+- [ ] All tasks checked off
+- [ ] `openspec validate` passes
+- [ ] Manual testing against acceptance criteria (Task 7 dev-env smoke test)
+- [ ] Code review against spec requirements
+- [ ] CI green (lint, schema validation)
 
 ## Tests (company-wide ADR-009)
 
 - [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`) —
   Task 8 adds `RegisterDescriptorTest.php` covering entity↔schema coverage
-- [~] Newman/Postman tests for new/changed API endpoints — **N/A**: this — deferred to downstream cycle (handoff)
+- [ ] Newman/Postman tests for new/changed API endpoints — **N/A**: this
   change introduces no HTTP endpoints
-- [~] Browser tests (Playwright MCP) for UI changes — **N/A**: no UI changes — deferred to downstream cycle (handoff)
-- [~] All tests pass (`composer test`, `newman run`) — deferred to downstream cycle (handoff)
+- [ ] Browser tests (Playwright MCP) for UI changes — **N/A**: no UI changes
+- [ ] All tests pass (`composer test`, `newman run`)
 
 ## Documentation (company-wide ADR-010)
 
-- [~] Feature documentation updated in `docs/` — add — deferred to downstream cycle (handoff)
+- [ ] Feature documentation updated in `docs/` — add
   `docs/architecture/register-schema.md` describing the descriptor layout, the
   declarative `appendOnly` + `immutable` flags, and the chain split with the
   storage change
-- [~] Screenshot captured and committed to `docs/images/` — **N/A**: no UI — deferred to downstream cycle (handoff)
+- [ ] Screenshot captured and committed to `docs/images/` — **N/A**: no UI
 
 ## i18n (company-wide hydra ADR-007)
 
-- [~] Dutch (`nl_NL`) and English (`en_US`) translation strings added — — deferred to downstream cycle (handoff)
+- [ ] Dutch (`nl_NL`) and English (`en_US`) translation strings added —
   **N/A**: schema/property descriptions live inside the descriptor in English;
   no new user-facing strings reach `l10n/`
