@@ -7,8 +7,8 @@
 - [x] Add `x-openregister-notifications` (rule `job-overdue`, scheduled, enabled:false) to `job` in lib/Settings/openconnector_register.json
 - [x] Add nl + en `subject` strings to every rule (already specified in proposal.md)
 - [x] Validate the register JSON still parses (e.g. `python3 -c "import json;json.load(open('lib/Settings/openconnector_register.json'))"`)
-- [ ] Confirm the `openconnector-ops` group exists or remap `groups` recipients to a real NC group before enabling
-- [ ] Confirm engine support for `scheduled` `"now"`-relative date filter before enabling `job-overdue`
+- [~] Confirm the `openconnector-ops` group exists or remap `groups` recipients to a real NC group before enabling — deferred to downstream cycle (handoff)
+- [~] Confirm engine support for `scheduled` `"now"`-relative date filter before enabling `job-overdue` — deferred to downstream cycle (handoff)
 
 ## Acceptance criteria
 
