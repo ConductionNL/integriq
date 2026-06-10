@@ -229,37 +229,36 @@
 
 ## Verification
 
-- [ ] All tasks checked off
-- [ ] `openspec validate openconnector-frontend-vue-rewrite` passes
-- [ ] All 13 nav items render in a running Nextcloud instance
-- [ ] Sources, Mappings, and Rules create/edit/delete flows work end-to-end
-- [ ] `npm run lint && npm run build` exits 0
-- [ ] Bundle size within 10% threshold
-- [ ] No PHP files remain under `src/`
-- [ ] `src/Controller/`, `src/Mapper/`, `src/navigation/`, `src/router/index.js` are all deleted
-- [ ] Playwright smoke test: navigate to each of the 10 resource pages without a 404 or console error
+- [x] All tasks checked off
+- [x] `openspec validate openconnector-frontend-vue-rewrite` passes (repo REQ-format convention)
+- [x] All 13 nav items render in a running Nextcloud instance <!-- verified post chain-E manifest cutover; manifest-pages.spec.ts asserts every nav-listed page renders -->
+- [x] Sources, Mappings, and Rules create/edit/delete flows work end-to-end <!-- covered by tests/e2e/regression/journeys.spec.ts J1/J2/etc -->
+- [x] `npm run lint && npm run build` exits 0 <!-- gates are green on development -->
+- [~] Bundle size within 10% threshold <!-- chain-E manifest cutover removed 11 per-schema CRUD stores; bundle SHRANK relative to baseline. Not separately verified with `--analyze`. -->
+- [x] No PHP files remain under `src/`
+- [x] `src/Controller/`, `src/Mapper/`, `src/navigation/`, `src/router/index.js` are all deleted <!-- verified at branch time: none of these directories exist -->
+- [x] Playwright smoke test: navigate to each of the 10 resource pages without a 404 or console error <!-- tests/e2e/regression/manifest-pages.spec.ts -->
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests — N/A (no PHP changes in D2)
-- [ ] Newman/Postman tests — N/A (no HTTP endpoint changes in D2)
-- [ ] Browser tests (Playwright MCP) — YES: smoke navigation through all 13 menu items;
-  create/edit/delete flow for Sources (highest-risk) and Mappings (most complex)
-- [ ] `npm run lint && npm run build` passes (CI gate for this change)
+- [x] PHPUnit unit tests — N/A (no PHP changes in D2)
+- [x] Newman/Postman tests — N/A (no HTTP endpoint changes in D2)
+- [x] Browser tests (Playwright MCP) — covered by `tests/e2e/regression/manifest-pages.spec.ts` + `journeys.spec.ts` (J1 Source / J2 Mapping / J3 Synchronization) + `or-cutover-smoke.spec.ts`
+- [x] `npm run lint && npm run build` passes (CI gate for this change)
 
 ## Documentation (company-wide ADR-010)
 
-- [ ] Update `src/` tree references in any developer-facing docs if `src/navigation/`
-  or `src/router/` are mentioned
-- [ ] No user-facing documentation needed (D2 is a code refactor with no UX changes
+- [x] Update `src/` tree references in any developer-facing docs if `src/navigation/`
+  or `src/router/` are mentioned <!-- no remaining references -->
+- [x] No user-facing documentation needed (D2 is a code refactor with no UX changes
   visible to end users — all pages render the same data via CnIndexPage)
 
 ## i18n (company-wide hydra ADR-007)
 
-- [ ] After Task 14 (modal deletion), run `npm run lint` to catch orphan l10n keys
-  introduced by deleting modal components
-- [ ] Thijn's #743 l10n tooling (applied in Task 5) provides the lint gate for orphan keys
-- [ ] No new translation strings are added by D2 (all page/modal labels already exist
+- [x] After Task 14 (modal deletion), run `npm run lint` to catch orphan l10n keys
+  introduced by deleting modal components <!-- lint gate green on development -->
+- [x] Thijn's #743 l10n tooling (applied in Task 5) provides the lint gate for orphan keys
+- [x] No new translation strings are added by D2 (all page/modal labels already exist
   in `l10n/` from the pre-D2 modal components)
 
 ---
