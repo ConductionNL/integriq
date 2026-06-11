@@ -22,6 +22,12 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
+use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientMock;
+use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientMock;
+use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
@@ -30,6 +36,9 @@ use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
 use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
+use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
+use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -116,6 +125,65 @@ class Application extends App implements IBootstrap
             BeforeTemplateRenderedEvent::class,
             static function (): void {
                 Util::addInitScript('openconnector', 'openconnector-integration');
+            }
+        );
+
+        // Dormant PDOK source-pattern adapters (lib/Sources/Pdok/).
+        // The abstract `PdokWmsClient`, `PdokWfsClient`, and
+        // `PdokGeocodingClient` (lib/Adapters/Pdok/) are resolved to their
+        // mock flavours until `pdok.feature_flag` is flipped to `1`. The
+        // Source-pattern facades (`PdokWmsSourceAdapter`,
+        // `PdokWfsSourceAdapter`, `PdokGeocodingClient` under the Sources
+        // namespace) layer logging + Source-row identity on top so they can
+        // be discovered through the openconnector Source registry under
+        // category `geo`. Swap the mock binding for the `*ClientHttp`
+        // implementation in a downstream change once the flag flips.
+        $context->registerService(
+            PdokWmsClient::class,
+            static function ($c) {
+                return $c->get(PdokWmsClientMock::class);
+            }
+        );
+        $context->registerService(
+            PdokWfsClient::class,
+            static function ($c) {
+                return $c->get(PdokWfsClientMock::class);
+            }
+        );
+        $context->registerService(
+            AdapterPdokGeocodingClient::class,
+            static function ($c) {
+                return $c->get(PdokGeocodingClientMock::class);
+            }
+        );
+        $context->registerService(
+            PdokWmsSourceAdapter::class,
+            static function ($c) {
+                return new PdokWmsSourceAdapter(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    wmsClient: $c->get(PdokWmsClient::class)
+                );
+            }
+        );
+        $context->registerService(
+            PdokWfsSourceAdapter::class,
+            static function ($c) {
+                return new PdokWfsSourceAdapter(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    wfsClient: $c->get(PdokWfsClient::class)
+                );
+            }
+        );
+        $context->registerService(
+            SourcePdokGeocodingClient::class,
+            static function ($c) {
+                return new SourcePdokGeocodingClient(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    geocodingClient: $c->get(AdapterPdokGeocodingClient::class)
+                );
             }
         );
     }//end register()
