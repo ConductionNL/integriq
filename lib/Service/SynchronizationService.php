@@ -8,8 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\User\NoUserException;
-use OCA\OpenConnector\Db\CallLog;
-use OCA\OpenConnector\Db\Mapping;
 use OCA\OpenConnector\Db\MappingMapper;
 use OCA\OpenConnector\Db\Rule;
 use OCA\OpenConnector\Db\RuleMapper;
@@ -20,6 +18,7 @@ use OCA\OpenConnector\Db\SynchronizationContract;
 use OCA\OpenConnector\Db\SynchronizationContractLogMapper;
 use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -3514,7 +3513,7 @@ class SynchronizationService
 		return $originalEndpoint;
 	}
 
-    private function getFilenameFromHeaders(array $response, CallLog $result): ?string
+    private function getFilenameFromHeaders(array $response, ObjectEntity $result): ?string
     {
         $filename = null;
         // Get a filename from the response. First try to do this using the Content-Disposition header
@@ -3524,9 +3523,12 @@ class SynchronizationService
 
 		 $filename = trim(string: $explodedContentDisposition[1], characters: '"');
 		} else {
-			// Otherwise, parse the url and content type header.
-			$parsedUrl = parse_url($result->getRequest()['url']);
-			$path = explode(separator:'/', string: $parsedUrl['path']);
+			// Otherwise, parse the url and content type header. The CallLog is now
+			// an OpenRegister ObjectEntity; the `request` body lives under
+			// `getObject()['request']` instead of the legacy `getRequest()` getter.
+			$resultRequest = ($result->getObject()['request'] ?? []);
+			$parsedUrl = parse_url(($resultRequest['url'] ?? ''));
+			$path = explode(separator:'/', string: ($parsedUrl['path'] ?? ''));
 			$filename = end($path);
 
 			if (count(explode(separator: '.', string: $filename)) === 1
@@ -4110,7 +4112,7 @@ class SynchronizationService
      *
      * @return array $data
      */
-    private function processMapping(Mapping $mapping, array $data): array
+    private function processMapping(OrMapping|ObjectEntity|array $mapping, array $data): array
     {
         return $this->mappingService->executeMapping($mapping, $data);
     }
