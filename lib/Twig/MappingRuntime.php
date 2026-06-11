@@ -21,6 +21,7 @@ namespace OCA\OpenConnector\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
 use OC\Files\Node\File;
+use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
@@ -48,16 +49,18 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Constructor.
      *
-     * @param MappingService $mappingService Service that executes mappings.
-     * @param CallService    $callService    Service that performs outbound calls.
-     * @param FileService    $fileService    Service that resolves file metadata.
-     * @param ObjectService  $objectService  Service that resolves OR objects.
+     * @param MappingService                $mappingService               Service that executes mappings.
+     * @param CallService                   $callService                  Service that performs outbound calls.
+     * @param FileService                   $fileService                  Service that resolves file metadata.
+     * @param ObjectService                 $objectService                Service that resolves OR objects.
+     * @param SynchronizationContractMapper $synchronizationContractMapper Mapper for contract lookups.
      */
     public function __construct(
-        private readonly MappingService $mappingService,
-        private readonly CallService $callService,
-        private readonly FileService $fileService,
-        private readonly ObjectService $objectService,
+        private readonly MappingService                $mappingService,
+        private readonly CallService                   $callService,
+        private readonly FileService                   $fileService,
+        private readonly ObjectService                 $objectService,
+        private readonly SynchronizationContractMapper $synchronizationContractMapper,
     ) {
 
     }//end __construct()
@@ -278,4 +281,37 @@ class MappingRuntime implements RuntimeExtensionInterface
         return $slug;
 
     }//end createSlug()
+
+    /**
+     * Look up the targetId of the synchronization contract for a given originId.
+     *
+     * Use this in a mapping when a related object has already been pushed to an external
+     * system and you need its external ID (targetId) as a reference. For example, after
+     * uploading a file to zaaksysteem /case/prepare_file the returned UUID is stored as
+     * targetId; this function lets a subsequent mapping retrieve that UUID by the
+     * OpenRegister object's own id (@self.id / originId).
+     *
+     * @param string      $originId          UUID of the OpenRegister object (@self.id).
+     * @param string|null $synchronizationId Optional: scope the lookup to a specific
+     *                                       synchronization; when omitted the first matching
+     *                                       contract across all synchronizations is returned.
+     *
+     * @return string|null The targetId stored on the contract, or null when not found.
+     *
+     * @throws \OCP\DB\Exception
+     */
+    public function getTargetIdByOriginId(string $originId, ?string $synchronizationId=null): ?string
+    {
+        if ($synchronizationId !== null) {
+            $contract = $this->synchronizationContractMapper->findSyncContractByOriginId(
+                synchronizationId: $synchronizationId,
+                originId: $originId
+            );
+            return $contract?->getTargetId();
+        }
+
+        return $this->synchronizationContractMapper->findTargetIdByOriginId($originId);
+
+    }//end getTargetIdByOriginId()
+
 }//end class

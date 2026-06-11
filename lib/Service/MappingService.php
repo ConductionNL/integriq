@@ -26,6 +26,7 @@
 
 namespace OCA\OpenConnector\Service;
 
+use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenConnector\Twig\MappingExtension;
@@ -97,15 +98,17 @@ class MappingService
         FileService $fileService,
         ObjectService $objectService,
         private readonly OrObjectService $orObjectService,
+        SynchronizationContractMapper $synchronizationContractMapper,
     ) {
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new MappingExtension());
         $this->twig->addRuntimeLoader(
             new MappingRuntimeLoader(
-                mappingService: $this,
-                callService: $callService,
-                fileService: $fileService,
-                objectService: $objectService
+                mappingService:                $this,
+                callService:                   $callService,
+                fileService:                   $fileService,
+                objectService:                 $objectService,
+                synchronizationContractMapper: $synchronizationContractMapper,
             )
         );
 

@@ -3024,6 +3024,7 @@ class SynchronizationService
             if (isset($targetConfig['idInRequestBody']) === true) {
                 $targetId = $targetConfig['json'][$targetConfig['idInRequestBody']];
             }
+			$this->applyFileUploadToTargetConfig($targetConfig, $contract);
 			$response = $this->callLogResponse($this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig));
 
 			$body = json_decode($response['body'], true);
@@ -3064,6 +3065,7 @@ class SynchronizationService
             $targetConfig['json'] = $this->processMapping(mapping: $mapping, data: $targetConfig['json']);
 		}
 
+		$this->applyFileUploadToTargetConfig($targetConfig, $contract);
 			$response = $this->callLogResponse($this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig));
 
             $decodedResponseBody = json_decode($response['body'] ?? '', true);
@@ -3512,6 +3514,121 @@ class SynchronizationService
 
 		return $originalEndpoint;
 	}
+
+	/**
+	 * Convert a JSON target payload to multipart/form-data when fileUpload is configured.
+	 *
+	 * Reads targetConfig['fileUpload'] and, if present, fetches the referenced file(s) from
+	 * OpenRegister's FileService and replaces targetConfig['json'] with a Guzzle-compatible
+	 * 'multipart' array so the request is sent as multipart/form-data to the target source.
+	 *
+	 * Use case example — zaaksysteem /case/prepare_file:
+	 *   "fileUpload": { "fieldName": "upload" }
+	 *   The object's originId (@self.id) is used to look up its files in OpenRegister; each
+	 *   file is posted as a separate "upload" part, mirroring the HTML form / curl -F style.
+	 *
+	 * Supported keys under targetConfig['fileUpload']:
+	 *   fieldName     (string) – Multipart field name for each file part; default "upload".
+	 *   objectId      (string) – UUID of the OpenRegister object whose files to fetch;
+	 *                            supports {{originId}} placeholder; defaults to contract originId.
+	 *   fileName      (string) – Fetch only this specific file by name from the object folder.
+	 *   allFiles      (bool)   – Send ALL files attached to the object; default false (first only).
+	 *   fileId        (int)    – Nextcloud node ID; takes priority over objectId-based lookup.
+	 *   includeObject (bool)   – Also send each object field as an individual multipart part
+	 *                            before the file parts; default false.
+	 *
+	 * When no file can be resolved the method logs a warning and leaves targetConfig unchanged
+	 * so the caller falls back to a normal JSON request.
+	 */
+	private function applyFileUploadToTargetConfig(array &$targetConfig, SynchronizationContract $contract): void
+	{
+		if (isset($targetConfig['fileUpload']) === false) {
+			return;
+		}
+
+		$fileUploadConfig = $targetConfig['fileUpload'];
+		$fieldName        = $fileUploadConfig['fieldName'] ?? 'upload';
+
+		/** @var \OCA\OpenRegister\Service\FileService $fileService */
+		$fileService   = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+		$filesToUpload = [];
+
+		if (isset($fileUploadConfig['fileId']) === true) {
+			// Direct lookup by Nextcloud node ID.
+			$file = $fileService->getFileById((int) $fileUploadConfig['fileId']);
+			if ($file !== null) {
+				$filesToUpload[] = $file;
+			}
+		} else {
+			// Resolve the OpenRegister object whose files we want.
+			$objectId = $fileUploadConfig['objectId'] ?? $contract->getOriginId();
+			if ($objectId !== null) {
+				$objectId = str_replace(
+					['{{ originId }}', '{{originId}}'],
+					(string) ($contract->getOriginId() ?? ''),
+					(string) $objectId
+				);
+			}
+
+			if (empty($objectId) === false) {
+				$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+				$objectEntity  = $objectService->find(id: $objectId);
+
+				if (isset($fileUploadConfig['fileName']) === true) {
+					// Single specific file by name.
+					$file = $fileService->getFile($objectEntity, $fileUploadConfig['fileName']);
+					if ($file !== null) {
+						$filesToUpload[] = $file;
+					}
+				} elseif (empty($fileUploadConfig['allFiles']) === false && (bool) $fileUploadConfig['allFiles'] === true) {
+					// All files attached to the object.
+					$filesToUpload = $fileService->getFiles($objectEntity);
+				} else {
+					// Default: first file only.
+					$files = $fileService->getFiles($objectEntity);
+					if (empty($files) === false) {
+						$filesToUpload[] = $files[0];
+					}
+				}
+			}
+		}
+
+		if (empty($filesToUpload) === true) {
+			$this->logger->warning('fileUpload configured but no file resolved; falling back to JSON payload', [
+				'synchronizationId' => $contract->getSynchronizationId(),
+				'originId'          => $contract->getOriginId(),
+			]);
+			return;
+		}
+
+		$multipart = [];
+
+		// Optionally include the object's own fields as individual parts before the file(s).
+		if (empty($fileUploadConfig['includeObject']) === false && (bool) $fileUploadConfig['includeObject'] === true) {
+			foreach ($targetConfig['json'] ?? [] as $key => $value) {
+				$multipart[] = [
+					'name'     => $key,
+					'contents' => is_array($value) ? json_encode($value) : (string) $value,
+				];
+			}
+		}
+
+		foreach ($filesToUpload as $file) {
+			$multipart[] = [
+				'name'     => $fieldName,
+				'contents' => $file->getContent(),
+				'filename' => $file->getName(),
+				'headers'  => ['Content-Type' => $file->getMimeType()],
+			];
+		}
+
+		unset($targetConfig['json']);
+		$targetConfig['multipart'] = $multipart;
+		// Guzzle sets Content-Type (including the boundary) automatically for multipart; remove
+		// any explicit override that would otherwise clobber the generated header.
+		unset($targetConfig['headers']['Content-Type'], $targetConfig['headers']['content-type']);
+
+	}//end applyFileUploadToTargetConfig()
 
     private function getFilenameFromHeaders(array $response, ObjectEntity $result): ?string
     {

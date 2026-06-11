@@ -19,6 +19,7 @@
 
 namespace OCA\OpenConnector\Twig;
 
+use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
@@ -33,16 +34,18 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
     /**
      * Constructor.
      *
-     * @param MappingService $mappingService Service that executes mappings.
-     * @param CallService    $callService    Service that performs outbound calls.
-     * @param FileService    $fileService    Service that resolves file metadata.
-     * @param ObjectService  $objectService  Service that resolves OR objects.
+     * @param MappingService                $mappingService               Service that executes mappings.
+     * @param CallService                   $callService                  Service that performs outbound calls.
+     * @param FileService                   $fileService                  Service that resolves file metadata.
+     * @param ObjectService                 $objectService                Service that resolves OR objects.
+     * @param SynchronizationContractMapper $synchronizationContractMapper Mapper for contract lookups.
      */
     public function __construct(
-        private readonly MappingService $mappingService,
-        private readonly CallService $callService,
-        private readonly FileService $fileService,
-        private readonly ObjectService $objectService,
+        private readonly MappingService                $mappingService,
+        private readonly CallService                   $callService,
+        private readonly FileService                   $fileService,
+        private readonly ObjectService                 $objectService,
+        private readonly SynchronizationContractMapper $synchronizationContractMapper,
     ) {
 
     }//end __construct()
@@ -58,14 +61,16 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
     {
         if ($class === MappingRuntime::class) {
             return new MappingRuntime(
-                mappingService: $this->mappingService,
-                callService: $this->callService,
-                fileService: $this->fileService,
-                objectService: $this->objectService
+                mappingService:                $this->mappingService,
+                callService:                   $this->callService,
+                fileService:                   $this->fileService,
+                objectService:                 $this->objectService,
+                synchronizationContractMapper: $this->synchronizationContractMapper,
             );
         }
 
         return null;
 
     }//end load()
+
 }//end class
