@@ -8,11 +8,19 @@
  * table was dropped. The W5 SynchronizationService rewrite replaces the
  * `SynchronizationContractLogMapper` adapter with this service so the engine
  * no longer carries an `OCA\OpenConnector\Db\SynchronizationContractLogMapper`
- * import. The persistence semantics are identical to the previous adapter:
+ * import.
  *
- *  - createFromArray() builds an in-memory SynchronizationContractLog value
- *    object (auto-filling system fields + a stable uuid the engine can
- *    reference before persistence); no write occurs.
+ * W14 tier-2 cleanup further drops the residual
+ * `OCA\OpenConnector\Db\SynchronizationContractLog` value-object import: the
+ * service now operates on plain arrays end-to-end (matching the array shapes
+ * the OpenRegister `synchronization_contract_log` schema persists). Callers
+ * receive arrays they can mutate freely and persist via update()/insert().
+ *
+ * Persistence semantics are identical to the previous adapter:
+ *
+ *  - createFromArray() builds an in-memory array (auto-filling system fields +
+ *    a stable uuid the engine can reference before persistence); no write
+ *    occurs.
  *  - update() / insert() performs the single INSERT honouring the
  *    append-only schema invariant; repeated calls for an already-persisted
  *    log are a safe no-op.
@@ -32,7 +40,6 @@
 namespace OCA\OpenConnector\Service;
 
 use DateTime;
-use OCA\OpenConnector\Db\SynchronizationContractLog;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ISession;
 use OCP\IUserSession;
@@ -93,14 +100,14 @@ class SynchronizationContractLogService
      * OR rejects any UPDATE/DELETE on it. The engine therefore mutates the log
      * in memory during the run and persists it exactly once at the end via
      * update()/insert(). This method only builds and returns the in-memory
-     * value object with system fields auto-filled (uuid, userId, sessionId,
+     * array with system fields auto-filled (uuid, userId, sessionId,
      * synchronizationLogId default, expires default).
      *
      * @param array $object The contract log data.
      *
-     * @return SynchronizationContractLog The (unpersisted) contract log value object.
+     * @return array The (unpersisted) contract log array.
      */
-    public function createFromArray(array $object): SynchronizationContractLog
+    public function createFromArray(array $object): array
     {
         // Auto-fill a stable uuid the engine can reference before persistence.
         if (empty($object['uuid']) === true) {
@@ -131,7 +138,7 @@ class SynchronizationContractLogService
             $object['expires'] = (new DateTime('+3 days'))->format('c');
         }
 
-        return (new SynchronizationContractLog())->hydrate($object);
+        return $object;
 
     }//end createFromArray()
 
@@ -141,16 +148,15 @@ class SynchronizationContractLogService
      *
      * Honours the append-only schema: the row is INSERTed exactly once (no uuid
      * parameter, so OpenRegister treats it as a CREATE). A repeated call for an
-     * already-persisted log is a no-op that returns the handle unchanged.
+     * already-persisted log is a no-op that returns the array unchanged.
      *
-     * @param SynchronizationContractLog $log The contract log value object to persist.
+     * @param array $log The contract log array to persist.
      *
-     * @return SynchronizationContractLog The persisted (or unchanged) value object.
+     * @return array The persisted (or unchanged) array.
      */
-    public function update(SynchronizationContractLog $log): SynchronizationContractLog
+    public function update(array $log): array
     {
-        $object = $log->jsonSerialize();
-        $uuid   = (string) ($object['uuid'] ?? '');
+        $uuid = (string) ($log['uuid'] ?? '');
 
         // Append-only: never issue a second write for the same log.
         if ($uuid !== '' && isset($this->persisted[$uuid]) === true) {
@@ -160,7 +166,7 @@ class SynchronizationContractLogService
         // INSERT only (no uuid parameter): OpenRegister treats this as a CREATE,
         // which the append-only schema permits.
         $saved = $this->orObjectService->saveObject(
-            object: $this->normalize($object),
+            object: $this->normalize($log),
             register: self::REGISTER,
             schema: self::SCHEMA
         );
@@ -169,7 +175,7 @@ class SynchronizationContractLogService
             $this->persisted[$uuid] = true;
         }
 
-        return (new SynchronizationContractLog())->hydrate($saved->jsonSerialize());
+        return $saved->jsonSerialize();
 
     }//end update()
 
@@ -177,11 +183,11 @@ class SynchronizationContractLogService
     /**
      * Persist a contract log to OpenRegister, write-once (alias of update()).
      *
-     * @param SynchronizationContractLog $log The contract log value object to persist.
+     * @param array $log The contract log array to persist.
      *
-     * @return SynchronizationContractLog The persisted value object.
+     * @return array The persisted array.
      */
-    public function insert(SynchronizationContractLog $log): SynchronizationContractLog
+    public function insert(array $log): array
     {
         return $this->update($log);
 

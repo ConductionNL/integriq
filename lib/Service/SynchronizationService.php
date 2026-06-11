@@ -100,6 +100,20 @@ class SynchronizationService
     private ?SynchronizationContractLogService $synchronizationContractLogService = null;
 
     /**
+     * The OpenRegister-backed synchronization contract lifecycle service.
+     *
+     * Extracted from SynchronizationService in W14 Tier 2 — encapsulates all
+     * read/write operations against the `synchronization_contract` schema so
+     * the engine no longer interleaves OR persistence with sync orchestration.
+     * Resolved lazily from the container so the public constructor signature
+     * stays unchanged; call sites fall back to the in-class private helpers
+     * when the container returns null (unit-suite safety net).
+     *
+     * @var SynchronizationContractService|null
+     */
+    private ?SynchronizationContractService $synchronizationContractService = null;
+
+    /**
      * Constructor.
      *
      * Post OpenRegister-cutover, synchronizations are resolved through the
@@ -139,6 +153,11 @@ class SynchronizationService
         $synchronizationContractLogService = $this->containerInterface->get(SynchronizationContractLogService::class);
         if ($synchronizationContractLogService instanceof SynchronizationContractLogService) {
             $this->synchronizationContractLogService = $synchronizationContractLogService;
+        }
+
+        $synchronizationContractService = $this->containerInterface->get(SynchronizationContractService::class);
+        if ($synchronizationContractService instanceof SynchronizationContractService) {
+            $this->synchronizationContractService = $synchronizationContractService;
         }
 
         if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
@@ -285,6 +304,10 @@ class SynchronizationService
      */
     private function findAllContractObjects(array $filters=[]): array
     {
+        if ($this->synchronizationContractService !== null) {
+            return $this->synchronizationContractService->findAllObjects(filters: $filters);
+        }
+
         $config  = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization_contract'], $filters)];
         $matches = $this->orObjectService->findAll(config: $config);
 
@@ -300,6 +323,10 @@ class SynchronizationService
      */
     private function findContractObject(string|int $id): ?ObjectEntity
     {
+        if ($this->synchronizationContractService !== null) {
+            return $this->synchronizationContractService->findObject(id: $id);
+        }
+
         return $this->orObjectService->find(
             id: (string) $id,
             register: 'openconnector',
@@ -414,6 +441,13 @@ class SynchronizationService
      */
     private function persistContract(array $contract, bool $ensureUuid=false): array
     {
+        if ($this->synchronizationContractService !== null) {
+            return $this->synchronizationContractService->persist(
+                contract: $contract,
+                ensureUuid: $ensureUuid
+            );
+        }
+
         $object = $contract;
 
         if ($ensureUuid === true && empty($object['uuid']) === true) {
@@ -448,6 +482,10 @@ class SynchronizationService
      */
     private function createContractFromArray(array $object): array
     {
+        if ($this->synchronizationContractService !== null) {
+            return $this->synchronizationContractService->createFromArray(object: $object);
+        }
+
         if (empty($object['uuid']) === true) {
             $object['uuid'] = (string) Uuid::v4();
         }
@@ -483,6 +521,10 @@ class SynchronizationService
      */
     private function updateContractFromArray(string|int $id, array $object): array
     {
+        if ($this->synchronizationContractService !== null) {
+            return $this->synchronizationContractService->updateFromArray(id: $id, object: $object);
+        }
+
         $existing = $this->findContract(id: $id);
 
         $existingVersion = ($existing['version'] ?? null);
@@ -1949,7 +1991,7 @@ class SynchronizationService
         }
 
 		if (isset($contractLog) === true) {
-			$contractLog->setSynchronizationLogId($log->getId());
+			$contractLog['synchronizationLogId'] = $log->getId();
 		}
 
         $flowToken->setSyncInputOriginal($object);
@@ -2001,13 +2043,16 @@ class SynchronizationService
             ) {
 			// We checked the source so let log that
 			$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
-            $contractLog->setExpires($this->calculateExpires($this->successRetention));
+            if (isset($contractLog) === true) {
+                $expires = $this->calculateExpires($this->successRetention);
+                $contractLog['expires'] = $expires !== null ? $expires->format(DateTime::ATOM) : null;
+            }
 			// The object has not changed and neither config nor mapping have been updated since last check
 			if (isset($contractLog) === true && $this->synchronizationContractLogService !== null) {
 				$contractLog = $this->synchronizationContractLogService->update($contractLog);
 			}
 			return [
-				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
+				'log' => isset($contractLog) === true ? $contractLog : null,
 				'contract' => $synchronizationContract,
 				'resultAction' => 'skip'
 			];
@@ -2028,7 +2073,7 @@ class SynchronizationService
         }
 
         if (isset($contractLog) === true) {
-		    $contractLog->setTarget($object);
+		    $contractLog['target'] = $object;
         }
 
         $object = $this->replaceRelatedOriginIds(object: $object, config: $sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [], replaceIdWithTargetId: true);
@@ -2052,14 +2097,15 @@ class SynchronizationService
 		if ($isTest === true) {
 			// Return test data without updating target
 			if (isset($contractLog) === true) {
-			    $contractLog->setTargetResult('test');
-                $contractLog->setExpires($this->calculateExpires($this->successRetention));
+			    $contractLog['targetResult'] = 'test';
+                $expires = $this->calculateExpires($this->successRetention);
+                $contractLog['expires'] = $expires !== null ? $expires->format(DateTime::ATOM) : null;
 			    if ($this->synchronizationContractLogService !== null) {
 			        $contractLog = $this->synchronizationContractLogService->update($contractLog);
 			    }
 			}
 			return [
-				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
+				'log' => isset($contractLog) === true ? $contractLog : null,
 				'contract' => $synchronizationContract,
 				'resultAction' => 'skip'
 			];
@@ -2083,8 +2129,9 @@ class SynchronizationService
 
 		// Create log entry for the synchronization
         if (isset($contractLog) === true) {
-		    $contractLog->setTargetResult(($synchronizationContract['targetLastAction'] ?? null));
-            $contractLog->setExpires($this->calculateExpires($this->successRetention));
+		    $contractLog['targetResult'] = ($synchronizationContract['targetLastAction'] ?? null);
+            $expires = $this->calculateExpires($this->successRetention);
+            $contractLog['expires'] = $expires !== null ? $expires->format(DateTime::ATOM) : null;
 		    if ($this->synchronizationContractLogService !== null) {
 		        $contractLog = $this->synchronizationContractLogService->update($contractLog);
 		    }
@@ -2100,7 +2147,7 @@ class SynchronizationService
         }
 
 		return [
-			'log' => $contractLog ? $contractLog->jsonSerialize() : [],
+			'log' => $contractLog ?: [],
 			'contract' => $synchronizationContract,
 			'resultAction' => 'update' // /create
 		];

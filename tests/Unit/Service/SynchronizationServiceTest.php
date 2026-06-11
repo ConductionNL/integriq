@@ -318,4 +318,279 @@ class SynchronizationServiceTest extends TestCase
     }//end testSynchronizationLogIsWrittenExactlyOnce()
 
 
+    /**
+     * synchronize() throws when an invalid mutationType is passed.
+     *
+     * @return void
+     */
+    public function testSynchronizeThrowsOnInvalidMutationType(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/Invalid mutation type/');
+
+        $this->service->synchronize(
+            synchronization: ['uuid' => 'sync-1'],
+            mutationType: 'not-a-real-type'
+        );
+    }//end testSynchronizeThrowsOnInvalidMutationType()
+
+
+    /**
+     * handleObjectEventSynchronization() short-circuits when the
+     * ObjectEntity has no register/schema (no findAll, no synchronize).
+     *
+     * @return void
+     */
+    public function testHandleObjectEventSkipsWhenObjectHasNoRegister(): void
+    {
+        $objectEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [],
+            'obj-1'
+        );
+        // Leave register/schema unset.
+
+        $this->orObjectService->expects($this->never())->method('findAll');
+
+        $this->service->handleObjectEventSynchronization($objectEntity, 'create');
+        $this->addToAssertionCount(1);
+    }//end testHandleObjectEventSkipsWhenObjectHasNoRegister()
+
+
+    /**
+     * handleObjectEventSynchronization() queries OR for direct syncs on the
+     * object's register/schema when the mutation type is valid.
+     *
+     * @return void
+     */
+    public function testHandleObjectEventQueriesOrForDirectSyncs(): void
+    {
+        $objectEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [],
+            'obj-1'
+        );
+        $objectEntity->setRegister('openconnector');
+        $objectEntity->setSchema('source');
+
+        // OR findAll is invoked at least once on the direct-sync lookup. The
+        // related-trigger lookup may also hit findAll. We assert at least one
+        // call instead of exact count to keep the test resilient.
+        $this->orObjectService->expects($this->atLeastOnce())
+            ->method('findAll')
+            ->willReturn(['results' => [], 'total' => 0]);
+
+        $this->service->handleObjectEventSynchronization($objectEntity, 'create');
+        $this->addToAssertionCount(1);
+    }//end testHandleObjectEventQueriesOrForDirectSyncs()
+
+
+    /**
+     * encodeArrayKeys() rewrites flat keys.
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysReplacesFlatKeys(): void
+    {
+        $input = ['a.b' => 1, 'c.d' => 2];
+
+        $result = $this->service->encodeArrayKeys($input, '.', '|');
+
+        $this->assertSame(['a|b' => 1, 'c|d' => 2], $result);
+    }//end testEncodeArrayKeysReplacesFlatKeys()
+
+
+    /**
+     * encodeArrayKeys() recurses into nested arrays and rewrites their keys
+     * too.
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysRecursesIntoNestedArrays(): void
+    {
+        $input = ['a.b' => ['c.d' => 1, 'e.f' => ['g.h' => 2]]];
+
+        $result = $this->service->encodeArrayKeys($input, '.', '|');
+
+        $this->assertSame(
+            ['a|b' => ['c|d' => 1, 'e|f' => ['g|h' => 2]]],
+            $result
+        );
+    }//end testEncodeArrayKeysRecursesIntoNestedArrays()
+
+
+    /**
+     * encodeArrayKeys() returns an empty array unchanged.
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysReturnsEmptyArrayUnchanged(): void
+    {
+        $this->assertSame([], $this->service->encodeArrayKeys([], '.', '|'));
+    }//end testEncodeArrayKeysReturnsEmptyArrayUnchanged()
+
+
+    /**
+     * encodeArrayKeys() leaves an inner empty array untouched (not recursed
+     * into).
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysLeavesEmptyInnerArrayUntouched(): void
+    {
+        $input = ['a.b' => []];
+
+        $result = $this->service->encodeArrayKeys($input, '.', '|');
+
+        $this->assertSame(['a|b' => []], $result);
+    }//end testEncodeArrayKeysLeavesEmptyInnerArrayUntouched()
+
+
+    /**
+     * sortNestedArray() returns false when given a non-array value.
+     *
+     * @return void
+     */
+    public function testSortNestedArrayReturnsFalseForNonArray(): void
+    {
+        $value = 'not-an-array';
+        $this->assertFalse($this->service->sortNestedArray($value));
+    }//end testSortNestedArrayReturnsFalseForNonArray()
+
+
+    /**
+     * sortNestedArray() sorts nested associative arrays too.
+     *
+     * @return void
+     */
+    public function testSortNestedArraySortsNestedAssociativeArrays(): void
+    {
+        $array = ['b' => 2, 'a' => ['z' => 26, 'x' => 24], 'c' => 3];
+
+        $this->assertTrue($this->service->sortNestedArray($array));
+        $this->assertSame(['a', 'b', 'c'], array_keys($array));
+        $this->assertSame(['x', 'z'], array_keys($array['a']));
+    }//end testSortNestedArraySortsNestedAssociativeArrays()
+
+
+    /**
+     * replaceRelatedOriginIds() leaves keys absent in the input untouched
+     * (no spurious additions).
+     *
+     * @return void
+     */
+    public function testReplaceRelatedOriginIdsSkipsMissingKeys(): void
+    {
+        $object = ['kept' => 'as-is'];
+        $config = ['absent-key' => 'true'];
+
+        $result = $this->service->replaceRelatedOriginIds($object, $config);
+
+        $this->assertSame(['kept' => 'as-is'], $result);
+    }//end testReplaceRelatedOriginIdsSkipsMissingKeys()
+
+
+    /**
+     * replaceRelatedOriginIds() leaves a non-UUID leaf string unchanged
+     * (replaceIdInString preserves values it can't resolve).
+     *
+     * @return void
+     */
+    public function testReplaceRelatedOriginIdsLeavesNonUuidLeafUnchanged(): void
+    {
+        $object = ['relation' => 'not-a-uuid-value'];
+        $config = ['relation' => 'true'];
+
+        // findAll returns empty so the contract lookup yields null and the
+        // leaf is returned unchanged.
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $result = $this->service->replaceRelatedOriginIds($object, $config);
+
+        $this->assertSame('not-a-uuid-value', $result['relation']);
+    }//end testReplaceRelatedOriginIdsLeavesNonUuidLeafUnchanged()
+
+
+    /**
+     * replaceRelatedOriginIds() recurses into a single nested associative
+     * subobject (config + object both shaped as assoc arrays).
+     *
+     * @return void
+     */
+    public function testReplaceRelatedOriginIdsRecursesIntoNestedAssociativeObject(): void
+    {
+        $object = ['sub' => ['relation' => 'not-a-uuid-value']];
+        $config = ['sub' => ['relation' => 'true']];
+
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $result = $this->service->replaceRelatedOriginIds($object, $config);
+
+        $this->assertSame('not-a-uuid-value', $result['sub']['relation']);
+    }//end testReplaceRelatedOriginIdsRecursesIntoNestedAssociativeObject()
+
+
+    /**
+     * findAllBySourceId() composes the sourceId from register+schema.
+     *
+     * @return void
+     */
+    public function testFindAllBySourceIdComposesSourceFilter(): void
+    {
+        $entity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['sourceId' => 'reg-1/schema-1'],
+            'sync-1'
+        );
+
+        $this->orObjectService->expects($this->once())
+            ->method('findAll')
+            ->with($this->callback(function (array $config): bool {
+                $filters = ($config['filters'] ?? []);
+                return ($filters['sourceId'] ?? null) === 'reg-1/schema-1'
+                    && ($filters['register'] ?? null) === 'openconnector'
+                    && ($filters['schema'] ?? null) === 'synchronization';
+            }))
+            ->willReturn(['results' => [$entity], 'total' => 1]);
+
+        $result = $this->service->findAllBySourceId('reg-1', 'schema-1');
+
+        $this->assertCount(1, $result);
+    }//end testFindAllBySourceIdComposesSourceFilter()
+
+
+    /**
+     * findAllBySourceId() returns an empty array when no syncs match.
+     *
+     * @return void
+     */
+    public function testFindAllBySourceIdReturnsEmptyArrayWhenNoMatch(): void
+    {
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $this->assertSame([], $this->service->findAllBySourceId('reg-x', 'schema-x'));
+    }//end testFindAllBySourceIdReturnsEmptyArrayWhenNoMatch()
+
+
+    /**
+     * getSynchronization() proxies to OR find() against the synchronization
+     * schema.
+     *
+     * @return void
+     */
+    public function testGetSynchronizationDelegatesToFind(): void
+    {
+        $entity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['name' => 'my-sync'],
+            'sync-uuid-3'
+        );
+        $this->orObjectService->method('find')->willReturn($entity);
+
+        $result = $this->service->getSynchronization('sync-uuid-3');
+
+        $this->assertSame($entity, $result);
+    }//end testGetSynchronizationDelegatesToFind()
+
+
 }//end class
