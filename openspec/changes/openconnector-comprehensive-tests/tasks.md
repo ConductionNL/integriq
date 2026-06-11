@@ -38,8 +38,8 @@
   - GIVEN `CallService` reads a source's `apikey` WHEN the call is made THEN `EncryptionService::decrypt` is called before passing the key to the HTTP client
   - GIVEN `EventService` receives a webhook payload WHEN routing THEN the correct consumer's handler is invoked
   - GIVEN `SynchronizationService::runSync` is called WHEN OR storage is active THEN objects are fetched via `ObjectService::findAll` not legacy mapper
-- [x] Implement <!-- CallServiceTest, EventServiceTest, SynchronizationServiceTest already shipped on development -->
-- [x] Test
+- [x] Implement <!-- CallServiceTest, EventServiceTest, SynchronizationServiceTest already shipped on development; W14 Tier 2 expanded SynchronizationServiceTest (+15 new tests covering invalid mutation type throws, handleObjectEventSynchronization paths, encodeArrayKeys flat+recursive+empty cases, sortNestedArray non-array+nested-associative cases, replaceRelatedOriginIds missing-key+non-uuid+nested-object cases, findAllBySourceId filter composition+empty, getSynchronization delegate) and added SynchronizationContractServiceTest (21 tests) + SynchronizationContractLogServiceTest (8 tests) for the lifecycle/log services extracted/refactored in W14. -->
+- [x] Test <!-- W14 baseline: 349/349 unit tests green on PHPUnit 10.5 / PHP 8.3 (+44 tests since W13). -->
 
 ### Task 5: Add PHPUnit test for LegacyToRegisterMigrator
 - **spec_ref**: `openspec/changes/openconnector-comprehensive-tests/specs/openconnector-comprehensive-tests/spec.md#req-012-legacytoregistermigratorrtest-must-verify-chain-b-migration-paths`
