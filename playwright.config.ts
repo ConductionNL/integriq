@@ -76,6 +76,8 @@ export default defineConfig({
 				'**/docs-screenshots.spec.ts',
 				'**/regression/**',
 				'**/api-direct/**',
+				// Visual specs run only under the opt-in `visual` project (GAP-5).
+				'**/visual/**',
 			],
 			use: { ...devices['Desktop Chrome'] },
 		},
@@ -107,6 +109,25 @@ export default defineConfig({
 			use: {
 				...devices['Desktop Chrome'],
 				viewport: { width: 1280, height: 800 },
+			},
+			timeout: 90_000,
+		},
+		// Visual-regression project (GAP-5). Opt-in / non-gating:
+		//   npx playwright test --project visual
+		//   npx playwright test --project visual --update-snapshots  (rebaseline)
+		// Fixed viewport + authenticated session => deterministic shots.
+		// Baselines live in tests/e2e/visual/*-snapshots/ and ARE committed.
+		// PLATFORM CAVEAT: PNG baselines are host-font/GPU specific, so a CI
+		// Linux runner will not byte-match a dev-container baseline; the visual
+		// project must regenerate its baselines in-CI before it can gate.
+		{
+			name: 'visual',
+			testMatch: /visual\/.*\.visual\.spec\.ts$/,
+			testIgnore: [],
+			use: {
+				...devices['Desktop Chrome'],
+				viewport: { width: 1280, height: 800 },
+				storageState: path.resolve(__dirname, 'tests/e2e/.auth/admin.json'),
 			},
 			timeout: 90_000,
 		},
