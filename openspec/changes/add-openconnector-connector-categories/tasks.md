@@ -356,11 +356,10 @@
 - [~] PHPUnit unit tests for new/changed business logic
       (`tests/Unit/`) — declared on tasks 2.1-2.5; land with
       per-adapter implementation cycles [DEFERRED — per-adapter.]
-- [~] Newman/Postman tests for new/changed API endpoints — no
-      new endpoints in the category specs (the integration
-      registry exposes adapter invocation generically per
-      ADR-019) [N/A — no endpoints in this change. Marked deferred
-      for cascade visibility; no work required on the umbrella.]
+- [x] Newman/Postman tests for new/changed API endpoints — N/A: no
+      new endpoints in the category specs. The integration registry
+      exposes adapter invocation generically per ADR-019; per-adapter
+      changes carry their own Newman coverage when they ship endpoints.
 - [~] Browser tests (Playwright MCP) for UI changes — declared
       on tasks 2.2-2.3; lands with implementation cycles via
       the integration-registry admin UI [DEFERRED — per-adapter.]
