@@ -49,52 +49,202 @@
         "version": "1.0.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad — see local ADR-005.",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID assigned by OpenRegister" },
-          "name": { "type": "string", "description": "Human-readable name", "maxLength": 255 },
-          "description": { "type": "string", "description": "Free-form description", "maxLength": 2555 },
-          "reference": { "type": "string", "description": "Cross-environment reference identifier (slug)" },
-          "version": { "type": "string", "description": "Semver of the source configuration", "default": "1.0.0" },
-          "location": { "type": "string", "description": "Base URL or connection string" },
-          "isEnabled": { "type": "boolean", "description": "Whether this source is active", "default": true },
-          "type": { "type": "string", "description": "Source kind (api, database, file, etc.)" },
-          "authorizationHeader": { "type": "string", "description": "Header name used for authentication" },
-          "auth": { "type": "string", "description": "Authentication strategy slug (apikey, basic, oauth, jwt, none)" },
-          "authenticationConfig": { "type": "object", "description": "Provider-specific auth configuration (object). Credential strings here are stored plaintext per local ADR-007 until EncryptionService ships (local ADR-016)." },
-          "authorizationPassthroughMethod": { "type": "string", "description": "How auth flows to the upstream target" },
-          "locale": { "type": "string", "description": "Locale hint for upstream (e.g. nl_NL)" },
-          "accept": { "type": "string", "description": "Default Accept header for outbound requests" },
-          "jwt": { "type": "string", "description": "JWT bearer token (plaintext per ADR-007)" },
-          "jwtId": { "type": "string", "description": "Reference to JWT credential record" },
-          "secret": { "type": "string", "description": "OAuth client secret (plaintext per ADR-007)" },
-          "username": { "type": "string", "description": "Basic-auth username (plaintext per ADR-007)" },
-          "password": { "type": "string", "description": "Basic-auth password (plaintext per ADR-007)" },
-          "apikey": { "type": "string", "description": "API key value (plaintext per ADR-007)" },
-          "documentation": { "type": "string", "description": "Public docs URL for the upstream API" },
-          "loggingConfig": { "type": "object", "description": "Per-source override for CallLog retention windows" },
-          "oas": { "type": "string", "description": "OpenAPI spec URL or inline reference for the upstream" },
-          "paths": { "type": "object", "description": "Per-path overrides (auth, headers, transformations)" },
-          "headers": { "type": "object", "description": "Default headers applied to outbound requests" },
-          "translationConfig": { "type": "object", "description": "Mapping/translation hooks applied to outbound payloads" },
-          "configuration": { "type": "object", "description": "Free-form structured config (provider-specific)" },
-          "endpointsConfig": { "type": "object", "description": "Per-endpoint overrides nested under this source" },
-          "status": { "type": "string", "description": "Operational status (ok, degraded, error, disabled)" },
-          "logRetention": { "type": "integer", "description": "Per-source override for success log retention. Stored in seconds (legacy Source.php convention); JobService DEFAULT_SUCCESS_LOG_RETENTION is 3600000 ms = 3600 s. See chain-B Note on retention unit conversion." },
-          "errorRetention": { "type": "integer", "description": "Per-source override for error log retention. Stored in seconds; JobService DEFAULT_ERROR_LOG_RETENTION is 2592000000 ms = 2592000 s = P30D." },
-          "objectCount": { "type": "integer", "description": "Cached count of objects in this source's last sync" },
-          "test": { "type": "boolean", "description": "Whether to run in test/dry-run mode", "default": false },
-          "rateLimitLimit": { "type": "integer", "description": "Rate limit cap (requests per window)" },
-          "rateLimitRemaining": { "type": "integer", "description": "Remaining requests in the current window" },
-          "rateLimitReset": { "type": "integer", "description": "Unix timestamp when the rate-limit window resets" },
-          "rateLimitWindow": { "type": "integer", "description": "Rate-limit window size in seconds" },
-          "lastCall": { "type": "string", "format": "date-time", "description": "Timestamp of the most recent outbound call" },
-          "lastSync": { "type": "string", "format": "date-time", "description": "Timestamp of the most recent successful sync" },
-          "dateCreated": { "type": "string", "format": "date-time", "description": "OR-managed; mirrors `created` for legacy compatibility" },
-          "dateModified": { "type": "string", "format": "date-time", "description": "OR-managed; mirrors `updated` for legacy compatibility" },
-          "configurations": { "type": "array", "items": { "type": "string" }, "description": "Configuration profile slugs this source participates in" },
-          "slug": { "type": "string", "description": "Machine-readable identifier for cross-environment portability (local ADR-015)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "maxLength": 2555
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference identifier (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver of the source configuration",
+            "default": "1.0.0"
+          },
+          "location": {
+            "type": "string",
+            "description": "Base URL or connection string"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether this source is active",
+            "default": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "examples": [
+              "api",
+              "database",
+              "file",
+              "soap",
+              "dso"
+            ]
+          },
+          "authorizationHeader": {
+            "type": "string",
+            "description": "Header name used for authentication"
+          },
+          "auth": {
+            "type": "string",
+            "description": "Authentication strategy slug (apikey, basic, oauth, jwt, none)"
+          },
+          "authenticationConfig": {
+            "type": "object",
+            "description": "Provider-specific auth configuration (object). Credential strings here are stored plaintext per local ADR-007 until EncryptionService ships (local ADR-016)."
+          },
+          "authorizationPassthroughMethod": {
+            "type": "string",
+            "description": "How auth flows to the upstream target"
+          },
+          "locale": {
+            "type": "string",
+            "description": "Locale hint for upstream (e.g. nl_NL)"
+          },
+          "accept": {
+            "type": "string",
+            "description": "Default Accept header for outbound requests"
+          },
+          "jwt": {
+            "type": "string",
+            "description": "JWT bearer token (plaintext per ADR-007)"
+          },
+          "jwtId": {
+            "type": "string",
+            "description": "Reference to JWT credential record"
+          },
+          "secret": {
+            "type": "string",
+            "description": "OAuth client secret (plaintext per ADR-007)"
+          },
+          "username": {
+            "type": "string",
+            "description": "Basic-auth username (plaintext per ADR-007)"
+          },
+          "password": {
+            "type": "string",
+            "description": "Basic-auth password (plaintext per ADR-007)"
+          },
+          "apikey": {
+            "type": "string",
+            "description": "API key value (plaintext per ADR-007)"
+          },
+          "documentation": {
+            "type": "string",
+            "description": "Public docs URL for the upstream API"
+          },
+          "loggingConfig": {
+            "type": "object",
+            "description": "Per-source override for CallLog retention windows"
+          },
+          "oas": {
+            "type": "string",
+            "description": "OpenAPI spec URL or inline reference for the upstream"
+          },
+          "paths": {
+            "type": "object",
+            "description": "Per-path overrides (auth, headers, transformations)"
+          },
+          "headers": {
+            "type": "object",
+            "description": "Default headers applied to outbound requests"
+          },
+          "translationConfig": {
+            "type": "object",
+            "description": "Mapping/translation hooks applied to outbound payloads"
+          },
+          "configuration": {
+            "type": "object",
+            "description": "Free-form structured config (provider-specific)"
+          },
+          "endpointsConfig": {
+            "type": "object",
+            "description": "Per-endpoint overrides nested under this source"
+          },
+          "status": {
+            "type": "string",
+            "description": "Operational status (ok, degraded, error, disabled)"
+          },
+          "logRetention": {
+            "type": "integer",
+            "description": "Per-source override for success log retention. Stored in seconds (legacy Source.php convention); JobService DEFAULT_SUCCESS_LOG_RETENTION is 3600000 ms = 3600 s. See chain-B Note on retention unit conversion."
+          },
+          "errorRetention": {
+            "type": "integer",
+            "description": "Per-source override for error log retention. Stored in seconds; JobService DEFAULT_ERROR_LOG_RETENTION is 2592000000 ms = 2592000 s = P30D."
+          },
+          "objectCount": {
+            "type": "integer",
+            "description": "Cached count of objects in this source's last sync"
+          },
+          "test": {
+            "type": "boolean",
+            "description": "Whether to run in test/dry-run mode",
+            "default": false
+          },
+          "rateLimitLimit": {
+            "type": "integer",
+            "description": "Rate limit cap (requests per window)"
+          },
+          "rateLimitRemaining": {
+            "type": "integer",
+            "description": "Remaining requests in the current window"
+          },
+          "rateLimitReset": {
+            "type": "integer",
+            "description": "Unix timestamp when the rate-limit window resets"
+          },
+          "rateLimitWindow": {
+            "type": "integer",
+            "description": "Rate-limit window size in seconds"
+          },
+          "lastCall": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the most recent outbound call"
+          },
+          "lastSync": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the most recent successful sync"
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed; mirrors `created` for legacy compatibility"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed; mirrors `updated` for legacy compatibility"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Configuration profile slugs this source participates in"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Machine-readable identifier for cross-environment portability (local ADR-015)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -107,19 +257,60 @@
         "version": "1.0.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID assigned by OpenRegister" },
-          "name": { "type": "string", "description": "Consumer name", "maxLength": 255 },
-          "description": { "type": "string", "description": "Free-form description" },
-          "domains": { "type": "array", "items": { "type": "string" }, "description": "Allowed source domains (CIDR-style or hostname patterns)" },
-          "ips": { "type": "array", "items": { "type": "string" }, "description": "Allowed source IP addresses" },
-          "authorizationType": { "type": "string", "description": "Auth strategy used by this consumer" },
-          "authorizationConfiguration": { "type": "object", "description": "Provider-specific auth config (plaintext per ADR-007)" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "userId": { "type": "string", "description": "Nextcloud user id that created the consumer (null for system-created)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister"
+          },
+          "name": {
+            "type": "string",
+            "description": "Consumer name",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description"
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Allowed source domains (CIDR-style or hostname patterns)"
+          },
+          "ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Allowed source IP addresses"
+          },
+          "authorizationType": {
+            "type": "string",
+            "description": "Auth strategy used by this consumer"
+          },
+          "authorizationConfiguration": {
+            "type": "object",
+            "description": "Provider-specific auth config (plaintext per ADR-007)"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id that created the consumer (null for system-created)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -132,28 +323,104 @@
         "version": "1.0.0",
         "summary": "An inbound API endpoint mapping to a target (register/schema, api, job, synchronization)",
         "description": "An Endpoint exposes openconnector's inbound surface. Each endpoint has a polymorphic targetType/targetId pair (see local ADR-008) and routes incoming requests to the right kernel. Supports per-endpoint input/output mapping + rule pipelines.",
-        "required": ["name", "endpoint", "method"],
+        "required": [
+          "name",
+          "endpoint",
+          "method"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "name": { "type": "string", "description": "Endpoint name" },
-          "description": { "type": "string", "description": "Free-form description" },
-          "reference": { "type": "string", "description": "Cross-environment reference (slug)" },
-          "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
-          "endpoint": { "type": "string", "description": "Path pattern (with optional `{param}` placeholders)" },
-          "endpointArray": { "type": "array", "items": { "type": "string" }, "description": "Parsed endpoint path segments" },
-          "endpointRegex": { "type": "string", "description": "Compiled regex used by the dispatch router" },
-          "method": { "type": "string", "description": "HTTP method (GET/POST/PUT/PATCH/DELETE)" },
-          "targetType": { "type": "string", "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`. See local ADR-008." },
-          "targetId": { "type": "string", "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID (post-chain-B); for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID. See local ADR-008 + chain-B sourceId overload documentation." },
-          "conditions": { "type": "array", "items": { "type": "object" }, "description": "Conditional pre-dispatch rules" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "inputMapping": { "type": "string", "description": "Mapping slug applied to incoming request payload" },
-          "outputMapping": { "type": "string", "description": "Mapping slug applied to outgoing response payload" },
-          "rules": { "type": "array", "items": { "type": "string" }, "description": "Ordered list of Rule slugs applied to this endpoint" },
-          "configurations": { "type": "array", "items": { "type": "string" }, "description": "Configuration profile slugs this endpoint participates in" },
-          "slug": { "type": "string", "description": "Machine-readable identifier (local ADR-015)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Endpoint name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver",
+            "default": "1.0.0"
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "Path pattern (with optional `{param}` placeholders)"
+          },
+          "endpointArray": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Parsed endpoint path segments"
+          },
+          "endpointRegex": {
+            "type": "string",
+            "description": "Compiled regex used by the dispatch router"
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method (GET/POST/PUT/PATCH/DELETE)"
+          },
+          "targetType": {
+            "type": "string",
+            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`. See local ADR-008."
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID (post-chain-B); for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID. See local ADR-008 + chain-B sourceId overload documentation."
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Conditional pre-dispatch rules"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "inputMapping": {
+            "type": "string",
+            "description": "Mapping slug applied to incoming request payload"
+          },
+          "outputMapping": {
+            "type": "string",
+            "description": "Mapping slug applied to outgoing response payload"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ordered list of Rule slugs applied to this endpoint"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Configuration profile slugs this endpoint participates in"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Machine-readable identifier (local ADR-015)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -166,23 +433,73 @@
         "version": "1.0.0",
         "summary": "A thing-that-happened, in CloudEvents shape",
         "description": "An Event is a CloudEvents v1.0-shaped record (source/type/specversion/time/data). Events are matched against EventSubscriptions to produce EventMessages. See local ADR-013 for the event-bus model.",
-        "required": ["source", "type"],
+        "required": [
+          "source",
+          "type"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID (CloudEvents `id` attribute)" },
-          "source": { "type": "string", "description": "CloudEvents `source` attribute — the producing component identity" },
-          "type": { "type": "string", "description": "CloudEvents `type` attribute (event-type slug, e.g. `org.openconnector.source.created`)" },
-          "specversion": { "type": "string", "description": "CloudEvents spec version", "default": "1.0" },
-          "time": { "type": "string", "format": "date-time", "description": "CloudEvents `time` attribute — when the event happened" },
-          "datacontenttype": { "type": "string", "description": "CloudEvents `datacontenttype` (e.g. `application/json`)" },
-          "dataschema": { "type": "string", "description": "CloudEvents `dataschema` URI" },
-          "subject": { "type": "string", "description": "CloudEvents `subject` (optional sub-context within source)" },
-          "data": { "type": "object", "description": "CloudEvents `data` payload" },
-          "userId": { "type": "string", "description": "Nextcloud user id that produced this event (null for system-produced)" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "processed": { "type": "string", "format": "date-time", "description": "Timestamp when EventService finished fan-out for this event" },
-          "status": { "type": "string", "description": "Processing status (pending, processed, failed)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID (CloudEvents `id` attribute)"
+          },
+          "source": {
+            "type": "string",
+            "description": "CloudEvents `source` attribute — the producing component identity"
+          },
+          "type": {
+            "type": "string",
+            "description": "CloudEvents `type` attribute (event-type slug, e.g. `org.openconnector.source.created`)"
+          },
+          "specversion": {
+            "type": "string",
+            "description": "CloudEvents spec version",
+            "default": "1.0"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "CloudEvents `time` attribute — when the event happened"
+          },
+          "datacontenttype": {
+            "type": "string",
+            "description": "CloudEvents `datacontenttype` (e.g. `application/json`)"
+          },
+          "dataschema": {
+            "type": "string",
+            "description": "CloudEvents `dataschema` URI"
+          },
+          "subject": {
+            "type": "string",
+            "description": "CloudEvents `subject` (optional sub-context within source)"
+          },
+          "data": {
+            "type": "object",
+            "description": "CloudEvents `data` payload"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id that produced this event (null for system-produced)"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "processed": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when EventService finished fan-out for this event"
+          },
+          "status": {
+            "type": "string",
+            "description": "Processing status (pending, processed, failed)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -192,11 +509,24 @@
         "slug": "event_message",
         "x-openregister-notifications": {
           "delivery-retries-exhausted": {
-            "trigger": {"type": "threshold", "aggregation": "max", "field": "retryCount", "op": "gte", "value": 5},
+            "trigger": {
+              "type": "threshold",
+              "aggregation": "max",
+              "field": "retryCount",
+              "op": "gte",
+              "value": 5
+            },
             "enabled": true,
-            "channels": ["nc-notification"],
+            "channels": [
+              "nc-notification"
+            ],
             "recipients": [
-              {"kind": "groups", "groups": ["openconnector-ops"]}
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
             ],
             "subject": {
               "nl": "Event-bezorging faalt herhaaldelijk (retry {{retryCount}})",
@@ -212,21 +542,80 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "eventId": { "type": "integer", "description": "Legacy integer FK to event (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)" },
-          "event": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/event", "x-openregister-onDelete": "CASCADE", "description": "FK to source event (UUID; many-to-one; onDelete=CASCADE — when the source Event is destroyed, all delivery records cascade-delete with it)" },
-          "consumerId": { "type": "integer", "description": "Legacy integer FK to consumer (kept during transition per chain-A REQ-A-008)" },
-          "consumer": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/consumer", "x-openregister-onDelete": "SET NULL", "description": "FK to subscriber consumer (UUID; many-to-one; onDelete=SET NULL — when a Consumer is destroyed, delivery records remain for audit but lose their consumer pointer)" },
-          "subscriptionId": { "type": "integer", "description": "Legacy integer FK to event_subscription (kept during transition per chain-A REQ-A-008)" },
-          "subscription": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/event_subscription", "x-openregister-onDelete": "CASCADE", "description": "FK to matching subscription (UUID; many-to-one; onDelete=CASCADE — when a Subscription is destroyed, its in-flight delivery records cascade-delete)" },
-          "status": { "type": "string", "description": "Delivery state (pending, delivered, failed, abandoned)" },
-          "payload": { "type": "object", "description": "Materialised payload sent to the consumer (may differ from raw event data after mapping)" },
-          "lastResponse": { "type": "object", "description": "Most recent response from the consumer (status, headers, body)" },
-          "retryCount": { "type": "integer", "description": "Number of delivery attempts made", "default": 0 },
-          "lastAttempt": { "type": "string", "format": "date-time", "description": "Timestamp of most recent delivery attempt" },
-          "nextAttempt": { "type": "string", "format": "date-time", "description": "Scheduled time of next retry (null when terminal state reached)" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "eventId": {
+            "type": "integer",
+            "description": "Legacy integer FK to event (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)"
+          },
+          "event": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/event",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to source event (UUID; many-to-one; onDelete=CASCADE — when the source Event is destroyed, all delivery records cascade-delete with it)"
+          },
+          "consumerId": {
+            "type": "integer",
+            "description": "Legacy integer FK to consumer (kept during transition per chain-A REQ-A-008)"
+          },
+          "consumer": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/consumer",
+            "x-openregister-onDelete": "SET NULL",
+            "description": "FK to subscriber consumer (UUID; many-to-one; onDelete=SET NULL — when a Consumer is destroyed, delivery records remain for audit but lose their consumer pointer)"
+          },
+          "subscriptionId": {
+            "type": "integer",
+            "description": "Legacy integer FK to event_subscription (kept during transition per chain-A REQ-A-008)"
+          },
+          "subscription": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/event_subscription",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to matching subscription (UUID; many-to-one; onDelete=CASCADE — when a Subscription is destroyed, its in-flight delivery records cascade-delete)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Delivery state (pending, delivered, failed, abandoned)"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Materialised payload sent to the consumer (may differ from raw event data after mapping)"
+          },
+          "lastResponse": {
+            "type": "object",
+            "description": "Most recent response from the consumer (status, headers, body)"
+          },
+          "retryCount": {
+            "type": "integer",
+            "description": "Number of delivery attempts made",
+            "default": 0
+          },
+          "lastAttempt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of most recent delivery attempt"
+          },
+          "nextAttempt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled time of next retry (null when terminal state reached)"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -242,21 +631,72 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "reference": { "type": "string", "description": "Cross-environment reference (slug)" },
-          "version": { "type": "string", "description": "Semver of subscription configuration", "default": "1.0.0" },
-          "source": { "type": "string", "description": "CloudEvents source filter (exact match)" },
-          "types": { "type": "array", "items": { "type": "string" }, "description": "List of CloudEvents type filters (any-of match)" },
-          "config": { "type": "object", "description": "Free-form subscription configuration" },
-          "filters": { "type": "object", "description": "CloudEvents Subscriptions API filters block" },
-          "sink": { "type": "string", "description": "Delivery target URL (or AMQP/MQTT endpoint)" },
-          "protocol": { "type": "string", "description": "Delivery protocol (HTTP, AMQP, MQTT, NATS)" },
-          "protocolSettings": { "type": "object", "description": "Protocol-specific delivery settings" },
-          "style": { "type": "string", "description": "Delivery style (push, pull)" },
-          "status": { "type": "string", "description": "Subscription status (active, paused, expired)" },
-          "userId": { "type": "string", "description": "Nextcloud user id that owns the subscription" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver of subscription configuration",
+            "default": "1.0.0"
+          },
+          "source": {
+            "type": "string",
+            "description": "CloudEvents source filter (exact match)"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of CloudEvents type filters (any-of match)"
+          },
+          "config": {
+            "type": "object",
+            "description": "Free-form subscription configuration"
+          },
+          "filters": {
+            "type": "object",
+            "description": "CloudEvents Subscriptions API filters block"
+          },
+          "sink": {
+            "type": "string",
+            "description": "Delivery target URL (or AMQP/MQTT endpoint)"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Delivery protocol (HTTP, AMQP, MQTT, NATS)"
+          },
+          "protocolSettings": {
+            "type": "object",
+            "description": "Protocol-specific delivery settings"
+          },
+          "style": {
+            "type": "string",
+            "description": "Delivery style (push, pull)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Subscription status (active, paused, expired)"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id that owns the subscription"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -266,12 +706,35 @@
         "slug": "job",
         "x-openregister-notifications": {
           "job-overdue": {
-            "trigger": {"type": "scheduled", "intervalSec": 3600, "filter": {"isEnabled": {"op": "equals", "value": true}, "nextRun": {"op": "lt", "value": "now"}}},
+            "trigger": {
+              "type": "scheduled",
+              "intervalSec": 3600,
+              "filter": {
+                "isEnabled": {
+                  "op": "equals",
+                  "value": true
+                },
+                "nextRun": {
+                  "op": "lt",
+                  "value": "now"
+                }
+              }
+            },
             "enabled": false,
-            "channels": ["nc-notification"],
+            "channels": [
+              "nc-notification"
+            ],
             "recipients": [
-              {"kind": "field", "field": "userId"},
-              {"kind": "groups", "groups": ["openconnector-ops"]}
+              {
+                "kind": "field",
+                "field": "userId"
+              },
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
             ],
             "subject": {
               "nl": "Geplande job loopt achter: {{name}}",
@@ -284,34 +747,125 @@
         "version": "1.0.0",
         "summary": "A scheduled background task",
         "description": "A Job is a scheduled task discovered by Nextcloud's `\\OCP\\BackgroundJob\\TimedJob` subclass (JobTask). See local ADR-014 for the cron/job execution model.",
-        "required": ["name", "jobClass"],
+        "required": [
+          "name",
+          "jobClass"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "name": { "type": "string", "description": "Job name" },
-          "description": { "type": "string", "description": "Free-form description" },
-          "reference": { "type": "string", "description": "Cross-environment reference (slug)" },
-          "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
-          "jobClass": { "type": "string", "description": "PHP class name implementing the job logic" },
-          "arguments": { "type": "object", "description": "Arguments passed to the job class at invocation" },
-          "interval": { "type": "integer", "description": "Cron interval in seconds between runs" },
-          "executionTime": { "type": "integer", "description": "Last execution duration in milliseconds (observability)" },
-          "timeSensitive": { "type": "boolean", "description": "Whether this job has a hard scheduling window", "default": false },
-          "allowParallelRuns": { "type": "boolean", "description": "Whether multiple instances may run concurrently", "default": false },
-          "isEnabled": { "type": "boolean", "description": "Whether this job is active", "default": true },
-          "singleRun": { "type": "boolean", "description": "Whether this is a one-shot job (auto-disabled after success)", "default": false },
-          "scheduleAfter": { "type": "string", "format": "date-time", "description": "Earliest run time (delayed-start jobs)" },
-          "userId": { "type": "string", "description": "Nextcloud user id that owns the job (null for system jobs)" },
-          "jobListId": { "type": "string", "description": "Nextcloud job-list reference for cross-system tracking" },
-          "logRetention": { "type": "integer", "description": "Per-job override for success log retention (seconds)" },
-          "errorRetention": { "type": "integer", "description": "Per-job override for error log retention (seconds)" },
-          "lastRun": { "type": "string", "format": "date-time", "description": "Timestamp of most recent execution" },
-          "nextRun": { "type": "string", "format": "date-time", "description": "Scheduled time of next execution" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "configurations": { "type": "array", "items": { "type": "string" }, "description": "Configuration profile slugs this job participates in" },
-          "status": { "type": "string", "description": "Operational status (idle, running, error, disabled)" },
-          "slug": { "type": "string", "description": "Machine-readable identifier (local ADR-015)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Job name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver",
+            "default": "1.0.0"
+          },
+          "jobClass": {
+            "type": "string",
+            "description": "PHP class name implementing the job logic"
+          },
+          "arguments": {
+            "type": "object",
+            "description": "Arguments passed to the job class at invocation"
+          },
+          "interval": {
+            "type": "integer",
+            "description": "Cron interval in seconds between runs"
+          },
+          "executionTime": {
+            "type": "integer",
+            "description": "Last execution duration in milliseconds (observability)"
+          },
+          "timeSensitive": {
+            "type": "boolean",
+            "description": "Whether this job has a hard scheduling window",
+            "default": false
+          },
+          "allowParallelRuns": {
+            "type": "boolean",
+            "description": "Whether multiple instances may run concurrently",
+            "default": false
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether this job is active",
+            "default": true
+          },
+          "singleRun": {
+            "type": "boolean",
+            "description": "Whether this is a one-shot job (auto-disabled after success)",
+            "default": false
+          },
+          "scheduleAfter": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Earliest run time (delayed-start jobs)"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id that owns the job (null for system jobs)"
+          },
+          "jobListId": {
+            "type": "string",
+            "description": "Nextcloud job-list reference for cross-system tracking"
+          },
+          "logRetention": {
+            "type": "integer",
+            "description": "Per-job override for success log retention (seconds)"
+          },
+          "errorRetention": {
+            "type": "integer",
+            "description": "Per-job override for error log retention (seconds)"
+          },
+          "lastRun": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of most recent execution"
+          },
+          "nextRun": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled time of next execution"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Configuration profile slugs this job participates in"
+          },
+          "status": {
+            "type": "string",
+            "description": "Operational status (idle, running, error, disabled)"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Machine-readable identifier (local ADR-015)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -324,22 +878,73 @@
         "version": "1.0.0",
         "summary": "A transformation rule from one schema to another",
         "description": "A Mapping defines a transformation between two object shapes. Used by Endpoints (input/output mapping), Synchronizations (source-target mapping), and Rules. See local ADR-002.",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "reference": { "type": "string", "description": "Cross-environment reference (slug)" },
-          "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
-          "name": { "type": "string", "description": "Mapping name" },
-          "description": { "type": "string", "description": "Free-form description" },
-          "mapping": { "type": "object", "description": "The field-to-field transformation rules (Twig templates or property paths)" },
-          "unset": { "type": "array", "items": { "type": "string" }, "description": "Field paths to remove from the output" },
-          "cast": { "type": "object", "description": "Per-field type-cast directives (e.g. string→int)" },
-          "passThrough": { "type": "boolean", "description": "Whether unmapped fields flow through to the output", "default": true },
-          "dateCreated": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp (legacy column name)" },
-          "dateModified": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp (legacy column name)" },
-          "configurations": { "type": "array", "items": { "type": "string" }, "description": "Configuration profile slugs" },
-          "slug": { "type": "string", "description": "Machine-readable identifier (local ADR-015)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver",
+            "default": "1.0.0"
+          },
+          "name": {
+            "type": "string",
+            "description": "Mapping name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description"
+          },
+          "mapping": {
+            "type": "object",
+            "description": "The field-to-field transformation rules (Twig templates or property paths)"
+          },
+          "unset": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Field paths to remove from the output"
+          },
+          "cast": {
+            "type": "object",
+            "description": "Per-field type-cast directives (e.g. string→int)"
+          },
+          "passThrough": {
+            "type": "boolean",
+            "description": "Whether unmapped fields flow through to the output",
+            "default": true
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp (legacy column name)"
+          },
+          "dateModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp (legacy column name)"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Configuration profile slugs"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Machine-readable identifier (local ADR-015)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -352,24 +957,79 @@
         "version": "1.1.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
-        "required": ["name", "action"],
+        "required": [
+          "name",
+          "action"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "name": { "type": "string", "description": "Rule name" },
-          "description": { "type": "string", "description": "Free-form description" },
-          "reference": { "type": "string", "description": "Cross-environment reference (slug)" },
-          "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
-          "action": { "type": "string", "description": "Action verb (e.g. `error`, `replace`, `appendHeader`)" },
-          "timing": { "type": "string", "description": "Pipeline timing slot (pre-request, post-request, pre-response, post-response)" },
-          "conditions": { "type": "object", "description": "JsonLogic expression tree (canonical top-level object shape, e.g. {\"and\": [{\"var\": [\"user.email\"]}]}). Backend evaluator (jwadhams/json-logic-php) accepts either object or array; the schema mandates object to match what the visual builder emits." },
-          "type": { "type": "string", "description": "Rule kind (authorization, transformation, validation, audit)" },
-          "configuration": { "type": "object", "description": "Action-specific configuration" },
-          "order": { "type": "integer", "description": "Execution order within its timing slot", "default": 100 },
-          "configurations": { "type": "array", "items": { "type": "string" }, "description": "Configuration profile slugs" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "slug": { "type": "string", "description": "Machine-readable identifier (local ADR-015)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Rule name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver",
+            "default": "1.0.0"
+          },
+          "action": {
+            "type": "string",
+            "description": "Action verb (e.g. `error`, `replace`, `appendHeader`)"
+          },
+          "timing": {
+            "type": "string",
+            "description": "Pipeline timing slot (pre-request, post-request, pre-response, post-response)"
+          },
+          "conditions": {
+            "type": "object",
+            "description": "JsonLogic expression tree (canonical top-level object shape, e.g. {\"and\": [{\"var\": [\"user.email\"]}]}). Backend evaluator (jwadhams/json-logic-php) accepts either object or array; the schema mandates object to match what the visual builder emits."
+          },
+          "type": {
+            "type": "string",
+            "description": "Rule kind (authorization, transformation, validation, audit)"
+          },
+          "configuration": {
+            "type": "object",
+            "description": "Action-specific configuration"
+          },
+          "order": {
+            "type": "integer",
+            "description": "Execution order within its timing slot",
+            "default": 100
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Configuration profile slugs"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Machine-readable identifier (local ADR-015)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -382,40 +1042,157 @@
         "version": "1.0.0",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "name": { "type": "string", "description": "Synchronization name" },
-          "description": { "type": "string", "description": "Free-form description" },
-          "reference": { "type": "string", "description": "Cross-environment reference (slug)" },
-          "version": { "type": "string", "description": "Semver", "default": "1.0.0" },
-          "sourceId": { "type": "string", "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = post-chain-B canonical OR identifier. Chain B's migrator branches on the format to translate (1) to (3). Cross-ref: chain-B REQ on sourceId 3-format branching." },
-          "sourceType": { "type": "string", "description": "Source kind discriminator (api, register/schema, file)" },
-          "sourceHash": { "type": "string", "description": "Hash of last-known source state (for change detection)" },
-          "sourceHashMapping": { "type": "string", "description": "Mapping slug used to compute the source hash" },
-          "sourceTargetMapping": { "type": "string", "description": "Mapping slug for source-to-target field transformation" },
-          "sourceConfig": { "type": "object", "description": "Source-specific configuration overrides" },
-          "sourceLastChanged": { "type": "string", "format": "date-time", "description": "Most recent change timestamp from the source side" },
-          "sourceLastChecked": { "type": "string", "format": "date-time", "description": "Most recent successful check of the source" },
-          "sourceLastSynced": { "type": "string", "format": "date-time", "description": "Most recent successful sync from the source" },
-          "currentPage": { "type": "integer", "description": "Pagination cursor for in-flight sync passes", "default": 1 },
-          "targetId": { "type": "string", "description": "Polymorphic target identifier. Same overloaded format as `sourceId`." },
-          "targetType": { "type": "string", "description": "Target kind discriminator (api, register/schema, file)" },
-          "targetHash": { "type": "string", "description": "Hash of last-known target state" },
-          "targetSourceMapping": { "type": "string", "description": "Mapping slug for target-to-source reverse transformation (bidirectional sync)" },
-          "targetConfig": { "type": "object", "description": "Target-specific configuration overrides" },
-          "targetLastChanged": { "type": "string", "format": "date-time", "description": "Most recent change timestamp from the target side" },
-          "targetLastChecked": { "type": "string", "format": "date-time", "description": "Most recent successful check of the target" },
-          "targetLastSynced": { "type": "string", "format": "date-time", "description": "Most recent successful sync to the target" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "conditions": { "type": "array", "items": { "type": "object" }, "description": "Per-pass conditional filters" },
-          "followUps": { "type": "array", "items": { "type": "string" }, "description": "Synchronization slugs to trigger after this one completes" },
-          "actions": { "type": "array", "items": { "type": "string" }, "description": "Rule slugs applied during sync" },
-          "configurations": { "type": "array", "items": { "type": "string" }, "description": "Configuration profile slugs" },
-          "status": { "type": "string", "description": "Operational status (idle, syncing, error, disabled)" },
-          "slug": { "type": "string", "description": "Machine-readable identifier (local ADR-015)" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Synchronization name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Cross-environment reference (slug)"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver",
+            "default": "1.0.0"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = post-chain-B canonical OR identifier. Chain B's migrator branches on the format to translate (1) to (3). Cross-ref: chain-B REQ on sourceId 3-format branching."
+          },
+          "sourceType": {
+            "type": "string",
+            "description": "Source kind discriminator (api, register/schema, file)"
+          },
+          "sourceHash": {
+            "type": "string",
+            "description": "Hash of last-known source state (for change detection)"
+          },
+          "sourceHashMapping": {
+            "type": "string",
+            "description": "Mapping slug used to compute the source hash"
+          },
+          "sourceTargetMapping": {
+            "type": "string",
+            "description": "Mapping slug for source-to-target field transformation"
+          },
+          "sourceConfig": {
+            "type": "object",
+            "description": "Source-specific configuration overrides"
+          },
+          "sourceLastChanged": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent change timestamp from the source side"
+          },
+          "sourceLastChecked": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful check of the source"
+          },
+          "sourceLastSynced": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful sync from the source"
+          },
+          "currentPage": {
+            "type": "integer",
+            "description": "Pagination cursor for in-flight sync passes",
+            "default": 1
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Polymorphic target identifier. Same overloaded format as `sourceId`."
+          },
+          "targetType": {
+            "type": "string",
+            "description": "Target kind discriminator (api, register/schema, file)"
+          },
+          "targetHash": {
+            "type": "string",
+            "description": "Hash of last-known target state"
+          },
+          "targetSourceMapping": {
+            "type": "string",
+            "description": "Mapping slug for target-to-source reverse transformation (bidirectional sync)"
+          },
+          "targetConfig": {
+            "type": "object",
+            "description": "Target-specific configuration overrides"
+          },
+          "targetLastChanged": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent change timestamp from the target side"
+          },
+          "targetLastChecked": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful check of the target"
+          },
+          "targetLastSynced": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful sync to the target"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Per-pass conditional filters"
+          },
+          "followUps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Synchronization slugs to trigger after this one completes"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Rule slugs applied during sync"
+          },
+          "configurations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Configuration profile slugs"
+          },
+          "status": {
+            "type": "string",
+            "description": "Operational status (idle, syncing, error, disabled)"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Machine-readable identifier (local ADR-015)"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -431,25 +1208,93 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "version": { "type": "string", "description": "Semver of the contract record", "default": "1.0.0" },
-          "synchronizationId": { "type": "string", "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)" },
-          "synchronization": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization", "description": "FK to parent Synchronization (UUID; many-to-one)" },
-          "originId": { "type": "string", "description": "Origin-side object identifier (UUID or external system id)" },
-          "originHash": { "type": "string", "description": "Hash of the origin-side object payload at last sync" },
-          "sourceLastChanged": { "type": "string", "format": "date-time", "description": "Most recent change timestamp on the origin side" },
-          "sourceLastChecked": { "type": "string", "format": "date-time", "description": "Most recent successful check of the origin object" },
-          "sourceLastSynced": { "type": "string", "format": "date-time", "description": "Most recent successful sync from origin" },
-          "targetId": { "type": "string", "description": "Target-side object identifier" },
-          "targetHash": { "type": "string", "description": "Hash of the target-side object payload at last sync" },
-          "targetLastChanged": { "type": "string", "format": "date-time", "description": "Most recent change timestamp on the target side" },
-          "targetLastChecked": { "type": "string", "format": "date-time", "description": "Most recent successful check of the target object" },
-          "targetLastSynced": { "type": "string", "format": "date-time", "description": "Most recent successful sync to target" },
-          "targetLastAction": { "type": "string", "description": "Most recent action applied to the target (created, updated, deleted)" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" },
-          "sourceId": { "type": "string", "description": "Deprecated alias for `originId` — retained for backwards compatibility per chain-A REQ-A-008" },
-          "sourceHash": { "type": "string", "description": "Deprecated alias for `originHash` — retained for backwards compatibility per chain-A REQ-A-008" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "version": {
+            "type": "string",
+            "description": "Semver of the contract record",
+            "default": "1.0.0"
+          },
+          "synchronizationId": {
+            "type": "string",
+            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)"
+          },
+          "synchronization": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "description": "FK to parent Synchronization (UUID; many-to-one)"
+          },
+          "originId": {
+            "type": "string",
+            "description": "Origin-side object identifier (UUID or external system id)"
+          },
+          "originHash": {
+            "type": "string",
+            "description": "Hash of the origin-side object payload at last sync"
+          },
+          "sourceLastChanged": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent change timestamp on the origin side"
+          },
+          "sourceLastChecked": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful check of the origin object"
+          },
+          "sourceLastSynced": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful sync from origin"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Target-side object identifier"
+          },
+          "targetHash": {
+            "type": "string",
+            "description": "Hash of the target-side object payload at last sync"
+          },
+          "targetLastChanged": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent change timestamp on the target side"
+          },
+          "targetLastChecked": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful check of the target object"
+          },
+          "targetLastSynced": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Most recent successful sync to target"
+          },
+          "targetLastAction": {
+            "type": "string",
+            "description": "Most recent action applied to the target (created, updated, deleted)"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "Deprecated alias for `originId` — retained for backwards compatibility per chain-A REQ-A-008"
+          },
+          "sourceHash": {
+            "type": "string",
+            "description": "Deprecated alias for `originHash` — retained for backwards compatibility per chain-A REQ-A-008"
+          }
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -459,12 +1304,30 @@
         "slug": "call_log",
         "x-openregister-notifications": {
           "call-failed": {
-            "trigger": {"type": "created", "filter": {"statusCode": {"op": "gte", "value": 400}}},
+            "trigger": {
+              "type": "created",
+              "filter": {
+                "statusCode": {
+                  "op": "gte",
+                  "value": 400
+                }
+              }
+            },
             "enabled": true,
-            "channels": ["nc-notification"],
+            "channels": [
+              "nc-notification"
+            ],
             "recipients": [
-              {"kind": "field", "field": "userId"},
-              {"kind": "groups", "groups": ["openconnector-ops"]}
+              {
+                "kind": "field",
+                "field": "userId"
+              },
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
             ],
             "subject": {
               "nl": "Mislukte API-aanroep ({{statusCode}}) op bron {{sourceId}}",
@@ -480,29 +1343,90 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "statusCode": { "type": "integer", "description": "HTTP status code returned by the upstream" },
-          "statusMessage": { "type": "string", "description": "Reason phrase or short error description" },
-          "request": { "type": "object", "description": "Captured outbound request (method, URL, headers, body)" },
-          "response": { "type": "object", "description": "Captured upstream response (status, headers, body)" },
-          "sourceId": { "type": "integer", "description": "Legacy integer FK to source (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)" },
-          "source": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/source", "x-openregister-onDelete": "SET NULL", "description": "FK to originating Source (UUID; many-to-one; onDelete=SET NULL — when a Source is destroyed, its CallLog rows remain for audit but lose their source pointer)" },
-          "actionId": { "type": "integer", "description": "Polymorphic integer FK to the action that triggered this call. Target schema unresolved — see chain-B DEFERRED Q2." },
-          "synchronizationId": { "type": "integer", "description": "Legacy integer FK to synchronization (kept during transition per chain-A REQ-A-008)" },
-          "synchronization": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization", "x-openregister-onDelete": "SET NULL", "description": "FK to originating Synchronization (UUID; many-to-one; onDelete=SET NULL — when a Synchronization is destroyed, its CallLog rows remain for audit)" },
-          "userId": { "type": "string", "description": "Nextcloud user id at the time of the call (null for system calls)" },
-          "sessionId": { "type": "string", "description": "Session token for correlating multi-call traces" },
-          "expires": { "type": "string", "format": "date-time", "description": "Computed retention horizon — when this log row becomes eligible for archival" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "size": { "type": "integer", "description": "Combined request+response byte size for storage accounting" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code returned by the upstream"
+          },
+          "statusMessage": {
+            "type": "string",
+            "description": "Reason phrase or short error description"
+          },
+          "request": {
+            "type": "object",
+            "description": "Captured outbound request (method, URL, headers, body)"
+          },
+          "response": {
+            "type": "object",
+            "description": "Captured upstream response (status, headers, body)"
+          },
+          "sourceId": {
+            "type": "integer",
+            "description": "Legacy integer FK to source (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)"
+          },
+          "source": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/source",
+            "x-openregister-onDelete": "SET NULL",
+            "description": "FK to originating Source (UUID; many-to-one; onDelete=SET NULL — when a Source is destroyed, its CallLog rows remain for audit but lose their source pointer)"
+          },
+          "actionId": {
+            "type": "integer",
+            "description": "Polymorphic integer FK to the action that triggered this call. Target schema unresolved — see chain-B DEFERRED Q2."
+          },
+          "synchronizationId": {
+            "type": "integer",
+            "description": "Legacy integer FK to synchronization (kept during transition per chain-A REQ-A-008)"
+          },
+          "synchronization": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "x-openregister-onDelete": "SET NULL",
+            "description": "FK to originating Synchronization (UUID; many-to-one; onDelete=SET NULL — when a Synchronization is destroyed, its CallLog rows remain for audit)"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id at the time of the call (null for system calls)"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session token for correlating multi-call traces"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Computed retention horizon — when this log row becomes eligible for archival"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Combined request+response byte size for storage accounting"
+          }
         },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
             "default": "P30D",
             "rules": [
-              { "condition": "statusCode < 400", "retention": "PT1H", "reason": "Successful CallLogs retained for one hour for short-term observability — matches JobService::DEFAULT_SUCCESS_LOG_RETENTION (3600 s)." },
-              { "condition": "statusCode >= 400", "retention": "P30D", "reason": "Error CallLogs retained for 30 days for debugging + incident review — matches JobService::DEFAULT_ERROR_LOG_RETENTION (2592000 s)." }
+              {
+                "condition": "statusCode < 400",
+                "retention": "PT1H",
+                "reason": "Successful CallLogs retained for one hour for short-term observability — matches JobService::DEFAULT_SUCCESS_LOG_RETENTION (3600 s)."
+              },
+              {
+                "condition": "statusCode >= 400",
+                "retention": "P30D",
+                "reason": "Error CallLogs retained for 30 days for debugging + incident review — matches JobService::DEFAULT_ERROR_LOG_RETENTION (2592000 s)."
+              }
             ]
           }
         },
@@ -513,12 +1437,30 @@
         "slug": "job_log",
         "x-openregister-notifications": {
           "job-error": {
-            "trigger": {"type": "created", "filter": {"level": {"op": "equals", "value": "ERROR"}}},
+            "trigger": {
+              "type": "created",
+              "filter": {
+                "level": {
+                  "op": "equals",
+                  "value": "ERROR"
+                }
+              }
+            },
             "enabled": true,
-            "channels": ["nc-notification"],
+            "channels": [
+              "nc-notification"
+            ],
             "recipients": [
-              {"kind": "field", "field": "userId"},
-              {"kind": "groups", "groups": ["openconnector-ops"]}
+              {
+                "kind": "field",
+                "field": "userId"
+              },
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
             ],
             "subject": {
               "nl": "Job-fout: {{message}}",
@@ -534,31 +1476,96 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "level": { "type": "string", "description": "Log level (info, warning, error)" },
-          "message": { "type": "string", "description": "Free-form log message" },
-          "jobId": { "type": "string", "description": "Legacy string FK to job (kept during transition per chain-A REQ-A-008)" },
-          "job": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/job", "description": "FK to executing Job (UUID; many-to-one)" },
-          "jobListId": { "type": "string", "description": "Nextcloud job-list reference" },
-          "jobClass": { "type": "string", "description": "PHP class that executed the job (denormalised for log archival)" },
-          "arguments": { "type": "object", "description": "Arguments passed at invocation (denormalised)" },
-          "executionTime": { "type": "integer", "description": "Execution duration in milliseconds" },
-          "userId": { "type": "string", "description": "Nextcloud user id (null for system jobs)" },
-          "sessionId": { "type": "string", "description": "Session token for multi-event correlation" },
-          "stackTrace": { "type": "object", "description": "Captured exception stack (when level=error)" },
-          "expires": { "type": "string", "format": "date-time", "description": "Computed retention horizon" },
-          "lastRun": { "type": "string", "format": "date-time", "description": "Job's lastRun snapshot at log time" },
-          "nextRun": { "type": "string", "format": "date-time", "description": "Job's nextRun snapshot at log time" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "size": { "type": "integer", "description": "Approximate row size for storage accounting" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "level": {
+            "type": "string",
+            "description": "Log level (info, warning, error)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Free-form log message"
+          },
+          "jobId": {
+            "type": "string",
+            "description": "Legacy string FK to job (kept during transition per chain-A REQ-A-008)"
+          },
+          "job": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/job",
+            "description": "FK to executing Job (UUID; many-to-one)"
+          },
+          "jobListId": {
+            "type": "string",
+            "description": "Nextcloud job-list reference"
+          },
+          "jobClass": {
+            "type": "string",
+            "description": "PHP class that executed the job (denormalised for log archival)"
+          },
+          "arguments": {
+            "type": "object",
+            "description": "Arguments passed at invocation (denormalised)"
+          },
+          "executionTime": {
+            "type": "integer",
+            "description": "Execution duration in milliseconds"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id (null for system jobs)"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session token for multi-event correlation"
+          },
+          "stackTrace": {
+            "type": "object",
+            "description": "Captured exception stack (when level=error)"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Computed retention horizon"
+          },
+          "lastRun": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job's lastRun snapshot at log time"
+          },
+          "nextRun": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Job's nextRun snapshot at log time"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Approximate row size for storage accounting"
+          }
         },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
             "default": "P30D",
             "rules": [
-              { "condition": "level == 'info'", "retention": "PT1H", "reason": "Info JobLogs retained for one hour — matches DEFAULT_SUCCESS_LOG_RETENTION." },
-              { "condition": "level == 'warning' || level == 'error'", "retention": "P30D", "reason": "Warning + error JobLogs retained for 30 days — matches DEFAULT_ERROR_LOG_RETENTION." }
+              {
+                "condition": "level == 'info'",
+                "retention": "PT1H",
+                "reason": "Info JobLogs retained for one hour — matches DEFAULT_SUCCESS_LOG_RETENTION."
+              },
+              {
+                "condition": "level == 'warning' || level == 'error'",
+                "retention": "P30D",
+                "reason": "Warning + error JobLogs retained for 30 days — matches DEFAULT_ERROR_LOG_RETENTION."
+              }
             ]
           }
         },
@@ -569,12 +1576,24 @@
         "slug": "synchronization_log",
         "x-openregister-notifications": {
           "sync-failed": {
-            "trigger": {"type": "created"},
+            "trigger": {
+              "type": "created"
+            },
             "enabled": false,
-            "channels": ["nc-notification"],
+            "channels": [
+              "nc-notification"
+            ],
             "recipients": [
-              {"kind": "field", "field": "userId"},
-              {"kind": "groups", "groups": ["openconnector-ops"]}
+              {
+                "kind": "field",
+                "field": "userId"
+              },
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
             ],
             "subject": {
               "nl": "Synchronisatie-uitkomst: {{message}}",
@@ -590,27 +1609,80 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "message": { "type": "string", "description": "Free-form log message" },
-          "synchronizationId": { "type": "string", "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)" },
-          "synchronization": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization", "description": "FK to executing Synchronization (UUID; many-to-one)" },
-          "result": { "type": "object", "description": "Sync pass result summary (counts, errors, durations)" },
-          "userId": { "type": "string", "description": "Nextcloud user id that triggered the sync (null for cron-triggered)" },
-          "sessionId": { "type": "string", "description": "Session token for multi-event correlation" },
-          "test": { "type": "boolean", "description": "Whether this entry comes from a dry-run/test execution", "default": false },
-          "force": { "type": "boolean", "description": "Whether this entry comes from a forced (skip-hash) execution", "default": false },
-          "executionTime": { "type": "integer", "description": "Execution duration in milliseconds" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "expires": { "type": "string", "format": "date-time", "description": "Computed retention horizon" },
-          "size": { "type": "integer", "description": "Approximate row size for storage accounting" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "message": {
+            "type": "string",
+            "description": "Free-form log message"
+          },
+          "synchronizationId": {
+            "type": "string",
+            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)"
+          },
+          "synchronization": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "description": "FK to executing Synchronization (UUID; many-to-one)"
+          },
+          "result": {
+            "type": "object",
+            "description": "Sync pass result summary (counts, errors, durations)"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id that triggered the sync (null for cron-triggered)"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session token for multi-event correlation"
+          },
+          "test": {
+            "type": "boolean",
+            "description": "Whether this entry comes from a dry-run/test execution",
+            "default": false
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Whether this entry comes from a forced (skip-hash) execution",
+            "default": false
+          },
+          "executionTime": {
+            "type": "integer",
+            "description": "Execution duration in milliseconds"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Computed retention horizon"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Approximate row size for storage accounting"
+          }
         },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
             "default": "P30D",
             "rules": [
-              { "condition": "result.errors == null || result.errors.length == 0", "retention": "PT1H", "reason": "Successful sync logs retained for one hour." },
-              { "condition": "result.errors.length > 0", "retention": "P30D", "reason": "Error sync logs retained for 30 days." }
+              {
+                "condition": "result.errors == null || result.errors.length == 0",
+                "retention": "PT1H",
+                "reason": "Successful sync logs retained for one hour."
+              },
+              {
+                "condition": "result.errors.length > 0",
+                "retention": "P30D",
+                "reason": "Error sync logs retained for 30 days."
+              }
             ]
           }
         },
@@ -627,32 +1699,105 @@
         "required": [],
         "type": "object",
         "properties": {
-          "uuid": { "type": "string", "description": "Canonical UUID" },
-          "message": { "type": "string", "description": "Free-form log message" },
-          "synchronizationId": { "type": "string", "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)" },
-          "synchronization": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization", "description": "FK to parent Synchronization (UUID; many-to-one)" },
-          "synchronizationContractId": { "type": "string", "description": "Legacy string FK to synchronization_contract (kept during transition)" },
-          "synchronization_contract": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization_contract", "x-openregister-onDelete": "CASCADE", "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)" },
-          "synchronizationLogId": { "type": "string", "description": "Legacy string FK to synchronization_log (kept during transition)" },
-          "synchronization_log": { "type": "string", "format": "uuid", "$ref": "#/components/schemas/synchronization_log", "description": "FK to parent synchronization_log entry (UUID; many-to-one)" },
-          "source": { "type": "object", "description": "Source-side object payload snapshot at sync time" },
-          "target": { "type": "object", "description": "Target-side object payload snapshot at sync time" },
-          "targetResult": { "type": "string", "description": "Action taken on target (created, updated, deleted, skipped, error)" },
-          "userId": { "type": "string", "description": "Nextcloud user id that triggered the sync" },
-          "sessionId": { "type": "string", "description": "Session token for multi-event correlation" },
-          "test": { "type": "boolean", "description": "Whether this entry comes from a dry-run/test execution", "default": false },
-          "force": { "type": "boolean", "description": "Whether this entry comes from a forced execution", "default": false },
-          "expires": { "type": "string", "format": "date-time", "description": "Computed retention horizon" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "size": { "type": "integer", "description": "Approximate row size for storage accounting" }
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID"
+          },
+          "message": {
+            "type": "string",
+            "description": "Free-form log message"
+          },
+          "synchronizationId": {
+            "type": "string",
+            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)"
+          },
+          "synchronization": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "description": "FK to parent Synchronization (UUID; many-to-one)"
+          },
+          "synchronizationContractId": {
+            "type": "string",
+            "description": "Legacy string FK to synchronization_contract (kept during transition)"
+          },
+          "synchronization_contract": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization_contract",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)"
+          },
+          "synchronizationLogId": {
+            "type": "string",
+            "description": "Legacy string FK to synchronization_log (kept during transition)"
+          },
+          "synchronization_log": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization_log",
+            "description": "FK to parent synchronization_log entry (UUID; many-to-one)"
+          },
+          "source": {
+            "type": "object",
+            "description": "Source-side object payload snapshot at sync time"
+          },
+          "target": {
+            "type": "object",
+            "description": "Target-side object payload snapshot at sync time"
+          },
+          "targetResult": {
+            "type": "string",
+            "description": "Action taken on target (created, updated, deleted, skipped, error)"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Nextcloud user id that triggered the sync"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session token for multi-event correlation"
+          },
+          "test": {
+            "type": "boolean",
+            "description": "Whether this entry comes from a dry-run/test execution",
+            "default": false
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Whether this entry comes from a forced execution",
+            "default": false
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Computed retention horizon"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Approximate row size for storage accounting"
+          }
         },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
             "default": "P30D",
             "rules": [
-              { "condition": "targetResult == 'created' || targetResult == 'updated' || targetResult == 'skipped'", "retention": "PT1H", "reason": "Successful per-object sync results retained for one hour." },
-              { "condition": "targetResult == 'error' || targetResult == 'deleted'", "retention": "P30D", "reason": "Error + delete per-object sync results retained for 30 days." }
+              {
+                "condition": "targetResult == 'created' || targetResult == 'updated' || targetResult == 'skipped'",
+                "retention": "PT1H",
+                "reason": "Successful per-object sync results retained for one hour."
+              },
+              {
+                "condition": "targetResult == 'error' || targetResult == 'deleted'",
+                "retention": "P30D",
+                "reason": "Error + delete per-object sync results retained for 30 days."
+              }
             ]
           }
         },
@@ -666,29 +1811,116 @@
         "version": "1.0.0",
         "summary": "Audit record for iBabs/NotuBiz synchronisation operations",
         "description": "A RIS Sync Record tracks each outbound push or inbound pull between OpenConnector and an iBabs or NotuBiz raadsinformatiesysteem. Provides a full audit trail for Archiefwet compliance. See openspec/changes/ibabs-notubiz-connector/specs/ibabs-notubiz-connector/spec.md#REQ-RIS-033.",
-        "required": ["zaakId", "risType", "direction", "status"],
+        "required": [
+          "zaakId",
+          "risType",
+          "direction",
+          "status"
+        ],
         "type": "object",
         "properties": {
-          "zaakId": { "type": "string", "format": "uuid", "description": "Source zaak UUID in Procest" },
-          "risType": { "type": "string", "enum": ["ibabs", "notubiz"], "description": "Which RIS was used" },
-          "risDocumentId": { "type": "string", "description": "Document or vergaderstuk ID in the RIS" },
-          "risVergaderingId": { "type": "string", "description": "Vergadering ID in the RIS" },
-          "direction": { "type": "string", "enum": ["outbound", "inbound"], "description": "Push (outbound) or pull (inbound)" },
-          "status": { "type": "string", "enum": ["pending", "synced", "failed", "conflict"], "description": "Current sync state" },
-          "syncedAt": { "type": "string", "format": "date-time", "description": "Timestamp of last successful sync" },
-          "retryCount": { "type": "integer", "default": 0, "description": "Number of retries attempted" },
-          "nextRetryAt": { "type": "string", "format": "date-time", "description": "Scheduled time for next retry" },
-          "errorMessage": { "type": "string", "description": "Error details if status is failed" },
-          "documents": { "type": "array", "items": { "type": "object" }, "description": "List of document references (Nextcloud file ID + RIS doc ID)" },
-          "besluitStatus": { "type": "string", "enum": ["aangenomen", "verworpen", "aangehouden", "doorgeschoven"], "description": "Besluit result from the RIS" },
-          "paraferingStatus": { "type": "object", "description": "Current parafering progress (completed/total, current step)" },
-          "sourceId": { "type": "string", "format": "uuid", "description": "UUID of the Source entity used for this sync" },
-          "created": { "type": "string", "format": "date-time", "description": "OR-managed creation timestamp" },
-          "updated": { "type": "string", "format": "date-time", "description": "OR-managed update timestamp" }
+          "zaakId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Source zaak UUID in Procest"
+          },
+          "risType": {
+            "type": "string",
+            "enum": [
+              "ibabs",
+              "notubiz"
+            ],
+            "description": "Which RIS was used"
+          },
+          "risDocumentId": {
+            "type": "string",
+            "description": "Document or vergaderstuk ID in the RIS"
+          },
+          "risVergaderingId": {
+            "type": "string",
+            "description": "Vergadering ID in the RIS"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Push (outbound) or pull (inbound)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "synced",
+              "failed",
+              "conflict"
+            ],
+            "description": "Current sync state"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last successful sync"
+          },
+          "retryCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "Number of retries attempted"
+          },
+          "nextRetryAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Scheduled time for next retry"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Error details if status is failed"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "List of document references (Nextcloud file ID + RIS doc ID)"
+          },
+          "besluitStatus": {
+            "type": "string",
+            "enum": [
+              "aangenomen",
+              "verworpen",
+              "aangehouden",
+              "doorgeschoven"
+            ],
+            "description": "Besluit result from the RIS"
+          },
+          "paraferingStatus": {
+            "type": "object",
+            "description": "Current parafering progress (completed/total, current step)"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the Source entity used for this sync"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp"
+          }
         },
         "x-openregister-seed": [
           {
-            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-1" },
+            "@self": {
+              "register": "openconnector",
+              "schema": "ris_sync_record",
+              "slug": "ris-sync-record-demo-1"
+            },
             "zaakId": "a1b2c3d4-0001-4001-8001-aabbccdd0001",
             "risType": "ibabs",
             "direction": "outbound",
@@ -700,7 +1932,11 @@
             "besluitStatus": "aangenomen"
           },
           {
-            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-2" },
+            "@self": {
+              "register": "openconnector",
+              "schema": "ris_sync_record",
+              "slug": "ris-sync-record-demo-2"
+            },
             "zaakId": "a1b2c3d4-0002-4002-8002-aabbccdd0002",
             "risType": "ibabs",
             "direction": "inbound",
@@ -712,7 +1948,11 @@
             "besluitStatus": "verworpen"
           },
           {
-            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-3" },
+            "@self": {
+              "register": "openconnector",
+              "schema": "ris_sync_record",
+              "slug": "ris-sync-record-demo-3"
+            },
             "zaakId": "a1b2c3d4-0003-4003-8003-aabbccdd0003",
             "risType": "notubiz",
             "direction": "outbound",
@@ -720,7 +1960,11 @@
             "retryCount": 0
           },
           {
-            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-4" },
+            "@self": {
+              "register": "openconnector",
+              "schema": "ris_sync_record",
+              "slug": "ris-sync-record-demo-4"
+            },
             "zaakId": "a1b2c3d4-0004-4004-8004-aabbccdd0004",
             "risType": "notubiz",
             "direction": "outbound",
@@ -729,7 +1973,11 @@
             "errorMessage": "NotuBiz API unavailable after 3 retries"
           },
           {
-            "@self": { "register": "openconnector", "schema": "ris_sync_record", "slug": "ris-sync-record-demo-5" },
+            "@self": {
+              "register": "openconnector",
+              "schema": "ris_sync_record",
+              "slug": "ris-sync-record-demo-5"
+            },
             "zaakId": "a1b2c3d4-0005-4005-8005-aabbccdd0005",
             "risType": "ibabs",
             "direction": "outbound",
