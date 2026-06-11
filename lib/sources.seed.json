@@ -1,0 +1,47 @@
+{
+  "$comment": "Dormant external API source rows seeded by openconnector. Until pdok.feature_flag is flipped to 1, the resolved adapters log+stub. See hydra/openspec/changes/shared-pdok-via-openconnector/.",
+  "sources": [
+    {
+      "id": "pdok-wms",
+      "name": "PDOK WMS",
+      "description": "Publieke Dienstverlening Op de Kaart — Web Map Service (raster tile endpoints).",
+      "category": "geo",
+      "subCategory": "gis-raster",
+      "adapterClass": "OCA\\OpenConnector\\Sources\\Pdok\\PdokWmsSourceAdapter",
+      "location": "https://service.pdok.nl/{collection}/{dataset}/wms/v1_0",
+      "type": "wms",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://www.pdok.nl/over-pdok/services/web-map-service-wms",
+      "reference": "pdok.feature_flag"
+    },
+    {
+      "id": "pdok-wfs",
+      "name": "PDOK WFS",
+      "description": "Publieke Dienstverlening Op de Kaart — Web Feature Service (vector feature endpoints).",
+      "category": "geo",
+      "subCategory": "gis-vector",
+      "adapterClass": "OCA\\OpenConnector\\Sources\\Pdok\\PdokWfsSourceAdapter",
+      "location": "https://service.pdok.nl/{collection}/{dataset}/wfs/v1_0",
+      "type": "wfs",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://www.pdok.nl/over-pdok/services/web-feature-service-wfs",
+      "reference": "pdok.feature_flag"
+    },
+    {
+      "id": "pdok-geocoding",
+      "name": "PDOK Locatieserver",
+      "description": "Publieke Dienstverlening Op de Kaart — adres → coordinaten resolutie (geocoding) via Locatieserver v3.1.",
+      "category": "geo",
+      "subCategory": "geocoding",
+      "adapterClass": "OCA\\OpenConnector\\Sources\\Pdok\\PdokGeocodingClient",
+      "location": "https://api.pdok.nl/bzk/locatieserver/search/v3_1",
+      "type": "rest",
+      "auth": "none",
+      "isEnabled": false,
+      "documentation": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/",
+      "reference": "pdok.feature_flag"
+    }
+  ]
+}
