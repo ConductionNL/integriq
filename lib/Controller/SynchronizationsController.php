@@ -299,13 +299,20 @@ class SynchronizationsController extends Controller
                 $headers = [];
             }
 
-            // If synchronization fails, return an error response.
+            // If synchronization fails, return an error response. Exceptions whose
+            // getCode() is 0 (the default) must not become a status-0 JSONResponse,
+            // which NC's Http layer rejects with a 500; fall back to 400 like run().
+            $statusCode = $e->getCode();
+            if ($statusCode === 0) {
+                $statusCode = 400;
+            }
+
             return new JSONResponse(
                 data: [
                     'error'   => $this->l->t('Synchronization error'),
                     'message' => $e->getMessage(),
                 ],
-                statusCode: ($e->getCode() ?? 400),
+                statusCode: $statusCode,
                 headers: $headers
             );
         }//end try

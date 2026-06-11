@@ -20,13 +20,12 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use InvalidArgumentException;
+use OCA\OpenConnector\Db\Mapping;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -137,9 +136,16 @@ class MappingsController extends Controller
         // Get all parameters from the request.
         $data = $this->request->getParams();
 
-        // Validate that required parameters are present.
+        // Validate that required parameters are present. Missing params are a client
+        // error, so return a clean 400 rather than letting an exception escape as a 500.
         if (isset($data['inputObject']) === false || isset($data['mapping']) === false) {
-            throw new InvalidArgumentException('Both `inputObject` and `mapping` are required');
+            return new JSONResponse(
+                data: [
+                    'error'   => $this->l->t('Bad request'),
+                    'message' => $this->l->t('Both `inputObject` and `mapping` are required'),
+                ],
+                statusCode: 400
+            );
         }
 
         // Decode the input object from JSON.
@@ -183,14 +189,17 @@ class MappingsController extends Controller
             $validation = $data['validation'];
         }
 
-        // Create a new ObjectEntity representing the mapping configuration.
+        // Create a Mapping entity representing the mapping configuration.
+        // MappingService::executeMapping() is typed against OCA\OpenConnector\Db\Mapping,
+        // so the request mapping must be hydrated into that type (not an OpenRegister
+        // ObjectEntity, which would raise a TypeError).
         if (is_array($mapping) === true) {
             $mappingPayload = $mapping;
         } else {
             $mappingPayload = ['mapping' => $mapping];
         }
 
-        $mappingObject = new ObjectEntity();
+        $mappingObject = new Mapping();
         $mappingObject->hydrate($mappingPayload);
 
         // Perform the mapping operation.

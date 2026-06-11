@@ -419,9 +419,11 @@ class JobService
             }
         }
 
-        // Calculate execution time in milliseconds.
+        // Calculate execution time in milliseconds. The job_log schema requires an
+        // integer (or null), so round the millisecond delta to a whole number before
+        // it is persisted — a raw float fails OpenRegister object validation (500).
         $timeEnd       = microtime(true);
-        $executionTime = (($timeEnd - $timeStart) * 1000);
+        $executionTime = (int) round(($timeEnd - $timeStart) * 1000);
 
         // Pre-compute lastRun/nextRun so the job log reflects the correct
         // timeline even though we write the log BEFORE advancing the job row
@@ -582,6 +584,22 @@ class JobService
             ],
             $logData
         );
+
+        // The job_log schema types `stackTrace` as 'object or null', but it is built
+        // as a numerically-indexed list of frame strings (which JSON-encodes to an
+        // array). Normalise it to a string-keyed object (or null when empty) so it
+        // passes OpenRegister object validation instead of failing with a 500.
+        $stackTraceFrames = ($logObject['stackTrace'] ?? []);
+        if (empty($stackTraceFrames) === true) {
+            $logObject['stackTrace'] = null;
+        } else {
+            $normalisedStackTrace = [];
+            foreach (array_values((array) $stackTraceFrames) as $frameIndex => $frameValue) {
+                $normalisedStackTrace['frame_'.$frameIndex] = $frameValue;
+            }
+
+            $logObject['stackTrace'] = $normalisedStackTrace;
+        }
 
         // Default expiry per level if not already set.
         if (isset($logObject['expires']) === false) {

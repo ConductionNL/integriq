@@ -243,15 +243,15 @@
 					}
 				},
 				{
-					"name": "mappings#test QUARANTINED (real bug: executeMapping type-mismatch -> 500)",
+					"name": "mappings#test (happy path: 200 with mapped result)",
 					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-						"// REAL BUG, not a fake pass: MappingsController::test builds an",
-						"// OCA\\OpenRegister\\Db\\ObjectEntity and passes it to",
-						"// MappingService::executeMapping() which type-hints OCA\\OpenConnector\\Db\\Mapping",
-						"// -> TypeError -> 500, REGARDLESS of body. Asserting the current 500 so the",
-						"// suite stays honest. When fixed, flip this to a happy-path 200 with",
-						"// { resultObject, isValid, validationErrors }.",
-						"pm.test('mappings test currently 500 (quarantined real bug)', () => pm.response.to.have.status(500));"
+						"// FIXED: MappingsController::test now hydrates an OCA\\OpenConnector\\Db\\Mapping",
+						"// (the type executeMapping() requires) instead of an OpenRegister ObjectEntity,",
+						"// so the request maps cleanly and returns 200 with the result envelope.",
+						"pm.test('mappings test returns 200', () => pm.response.to.have.status(200));",
+						"const b = pm.response.json();",
+						"pm.test('mappings test: result envelope', () => { pm.expect(b).to.have.property('resultObject'); pm.expect(b).to.have.property('isValid'); pm.expect(b).to.have.property('validationErrors'); });",
+						"pm.test('mappings test mapped fullName', () => pm.expect(b.resultObject).to.have.property('fullName'));"
 					] } } ],
 					"request": {
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
@@ -378,15 +378,15 @@
 					}
 				},
 				{
-					"name": "jobs#run real job QUARANTINED (real bug: job_log executionTime float vs integer -> 500)",
+					"name": "jobs#run real job (happy path: 200 success log)",
 					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-						"// REAL BUG, not a fake pass: JobService::executeJob writes a job_log whose",
-						"// 'executionTime' is a float, but the job_log schema requires 'integer or null'",
-						"// -> OR validation error -> caught -> JSONResponse 500. The route reaches the",
-						"// service correctly (404 for unknown id proves routing/find work); only the",
-						"// log write fails. Asserting the current 500 so the suite stays honest.",
-						"// When fixed (cast executionTime to int), flip to a 200/ERROR-level assertion.",
-						"pm.test('jobs run currently 500 (quarantined real bug)', () => pm.response.to.have.status(500));"
+						"// FIXED: JobService::executeJob now writes a job_log whose 'executionTime' is",
+						"// cast to int and whose 'stackTrace' is normalised to an object, both matching",
+						"// the job_log schema, so the run passes OpenRegister validation and returns 200.",
+						"pm.test('jobs run returns 200', () => pm.response.to.have.status(200));",
+						"pm.test('jobs run: success-level log written', () => { const b = pm.response.json(); pm.expect(b).to.have.property('level'); pm.expect(b.level).to.not.equal('ERROR'); });",
+						"pm.test('jobs run: executionTime is an integer', () => { const b = pm.response.json(); pm.expect(b.executionTime === null || Number.isInteger(b.executionTime)).to.be.true; });",
+						"pm.test('jobs run: stackTrace is an object (not an array)', () => { const b = pm.response.json(); pm.expect(b.stackTrace === null || (typeof b.stackTrace === 'object' && Array.isArray(b.stackTrace) === false)).to.be.true; });"
 					] } } ],
 					"request": {
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
@@ -462,15 +462,10 @@
 					}
 				},
 				{
-					"name": "synchronizations#test QUARANTINED (real bug: getCode()==0 -> status 0 -> 500)",
+					"name": "synchronizations#test (error: 400 not 500 on missing source)",
 					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-						"// REAL BUG, not a fake pass: SynchronizationsController::test catches Exception and",
-						"// returns JSONResponse(status: ($e->getCode() ?? 400)). getCode() returns 0 (NOT null)",
-						"// for the 'sourceId cannot be empty' exception, so the response is built with HTTP",
-						"// status 0 -> NC Http.php#106 'Undefined array key 0' -> 500. The sibling run() method",
-						"// hardcodes 400 and is correct. Asserting the current 500 so the suite stays honest.",
-						"// When fixed (use a real 4xx for getCode()===0), flip to a 400 assertion.",
-						"pm.test('sync test currently 500 (quarantined real bug)', () => pm.response.to.have.status(500));"
+						"// FIXED: SynchronizationsController::test now uses ($e->getCode() ?: 400) so an exception whose getCode() is 0 falls back to a real 400 instead of building a status-0 JSONResponse that NC's Http layer rejects with a 500.",
+						"pm.test('sync test returns 400 (not 500)', () => pm.response.to.have.status(400));"
 					] } } ],
 					"request": {
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
