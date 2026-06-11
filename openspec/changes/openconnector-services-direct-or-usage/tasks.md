@@ -85,8 +85,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Write calls use `$objectService->saveObject('openconnector', 'mapping', $data, $uuid)`
   - Delete calls use `$objectService->delete('openconnector', 'mapping', $uuid)`
   - `composer check:strict` passes; existing MappingService unit test passes after rewrite
-- [~] Implement <!-- PARTIAL on development: ObjectService injected and used in MappingRuntimeLoader hot path; 3 legacy `use OCA\OpenConnector\Db\{Mapping,MappingMapper,SourceMapper}` imports remain for the slower import/export path. Mapper deletions (Task 18) gated on closing those 3 callsites. -->
-- [~] Test <!-- existing tests/Unit/Service/MappingServiceTest.php green on dev -->
+- [x] Implement <!-- CLOSED 2026-06-11 on feature/openconnector-r3/finish: MappingService fully rewritten. The 3 legacy `use OCA\OpenConnector\Db\{Mapping,MappingMapper,SourceMapper}` imports are dropped; the constructor now injects `\OCA\OpenRegister\Service\ObjectService` directly. `executeMapping()` accepts a polymorphic `OrMapping|ObjectEntity|array|string|int` argument and normalises it through a new `normaliseMapping()` private helper. `getMapping()`/`getMappings()` route directly through `OrObjectService::find()`/`findAll()`. MappingsController also drops its `use OCA\OpenConnector\Db\Mapping` import and now passes the raw array payload to `executeMapping()`. -->
+- [x] Test <!-- CLOSED 2026-06-11: tests/Unit/Service/MappingServiceTest.php fully rewritten (13 tests: constructor wiring, encodeArrayKeys, getMapping/getMappings via OR ObjectService mock, executeMapping with array/OrMapping/ObjectEntity/string id, Twig rendering, coordinate parsing). 305/305 unit tests green. -->
 
 ### Task 5: Rewrite RuleService
 
@@ -158,8 +158,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - No `SynchronizationMapper`, `SynchronizationContractMapper`, `SynchronizationLogMapper`, `SynchronizationContractLogMapper`, `Synchronization`, `SynchronizationContract`, `SynchronizationLog`, or `SynchronizationContractLog` entity reference remains
   - Per-object hash comparison (the change-detection primitive per ADR-005) is preserved
   - `composer check:strict` passes
-- [~] Implement <!-- PARTIAL on development: ObjectService injected and per-object hash compare preserved (run-log write path restored on b855af5b "fix(sync): restore run-log write path to OpenRegister"). 11 OpenConnector\Db imports remain — typed Synchronization/SynchronizationContract value objects + Mapping/Rule/Source/CallLog + 4 Synchronization*Mapper refs — pending replacement with ObjectEntity + the new SyncRefResolver. Mapper deletions (Task 18) gated on closing these. -->
-- [~] Test <!-- tests/Unit/Service/SynchronizationServiceTest.php green on dev; rewrite pending -->
+- [~] Implement <!-- ADVANCED 2026-06-11 on feature/openconnector-r3/finish: 2 of the 11 OpenConnector\Db imports dropped (CallLog, Mapping). The `getFilenameFromHeaders($result)` signature now takes the OR `ObjectEntity` directly and reads the request body via `$result->getObject()['request']` (the legacy `getRequest()` accessor is gone post-OR-cutover). The `processMapping($mapping)` signature is widened to `OrMapping|ObjectEntity|array` and routes through the rewritten MappingService. 9 imports still remain — typed Synchronization/SynchronizationContract value objects + Rule/Source + 4 Synchronization*Mapper refs — pending leaf-by-leaf replacement with ObjectEntity. The Phase-2 service-rewrite work is genuinely incremental at this point: each remaining type swap is a 30-50 callsite touch and is being staged behind the chain-D ZGW work. Mapper deletions (Task 18) stay gated on closing these. -->
+- [~] Test <!-- 305/305 unit tests green on this branch including the existing tests/Unit/Service/SynchronizationServiceTest.php; full rewrite of SynchronizationService still pending. -->
 
 ### Task 11: Rewrite remaining mid-tier services
 
