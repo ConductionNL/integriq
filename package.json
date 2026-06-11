@@ -7,6 +7,8 @@
     "npm": "^10.0.0"
   },
   "scripts": {
+    "test:l10n": "node tests/l10n/check-l10n.js",
+    "test:l10n:write": "node tests/l10n/check-l10n.js --write",
     "build": "NODE_ENV=production webpack --config webpack.config.js --progress",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
