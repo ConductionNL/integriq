@@ -8,7 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\User\NoUserException;
-use OCA\OpenConnector\Db\SynchronizationContract;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -309,24 +308,24 @@ class SynchronizationService
     }//end findContractObject()
 
     /**
-     * Find a single synchronization contract by id and hydrate the value object.
+     * Find a single synchronization contract by id and return its payload array.
      *
      * Replaces the legacy `SynchronizationContractMapper::find($id)`.
      *
      * @param string|int $id The OpenRegister id/uuid of the contract.
      *
-     * @return SynchronizationContract The hydrated contract value object.
+     * @return array The contract payload array.
      *
      * @throws DoesNotExistException When no contract matches the id.
      */
-    private function findContract(string|int $id): SynchronizationContract
+    private function findContract(string|int $id): array
     {
         $object = $this->findContractObject(id: $id);
         if ($object === null) {
             throw new DoesNotExistException('The synchronization contract you are looking for does not exist');
         }
 
-        return (new SynchronizationContract())->hydrate($object->jsonSerialize());
+        return $object->jsonSerialize();
     }//end findContract()
 
     /**
@@ -339,9 +338,9 @@ class SynchronizationService
      * @param string    $originId          The origin id.
      * @param bool|null $justByOriginId    When true, match on origin id only.
      *
-     * @return SynchronizationContract|null The found contract or null when not found.
+     * @return array|null The found contract payload array or null when not found.
      */
-    private function findContractBySyncAndOrigin(string $synchronizationId, string $originId, ?bool $justByOriginId=false): ?SynchronizationContract
+    private function findContractBySyncAndOrigin(string $synchronizationId, string $originId, ?bool $justByOriginId=false): ?array
     {
         if ($justByOriginId === true) {
             $filters = ['originId' => $originId];
@@ -354,7 +353,7 @@ class SynchronizationService
             return null;
         }
 
-        return (new SynchronizationContract())->hydrate($matches[0]->jsonSerialize());
+        return $matches[0]->jsonSerialize();
     }//end findContractBySyncAndOrigin()
 
     /**
@@ -364,16 +363,16 @@ class SynchronizationService
      *
      * @param string $originId The origin id.
      *
-     * @return SynchronizationContract|null The found contract or null when not found.
+     * @return array|null The found contract payload array or null when not found.
      */
-    private function findContractByOriginId(string $originId): ?SynchronizationContract
+    private function findContractByOriginId(string $originId): ?array
     {
         $matches = $this->findAllContractObjects(filters: ['originId' => $originId]);
         if (empty($matches) === true) {
             return null;
         }
 
-        return (new SynchronizationContract())->hydrate($matches[0]->jsonSerialize());
+        return $matches[0]->jsonSerialize();
     }//end findContractByOriginId()
 
     /**
@@ -393,29 +392,29 @@ class SynchronizationService
             return null;
         }
 
-        $targetId = $contract->getTargetId();
+        $targetId = ($contract['targetId'] ?? null);
         if ($targetId === null || $targetId === '') {
             return null;
         }
 
-        return $targetId;
+        return (string) $targetId;
     }//end findTargetIdByContractOrigin()
 
     /**
-     * Persist a contract value object to OpenRegister.
+     * Persist a contract payload array to OpenRegister.
      *
      * Mirrors the previous SynchronizationContractMapper::persist() semantics:
      * keyed on `uuid` for upsert, dropping the legacy int `id` so OpenRegister's
      * upsert probe does not get confused.
      *
-     * @param SynchronizationContract $contract     The contract to persist.
-     * @param bool                    $ensureUuid   When true, auto-assign a uuid if absent.
+     * @param array $contract     The contract payload array to persist.
+     * @param bool  $ensureUuid   When true, auto-assign a uuid if absent.
      *
-     * @return SynchronizationContract The persisted contract value object.
+     * @return array The persisted contract payload array.
      */
-    private function persistContract(SynchronizationContract $contract, bool $ensureUuid=false): SynchronizationContract
+    private function persistContract(array $contract, bool $ensureUuid=false): array
     {
-        $object = $contract->jsonSerialize();
+        $object = $contract;
 
         if ($ensureUuid === true && empty($object['uuid']) === true) {
             $object['uuid'] = (string) Uuid::v4();
@@ -424,8 +423,8 @@ class SynchronizationService
         $uuid = ($object['uuid'] ?? null);
 
         // OpenRegister owns object identity (it keys on the `uuid` parameter); the
-        // value object's legacy int `id` is not an OpenRegister identifier and
-        // would break OR's `trim($object['id'])` upsert probe, so drop it.
+        // payload's legacy int `id` is not an OpenRegister identifier and would
+        // break OR's `trim($object['id'])` upsert probe, so drop it.
         unset($object['id']);
 
         $saved = $this->orObjectService->saveObject(
@@ -435,7 +434,7 @@ class SynchronizationService
             uuid: ($uuid !== null && $uuid !== '' ? (string) $uuid : null)
         );
 
-        return (new SynchronizationContract())->hydrate($saved->jsonSerialize());
+        return $saved->jsonSerialize();
     }//end persistContract()
 
     /**
@@ -445,9 +444,9 @@ class SynchronizationService
      *
      * @param array $object Array of contract data.
      *
-     * @return SynchronizationContract The persisted contract value object.
+     * @return array The persisted contract payload array.
      */
-    private function createContractFromArray(array $object): SynchronizationContract
+    private function createContractFromArray(array $object): array
     {
         if (empty($object['uuid']) === true) {
             $object['uuid'] = (string) Uuid::v4();
@@ -467,7 +466,7 @@ class SynchronizationService
             uuid: $uuid
         );
 
-        return (new SynchronizationContract())->hydrate($saved->jsonSerialize());
+        return $saved->jsonSerialize();
     }//end createContractFromArray()
 
     /**
@@ -478,25 +477,26 @@ class SynchronizationService
      * @param string|int $id     The contract id/uuid.
      * @param array      $object Array of updated contract data.
      *
-     * @return SynchronizationContract The persisted contract value object.
+     * @return array The persisted contract payload array.
      *
      * @throws DoesNotExistException When the contract does not exist.
      */
-    private function updateContractFromArray(string|int $id, array $object): SynchronizationContract
+    private function updateContractFromArray(string|int $id, array $object): array
     {
         $existing = $this->findContract(id: $id);
 
-        if (empty($existing->getVersion()) === true) {
+        $existingVersion = ($existing['version'] ?? null);
+        if (empty($existingVersion) === true) {
             $object['version'] = '0.0.1';
         } else if (empty($object['version']) === true) {
-            $version = explode('.', $existing->getVersion());
+            $version = explode('.', (string) $existingVersion);
             if (isset($version[2]) === true) {
                 $version[2]        = ((int) $version[2] + 1);
                 $object['version'] = implode('.', $version);
             }
         }
 
-        $merged = array_merge($existing->jsonSerialize(), $object);
+        $merged = array_merge($existing, $object);
         unset($merged['id']);
 
         $uuid  = ($merged['uuid'] ?? null);
@@ -507,7 +507,7 @@ class SynchronizationService
             uuid: ($uuid !== null && $uuid !== '' ? (string) $uuid : null)
         );
 
-        return (new SynchronizationContract())->hydrate($saved->jsonSerialize());
+        return $saved->jsonSerialize();
     }//end updateContractFromArray()
 
     /**
@@ -986,7 +986,7 @@ class SynchronizationService
 	 * @param bool|null       $force Whether to force the synchronization regardless of changes.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
 	 *
-	 * @return SynchronizationContract|array|null Returns a synchronization contract, an array for test cases, or null if conditions are not met.
+	 * @return array|null Returns a synchronization contract, an array for test cases, or null if conditions are not met.
 	 */
 	private function synchronizeInternToExtern(
 		array $synchronization,
@@ -996,7 +996,7 @@ class SynchronizationService
 		?bool $isTest = false,
 		?bool $force = false,
 		?string $mutationType = null,
-	): SynchronizationContract|array|null
+	): array|null
 	{
         $serializedObject = $object;
         if($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true) {
@@ -1090,7 +1090,7 @@ class SynchronizationService
 			);
 		}
 
-		if ($synchronizationContract instanceof SynchronizationContract === false) {
+		if (is_array($synchronizationContract) === false) {
 			// Only persist if not test
 			if ($isTest === false) {
 				$synchronizationContract = $this->createContractFromArray([
@@ -1098,37 +1098,28 @@ class SynchronizationService
 					'originId' => $originId,
 				]);
 			} else {
-				$synchronizationContract = new SynchronizationContract();
-				$synchronizationContract->setSynchronizationId(($synchronization['id'] ?? null));
-				$synchronizationContract->setOriginId($originId);
-			}
-
-			$synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization,  flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
-
-			if ($isTest === true && is_array($synchronizationContract) === true) {
-				// If this is a log and contract array return for the test endpoint.
-				$logAndContractArray = $synchronizationContract;
-
-				return $logAndContractArray;
-			}
-		} else {
-			// @todo this is wierd
-			$synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization, flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
-			if ($isTest === false && $synchronizationContract instanceof SynchronizationContract === true) {
-				// If this is a regular synchronizationContract update it to the database.
-				$this->persistContract(contract: $synchronizationContract);
-			} elseif ($isTest === true && is_array($synchronizationContract) === true) {
-				// If this is a log and contract array return for the test endpoint.
-				$logAndContractArray = $synchronizationContract;
-
-				return $logAndContractArray;
+				$synchronizationContract = [
+					'synchronizationId' => ($synchronization['id'] ?? null),
+					'originId' => $originId,
+				];
 			}
 		}
 
-        if ($synchronizationContract instanceof SynchronizationContract === true) {
-            $synchronizationContract = $this->persistContract(contract: $synchronizationContract);
-        }
-        return $synchronizationContract;
+		$synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization, flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
+
+		// synchronizeContract returns either an Exception or the
+		// `['log' => ..., 'contract' => ..., 'resultAction' => ...]` result
+		// shape (test + non-test both go through the same return paths). Test
+		// mode returns the shape upstream; non-test extracts the contract.
+		if ($synchronizationContract instanceof Exception) {
+			return null;
+		}
+
+		if ($isTest === true) {
+			return $synchronizationContract;
+		}
+
+		return ($synchronizationContract['contract'] ?? null);
 	}
 
     /**
@@ -1364,7 +1355,7 @@ class SynchronizationService
 	 * @param string|null $source The source to synchronize, if not provided, the synchronization's source will be used
 	 * @param array|null $data The data to add to synchronize, if not provided, the synchronization's data will be used
 	 *
-	 * @return array|SynchronizationContract|array|null
+	 * @return array|array|null
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 * @throws GuzzleException
@@ -1384,7 +1375,7 @@ class SynchronizationService
         ?string $source=null,
         ?array $data=null,
         ?FlowToken &$flowToken=null,
-    ): array|SynchronizationContract|null {
+    ): array|null {
         // Controllers and cron jobs fetch the synchronization as an OpenRegister
         // object (register `openconnector`, schema `synchronization`); hydrate it
         // into the typed value object the engine operates on.
@@ -1804,11 +1795,12 @@ class SynchronizationService
 				$allContractSourceIds = [];
 				$contractsByTargetId  = [];
 				foreach ($contractObjects as $contractObject) {
-					$contract = (new SynchronizationContract())->hydrate($contractObject->jsonSerialize());
-					if ($contract->getTargetId() !== null) {
-						$allContractTargetIds[] = $contract->getTargetId();
-						$allContractSourceIds[$contract->getTargetId()] = $contract->getOriginId();
-						$contractsByTargetId[$contract->getTargetId()]  = $contract;
+					$contract = $contractObject->jsonSerialize();
+					$contractTargetId = ($contract['targetId'] ?? null);
+					if ($contractTargetId !== null) {
+						$allContractTargetIds[] = $contractTargetId;
+						$allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
+						$contractsByTargetId[$contractTargetId]  = $contract;
 					}
 				}
 
@@ -1868,7 +1860,7 @@ class SynchronizationService
 					}
 
 					$synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
-					if ($synchronizationContract instanceof SynchronizationContract) {
+					if (is_array($synchronizationContract) === true) {
 						$this->persistContract(contract: $synchronizationContract);
 					}
 
@@ -1914,7 +1906,7 @@ class SynchronizationService
 	/**
 	 * Synchronize a contract
 	 *
-	 * @param SynchronizationContract $synchronizationContract
+	 * @param array $synchronizationContract
 	 * @param array|null $synchronization
 	 * @param array $object
 	 * @param bool|null $isTest False by default, currently added for synchronization-test endpoint
@@ -1922,7 +1914,7 @@ class SynchronizationService
 	 * @param SynchronizationRunLog|null $log The log to update
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
      *
-	 * @return SynchronizationContract|Exception|array
+	 * @return array|Exception
 	 * @throws ContainerExceptionInterface
 	 * @throws NotFoundExceptionInterface
 	 * @throws LoaderError
@@ -1930,7 +1922,7 @@ class SynchronizationService
 	 * @throws GuzzleException
 	 */
 	public function synchronizeContract(
-		SynchronizationContract $synchronizationContract,
+		array $synchronizationContract,
         array $synchronization = null,
         FlowToken &$flowToken,
         array &$object = [],
@@ -1938,16 +1930,16 @@ class SynchronizationService
         ?bool $force = false,
         ?SynchronizationRunLog $log = null,
 		?string $mutationType = null
-		): SynchronizationContract|Exception|array
+		): array|Exception
 	{
 		$contractLog = null;
 
 		// We are doing something so lets log it
-        if ($synchronizationContract->getId() !== null && $this->synchronizationContractLogService !== null) {
+        if (($synchronizationContract['id'] ?? null) !== null && $this->synchronizationContractLogService !== null) {
             $contractLog = $this->synchronizationContractLogService->createFromArray(
                 [
                     'synchronizationId' => ($synchronization['id'] ?? null),
-                    'synchronizationContractId' => $synchronizationContract->getId(),
+                    'synchronizationContractId' => ($synchronizationContract['id'] ?? null),
                     'source' => $object,
                     'test' => $isTest,
                     'force' => $force,
@@ -2000,15 +1992,15 @@ class SynchronizationService
         // 5. Force parameter is false (otherwise always continue with update)
 		if (
             $force === false &&
-            $originHash === $synchronizationContract->getOriginHash() &&
-            ($synchronization['updated'] ?? null) < $synchronizationContract->getSourceLastChecked() &&
+            $originHash === ($synchronizationContract['originHash'] ?? null) &&
+            ($synchronization['updated'] ?? null) < ($synchronizationContract['sourceLastChecked'] ?? null) &&
             ($sourceTargetMapping === null ||
-             $sourceTargetMapping->getUpdated() < $synchronizationContract->getSourceLastChecked()) &&
-            $synchronizationContract->getTargetId() !== null &&
-            $synchronizationContract->getTargetHash() !== null
+             $sourceTargetMapping->getUpdated() < ($synchronizationContract['sourceLastChecked'] ?? null)) &&
+            ($synchronizationContract['targetId'] ?? null) !== null &&
+            ($synchronizationContract['targetHash'] ?? null) !== null
             ) {
 			// We checked the source so let log that
-			$synchronizationContract->setSourceLastChecked(new DateTime());
+			$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
             $contractLog->setExpires($this->calculateExpires($this->successRetention));
 			// The object has not changed and neither config nor mapping have been updated since last check
 			if (isset($contractLog) === true && $this->synchronizationContractLogService !== null) {
@@ -2016,15 +2008,15 @@ class SynchronizationService
 			}
 			return [
 				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
-				'contract' => $synchronizationContract->jsonSerialize(),
+				'contract' => $synchronizationContract,
 				'resultAction' => 'skip'
 			];
 		}
 
 		// The object has changed, oke let do mappig and set metadata
-		$synchronizationContract->setOriginHash($originHash);
-		$synchronizationContract->setSourceLastChanged(new DateTime());
-		$synchronizationContract->setSourceLastChecked(new DateTime());
+		$synchronizationContract['originHash'] = $originHash;
+		$synchronizationContract['sourceLastChanged'] = (new DateTime())->format(DateTime::ATOM);
+		$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
 
         // Execute mapping if found
 		$objectBeforeMapping = $object;
@@ -2050,10 +2042,10 @@ class SynchronizationService
             // set the target hash
         $targetHash = md5(serialize($object));
 
-        $synchronizationContract->setTargetHash($targetHash);
-		$synchronizationContract->setTargetLastChanged(new DateTime());
-		$synchronizationContract->setTargetLastSynced(new DateTime());
-		$synchronizationContract->setSourceLastSynced(new DateTime());
+        $synchronizationContract['targetHash'] = $targetHash;
+		$synchronizationContract['targetLastChanged'] = (new DateTime())->format(DateTime::ATOM);
+		$synchronizationContract['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
+		$synchronizationContract['sourceLastSynced'] = (new DateTime())->format(DateTime::ATOM);
 
 
 		// Handle synchronization based on test mode
@@ -2068,7 +2060,7 @@ class SynchronizationService
 			}
 			return [
 				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
-				'contract' => $synchronizationContract->jsonSerialize(),
+				'contract' => $synchronizationContract,
 				'resultAction' => 'skip'
 			];
 		}
@@ -2082,34 +2074,34 @@ class SynchronizationService
 
         if (($synchronization['targetType'] ?? null) === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: (string) ($synchronization['targetId'] ?? ''));
-            $this->processRules(synchronization: $synchronization, data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]), timing: 'after', objectId: $synchronizationContract->getTargetId(), registerId: $registerId, schemaId: $schemaId, flowToken: $flowToken);
+            $this->processRules(synchronization: $synchronization, data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]), timing: 'after', objectId: ($synchronizationContract['targetId'] ?? null), registerId: $registerId, schemaId: $schemaId, flowToken: $flowToken);
         } else if (($synchronization['targetType'] ?? null) === 'api' && ($synchronization['sourceType'] ?? null) === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: (string) ($synchronization['sourceId'] ?? ''));
-            $this->processRules(synchronization: $synchronization, data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]), timing: 'after', objectId: $synchronizationContract->getSourceId(), registerId: $registerId, schemaId: $schemaId, flowToken: $flowToken);
+            $this->processRules(synchronization: $synchronization, data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]), timing: 'after', objectId: ($synchronizationContract['sourceId'] ?? null), registerId: $registerId, schemaId: $schemaId, flowToken: $flowToken);
 		}
 
 
 		// Create log entry for the synchronization
         if (isset($contractLog) === true) {
-		    $contractLog->setTargetResult($synchronizationContract->getTargetLastAction());
+		    $contractLog->setTargetResult(($synchronizationContract['targetLastAction'] ?? null));
             $contractLog->setExpires($this->calculateExpires($this->successRetention));
 		    if ($this->synchronizationContractLogService !== null) {
 		        $contractLog = $this->synchronizationContractLogService->update($contractLog);
 		    }
         }
 
-        if ($synchronizationContract->getId()) {
+        if (($synchronizationContract['id'] ?? null)) {
             $synchronizationContract = $this->persistContract(contract: $synchronizationContract);
         } else {
-            if ($synchronizationContract->getUuid() === null) {
-                $synchronizationContract->setUuid(Uuid::v4());
+            if (($synchronizationContract['uuid'] ?? null) === null) {
+                $synchronizationContract['uuid'] = (string) Uuid::v4();
             }
             $synchronizationContract = $this->persistContract(contract: $synchronizationContract, ensureUuid: true);
         }
 
 		return [
 			'log' => $contractLog ? $contractLog->jsonSerialize() : [],
-			'contract' => $synchronizationContract->jsonSerialize(),
+			'contract' => $synchronizationContract,
 			'resultAction' => 'update' // /create
 		];
 	}
@@ -2121,23 +2113,23 @@ class SynchronizationService
 	 * or deletes it based on the specified action. It extracts the register and schema
 	 * from the target ID and performs the corresponding operation using the object service.
 	 *
-	 * @param SynchronizationContract $synchronizationContract The synchronization contract being updated.
+	 * @param array $synchronizationContract The synchronization contract being updated.
 	 * @param array $synchronization The synchronization entity containing the target ID.
 	 * @param array|null $targetObject An optional array containing the data for the target object. Defaults to an empty array.
 	 * @param string|null $action The action to perform: 'save' (default) to update or 'delete' to remove the target object.
 	 *
-	 * @return SynchronizationContract The updated synchronization contract with the modified target ID.
+	 * @return array The updated synchronization contract payload array with the modified target ID.
 	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface If an error occurs while interacting with the object service or processing the data.
 	 */
-	private function updateTargetOpenRegister(SynchronizationContract $synchronizationContract, array $synchronization, ?array &$targetObject = [], ?string $action = 'save'): SynchronizationContract
+	private function updateTargetOpenRegister(array $synchronizationContract, array $synchronization, ?array &$targetObject = [], ?string $action = 'save'): array
 	{
 		// Setup the object service
 		$objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
 		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
 		// if we already have an id, we need to get the object and update it
-		if ($synchronizationContract->getTargetId() !== null) {
-			$targetObject['id'] = $synchronizationContract->getTargetId();
+		if (($synchronizationContract['targetId'] ?? null) !== null) {
+			$targetObject['id'] = ($synchronizationContract['targetId'] ?? null);
 		}
 
 		if (isset($sourceConfig['subObjects']) === true) {
@@ -2152,15 +2144,15 @@ class SynchronizationService
 		// Save the object to the target
 		switch ($action) {
 			case 'save':
-				if (isset($targetObject['id']) === true && $synchronizationContract->getTargetId() === null) {
-					$synchronizationContract->setTargetId($targetObject['id']);
+				if (isset($targetObject['id']) === true && ($synchronizationContract['targetId'] ?? null) === null) {
+					$synchronizationContract['targetId'] = $targetObject['id'];
 				}
 
                 $targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
 
-				$target = $objectService->saveObject(register: $register, schema: $schema, object: $targetObject, uuid: $synchronizationContract->getTargetId());
+				$target = $objectService->saveObject(register: $register, schema: $schema, object: $targetObject, uuid: ($synchronizationContract['targetId'] ?? null));
 				// Get the id form the target object
-				$synchronizationContract->setTargetId($target->getUuid());
+				$synchronizationContract['targetId'] = $target->getUuid();
 
                 // NOTE: Orphan cleanup is handled by the fetch-file rule path
                 // (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
@@ -2174,12 +2166,12 @@ class SynchronizationService
 				}
 
 				// Set target last action based on whether we're creating or updating
-				$synchronizationContract->setTargetLastAction($synchronizationContract->getTargetId() ? 'update' : 'create');
+				$synchronizationContract['targetLastAction'] = (($synchronizationContract['targetId'] ?? null) ? 'update' : 'create');
 				break;
 			case 'delete':
-				$objectService->delete(object: ['id' => $synchronizationContract->getTargetId()]);
-				$synchronizationContract->setTargetId(null);
-				$synchronizationContract->setTargetLastAction('delete');
+				$objectService->delete(object: ['id' => ($synchronizationContract['targetId'] ?? null)]);
+				$synchronizationContract['targetId'] = null;
+				$synchronizationContract['targetLastAction'] = 'delete';
 				break;
 		}
 
@@ -2343,36 +2335,37 @@ class SynchronizationService
 		$subContract = $this->findContractByOriginId(originId: $subObjectData['originId']);
 
 		if (!$subContract) {
-			$subContract = new SynchronizationContract();
-			$subContract->setSynchronizationId($synchronizationId);
-			$subContract->setOriginId($subObjectData['originId']);
-			$subContract->setTargetId($id);
-			$subContract->setUuid(Uuid::V4());
-			$subContract->setTargetHash(md5(serialize($subObjectData)));
-			$subContract->setTargetLastChanged(new DateTime());
-			$subContract->setTargetLastSynced(new DateTime());
-			$subContract->setSourceLastSynced(new DateTime());
+			$subContract = [
+				'synchronizationId' => $synchronizationId,
+				'originId'          => $subObjectData['originId'],
+				'targetId'          => $id,
+				'uuid'              => (string) Uuid::V4(),
+				'targetHash'        => md5(serialize($subObjectData)),
+				'targetLastChanged' => (new DateTime())->format(DateTime::ATOM),
+				'targetLastSynced'  => (new DateTime())->format(DateTime::ATOM),
+				'sourceLastSynced'  => (new DateTime())->format(DateTime::ATOM),
+			];
 
 			$subContract = $this->persistContract(contract: $subContract, ensureUuid: true);
 		} else {
 			$subContract = $this->updateContractFromArray(
-				id: $subContract->getId(),
+				id: (string) ($subContract['id'] ?? ''),
 				object: [
 					'synchronizationId' => $synchronizationId,
 					'originId'   => $subObjectData['originId'],
 					'targetId'   => $id,
 					'targetHash' => md5(serialize($subObjectData)),
-					'targetLastChanged' => new DateTime(),
-					'targetLastSynced' => new DateTime(),
-					'sourceLastSynced' => new DateTime()
+					'targetLastChanged' => (new DateTime())->format(DateTime::ATOM),
+					'targetLastSynced' => (new DateTime())->format(DateTime::ATOM),
+					'sourceLastSynced' => (new DateTime())->format(DateTime::ATOM)
 				]
 			);
 		}
 
 		if ($this->synchronizationContractLogService !== null) {
 			$this->synchronizationContractLogService->createFromArray([
-				'synchronizationId' => $subContract->getSynchronizationId(),
-				'synchronizationContractId' => $subContract->getId(),
+				'synchronizationId' => ($subContract['synchronizationId'] ?? null),
+				'synchronizationContractId' => ($subContract['id'] ?? null),
 				'target' => $subObjectData,
 				'expires' => $this->calculateExpires($this->successRetention, $this->successRetention),
 			]);
@@ -2458,12 +2451,12 @@ class SynchronizationService
 	/**
 	 * Write the data to the target
 	 *
-	 * @param SynchronizationContract $synchronizationContract
+	 * @param array $synchronizationContract
 	 * @param array|null $targetObject
 	 * @param string|null $action Determines what needs to be done with the target object, defaults to 'save'
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
 	 *
-	 * @return SynchronizationContract
+	 * @return array
 	 * @throws ContainerExceptionInterface
 	 * @throws GuzzleException
 	 * @throws LoaderError
@@ -2472,16 +2465,16 @@ class SynchronizationService
 	 * @throws \OCP\DB\Exception
 	 * @throws Exception
 	 */
-	public function updateTarget(SynchronizationContract $synchronizationContract, ?array &$targetObject = [], ?string $action = 'save', ?string $mutationType = null): SynchronizationContract
+	public function updateTarget(array $synchronizationContract, ?array &$targetObject = [], ?string $action = 'save', ?string $mutationType = null): array
 	{
 		// The function can be called solo set let's make sure we have the full synchronization object
 		if (isset($synchronization) === false) {
-			$synchronization = $this->findSynchronization(id: $synchronizationContract->getSynchronizationId());
+			$synchronization = $this->findSynchronization(id: ((string) ($synchronizationContract['synchronizationId'] ?? '')));
 		}
 
 		// Let's check if we need to create or update
 		$update = false;
-		if ($synchronizationContract->getTargetId()) {
+		if (($synchronizationContract['targetId'] ?? null)) {
 			$update = true;
 		}
 
@@ -3219,12 +3212,12 @@ class SynchronizationService
      * Write an created, updated or deleted object to an external target.
      *
 	 * @param array $synchronization The synchronization to run.
-	 * @param SynchronizationContract $contract The contract to enforce.
+	 * @param array $contract The contract to enforce.
 	 * @param string $endpoint The endpoint to write the object to.
 	 * @param array|null $targetObject Update referenced targetObject so we can return response here.
 	 * @param string|null $mutationType If dealing with single object synchronization, the type of the mutation that will be handled, 'create', 'update' or 'delete'. Used for syncs to extern sources.
      *
-	 * @return SynchronizationContract The updated contract.
+	 * @return array The updated contract payload array.
      *
 	 * @throws ContainerExceptionInterface
 	 * @throws GuzzleException
@@ -3235,13 +3228,13 @@ class SynchronizationService
 	 */
 	private function writeObjectToTarget(
 		array                   $synchronization,
-		SynchronizationContract $contract,
+		array $contract,
 		string                  $endpoint,
         ?array                  &$targetObject = null,
 		?string 				$mutationType = null
-	): SynchronizationContract
+	): array
 	{
-		$targetId = $contract->getTargetId();
+		$targetId = ($contract['targetId'] ?? null);
 		$target = $this->findSource(id: ($synchronization['targetId'] ?? null));
 
         if ($targetObject !== null) {
@@ -3249,7 +3242,7 @@ class SynchronizationService
         }
 
 		$sourceId = ($synchronization['sourceId'] ?? null);
-		if (($synchronization['sourceType'] ?? null) === 'register/schema' && $contract->getOriginId() !== null) {
+		if (($synchronization['sourceType'] ?? null) === 'register/schema' && ($contract['originId'] ?? null) !== null) {
 			$sourceIds = explode(separator: '/', string: $sourceId);
 
 			$this->objectService->getOpenRegisters()->setRegister($sourceIds[0]);
@@ -3257,7 +3250,7 @@ class SynchronizationService
 
 			if ($targetObject === null) {
 				$object = $this->objectService->getOpenRegisters()->find(
-					id: $contract->getOriginId(),
+					id: ($contract['originId'] ?? null),
 				)->jsonSerialize();
 			}
 		}
@@ -3292,8 +3285,8 @@ class SynchronizationService
 			$response = $this->callLogResponse($this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig));
 
 
-			$contract->setTargetHash(md5(serialize($response['body'])));
-			$contract->setTargetId(null);
+			$contract['targetHash'] = md5(serialize($response['body']));
+			$contract['targetId'] = null;
 
 			return $contract;
 		}
@@ -3322,7 +3315,7 @@ class SynchronizationService
 					throw new Exception('Could not determine an id from target synchronization');
 				}
 
-			$contract->setTargetId($targetId);
+			$contract['targetId'] = $targetId;
 			return $contract;
 		}
 
@@ -3364,7 +3357,7 @@ class SynchronizationService
 	 * The synchronizationContract should be given if the normal procedure to find the contract (on originId) is not available to the contract that should be updated.
 	 *
 	 * @param ObjectEntity $object The object to synchronize
-	 * @param SynchronizationContract|null $synchronizationContract If given: the synchronization contract that should be updated.
+	 * @param array|null $synchronizationContract If given: the synchronization contract payload array that should be updated.
 	 * @param bool|null $force If true, the object will be updated regardless of changes
 	 * @return array The updated synchronizationContracts
 	 *
@@ -3377,7 +3370,7 @@ class SynchronizationService
 	 */
 	public function synchronizeToTarget(
 		ObjectEntity $object,
-		?SynchronizationContract $synchronizationContract = null,
+		?array $synchronizationContract = null,
 		?bool $force = false,
 		?bool $test = false,
 		?SynchronizationRunLog $log = null
@@ -3399,7 +3392,7 @@ class SynchronizationService
 
 		$synchronization = $synchronizations[0];
 
-		if ($synchronizationContract instanceof SynchronizationContract === false) {
+		if (is_array($synchronizationContract) === false) {
 			$synchronizationContract = $this->createContractFromArray([
 				'synchronizationId' => ($synchronization['id'] ?? null),
 				'originId' => $objectId,
@@ -3418,14 +3411,19 @@ class SynchronizationService
 			log: $log
 		);
 
-		if ($synchronizationContract instanceof SynchronizationContract === true) {
-			// If this is a regular synchronizationContract update it to the database.
-			$synchronizationContract = $this->persistContract(contract: $synchronizationContract);
+		if ($synchronizationContract instanceof Exception) {
+			return [];
 		}
 
-		$synchronizationContract = $this->persistContract(contract: $synchronizationContract);
+		// synchronizeContract returns the
+		// `['log' => ..., 'contract' => ..., 'resultAction' => ...]` result
+		// shape; extract the contract payload before persisting.
+		$contract = ($synchronizationContract['contract'] ?? null);
+		if (is_array($contract) === true) {
+			$contract = $this->persistContract(contract: $contract);
+		}
 
-		return [$synchronizationContract];
+		return [$contract];
 
 	}
 
@@ -4605,11 +4603,12 @@ class SynchronizationService
             justByOriginId: $findContractByOriginId
 		);
 
-		if ($synchronizationContract instanceof SynchronizationContract === false) {
+		if (is_array($synchronizationContract) === false) {
 			// Only persist if not test
-			$synchronizationContract = new SynchronizationContract();
-			$synchronizationContract->setSynchronizationId(($synchronization['id'] ?? null));
-			$synchronizationContract->setOriginId($originId);
+			$synchronizationContract = [
+				'synchronizationId' => ($synchronization['id'] ?? null),
+				'originId'          => $originId,
+			];
 
 			$synchronizationContractResult = $this->synchronizeContract(
 				synchronizationContract: $synchronizationContract,
