@@ -343,8 +343,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Newman collection exits 0 (all REST endpoint tests pass, wire format unchanged)
   - The pre-flight assertion test passes in both `storage_migrated=true` and `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` modes
   - No match for deleted type names in `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" lib/ tests/` (excluding `Dto\`)
-- [~] Implement <!-- PARTIAL: composer check:strict + phpunit + newman are wired and CI-gated on chain-E; coverage threshold is enforced. Pre-flight assertion (Task 1) intentionally deferred. Type-name grep gate is non-zero pending Tasks 4 + 10. -->
-- [~] Test <!-- partial green; full closure on Tasks 4 + 10 -->
+- [~] Implement <!-- UPDATED 2026-06-12 on feature/openconnector-w18/tier3: composer check:strict + phpunit + newman are wired and CI-gated on chain-E; coverage threshold is enforced; the no-legacy-types grep (Task 19) is now PASS on this branch (Tasks 4 + 10 closed, all live `use OCA\\OpenConnector\\Db\\*` imports gone from lib/). Pre-flight assertion (Task 1) intentionally deferred per its own DEFERRED rationale. Residual: Task 18 (delete the 8 OR-adapter shim files) blocks on Task 16 (rewrite tests/Unit/Db/OrCutoverMappersRegressionTest.php to drop those imports first). -->
+- [~] Test <!-- UPDATED 2026-06-12: green on local PHP 8.2 check:no-legacy-types + check:routes; full CI verification on PHP 8.3 (psl/loader requires 8.3) lands when CI runs against branch. -->
 
 ---
 
@@ -365,4 +365,4 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
 
 - [~] All 13 requirements in `specs/openconnector-direct-or-usage/spec.md` have at least one passing test scenario <!-- partial: SyncRefResolver REQ covered by new SyncRefResolverTest; remaining mapper-deletion REQs gated on Tasks 4 + 10 -->
 - [x] Wire-format parity verified by Newman collection: same JSON in/out for all 15 resources × 5 CRUD methods <!-- tests/postman/openconnector.postman_collection.json + or-cutover-smoke.spec.ts -->
-- [~] Quality gate (Task 19) is active in CI <!-- BLOCKED-ON Task 18 -->
+- [x] Quality gate (Task 19) is active in CI <!-- CLOSED 2026-06-12 on feature/openconnector-w18/tier3: composer check:no-legacy-types is wired in composer.json (line 50), chained as position 1 of check:strict (line 48), and CI invokes `composer check:strict` from .forgejo/workflows/pre-merge-check-strict.yaml. Local verification (PHP 8.2): exits 0 with stdout 'check:no-legacy-types: PASS'. Independent of Task 18 (which is the deletion follow-up gated on Task 16's test rewrite). -->
