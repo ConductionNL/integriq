@@ -9,7 +9,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\User\NoUserException;
 use OCA\OpenConnector\Db\Rule;
-use OCA\OpenConnector\Db\RuleMapper;
 use OCA\OpenConnector\Db\Source;
 use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Db\Synchronization;
@@ -111,13 +110,6 @@ class SynchronizationService
     private SynchronizationContractLogMapper $synchronizationContractLogMapper;
 
     /**
-     * The rule mapper.
-     *
-     * @var RuleMapper
-     */
-    private RuleMapper $ruleMapper;
-
-    /**
      * Constructor.
      *
      * Post OpenRegister-cutover, synchronizations are resolved through the
@@ -157,11 +149,6 @@ class SynchronizationService
         $sourceMapper = $this->containerInterface->get(SourceMapper::class);
         if ($sourceMapper instanceof SourceMapper) {
             $this->sourceMapper = $sourceMapper;
-        }
-
-        $ruleMapper = $this->containerInterface->get(RuleMapper::class);
-        if ($ruleMapper instanceof RuleMapper) {
-            $this->ruleMapper = $ruleMapper;
         }
 
         $synchronizationContractMapper = $this->containerInterface->get(SynchronizationContractMapper::class);
@@ -3313,20 +3300,35 @@ class SynchronizationService
     }
 
     /**
-     * Get a rule by its ID using RuleMapper
+     * Get a rule by its ID directly from OpenRegister.
      *
-     * @param string $id The unique identifier of the rule
+     * Post W5 the legacy RuleMapper container lookup is dropped: the rule is
+     * fetched straight from the OpenRegister ObjectService (register
+     * `openconnector`, schema `rule`) and hydrated into the typed Rule value
+     * object so the downstream rule processors keep their strongly typed
+     * surface (`$rule->getType()`, `$rule->getConfig()`, ...).
      *
-     * @return Rule|null The rule object if found, or null if not found
+     * @param string $id The unique identifier of the rule (OpenRegister UUID or slug).
+     *
+     * @return Rule|null The rule value object if found, or null if not found
      */
     private function getRuleById(string $id): ?Rule
     {
         try {
-            return $this->ruleMapper->find((int)$id);
+            $object = $this->orObjectService->find(
+                id: $id,
+                register: 'openconnector',
+                schema: 'rule'
+            );
         } catch (Exception $e) {
-//            $this->logger->error('Error fetching rule: ' . $e->getMessage());
             return null;
         }
+
+        if ($object === null) {
+            return null;
+        }
+
+        return (new Rule())->hydrate($object->jsonSerialize());
     }
 
 	/**
