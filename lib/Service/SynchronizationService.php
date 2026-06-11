@@ -8,7 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\User\NoUserException;
-use OCA\OpenConnector\Db\Source;
 use OCA\OpenConnector\Db\Synchronization;
 use OCA\OpenConnector\Db\SynchronizationContract;
 use OCA\OpenConnector\Service\Helper\FlowToken;
@@ -544,17 +543,17 @@ class SynchronizationService
     }//end findSourceObject()
 
     /**
-     * Find a single source by id and hydrate it into the typed value object.
+     * Find a single source by id and return its OpenRegister payload array.
      *
      * @param string|int $id The OpenRegister id/uuid/slug of the source.
      *
-     * @return Source The hydrated source value object.
+     * @return array The OpenRegister source payload array.
      *
      * @throws DoesNotExistException When no source matches the identifier.
      */
-    private function findSource(string|int $id): Source
+    private function findSource(string|int $id): array
     {
-        return (new Source())->hydrate($this->findSourceObject(id: $id)->jsonSerialize());
+        return $this->findSourceObject(id: $id)->jsonSerialize();
     }//end findSource()
 
     /**
@@ -566,16 +565,16 @@ class SynchronizationService
      * @param string $location    The source location (URL/identifier).
      * @param array  $defaultData Additional fields to seed the new source with.
      *
-     * @return Source The hydrated existing or newly-created source value object.
+     * @return array The existing or newly-created source payload array.
      */
-    private function findOrCreateSourceByLocation(string $location, array $defaultData=[]): Source
+    private function findOrCreateSourceByLocation(string $location, array $defaultData=[]): array
     {
         $config  = ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $location], 'limit' => 1];
         $matches = $this->orObjectService->findAll(config: $config);
         $objects = array_values(($matches['results'] ?? $matches));
 
         if (empty($objects) === false) {
-            return (new Source())->hydrate($objects[0]->jsonSerialize());
+            return $objects[0]->jsonSerialize();
         }
 
         $sourceData = array_merge(
@@ -606,7 +605,7 @@ class SynchronizationService
             schema: 'source'
         );
 
-        return (new Source())->hydrate($saved->jsonSerialize());
+        return $saved->jsonSerialize();
     }//end findOrCreateSourceByLocation()
 
     /**
@@ -1185,7 +1184,7 @@ class SynchronizationService
 		// If a source is provided, use it instead of the synchronization's source
 		if ($source !== null) {
 			$source = $this->findOrCreateSourceByLocation(location: $source);
-			$synchronization->setSourceId($source->getId());
+			$synchronization->setSourceId((string) ($source['id'] ?? $source['uuid'] ?? ''));
 		}
 
         if (empty($synchronization->getSourceId()) === true && $source === null) {
@@ -1549,8 +1548,8 @@ class SynchronizationService
 			$config['query'] = $sourceConfig['query'];
 		}
 
-		if (str_starts_with($endpoint, $source->getLocation()) === true) {
-			$endpoint = str_replace(search: $source->getLocation(), replace: '', subject: $endpoint);
+		if (str_starts_with($endpoint, (string) ($source['location'] ?? '')) === true) {
+			$endpoint = str_replace(search: (string) ($source['location'] ?? ''), replace: '', subject: $endpoint);
 		}
 
 		// Make the initial API call, read denotes that we call an endpoint for a single object (for config variations).
@@ -2617,7 +2616,7 @@ class SynchronizationService
 		$currentPage = 1;
 
 		// Start with the current page
-        if ($source->getRateLimitLimit() !== null) {
+        if (($source['rateLimitLimit'] ?? null) !== null) {
             $currentPage = $synchronization->getCurrentPage() ?? 1;
         }
 
@@ -2659,7 +2658,7 @@ class SynchronizationService
 	/**
 	 * Recursively fetches all pages of data from the API.
 	 *
-	 * @param Source $source The source object containing rate limit and configuration details.
+	 * @param array $source The source object containing rate limit and configuration details.
 	 * @param string $endpoint The API endpoint to fetch data from.
 	 * @param array $config Configuration for the API call (e.g., headers and query parameters).
 	 * @param Synchronization $synchronization The synchronization object containing state information.
@@ -2680,7 +2679,7 @@ class SynchronizationService
 	 * This method uses an optimized approach to fetch paginated data more efficiently
 	 * than the original recursive implementation, reducing overhead and improving performance.
 	 *
-	 * @param Source $source The data source configuration
+	 * @param array $source The data source configuration
 	 * @param string $endpoint The API endpoint to fetch from
 	 * @param array $config The request configuration
 	 * @param Synchronization $synchronization The synchronization context
@@ -2692,7 +2691,7 @@ class SynchronizationService
 	 * @return array Combined objects from all pages
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 */
-	private function fetchAllPages(Source $source, string $endpoint, array $config, Synchronization $synchronization, int $currentPage, bool $isTest = false, ?bool $usesNextEndpoint = null, ?bool $usesPagination = true): array
+	private function fetchAllPages(array $source, string $endpoint, array $config, Synchronization $synchronization, int $currentPage, bool $isTest = false, ?bool $usesNextEndpoint = null, ?bool $usesPagination = true): array
 	{
 		// Return objects if we don't paginate
 		if ($usesPagination === false) {
@@ -2709,7 +2708,7 @@ class SynchronizationService
 	 * This method eliminates the recursive overhead of the original implementation
 	 * and uses a simple iterative approach that's much faster and more reliable.
 	 *
-	 * @param Source $source The data source configuration
+	 * @param array $source The data source configuration
 	 * @param string $endpoint The API endpoint to fetch from
 	 * @param array $config The request configuration
 	 * @param Synchronization $synchronization The synchronization context
@@ -2720,7 +2719,7 @@ class SynchronizationService
 	 * @return array Combined objects from all pages
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 */
-	private function fetchAllPagesOptimized(Source $source, string $endpoint, array $config, Synchronization $synchronization, int $currentPage, bool $isTest = false, ?bool $usesNextEndpoint = null): array
+	private function fetchAllPagesOptimized(array $source, string $endpoint, array $config, Synchronization $synchronization, int $currentPage, bool $isTest = false, ?bool $usesNextEndpoint = null): array
 	{
 		$allObjects = [];
 		$currentEndpoint = $endpoint;
@@ -2775,7 +2774,7 @@ class SynchronizationService
 	 * This method determines the next page URL and configuration based on the current
 	 * page response and pagination pattern.
 	 *
-	 * @param Source $source The data source configuration
+	 * @param array $source The data source configuration
 	 * @param string $currentEndpoint The current page endpoint
 	 * @param array $config The current request configuration
 	 * @param Synchronization $synchronization The synchronization context
@@ -2784,7 +2783,7 @@ class SynchronizationService
 	 *
 	 * @return array|null Next page information or null if no more pages
 	 */
-	private function getNextPageInfo(Source $source, string $currentEndpoint, array $config, Synchronization $synchronization, int $currentPage, array $result, ?bool $usesNextEndpoint = null): ?array
+	private function getNextPageInfo(array $source, string $currentEndpoint, array $config, Synchronization $synchronization, int $currentPage, array $result, ?bool $usesNextEndpoint = null): ?array
 	{
 		if (empty($result)) {
 			return null;
@@ -2797,7 +2796,7 @@ class SynchronizationService
 
 		if ($usesNextEndpoint === true) {
 			// Use next endpoint URL pagination
-			$nextEndpoint = $this->getNextEndpoint(body: $result, url: $source->getLocation(), currentEndpoint: $currentEndpoint);
+			$nextEndpoint = $this->getNextEndpoint(body: $result, url: (string) ($source['location'] ?? ''), currentEndpoint: $currentEndpoint);
 			if ($nextEndpoint === null || $nextEndpoint === $currentEndpoint) {
 				return null; // No more pages
 			}
@@ -2828,7 +2827,7 @@ class SynchronizationService
 	 * This method handles the actual HTTP request and response parsing for a single page,
 	 * used both in parallel and sequential fetching scenarios.
 	 *
-	 * @param Source $source The data source configuration
+	 * @param array $source The data source configuration
 	 * @param string $endpoint The page endpoint to fetch
 	 * @param array $config The request configuration
 	 * @param Synchronization $synchronization The synchronization context
@@ -2836,7 +2835,7 @@ class SynchronizationService
 	 * @return array Objects from the page
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 */
-	private function fetchSinglePage(Source $source, string $endpoint, array $config, Synchronization $synchronization): array
+	private function fetchSinglePage(array $source, string $endpoint, array $config, Synchronization $synchronization): array
 	{
 		$pageData = $this->fetchSinglePageData($source, $endpoint, $config, $synchronization);
 
@@ -2846,7 +2845,7 @@ class SynchronizationService
 	/**
 	 * Fetches and parses a single page.
 	 *
-	 * @param Source $source The data source configuration
+	 * @param array $source The data source configuration
 	 * @param string $endpoint The page endpoint to fetch
 	 * @param array $config The request configuration
 	 * @param Synchronization $synchronization The synchronization context
@@ -2854,7 +2853,7 @@ class SynchronizationService
 	 * @return array{objects: array, result: array}
 	 * @throws TooManyRequestsHttpException When rate limit is exceeded
 	 */
-	private function fetchSinglePageData(Source $source, string $endpoint, array $config, Synchronization $synchronization): array
+	private function fetchSinglePageData(array $source, string $endpoint, array $config, Synchronization $synchronization): array
 	{
 		// Make the API call (CallService is OpenRegister-native; callSourceObject
 		// resolves the source's OpenRegister object before invoking it).
@@ -2906,7 +2905,7 @@ class SynchronizationService
 	 * This method provides the original sequential fetching behavior as a fallback
 	 * when parallel fetching fails or is not suitable.
 	 *
-	 * @param Source $source The data source configuration
+	 * @param array $source The data source configuration
 	 * @param string $endpoint The API endpoint to fetch from
 	 * @param array $config The request configuration
 	 * @param Synchronization $synchronization The synchronization context
@@ -2916,7 +2915,7 @@ class SynchronizationService
 	 *
 	 * @return array Combined objects from all pages
 	 */
-	private function fetchAllPagesSequential(Source $source, string $endpoint, array $config, Synchronization $synchronization, int $currentPage, bool $isTest = false, ?bool $usesNextEndpoint = null): array
+	private function fetchAllPagesSequential(array $source, string $endpoint, array $config, Synchronization $synchronization, int $currentPage, bool $isTest = false, ?bool $usesNextEndpoint = null): array
 	{
 		$allObjects = [];
 		$currentEndpoint = $endpoint;
@@ -2948,7 +2947,7 @@ class SynchronizationService
 			}
 
 			if ($usesNextEndpoint === true) {
-				$nextEndpoint = $this->getNextEndpoint(body: $result, url: $source->getLocation(), currentEndpoint: $currentEndpoint);
+				$nextEndpoint = $this->getNextEndpoint(body: $result, url: (string) ($source['location'] ?? ''), currentEndpoint: $currentEndpoint);
 				if ($nextEndpoint === null || $nextEndpoint === $currentEndpoint) {
 					break;
 				}
@@ -2966,16 +2965,16 @@ class SynchronizationService
 	/**
 	 * Checks if the source has exceeded its rate limit and throws an exception if true.
 	 *
-	 * @param Source $source The source object containing rate limit details.
+	 * @param array $source The source object containing rate limit details.
 	 *
 	 * @throws TooManyRequestsHttpException
 	 */
-	private function checkRateLimit(Source $source): void
+	private function checkRateLimit(array $source): void
 	{
-		if ($source->getRateLimitRemaining() !== null &&
-			$source->getRateLimitReset() !== null &&
-			$source->getRateLimitRemaining() <= 0 &&
-			$source->getRateLimitReset() > time()
+		if (($source['rateLimitRemaining'] ?? null) !== null &&
+			($source['rateLimitReset'] ?? null) !== null &&
+			(int) ($source['rateLimitRemaining'] ?? 0) <= 0 &&
+			(int) ($source['rateLimitReset'] ?? 0) > time()
 		) {
 			throw new TooManyRequestsHttpException(
 				message: "Rate Limit on Source has been exceeded. Canceling synchronization...",
@@ -2992,7 +2991,7 @@ class SynchronizationService
 	 * as an associative array of headers. The headers can be used for communicating rate limit status
 	 * in API responses or logging purposes.
 	 *
-	 * @param Source $source The source object containing rate limit details, such as limits, remaining requests, and reset times.
+	 * @param array $source The source object containing rate limit details, such as limits, remaining requests, and reset times.
 	 *
 	 * @return array An associative array of rate limit headers:
 	 *               - 'X-RateLimit-Limit' (int|null): The maximum number of allowed requests.
@@ -3010,7 +3009,7 @@ class SynchronizationService
 	 * location logic. This helper bridges the two by resolving the source's
 	 * OpenRegister object and delegating the call.
 	 *
-	 * @param Source $source       The source value object to call with.
+	 * @param array $source       The source value object to call with.
 	 * @param string $endpoint     The endpoint to call.
 	 * @param string $method       The HTTP method.
 	 * @param array  $config       The call configuration.
@@ -3018,13 +3017,13 @@ class SynchronizationService
 	 *
 	 * @return ObjectEntity The resulting call log (an OpenRegister object).
 	 */
-	private function callSourceObject(Source $source, string $endpoint = '', string $method = 'GET', array $config = [], bool $read = false): ObjectEntity
+	private function callSourceObject(array $source, string $endpoint = '', string $method = 'GET', array $config = [], bool $read = false): ObjectEntity
 	{
 		// Address the source by its OpenRegister uuid (the canonical identifier);
 		// the legacy int `id` is not the OpenRegister object key.
-		$sourceIdentifier = $source->getUuid();
+		$sourceIdentifier = ($source['uuid'] ?? null);
 		if ($sourceIdentifier === null || $sourceIdentifier === '') {
-			$sourceIdentifier = (string) $source->getId();
+			$sourceIdentifier = (string) ($source['id'] ?? '');
 		}
 
 		$sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
@@ -3075,18 +3074,18 @@ class SynchronizationService
 	/**
 	 * Returns the rate limit headers for a given source object.
 	 *
-	 * @param Source $source The source object containing rate limit details, such as limits, remaining requests, and reset times.
+	 * @param array $source The source object containing rate limit details, such as limits, remaining requests, and reset times.
 	 *
 	 * @return array An associative array of rate limit headers.
 	 */
-	private function getRateLimitHeaders(Source $source): array
+	private function getRateLimitHeaders(array $source): array
 	{
 		return [
-			'X-RateLimit-Limit' => $source->getRateLimitLimit(),
-			'X-RateLimit-Remaining' => $source->getRateLimitRemaining(),
-			'X-RateLimit-Reset' => $source->getRateLimitReset(),
+			'X-RateLimit-Limit' => ($source['rateLimitLimit'] ?? null),
+			'X-RateLimit-Remaining' => ($source['rateLimitRemaining'] ?? null),
+			'X-RateLimit-Reset' => ($source['rateLimitReset'] ?? null),
 			'X-RateLimit-Used' => 0,
-			'X-RateLimit-Window' => $source->getRateLimitWindow(),
+			'X-RateLimit-Window' => ($source['rateLimitWindow'] ?? null),
 		];
 	}
 
@@ -3667,7 +3666,7 @@ class SynchronizationService
 	/**
 	 * Fetch a file from a source.
 	 *
-	 * @param Source $source The source to fetch the file from.
+	 * @param array $source The source to fetch the file from.
 	 * @param string $endpoint The endpoint for the file.
 	 * @param array $config The configuration of the action.
 	 * @param string $objectId The id of the object the file belongs to.
@@ -3686,12 +3685,12 @@ class SynchronizationService
 	 * @throws SyntaxError
 	 * @throws \OCP\DB\Exception
 	 */
-	private function fetchFile(Source $source, string $endpoint, array $config, string $objectId, ?array $tags = [], ?string &$filename = null, ?string $published = null, int|string|null $registerId = null): string
+	private function fetchFile(array $source, string $endpoint, array $config, string $objectId, ?array $tags = [], ?string &$filename = null, ?string $published = null, int|string|null $registerId = null): string
 	{
 
 		$originalEndpoint = $endpoint;
-		$endpoint = str_contains(haystack: $endpoint, needle: $source->getLocation()) === true
-			? substr(string: $endpoint, offset: strlen(string: $source->getLocation()))
+		$endpoint = str_contains(haystack: $endpoint, needle: (string) ($source['location'] ?? '')) === true
+			? substr(string: $endpoint, offset: strlen(string: (string) ($source['location'] ?? '')))
 			: $endpoint;
 
 		$sourceConfig = json_encode($config['sourceConfiguration']);
@@ -4110,7 +4109,7 @@ class SynchronizationService
 	 * This method creates fire-and-forget promises that handle file fetching in the background
 	 * without blocking the main synchronization process.
 	 *
-	 * @param Source $source The source to fetch files from.
+	 * @param array $source The source to fetch files from.
 	 * @param array $config The fetch_file rule configuration.
 	 * @param mixed $endpoint The endpoint(s) to fetch files from.
 	 * @param int $ruleId The ID of the rule for error logging.
@@ -4120,7 +4119,7 @@ class SynchronizationService
 	 *
 	 * @psalm-param array<string, mixed> $config
 	 */
-	private function startAsyncFileFetching(Source $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void
+	private function startAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void
 	{
         // Execute file fetching immediately but with error isolation
         // This provides "fire-and-forget" behavior without complex ReactPHP setup
@@ -4134,7 +4133,7 @@ class SynchronizationService
 	 * and fetches files accordingly. All operations are wrapped in try-catch blocks to prevent errors from
 	 * affecting the main synchronization process.
 	 *
-	 * @param Source $source The source to fetch files from.
+	 * @param array $source The source to fetch files from.
 	 * @param array $config The fetch_file rule configuration.
 	 * @param mixed $endpoint The endpoint(s) to fetch files from.
 	 * @param int $ruleId The ID of the rule for error logging.
@@ -4144,7 +4143,7 @@ class SynchronizationService
 	 *
 	 * @psalm-param array<string, mixed> $config
 	 */
-	private function executeAsyncFileFetching(Source $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void
+	private function executeAsyncFileFetching(array $source, array $config, mixed $endpoint, int $ruleId, ?string $objectId = null): void
 	{
         try {
             $filename = null;
@@ -4190,7 +4189,7 @@ class SynchronizationService
 	 * This method wraps the existing fetchFile method with error isolation to enable
 	 * fire-and-forget execution. Errors are caught and logged without affecting the main process.
 	 *
-	 * @param Source $source The source to fetch the file from.
+	 * @param array $source The source to fetch the file from.
 	 * @param string $endpoint The endpoint for the file.
 	 * @param array $config The configuration of the action.
 	 * @param string $objectId The UUID of the object the file belongs to.
@@ -4204,7 +4203,7 @@ class SynchronizationService
 	 * @psalm-param array<string, mixed> $config
 	 * @psalm-param array<string> $tags
 	 */
-	private function fetchFileSafely(Source $source, string $endpoint, array $config, string $objectId, ?string $filename = null, array $tags = [], int|string|null $published = null, int|string|null $registerId = null): void
+	private function fetchFileSafely(array $source, string $endpoint, array $config, string $objectId, ?string $filename = null, array $tags = [], int|string|null $published = null, int|string|null $registerId = null): void
 	{
         try {
             // Execute the file fetching operation
@@ -4892,14 +4891,14 @@ class SynchronizationService
 	 * This method fetches multiple files for an object and ensures that any files
 	 * currently attached to the object but not in the new set are removed.
 	 *
-	 * @param Source $source The source to fetch files from.
+	 * @param array $source The source to fetch files from.
 	 * @param array $config The fetch_file rule configuration.
 	 * @param array $endpoints Array of endpoints/file data to process.
 	 * @param string|null $objectId The UUID of the object to attach files to.
 	 *
 	 * @return void
 	 */
-	private function processMultipleFilesWithCleanup(Source $source, array $config, array $endpoints, ?string $objectId = null): void
+	private function processMultipleFilesWithCleanup(array $source, array $config, array $endpoints, ?string $objectId = null): void
 	{
 		$newFileNames = [];
 
@@ -5071,7 +5070,7 @@ class SynchronizationService
 	 * This method downloads a file from a remote source and stores it in the OpenRegister
 	 * file system, optionally applying tags and sharing settings.
 	 *
-	 * @param Source $source The source configuration for the API call.
+	 * @param array $source The source configuration for the API call.
 	 * @param string $endpoint The endpoint URL to fetch the file from.
 	 * @param array $config Configuration array containing method, write settings, etc.
 	 * @param string $objectId The UUID of the object to attach the file to.
