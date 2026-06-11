@@ -6,6 +6,11 @@
  * Twig-driven mapping service that transforms inbound payloads against
  * configured Mapping objects + runtime authentication helpers.
  *
+ * Post chain-C cutover (services-direct-or-usage) this service consumes the
+ * OpenRegister-owned mapping value object directly via
+ * {@see \OCA\OpenRegister\Service\ObjectService}: no more references to the
+ * legacy `OCA\OpenConnector\Db\Mapping*` types.
+ *
  * @category Service
  * @package  OCA\OpenConnector\Service
  *
@@ -21,20 +26,18 @@
 
 namespace OCA\OpenConnector\Service;
 
-use OCA\OpenConnector\Db\Mapping;
-use OCA\OpenConnector\Db\MappingMapper;
-use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenConnector\Twig\MappingExtension;
 use OCA\OpenConnector\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Db\Mapping as OrMapping;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-//use Twig\Environment;
-//use Twig\Error\LoaderError;
-//use Twig\Error\SyntaxError;
 use Adbar\Dot;
 use Twig\Environment;
 use Twig\Error\LoaderError;
@@ -43,8 +46,35 @@ use Twig\Loader\ArrayLoader;
 use Throwable;
 use Exception;
 
+/**
+ * MappingService — Twig-driven payload transformer.
+ *
+ * Consumes either a fully hydrated OpenRegister Mapping value object, a raw
+ * ObjectEntity, or a plain array describing a mapping configuration. The
+ * normalisation helper resolves any of those into an OrMapping internally,
+ * preserving the existing per-key Twig + cast pipeline.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ */
 class MappingService
 {
+    /**
+     * The OpenRegister register slug mappings live in.
+     *
+     * @var string
+     */
+    private const REGISTER = 'openconnector';
+
+    /**
+     * The OpenRegister schema slug for mapping objects.
+     *
+     * @var string
+     */
+    private const SCHEMA = 'mapping';
+
     /**
      * Create a private variable to store the twig environment.
      *
@@ -52,23 +82,32 @@ class MappingService
      */
     private Environment $twig;
 
-	/**
-	 * Setting up the base class with required services.
-	 *
-	 * @param ArrayLoader   $loader		   The ArrayLoader for Twig.
-	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 */
+    /**
+     * Setting up the base class with required services.
+     *
+     * @param ArrayLoader    $loader        The ArrayLoader for Twig.
+     * @param CallService    $callService   Outbound HTTP caller used by the Twig runtime.
+     * @param FileService    $fileService   The OR-side file lookup helper.
+     * @param ObjectService  $objectService The OpenConnector object service.
+     * @param OrObjectService $orObjectService The OpenRegister object service (chain-C entry point).
+     */
     public function __construct(
-		ArrayLoader $loader,
-		private readonly MappingMapper $mappingMapper,
+        ArrayLoader $loader,
         CallService $callService,
-        SourceMapper $sourceMapper,
         FileService $fileService,
         ObjectService $objectService,
+        private readonly OrObjectService $orObjectService,
     ) {
         $this->twig = new Environment($loader);
-		$this->twig->addExtension(new MappingExtension());
-		$this->twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, callService: $callService, fileService: $fileService, objectService: $objectService));
+        $this->twig->addExtension(new MappingExtension());
+        $this->twig->addRuntimeLoader(
+            new MappingRuntimeLoader(
+                mappingService: $this,
+                callService: $callService,
+                fileService: $fileService,
+                objectService: $objectService
+            )
+        );
 
     }//end __construct()
 
@@ -103,29 +142,91 @@ class MappingService
      * Renders a Twig template string using the mapping Twig environment.
      *
      * @param string $template The Twig template to render.
-     * @param array $context The context available inside the template.
+     * @param array  $context  The context available inside the template.
      *
      * @return string The rendered template result.
+     *
      * @throws LoaderError|SyntaxError Twig exceptions
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
-    public function renderTemplateString(string $template, array $context = []): string
+    public function renderTemplateString(string $template, array $context=[]): string
     {
         return html_entity_decode($this->twig->createTemplate($template)->render($context));
-    }
+
+    }//end renderTemplateString()
+
+    /**
+     * Normalise the polymorphic $mapping input to a concrete OR Mapping value object.
+     *
+     * Accepts:
+     *  - {@see OrMapping}: returned as-is.
+     *  - {@see ObjectEntity}: hydrates a fresh OrMapping from `getObject()`.
+     *  - array: hydrates a fresh OrMapping from the raw array shape.
+     *  - string|int: resolved through {@see OrObjectService::find()} as an
+     *    `openconnector/mapping` lookup.
+     *
+     * @param OrMapping|ObjectEntity|array|string|int $mapping The polymorphic mapping reference.
+     *
+     * @return OrMapping The normalised value object.
+     *
+     * @throws \InvalidArgumentException When the reference cannot be resolved.
+     */
+    private function normaliseMapping(OrMapping|ObjectEntity|array|string|int $mapping): OrMapping
+    {
+        if ($mapping instanceof OrMapping) {
+            return $mapping;
+        }
+
+        if ($mapping instanceof ObjectEntity) {
+            return (new OrMapping())->hydrate($mapping->getObject());
+        }
+
+        if (is_array($mapping) === true) {
+            return (new OrMapping())->hydrate($mapping);
+        }
+
+        // String/int -> resolve via OpenRegister.
+        try {
+            $object = $this->orObjectService->find(
+                id: (string) $mapping,
+                register: self::REGISTER,
+                schema: self::SCHEMA
+            );
+        } catch (DoesNotExistException $e) {
+            throw new \InvalidArgumentException(
+                sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping),
+                0,
+                $e
+            );
+        }
+
+        if ($object === null) {
+            throw new \InvalidArgumentException(
+                sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping)
+            );
+        }
+
+        return (new OrMapping())->hydrate($object->getObject());
+
+    }//end normaliseMapping()
 
     /**
      * Maps (transforms) an array (input) to a different array (output).
      *
-     * @param Mapping $mapping The mapping object that forms the recipe for the mapping
-     * @param array   $input   The array that need to be mapped (transformed) otherwise known as input
-     * @param bool    $list    Whether we want a list instead of a single item
+     * @param OrMapping|ObjectEntity|array|string|int $mapping The mapping recipe (polymorphic).
+     * @param array                                   $input   The array to be mapped.
+     * @param bool                                    $list    Whether we want a list instead of a single item.
      *
-     * @return array The result (output) of the mapping process
-     *@throws LoaderError|SyntaxError Twig Exceptions
+     * @return array The result (output) of the mapping process.
      *
+     * @throws LoaderError|SyntaxError Twig Exceptions.
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
-    public function executeMapping(Mapping $mapping, array $input, bool $list = false): array
+    public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list=false): array
     {
+        $mapping = $this->normaliseMapping($mapping);
 
         // Check for list
         if ($list === true) {
@@ -153,18 +254,14 @@ class MappingService
         }//end if
 
         $originalInput = $input;
-        $input = $this->encodeArrayKeys($input, '.', '&#46;');
-
-        // @todo: error logging
+        $input         = $this->encodeArrayKeys($input, '.', '&#46;');
 
         // Determine pass through.
         // Let's get the dot array based on https://github.com/adbario/php-dot-notation.
         if ($mapping->getPassThrough()) {
             $dotArray = new Dot($input);
-            // @todo: error logging
         } else {
             $dotArray = new Dot();
-            // @todo: error logging
         }
         $dotInput = new Dot($input);
 
@@ -183,7 +280,7 @@ class MappingService
             }
 
             try {
-			    $dotArray->set($key, $this->renderTemplateString($value, $originalInput));
+                $dotArray->set($key, $this->renderTemplateString($value, $originalInput));
             } catch (Throwable $e) {
                 throw new Exception("Error for mapping: {$mapping->getName()}, key: $key, value: $value and with message thrown: {$e->getMessage()}");
             }
@@ -193,7 +290,6 @@ class MappingService
         $unsets = ($mapping->getUnset() ?? []);
         foreach ($unsets as $unset) {
             if ($dotArray->has($unset) === false) {
-                // @todo: error logging
                 continue;
             }
 
@@ -205,7 +301,6 @@ class MappingService
 
         foreach ($casts as $key => $cast) {
             if ($dotArray->has($key) === false) {
-                // @todo: error logging
                 continue;
             }
 
@@ -214,7 +309,6 @@ class MappingService
             }
 
             if ($cast === false) {
-                // @todo: error logging
                 continue;
             }
 
@@ -225,7 +319,6 @@ class MappingService
 
         // Back to array.
         $output = $dotArray->all();
-
         $output = $this->encodeArrayKeys($output, '&#46;', '.');
 
         // If something has been defined to work on root level (i.e. the object lives on root level), we can use # to define writing the root object.
@@ -247,7 +340,7 @@ class MappingService
 
         return $output;
 
-    }//end mapping()
+    }//end executeMapping()
 
     /**
      * Handles a single cast.
@@ -287,19 +380,19 @@ class MappingService
 
             $value = false;
             break;
-		case '?bool':
-		case '?boolean':
-			if($value === null) {
-				break;
-			}
-			if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-				$value = true;
-				break;
-			}
+        case '?bool':
+        case '?boolean':
+            if ($value === null) {
+                break;
+            }
+            if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
+                $value = true;
+                break;
+            }
 
-			$value = false;
+            $value = false;
 
-			break;
+            break;
         case 'int':
         case 'integer':
             $value = (int) $value;
@@ -410,7 +503,6 @@ class MappingService
             break;
         default:
             // @todo: error handling
-            //isset($this->style) === true && $this->style->info('Trying to cast to an unsupported cast type: '.$cast);
             break;
         }//end switch
 
@@ -481,39 +573,67 @@ class MappingService
 
 
     /**
-     * Retrieves a single mapping by its ID.
+     * Retrieves a single mapping by its ID/UUID/slug.
      *
-     * This is a wrapper function that provides controlled access to the mapping mapper.
-     * We use this wrapper pattern to ensure other Nextcloud apps can only interact with
-     * mappings through this service layer, rather than accessing the mapper directly.
-     * This maintains proper encapsulation and separation of concerns.
+     * Post chain-C cutover this routes directly through OpenRegister's ObjectService.
+     * The returned OR Mapping value object exposes the same methods the previous
+     * `OCA\OpenConnector\Db\Mapping` shape did (`getMapping`, `getPassThrough`, ...).
      *
-     * @param string $mappingId The unique identifier of the mapping to retrieve
-     * @return Mapping The requested mapping entity
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If mapping is not found
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple mappings found
+     * @param string $mappingId The unique identifier of the mapping to retrieve.
+     *
+     * @return OrMapping The hydrated mapping value object.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If mapping is not found.
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
-    public function getMapping(string $mappingId): Mapping
+    public function getMapping(string $mappingId): OrMapping
     {
-        // Forward the find request to the mapper while maintaining encapsulation
-        return $this->mappingMapper->find($mappingId);
-    }
+        $object = $this->orObjectService->find(
+            id: $mappingId,
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        if ($object === null) {
+            throw new DoesNotExistException(
+                sprintf('Mapping "%s" does not exist.', $mappingId)
+            );
+        }
+
+        return (new OrMapping())->hydrate($object->getObject());
+
+    }//end getMapping()
 
     /**
      * Retrieves all available mappings.
      *
-     * This is a wrapper function that provides controlled access to the mapping mapper.
-     * We use this wrapper pattern to ensure other Nextcloud apps can only interact with
-     * mappings through this service layer, rather than accessing the mapper directly.
-     * This maintains proper encapsulation and separation of concerns.
+     * Routes directly through OpenRegister's ObjectService.
      *
-     * @return array<Mapping> An array containing all mapping entities
+     * @return array<OrMapping> An array containing all hydrated mapping value objects.
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
     public function getMappings(): array
     {
-        // Forward the findAll request to the mapper while maintaining encapsulation
-        // @todo: add filtering options
-        return $this->mappingMapper->findAll();
-    }
+        $results = $this->orObjectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => self::REGISTER,
+                    'schema'   => self::SCHEMA,
+                ],
+            ]
+        );
 
-}
+        $rows = ($results['results'] ?? $results);
+
+        return array_map(
+            fn ($object): OrMapping => (new OrMapping())->hydrate(
+                $object instanceof ObjectEntity ? $object->getObject() : (array) $object
+            ),
+            $rows
+        );
+
+    }//end getMappings()
+
+}//end class

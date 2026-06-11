@@ -20,7 +20,6 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\Db\Mapping;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\MappingService;
@@ -189,22 +188,19 @@ class MappingsController extends Controller
             $validation = $data['validation'];
         }
 
-        // Create a Mapping entity representing the mapping configuration.
-        // MappingService::executeMapping() is typed against OCA\OpenConnector\Db\Mapping,
-        // so the request mapping must be hydrated into that type (not an OpenRegister
-        // ObjectEntity, which would raise a TypeError).
+        // Build a polymorphic mapping payload accepted directly by
+        // MappingService::executeMapping(): post chain-C the service hydrates
+        // arrays into an \OCA\OpenRegister\Db\Mapping value object internally,
+        // so the controller no longer constructs a typed entity here.
         if (is_array($mapping) === true) {
             $mappingPayload = $mapping;
         } else {
             $mappingPayload = ['mapping' => $mapping];
         }
 
-        $mappingObject = new Mapping();
-        $mappingObject->hydrate($mappingPayload);
-
         // Perform the mapping operation.
         try {
-            $resultObject = $this->mappingService->executeMapping(mapping: $mappingObject, input: $inputObject);
+            $resultObject = $this->mappingService->executeMapping(mapping: $mappingPayload, input: $inputObject);
         } catch (Exception $e) {
             // If mapping fails, return an error response.
             return new JSONResponse(
