@@ -8,7 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\User\NoUserException;
-use OCA\OpenConnector\Db\MappingMapper;
 use OCA\OpenConnector\Db\Rule;
 use OCA\OpenConnector\Db\RuleMapper;
 use OCA\OpenConnector\Db\Source;
@@ -87,13 +86,6 @@ class SynchronizationService
     private SourceMapper $sourceMapper;
 
     /**
-     * The mapping mapper.
-     *
-     * @var MappingMapper
-     */
-    private MappingMapper $mappingMapper;
-
-    /**
      * The OpenRegister-backed synchronization run-log write service.
      *
      * Post OpenRegister-cutover the SynchronizationLog entity + its QBMapper were
@@ -165,11 +157,6 @@ class SynchronizationService
         $sourceMapper = $this->containerInterface->get(SourceMapper::class);
         if ($sourceMapper instanceof SourceMapper) {
             $this->sourceMapper = $sourceMapper;
-        }
-
-        $mappingMapper = $this->containerInterface->get(MappingMapper::class);
-        if ($mappingMapper instanceof MappingMapper) {
-            $this->mappingMapper = $mappingMapper;
         }
 
         $ruleMapper = $this->containerInterface->get(RuleMapper::class);
@@ -1461,13 +1448,17 @@ class SynchronizationService
 	{
 		if (empty($synchronization->getSourceHashMapping()) === false) {
 			try {
-				$sourceHashMapping = $this->mappingMapper->find(id: $synchronization->getSourceHashMapping());
+				$sourceHashMapping = $this->orObjectService->find(
+					id: (string) $synchronization->getSourceHashMapping(),
+					register: 'openconnector',
+					schema: 'mapping'
+				);
 			} catch (DoesNotExistException $exception) {
 				return new Exception($exception->getMessage());
 			}
 
 			// Execute mapping if found
-			if ($sourceHashMapping) {
+			if ($sourceHashMapping !== null) {
 				return $this->mappingService->executeMapping(mapping: $sourceHashMapping, input: $object);
 			}
 		}
@@ -1709,7 +1700,11 @@ class SynchronizationService
             $sourceTargetMapping = null;
 		} else {
 			try {
-				$sourceTargetMapping = $this->mappingMapper->find(id: $synchronization->getSourceTargetMapping());
+				$sourceTargetMapping = $this->orObjectService->find(
+					id: (string) $synchronization->getSourceTargetMapping(),
+					register: 'openconnector',
+					schema: 'mapping'
+				);
 			} catch (DoesNotExistException $exception) {
 				return new Exception($exception->getMessage());
 			}
