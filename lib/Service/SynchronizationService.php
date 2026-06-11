@@ -10,7 +10,6 @@ use JWadhams\JsonLogic;
 use OC\User\NoUserException;
 use OCA\OpenConnector\Db\Rule;
 use OCA\OpenConnector\Db\Source;
-use OCA\OpenConnector\Db\SourceMapper;
 use OCA\OpenConnector\Db\Synchronization;
 use OCA\OpenConnector\Db\SynchronizationContract;
 use OCA\OpenConnector\Db\SynchronizationContractLogMapper;
@@ -78,13 +77,6 @@ class SynchronizationService
     private const DEFAULT_ERROR_LOG_RETENTION = 259200000;
 
     /**
-     * The source mapper.
-     *
-     * @var SourceMapper
-     */
-    private SourceMapper $sourceMapper;
-
-    /**
      * The OpenRegister-backed synchronization run-log write service.
      *
      * Post OpenRegister-cutover the SynchronizationLog entity + its QBMapper were
@@ -146,11 +138,6 @@ class SynchronizationService
         // signature mirrors the OpenRegister-based wiring (and the unit suite).
         // Guarded against a bare container mock that returns null in tests which
         // only exercise the OpenRegister-backed paths.
-        $sourceMapper = $this->containerInterface->get(SourceMapper::class);
-        if ($sourceMapper instanceof SourceMapper) {
-            $this->sourceMapper = $sourceMapper;
-        }
-
         $synchronizationContractMapper = $this->containerInterface->get(SynchronizationContractMapper::class);
         if ($synchronizationContractMapper instanceof SynchronizationContractMapper) {
             $this->synchronizationContractMapper = $synchronizationContractMapper;
@@ -312,6 +299,101 @@ class SynchronizationService
 
         return array_values(($matches['results'] ?? $matches));
     }//end findAllContractObjects()
+
+    /**
+     * Find a single source OpenRegister object by its id/uuid/slug.
+     *
+     * Reads sources straight from OpenRegister (register `openconnector`, schema
+     * `source`) so the engine no longer has to go through the SourceMapper
+     * adapter. Replaces the legacy `$this->sourceMapper->findObject($id)` and
+     * `$this->sourceMapper->find($id)` calls.
+     *
+     * @param string|int $id The OpenRegister id/uuid/slug of the source.
+     *
+     * @return ObjectEntity The OpenRegister source object.
+     *
+     * @throws DoesNotExistException When no source matches the identifier.
+     */
+    private function findSourceObject(string|int $id): ObjectEntity
+    {
+        $object = $this->orObjectService->find(
+            id: (string) $id,
+            register: 'openconnector',
+            schema: 'source'
+        );
+
+        if ($object === null) {
+            throw new DoesNotExistException('The source you are looking for does not exist');
+        }
+
+        return $object;
+    }//end findSourceObject()
+
+    /**
+     * Find a single source by id and hydrate it into the typed value object.
+     *
+     * @param string|int $id The OpenRegister id/uuid/slug of the source.
+     *
+     * @return Source The hydrated source value object.
+     *
+     * @throws DoesNotExistException When no source matches the identifier.
+     */
+    private function findSource(string|int $id): Source
+    {
+        return (new Source())->hydrate($this->findSourceObject(id: $id)->jsonSerialize());
+    }//end findSource()
+
+    /**
+     * Find a source by its `location`, or create one if no match exists.
+     *
+     * Reimplements the legacy `SourceMapper::findOrCreateByLocation()` over the
+     * OpenRegister ObjectService so the engine no longer depends on the adapter.
+     *
+     * @param string $location    The source location (URL/identifier).
+     * @param array  $defaultData Additional fields to seed the new source with.
+     *
+     * @return Source The hydrated existing or newly-created source value object.
+     */
+    private function findOrCreateSourceByLocation(string $location, array $defaultData=[]): Source
+    {
+        $config  = ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $location], 'limit' => 1];
+        $matches = $this->orObjectService->findAll(config: $config);
+        $objects = array_values(($matches['results'] ?? $matches));
+
+        if (empty($objects) === false) {
+            return (new Source())->hydrate($objects[0]->jsonSerialize());
+        }
+
+        $sourceData = array_merge(
+            [
+                'location' => $location,
+                'name'     => basename($location),
+                'type'     => 'api',
+                'enabled'  => true,
+            ],
+            $defaultData
+        );
+
+        if (empty($sourceData['uuid']) === true) {
+            $sourceData['uuid'] = (string) Uuid::v4();
+        }
+
+        if (empty($sourceData['version']) === true) {
+            $sourceData['version'] = '0.0.1';
+        }
+
+        // OpenRegister owns identity via the uuid; a stray int `id` breaks its
+        // upsert probe (trim($object['id'])).
+        unset($sourceData['id']);
+
+        $saved = $this->orObjectService->saveObject(
+            object: $sourceData,
+            register: 'openconnector',
+            schema: 'source'
+        );
+
+        return (new Source())->hydrate($saved->jsonSerialize());
+    }//end findOrCreateSourceByLocation()
 
     /**
      * Find synchronizations triggered by a mutation on a related object.
@@ -885,7 +967,7 @@ class SynchronizationService
 
 		// If a source is provided, use it instead of the synchronization's source
 		if ($source !== null) {
-			$source = $this->sourceMapper->findOrCreateByLocation(location: $source);
+			$source = $this->findOrCreateSourceByLocation(location: $source);
 			$synchronization->setSourceId($source->getId());
 		}
 
@@ -1236,7 +1318,7 @@ class SynchronizationService
 			$sourceId = $source;
 		}
 
-		$source = $this->sourceMapper->find(id: $sourceId);
+		$source = $this->findSource(id: $sourceId);
 
 		// Let's get the source config
 		$sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig());
@@ -2263,7 +2345,7 @@ class SynchronizationService
 		// Extract source configuration
 		$sourceConfig = $this->callService->applyConfigDot($synchronization->getSourceConfig()); // TODO; This is the second time this function is called in the synchonysation flow, needs further refactoring investigation
 		//@todo this is an nuessesery db call, we should refactor this
-		$source = $this->sourceMapper->find($synchronization->getSourceId());
+		$source = $this->findSource($synchronization->getSourceId());
 
 		// Check rate limit before proceeding
 		$this->checkRateLimit($source);
@@ -2724,7 +2806,7 @@ class SynchronizationService
 			$sourceIdentifier = (string) $source->getId();
 		}
 
-		$sourceObject = $this->sourceMapper->findObject(id: (string) $sourceIdentifier);
+		$sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
 
 		return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read);
 	}//end callSourceObject()
@@ -2943,7 +3025,7 @@ class SynchronizationService
 	): SynchronizationContract
 	{
 		$targetId = $contract->getTargetId();
-		$target = $this->sourceMapper->find(id: $synchronization->getTargetId());
+		$target = $this->findSource(id: $synchronization->getTargetId());
 
         if ($targetObject !== null) {
             $object = $targetObject;
@@ -3737,7 +3819,7 @@ class SynchronizationService
 
         // Get source for file fetching
         try {
-            $source = $this->sourceMapper->find($config['source']);
+            $source = $this->findSource($config['source']);
         } catch (Exception $e) {
             // Log error but don't block synchronization
             $this->logger->error('Failed to find source for fetch file rule: ' . $e->getMessage(), ['exception' => $e]);
