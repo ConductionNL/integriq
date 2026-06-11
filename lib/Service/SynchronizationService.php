@@ -8,7 +8,6 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OC\User\NoUserException;
-use OCA\OpenConnector\Db\Rule;
 use OCA\OpenConnector\Db\Source;
 use OCA\OpenConnector\Db\Synchronization;
 use OCA\OpenConnector\Db\SynchronizationContract;
@@ -3437,14 +3436,14 @@ class SynchronizationService
     /**
      * Saves object to OpenRegister
      *
-     * @param Rule $rule
+     * @param array $rule The OpenRegister rule payload array.
      * @param array $data
      *
      * @return array $data
      */
-    private function processSaveObjectRule(Rule $rule, array $data): array
+    private function processSaveObjectRule(array $rule, array $data): array
     {
-        $configuration = $rule->getConfiguration();
+        $configuration = ($rule['configuration'] ?? []);
         $register = $configuration['save_object']['register'];
         $schema = $configuration['save_object']['schema'];
         $mapping = $configuration['save_object']['mapping'] ?? null;
@@ -3555,7 +3554,7 @@ class SynchronizationService
             );
 
             // Sort rules by order
-            usort($ruleEntities, fn($a, $b) => $a->getOrder() - $b->getOrder());
+            usort($ruleEntities, fn($a, $b) => ((int) ($a['order'] ?? 0)) - ((int) ($b['order'] ?? 0)));
 
             // Process each rule in order
             foreach ($ruleEntities as $rule) {
@@ -3564,25 +3563,25 @@ class SynchronizationService
                 }
 
                 // Check rule conditions
-                if ($this->checkRuleConditions($rule, $data) === false || $rule->getTiming() !== $timing) {
-                    $this->logger->info('Rule condition check failed for synchronization ' . $synchronization->getName() . ' and rule ' . $rule->getName() . ' of type: ' . $rule->getType());
+                if ($this->checkRuleConditions($rule, $data) === false || ($rule['timing'] ?? null) !== $timing) {
+                    $this->logger->info('Rule condition check failed for synchronization ' . $synchronization->getName() . ' and rule ' . ($rule['name'] ?? '') . ' of type: ' . ($rule['type'] ?? ''));
                     unset ($data['flowToken']);
                     continue;
                 }
                 unset ($data['flowToken']);
 
-                $this->logger->info('Applying rule for synchronization ' . $synchronization->getName() . ' with rule ' . $rule->getName() . ' of type ' . $rule->getType());
+                $this->logger->info('Applying rule for synchronization ' . $synchronization->getName() . ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? ''));
 
                 // Process rule based on type
-                $result = match ($rule->getType()) {
+                $result = match ($rule['type'] ?? null) {
                     'error' => $this->processErrorRule($rule),
                     'mapping' => $this->processMappingRule($rule, $data),
                     'synchronization' => $this->processSyncRule($rule, $data),
                     'save_object' => $this->processSaveObjectRule($rule, $data),
                     'fetch_file' => $this->processFetchFileRule($rule, $data, $objectId),
                     'write_file' => $this->processWriteFileRule($rule, $data, $objectId, $registerId, $schemaId),
-                    'extend_input' => $this->processExtendInputRule(config: $rule->getConfig(), data: $data),
-                    default => throw new Exception('Unsupported rule type: ' . $rule->getType()),
+                    'extend_input' => $this->processExtendInputRule(config: ($rule['configuration'] ?? []), data: $data),
+                    default => throw new Exception('Unsupported rule type: ' . ($rule['type'] ?? '')),
                 };
 
                 // If result is JSONResponse, return error immediately
@@ -3593,7 +3592,7 @@ class SynchronizationService
                 // Update data with rule result
                 $data = $result;
 
-                $this->logger->info('Successfully applied rule for synchronization ' . $synchronization->getName() . ' with rule ' . $rule->getName() . ' of type ' . $rule->getType());
+                $this->logger->info('Successfully applied rule for synchronization ' . $synchronization->getName() . ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? ''));
             }
 
             return $data;
@@ -3606,17 +3605,17 @@ class SynchronizationService
     /**
      * Get a rule by its ID directly from OpenRegister.
      *
-     * Post W5 the legacy RuleMapper container lookup is dropped: the rule is
-     * fetched straight from the OpenRegister ObjectService (register
-     * `openconnector`, schema `rule`) and hydrated into the typed Rule value
-     * object so the downstream rule processors keep their strongly typed
-     * surface (`$rule->getType()`, `$rule->getConfig()`, ...).
+     * Post W6 the typed Rule value object is dropped: the rule is fetched
+     * straight from the OpenRegister ObjectService (register `openconnector`,
+     * schema `rule`) and returned as the OR jsonSerialize() array payload.
+     * Downstream rule processors read fields via array access
+     * (`$rule['type']`, `$rule['configuration']`, ...).
      *
      * @param string $id The unique identifier of the rule (OpenRegister UUID or slug).
      *
-     * @return Rule|null The rule value object if found, or null if not found
+     * @return array|null The rule payload array if found, or null if not found
      */
-    private function getRuleById(string $id): ?Rule
+    private function getRuleById(string $id): ?array
     {
         try {
             $object = $this->orObjectService->find(
@@ -3632,7 +3631,7 @@ class SynchronizationService
             return null;
         }
 
-        return (new Rule())->hydrate($object->jsonSerialize());
+        return $object->jsonSerialize();
     }
 
 	/**
@@ -3997,7 +3996,7 @@ class SynchronizationService
 	 * This method initiates file fetching operations asynchronously without blocking the main execution flow.
 	 * The actual file fetching happens in the background, allowing the synchronization to continue immediately.
 	 *
-	 * @param Rule $rule The rule to process containing fetch_file configuration.
+	 * @param array $rule The OpenRegister rule payload array containing fetch_file configuration.
 	 * @param array $data The data written to the object.
 	 * @param string|null $objectId The UUID of the object to attach files to.
 	 *
@@ -4007,7 +4006,7 @@ class SynchronizationService
 	 * @psalm-return array<string, mixed>
 	 * @phpstan-return array<string, mixed>
 	 */
-	private function processFetchFileRule(Rule $rule, array $data, ?string $objectId = null): array
+	private function processFetchFileRule(array $rule, array $data, ?string $objectId = null): array
 	{
         // Check if OpenRegister app is available
         $appManager = \OC::$server->get(\OCP\App\IAppManager::class);
@@ -4016,11 +4015,12 @@ class SynchronizationService
         }
 
         // Validate rule configuration
-		if (isset($rule->getConfiguration()['fetch_file']) === false) {
+		$ruleConfiguration = ($rule['configuration'] ?? []);
+		if (isset($ruleConfiguration['fetch_file']) === false) {
 			throw new Exception('No configuration found for fetch_file');
 		}
 
-		$config = $rule->getConfiguration()['fetch_file'];
+		$config = $ruleConfiguration['fetch_file'];
 
 		$dataDot = new Dot($data);
         $endpoint = isset($config['filePath']) === true && $config['filePath'] !== '' ? $dataDot->get($config['filePath']) : $config['endpoint'];
@@ -4094,7 +4094,7 @@ class SynchronizationService
 //		}
 
         // Start fire-and-forget file fetching based on endpoint type
-        $this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: $rule->getId(), objectId: $objectId);
+        $this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: (int) ($rule['id'] ?? 0), objectId: $objectId);
 
         // Return data immediately with placeholder values
         if (isset($config['setPlaceholder']) === false || (isset($config['setPlaceholder']) === true && $config['setPlaceholder'] != false)) {
@@ -4258,7 +4258,7 @@ class SynchronizationService
 	/**
 	 * Process a rule to write files.
 	 *
-	 * @param Rule $rule The rule to process.
+	 * @param array $rule The OpenRegister rule payload array.
 	 * @param array $data The data to write.
 	 * @param string $objectId The object to write the data to.
 	 * @param int $registerId The register the object is in.
@@ -4269,13 +4269,14 @@ class SynchronizationService
 	 * @throws NotFoundExceptionInterface
 	 * @throws Exception
 	 */
-    private function processWriteFileRule(Rule $rule, array $data, string $objectId, int $registerId, int $schemaId): array
+    private function processWriteFileRule(array $rule, array $data, string $objectId, int $registerId, int $schemaId): array
     {
-        if (isset($rule->getConfiguration()['write_file']) === false) {
+        $ruleConfiguration = ($rule['configuration'] ?? []);
+        if (isset($ruleConfiguration['write_file']) === false) {
             throw new Exception('No configuration found for write_file');
         }
 
-        $config  = $rule->getConfiguration()['write_file'];
+        $config  = $ruleConfiguration['write_file'];
         $dataDot = new Dot($data);
         $files = $dataDot[$config['filePath']];
         if (isset($files) === false || empty($files) === true) {
@@ -4369,13 +4370,13 @@ class SynchronizationService
     /**
      * Processes an error rule
      *
-     * @param Rule $rule The rule object containing error details
+     * @param array $rule The OpenRegister rule payload array containing error details.
      *
      * @return JSONResponse Response containing error details and HTTP status code
      */
-    private function processErrorRule(Rule $rule): JSONResponse
+    private function processErrorRule(array $rule): JSONResponse
     {
-        $config = $rule->getConfiguration();
+        $config = ($rule['configuration'] ?? []);
         return new JSONResponse(
             [
                 'error' => $config['error']['name'],
@@ -4388,7 +4389,7 @@ class SynchronizationService
     /**
      * Processes a mapping rule
      *
-     * @param Rule $rule The rule object containing mapping details
+     * @param array $rule The OpenRegister rule payload array containing mapping details.
      * @param array $data The data to be processed through the mapping rule
      *
      * @return array The processed data after applying the mapping rule
@@ -4397,9 +4398,9 @@ class SynchronizationService
      * @throws LoaderError When there is an error loading the mapping
      * @throws SyntaxError When there is a syntax error in the mapping configuration
      */
-    private function processMappingRule(Rule $rule, array $data): array
+    private function processMappingRule(array $rule, array $data): array
     {
-        $config = $rule->getConfiguration();
+        $config = ($rule['configuration'] ?? []);
         $mapping = $this->mappingService->getMapping($config['mapping']);
 
         return $this->processMapping(mapping: $mapping, data: $data);
@@ -4421,14 +4422,14 @@ class SynchronizationService
     /**
      * Processes a synchronization rule
      *
-     * @param Rule $rule The rule object containing synchronization details
+     * @param array $rule The OpenRegister rule payload array containing synchronization details.
      * @param array $data The data to be synchronized
      *
      * @return array The data after synchronization processing
      */
-    private function processSyncRule(Rule $rule, array $data): array
+    private function processSyncRule(array $rule, array $data): array
     {
-        $config = $rule->getConfiguration();
+        $config = ($rule['configuration'] ?? []);
         // Here you would implement the synchronization logic
         // For now, just return the data unchanged
         return $data;
@@ -4437,15 +4438,15 @@ class SynchronizationService
     /**
      * Checks if rule conditions are met
      *
-     * @param Rule $rule The rule object containing conditions to be checked
+     * @param array $rule The OpenRegister rule payload array containing conditions to be checked.
      * @param array $data The input data against which the conditions are evaluated
      *
      * @return bool True if conditions are met, false otherwise
      * @throws Exception
      */
-    private function checkRuleConditions(Rule $rule, array $data): bool
+    private function checkRuleConditions(array $rule, array $data): bool
     {
-        $conditions = $rule->getConditions();
+        $conditions = ($rule['conditions'] ?? []);
         if (empty($conditions) === true) {
             return true;
         }
