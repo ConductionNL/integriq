@@ -97,6 +97,29 @@ jobs:
         run: node tests/l10n/check-l10n.js
 
   # ---------------------------------------------------------------------------
+  # HARD GATE 3 — frontend unit suite (Vitest, OFFLINE; no NC needed).
+  #
+  # Runs the pure-logic Vitest suite under tests/vitest/** (Pinia store
+  # state transitions, util/formatter calc, form-validation mappers). These
+  # need no DOM/NC runtime — @nextcloud/* and @conduction/nextcloud-vue are
+  # aliased to deterministic stubs in vitest.config.js. Always gating.
+  # ---------------------------------------------------------------------------
+  frontend-unit:
+    name: Frontend unit (Vitest — ${{ inputs.app-id }})
+    runs-on: codeberg-small
+    container:
+      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Install npm deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Run Vitest unit suite
+        run: npm run test:unit
+
+  # ---------------------------------------------------------------------------
   # SCAFFOLD — deep e2e (Playwright tests/e2e/workflows/). Opt-in via run-e2e.
   #
   # TODO(nc-in-ci): wire a live Nextcloud before flipping this to gating:
