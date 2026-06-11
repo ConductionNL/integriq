@@ -8,6 +8,7 @@ use OCA\OpenConnector\Db\Mapping;
 use OCA\OpenConnector\Db\MappingMapper;
 use OCA\OpenConnector\Db\Source;
 use OCA\OpenConnector\Db\SourceMapper;
+use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
@@ -25,15 +26,17 @@ use Symfony\Component\Uid\UuidV4;
 
 class MappingRuntime implements RuntimeExtensionInterface
 {
-	public function __construct(
-		private readonly MappingService $mappingService,
-		private readonly MappingMapper  $mappingMapper,
-        private readonly CallService $callService,
-        private readonly SourceMapper $sourceMapper,
-        private readonly FileService $fileService,
-        private readonly ObjectService $objectService,
-	) {
-	}
+    public function __construct(
+        private readonly MappingService                $mappingService,
+        private readonly MappingMapper                 $mappingMapper,
+        private readonly CallService                   $callService,
+        private readonly SourceMapper                  $sourceMapper,
+        private readonly FileService                   $fileService,
+        private readonly ObjectService                 $objectService,
+        private readonly SynchronizationContractMapper $synchronizationContractMapper,
+    ) {
+
+    }//end __construct()
 
     /**
      * Encodes a string to base64.
@@ -181,5 +184,76 @@ class MappingRuntime implements RuntimeExtensionInterface
         }
 
         return $formattedFiles;
-    }
-}
+
+    }//end getFiles()
+
+    /**
+     * Creates a URL-friendly slug from text.
+     *
+     * Conversion steps:
+     * 1. Convert to lowercase
+     * 2. Replace spaces and underscores with hyphens
+     * 3. Remove special characters
+     * 4. Remove multiple consecutive hyphens
+     * 5. Trim hyphens from start and end
+     *
+     * @param string $text The text to convert to a slug.
+     *
+     * @return string The generated slug.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     */
+    public function createSlug(string $text): string
+    {
+        // Convert to lowercase.
+        $slug = strtolower($text);
+
+        // Replace spaces and underscores with hyphens.
+        $slug = str_replace([' ', '_'], '-', $slug);
+
+        // Remove all characters that are not a-z, 0-9, or hyphen.
+        $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
+
+        // Replace multiple consecutive hyphens with single hyphen.
+        $slug = preg_replace('/-+/', '-', $slug);
+
+        // Trim hyphens from start and end.
+        $slug = trim($slug, '-');
+
+        return $slug;
+
+    }//end createSlug()
+
+    /**
+     * Look up the targetId of the synchronization contract for a given originId.
+     *
+     * Use this in a mapping when a related object has already been pushed to an external
+     * system and you need its external ID (targetId) as a reference. For example, after
+     * uploading a file to zaaksysteem /case/prepare_file the returned UUID is stored as
+     * targetId; this function lets a subsequent mapping retrieve that UUID by the
+     * OpenRegister object's own id (@self.id / originId).
+     *
+     * @param string      $originId          UUID of the OpenRegister object (@self.id).
+     * @param string|null $synchronizationId Optional: scope the lookup to a specific
+     *                                       synchronization; when omitted the first matching
+     *                                       contract across all synchronizations is returned.
+     *
+     * @return string|null The targetId stored on the contract, or null when not found.
+     *
+     * @throws \OCP\DB\Exception
+     */
+    public function getTargetIdByOriginId(string $originId, ?string $synchronizationId=null): ?string
+    {
+        if ($synchronizationId !== null) {
+            $contract = $this->synchronizationContractMapper->findSyncContractByOriginId(
+                synchronizationId: $synchronizationId,
+                originId: $originId
+            );
+            return $contract?->getTargetId();
+        }
+
+        return $this->synchronizationContractMapper->findTargetIdByOriginId($originId);
+
+    }//end getTargetIdByOriginId()
+
+}//end class
