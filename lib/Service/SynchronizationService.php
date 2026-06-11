@@ -12,7 +12,6 @@ use OCA\OpenConnector\Db\Rule;
 use OCA\OpenConnector\Db\Source;
 use OCA\OpenConnector\Db\Synchronization;
 use OCA\OpenConnector\Db\SynchronizationContract;
-use OCA\OpenConnector\Db\SynchronizationContractLogMapper;
 use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
@@ -95,11 +94,17 @@ class SynchronizationService
     private SynchronizationContractMapper $synchronizationContractMapper;
 
     /**
-     * The synchronization contract log mapper.
+     * The OpenRegister-backed synchronization contract log write service.
      *
-     * @var SynchronizationContractLogMapper
+     * Replaces the legacy SynchronizationContractLogMapper container lookup
+     * dropped in W5. The service is resolved lazily from the PSR-11 container
+     * so the public constructor signature stays unchanged and the unit suite
+     * (which mocks the container as a bare stub) keeps working — call sites
+     * are guarded against a null resolution exactly like the legacy mapper.
+     *
+     * @var SynchronizationContractLogService|null
      */
-    private SynchronizationContractLogMapper $synchronizationContractLogMapper;
+    private ?SynchronizationContractLogService $synchronizationContractLogService = null;
 
     /**
      * Constructor.
@@ -143,9 +148,9 @@ class SynchronizationService
             $this->synchronizationContractMapper = $synchronizationContractMapper;
         }
 
-        $synchronizationContractLogMapper = $this->containerInterface->get(SynchronizationContractLogMapper::class);
-        if ($synchronizationContractLogMapper instanceof SynchronizationContractLogMapper) {
-            $this->synchronizationContractLogMapper = $synchronizationContractLogMapper;
+        $synchronizationContractLogService = $this->containerInterface->get(SynchronizationContractLogService::class);
+        if ($synchronizationContractLogService instanceof SynchronizationContractLogService) {
+            $this->synchronizationContractLogService = $synchronizationContractLogService;
         }
 
         if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
@@ -1730,8 +1735,8 @@ class SynchronizationService
 		$contractLog = null;
 
 		// We are doing something so lets log it
-        if ($synchronizationContract->getId() !== null) {
-            $contractLog = $this->synchronizationContractLogMapper->createFromArray(
+        if ($synchronizationContract->getId() !== null && $this->synchronizationContractLogService !== null) {
+            $contractLog = $this->synchronizationContractLogService->createFromArray(
                 [
                     'synchronizationId' => $synchronization->getId(),
                     'synchronizationContractId' => $synchronizationContract->getId(),
@@ -1798,8 +1803,8 @@ class SynchronizationService
 			$synchronizationContract->setSourceLastChecked(new DateTime());
             $contractLog->setExpires($this->calculateExpires($this->successRetention));
 			// The object has not changed and neither config nor mapping have been updated since last check
-			if (isset($contractLog) === true) {
-				$contractLog = $this->synchronizationContractLogMapper->update($contractLog);
+			if (isset($contractLog) === true && $this->synchronizationContractLogService !== null) {
+				$contractLog = $this->synchronizationContractLogService->update($contractLog);
 			}
 			return [
 				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
@@ -1849,7 +1854,9 @@ class SynchronizationService
 			if (isset($contractLog) === true) {
 			    $contractLog->setTargetResult('test');
                 $contractLog->setExpires($this->calculateExpires($this->successRetention));
-			    $contractLog = $this->synchronizationContractLogMapper->update($contractLog);
+			    if ($this->synchronizationContractLogService !== null) {
+			        $contractLog = $this->synchronizationContractLogService->update($contractLog);
+			    }
 			}
 			return [
 				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
@@ -1878,7 +1885,9 @@ class SynchronizationService
         if (isset($contractLog) === true) {
 		    $contractLog->setTargetResult($synchronizationContract->getTargetLastAction());
             $contractLog->setExpires($this->calculateExpires($this->successRetention));
-		    $contractLog = $this->synchronizationContractLogMapper->update($contractLog);
+		    if ($this->synchronizationContractLogService !== null) {
+		        $contractLog = $this->synchronizationContractLogService->update($contractLog);
+		    }
         }
 
         if ($synchronizationContract->getId()) {
@@ -2154,12 +2163,14 @@ class SynchronizationService
 			);
 		}
 
-		$this->synchronizationContractLogMapper->createFromArray([
-			'synchronizationId' => $subContract->getSynchronizationId(),
-			'synchronizationContractId' => $subContract->getId(),
-			'target' => $subObjectData,
-			'expires' => $this->calculateExpires($this->successRetention, $this->successRetention),
-		]);
+		if ($this->synchronizationContractLogService !== null) {
+			$this->synchronizationContractLogService->createFromArray([
+				'synchronizationId' => $subContract->getSynchronizationId(),
+				'synchronizationContractId' => $subContract->getId(),
+				'target' => $subObjectData,
+				'expires' => $this->calculateExpires($this->successRetention, $this->successRetention),
+			]);
+		}
 	}
 
 	/**
