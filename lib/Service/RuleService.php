@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\RegisterResolverService;
 use OCP\AppFramework\Http\JSONResponse;
 use Symfony\Component\Uid\Uuid;
 use DateTime;
@@ -171,12 +172,15 @@ class RuleService
     /**
      * Constructor for RuleService.
      *
-     * @param ObjectService            $objectService    OpenConnector object-service facade.
-     * @param SoftwareCatalogueService $catalogueService Software-catalog rule helper.
-     * @param RegisterMapper           $registerMapper   Mapper used to resolve register IDs.
-     * @param SchemaMapper             $schemaMapper     Mapper used to resolve schema IDs.
-     * @param CallService              $callService      Service used for outbound HTTP calls during rule evaluation.
-     * @param ORObjectService          $orObjectService  OpenRegister object-service used by extend / save rules.
+     * @param ObjectService                 $objectService    OpenConnector object-service facade.
+     * @param SoftwareCatalogueService      $catalogueService Software-catalog rule helper.
+     * @param RegisterMapper                $registerMapper   Mapper used to resolve register IDs.
+     * @param SchemaMapper                  $schemaMapper     Mapper used to resolve schema IDs.
+     * @param CallService                   $callService      Service used for outbound HTTP calls during rule evaluation.
+     * @param ORObjectService               $orObjectService  OpenRegister object-service used by extend / save rules.
+     * @param RegisterResolverService|null  $registerResolver Resolves `<context>_property` config keys to property
+     *                                                       identifiers; nullable so unit tests that don't exercise
+     *                                                       the catalogue rule path can omit the dependency.
      *
      * @return void
      */
@@ -187,8 +191,48 @@ class RuleService
         private readonly SchemaMapper $schemaMapper,
         private readonly CallService $callService,
         private readonly ORObjectService $orObjectService,
+        private readonly ?RegisterResolverService $registerResolver=null,
     ) {
     }//end __construct()
+
+
+    /**
+     * Resolve a software-catalogue propertyDefinitionRef through app config.
+     *
+     * Consumer admins can override the hardcoded `id-*` constants by
+     * setting `swc_<context>_property = <id>` in openconnector's app
+     * config. When the resolver is unavailable (unit tests) or the
+     * config key is unset, the in-code default is used so behaviour is
+     * preserved end-to-end.
+     *
+     * @param string $configKey App-config key (e.g. `swc_type_property`).
+     * @param string $default   Default property identifier used when the
+     *                          config key is unset or the resolver is
+     *                          unavailable.
+     *
+     * @return string The resolved property identifier.
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md
+     */
+    private function resolvePropertyRef(string $configKey, string $default): string
+    {
+        if ($this->registerResolver === null) {
+            return $default;
+        }
+
+        try {
+            return $this->registerResolver->resolvePropertyId(
+                appId: 'openconnector',
+                configKey: $configKey,
+                default: $default,
+            );
+        } catch (\Throwable $e) {
+            // Resolver failures must not break the catalogue export
+            // pipeline — fall back to the in-code constant.
+            return $default;
+        }
+
+    }//end resolvePropertyRef()
 
     /**
      * Process a custom rule.
@@ -460,7 +504,7 @@ class RuleService
         $datumExport = new DateTime();
         $data['body']['properties'][] = [
             // Datum export.
-            'propertyDefinitionRef' => self::PROP_DATUM_EXPORT,
+            'propertyDefinitionRef' => $this->resolvePropertyRef('swc_datum_export_property', self::PROP_DATUM_EXPORT),
             'value'                 => $datumExport->format('Y-m-d H:i:s'),
             'value-lang'            => 'nl',
         ];
@@ -604,11 +648,11 @@ class RuleService
                 'type'               => 'ApplicationComponent',
                 'properties'         => [
                     [
-                        'propertyDefinitionRef' => self::PROP_SWC_TYPE,
+                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_type_property', self::PROP_SWC_TYPE),
                         'value'                 => 'Pakket',
                     ],
                     [
-                        'propertyDefinitionRef' => self::PROP_OBJECT_ID,
+                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_object_id_property', self::PROP_OBJECT_ID),
                         'value'                 => $voorziening['id'],
                     ],
                     [
@@ -616,15 +660,15 @@ class RuleService
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => self::PROP_EXTERN_PAKKET,
+                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_extern_pakket_property', self::PROP_EXTERN_PAKKET),
                         'value'                 => 'n',
                     ],
                     [
-                        'propertyDefinitionRef' => self::PROP_OMSCHRIJVING,
+                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_omschrijving_property', self::PROP_OMSCHRIJVING),
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => self::BRON,
+                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_bron_property', self::BRON),
                         'value'                 => 'Softwarecatalogus',
                     ],
                 ],
@@ -896,11 +940,11 @@ class RuleService
             'properties' => [
                 [
                     // Object ID.
-                    'propertyDefinitionRef' => self::PROP_OBJECT_ID,
+                    'propertyDefinitionRef' => $this->resolvePropertyRef('swc_object_id_property', self::PROP_OBJECT_ID),
                     'value'                 => $relationUuid,
                 ],
                 [
-                    'propertyDefinitionRef' => self::BRON,
+                    'propertyDefinitionRef' => $this->resolvePropertyRef('swc_bron_property', self::BRON),
                     'value'                 => 'Softwarecatalogus',
                 ],
             ],
