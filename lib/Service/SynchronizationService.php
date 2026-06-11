@@ -1882,18 +1882,10 @@ class SynchronizationService
 				// Get the id form the target object
 				$synchronizationContract->setTargetId($target->getUuid());
 
-                //@TODO: Orphan cleanup is done also in the fetch file rule, this can be removed after a succesful test.
-//				// Clean up orphaned files based on the attachments array
-//				if (isset($targetObject['attachments']) && is_array($targetObject['attachments'])) {
-//					try {
-//						$deletedCount = $this->cleanupFilesFromAttachments($target->getUuid(), $targetObject['attachments']);
-//						if ($deletedCount > 0) {
-//							error_log("Cleaned up {$deletedCount} orphaned files for object {$target->getUuid()}");
-//						}
-//					} catch (Exception $e) {
-//						error_log("Failed to cleanup orphaned files for object {$target->getUuid()}: " . $e->getMessage());
-//					}
-//				}
+                // NOTE: Orphan cleanup is handled by the fetch-file rule path
+                // (see SynchronizationService::fetchAndRegisterFileFromEndpoint).
+                // The duplicate per-attachment cleanup that used to live here was
+                // removed after the fetch-rule path was verified.
 
 				// Handle sub-objects synchronization if sourceConfig is defined
 				if (isset($sourceConfig['subObjects']) === true) {
@@ -3495,7 +3487,7 @@ class SynchronizationService
 					$fileService->publishFile(object: $objectEntity, file: $filename);
 				} catch (Exception $e) {
 					// Log but don't fail the entire operation
-					error_log("Failed to publish file {$filename} for object {$objectId}: " . $e->getMessage());
+					$this->logger->warning("Failed to publish file {$filename} for object {$objectId}: " . $e->getMessage(), ['exception' => $e]);
 				}
 			}
 		} catch (DoesNotExistException $exception) {
@@ -3512,7 +3504,7 @@ class SynchronizationService
 					$fileService->publishFile(object: $objectEntity, file: $filename);
 				} catch (Exception $e) {
 					// Log but don't fail the entire operation
-					error_log("Failed to publish file {$filename} for object {$objectId}: " . $e->getMessage());
+					$this->logger->warning("Failed to publish file {$filename} for object {$objectId}: " . $e->getMessage(), ['exception' => $e]);
 				}
 			}
 		} catch (Exception $e) {
@@ -3749,7 +3741,7 @@ class SynchronizationService
             $source = $this->sourceMapper->find($config['source']);
         } catch (Exception $e) {
             // Log error but don't block synchronization
-            error_log("Failed to find source for fetch file rule: " . $e->getMessage());
+            $this->logger->error('Failed to find source for fetch file rule: ' . $e->getMessage(), ['exception' => $e]);
             return $dataDot->jsonSerialize();
         }
 
@@ -3885,7 +3877,7 @@ class SynchronizationService
             }
         } catch (Exception $e) {
             // Log error but don't throw - this is fire-and-forget
-            error_log("Async file fetching failed for rule {$ruleId}: " . $e->getMessage());
+            $this->logger->error("Async file fetching failed for rule {$ruleId}: " . $e->getMessage(), ['exception' => $e]);
         }
 	}
 
@@ -3925,7 +3917,7 @@ class SynchronizationService
             );
         } catch (Exception $e) {
             // Log error with detailed information but don't throw
-            error_log("File fetch failed for endpoint {$endpoint}, objectId {$objectId}: " . $e->getMessage());
+            $this->logger->error("File fetch failed for endpoint {$endpoint}, objectId {$objectId}: " . $e->getMessage(), ['exception' => $e]);
         }
 	}
 
@@ -4033,7 +4025,7 @@ class SynchronizationService
 
                     $result[$key] = $file->getPath();
                 } catch (Exception $exception) {
-                    error_log("Failed to save file $fileName: " . $exception->getMessage());
+                    $this->logger->error("Failed to save file $fileName: " . $exception->getMessage(), ['exception' => $exception]);
                     $result[$key] = null;
                 }
             }
@@ -4061,7 +4053,7 @@ class SynchronizationService
 
                 $dataDot[$config['filePath']] = $file->getPath();
             } catch (Exception $exception) {
-                error_log("Failed to save file $fileName: " . $exception->getMessage());
+                $this->logger->error("Failed to save file $fileName: " . $exception->getMessage(), ['exception' => $exception]);
                 $dataDot[$config['filePath']] = null;
             }
         }
@@ -4579,13 +4571,13 @@ class SynchronizationService
 							$deletedCount++;
 						}
 					} catch (Exception $e) {
-						error_log("FAILED to delete orphaned file {$fileName}: " . $e->getMessage());
+						$this->logger->error("FAILED to delete orphaned file {$fileName}: " . $e->getMessage(), ['exception' => $e]);
 					}
 				}
 			}
 
 		} catch (Exception $e) {
-			error_log("FATAL ERROR during file cleanup for object {$objectId}: " . $e->getMessage());
+			$this->logger->critical("FATAL ERROR during file cleanup for object {$objectId}: " . $e->getMessage(), ['exception' => $e]);
 		}
 
 		return $deletedCount;
@@ -4660,7 +4652,7 @@ class SynchronizationService
                         registerId: $registerId
 					);
 				} catch (Exception $e) {
-					error_log("Failed to fetch file from endpoint {$actualEndpoint}: " . $e->getMessage());
+					$this->logger->error("Failed to fetch file from endpoint {$actualEndpoint}: " . $e->getMessage(), ['exception' => $e]);
 					// Note: We still keep the filename in tracking array even if fetch fails
 					// This prevents cleanup from deleting files that should exist
 				}

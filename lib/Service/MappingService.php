@@ -1,5 +1,24 @@
 <?php
 
+/**
+ * MappingService.
+ *
+ * Twig-driven mapping service that transforms inbound payloads against
+ * configured Mapping objects + runtime authentication helpers.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ */
+
+// SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+
 namespace OCA\OpenConnector\Service;
 
 use OCA\OpenConnector\Db\Mapping;

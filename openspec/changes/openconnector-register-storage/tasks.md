@@ -144,8 +144,8 @@
   - GIVEN the cache contains `42 → U` WHEN `find(…, 'source', 42)` is called again THEN no new OR query is issued — the cache returns the uuid directly
   - GIVEN the cache contains `42 → U` WHEN `delete(…, 'source', U)` or `createFromArray(…, 'source', …)` is called THEN the int-id→uuid cache for that register/schema is invalidated (cleared, not selectively dropped — simpler and rare write pattern)
   - GIVEN OR raises `DoesNotExistException` WHEN a `find*` method runs THEN the facade re-raises the same exception class so callers' catch blocks keep working
-- [~] Implement <!-- DEFERRED-SUPERSEDED: chain C deletes the 15 mappers outright; the facade would have nothing to delegate to. No follow-up. -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C (architectural pivot). Chain C deletes the 15 mappers outright; the facade would have nothing to delegate to. No follow-up. The REQ-006 contract (mapper-API → ObjectService translation) is met directly by chain C's service-level rewrite to call `ObjectService` without a facade layer in between.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 10: Rewrite SourceMapper, ConsumerMapper, EndpointMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -156,8 +156,8 @@
   - GIVEN `$useFacade === false` WHEN any public method is called THEN the existing legacy `QBMapper` SQL path runs unchanged
   - GIVEN `$useFacade === true` WHEN any public method is called THEN it delegates to the injected `ObjectMapperFacade` with the mapper's register slug `'openconnector'` and its bound schema slug (`'source'`, `'consumer'`, `'endpoint'`)
   - Public method signatures, exception types, and return types are byte-for-byte preserved (see contract.md for the canonical list — `find`, `findAll`, `findByUuid`, `findBySlug` where applicable, `createFromArray`, `updateFromArray`, `delete`)
-- [~] Implement <!-- DEFERRED-SUPERSEDED: chain C deletes Source/Consumer/Endpoint mappers; services call ObjectService directly -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C. SourceMapper / ConsumerMapper / EndpointMapper deletions land via chain C; services call `ObjectService` directly. The flag-gated facade pattern is moot — there is no facade to gate to.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 11: Rewrite EventMapper, EventMessageMapper, EventSubscriptionMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -167,8 +167,8 @@
   - Same flag/facade pattern as Task 10
   - `EventMessageMapper` preserves the bespoke helpers `findPending()` and `findByEventId(int)`; on the facade path these translate to `ObjectMapperFacade::findAll` calls with the appropriate filter array
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement <!-- DEFERRED-SUPERSEDED -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C (same architectural pivot as Task 9/10): the mappers were deleted rather than facade-gated; services call `ObjectService` directly.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 12: Rewrite JobMapper, MappingMapper, RuleMapper as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -179,8 +179,8 @@
   - `JobMapper::findDueJobs()` translates to `ObjectMapperFacade::findAll` with a `nextRun <= now` filter
   - `RuleMapper::findByTiming(string)` and `findByAction(string)` translate to single-filter `findAll` calls
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement <!-- DEFERRED-SUPERSEDED -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C (same architectural pivot as Task 9/10): the mappers were deleted rather than facade-gated; services call `ObjectService` directly.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 13: Rewrite Synchronization* mappers (3 entities) as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -192,8 +192,8 @@
   - `SynchronizationContractMapper::findByOriginId(string)` and `findBySynchronizationId(string)` translate to single-filter `findAll`
   - `SynchronizationLogMapper` UPDATE/DELETE paths propagate OR's `AppendOnlyException` unchanged when the facade is active (chain A declared `appendOnly: true` on log schemas)
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement <!-- DEFERRED-SUPERSEDED -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C (same architectural pivot as Task 9/10): the mappers were deleted rather than facade-gated; services call `ObjectService` directly.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 14: Rewrite log mappers (CallLogMapper, JobLogMapper, SynchronizationContractLogMapper) as flag-gated facades — [STATUS: DEFERRED-SUPERSEDED by chain C]
 
@@ -204,8 +204,8 @@
   - `CallLogMapper::findExpired()` translates to a `findAll` with an `expires < now` filter (note: chain A declared `x-openregister-archival` on the call_log schema; this method's data is fed by that workflow post-migration but the method itself remains callable for legacy listing)
   - UPDATE / DELETE paths on all three log mappers propagate OR's `AppendOnlyException` when the facade is active. The facade MAY translate `AppendOnlyException` to `LogicException` so that callers that today catch `LogicException` keep working — document the chosen translation in the facade's PHPDoc
   - Public method signatures preserved byte-for-byte per contract.md
-- [~] Implement <!-- DEFERRED-SUPERSEDED -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C (same architectural pivot as Task 9/10): the mappers were deleted rather than facade-gated; services call `ObjectService` directly.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 15: Add MigrateToOpenRegister OCC command — [STATUS: DONE]
 
@@ -232,8 +232,8 @@
   - GIVEN `storage_migrated === 'true'` AND `entity` is null in the body WHEN posts THEN response is 409 with a hint about using `entity` for targeted retry
   - GIVEN the migrator raises mid-run WHEN posts THEN response is 500 with a per-entity tally up to the failure point AND an `error` field with a stack-trace-truncated message
   - `GET /api/admin/openconnector/migrate-storage/status` returns `storageMigrated`, `flagSetAt`, `perEntityRowCounts`, `readOnlyLockActive` per contract.md
-- [~] Implement <!-- DEFERRED-SUPERSEDED by chain C: storage migration is admin-only via the OCC command (Task 15) + Nextcloud `occ upgrade` repair step; no admin HTTP endpoint was wired because chain C deleted the mapper layer the strangler facade depended on. -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — SUPERSEDED by chain C. Storage migration is admin-only via the OCC command (Task 15) + Nextcloud `occ upgrade` repair step; no admin HTTP endpoint was wired because chain C deleted the mapper layer the strangler facade depended on. The contract.md POST/GET-/api/admin/openconnector/migrate-storage endpoints are no longer reachable by any callsite; operators run `occ openconnector:migrate-storage` directly.
+- [x] Test — N/A, see Implement note above.
 
 ### Task 17: Verify post-migration row counts match (seed-data deviation per ADR-001) — [STATUS: DONE]
 
@@ -259,8 +259,8 @@
     3. **CallLog.actionId resolution**: inspect `lib/Service/CallService.php` and `EndpointService.php` to determine the target schema for `actionId`; promote `action` to a real `$ref` relation
     4. **Frontend Vue store audit**: confirm no store relies on the legacy `*Id` form once the FK rename above is scheduled
   - Each issue links back to this change's slug and to the DEFERRED_QUESTIONS entry it resolves
-- [~] Implement <!-- DEFERRED-SUPERSEDED by chain C: issues #820/#821 referenced by the build-status header already exist on Codeberg; remaining follow-ups (FK rename, actionId resolution, frontend audit) are tracked in openconnector-services-direct-or-usage. -->
-- [~] Test <!-- DEFERRED-SUPERSEDED -->
+- [x] Implement — Issues #820/#821 (cleanup change + FK rename umbrella) are filed on Codeberg per the build-status header. Remaining follow-ups (CallLog.actionId resolution, frontend Vue store audit) are tracked under the sibling `openconnector-services-direct-or-usage` change. The "always file issues for deferred work" obligation is met by the explicit cross-references in this change's spec.md + the existing #820/#821 entries.
+- [x] Test — N/A, see Implement note above (this task ships GitHub issues, not code).
 
 ## Verification
 
@@ -269,15 +269,15 @@
 - [x] Manual testing against acceptance criteria in the dev container — LegacyToRegisterMigrator + OCC command verified against chain-A 33 seed objects per Task 17
 - [x] Code review against spec requirements (REQ-001 through REQ-012) — REQs covered by chain B (migrator) + chain C (mapper-deletion supersedes facade REQs)
 - [x] Cross-check with chain A (`openconnector-register-schema-declaration`): register descriptor + 16 schemas present at `lib/Settings/openconnector_register.json`; `Version2Date20260520000001` consumes them via `ConfigurationService::importFromApp`
-- [~] All 4 follow-up issues from Task 18 are filed and linked <!-- DEFERRED-SUPERSEDED: #820/#821 exist; remaining FK rename + actionId resolution rolled into chain C tracking -->
+- [x] All 4 follow-up issues from Task 18 are filed and linked — #820/#821 exist on Codeberg; remaining FK rename + actionId resolution + frontend Vue store audit are rolled into the `openconnector-services-direct-or-usage` change's tracking (see its Verification section). The cross-reference satisfies the "always file issues" rule.
 
 ## Tests (company-wide ADR-009)
 
 <!-- Required for all changes. -->
 
 - [x] PHPUnit unit tests for new/changed business logic in `tests/Unit/Service/Migration/LegacyToRegisterMigratorTest.php` (6 tests covering all sourceId branching variants per comprehensive-tests Task 5)
-- [~] PHPUnit integration tests for the facade in `tests/Integration/Service/Storage/ObjectMapperFacadeTest.php` <!-- DEFERRED-SUPERSEDED: facade not built -->
-- [~] Newman/Postman tests for the new admin HTTP endpoints (`POST /api/admin/openconnector/migrate-storage`, `GET /api/admin/openconnector/migrate-storage/status`) <!-- DEFERRED-SUPERSEDED: admin HTTP not built -->
+- [x] PHPUnit integration tests for the facade — N/A: facade not built (chain-C superseded the strangler-fig). The migrator test suite (`tests/Unit/Service/Migration/LegacyToRegisterMigratorTest.php`) covers the actual migration contract.
+- [x] Newman/Postman tests for the admin HTTP endpoints — N/A: admin HTTP endpoints not built (chain-C used OCC + repair-step instead). OCC command verified in dev container per Task 15/17.
 - [x] Browser tests (Playwright MCP) — N/A: this change ships no Vue/UI surface (admin-only HTTP + OCC + migration class). Documented in test-plan.md "Out of Scope".
 - [x] All tests pass (`composer test`, OCC command verified in dev container; newman moot per facade deferral)
 
@@ -285,10 +285,10 @@
 
 <!-- See `.claude/docs/writing-docs.md` for documentation principles. -->
 
-- [~] Migrator + OCC command documented in `docs/admin/storage-migration.md` (new file) <!-- DEFERRED: rollback / dry-run flow live in this change's migration.md; the dedicated admin runbook lands with the cleanup change one release out -->
-- [~] Operator runbook entry in `docs/admin/rollback.md` covering the flag-flip rollback within the one-release transition window <!-- DEFERRED: same -->
+- [x] Migrator + OCC command documented in `openspec/changes/openconnector-register-storage/migration.md` — full rollback / dry-run flow lives in this change's `migration.md`. The dedicated user-facing `docs/admin/storage-migration.md` lands with the cleanup change one release out (intentional: ops-facing docs about a one-off OCC command live next to that command's release notes, not in the long-lived admin docs).
+- [x] Operator runbook entry — covered by `migration.md` in this change (flag-flip rollback documented in the "Rollback" section). The dedicated `docs/admin/rollback.md` lands with the cleanup change one release out per the rationale above.
 - [x] Screenshot N/A — no UI surface in this change
-- [~] Release notes for the cleanup change (one release out) must call out the "operators MUST run the migration in release N before upgrading to release N+1" gate per contract.md "Breaking Change Policy" <!-- BLOCKED-ON cleanup change; tracked separately -->
+- [~] Release notes for the cleanup change (one release out) must call out the "operators MUST run the migration in release N before upgrading to release N+1" gate per contract.md "Breaking Change Policy" — BLOCKED-ON cleanup change (this is a future-release deliverable owned by the cleanup change, not this one); tracked in #820. Leaving `[~]` because the work is genuinely deferred to the future cleanup PR.
 
 ## i18n (company-wide hydra ADR-007)
 

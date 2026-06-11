@@ -120,7 +120,7 @@
   - GIVEN new source type "dso" WHEN configured THEN DSO-specific fields stored
   - GIVEN DSO source WHEN test connection clicked THEN STAM probe validates connectivity
 - Add "dso" source type + implement test connection (STAM probe), tests
-- [~] Task complete <!-- PARTIAL: DSOAdapterService::testDSOConnection(string $apiUrl, ?string $certPath=null) implements the STAM probe + cert validation. Adding the 'dso' literal to the OR `source` schema's type enum (lib/Settings/openconnector_register.json) pending — post chain-C the Source mapper deletion (openconnector-services-direct-or-usage Task 18) shifts the enum from lib/Db/Source.php into the schema descriptor. -->
+- [x] Task complete — `DSOAdapterService::testDSOConnection(string $apiUrl, ?string $certPath=null)` at `lib/Service/DSOAdapterService.php:841` implements the STAM probe + cert validation. The deferral's reference to an "enum" was inaccurate: `Source.type` is free-form (`?string`) both in `lib/Db/Source.php` and in the register descriptor — there is no enum constraint to migrate. `CallService::callSource()` dispatches on `'soap'` and falls back to HTTP for everything else, so `'dso'` is accepted today and routed through the HTTP path that `DSOAdapterService` expects. To make the contract auditable, `lib/Settings/openconnector_register.json` `source.properties.type` now lists `api / database / file / soap / dso` in `description` + `examples` while staying free-form so custom adapter types remain unblocked.
 
 ## Task 14: Unit Tests
 - **spec_ref**: ADR-009

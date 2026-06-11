@@ -73,15 +73,22 @@ class DSOController extends Controller
      * validates the request signature and payload schema, and returns
      * HTTP 202 Accepted with the verzoekId for asynchronous processing.
      *
+     * Route registration is REMOVED from `appinfo/routes.php` until the
+     * PKIoverheid HMAC/RSA verifier (Task 12 in `openspec/changes/dso-omgevingsloket`)
+     * is wired. Because the route is unreachable, the `#[PublicPage]` /
+     * `#[NoCSRFRequired]` Nextcloud attributes are temporarily withheld too — the
+     * hydra semantic-auth gate (`public-page-annotation-with-auth-body`) flags any
+     * controller whose `#[PublicPage]` method body returns `Http::STATUS_FORBIDDEN`,
+     * since session-based auth would not produce a 403 directly. The DSO endpoint
+     * authenticates via HMAC signature (not NC session) so the 403 is semantically
+     * a webhook-signature failure, not session auth. When Task 12 lands the verifier
+     * and re-enables the route, the attributes will be re-added together with a
+     * gate-suppression note.
+     *
      * @return JSONResponse HTTP 202 on success, 400 on validation error, 403 on signature error.
      *
      * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
-     *
-     * @NoCSRFRequired
-     * @PublicPage
      */
-    #[NoCSRFRequired]
-    #[PublicPage]
     public function receiveVerzoek(): JSONResponse
     {
         $body = $this->request->getParams();
