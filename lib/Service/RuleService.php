@@ -924,7 +924,7 @@ class RuleService
      */
     private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
-        $explodedPath = explode(separator: '/', string: $data['path']);
+        $explodedPath = explode(separator: '/', string: (string) ($data['path'] ?? ''));
 
         if (is_string(end($explodedPath)) === true && Uuid::isValid(end($explodedPath)) === true) {
             $this->catalogueService->extendModel(end($explodedPath));

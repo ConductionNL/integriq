@@ -217,7 +217,7 @@ class RegisterDescriptorTest extends TestCase
     /**
      * @return array<string, array<string>>
      */
-    public function schemaSlugProvider(): array
+    public static function schemaSlugProvider(): array
     {
         $cases = [];
         foreach (self::SCHEMA_SLUGS as $label => $schemaSlug) {
