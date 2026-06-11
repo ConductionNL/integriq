@@ -1949,7 +1949,7 @@ class SynchronizationService
         }
 
 		if (isset($contractLog) === true) {
-			$contractLog->setSynchronizationLogId($log->getId());
+			$contractLog['synchronizationLogId'] = $log->getId();
 		}
 
         $flowToken->setSyncInputOriginal($object);
@@ -2001,13 +2001,16 @@ class SynchronizationService
             ) {
 			// We checked the source so let log that
 			$synchronizationContract['sourceLastChecked'] = (new DateTime())->format(DateTime::ATOM);
-            $contractLog->setExpires($this->calculateExpires($this->successRetention));
+            if (isset($contractLog) === true) {
+                $expires = $this->calculateExpires($this->successRetention);
+                $contractLog['expires'] = $expires !== null ? $expires->format(DateTime::ATOM) : null;
+            }
 			// The object has not changed and neither config nor mapping have been updated since last check
 			if (isset($contractLog) === true && $this->synchronizationContractLogService !== null) {
 				$contractLog = $this->synchronizationContractLogService->update($contractLog);
 			}
 			return [
-				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
+				'log' => isset($contractLog) === true ? $contractLog : null,
 				'contract' => $synchronizationContract,
 				'resultAction' => 'skip'
 			];
@@ -2028,7 +2031,7 @@ class SynchronizationService
         }
 
         if (isset($contractLog) === true) {
-		    $contractLog->setTarget($object);
+		    $contractLog['target'] = $object;
         }
 
         $object = $this->replaceRelatedOriginIds(object: $object, config: $sourceConfig['idsToReplaceWithTargetIdsBeforeRules'] ?? [], replaceIdWithTargetId: true);
@@ -2052,14 +2055,15 @@ class SynchronizationService
 		if ($isTest === true) {
 			// Return test data without updating target
 			if (isset($contractLog) === true) {
-			    $contractLog->setTargetResult('test');
-                $contractLog->setExpires($this->calculateExpires($this->successRetention));
+			    $contractLog['targetResult'] = 'test';
+                $expires = $this->calculateExpires($this->successRetention);
+                $contractLog['expires'] = $expires !== null ? $expires->format(DateTime::ATOM) : null;
 			    if ($this->synchronizationContractLogService !== null) {
 			        $contractLog = $this->synchronizationContractLogService->update($contractLog);
 			    }
 			}
 			return [
-				'log' => isset($contractLog) === true ? $contractLog->jsonSerialize() : null,
+				'log' => isset($contractLog) === true ? $contractLog : null,
 				'contract' => $synchronizationContract,
 				'resultAction' => 'skip'
 			];
@@ -2083,8 +2087,9 @@ class SynchronizationService
 
 		// Create log entry for the synchronization
         if (isset($contractLog) === true) {
-		    $contractLog->setTargetResult(($synchronizationContract['targetLastAction'] ?? null));
-            $contractLog->setExpires($this->calculateExpires($this->successRetention));
+		    $contractLog['targetResult'] = ($synchronizationContract['targetLastAction'] ?? null);
+            $expires = $this->calculateExpires($this->successRetention);
+            $contractLog['expires'] = $expires !== null ? $expires->format(DateTime::ATOM) : null;
 		    if ($this->synchronizationContractLogService !== null) {
 		        $contractLog = $this->synchronizationContractLogService->update($contractLog);
 		    }
@@ -2100,7 +2105,7 @@ class SynchronizationService
         }
 
 		return [
-			'log' => $contractLog ? $contractLog->jsonSerialize() : [],
+			'log' => $contractLog ?: [],
 			'contract' => $synchronizationContract,
 			'resultAction' => 'update' // /create
 		];
