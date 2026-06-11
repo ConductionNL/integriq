@@ -23,10 +23,13 @@ namespace OCA\OpenConnector\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
 use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientMock;
 use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientMock;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
@@ -131,32 +134,83 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Dormant PDOK source-pattern adapters (lib/Sources/Pdok/).
+        // Dormant + active PDOK source-pattern adapters (lib/Sources/Pdok/).
+        //
         // The abstract `PdokWmsClient`, `PdokWfsClient`, and
-        // `PdokGeocodingClient` (lib/Adapters/Pdok/) are resolved to their
-        // mock flavours until `pdok.feature_flag` is flipped to `1`. The
-        // Source-pattern facades (`PdokWmsSourceAdapter`,
+        // `PdokGeocodingClient` (lib/Adapters/Pdok/) are resolved to the
+        // appropriate concrete flavour based on the `pdok.feature_flag`
+        // app-config flag:
+        //   - `'1'` or `'true'`  → the `*ClientHttp` implementation
+        //     (real outbound HTTPS calls against api.pdok.nl /
+        //     service.pdok.nl).
+        //   - anything else (default) → the `*ClientMock` implementation
+        //     (deterministic canned responses; no network access).
+        //
+        // The Source-pattern facades (`PdokWmsSourceAdapter`,
         // `PdokWfsSourceAdapter`, `PdokGeocodingClient` under the Sources
         // namespace) layer logging + Source-row identity on top so they can
         // be discovered through the openconnector Source registry under
-        // category `geo`. Swap the mock binding for the `*ClientHttp`
-        // implementation in a downstream change once the flag flips.
+        // category `geo`.
+        $isPdokActive = static function ($c): bool {
+            $config = $c->get('OCP\IAppConfig');
+            $raw    = $config->getValueString('openconnector', 'pdok.feature_flag', '0');
+            return ($raw === '1' || strtolower($raw) === 'true');
+        };
+
         $context->registerService(
             PdokWmsClient::class,
-            static function ($c) {
-                return $c->get(PdokWmsClientMock::class);
+            static function ($c) use ($isPdokActive) {
+                return $isPdokActive($c) === true
+                    ? $c->get(PdokWmsClientHttp::class)
+                    : $c->get(PdokWmsClientMock::class);
             }
         );
         $context->registerService(
             PdokWfsClient::class,
-            static function ($c) {
-                return $c->get(PdokWfsClientMock::class);
+            static function ($c) use ($isPdokActive) {
+                return $isPdokActive($c) === true
+                    ? $c->get(PdokWfsClientHttp::class)
+                    : $c->get(PdokWfsClientMock::class);
             }
         );
         $context->registerService(
             AdapterPdokGeocodingClient::class,
+            static function ($c) use ($isPdokActive) {
+                return $isPdokActive($c) === true
+                    ? $c->get(PdokGeocodingClientHttp::class)
+                    : $c->get(PdokGeocodingClientMock::class);
+            }
+        );
+
+        // Explicit factories for the *ClientHttp flavours so the Guzzle
+        // ClientInterface is injected via a shared singleton; NC's
+        // auto-wiring can't construct GuzzleHttp\Client directly because
+        // ClientInterface is an interface.
+        $context->registerService(
+            PdokGeocodingClientHttp::class,
             static function ($c) {
-                return $c->get(PdokGeocodingClientMock::class);
+                return new PdokGeocodingClientHttp(
+                    httpClient: new \GuzzleHttp\Client(),
+                    logger: $c->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+        $context->registerService(
+            PdokWmsClientHttp::class,
+            static function ($c) {
+                return new PdokWmsClientHttp(
+                    httpClient: new \GuzzleHttp\Client(),
+                    logger: $c->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+        $context->registerService(
+            PdokWfsClientHttp::class,
+            static function ($c) {
+                return new PdokWfsClientHttp(
+                    httpClient: new \GuzzleHttp\Client(),
+                    logger: $c->get('Psr\Log\LoggerInterface')
+                );
             }
         );
         $context->registerService(
