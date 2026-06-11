@@ -28,6 +28,8 @@ use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
 use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientMock;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
+use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
+use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
@@ -39,6 +41,7 @@ use OCA\OpenConnector\Service\SettingsService;
 use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
+use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -183,6 +186,30 @@ class Application extends App implements IBootstrap
                     config: $c->get('OCP\IAppConfig'),
                     logger: $c->get('Psr\Log\LoggerInterface'),
                     geocodingClient: $c->get(AdapterPdokGeocodingClient::class)
+                );
+            }
+        );
+
+        // Wave-4 external-API low-volume families.
+        //
+        // - Logius Berichtenbox (BBK 1.7 — burgerportaal-mijnoverheid-bridge,
+        //   procest berichtenbox-integration spec). The abstract
+        //   BerichtenboxClient resolves to BerichtenboxClientMock by
+        //   default; flip `logius.berichtenbox.feature_flag` and bind
+        //   the BerichtenboxClientHttp implementation to activate.
+        $context->registerService(
+            BerichtenboxClient::class,
+            static function ($c) {
+                return $c->get(BerichtenboxClientMock::class);
+            }
+        );
+        $context->registerService(
+            BerichtenboxSourceAdapter::class,
+            static function ($c) {
+                return new BerichtenboxSourceAdapter(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    berichtenboxClient: $c->get(BerichtenboxClient::class)
                 );
             }
         );
