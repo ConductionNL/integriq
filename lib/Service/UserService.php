@@ -11,10 +11,14 @@ declare(strict_types=1);
  *
  * @category  Service
  * @package   OpenConnector
+ *
  * @author    Conduction <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @version   1.0.0
- * @link      https://github.com/ConductionNL/opencatalogi
+ *
+ * @link      https://conduction.nl
  */
 
 namespace OCA\OpenConnector\Service;
@@ -139,9 +143,16 @@ class UserService
         $result['lastName'] = $result['lastName'] ?? null;
         $result['middleName'] = $result['middleName'] ?? null;
         
-        // Add organization information if available
-        $organisationStats = $this->organisationBridgeService->getUserOrganisationStats();
-        $result['organisations'] = $organisationStats;
+        // Add organization information if available.
+        // Guard against the OpenRegister-side OrganisationService being absent on
+        // single-tenant instances — the bridge service exposes
+        // isOrganisationServiceAvailable() exactly for this gating call.
+        if ($this->organisationBridgeService->isOrganisationServiceAvailable() === true) {
+            $organisationStats = $this->organisationBridgeService->getUserOrganisationStats();
+            $result['organisations'] = $organisationStats;
+        } else {
+            $result['organisations'] = [];
+        }
         
         return $result;
     }
