@@ -12,6 +12,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\IRequest;
 
 class SourcesController extends Controller
@@ -28,7 +29,8 @@ class SourcesController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SourceMapper $sourceMapper,
-        private readonly CallLogMapper $callLogMapper
+        private readonly CallLogMapper $callLogMapper,
+        private readonly IDBConnection $db
     )
     {
         parent::__construct($appName, $request);
@@ -250,7 +252,19 @@ class SourcesController extends Controller
             }
 
             if (empty($specialFilters['slow_requests']) === false) {
-                $searchConditions[] = "JSON_EXTRACT(response, '$.responseTime') > ?";
+                // The responseTime lives inside the `response` JSON column; JSON access
+                // syntax differs per database engine, so pick the right expression.
+                switch ($this->db->getDatabaseProvider()) {
+                    case IDBConnection::PLATFORM_POSTGRES:
+                        $searchConditions[] = "(response::jsonb->>'responseTime')::numeric > ?";
+                        break;
+                    case IDBConnection::PLATFORM_SQLITE:
+                        $searchConditions[] = "json_extract(response, '$.responseTime') > ?";
+                        break;
+                    default: // MySQL / MariaDB
+                        $searchConditions[] = "JSON_EXTRACT(response, '$.responseTime') > ?";
+                        break;
+                }
                 $searchParams[] = $specialFilters['slow_requests'];
             }
 

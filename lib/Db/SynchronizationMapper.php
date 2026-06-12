@@ -368,8 +368,14 @@ class SynchronizationMapper extends QBMapper
      */
     public function findByConfiguration(string $configurationId): array
     {
-        $sql = 'SELECT * FROM `' . $this->getTableName() . '` WHERE JSON_CONTAINS(configurations, ?)';
-        return $this->findEntities($sql, [$configurationId]);
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->like('configurations', $qb->createNamedParameter('%"' . $configurationId . '"%'))
+            );
+
+        return $this->findEntities(query: $qb);
     }
 
     /**

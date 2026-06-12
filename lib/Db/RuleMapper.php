@@ -46,8 +46,7 @@ class RuleMapper extends QBMapper
 			$qb->where(
 				$qb->expr()->orX(
 					$qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('slug', $qb->createNamedParameter($id)),
-					$qb->expr()->eq('id', $qb->createNamedParameter($id))
+					$qb->expr()->eq('slug', $qb->createNamedParameter($id))
 				)
 			);
 		} else {
@@ -215,13 +214,14 @@ class RuleMapper extends QBMapper
 	private function getMaxOrder(): int
 	{
 		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COALESCE(MAX(`order`), 0) as max_order'))
+		$qb->selectAlias($qb->func()->max('order'), 'max_order')
 		   ->from('openconnector_rules');
 
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
 
+		// Cast handles a NULL result (no rows) as 0, so COALESCE is unnecessary.
 		return (int)($row['max_order']);
 	}
 
@@ -268,8 +268,14 @@ class RuleMapper extends QBMapper
 	 */
 	public function findByConfiguration(string $configurationId): array
 	{
-		$sql = 'SELECT * FROM `' . $this->getTableName() . '` WHERE JSON_CONTAINS(configurations, ?)';
-		return $this->findEntities($sql, [$configurationId]);
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->like('configurations', $qb->createNamedParameter('%"' . $configurationId . '"%'))
+			);
+
+		return $this->findEntities(query: $qb);
 	}
 
 	/**
