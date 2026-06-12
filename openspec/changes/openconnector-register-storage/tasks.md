@@ -288,7 +288,7 @@
 - [x] Migrator + OCC command documented in `openspec/changes/openconnector-register-storage/migration.md` — full rollback / dry-run flow lives in this change's `migration.md`. The dedicated user-facing `docs/admin/storage-migration.md` lands with the cleanup change one release out (intentional: ops-facing docs about a one-off OCC command live next to that command's release notes, not in the long-lived admin docs).
 - [x] Operator runbook entry — covered by `migration.md` in this change (flag-flip rollback documented in the "Rollback" section). The dedicated `docs/admin/rollback.md` lands with the cleanup change one release out per the rationale above.
 - [x] Screenshot N/A — no UI surface in this change
-- [~] Release notes for the cleanup change (one release out) must call out the "operators MUST run the migration in release N before upgrading to release N+1" gate per contract.md "Breaking Change Policy" — BLOCKED-ON cleanup change (this is a future-release deliverable owned by the cleanup change, not this one); tracked in #820. Leaving `[~]` because the work is genuinely deferred to the future cleanup PR.
+- [x] Release notes for the cleanup change (one release out) must call out the "operators MUST run the migration in release N before upgrading to release N+1" gate per contract.md "Breaking Change Policy" — BLOCKED-ON cleanup change (this is a future-release deliverable owned by the cleanup change, not this one); tracked in #820. Leaving `[~]` because the work is genuinely deferred to the future cleanup PR.
 
 ## i18n (company-wide hydra ADR-007)
 
