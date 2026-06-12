@@ -4,7 +4,9 @@
 	<id>openconnector</id>
 	<name>Open Connector</name>
 	<summary>Gateway and Service bus functionality</summary>
-	<description><![CDATA[📰 Bringing Gateway and Service bus functionality to nextcloud
+	<description><![CDATA[> ⚠️ **Active development — not for production use yet.** This app is under active development. Although it may carry a stable release status, **please do not use it in production environments before 17 June 2026.** See the [app page on conduction.nl](https://conduction.nl/apps/openconnector) for release planning and what this app does.
+
+📰 Bringing Gateway and Service bus functionality to nextcloud
 
 The OpenConnector Nextcloud app provides a ESB-framework to work together in an (open) data ecosystem
 
@@ -13,7 +15,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 - 🆓 Map and translate API calls
 
     ]]></description>
-	<version>0.2.13</version>
+	<version>0.2.14</version>
 	<licence>agpl</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
