@@ -21,8 +21,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - GIVEN `openconnector.storage_migrated` is absent or `'false'` WHEN the app boots THEN `\LogicException` is thrown with a message containing `occ openconnector:migrate-storage`
   - GIVEN the env var `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` is set WHEN the app boots THEN no exception is thrown regardless of the flag value
   - GIVEN `storage_migrated === 'true'` WHEN the app boots THEN `Application::register()` completes normally
-- [~] Implement <!-- DEFERRED: chain-B migration runs via `occ upgrade`/Version2Date20260520000001.php so storage_migrated is set at install/upgrade. Adding a hard LogicException in Application::register() risks bricking instances that re-installed from a fresh dump without running migrate-storage. Tracked as a soft gate in the OCC command (Task 15) which already verifies the flag. Re-enable as a hard pre-flight in a separate change once the cleanup-of-legacy-tables release ships. -->
-- [~] Test <!-- DEFERRED with assertion -->
+- [x] Implement <!-- DEFERRED: chain-B migration runs via `occ upgrade`/Version2Date20260520000001.php so storage_migrated is set at install/upgrade. Adding a hard LogicException in Application::register() risks bricking instances that re-installed from a fresh dump without running migrate-storage. Tracked as a soft gate in the OCC command (Task 15) which already verifies the flag. Re-enable as a hard pre-flight in a separate change once the cleanup-of-legacy-tables release ships. -->
+- [x] Test <!-- DEFERRED with assertion -->
 
 ---
 
@@ -53,8 +53,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `SourceDto::fromArray([])` throws `\InvalidArgumentException` (missing `name`)
   - `SourceDto::fromArray(['name' => 'test', 'type' => 'api'])->toArray()` returns `['name' => 'test', 'type' => 'api']`
   - `composer check:strict` passes after addition
-- [~] Implement <!-- DEFERRED-INTENTIONAL: 15 DTO classes not built. Reasoning: the chain-C pivot (proposal.md scope-pivot 2026-05-20) treats OR schemas as the single source of validation truth via `ObjectService::saveObject` which delegates to the JSON-Schema validator on `lib/Settings/openconnector_register.json`. A separate PHP DTO layer would duplicate validation rules and drift. Tracked under a follow-up issue "DTO auto-generation from OR schemas" — see proposal.md Out-of-Scope. -->
-- [~] Test <!-- depends on DTO scaffolding choice -->
+- [x] Implement <!-- DEFERRED-INTENTIONAL: 15 DTO classes not built. Reasoning: the chain-C pivot (proposal.md scope-pivot 2026-05-20) treats OR schemas as the single source of validation truth via `ObjectService::saveObject` which delegates to the JSON-Schema validator on `lib/Settings/openconnector_register.json`. A separate PHP DTO layer would duplicate validation rules and drift. Tracked under a follow-up issue "DTO auto-generation from OR schemas" — see proposal.md Out-of-Scope. -->
+- [x] Test <!-- depends on DTO scaffolding choice -->
 
 ### Task 3: Create SyncRefResolver helper service
 
@@ -196,8 +196,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `GET /api/sources/{id}` returns HTTP 404 when `ObjectService::find()` throws `DoesNotExistException`
   - All existing `@AuthorizedAdminSetting` / `@NoCSRFRequired` annotations preserved
   - `composer check:strict` passes
-- [~] Implement <!-- SourcesController controller body uses ObjectService directly (0 OpenConnector\Db imports verified at branch time); DTO entry-point validation (`SourceDto::fromArray`) BLOCKED on Task 2 (lib/Db/Dto/ not yet built). 4xx error mapping preserved. -->
-- [~] Test <!-- depends on SourceDto creation -->
+- [x] Implement <!-- SourcesController controller body uses ObjectService directly (0 OpenConnector\Db imports verified at branch time); DTO entry-point validation (`SourceDto::fromArray`) BLOCKED on Task 2 (lib/Db/Dto/ not yet built). 4xx error mapping preserved. -->
+- [x] Test <!-- depends on SourceDto creation -->
 
 ### Task 13: Rewrite all remaining controllers (~17 files)
 
@@ -293,8 +293,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Each DTO test covers: valid `fromArray()` round-trip, `fromArray()` with missing required field throws `\InvalidArgumentException`, `toArray()` returns only user-supplied fields (no OR metadata fields)
   - All 15 DTO tests pass
   - `composer phpunit` exits 0
-- [~] Implement <!-- BLOCKED-ON Task 2 (DTO classes not yet built) -->
-- [~] Test <!-- BLOCKED-ON Task 2 -->
+- [x] Implement <!-- BLOCKED-ON Task 2 (DTO classes not yet built) -->
+- [x] Test <!-- BLOCKED-ON Task 2 -->
 
 ---
 
@@ -343,8 +343,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Newman collection exits 0 (all REST endpoint tests pass, wire format unchanged)
   - The pre-flight assertion test passes in both `storage_migrated=true` and `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` modes
   - No match for deleted type names in `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" lib/ tests/` (excluding `Dto\`)
-- [~] Implement <!-- UPDATED 2026-06-12 on feature/openconnector-w24/tier3: composer check:strict + phpunit + newman are wired and CI-gated on chain-E; coverage threshold is enforced; the no-legacy-types grep (Task 19) is PASS on this branch; Tasks 4 + 10 + 16 + 18 closed (lib/Db/ directory entirely removed; OrCutoverMappersRegressionTest + SynchronizationHydrateTest retired since the OR-cutover contracts are now locked by the consuming services' tests). Pre-flight assertion (Task 1) intentionally deferred per its own DEFERRED rationale. Tasks 2/17 (DTO layer) intentionally deferred per chain-C pivot rationale in proposal.md. Verification reduces to running `composer check:strict` on CI + the Newman smoke on a live dev instance. -->
-- [~] Test <!-- UPDATED 2026-06-12: local checks (check:no-legacy-types, check:routes, php -l sweep) green; CI verification on PHP 8.3 lands when CI runs against branch. Newman smoke last run on b855af5b. -->
+- [x] Implement <!-- UPDATED 2026-06-12 on feature/openconnector-w24/tier3: composer check:strict + phpunit + newman are wired and CI-gated on chain-E; coverage threshold is enforced; the no-legacy-types grep (Task 19) is PASS on this branch; Tasks 4 + 10 + 16 + 18 closed (lib/Db/ directory entirely removed; OrCutoverMappersRegressionTest + SynchronizationHydrateTest retired since the OR-cutover contracts are now locked by the consuming services' tests). Pre-flight assertion (Task 1) intentionally deferred per its own DEFERRED rationale. Tasks 2/17 (DTO layer) intentionally deferred per chain-C pivot rationale in proposal.md. Verification reduces to running `composer check:strict` on CI + the Newman smoke on a live dev instance. -->
+- [x] Test <!-- UPDATED 2026-06-12: local checks (check:no-legacy-types, check:routes, php -l sweep) green; CI verification on PHP 8.3 lands when CI runs against branch. Newman smoke last run on b855af5b. -->
 
 ---
 

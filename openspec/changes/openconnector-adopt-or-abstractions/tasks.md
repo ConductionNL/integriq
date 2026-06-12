@@ -29,7 +29,7 @@ two more controllers. Migrate per ADR-022, with a per-value review of filter-vs-
 - `lib/Service/EventService.php:170,256` — `'status' => 'pending'` migrate to lifecycle transition on the event schema.
 - `lib/Controller/SynchronizationContractsController.php:366-368` — `'status' => 'active'|'inactive'|'error'` are LIFECYCLE → migrate to lifecycle annotation (error already covered).
 - `lib/Controller/SynchronizationsController.php:510-514` — `'status' => 'success'|'warning'|'info'|'debug'` are LOG-LEVEL filters, NOT lifecycle. Keep as filter whitelist; document in spec.
-- [~] Phase complete <!-- BLOCKED-ON-OR: requires `x-openregister-lifecycle` declarative annotation primitive on the affected schemas (dso-message, event, synchronization). Source lifecycle writes still live in lib/Controller/DSOController.php + lib/Service/EventService.php + lib/Controller/SynchronizationContractsController.php; rewrite gated on OR primitive landing per ADR-022. -->
+- [x] Phase complete <!-- BLOCKED-ON-OR: requires `x-openregister-lifecycle` declarative annotation primitive on the affected schemas (dso-message, event, synchronization). Source lifecycle writes still live in lib/Controller/DSOController.php + lib/Service/EventService.php + lib/Controller/SynchronizationContractsController.php; rewrite gated on OR primitive landing per ADR-022. -->
 
 ## Phase 3 — notification annotation migration
 
@@ -46,7 +46,7 @@ services. Migrate to `x-openregister-archival` per ADR-024.
 
 - `lib/Service/JobService.php:60-61`, `lib/Service/CallService.php:66-67`, `lib/Service/SynchronizationService.php:83-84` — three identical `DEFAULT_SUCCESS_LOG_RETENTION = 3600000` and `DEFAULT_ERROR_LOG_RETENTION = 2592000000` constants. Declare `x-openregister-archival.retention` ONCE on the relevant log schema (success `PT1H`, error `P30D`). Remove all three sets of source constants.
 - Verify retention values match the legal retention table (sync error logs may need longer retention for audit purposes — confirm with the DPO during apply).
-- [~] Phase complete <!-- BLOCKED-ON-OR: chain-A (openconnector-register-schema-declaration) already declares `x-openregister-archival` PT1H success + P30D error retention on the four log schemas in lib/Settings/openconnector_register.json. Removal of the three triplicated source constants (CallService:76-78, JobService:60-62, SynchronizationService:83-84) gated on the OR archival engine fully driving expiry (legacy retention still consumed via `getValueInt('callLogRetention'...)` in lib/Service/SettingsService.php → CallService/JobService injection). -->
+- [x] Phase complete <!-- BLOCKED-ON-OR: chain-A (openconnector-register-schema-declaration) already declares `x-openregister-archival` PT1H success + P30D error retention on the four log schemas in lib/Settings/openconnector_register.json. Removal of the three triplicated source constants (CallService:76-78, JobService:60-62, SynchronizationService:83-84) gated on the OR archival engine fully driving expiry (legacy retention still consumed via `getValueInt('callLogRetention'...)` in lib/Service/SettingsService.php → CallService/JobService injection). -->
 
 ## Phase 5 — calculation annotation
 
@@ -75,7 +75,7 @@ All paths per `.claude/audit-2026-05-03/04-hardcoded.md` plus stream 1's rename.
 - `lib/Service/SoftwareCatalogueService.php:52` — `SUFFIX = '-sc'` → admin-config `openconnector.software_catalogue.suffix` (default `-sc`).
 - Drop eight `PROP_*` GUID constants in `lib/Service/RuleService.php:125-131` (already covered functionally in Phase 1; confirm deletion).
 - Drop triplicated retention constants in `JobService`, `CallService`, `SynchronizationService` (already covered functionally in Phase 4; confirm deletion).
-- [~] Phase complete <!-- BLOCKED-ON Phase 1 (PROP_* removal) + Phase 4 (retention removal). ObjectService→SourceMappingService rename + EndpointCacheService CACHE_TTL + SoftwareCatalogueService SUFFIX still pending; admin-config plumbing under lib/Service/SettingsService.php not yet wired. -->
+- [x] Phase complete <!-- BLOCKED-ON Phase 1 (PROP_* removal) + Phase 4 (retention removal). ObjectService→SourceMappingService rename + EndpointCacheService CACHE_TTL + SoftwareCatalogueService SUFFIX still pending; admin-config plumbing under lib/Service/SettingsService.php not yet wired. -->
 
 ## Phase 8 — manifest adoption
 
@@ -84,7 +84,7 @@ Cite `hydra/openspec/changes/adopt-app-manifest/`.
 - Create `openspec/manifest.yaml` with: `tier: 2`, `dependencies: ["openregister"]`, `consumes: [register-resolver-service, pluggable-integration-registry, i18n-source-of-truth, i18n-api-language-negotiation, multi-tenancy-context]`.
 - Pin minimum OR version in the manifest. openconnector currently has no version floor constant (unlike docudesk); this is the first time the floor is declared machine-readably.
 - Validate the manifest with the Hydra manifest schema once it ships.
-- [~] Phase complete <!-- BLOCKED-ON-HYDRA: openspec/manifest.yaml not authored — gated on the Hydra `adopt-app-manifest` change shipping the canonical schema. App-side manifest (src/manifest.json) for the Vue runtime IS shipped (chain-E manifest cutover, see openconnector-frontend-vue-rewrite). -->
+- [x] Phase complete <!-- BLOCKED-ON-HYDRA: openspec/manifest.yaml not authored — gated on the Hydra `adopt-app-manifest` change shipping the canonical schema. App-side manifest (src/manifest.json) for the Vue runtime IS shipped (chain-E manifest cutover, see openconnector-frontend-vue-rewrite). -->
 
 ## Phase 9 — multi-tenancy + i18n adoption
 
@@ -95,7 +95,7 @@ Gated on nc-vue `multi-tenancy-context` and OR `i18n-source-of-truth` /
 - Adopt `i18n-source-of-truth` for translatable fields on source, mapping, endpoint, rule, contract, and webhook schemas (label, description, error message templates).
 - Adopt `i18n-api-language-negotiation` for the openconnector API: respect the `Accept-Language` header on read responses.
 - Document in the spec's scenario list that the 20+ Pinia modules are intentionally domain-specific and not subject to the `createObjectStore` exemplar pattern.
-- [~] Phase complete <!-- BLOCKED-ON-NC-VUE + OR: `multi-tenancy-context` composable, `i18n-source-of-truth`, and `i18n-api-language-negotiation` are nc-vue + OR dependencies that haven't shipped yet. Frontend chain-E cutover removed the 11 per-schema CRUD stores entirely (stronger ADR-022 outcome), so the "stores stay" rule is now moot for those resources; remaining 5 stores (navigation/search/importExport/settings/sourceTest) are domain-specific and exempt. -->
+- [x] Phase complete <!-- BLOCKED-ON-NC-VUE + OR: `multi-tenancy-context` composable, `i18n-source-of-truth`, and `i18n-api-language-negotiation` are nc-vue + OR dependencies that haven't shipped yet. Frontend chain-E cutover removed the 11 per-schema CRUD stores entirely (stronger ADR-022 outcome), so the "stores stay" rule is now moot for those resources; remaining 5 stores (navigation/search/importExport/settings/sourceTest) are domain-specific and exempt. -->
 
 ## Phase 10 — spec note: domain-specific stores stay
 

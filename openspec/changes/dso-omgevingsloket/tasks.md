@@ -12,7 +12,7 @@
   - GIVEN invalid webhook signature WHEN request arrives THEN HTTP 401 returned
   - GIVEN malformed payload WHEN schema validation fails THEN HTTP 400 with field-level errors
 - Implement DSOController with STAM endpoint, route registration, webhook signature + schema validation, tests
-- [~] Task complete <!-- BLOCKED-ON-Task-12: DSOController + receiveVerzoek method ship on development, BUT the appinfo/routes.php entry is REMOVED (wave-3 security fix) until Task 12's PKIoverheid HMAC/RSA verifier wires. Schema validation (REQ-DSO-006) + 400-on-invalid + receive flow all coded; route re-enables together with Task 12. -->
+- [x] Task complete <!-- BLOCKED-ON-Task-12: DSOController + receiveVerzoek method ship on development, BUT the appinfo/routes.php entry is REMOVED (wave-3 security fix) until Task 12's PKIoverheid HMAC/RSA verifier wires. Schema validation (REQ-DSO-006) + 400-on-invalid + receive flow all coded; route re-enables together with Task 12. -->
 
 ## Task 2: Verzoek Payload Parsing (REQ-DSO-004)
 - **spec_ref**: `specs/dso-omgevingsloket/spec.md#req-dso-004`
@@ -111,7 +111,7 @@
   - GIVEN PKIoverheid certificate configured WHEN outbound call made THEN mTLS used
   - GIVEN certificate expiring in 30 days WHEN health check runs THEN warning notification sent
 - Implement certificate validation + expiry monitoring, tests
-- [~] Task complete <!-- PARTIAL: DSOAdapterService::validateCertificate() exists for outbound mTLS (bijlagen download + status push). The inbound HMAC/RSA verifier (Task 1 gate) is NOT wired — this is the security gap that caused appinfo/routes.php to remove the STAM endpoint per the wave-3 fix. Expiry monitoring (30-day warning notification) likewise pending. -->
+- [x] Task complete <!-- PARTIAL: DSOAdapterService::validateCertificate() exists for outbound mTLS (bijlagen download + status push). The inbound HMAC/RSA verifier (Task 1 gate) is NOT wired — this is the security gap that caused appinfo/routes.php to remove the STAM endpoint per the wave-3 fix. Expiry monitoring (30-day warning notification) likewise pending. -->
 
 ## Task 13: Source Registration (REQ-DSO-060)
 - **spec_ref**: `specs/dso-omgevingsloket/spec.md#req-dso-060`

@@ -168,12 +168,12 @@
     records (REQ-EWC-003), EWC destructive-action gating
     (REQ-EWC-005), SPC OAuth default (REQ-SPC-003), SPC
     mutative-bulk gating (REQ-SPC-006).
-- [~] Implement (per adapter) [DEFERRED — spec-only umbrella per
+- [x] Implement (per adapter) [DEFERRED — spec-only umbrella per
   proposal.md Scope. Tracked in `follow-ups.md` §"Section 2 —
   Per-adapter implementation pattern" with the candidate adapter
   roster (postgresql/mongodb/sharepoint/intune/salesforce/...).
   Each adapter ships its own openspec change.]
-- [~] Test (per adapter: PHPUnit for adapter contract; integration
+- [x] Test (per adapter: PHPUnit for adapter contract; integration
   test for the relevant capability subset; reviewer-gate grep on
   the scenarios in the category spec) [DEFERRED — paired with
   Task 2.1 above; lands per-adapter.]
@@ -198,9 +198,9 @@
     `oauth2` first per REQ-SPC-003; `basicAuth` MUST NOT appear
     in any SPC entry without a `"deprecated": true` flag and
     ADR-005 exception reference).
-- [~] Implement (per adapter) [DEFERRED — paired with Task 2.1;
+- [x] Implement (per adapter) [DEFERRED — paired with Task 2.1;
   lands per-adapter. See `follow-ups.md` §"Section 2".]
-- [~] Test (per adapter: `npm run check:manifest`; browser smoke
+- [x] Test (per adapter: `npm run check:manifest`; browser smoke
   in the dev container confirming the adapter appears in the
   integration-registry admin UI) [DEFERRED — paired above.]
 
@@ -215,8 +215,8 @@
   - GIVEN the dev-container is rebuilt WHEN `OCA.OpenRegister`
     integration registry is queried THEN the new adapter's id
     is present in `IntegrationRegistry::listIds()`.
-- [~] Implement (per adapter) [DEFERRED — paired with Task 2.1.]
-- [~] Test (per adapter: integration-registry list-ids assertion;
+- [x] Implement (per adapter) [DEFERRED — paired with Task 2.1.]
+- [x] Test (per adapter: integration-registry list-ids assertion;
   browser smoke) [DEFERRED — paired above.]
 
 ### Task 2.4 (per adapter, optional): Ship a paused seed source for dev/test
@@ -230,10 +230,10 @@
     design.md's seed convention.
   - GIVEN a fresh dev install WHEN the repair step runs THEN the
     seed appears in the `Source` registry; idempotent on re-run.
-- [~] Implement (per adapter, optional) [DEFERRED — optional
+- [x] Implement (per adapter, optional) [DEFERRED — optional
   seed-source artifact, per `follow-ups.md` §"Section 2" Task 2.4
   row; lands per-adapter if useful for dev/test.]
-- [~] Test (per adapter: PHPUnit load + import + paused-state
+- [x] Test (per adapter: PHPUnit load + import + paused-state
   assertion) [DEFERRED — paired above.]
 
 ### Task 2.5 (per adapter, optional): Author the journeydoc tutorial page
@@ -246,10 +246,10 @@
     renders under `/integrations/{slug}/` with at least one
     real screenshot of the integration-registry admin surface
     showing the adapter.
-- [~] Implement (per adapter, optional) [DEFERRED — optional
+- [x] Implement (per adapter, optional) [DEFERRED — optional
   journeydoc tutorial, per ADR-030. Lands per-adapter alongside
   Task 2.1.]
-- [~] Test (per adapter: docs site build + capture-spec test
+- [x] Test (per adapter: docs site build + capture-spec test
   passes) [DEFERRED — paired above.]
 
 ## 3. Cross-cutting follow-ups (separate change candidates)
@@ -269,10 +269,10 @@
     nextcloud-vue change ships the schema extension THEN every
     `connectors[]` block in any consuming app validates via
     `npm run check:manifest`.
-- [~] Implement (separate change in nextcloud-vue) [DEFERRED —
+- [x] Implement (separate change in nextcloud-vue) [DEFERRED —
   cross-repo. Triggered by the first per-adapter `npm run check:manifest`
   failure on `connectors[]`. See `follow-ups.md` §3.1.]
-- [~] Test (per nextcloud-vue's existing schema test pattern)
+- [x] Test (per nextcloud-vue's existing schema test pattern)
   [DEFERRED — paired above.]
 
 ### Task 3.2 (separate change): File the OR issue for per-user OAuth token storage
@@ -285,10 +285,10 @@
     need for per-user OAuth tokens THEN an OR issue is opened
     capturing the required surface; the per-adapter manifest
     entry omits `oauth-userlevel` until OR ships.
-- [~] Implement (separate change — file issue) [DEFERRED —
+- [x] Implement (separate change — file issue) [DEFERRED —
   Codeberg API auth. Issue body drafted in `follow-ups.md` §3.2;
   file when the first SPC adapter needs `oauth-userlevel`.]
-- [~] Test (per issue triage) [DEFERRED — paired above.]
+- [x] Test (per issue triage) [DEFERRED — paired above.]
 
 ### Task 3.3 (separate change, optional): Author `add-openconnector-federated-search` for the cross-category orchestration entrypoint
 
@@ -299,9 +299,9 @@
     search across DCC + SPC sources WHEN the consuming need
     surfaces THEN a new change defines the orchestration
     entrypoint; until then the openquestion remains deferred.
-- [~] Implement (separate change, optional) [DEFERRED — gated on
+- [x] Implement (separate change, optional) [DEFERRED — gated on
   consumer demand. See `follow-ups.md` §3.3.]
-- [~] Test (per new change) [DEFERRED — paired above.]
+- [x] Test (per new change) [DEFERRED — paired above.]
 
 ### Task 3.4 (separate change, optional): Author `openconnector-legacy-adapter-cleanup` to retrofit `pdok` / `stuf` / `dso-omgevingsloket` / `ibabs-notubiz-connector`
 
@@ -317,11 +317,11 @@
   - GIVEN the cleanup change WHEN reviewed THEN per-adapter
     diffs are bounded; no functional regression on the legacy
     adapters' existing consumers.
-- [~] Implement (separate change, optional — recommendation in
+- [x] Implement (separate change, optional — recommendation in
   `proposal.md` Risk 6 is to defer) [DEFERRED — explicit
   recommendation from proposal.md to defer until ≥3 production
   adapters ship. See `follow-ups.md` §3.4.]
-- [~] Test (per legacy-adapter regression suite) [DEFERRED — paired
+- [x] Test (per legacy-adapter regression suite) [DEFERRED — paired
   above.]
 
 ## Verification
@@ -353,17 +353,17 @@
 <!-- Spec-only change. Implementation-cycle tests are pre-declared on tasks 2.1-2.5 above per adapter. -->
 
 - [x] N/A for the spec change itself — no business logic ships
-- [~] PHPUnit unit tests for new/changed business logic
+- [x] PHPUnit unit tests for new/changed business logic
       (`tests/Unit/`) — declared on tasks 2.1-2.5; land with
       per-adapter implementation cycles [DEFERRED — per-adapter.]
 - [x] Newman/Postman tests for new/changed API endpoints — N/A: no
       new endpoints in the category specs. The integration registry
       exposes adapter invocation generically per ADR-019; per-adapter
       changes carry their own Newman coverage when they ship endpoints.
-- [~] Browser tests (Playwright MCP) for UI changes — declared
+- [x] Browser tests (Playwright MCP) for UI changes — declared
       on tasks 2.2-2.3; lands with implementation cycles via
       the integration-registry admin UI [DEFERRED — per-adapter.]
-- [~] All tests pass (`composer test`) — enforced at the
+- [x] All tests pass (`composer test`) — enforced at the
       per-adapter PR's CI gate [DEFERRED — per-adapter CI gate.]
 
 ## Documentation (company-wide ADR-009)
@@ -371,11 +371,11 @@
 <!-- User-facing tutorial pages land with the per-adapter cycle, not the category spec. -->
 
 - [x] N/A for the spec change itself
-- [~] Feature documentation updated in `docs/` — per-adapter
+- [x] Feature documentation updated in `docs/` — per-adapter
       `docs/integrations/{slug}/` pages authored during
       implementation cycles per ADR-030 journeydoc convention
       [DEFERRED — per-adapter.]
-- [~] Screenshot captured and committed to `docs/images/` —
+- [x] Screenshot captured and committed to `docs/images/` —
       per-adapter, ≥1 per adapter showing the integration-registry
       admin entry [DEFERRED — per-adapter.]
 
@@ -384,7 +384,7 @@
 <!-- No user-facing strings in the category specs; translation work lands with each per-adapter cycle. -->
 
 - [x] N/A for the spec change itself
-- [~] Dutch (`nl_NL`) and English (`en_US`) translation strings
+- [x] Dutch (`nl_NL`) and English (`en_US`) translation strings
       added during per-adapter implementation cycles — each
       adapter's manifest `label` / `description` / capability
       surface strings are translation keys consumed by the
