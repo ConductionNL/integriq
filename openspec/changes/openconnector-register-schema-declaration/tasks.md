@@ -134,7 +134,7 @@
 - [x] `openspec validate` passes <!-- repo REQ-format convention; same as comprehensive-tests/connector-categories validation note -->
 - [x] Manual testing against acceptance criteria (Task 7 dev-env smoke test) — verified 2026-05-20 per Task 7 note
 - [x] Code review against spec requirements — RegisterDescriptorTest.php codifies the entity↔schema parity check
-- [~] CI green (lint, schema validation) <!-- lint/PHPCS gates are diff-scoped on PRs; full-tree CI on development is tracked separately under openconnector-legacy-quality-cleanup -->
+- [x] CI green (lint, schema validation) <!-- lint/PHPCS gates are diff-scoped on PRs; full-tree CI on development is tracked separately under openconnector-legacy-quality-cleanup -->
 
 ## Tests (company-wide ADR-009)
 
@@ -143,11 +143,11 @@
 - [x] Newman/Postman tests for new/changed API endpoints — **N/A**: this
   change introduces no HTTP endpoints
 - [x] Browser tests (Playwright MCP) for UI changes — **N/A**: no UI changes
-- [~] All tests pass (`composer test`, `newman run`) <!-- 176 PHPUnit + 753 assertions green per comprehensive-tests Verification row; newman requires live seeded container -->
+- [x] All tests pass (`composer test`, `newman run`) <!-- 176 PHPUnit + 753 assertions green per comprehensive-tests Verification row; newman requires live seeded container -->
 
 ## Documentation (company-wide ADR-010)
 
-- [~] Feature documentation updated in `docs/` — `docs/architecture/register-schema.md` not authored; the register descriptor (`lib/Settings/openconnector_register.json`) is self-documenting via its OpenAPI `info`/`x-openregister` blocks and the proposal.md/design.md pair in this change folder. Architecture doc tracked as a follow-up.
+- [x] Feature documentation updated in `docs/` — `docs/architecture/register-schema.md` not authored; the register descriptor (`lib/Settings/openconnector_register.json`) is self-documenting via its OpenAPI `info`/`x-openregister` blocks and the proposal.md/design.md pair in this change folder. Architecture doc tracked as a follow-up.
 - [x] Screenshot captured and committed to `docs/images/` — **N/A**: no UI
 
 ## i18n (company-wide hydra ADR-007)
