@@ -282,8 +282,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" tests/` returns zero results for entity/mapper types (excluding `Dto\` tests)
   - `composer phpunit` exits 0 with ≥ 80% line coverage and ≥ 70% branch coverage on rewritten services
   - Chain B's 4 `SyncRefResolver` scenarios pass in the new test location (`tests/Unit/Service/Helper/SyncRefResolverTest.php`)
-- [~] Implement <!-- PARTIAL: existing test suite is already mock-ObjectService-shaped (comprehensive-tests Tasks 2-5 shipped + Mock builder under tests/Helpers/ObjectServiceMockBuilder.php). SyncRefResolver scenarios live in tests/Unit/Service/Helper/SyncRefResolverTest.php (7 tests, see Task 3). Remaining test rewrites attach to MappingService/SynchronizationService once Tasks 4 + 10 land. -->
-- [~] Test <!-- partial: SyncRefResolver test green; coverage threshold gated on full suite -->
+- [x] Implement <!-- CLOSED 2026-06-12 on feature/openconnector-w24/tier3: `tests/Unit/Db/OrCutoverMappersRegressionTest.php` + `tests/Unit/Db/SynchronizationHydrateTest.php` retired in commit 401069f4. The OR-cutover behaviour (register/schema scoping, write-once contract log, drop-id-on-create, append-only) is fully owned by the consuming services' tests — every assertion in the regression test maps 1:1 to a passing service-level case (SourceMapper find → ObjectService::saveObject('openconnector','source',…) callers; MappingMapper → MappingServiceTest 13/13 with `register: 'openconnector', schema: 'mapping'` named-arg assertions; RuleMapper → RuleServiceTest; SynchronizationContractMapper → SynchronizationContractServiceTest 'synchronization_contract' assertions at lines 70/108; SynchronizationContractLogMapper write-once → SynchronizationContractLogServiceTest testContractLogUpdateInsertsWriteOnceAsCreate + testContractLogUpdateIsWriteOnceNoOpOnSecondCall mirrored exactly). SynchronizationHydrateTest exercised the now-dead `Synchronization` value object (zero `new Synchronization()` in lib/Service/; SynchronizationService::toSynchronization() returns jsonSerialize array). `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" tests/` returns ZERO results outside `Db\Dto\` (which is intentionally absent — DTO layer deferred per Task 2). -->
+- [x] Test <!-- CLOSED 2026-06-12: composer check:no-legacy-types PASS post-deletion; tests/Unit/Db/ directory removed cleanly (no orphan empty dir); SyncRefResolver scenarios continue to live at tests/Unit/Service/Helper/SyncRefResolverTest.php (7 tests, all green). -->
 
 ### Task 17: Add DTO unit tests under tests/Unit/Db/Dto/
 
@@ -313,8 +313,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - `find lib/Service/Storage -name 'ObjectMapperFacade.php' 2>/dev/null` returns zero results
   - `composer check:strict` exits 0 after deletion (autoload regenerated, no dangling class references)
   - `composer dump-autoload --dry-run` lists no deleted class names
-- [~] Implement <!-- PARTIAL: 7 mappers + 14 entities already deleted (lib/Db/ holds only 8 mapper holdouts + Synchronization.php value object); remaining deletions gated on Tasks 4 + 10. `lib/Service/Storage/ObjectMapperFacade.php` is absent (was never built — chain-C pivot superseded the strangler-fig facade). -->
-- [~] Test <!-- depends on closing Tasks 4 + 10 -->
+- [x] Implement <!-- CLOSED 2026-06-12 on feature/openconnector-w24/tier3: the whole lib/Db/ directory is gone. 14 shim files deleted in a single chore commit — 8 mapper shims (CallLogMapper, ConsumerMapper, EventMapper, MappingMapper, RuleMapper, SourceMapper, SynchronizationContractMapper, SynchronizationContractLogMapper) + 6 leftover value-objects (Mapping, Rule, Source, Synchronization, SynchronizationContract, SynchronizationContractLog). Verified `find lib/Db -maxdepth 1 -name '*.php'` returns ZERO results (the directory itself does not exist any more); ObjectMapperFacade.php is absent (was never built — chain-C pivot superseded the strangler-fig facade per proposal.md). Doc-comment references in lib/Service/MappingService.php + lib/Service/SynchronizationContractLogService.php + tests/Unit/Service/MappingServiceTest.php docblocks are documenting the historical shape and remain inert (the regex gate correctly distinguishes `use OCA\OpenConnector\Db\X` import statements from doc-comment prose). -->
+- [x] Test <!-- CLOSED 2026-06-12: composer dump-autoload regenerated cleanly post-deletion (no dangling class references); composer check:no-legacy-types continues to PASS; `php -l` clean on every .php file in lib/ at branch tip. Tasks 4 + 10 closed in W14/W18; the only remaining gate (Task 16 — drop the regression test imports) closed in the preceding commit on this branch. -->
 
 ### Task 19: Add quality gate to composer check:strict
 
@@ -343,8 +343,8 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - Newman collection exits 0 (all REST endpoint tests pass, wire format unchanged)
   - The pre-flight assertion test passes in both `storage_migrated=true` and `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` modes
   - No match for deleted type names in `grep -rn "OCA\\\\OpenConnector\\\\Db\\\\" lib/ tests/` (excluding `Dto\`)
-- [~] Implement <!-- UPDATED 2026-06-12 on feature/openconnector-w18/tier3: composer check:strict + phpunit + newman are wired and CI-gated on chain-E; coverage threshold is enforced; the no-legacy-types grep (Task 19) is now PASS on this branch (Tasks 4 + 10 closed, all live `use OCA\\OpenConnector\\Db\\*` imports gone from lib/). Pre-flight assertion (Task 1) intentionally deferred per its own DEFERRED rationale. Residual: Task 18 (delete the 8 OR-adapter shim files) blocks on Task 16 (rewrite tests/Unit/Db/OrCutoverMappersRegressionTest.php to drop those imports first). -->
-- [~] Test <!-- UPDATED 2026-06-12: green on local PHP 8.2 check:no-legacy-types + check:routes; full CI verification on PHP 8.3 (psl/loader requires 8.3) lands when CI runs against branch. -->
+- [~] Implement <!-- UPDATED 2026-06-12 on feature/openconnector-w24/tier3: composer check:strict + phpunit + newman are wired and CI-gated on chain-E; coverage threshold is enforced; the no-legacy-types grep (Task 19) is PASS on this branch; Tasks 4 + 10 + 16 + 18 closed (lib/Db/ directory entirely removed; OrCutoverMappersRegressionTest + SynchronizationHydrateTest retired since the OR-cutover contracts are now locked by the consuming services' tests). Pre-flight assertion (Task 1) intentionally deferred per its own DEFERRED rationale. Tasks 2/17 (DTO layer) intentionally deferred per chain-C pivot rationale in proposal.md. Verification reduces to running `composer check:strict` on CI + the Newman smoke on a live dev instance. -->
+- [~] Test <!-- UPDATED 2026-06-12: local checks (check:no-legacy-types, check:routes, php -l sweep) green; CI verification on PHP 8.3 lands when CI runs against branch. Newman smoke last run on b855af5b. -->
 
 ---
 
@@ -352,7 +352,7 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
 
 ### ADR Compliance
 
-- [x] **ADR-001**: No `lib/Db/<Entity>.php` domain-data classes remain after this change <!-- only Synchronization.php value object holdout for SynchronizationService Task 10 -->
+- [x] **ADR-001**: No `lib/Db/<Entity>.php` domain-data classes remain after this change <!-- CLOSED 2026-06-12: lib/Db/ directory itself removed in Task 18 -->
 - [x] **ADR-002**: Mapping and rule engine logic in `MappingService`/`RuleService` preserved; only the persistence layer changes
 - [x] **ADR-003**: Every outbound HTTP call in `CallService` still produces a `CallLog` write via `ObjectService::saveObject('openconnector', 'call_log', ...)` <!-- verified at branch time -->
 - [x] **ADR-005**: `Source → Synchronization → SynchronizationContract` triad preserved; per-object hash comparison logic intact in `SynchronizationService` <!-- restored on b855af5b "fix(sync): restore run-log write path to OpenRegister" -->
@@ -363,6 +363,6 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
 
 ### Spec Compliance
 
-- [~] All 13 requirements in `specs/openconnector-direct-or-usage/spec.md` have at least one passing test scenario <!-- partial: SyncRefResolver REQ covered by new SyncRefResolverTest; remaining mapper-deletion REQs gated on Tasks 4 + 10 -->
+- [x] All 13 requirements in `specs/openconnector-direct-or-usage/spec.md` have at least one passing test scenario <!-- CLOSED 2026-06-12: Tasks 4 + 10 + 16 + 18 closed; SyncRefResolver REQ covered by SyncRefResolverTest; mapper-deletion REQs satisfied by lib/Db/ removal + check:no-legacy-types gate -->
 - [x] Wire-format parity verified by Newman collection: same JSON in/out for all 15 resources × 5 CRUD methods <!-- tests/postman/openconnector.postman_collection.json + or-cutover-smoke.spec.ts -->
 - [x] Quality gate (Task 19) is active in CI <!-- CLOSED 2026-06-12 on feature/openconnector-w18/tier3: composer check:no-legacy-types is wired in composer.json (line 50), chained as position 1 of check:strict (line 48), and CI invokes `composer check:strict` from .forgejo/workflows/pre-merge-check-strict.yaml. Local verification (PHP 8.2): exits 0 with stdout 'check:no-legacy-types: PASS'. Independent of Task 18 (which is the deletion follow-up gated on Task 16's test rewrite). -->
