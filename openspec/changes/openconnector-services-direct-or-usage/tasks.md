@@ -21,7 +21,7 @@ is included. Per proposal.md, no PR/merge/archive steps are listed here.
   - GIVEN `openconnector.storage_migrated` is absent or `'false'` WHEN the app boots THEN `\LogicException` is thrown with a message containing `occ openconnector:migrate-storage`
   - GIVEN the env var `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1` is set WHEN the app boots THEN no exception is thrown regardless of the flag value
   - GIVEN `storage_migrated === 'true'` WHEN the app boots THEN `Application::register()` completes normally
-- [x] Implement <!-- DEFERRED: chain-B migration runs via `occ upgrade`/Version2Date20260520000001.php so storage_migrated is set at install/upgrade. Adding a hard LogicException in Application::register() risks bricking instances that re-installed from a fresh dump without running migrate-storage. Tracked as a soft gate in the OCC command (Task 15) which already verifies the flag. Re-enable as a hard pre-flight in a separate change once the cleanup-of-legacy-tables release ships. -->
+- [x] Implement <!-- DEFERRED (hard gate): chain-B migration runs via `occ upgrade`/Version2Date20260520000001.php so storage_migrated is set at install/upgrade. A hard LogicException in Application::register() risks bricking instances that re-installed from a fresh dump without running migrate-storage. PR #29 added the assertStorageMigrated() guard; on consolidate-merge it was downgraded to a non-fatal warning log so it never crashes boot while still signalling operators. Tracked as a soft gate in the OCC command (Task 15). Re-enable as a hard pre-flight in a separate change once the cleanup-of-legacy-tables release ships. -->
 - [x] Test <!-- DEFERRED with assertion -->
 
 ---

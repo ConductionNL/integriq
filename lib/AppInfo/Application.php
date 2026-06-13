@@ -95,6 +95,8 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        $this->assertStorageMigrated();
+
         // Register services.
         $context->registerService(
           SettingsService::class,
@@ -268,6 +270,69 @@ class Application extends App implements IBootstrap
             }
         );
     }//end register()
+
+    /**
+     * Soft pre-flight check: warn when the legacy→OpenRegister storage migration has
+     * not yet run.
+     *
+     * Chain C removed every `lib/Db/*Mapper.php` and entity class; all domain data
+     * now lives in OpenRegister objects (ADR-001). The connector-specific services
+     * that inject OpenRegister's `ObjectService` only have data to operate on once
+     * the one-shot migrator has copied every legacy row across and flipped the
+     * `openconnector.storage_migrated` IAppConfig flag to `'true'`.
+     *
+     * NOTE (consolidate-merge): PR #29 originally threw a `\LogicException` here as a
+     * hard pre-flight. Development deliberately deferred that hard gate — a boot-time
+     * throw risks bricking instances that re-installed from a fresh dump without
+     * running migrate-storage (see openconnector-services-direct-or-usage/tasks.md).
+     * The guard is therefore kept as PR #29's diagnostic intent but downgraded to a
+     * non-fatal log so neither side's behaviour is lost and app boot is never crashed
+     * by the check itself. The hard gate remains tracked as the OCC command's soft
+     * gate (Task 15) and can be re-enabled in a dedicated change once the
+     * legacy-table-cleanup release ships.
+     *
+     * Bypassable in CI/test (where no real upgrade has run) via
+     * `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1`, and soft-skipped if `IAppConfig`
+     * cannot be resolved during very early bootstrap.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-applicationphp-di-bindings-must-be-updated
+     */
+    private function assertStorageMigrated(): void
+    {
+        // CI / test bypass — no real upgrade has run in those environments.
+        if (getenv('OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
+            return;
+        }
+
+        try {
+            $appConfig = $this->getContainer()->get(\OCP\IAppConfig::class);
+        } catch (\Throwable) {
+            // IAppConfig not resolvable this early — don't disturb boot over the guard.
+            return;
+        }
+
+        if ($appConfig->getValueString(self::APP_ID, 'storage_migrated', 'false') === 'true') {
+            return;
+        }
+
+        // Non-fatal: log a warning instead of throwing, so an unmigrated instance
+        // still boots (development's deferral decision) while operators get a signal.
+        try {
+            $logger = $this->getContainer()->get(\Psr\Log\LoggerInterface::class);
+            $logger->warning(
+                'openconnector: legacy storage has not been migrated to OpenRegister. '
+                .'Run "occ openconnector:migrate-storage" to materialise the register and '
+                .'copy legacy rows. Connector services will operate on an empty register '
+                .'until then.'
+            );
+        } catch (\Throwable) {
+            // Logger unavailable this early — nothing more we can safely do.
+            return;
+        }
+
+    }//end assertStorageMigrated()
 
     /**
      * Boot the app and wire integration providers.
