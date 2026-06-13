@@ -1,9 +1,10 @@
 <?php
 /**
- * OpenConnector MongoDB Object Service.
+ * OpenConnector ObjectService — deprecated alias.
  *
- * Thin wrapper over the MongoDB Data API used by OpenConnector to persist and
- * query freeform JSON objects when OpenRegister is not the storage backend.
+ * This class is a one-minor-version compatibility shim.  All logic now lives in
+ * SourceMappingService.  Instantiating this class fires an E_USER_DEPRECATED
+ * notice pointing consumers to the new name.
  *
  * @category Service
  * @package  OCA\OpenConnector\Service
@@ -12,331 +13,46 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
- *
  * @link https://www.OpenConnector.nl
+ *
+ * @deprecated Use SourceMappingService instead.
+ *
+ * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#task-7
  */
 
 namespace OCA\OpenConnector\Service;
 
-use Adbar\Dot;
-use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use InvalidArgumentException;
 use OCP\App\IAppManager;
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
- * MongoDB Data API client wrapper for OpenConnector's optional Mongo backend.
+ * Deprecated alias for SourceMappingService.
+ *
+ * @deprecated 1.x Use OCA\OpenConnector\Service\SourceMappingService.
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
- * @SuppressWarnings(PHPMD.LongVariable)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
- * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  */
-class ObjectService
+class ObjectService extends SourceMappingService
 {
-
     /**
-     * Default MongoDB action payload skeleton.
+     * Constructor — fires E_USER_DEPRECATED on instantiation.
      *
-     * @var array<string, string>
-     */
-    public const BASE_OBJECT = [
-        'database'   => 'objects',
-        'collection' => 'json',
-    ];
-
-    /**
-     * Constructor.
+     * @param IAppManager        $appManager App manager (forwarded to parent).
+     * @param ContainerInterface $container  DI container (forwarded to parent).
      *
-     * @param IAppManager        $appManager Used to detect whether the OpenRegister app is installed.
-     * @param ContainerInterface $container  PSR-11 container used to resolve OpenRegister services.
+     * @deprecated 1.x Use SourceMappingService::__construct() directly.
      */
     public function __construct(
-        private readonly IAppManager $appManager,
-        private readonly ContainerInterface $container,
+        IAppManager $appManager,
+        ContainerInterface $container,
     ) {
+        trigger_error(
+            'OCA\OpenConnector\Service\ObjectService has been renamed to SourceMappingService. '
+            .'Update your code to use SourceMappingService before the next major release.',
+            E_USER_DEPRECATED
+        );
+
+        parent::__construct(appManager: $appManager, container: $container);
 
     }//end __construct()
-
-    /**
-     * Gets a guzzle client based upon given config.
-     *
-     * @param array $config The config to be used for the client.
-     *
-     * @return Client The configured Guzzle client.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     */
-    public function getClient(array $config): Client
-    {
-        $guzzleConf = $config;
-        unset($guzzleConf['mongodbCluster']);
-
-        return new Client($config);
-
-    }//end getClient()
-
-    /**
-     * Save an object to MongoDB.
-     *
-     * @param array $data   The data to be saved.
-     * @param array $config The configuration that should be used by the call.
-     *
-     * @return array The resulting object.
-     *
-     * @throws GuzzleException When the HTTP request fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-2
-     */
-    public function saveObject(array $data, array $config): array
-    {
-        $client = $this->getClient(config: $config);
-
-        $object = self::BASE_OBJECT;
-        $object['dataSource']     = $config['mongodbCluster'];
-        $object['document']       = $data;
-        $object['document']['id'] = $object['document']['_id'] = Uuid::v4();
-
-        $result     = $client->post(
-            uri: 'action/insertOne',
-            options: ['json' => $object],
-        );
-        $resultData = json_decode(
-            json: $result->getBody()->getContents(),
-            associative: true
-        );
-        $id         = $resultData['insertedId'];
-
-        return $this->findObject(filters: ['_id' => $id], config: $config);
-
-    }//end saveObject()
-
-    /**
-     * Finds objects based upon a set of filters.
-     *
-     * @param array $filters The filters to compare the object to.
-     * @param array $config  The configuration that should be used by the call.
-     *
-     * @return array The objects found for given filters.
-     *
-     * @throws GuzzleException When the HTTP request fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     */
-    public function findObjects(array $filters, array $config): array
-    {
-        $client = $this->getClient(config: $config);
-
-        $object = self::BASE_OBJECT;
-        $object['dataSource'] = $config['mongodbCluster'];
-        $object['filter']     = $filters;
-
-        // @todo Fix mongodb sort.
-        // if (empty($sort) === false) {
-        // $object['filter'][] = ['$sort' => $sort];
-        // }.
-        $returnData = $client->post(
-            uri: 'action/find',
-            options: ['json' => $object]
-        );
-
-        return json_decode(
-            json: $returnData->getBody()->getContents(),
-            associative: true
-        );
-
-    }//end findObjects()
-
-    /**
-     * Finds an object based upon a set of filters (usually the id).
-     *
-     * @param array $filters The filters to compare the objects to.
-     * @param array $config  The config to be used by the call.
-     *
-     * @return array The resulting object.
-     *
-     * @throws GuzzleException When the HTTP request fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     */
-    public function findObject(array $filters, array $config): array
-    {
-        $client = $this->getClient(config: $config);
-
-        $object           = self::BASE_OBJECT;
-        $object['filter'] = $filters;
-        $object['dataSource'] = $config['mongodbCluster'];
-
-        $returnData = $client->post(
-            uri: 'action/findOne',
-            options: ['json' => $object]
-        );
-
-        $result = json_decode(
-            json: $returnData->getBody()->getContents(),
-            associative: true
-        );
-
-        return $result['document'];
-
-    }//end findObject()
-
-    /**
-     * Updates an object in MongoDB.
-     *
-     * @param array $filters The filter to search the object with (id).
-     * @param array $update  The fields that should be updated.
-     * @param array $config  The configuration to be used by the call.
-     *
-     * @return array The updated object.
-     *
-     * @throws GuzzleException When the HTTP request fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     */
-    public function updateObject(array $filters, array $update, array $config): array
-    {
-        $client = $this->getClient(config: $config);
-
-        $dotUpdate = new Dot($update);
-
-        $object           = self::BASE_OBJECT;
-        $object['filter'] = $filters;
-        $object['update']['$set'] = $update;
-        $object['upsert']         = true;
-        $object['dataSource']     = $config['mongodbCluster'];
-
-            $returnData = $client->post(
-                uri: 'action/updateOne',
-                options: ['json' => $object]
-            );
-
-        return $this->findObject(filters: $filters, config: $config);
-
-    }//end updateObject()
-
-    /**
-     * Delete an object according to a filter (id specifically).
-     *
-     * @param array $filters The filters to use.
-     * @param array $config  The config to be used by the call.
-     *
-     * @return array An empty array.
-     *
-     * @throws GuzzleException When the HTTP request fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     */
-    public function deleteObject(array $filters, array $config): array
-    {
-        $client = $this->getClient(config: $config);
-
-        $object           = self::BASE_OBJECT;
-        $object['filter'] = $filters;
-        $object['dataSource'] = $config['mongodbCluster'];
-
-        $returnData = $client->post(
-            uri: 'action/deleteOne',
-            options: ['json' => $object]
-        );
-
-        return [];
-
-    }//end deleteObject()
-
-    /**
-     * Aggregates objects for search facets.
-     *
-     * @param array $filters  The filters apply to the search request.
-     * @param array $pipeline The pipeline to use.
-     * @param array $config   The configuration to use in the call.
-     *
-     * @return array The aggregation result.
-     *
-     * @throws GuzzleException When the HTTP request fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-3
-     */
-    public function aggregateObjects(array $filters, array $pipeline, array $config):array
-    {
-        $client = $this->getClient(config: $config);
-
-        $object           = self::BASE_OBJECT;
-        $object['filter'] = $filters;
-        $object['pipeline']   = $pipeline;
-        $object['dataSource'] = $config['mongodbCluster'];
-
-        $returnData = $client->post(
-            uri: 'action/aggregate',
-            options: ['json' => $object]
-        );
-
-        return json_decode(
-            json: $returnData->getBody()->getContents(),
-            associative: true
-        );
-
-    }//end aggregateObjects()
-
-    /**
-     * Attempts to retrieve the OpenRegister service from the container.
-     *
-     * @return \OCA\OpenRegister\Service\ObjectService|null The OpenRegister service if available, null otherwise.
-     *
-     * @throws ContainerExceptionInterface When the container fails.
-     * @throws NotFoundExceptionInterface  When the service is not bound.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-4
-     */
-    public function getOpenRegisters(): ?\OCA\OpenRegister\Service\ObjectService
-    {
-        if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
-            try {
-                // Attempt to get the OpenRegister service from the container.
-                return $this->container->get('OCA\OpenRegister\Service\ObjectService');
-            } catch (Exception $e) {
-                // If the service is not available, return null.
-                return null;
-            }
-        }
-
-        return null;
-
-    }//end getOpenRegisters()
-
-    /**
-     * Gets the appropriate mapper based on the object type.
-     *
-     * Either resolves an OpenRegister mapper by register + schema, or throws when
-     * an unknown object type is requested.
-     *
-     * @param string|null $objectType The objectType as string.
-     * @param int|null    $schema     The openregister schema.
-     * @param int|null    $register   The openregister register.
-     *
-     * @return mixed The appropriate mapper.
-     *
-     * @throws ContainerExceptionInterface When the container fails.
-     * @throws NotFoundExceptionInterface  When the service is not bound.
-     * @throws InvalidArgumentException    If an unknown object type is provided.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-5
-     */
-    public function getMapper(?string $objectType=null, ?int $schema=null, ?int $register=null): mixed
-    {
-        if ($register !== null && $schema !== null && $objectType === null) {
-            return $this->getOpenRegisters()->getMapper(register: $register, schema: $schema);
-        }
-
-        throw new InvalidArgumentException("Unknown object type: $objectType");
-
-    }//end getMapper()
 }//end class

@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
