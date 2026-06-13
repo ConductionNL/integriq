@@ -147,7 +147,9 @@
 
 ## Documentation (company-wide ADR-010)
 
-- [x] Feature documentation updated in `docs/` — `docs/architecture/register-schema.md` not authored; the register descriptor (`lib/Settings/openconnector_register.json`) is self-documenting via its OpenAPI `info`/`x-openregister` blocks and the proposal.md/design.md pair in this change folder. Architecture doc tracked as a follow-up.
+- [x] Feature documentation updated in `docs/` — `docs/architecture/register-schema.md`
+  describes the descriptor layout, the declarative `appendOnly` + `immutable` flags,
+  and the chain split with the storage change.
 - [x] Screenshot captured and committed to `docs/images/` — **N/A**: no UI
 
 ## i18n (company-wide hydra ADR-007)

@@ -21,7 +21,7 @@ namespace OCA\OpenConnector\Twig;
 
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Service\FileService;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
@@ -42,7 +42,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
         private readonly MappingService $mappingService,
         private readonly CallService $callService,
         private readonly FileService $fileService,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
     ) {
 
     }//end __construct()

@@ -116,6 +116,9 @@
 			"phpro/grumphp": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
+		"audit": {
+			"abandoned": "report"
+		},
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {

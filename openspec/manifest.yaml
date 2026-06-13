@@ -1,0 +1,22 @@
+# OpenConnector app manifest
+# Declares tier, dependencies, and consumed shared specs per Hydra adopt-app-manifest change.
+# See openspec/changes/openconnector-adopt-or-abstractions/design.md#phase-8
+
+tier: 2
+
+dependencies:
+  - openregister
+
+or_min_version: "^v0.2.10"
+
+consumes:
+  - register-resolver-service
+  - pluggable-integration-registry
+  - i18n-source-of-truth
+  - i18n-api-language-negotiation
+  - multi-tenancy-context
+
+keeps_app_local:
+  - mapping-rule-engine  # by-design transforms between schemas (see adr-002-mapping-rule-engine-stays-app-local.md)
+  - domain-pinia-stores  # 20+ domain-specific Pinia modules (see adr-001-domain-pinia-stores-app-local.md)
+  - protocol-adapters    # DSO, StUF, iBabs-Notubiz integrations via pluggable-integration-registry

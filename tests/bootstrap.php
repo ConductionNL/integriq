@@ -99,6 +99,10 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/OrganisationService.php';
         }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
+        }
     }
 }
 

@@ -143,12 +143,12 @@ class AuthenticationService
         }
 
         // Block loopback.
-        if ($host === 'localhost' || $host === '::1' || str_starts_with($host, '127.')) {
+        if ($host === 'localhost' || $host === '::1' || str_starts_with($host, '127.') === true) {
             throw new BadRequestException(message: 'Token URL resolves to a loopback address - SSRF blocked');
         }
 
         // Block link-local (AWS IMDS: 169.254.169.254, Azure: 169.254.169.254, GCP: metadata.google.internal).
-        if (str_starts_with($host, '169.254.')) {
+        if (str_starts_with($host, '169.254.') === true) {
             throw new BadRequestException(message: 'Token URL resolves to a link-local address - SSRF blocked');
         }
 
@@ -157,7 +157,7 @@ class AuthenticationService
         }
 
         // Block RFC-1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
-        if (str_starts_with($host, '10.') || str_starts_with($host, '192.168.')) {
+        if (str_starts_with($host, '10.') === true || str_starts_with($host, '192.168.') === true) {
             throw new BadRequestException(message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked');
         }
 

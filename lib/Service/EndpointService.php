@@ -360,8 +360,9 @@ class EndpointService
                         break;
                 }
 
-                if (isset($endpointData['configurations']['defaultStatusCode']) === true) {
-                    $statusCode = $endpointData['configurations']['defaultStatusCode'];
+                $configurations = $endpointData['configurations'] ?? [];
+                if (isset($configurations['defaultStatusCode']) === true) {
+                    $statusCode = $configurations['defaultStatusCode'];
                 }
 
                 return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);

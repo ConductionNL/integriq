@@ -21,7 +21,7 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -66,7 +66,7 @@ class MappingsController extends Controller
         $appName,
         IRequest $request,
         private readonly MappingService $mappingService,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
@@ -80,8 +80,8 @@ class MappingsController extends Controller
      *
      * This method tests a mapping with provided input data and optional schema validation.
      *
-     * @param ObjectService $objectService Object service used to access OpenRegister.
-     * @param IURLGenerator $urlGenerator  URL generator used to resolve schema URLs during validation.
+     * @param SourceMappingService $objectService Source mapping service used to access OpenRegister.
+     * @param IURLGenerator        $urlGenerator  URL generator used to resolve schema URLs during validation.
      *
      * @return JSONResponse A JSON response containing the test results.
      *
@@ -121,7 +121,7 @@ class MappingsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function test(ObjectService $objectService, IURLGenerator $urlGenerator): JSONResponse
+    public function test(SourceMappingService $objectService, IURLGenerator $urlGenerator): JSONResponse
     {
         $user = $this->userSession->getUser();
         if ($user === null) {

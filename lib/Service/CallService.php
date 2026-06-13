@@ -73,9 +73,7 @@ class CallService
 
     private const BASE_FILENAME_LOCATION = "%s-%s";
 
-    private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-
-    private const DEFAULT_ERROR_LOG_RETENTION = 2592000000;
+    // Retention defaults moved to job_log / call_log x-openregister-archival annotations (adr-004).
 
     /**
      * Guzzle HTTP client used to dispatch outbound requests.
@@ -145,15 +143,15 @@ class CallService
         $this->twig->addRuntimeLoader(new AuthenticationRuntimeLoader(authenticationService: $authenticationService));
         $this->cookieJar = new CookieJar();
 
-        $this->errorRetention   = self::DEFAULT_ERROR_LOG_RETENTION;
-        $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
+        $this->errorRetention   = 2592000000;
+        $this->successRetention = 3600000;
         if ($this->appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
             $retentionPayload       = json_decode(
                 $this->appConfig->getValueString(app: 'openconnector', key: 'retention'),
                 true
             );
-            $this->errorRetention   = ($retentionPayload['callLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
-            $this->successRetention = ($retentionPayload['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION);
+            $this->errorRetention   = ($retentionPayload['callLogRetention'] ?? 2592000000);
+            $this->successRetention = ($retentionPayload['successLogRetention'] ?? 3600000);
         }
 
     }//end __construct()
