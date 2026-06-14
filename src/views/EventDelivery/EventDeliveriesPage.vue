@@ -67,13 +67,13 @@
 		<table v-else class="eventDeliveries__table" data-testid="deliveries-table">
 			<thead>
 				<tr>
-					<th></th>
+					<th />
 					<th>{{ t('openconnector', 'Event') }}</th>
 					<th>{{ t('openconnector', 'Subscription') }}</th>
 					<th>{{ t('openconnector', 'Status') }}</th>
 					<th>{{ t('openconnector', 'Retries') }}</th>
 					<th>{{ t('openconnector', 'Last attempt') }}</th>
-					<th></th>
+					<th />
 				</tr>
 			</thead>
 			<tbody>
@@ -154,12 +154,23 @@ export default {
 
 	methods: {
 		t,
+		/**
+		 * Resolve a row's CloudEvent type for the list column.
+		 * @param {object} row Dead-letter message row.
+		 * @return {string}
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		rowEventType(row) {
 			return row?.payload?.type || row?.payload?.data?.type || '—'
 		},
 		isSelected(row) {
 			return this.selected.includes(row.uuid || row.id)
 		},
+		/**
+		 * Toggle a row in the bulk-selection set.
+		 * @param {object} row Dead-letter message row.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		toggleSelect(row) {
 			const id = row.uuid || row.id
 			if (this.selected.includes(id)) {
@@ -168,16 +179,33 @@ export default {
 				this.selected = [...this.selected, id]
 			}
 		},
+		/**
+		 * Open the per-message detail modal.
+		 * @param {object} row Dead-letter message row.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		openDetail(row) {
 			this.detail = { open: true, message: row }
 		},
+		/**
+		 * Close the detail modal.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		closeDetail() {
 			this.detail = { open: false, message: null }
 		},
+		/**
+		 * Debounced reload used by the subscription filter field.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		reloadDebounced() {
 			clearTimeout(this.reloadTimer)
 			this.reloadTimer = setTimeout(() => this.reload(), 400)
 		},
+		/**
+		 * Fetch the dead-letter listing from the admin-only endpoint.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		async reload() {
 			this.loading = true
 			this.selected = []
@@ -195,6 +223,10 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Apply the confirmed bulk verb (replay/discard) to the selected ids.
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		async commitBulk() {
 			const verb = this.bulkConfirm
 			if (!verb || !this.selected.length) {

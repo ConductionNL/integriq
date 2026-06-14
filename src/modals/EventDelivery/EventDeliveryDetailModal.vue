@@ -116,15 +116,35 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The attempt audit trail for the timeline (REQ-DLR-002).
+		 * @return {Array}
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		attempts() {
 			return Array.isArray(this.message?.attempts) ? this.message.attempts : []
 		},
+		/**
+		 * Whether replay/discard verbs are permitted on this message.
+		 * @return {boolean}
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		canAct() {
 			return ['failed', 'abandoned'].includes(this.message?.status)
 		},
+		/**
+		 * Status-badge CSS modifier class.
+		 * @return {string}
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		badgeClass() {
 			return `deliveryDetail__badge--${this.message?.status || 'unknown'}`
 		},
+		/**
+		 * Pretty-printed CloudEvent payload for the viewer.
+		 * @return {string}
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		prettyPayload() {
 			try {
 				return JSON.stringify(this.message?.payload ?? {}, null, 2)
@@ -136,6 +156,10 @@ export default {
 
 	methods: {
 		t,
+		/**
+		 * Commit the confirmed per-message verb (replay/discard).
+		 * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+		 */
 		async commit() {
 			const verb = this.confirming
 			const id = this.message?.uuid || this.message?.id

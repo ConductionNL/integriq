@@ -392,6 +392,10 @@ class EventsController extends Controller
      *
      * @return JSONResponse Filtered list of dead-letter messages.
      *
+     * @no-admin-idor-exempt Admin-only via #[AuthorizedAdminSetting]; not a
+     * #[NoAdminRequired] endpoint. The IDOR gate misattributes the preceding
+     * pull() method's @NoAdminRequired across the method boundary.
+     *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
