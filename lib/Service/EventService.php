@@ -20,6 +20,7 @@ namespace OCA\OpenConnector\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenConnector\Exception\InvalidMessageStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -33,9 +34,31 @@ use OCA\OpenConnector\Service\WebhookSignatureService;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  *
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
+ * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
  */
 class EventService
 {
+    /**
+     * Base backoff interval in seconds for the first retry.
+     *
+     * @var integer
+     */
+    private const RETRY_BASE_SECONDS = 60;
+
+    /**
+     * Exponential growth factor between retries.
+     *
+     * @var integer
+     */
+    private const RETRY_FACTOR = 4;
+
+    /**
+     * Maximum backoff interval in seconds (6 hours).
+     *
+     * @var integer
+     */
+    private const RETRY_CAP_SECONDS = 21600;
+
     /**
      * Constructor.
      *
@@ -243,6 +266,7 @@ class EventService
      * @return boolean True when delivered successfully.
      *
      * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
+     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
      */
     public function deliverMessage(ObjectEntity $message): bool
     {
@@ -310,12 +334,21 @@ class EventService
                     );
 
             if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
+                $now = (new DateTime())->format('c');
                 $messageData['status']           = 'delivered';
-                $messageData['deliveredAt']      = (new DateTime())->format('c');
+                $messageData['deliveredAt']      = $now;
+                $messageData['lastAttempt']      = $now;
+                $messageData['nextAttempt']      = null;
                 $messageData['deliveryResponse'] = [
                     'statusCode' => $response->getStatusCode(),
                     'body'       => $response->getBody(),
                 ];
+                $messageData['attempts']         = $this->appendAttempt(
+                    attempts: ($messageData['attempts'] ?? []),
+                    at: $now,
+                    statusCode: $response->getStatusCode(),
+                    error: null
+                );
                 $this->objectService->saveObject(
                     object: $messageData,
                     register: 'openconnector',
@@ -323,9 +356,18 @@ class EventService
                     uuid: $message->getUuid()
                 );
                 return true;
-            }
+            }//end if
 
-            throw new Exception('Delivery failed with status code: '.$response->getStatusCode());
+            $statusCode = $response->getStatusCode();
+            $retryAfter = $this->parseRetryAfter(header: $response->getHeader('Retry-After'));
+            $this->recordFailure(
+                message: $message,
+                error: 'Delivery failed with status code: '.$statusCode,
+                statusCode: $statusCode,
+                retryAfter: $retryAfter
+            );
+
+            return false;
         } catch (Exception $e) {
             $this->logger->error(
                     'Failed to deliver message: '.$e->getMessage(),
@@ -335,14 +377,11 @@ class EventService
                     ]
                     );
 
-            $messageDataFail           = $message->getObject();
-            $messageDataFail['status'] = 'failed';
-            $messageDataFail['error']  = $e->getMessage();
-            $this->objectService->saveObject(
-                object: $messageDataFail,
-                register: 'openconnector',
-                schema: 'event_message',
-                uuid: $message->getUuid()
+            $this->recordFailure(
+                message: $message,
+                error: $e->getMessage(),
+                statusCode: null,
+                retryAfter: null
             );
 
             return false;
@@ -351,35 +390,319 @@ class EventService
     }//end deliverMessage()
 
     /**
+     * Record a failed delivery attempt: increment retryCount, append an audit
+     * entry, schedule the next backoff (or transition to terminal abandoned).
+     *
+     * @param ObjectEntity $message    The message being delivered.
+     * @param string       $error      The human-readable failure reason.
+     * @param integer|null $statusCode The HTTP status code, or null on a transport exception.
+     * @param integer|null $retryAfter A Retry-After delay in seconds, or null when absent.
+     * @param integer      $maxRetries Maximum number of attempts before abandoning.
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
+     */
+    private function recordFailure(
+        ObjectEntity $message,
+        string $error,
+        ?int $statusCode,
+        ?int $retryAfter,
+        int $maxRetries=5
+    ): void {
+        $messageData = $message->getObject();
+        $retryCount  = ((int) ($messageData['retryCount'] ?? 0) + 1);
+        $now         = new DateTime();
+        $nowIso      = $now->format('c');
+
+        // Transport exceptions (no statusCode) record the error on the attempt;
+        // HTTP-level failures record only the statusCode.
+        if ($statusCode === null) {
+            $attemptError = $error;
+        } else {
+            $attemptError = null;
+        }
+
+        $messageData['retryCount']  = $retryCount;
+        $messageData['lastAttempt'] = $nowIso;
+        $messageData['error']       = $error;
+        $messageData['attempts']    = $this->appendAttempt(
+            attempts: ($messageData['attempts'] ?? []),
+            at: $nowIso,
+            statusCode: $statusCode,
+            error: $attemptError
+        );
+
+        if ($retryCount >= $maxRetries) {
+            // Terminal: no further attempts will be scheduled.
+            $messageData['status']      = 'abandoned';
+            $messageData['nextAttempt'] = null;
+        } else {
+            $messageData['status']      = 'failed';
+            $messageData['nextAttempt'] = $this->computeNextAttempt(
+                base: $now,
+                retryCount: $retryCount,
+                retryAfter: $retryAfter
+            );
+        }
+
+        $this->objectService->saveObject(
+            object: $messageData,
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
+
+    }//end recordFailure()
+
+    /**
+     * Compute the next-attempt timestamp from the exponential backoff schedule,
+     * never earlier than a Retry-After hint when one is present.
+     *
+     * @param DateTime     $base       The attempt timestamp the backoff is measured from.
+     * @param integer      $retryCount The (already incremented) retry count.
+     * @param integer|null $retryAfter A Retry-After delay in seconds, or null.
+     *
+     * @return string ISO 8601 timestamp of the next scheduled attempt.
+     *
+     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
+     */
+    private function computeNextAttempt(DateTime $base, int $retryCount, ?int $retryAfter): string
+    {
+        $backoff = (int) min(
+            (self::RETRY_BASE_SECONDS * (self::RETRY_FACTOR ** ($retryCount - 1))),
+            self::RETRY_CAP_SECONDS
+        );
+
+        // Retry-After may delay the retry but never hasten it.
+        $delay = max($backoff, ($retryAfter ?? 0));
+
+        $next = (clone $base);
+        $next->modify('+'.$delay.' seconds');
+        return $next->format('c');
+
+    }//end computeNextAttempt()
+
+    /**
+     * Parse a Retry-After header (seconds form or HTTP-date form) into a
+     * non-negative number of seconds from now.
+     *
+     * @param string $header The raw Retry-After header value (may be empty).
+     *
+     * @return integer|null Seconds to wait, or null when the header is absent/unparseable.
+     *
+     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
+     */
+    private function parseRetryAfter(string $header): ?int
+    {
+        $header = trim($header);
+        if ($header === '') {
+            return null;
+        }
+
+        // Delta-seconds form.
+        if (ctype_digit($header) === true) {
+            return (int) $header;
+        }
+
+        // HTTP-date form.
+        $timestamp = strtotime($header);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        $seconds = ($timestamp - time());
+        return max(0, $seconds);
+
+    }//end parseRetryAfter()
+
+    /**
+     * Append a single attempt entry to the audit trail.
+     *
+     * @param array        $attempts   The existing attempts array.
+     * @param string       $at         ISO 8601 timestamp of the attempt.
+     * @param integer|null $statusCode HTTP status code, or null on transport failure.
+     * @param string|null  $error      Transport/error message, or null on HTTP-level outcome.
+     *
+     * @return array The attempts array with the new entry appended.
+     *
+     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
+     */
+    private function appendAttempt(array $attempts, string $at, ?int $statusCode, ?string $error): array
+    {
+        $attempts[] = [
+            'at'         => $at,
+            'statusCode' => $statusCode,
+            'error'      => $error,
+        ];
+        return $attempts;
+
+    }//end appendAttempt()
+
+    /**
+     * Replay a dead-lettered message back into the delivery machine.
+     *
+     * Resets a `failed`/`abandoned` message to `pending`, clears its retry
+     * counter, schedules an immediate next attempt, preserves the existing
+     * `attempts[]` history, stamps the acting operator, and triggers one
+     * immediate delivery attempt. The message then re-enters the standard
+     * retry/backoff/abandon machine.
+     *
+     * @param string $id       The message UUID.
+     * @param string $actorUid The acting operator's user id.
+     *
+     * @return ObjectEntity The updated message.
+     *
+     * @throws InvalidMessageStateException When the message is not in a replayable state.
+     * @throws \OCP\DB\Exception            On persistence failure.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
+     */
+    public function replayMessage(string $id, string $actorUid): ObjectEntity
+    {
+        $message     = $this->objectService->find(
+            id: $id,
+            register: 'openconnector',
+            schema: 'event_message'
+        );
+        $messageData = $message->getObject();
+        $status      = ($messageData['status'] ?? '');
+
+        if (in_array($status, ['failed', 'abandoned'], true) === false) {
+            throw new InvalidMessageStateException(
+                message: 'Cannot replay a message in state "'.$status.'"; only failed or abandoned messages are replayable.'
+            );
+        }
+
+        $now = (new DateTime())->format('c');
+
+        $messageData['status']      = 'pending';
+        $messageData['retryCount']  = 0;
+        $messageData['nextAttempt'] = $now;
+        $messageData['replayedBy']  = $actorUid;
+        $messageData['replayedAt']  = $now;
+        // Attempts[] is deliberately preserved across the replay campaign.
+        $saved = $this->objectService->saveObject(
+            object: $messageData,
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
+
+        // Re-enter the delivery machine immediately.
+        $this->deliverMessage(message: $saved);
+
+        return $this->objectService->find(
+            id: $message->getUuid(),
+            register: 'openconnector',
+            schema: 'event_message'
+        );
+
+    }//end replayMessage()
+
+    /**
+     * Discard a dead-lettered message into the terminal `discarded` state.
+     *
+     * Marks a `failed`/`abandoned` message `discarded` with an operator audit
+     * stamp. Discarded messages are never swept and never hard-deleted; they
+     * remain queryable for audit.
+     *
+     * @param string $id       The message UUID.
+     * @param string $actorUid The acting operator's user id.
+     *
+     * @return ObjectEntity The updated message.
+     *
+     * @throws InvalidMessageStateException When the message is not in a discardable state.
+     * @throws \OCP\DB\Exception            On persistence failure.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
+     */
+    public function discardMessage(string $id, string $actorUid): ObjectEntity
+    {
+        $message     = $this->objectService->find(
+            id: $id,
+            register: 'openconnector',
+            schema: 'event_message'
+        );
+        $messageData = $message->getObject();
+        $status      = ($messageData['status'] ?? '');
+
+        if (in_array($status, ['failed', 'abandoned'], true) === false) {
+            throw new InvalidMessageStateException(
+                message: 'Cannot discard a message in state "'.$status.'"; only failed or abandoned messages are discardable.'
+            );
+        }
+
+        $now = (new DateTime())->format('c');
+
+        $messageData['status']      = 'discarded';
+        $messageData['nextAttempt'] = null;
+        $messageData['discardedBy'] = $actorUid;
+        $messageData['discardedAt'] = $now;
+
+        return $this->objectService->saveObject(
+            object: $messageData,
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
+
+    }//end discardMessage()
+
+    /**
      * Process pending message retries.
      *
      * @param integer $maxRetries Maximum number of retry attempts.
      *
      * @return integer Number of successfully delivered messages.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-2
+     * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-3
      */
     public function processRetries(int $maxRetries=5): int
     {
+        // Terminal states (delivered, abandoned, discarded) are never selected.
+        // Both 'pending' (crash-stranded or never-attempted) and 'failed'
+        // messages are eligible.
         $matches      = $this->objectService->findAll(
                 config: [
                     'filters' => [
                         'register' => 'openconnector',
                         'schema'   => 'event_message',
-                        'status'   => 'pending',
+                        'status'   => ['pending', 'failed'],
                     ],
                 ]
                 );
         $messages     = ($matches['results'] ?? $matches);
         $successCount = 0;
+        $now          = time();
 
         foreach ($messages as $message) {
             $messageData = $message->getObject();
-            $retryCount  = (int) ($messageData['retryCount'] ?? 0);
-            if ($retryCount < $maxRetries && $this->deliverMessage(message: $message) === true) {
+            $status      = ($messageData['status'] ?? '');
+            if (in_array($status, ['pending', 'failed'], true) === false) {
+                continue;
+            }
+
+            $retryCount = (int) ($messageData['retryCount'] ?? 0);
+            if ($retryCount >= $maxRetries) {
+                continue;
+            }
+
+            // Honour the scheduled backoff: skip messages not yet due.
+            $nextAttempt = ($messageData['nextAttempt'] ?? null);
+            if ($nextAttempt !== null && $nextAttempt !== '') {
+                $due = strtotime((string) $nextAttempt);
+                if ($due !== false && $due > $now) {
+                    continue;
+                }
+            }
+
+            if ($this->deliverMessage(message: $message) === true) {
                 $successCount++;
             }
-        }
+        }//end foreach
 
         return $successCount;
 

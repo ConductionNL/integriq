@@ -101,6 +101,14 @@ return [
 		['name' => 'events#generateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret', 'verb' => 'POST'],
 		['name' => 'events#rotateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret/rotate', 'verb' => 'POST'],
 
+		// Dead-letter queue inspection and replay (admin-only, CSRF intact)
+		['name' => 'events#deadLetterIndex', 'url' => '/api/events/dead-letter', 'verb' => 'GET'],
+		['name' => 'events#bulkReplay', 'url' => '/api/events/dead-letter/replay', 'verb' => 'POST'],
+		['name' => 'events#bulkDiscard', 'url' => '/api/events/dead-letter/discard', 'verb' => 'POST'],
+		['name' => 'events#deadLetterShow', 'url' => '/api/events/dead-letter/{id}', 'verb' => 'GET'],
+		['name' => 'events#replay', 'url' => '/api/events/dead-letter/{id}/replay', 'verb' => 'POST'],
+		['name' => 'events#discard', 'url' => '/api/events/dead-letter/{id}/discard', 'verb' => 'POST'],
+
 		// Logs endpoints (LogsController — synchronization_log schema)
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
 		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],

@@ -34,7 +34,8 @@
         { "id": "Mappings", "label": "Mappings", "icon": "SitemapOutline", "route": "Mappings", "order": 70 },
         { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
-        { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 }
+        { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
+        { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 }
       ]
     },
     {
@@ -433,6 +434,19 @@
       "config": {
         "register": "openconnector",
         "schema": "call_log"
+      }
+    },
+    {
+      "id": "EventDeliveries",
+      "route": "/cloud-events/deliveries",
+      "type": "custom",
+      "component": "EventDeliveriesPage",
+      "_note": "Custom page: dead-letter operations view over event_message (failed/abandoned by default) backed by the admin-only /api/events/dead-letter endpoints with per-row + bulk Replay/Discard and a detail modal. Not expressible as a generic CnIndexPage.",
+      "title": "Event deliveries",
+      "config": {
+        "register": "openconnector",
+        "schema": "event_message",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
