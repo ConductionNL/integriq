@@ -425,4 +425,137 @@ class EventServiceTest extends TestCase
     }//end testProcessRetriesSelectionMatrix()
 
 
+    /**
+     * REQ-DLR-003: replaying an abandoned message resets it to pending, stamps
+     * the operator, preserves attempts[], and re-enters delivery.
+     *
+     * @return void
+     */
+    public function testReplayMessageResetsAndStamps(): void
+    {
+        $captured = null;
+
+        $abandoned = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'status'         => 'abandoned',
+                'retryCount'     => 5,
+                'subscriptionId' => 'sub-uuid',
+                'attempts'       => [['at' => 'x', 'statusCode' => 503, 'error' => null]],
+            ],
+            'msg-uuid'
+        );
+
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['style' => 'push', 'sink' => 'https://sink.example/hook'],
+            'sub-uuid'
+        );
+
+        // find() is called: (1) replayMessage load, then deliverMessage->find
+        // subscription, then final re-load. Return the abandoned message first,
+        // subscription on the style lookup, then the (reset) message.
+        $this->objectService->method('find')->willReturnCallback(
+            function (string $id, string $register, string $schema) use ($abandoned, $subscription) {
+                if ($schema === 'event_subscription') {
+                    return $subscription;
+                }
+
+                return $abandoned;
+            }
+        );
+
+        $this->stubHttpResponse(200, 'ok');
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object) use (&$captured, $abandoned) {
+                // Capture the reset (first) save; ignore the delivery save.
+                if ($captured === null) {
+                    $captured = $object;
+                }
+
+                return $abandoned;
+            }
+        );
+
+        $this->service->replayMessage('msg-uuid', 'alice');
+
+        $this->assertSame('pending', $captured['status']);
+        $this->assertSame(0, $captured['retryCount']);
+        $this->assertSame('alice', $captured['replayedBy']);
+        $this->assertNotEmpty($captured['replayedAt']);
+        // attempts[] preserved.
+        $this->assertCount(1, $captured['attempts']);
+    }//end testReplayMessageResetsAndStamps()
+
+
+    /**
+     * REQ-DLR-003: replaying a delivered message is rejected with a state error.
+     *
+     * @return void
+     */
+    public function testReplayMessageRejectsDeliveredState(): void
+    {
+        $delivered = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['status' => 'delivered', 'subscriptionId' => 'sub-uuid'],
+            'msg-uuid'
+        );
+        $this->objectService->method('find')->willReturn($delivered);
+
+        $this->expectException(\OCA\OpenConnector\Exception\InvalidMessageStateException::class);
+        $this->service->replayMessage('msg-uuid', 'alice');
+    }//end testReplayMessageRejectsDeliveredState()
+
+
+    /**
+     * REQ-DLR-004: discard sets the terminal discarded state with an audit
+     * stamp and nextAttempt=null.
+     *
+     * @return void
+     */
+    public function testDiscardMessageMarksDiscarded(): void
+    {
+        $captured = null;
+
+        $abandoned = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['status' => 'abandoned', 'subscriptionId' => 'sub-uuid'],
+            'msg-uuid'
+        );
+        $this->objectService->method('find')->willReturn($abandoned);
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object) use (&$captured, $abandoned) {
+                $captured = $object;
+                return $abandoned;
+            }
+        );
+
+        $this->service->discardMessage('msg-uuid', 'bob');
+
+        $this->assertSame('discarded', $captured['status']);
+        $this->assertNull($captured['nextAttempt']);
+        $this->assertSame('bob', $captured['discardedBy']);
+        $this->assertNotEmpty($captured['discardedAt']);
+    }//end testDiscardMessageMarksDiscarded()
+
+
+    /**
+     * REQ-DLR-004: discard on a pending message is rejected.
+     *
+     * @return void
+     */
+    public function testDiscardMessageRejectsPendingState(): void
+    {
+        $pending = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['status' => 'pending', 'subscriptionId' => 'sub-uuid'],
+            'msg-uuid'
+        );
+        $this->objectService->method('find')->willReturn($pending);
+
+        $this->expectException(\OCA\OpenConnector\Exception\InvalidMessageStateException::class);
+        $this->service->discardMessage('msg-uuid', 'bob');
+    }//end testDiscardMessageRejectsPendingState()
+
+
 }//end class

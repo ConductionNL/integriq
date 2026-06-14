@@ -585,9 +585,10 @@
               "pending",
               "delivered",
               "failed",
-              "abandoned"
+              "abandoned",
+              "discarded"
             ],
-            "description": "Delivery state. Enforced lifecycle: pending → delivered (terminal, 2xx) | failed (non-2xx/exception, retryCount < maxRetries) → abandoned (terminal, retryCount >= maxRetries)."
+            "description": "Delivery state. Enforced lifecycle: pending → delivered (terminal, 2xx) | failed (non-2xx/exception, retryCount < maxRetries) → abandoned (terminal, retryCount >= maxRetries). An operator may replay a failed/abandoned message (→ pending) or discard it (→ discarded, terminal); discarded is never swept and never hard-deleted."
           },
           "payload": {
             "type": "object",
@@ -633,6 +634,24 @@
                 }
               }
             }
+          },
+          "replayedBy": {
+            "type": "string",
+            "description": "UID of the operator who last replayed this message out of failed/abandoned"
+          },
+          "replayedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last operator replay"
+          },
+          "discardedBy": {
+            "type": "string",
+            "description": "UID of the operator who discarded this message"
+          },
+          "discardedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the operator discard (terminal)"
           },
           "created": {
             "type": "string",

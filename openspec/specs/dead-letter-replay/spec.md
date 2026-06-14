@@ -1,7 +1,8 @@
-# dead-letter-replay — delta
+# dead-letter-replay Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change openconnector-dead-letter-replay. Update Purpose after archive.
+## Requirements
 ### Requirement: Dead-letter listing with filters and pagination (REQ-DLR-001)
 
 The system SHALL expose an admin-only, CSRF-protected endpoint
@@ -98,7 +99,9 @@ endpoint, and MUST NOT be hard-deleted by the discard verb. Discard on
 
 ### Requirement: Bulk replay and discard with per-item outcomes (REQ-DLR-005)
 
-`POST /api/events/dead-letter/replay` and `POST /api/events/dead-letter/discard`
+Bulk replay and discard MUST accept an explicit, capped id set and report
+per-item outcomes. `POST /api/events/dead-letter/replay` and
+`POST /api/events/dead-letter/discard`
 SHALL accept `{ids: string[]}` with at most 100 UUIDs, apply the corresponding
 single-message semantics (REQ-DLR-003 / REQ-DLR-004) per id, and return a
 per-id result map (`ok` | error reason, e.g. `not-found`, `invalid-state`).
@@ -144,3 +147,4 @@ feedback MUST be present.
 - **GIVEN** no failed or abandoned messages exist
 - **WHEN** an admin opens the Event deliveries view
 - **THEN** an empty state SHALL be rendered instead of an empty table
+
