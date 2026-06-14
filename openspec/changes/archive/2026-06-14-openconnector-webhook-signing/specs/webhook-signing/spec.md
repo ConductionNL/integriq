@@ -4,9 +4,11 @@
 
 ### Requirement: Outbound deliveries are HMAC-signed when the subscription has a signing secret (REQ-WHS-001)
 
-When an `event_subscription` carries `protocolSettings.signingSecret`, every
-push delivery attempt for that subscription (immediate, retry-sweep, and
-operator replay) MUST include the headers:
+Outbound push deliveries MUST be HMAC-signed when the subscription carries a
+signing secret. When an `event_subscription` carries
+`protocolSettings.signingSecret`, every push delivery attempt for that
+subscription (immediate, retry-sweep, and operator replay) MUST include the
+headers:
 
 - `X-OpenConnector-Signature: t=<unix-ts>,v1=<hex>` where
   `v1 = HMAC-SHA256(signingSecret, "<t>." + rawBody)` and `rawBody` is the
