@@ -1,0 +1,299 @@
+<!-- SPDX-License-Identifier: EUPL-1.2 -->
+<!-- SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl> -->
+
+<!--
+  EventDeliveriesPage — the dead-letter operations view in the Cloud events
+  section (manifest `type: custom`, `component: EventDeliveriesPage`).
+
+  Why a custom page rather than a plain CnIndexPage: the dead-letter surface
+  is a *filtered* operational view over event_message (default failed +
+  abandoned) backed by a dedicated admin-only endpoint
+  (`GET /api/events/dead-letter`), with bulk selection and per-row Replay /
+  Discard verbs that hit the bespoke `/api/events/dead-letter/*` routes — not
+  the generic OR object CRUD a CnIndexPage drives. It owns:
+
+    - status / subscription filters,
+    - loading + empty states,
+    - a per-message detail modal (EventDeliveryDetailModal, its own file
+      under src/modals/ per the modal-isolation gate),
+    - bulk Replay / Discard with a confirmation step and per-item feedback.
+
+  @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-4
+-->
+<template>
+	<div class="eventDeliveries">
+		<div class="eventDeliveries__header">
+			<h2>{{ t('openconnector', 'Event deliveries') }}</h2>
+			<div class="eventDeliveries__filters">
+				<NcSelect :input-label="t('openconnector', 'Status')"
+					:options="statusOptions"
+					:value.sync="statusFilter"
+					@input="reload" />
+				<NcTextField :label="t('openconnector', 'Subscription')"
+					:value.sync="subscriptionFilter"
+					@update:value="reloadDebounced" />
+			</div>
+		</div>
+
+		<div v-if="selected.length" class="eventDeliveries__bulk" data-testid="bulk-bar">
+			<span>{{ t('openconnector', '{count} selected', { count: selected.length }) }}</span>
+			<template v-if="bulkConfirm">
+				<span>{{ bulkConfirm === 'replay'
+					? t('openconnector', 'Replay {count} messages now?', { count: selected.length })
+					: t('openconnector', 'Discard {count} messages?', { count: selected.length }) }}</span>
+				<NcButton type="primary" :disabled="busy" @click="commitBulk">
+					{{ t('openconnector', 'Confirm') }}
+				</NcButton>
+				<NcButton :disabled="busy" @click="bulkConfirm = null">
+					{{ t('openconnector', 'Cancel') }}
+				</NcButton>
+			</template>
+			<template v-else>
+				<NcButton type="primary" :disabled="busy" @click="bulkConfirm = 'replay'">
+					{{ t('openconnector', 'Replay selected') }}
+				</NcButton>
+				<NcButton :disabled="busy" @click="bulkConfirm = 'discard'">
+					{{ t('openconnector', 'Discard selected') }}
+				</NcButton>
+			</template>
+		</div>
+
+		<NcLoadingIcon v-if="loading" :size="32" class="eventDeliveries__loading" />
+
+		<p v-else-if="!rows.length" class="eventDeliveries__empty" data-testid="empty-state">
+			{{ t('openconnector', 'No dead-lettered event deliveries') }}
+		</p>
+
+		<table v-else class="eventDeliveries__table" data-testid="deliveries-table">
+			<thead>
+				<tr>
+					<th></th>
+					<th>{{ t('openconnector', 'Event') }}</th>
+					<th>{{ t('openconnector', 'Subscription') }}</th>
+					<th>{{ t('openconnector', 'Status') }}</th>
+					<th>{{ t('openconnector', 'Retries') }}</th>
+					<th>{{ t('openconnector', 'Last attempt') }}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr v-for="row in rows" :key="row.uuid || row.id">
+					<td>
+						<NcCheckboxRadioSwitch :checked="isSelected(row)"
+							@update:checked="toggleSelect(row)" />
+					</td>
+					<td>{{ rowEventType(row) }}</td>
+					<td>{{ row.subscriptionId }}</td>
+					<td>
+						<span class="eventDeliveries__badge" :class="`eventDeliveries__badge--${row.status}`">
+							{{ row.status }}
+						</span>
+					</td>
+					<td>{{ row.retryCount || 0 }}</td>
+					<td>{{ row.lastAttempt }}</td>
+					<td>
+						<NcButton type="tertiary" @click="openDetail(row)">
+							{{ t('openconnector', 'Inspect') }}
+						</NcButton>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<EventDeliveryDetailModal :open="detail.open"
+			:message="detail.message"
+			@close="closeDetail"
+			@changed="reload" />
+	</div>
+</template>
+
+<script>
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
+import EventDeliveryDetailModal from '../../modals/EventDelivery/EventDeliveryDetailModal.vue'
+
+export default {
+	name: 'EventDeliveriesPage',
+
+	components: {
+		NcButton,
+		NcCheckboxRadioSwitch,
+		NcLoadingIcon,
+		NcSelect,
+		NcTextField,
+		EventDeliveryDetailModal,
+	},
+
+	data() {
+		return {
+			rows: [],
+			loading: false,
+			statusFilter: 'failed,abandoned',
+			subscriptionFilter: '',
+			statusOptions: ['failed,abandoned', 'failed', 'abandoned', 'discarded'],
+			selected: [],
+			detail: { open: false, message: null },
+			bulkConfirm: null,
+			busy: false,
+			reloadTimer: null,
+		}
+	},
+
+	mounted() {
+		this.reload()
+	},
+
+	methods: {
+		t,
+		rowEventType(row) {
+			return row?.payload?.type || row?.payload?.data?.type || '—'
+		},
+		isSelected(row) {
+			return this.selected.includes(row.uuid || row.id)
+		},
+		toggleSelect(row) {
+			const id = row.uuid || row.id
+			if (this.selected.includes(id)) {
+				this.selected = this.selected.filter((x) => x !== id)
+			} else {
+				this.selected = [...this.selected, id]
+			}
+		},
+		openDetail(row) {
+			this.detail = { open: true, message: row }
+		},
+		closeDetail() {
+			this.detail = { open: false, message: null }
+		},
+		reloadDebounced() {
+			clearTimeout(this.reloadTimer)
+			this.reloadTimer = setTimeout(() => this.reload(), 400)
+		},
+		async reload() {
+			this.loading = true
+			this.selected = []
+			try {
+				const params = { status: this.statusFilter }
+				if (this.subscriptionFilter) {
+					params.subscriptionId = this.subscriptionFilter
+				}
+				const res = await axios.get(generateUrl('/apps/openconnector/api/events/dead-letter'), { params })
+				this.rows = res.data?.results || []
+			} catch (err) {
+				showError(t('openconnector', 'Failed to load event deliveries'))
+				this.rows = []
+			} finally {
+				this.loading = false
+			}
+		},
+		async commitBulk() {
+			const verb = this.bulkConfirm
+			if (!verb || !this.selected.length) {
+				return
+			}
+			this.busy = true
+			try {
+				const res = await axios.post(
+					generateUrl(`/apps/openconnector/api/events/dead-letter/${verb}`),
+					{ ids: this.selected },
+				)
+				const results = res.data?.results || {}
+				const ok = Object.values(results).filter((r) => r === 'ok').length
+				const failed = Object.keys(results).length - ok
+				if (failed > 0) {
+					showError(t('openconnector', '{ok} processed, {failed} failed', { ok, failed }))
+				} else {
+					showSuccess(t('openconnector', '{ok} messages processed', { ok }))
+				}
+				await this.reload()
+			} catch (err) {
+				const detail = err?.response?.data?.error || err?.message || ''
+				showError(t('openconnector', 'Bulk action failed') + (detail ? `: ${detail}` : ''))
+			} finally {
+				this.busy = false
+				this.bulkConfirm = null
+			}
+		},
+	},
+}
+</script>
+
+<style scoped>
+.eventDeliveries {
+	padding: 20px;
+}
+
+.eventDeliveries__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-bottom: 16px;
+}
+
+.eventDeliveries__filters {
+	display: flex;
+	gap: 12px;
+	align-items: flex-end;
+}
+
+.eventDeliveries__bulk {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	padding: 8px 12px;
+	margin-bottom: 12px;
+	background: var(--color-background-hover);
+	border-radius: var(--border-radius);
+}
+
+.eventDeliveries__table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.eventDeliveries__table th,
+.eventDeliveries__table td {
+	text-align: left;
+	padding: 6px 10px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.eventDeliveries__badge {
+	padding: 2px 10px;
+	border-radius: var(--border-radius-pill);
+	background: var(--color-background-dark);
+}
+
+.eventDeliveries__badge--failed {
+	background: var(--color-warning, #e9a13b);
+	color: var(--color-primary-text);
+}
+
+.eventDeliveries__badge--abandoned {
+	background: var(--color-error, #e9322d);
+	color: var(--color-primary-text);
+}
+
+.eventDeliveries__badge--discarded {
+	background: var(--color-text-maxcontrast);
+	color: var(--color-main-background);
+}
+
+.eventDeliveries__loading,
+.eventDeliveries__empty {
+	margin: 32px auto;
+	text-align: center;
+	color: var(--color-text-maxcontrast);
+}
+</style>

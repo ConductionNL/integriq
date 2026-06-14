@@ -19,12 +19,15 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
+use OCA\OpenConnector\Exception\InvalidMessageStateException;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -40,6 +43,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ *
+ * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
  */
 class EventsController extends Controller
 {
@@ -375,4 +380,302 @@ class EventsController extends Controller
         return new JSONResponse($result);
 
     }//end pull()
+
+    /**
+     * List dead-lettered event messages (failed/abandoned by default).
+     *
+     * Admin-only via #[AuthorizedAdminSetting]; CSRF protection is intact
+     * (no #[NoCSRFRequired]). The DLQ can re-fire deliveries to arbitrary
+     * sinks, so it deliberately does NOT inherit the EventsController's
+     *
+     * @NoAdminRequired posture.
+     *
+     * @return JSONResponse Filtered list of dead-letter messages.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function deadLetterIndex(): JSONResponse
+    {
+        $statusParam = (string) $this->request->getParam('status', '');
+        if ($statusParam !== '') {
+            $statuses = array_values(array_filter(array_map('trim', explode(',', $statusParam))));
+        } else {
+            $statuses = ['failed', 'abandoned'];
+        }
+
+        $filters = [
+            'register' => 'openconnector',
+            'schema'   => 'event_message',
+            'status'   => $statuses,
+        ];
+
+        $subscriptionId = $this->request->getParam('subscriptionId');
+        if ($subscriptionId !== null && $subscriptionId !== '') {
+            $filters['subscriptionId'] = (string) $subscriptionId;
+        }
+
+        $matches  = $this->orObjectService->findAll(
+                config: [
+                    'filters' => $filters,
+                    'limit'   => (int) $this->request->getParam('limit', 50),
+                    'offset'  => (int) $this->request->getParam('offset', 0),
+                ]
+                );
+        $messages = ($matches['results'] ?? $matches);
+
+        // Defensive in-PHP narrowing: enforce the requested status set and the
+        // lastAttempt window regardless of how OR interprets the filters.
+        $from = $this->request->getParam('from');
+        $to   = $this->request->getParam('to');
+        $rows = [];
+        foreach ($messages as $message) {
+            $data = $message->getObject();
+            if (in_array(($data['status'] ?? ''), $statuses, true) === false) {
+                continue;
+            }
+
+            if ($this->withinWindow(lastAttempt: ($data['lastAttempt'] ?? null), from: $from, to: $to) === false) {
+                continue;
+            }
+
+            $rows[] = $data;
+        }
+
+        return new JSONResponse(['results' => $rows, 'total' => count($rows)]);
+
+    }//end deadLetterIndex()
+
+    /**
+     * Whether a lastAttempt timestamp falls within an optional [from, to] window.
+     *
+     * @param string|null $lastAttempt The message's lastAttempt timestamp.
+     * @param string|null $from        Lower bound (ISO 8601), or null.
+     * @param string|null $to          Upper bound (ISO 8601), or null.
+     *
+     * @return boolean
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    private function withinWindow(?string $lastAttempt, ?string $from, ?string $to): bool
+    {
+        if (($from === null || $from === '') && ($to === null || $to === '')) {
+            return true;
+        }
+
+        if ($lastAttempt === null || $lastAttempt === '') {
+            return false;
+        }
+
+        $ts = strtotime($lastAttempt);
+        if ($ts === false) {
+            return false;
+        }
+
+        if ($from !== null && $from !== '' && $ts < strtotime($from)) {
+            return false;
+        }
+
+        if ($to !== null && $to !== '' && $ts > strtotime($to)) {
+            return false;
+        }
+
+        return true;
+
+    }//end withinWindow()
+
+    /**
+     * Show full detail for one dead-lettered message including attempt history.
+     *
+     * @param string $id The message UUID.
+     *
+     * @return JSONResponse The message detail with resolved subscription context.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function deadLetterShow(string $id): JSONResponse
+    {
+        try {
+            $message = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'event_message');
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
+        }
+
+        $data            = $message->getObject();
+        $subscriptionCtx = null;
+        $subscriptionId  = ($data['subscriptionId'] ?? null);
+        if ($subscriptionId !== null && $subscriptionId !== '') {
+            try {
+                $subscription    = $this->orObjectService->find(
+                    id: (string) $subscriptionId,
+                    register: 'openconnector',
+                    schema: 'event_subscription'
+                );
+                $subData         = $subscription->getObject();
+                $subscriptionCtx = [
+                    'sink'     => ($subData['sink'] ?? null),
+                    'protocol' => ($subData['protocol'] ?? null),
+                    'status'   => ($subData['status'] ?? null),
+                ];
+            } catch (DoesNotExistException $e) {
+                $subscriptionCtx = null;
+            }
+        }
+
+        return new JSONResponse(
+                [
+                    'message'      => $data,
+                    'subscription' => $subscriptionCtx,
+                ]
+                );
+
+    }//end deadLetterShow()
+
+    /**
+     * Replay a single dead-lettered message back into the delivery machine.
+     *
+     * @param string $id The message UUID.
+     *
+     * @return JSONResponse The updated message, or 409 on an invalid state.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function replay(string $id): JSONResponse
+    {
+        $actor = $this->currentUid();
+
+        try {
+            $updated = $this->eventService->replayMessage(id: $id, actorUid: $actor);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
+        } catch (InvalidMessageStateException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
+        }
+
+        return new JSONResponse($updated->getObject());
+
+    }//end replay()
+
+    /**
+     * Discard a single dead-lettered message (terminal, audited, no delete).
+     *
+     * @param string $id The message UUID.
+     *
+     * @return JSONResponse The updated message, or 409 on an invalid state.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function discard(string $id): JSONResponse
+    {
+        $actor = $this->currentUid();
+
+        try {
+            $updated = $this->eventService->discardMessage(id: $id, actorUid: $actor);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
+        } catch (InvalidMessageStateException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
+        }
+
+        return new JSONResponse($updated->getObject());
+
+    }//end discard()
+
+    /**
+     * Bulk replay up to 100 dead-lettered messages, reporting per-id outcomes.
+     *
+     * @return JSONResponse A per-id result map, or 400 when the id cap is exceeded.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function bulkReplay(): JSONResponse
+    {
+        return $this->bulkApply(verb: 'replay');
+
+    }//end bulkReplay()
+
+    /**
+     * Bulk discard up to 100 dead-lettered messages, reporting per-id outcomes.
+     *
+     * @return JSONResponse A per-id result map, or 400 when the id cap is exceeded.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function bulkDiscard(): JSONResponse
+    {
+        return $this->bulkApply(verb: 'discard');
+
+    }//end bulkDiscard()
+
+    /**
+     * Apply a dead-letter verb to an explicit, capped set of message UUIDs.
+     *
+     * Partial failures never abort the batch; each id reports its own outcome
+     * (`ok`, `not-found`, `invalid-state`, or `error`). A filter-predicate form
+     * is deliberately NOT accepted — only an explicit `ids[]` array.
+     *
+     * @param string $verb Either `replay` or `discard`.
+     *
+     * @return JSONResponse Per-id result map, or 400 on cap/shape violations.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    private function bulkApply(string $verb): JSONResponse
+    {
+        $ids = $this->request->getParam('ids');
+        if (is_array($ids) === false) {
+            return new JSONResponse(['error' => $this->l->t('ids must be an array of message UUIDs')], 400);
+        }
+
+        if (count($ids) > 100) {
+            return new JSONResponse(['error' => $this->l->t('A maximum of 100 ids may be processed per call')], 400);
+        }
+
+        $actor   = $this->currentUid();
+        $results = [];
+        foreach ($ids as $id) {
+            $id = (string) $id;
+            try {
+                if ($verb === 'replay') {
+                    $this->eventService->replayMessage(id: $id, actorUid: $actor);
+                } else {
+                    $this->eventService->discardMessage(id: $id, actorUid: $actor);
+                }
+
+                $results[$id] = 'ok';
+            } catch (DoesNotExistException $e) {
+                $results[$id] = 'not-found';
+            } catch (InvalidMessageStateException $e) {
+                $results[$id] = 'invalid-state';
+            } catch (Exception $e) {
+                $results[$id] = 'error';
+            }//end try
+        }//end foreach
+
+        return new JSONResponse(['results' => $results]);
+
+    }//end bulkApply()
+
+    /**
+     * Resolve the acting operator's user id for audit stamping.
+     *
+     * @return string The current user's uid, or 'unknown' when unavailable.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     */
+    private function currentUid(): string
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return 'unknown';
+        }
+
+        return $user->getUID();
+
+    }//end currentUid()
 }//end class

@@ -43,6 +43,7 @@ import {
 	viewLogsHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
@@ -80,4 +81,9 @@ export default {
 	MappingDetailPage,
 	RuleDetailPage,
 	SynchronizationDetailPage,
+
+	// Dead-letter operations view (custom page): a filtered event_message
+	// surface backed by the admin-only /api/events/dead-letter endpoints with
+	// per-row + bulk Replay/Discard. See openconnector-dead-letter-replay.
+	EventDeliveriesPage,
 }

@@ -20,6 +20,7 @@ namespace OCA\OpenConnector\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenConnector\Exception\InvalidMessageStateException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -508,6 +509,116 @@ class EventService
         return $attempts;
 
     }//end appendAttempt()
+
+    /**
+     * Replay a dead-lettered message back into the delivery machine.
+     *
+     * Resets a `failed`/`abandoned` message to `pending`, clears its retry
+     * counter, schedules an immediate next attempt, preserves the existing
+     * `attempts[]` history, stamps the acting operator, and triggers one
+     * immediate delivery attempt. The message then re-enters the standard
+     * retry/backoff/abandon machine.
+     *
+     * @param string $id       The message UUID.
+     * @param string $actorUid The acting operator's user id.
+     *
+     * @return ObjectEntity The updated message.
+     *
+     * @throws InvalidMessageStateException When the message is not in a replayable state.
+     * @throws \OCP\DB\Exception            On persistence failure.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
+     */
+    public function replayMessage(string $id, string $actorUid): ObjectEntity
+    {
+        $message     = $this->objectService->find(
+            id: $id,
+            register: 'openconnector',
+            schema: 'event_message'
+        );
+        $messageData = $message->getObject();
+        $status      = ($messageData['status'] ?? '');
+
+        if (in_array($status, ['failed', 'abandoned'], true) === false) {
+            throw new InvalidMessageStateException(
+                message: 'Cannot replay a message in state "'.$status.'"; only failed or abandoned messages are replayable.'
+            );
+        }
+
+        $now = (new DateTime())->format('c');
+
+        $messageData['status']      = 'pending';
+        $messageData['retryCount']  = 0;
+        $messageData['nextAttempt'] = $now;
+        $messageData['replayedBy']  = $actorUid;
+        $messageData['replayedAt']  = $now;
+        // Attempts[] is deliberately preserved across the replay campaign.
+        $saved = $this->objectService->saveObject(
+            object: $messageData,
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
+
+        // Re-enter the delivery machine immediately.
+        $this->deliverMessage(message: $saved);
+
+        return $this->objectService->find(
+            id: $message->getUuid(),
+            register: 'openconnector',
+            schema: 'event_message'
+        );
+
+    }//end replayMessage()
+
+    /**
+     * Discard a dead-lettered message into the terminal `discarded` state.
+     *
+     * Marks a `failed`/`abandoned` message `discarded` with an operator audit
+     * stamp. Discarded messages are never swept and never hard-deleted; they
+     * remain queryable for audit.
+     *
+     * @param string $id       The message UUID.
+     * @param string $actorUid The acting operator's user id.
+     *
+     * @return ObjectEntity The updated message.
+     *
+     * @throws InvalidMessageStateException When the message is not in a discardable state.
+     * @throws \OCP\DB\Exception            On persistence failure.
+     *
+     * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
+     */
+    public function discardMessage(string $id, string $actorUid): ObjectEntity
+    {
+        $message     = $this->objectService->find(
+            id: $id,
+            register: 'openconnector',
+            schema: 'event_message'
+        );
+        $messageData = $message->getObject();
+        $status      = ($messageData['status'] ?? '');
+
+        if (in_array($status, ['failed', 'abandoned'], true) === false) {
+            throw new InvalidMessageStateException(
+                message: 'Cannot discard a message in state "'.$status.'"; only failed or abandoned messages are discardable.'
+            );
+        }
+
+        $now = (new DateTime())->format('c');
+
+        $messageData['status']      = 'discarded';
+        $messageData['nextAttempt'] = null;
+        $messageData['discardedBy'] = $actorUid;
+        $messageData['discardedAt'] = $now;
+
+        return $this->objectService->saveObject(
+            object: $messageData,
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
+
+    }//end discardMessage()
 
     /**
      * Process pending message retries.
