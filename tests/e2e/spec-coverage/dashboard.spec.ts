@@ -35,10 +35,13 @@ test.describe('Dashboard — index surface', () => {
 	// @e2e openconnector-comprehensive-tests::dashboard-charts-render
 	test('Dashboard chart widgets render their headings', async ({ page }) => {
 		const sink = trackErrors(page)
-		await page.goto(`${APP_BASE}/`, { waitUntil: 'networkidle' })
+		// The dashboard's chart widgets poll their data sources, so `networkidle`
+		// never settles and the goto can hit the test timeout. Wait for the DOM,
+		// then assert on the chart heading itself (the real signal).
+		await page.goto(`${APP_BASE}/`, { waitUntil: 'domcontentloaded' })
 		// Chart widget headings from the dashboard manifest config.
 		const chart = page.getByRole('heading', { name: /Outgoing calls|Job executions|Synchronization runs/i }).first()
-		await test.expect(chart, 'a chart widget heading should be visible').toBeVisible({ timeout: 15_000 })
+		await test.expect(chart, 'a chart widget heading should be visible').toBeVisible({ timeout: 20_000 })
 		assertNoAppErrors(sink)
 	})
 })
