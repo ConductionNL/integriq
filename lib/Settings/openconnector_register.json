@@ -581,7 +581,13 @@
           },
           "status": {
             "type": "string",
-            "description": "Delivery state (pending, delivered, failed, abandoned)"
+            "enum": [
+              "pending",
+              "delivered",
+              "failed",
+              "abandoned"
+            ],
+            "description": "Delivery state. Enforced lifecycle: pending → delivered (terminal, 2xx) | failed (non-2xx/exception, retryCount < maxRetries) → abandoned (terminal, retryCount >= maxRetries)."
           },
           "payload": {
             "type": "object",
@@ -605,6 +611,28 @@
             "type": "string",
             "format": "date-time",
             "description": "Scheduled time of next retry (null when terminal state reached)"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-attempt delivery audit trail (bounded by maxRetries + 1 entries). Each entry records the moment, the HTTP status code on an HTTP-level failure, and the transport error on an exception. statusCode and error are both null only on a successful attempt.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt"
+                },
+                "statusCode": {
+                  "type": "integer",
+                  "description": "HTTP status code returned by the sink, or null on a transport exception"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Transport/exception message, or null on an HTTP-level outcome"
+                }
+              }
+            }
           },
           "created": {
             "type": "string",
