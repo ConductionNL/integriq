@@ -36,6 +36,7 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<background-jobs>
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
+		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
 	</background-jobs>
 
 	<commands>
