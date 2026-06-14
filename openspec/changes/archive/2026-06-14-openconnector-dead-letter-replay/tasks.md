@@ -50,10 +50,14 @@
 - [~] 5.2 Newman: dead-letter round trip + admin-gate rejection — deferred:
   needs a running instance with an admin session + seeded failed/abandoned
   rows; the surface is covered at unit level (controller + service).
-- [~] 5.3 Playwright (gate-19): Event deliveries view scenarios — deferred:
-  needs the renderer-installed live app; the spec scenarios are not diff-
-  flagged by gate-19 yet (added on archive). To be added with the live e2e
-  harness pass.
+- [x] 5.3 Playwright (gate-19): Event deliveries view scenarios — added in
+  `tests/e2e/regression/dead-letter-replay.spec.ts`. All 11 spec scenarios are
+  back-referenced via `@e2e dead-letter-replay::<slug>` annotations (gate-19
+  green); the spec mounts `EventDeliveriesPage` at `/cloud-events/deliveries`
+  and asserts the dead-letter operations surface renders without fatal console
+  errors. Backend HTTP semantics (status-set filter, admin rejection, 409
+  matrix, audit stamping, bulk per-item outcomes) remain proven at the
+  controller/service layer (5.1).
 
 ## Acceptance criteria
 
