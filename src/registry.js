@@ -40,6 +40,7 @@ import {
 	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	manageSigningHandler,
 	viewLogsHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
@@ -59,6 +60,9 @@ export default {
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	// Webhook signing-secret manager (opens SubscriptionSigningModal via
+	// the modal bus). See openconnector-webhook-signing.
+	manageSigningHandler,
 	// Query-aware navigation handler for "View logs" row actions on
 	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
 	// destination *Logs route. Will be retired once nc-vue#330 lands a

@@ -235,6 +235,9 @@
         "columns": ["sink", "protocol", "style", "status", "updated"],
         "includeFields": ["source", "types", "sink", "protocol", "style", "status"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "manage-signing", "label": "Webhook signing", "icon": "ShieldKeyOutline", "handler": "manageSigningHandler" }
+        ],
         "documentationUrl": "https://openconnector.conduction.nl"
       }
     },

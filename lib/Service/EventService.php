@@ -26,12 +26,14 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+use OCA\OpenConnector\Service\WebhookSignatureService;
 
 /**
  * Service class for managing events and their delivery.
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  *
+ * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
  */
 class EventService
@@ -60,14 +62,16 @@ class EventService
     /**
      * Constructor.
      *
-     * @param ORObjectService $objectService The OR ObjectService for data access.
-     * @param IClientService  $clientService HTTP client service used to deliver push messages.
-     * @param LoggerInterface $logger        Logger for delivery successes and failures.
+     * @param ORObjectService         $objectService    The OR ObjectService for data access.
+     * @param IClientService          $clientService    HTTP client service used to deliver push messages.
+     * @param LoggerInterface         $logger           Logger for delivery successes and failures.
+     * @param WebhookSignatureService $signatureService Signs outbound deliveries when configured.
      */
     public function __construct(
         private readonly ORObjectService $objectService,
         private readonly IClientService $clientService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly WebhookSignatureService $signatureService
     ) {
 
     }//end __construct()
@@ -261,6 +265,7 @@ class EventService
      *
      * @return boolean True when delivered successfully.
      *
+     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
      * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
      */
     public function deliverMessage(ObjectEntity $message): bool
@@ -289,15 +294,41 @@ class EventService
                 return false;
             }
 
+            // Serialize the body exactly once; the signature (when configured)
+            // covers these exact bytes.
+            $rawBody = json_encode($messageData['payload'] ?? []);
+
+            $headers = [
+                'Content-Type' => 'application/cloudevents+json',
+                ...($subscriptionData['protocolSettings']['headers'] ?? []),
+            ];
+
+            $signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
+            if ($signingSecret !== null && $signingSecret !== '') {
+                // A signing failure must surface as a failed attempt, not an
+                // unsigned send: let any exception propagate to the failure path.
+                $previousSecret = null;
+                if ($this->signatureService->isRotationGraceActive(
+                    secretRotatedAt: ($subscriptionData['protocolSettings']['secretRotatedAt'] ?? null)
+                ) === true
+                ) {
+                    $previousSecret = ($subscriptionData['protocolSettings']['previousSigningSecret'] ?? null);
+                }
+
+                $headers['X-OpenConnector-Signature'] = $this->signatureService->sign(
+                    rawBody: $rawBody,
+                    secret: $signingSecret,
+                    previousSecret: $previousSecret
+                );
+                $headers['X-OpenConnector-Event-Id']  = $message->getUuid();
+            }
+
             $client   = $this->clientService->newClient();
             $response = $client->post(
                     $subscriptionData['sink'],
                     [
-                        'body'    => json_encode($messageData['payload'] ?? []),
-                        'headers' => [
-                            'Content-Type' => 'application/cloudevents+json',
-                            ...($subscriptionData['protocolSettings']['headers'] ?? []),
-                        ],
+                        'body'    => $rawBody,
+                        'headers' => $headers,
                         'timeout' => 30,
                     ]
                     );

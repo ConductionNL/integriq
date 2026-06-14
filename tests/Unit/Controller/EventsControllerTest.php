@@ -24,6 +24,7 @@ use OCA\OpenConnector\Controller\EventsController;
 use OCA\OpenConnector\Exception\InvalidMessageStateException;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
@@ -90,6 +91,8 @@ class EventsControllerTest extends TestCase
 
         $actionAuth = $this->createMock(ActionAuthService::class);
 
+        $signatureService = $this->createMock(WebhookSignatureService::class);
+
         $this->controller = new EventsController(
             'openconnector',
             $this->request,
@@ -97,7 +100,8 @@ class EventsControllerTest extends TestCase
             $this->eventService,
             $l,
             $this->userSession,
-            $actionAuth
+            $actionAuth,
+            $signatureService
         );
     }//end setUp()
 

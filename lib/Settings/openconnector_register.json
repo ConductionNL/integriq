@@ -720,7 +720,7 @@
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings"
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed — when present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted)."
           },
           "style": {
             "type": "string",

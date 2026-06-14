@@ -97,6 +97,10 @@ return [
 		// Pull-based delivery
 		['name' => 'events#pull', 'url' => '/api/events/subscriptions/{subscriptionId}/pull', 'verb' => 'GET'],
 
+		// Webhook signing secret lifecycle (admin-only, CSRF intact)
+		['name' => 'events#generateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret', 'verb' => 'POST'],
+		['name' => 'events#rotateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret/rotate', 'verb' => 'POST'],
+
 		// Dead-letter queue inspection and replay (admin-only, CSRF intact)
 		['name' => 'events#deadLetterIndex', 'url' => '/api/events/dead-letter', 'verb' => 'GET'],
 		['name' => 'events#bulkReplay', 'url' => '/api/events/dead-letter/replay', 'verb' => 'POST'],

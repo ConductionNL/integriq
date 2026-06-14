@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
@@ -67,6 +68,7 @@ class EventServiceTest extends TestCase
             $this->objectService,
             $this->clientService,
             $this->logger,
+            new WebhookSignatureService($this->logger),
         );
     }//end setUp()
 
@@ -174,6 +176,104 @@ class EventServiceTest extends TestCase
         // Assert
         $this->assertSame(0, $count);
     }//end testProcessRetriesReturnsZeroWhenNoPendingMessages()
+
+
+    /**
+     * REQ-WHS-001: a subscription with a signingSecret produces a verifiable
+     * X-OpenConnector-Signature over the exact body bytes.
+     *
+     * @return void
+     */
+    public function testDeliverMessageSignsWhenSecretConfigured(): void
+    {
+        $secret  = 'whsec_testsecret';
+        $payload = ['type' => 'com.example.created', 'id' => 'abc'];
+
+        $message = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['subscriptionId' => 'sub-uuid', 'payload' => $payload],
+            'msg-uuid'
+        );
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'style'            => 'push',
+                'sink'             => 'https://sink.example/hook',
+                'protocolSettings' => ['signingSecret' => $secret],
+            ],
+            'sub-uuid'
+        );
+        $this->objectService->method('find')->willReturn($subscription);
+        $this->objectService->method('saveObject')->willReturn($message);
+
+        $capturedHeaders = null;
+        $capturedBody    = null;
+        $response        = $this->createMock(IResponse::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getBody')->willReturn('ok');
+
+        $client = $this->createMock(IClient::class);
+        $client->method('post')->willReturnCallback(
+            function (string $url, array $opts) use (&$capturedHeaders, &$capturedBody, $response) {
+                $capturedHeaders = $opts['headers'];
+                $capturedBody    = $opts['body'];
+                return $response;
+            }
+        );
+        $this->clientService->method('newClient')->willReturn($client);
+
+        $this->service->deliverMessage($message);
+
+        $this->assertArrayHasKey('X-OpenConnector-Signature', $capturedHeaders);
+        $this->assertArrayHasKey('X-OpenConnector-Event-Id', $capturedHeaders);
+
+        // Recompute the signature against the exact body bytes that were sent.
+        $header = $capturedHeaders['X-OpenConnector-Signature'];
+        $this->assertMatchesRegularExpression('/^t=\d+,v1=[0-9a-f]{64}$/', $header);
+
+        preg_match('/t=(\d+),v1=([0-9a-f]+)/', $header, $m);
+        $expected = hash_hmac('sha256', $m[1].'.'.$capturedBody, $secret);
+        $this->assertSame($expected, $m[2]);
+    }//end testDeliverMessageSignsWhenSecretConfigured()
+
+
+    /**
+     * REQ-WHS-001: a subscription without a signingSecret delivers unsigned.
+     *
+     * @return void
+     */
+    public function testDeliverMessageUnsignedWhenNoSecret(): void
+    {
+        $message = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            'msg-uuid'
+        );
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['style' => 'push', 'sink' => 'https://sink.example/hook'],
+            'sub-uuid'
+        );
+        $this->objectService->method('find')->willReturn($subscription);
+        $this->objectService->method('saveObject')->willReturn($message);
+
+        $capturedHeaders = null;
+        $response        = $this->createMock(IResponse::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getBody')->willReturn('ok');
+        $client = $this->createMock(IClient::class);
+        $client->method('post')->willReturnCallback(
+            function (string $url, array $opts) use (&$capturedHeaders, $response) {
+                $capturedHeaders = $opts['headers'];
+                return $response;
+            }
+        );
+        $this->clientService->method('newClient')->willReturn($client);
+
+        $this->service->deliverMessage($message);
+
+        $this->assertArrayNotHasKey('X-OpenConnector-Signature', $capturedHeaders);
+    }//end testDeliverMessageUnsignedWhenNoSecret()
 
 
     /**
