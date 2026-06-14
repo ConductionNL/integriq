@@ -18,10 +18,10 @@
       "icon": "Webhook",
       "order": 20,
       "children": [
-        { "id": "Sources",   "label": "Sources",   "icon": "DatabaseArrowLeftOutline", "route": "Sources",   "order": 20 },
-        { "id": "Endpoints", "label": "Endpoints", "icon": "Api",                      "route": "Endpoints", "order": 30 },
-        { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline",   "route": "Consumers", "order": 40 },
-        { "id": "Webhooks",  "label": "Webhooks",  "icon": "Webhook",                  "route": "Webhooks",  "order": 50 }
+        { "id": "Sources", "label": "Sources", "icon": "DatabaseArrowLeftOutline", "route": "Sources", "order": 20 },
+        { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
+        { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
+        { "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "Webhooks", "order": 50 }
       ]
     },
     {
@@ -30,11 +30,11 @@
       "icon": "VectorPolylinePlus",
       "order": 30,
       "children": [
-        { "id": "Jobs",             "label": "Jobs",             "icon": "Update",             "route": "Jobs",             "order": 60 },
-        { "id": "Mappings",         "label": "Mappings",         "icon": "SitemapOutline",     "route": "Mappings",         "order": 70 },
-        { "id": "Rules",            "label": "Rules",            "icon": "ScaleBalance",       "route": "Rules",            "order": 80 },
+        { "id": "Jobs", "label": "Jobs", "icon": "Update", "route": "Jobs", "order": 60 },
+        { "id": "Mappings", "label": "Mappings", "icon": "SitemapOutline", "route": "Mappings", "order": 70 },
+        { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
-        { "id": "CloudEvents",      "label": "Cloud events",     "icon": "CloudUploadOutline", "route": "CloudEvents",      "order": 100 }
+        { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 }
       ]
     },
     {
