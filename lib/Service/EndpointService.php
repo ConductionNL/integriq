@@ -86,18 +86,19 @@ class EndpointService
     /**
      * Constructor for EndpointService.
      *
-     * @param ObjectService          $objectService          Service for handling object operations.
-     * @param CallService            $callService            Service for making external API calls.
-     * @param LoggerInterface        $logger                 Logger interface for error logging.
-     * @param IURLGenerator          $urlGenerator           Nextcloud URL generator used for absolute links.
-     * @param MappingService         $mappingService         Service used to apply request/response mappings.
-     * @param ORObjectService        $orObjectService        OpenRegister object service for register/schema CRUD.
-     * @param IConfig                $config                 Nextcloud system configuration.
-     * @param StorageService         $storageService         Service used for file part and attachment storage.
-     * @param AuthorizationService   $authorizationService   Service used to authorize incoming endpoint requests.
-     * @param ContainerInterface     $containerInterface     PSR container used to resolve optional services.
-     * @param SynchronizationService $synchronizationService Service used to dispatch endpoint synchronizations.
-     * @param RuleService            $ruleService            Service used to load and resolve endpoint rules.
+     * @param ObjectService           $objectService           Service for handling object operations.
+     * @param CallService             $callService             Service for making external API calls.
+     * @param LoggerInterface         $logger                  Logger interface for error logging.
+     * @param IURLGenerator           $urlGenerator            Nextcloud URL generator used for absolute links.
+     * @param MappingService          $mappingService          Service used to apply request/response mappings.
+     * @param ORObjectService         $orObjectService         OpenRegister object service for register/schema CRUD.
+     * @param IConfig                 $config                  Nextcloud system configuration.
+     * @param StorageService          $storageService          Service used for file part and attachment storage.
+     * @param AuthorizationService    $authorizationService    Service used to authorize incoming endpoint requests.
+     * @param ContainerInterface      $containerInterface      PSR container used to resolve optional services.
+     * @param SynchronizationService  $synchronizationService  Service used to dispatch endpoint synchronizations.
+     * @param RuleService             $ruleService             Service used to load and resolve endpoint rules.
+     * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
      *
      * @return void
      */
@@ -114,6 +115,7 @@ class EndpointService
         private readonly ContainerInterface $containerInterface,
         private readonly SynchronizationService $synchronizationService,
         private readonly RuleService $ruleService,
+        private readonly WebhookSignatureService $webhookSignatureService,
     ) {
     }//end __construct()
 
@@ -1355,6 +1357,7 @@ class EndpointService
                         'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
                         'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
                         'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
+                        'webhook_signature' => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $request),
                         'custom' => $this->processCustomRule(rule: $rule, data: $data),
                         default => throw new Exception('Unsupported rule type: '.($ruleData['type'] ?? '')),
                     };
@@ -1445,6 +1448,64 @@ class EndpointService
             return null;
         }
     }//end getRuleById()
+
+    /**
+     * Verify an inbound webhook signature over the RAW request body.
+     *
+     * Acts as a pre-pipeline gate: it reads the raw body bytes (before any
+     * decode/mapping), verifies the configured signature header with
+     * constant-time comparison via WebhookSignatureService, and short-circuits
+     * the pipeline with an undifferentiated 401 on ANY verification failure
+     * (missing/malformed header, digest mismatch, stale timestamp). On success
+     * the unchanged $data flows on to the remaining rules.
+     *
+     * Operators MUST order this rule ahead of any body-transforming or
+     * side-effecting rule (lowest `order`); it never mutates $data.
+     *
+     * @param ObjectEntity $rule    The webhook_signature rule.
+     * @param array        $data    The request data of the pipeline.
+     * @param IRequest     $request The inbound request (for raw body access).
+     *
+     * @return array|JSONResponse The unchanged $data on pass, or a 401 JSONResponse.
+     *
+     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-4
+     */
+    private function processWebhookSignatureRule(ObjectEntity $rule, array $data, IRequest $request): array|JSONResponse
+    {
+        $configuration = ($rule->getObject()['configuration'] ?? []);
+        // Config lives in the type slot (configuration.webhook_signature), with
+        // a root-level fallback for hand-authored rules.
+        $config = ($configuration['webhook_signature'] ?? $configuration);
+
+        $scheme     = ($config['scheme'] ?? 'openconnector');
+        $secret     = (string) ($config['secret'] ?? '');
+        $headerName = ($config['header'] ?? 'X-OpenConnector-Signature');
+        $tolerance  = (int) ($config['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
+
+        // Read the raw body bytes BEFORE any decode/mapping.
+        $rawBody = $this->getRawContent();
+
+        // Case-insensitive header lookup.
+        $headerValue = (string) $request->getHeader($headerName);
+
+        $verified = $this->webhookSignatureService->verify(
+            rawBody: $rawBody,
+            headerValue: $headerValue,
+            config: [
+                'scheme'           => $scheme,
+                'secret'           => $secret,
+                'toleranceSeconds' => $tolerance,
+            ]
+        );
+
+        if ($verified === false) {
+            // Undifferentiated error body: never leak which check failed.
+            return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        return $data;
+
+    }//end processWebhookSignatureRule()
 
     /**
      * Processes authentication rules
@@ -1786,9 +1847,10 @@ class EndpointService
     /**
      * Process a rule to write files.
      *
-     * @param ObjectEntity $rule     The rule to process.
-     * @param array        $data     The data to write.
-     * @param string       $objectId The object to write the data to.
+     * @param ObjectEntity $rule      The rule to process.
+     * @param array        $data      The data to write.
+     * @param string       $objectId  The object to write the data to.
+     * @param FlowToken    $flowToken The flow token carrying the request/response state.
      *
      * @return array
      *
@@ -1805,12 +1867,11 @@ class EndpointService
             throw new Exception('No configuration found for write_file');
         }
 
-        $config  = $ruleConfig['write_file'];
-        $dataDot = new Dot($data);
-		$flowTokenArray = $flowToken->getRequestOriginal();
-		$flowTokenArray['body'] = $flowTokenArray['parameters'];
-		$flowTokenDot = new Dot($flowTokenArray);
-
+        $config         = $ruleConfig['write_file'];
+        $dataDot        = new Dot($data);
+        $flowTokenArray = $flowToken->getRequestOriginal();
+        $flowTokenArray['body'] = $flowTokenArray['parameters'];
+        $flowTokenDot           = new Dot($flowTokenArray);
 
         $files = $dataDot[$config['filePath']] ?? $flowTokenDot[$config['filePath']];
         if (isset($files) === false || empty($files) === true) {
@@ -1862,7 +1923,7 @@ class EndpointService
 
             $dataDot[$config['filePath']] = $result;
         } else {
-            $content = $files;
+            $content  = $files;
             $fileName = basename($dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']]);
 
             try {

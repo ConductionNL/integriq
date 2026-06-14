@@ -21,10 +21,13 @@ namespace OCA\OpenConnector\Controller;
 use Exception;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\WebhookSignatureService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -40,19 +43,22 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ *
+ * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
  */
 class EventsController extends Controller
 {
     /**
      * Constructor for the EventsController.
      *
-     * @param string            $appName         The name of the app.
-     * @param IRequest          $request         The request object.
-     * @param OrObjectService   $orObjectService The OR object service.
-     * @param EventService      $eventService    The event service.
-     * @param IL10N             $l               The localization service.
-     * @param IUserSession      $userSession     The user session.
-     * @param ActionAuthService $actionAuth      The action authorization service.
+     * @param string                  $appName          The name of the app.
+     * @param IRequest                $request          The request object.
+     * @param OrObjectService         $orObjectService  The OR object service.
+     * @param EventService            $eventService     The event service.
+     * @param IL10N                   $l                The localization service.
+     * @param IUserSession            $userSession      The user session.
+     * @param ActionAuthService       $actionAuth       The action authorization service.
+     * @param WebhookSignatureService $signatureService Generates signing secrets.
      */
     public function __construct(
         $appName,
@@ -62,6 +68,7 @@ class EventsController extends Controller
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
+        private readonly WebhookSignatureService $signatureService,
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -149,7 +156,7 @@ class EventsController extends Controller
             // Create subscription.
             $subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
 
-            return new JSONResponse($subscription->getObject());
+            return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
@@ -197,7 +204,7 @@ class EventsController extends Controller
                 uuid: (string) $subscriptionId
             );
 
-            return new JSONResponse($subscription->getObject());
+            return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         } catch (Exception $e) {
@@ -280,7 +287,13 @@ class EventsController extends Controller
                 );
         $subscriptions = ($matches['results'] ?? $matches);
 
-        return new JSONResponse(['results' => $subscriptions]);
+        // Redact signing secrets on every list read.
+        $redacted = array_map(
+            fn($subscription) => $this->redactSubscription(subscription: $subscription->getObject()),
+            $subscriptions
+        );
+
+        return new JSONResponse(['results' => $redacted]);
 
     }//end subscriptions()
 
@@ -325,7 +338,7 @@ class EventsController extends Controller
 
         return new JSONResponse(
                 [
-                    'subscription' => $subscription->getObject(),
+                    'subscription' => $this->redactSubscription(subscription: $subscription->getObject()),
                     'messages'     => $messages,
                 ]
                 );
@@ -375,4 +388,129 @@ class EventsController extends Controller
         return new JSONResponse($result);
 
     }//end pull()
+
+    /**
+     * Generate a fresh signing secret for a push subscription.
+     *
+     * Admin-gated, CSRF-protected. The full `whsec_...` secret is returned in
+     * THIS response only; every subsequent read surface redacts it.
+     *
+     * @param string $subscriptionId The subscription UUID.
+     *
+     * @return JSONResponse The full secret (once) plus the redacted subscription.
+     *
+     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function generateSigningSecret(string $subscriptionId): JSONResponse
+    {
+        try {
+            $subscription = $this->orObjectService->find(id: $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+        }
+
+        $data = $subscription->getObject();
+        $protocolSettings = ($data['protocolSettings'] ?? []);
+
+        $secret = $this->signatureService->generateSecret();
+        $protocolSettings['signingSecret'] = $secret;
+        // A first generate clears any rotation remnants.
+        unset($protocolSettings['previousSigningSecret'], $protocolSettings['secretRotatedAt']);
+        $data['protocolSettings'] = $protocolSettings;
+
+        $saved = $this->orObjectService->saveObject(
+            object: $data,
+            register: 'openconnector',
+            schema: 'event_subscription',
+            uuid: $subscription->getUuid()
+        );
+
+        return new JSONResponse(
+                [
+                    'signingSecret' => $secret,
+                    'subscription'  => $this->redactSubscription(subscription: $saved->getObject()),
+                ]
+                );
+
+    }//end generateSigningSecret()
+
+    /**
+     * Rotate a subscription's signing secret.
+     *
+     * Moves the current secret to `previousSigningSecret`, stamps
+     * `secretRotatedAt`, and returns the new secret once. Outbound deliveries
+     * dual-sign until 24h after rotation.
+     *
+     * @param string $subscriptionId The subscription UUID.
+     *
+     * @return JSONResponse The new secret (once) plus the redacted subscription.
+     *
+     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function rotateSigningSecret(string $subscriptionId): JSONResponse
+    {
+        try {
+            $subscription = $this->orObjectService->find(id: $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
+        }
+
+        $data = $subscription->getObject();
+        $protocolSettings = ($data['protocolSettings'] ?? []);
+
+        $current = ($protocolSettings['signingSecret'] ?? null);
+        if ($current === null || $current === '') {
+            return new JSONResponse(['error' => $this->l->t('No signing secret to rotate; generate one first')], 400);
+        }
+
+        $newSecret = $this->signatureService->generateSecret();
+        $protocolSettings['previousSigningSecret'] = $current;
+        $protocolSettings['signingSecret']         = $newSecret;
+        $protocolSettings['secretRotatedAt']       = (new \DateTime())->format('c');
+        $data['protocolSettings'] = $protocolSettings;
+
+        $saved = $this->orObjectService->saveObject(
+            object: $data,
+            register: 'openconnector',
+            schema: 'event_subscription',
+            uuid: $subscription->getUuid()
+        );
+
+        return new JSONResponse(
+                [
+                    'signingSecret' => $newSecret,
+                    'subscription'  => $this->redactSubscription(subscription: $saved->getObject()),
+                ]
+                );
+
+    }//end rotateSigningSecret()
+
+    /**
+     * Redact signing secret material from a subscription object for any read.
+     *
+     * @param array $subscription The subscription object array.
+     *
+     * @return array The same array with secret fields replaced by a marker.
+     *
+     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
+     */
+    private function redactSubscription(array $subscription): array
+    {
+        if (isset($subscription['protocolSettings']) === false || is_array($subscription['protocolSettings']) === false) {
+            return $subscription;
+        }
+
+        foreach (['signingSecret', 'previousSigningSecret'] as $key) {
+            if (isset($subscription['protocolSettings'][$key]) === true
+                && $subscription['protocolSettings'][$key] !== ''
+            ) {
+                $subscription['protocolSettings'][$key] = '**********';
+            }
+        }
+
+        return $subscription;
+
+    }//end redactSubscription()
 }//end class

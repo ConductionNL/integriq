@@ -97,6 +97,10 @@ return [
 		// Pull-based delivery
 		['name' => 'events#pull', 'url' => '/api/events/subscriptions/{subscriptionId}/pull', 'verb' => 'GET'],
 
+		// Webhook signing secret lifecycle (admin-only, CSRF intact)
+		['name' => 'events#generateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret', 'verb' => 'POST'],
+		['name' => 'events#rotateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret/rotate', 'verb' => 'POST'],
+
 		// Logs endpoints (LogsController — synchronization_log schema)
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
 		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
