@@ -12,6 +12,23 @@
       { "key": "password", "value": "{{admin_password}}", "type": "string" }
     ]
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Nextcloud's CSRF/precondition middleware rejects requests that do not",
+          "// carry the OCS-APIRequest header with HTTP 412 (Precondition Failed).",
+          "// Apply it collection-wide so every request (incl. the action/journey",
+          "// endpoints that enforce it) is accepted without per-request headers.",
+          "if (!pm.request.headers.has('OCS-APIRequest')) {",
+          "    pm.request.headers.add({ key: 'OCS-APIRequest', value: 'true' });",
+          "}"
+        ]
+      }
+    }
+  ],
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
     { "key": "ocBase", "value": "{{base_url}}/index.php/apps/openconnector/api" },
