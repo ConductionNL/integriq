@@ -252,6 +252,17 @@ class SynchronizationService
             // escape — this method runs synchronously from the OpenRegister
             // object-event listener and would otherwise abort completely unrelated
             // object saves in other apps.
+            //
+            // Logged at debug only: this fires on every object create/update/delete
+            // instance-wide (and several times per event), so an error/warning here
+            // would flood the log on any instance without the register — including
+            // the bulk-import scenario this guard exists for. The operator-facing
+            // signal already lives at app registration ("legacy storage has not been
+            // migrated… run occ openconnector:migrate-storage").
+            $this->logger->debug(
+                'openconnector synchronization store not found; skipping event synchronization: ' . $e->getMessage(),
+                ['exception' => $e]
+            );
             return [];
         }
 
