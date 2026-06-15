@@ -609,6 +609,30 @@ class SynchronizationService
     }
 
     /**
+     * Determines whether a synchronization should run for the given mutation type.
+     *
+     * Checks sourceConfig['triggerOnlyOnEvents'] (case-insensitive). When the key
+     * is absent or empty the synchronization always runs; when present it runs only
+     * if $eventMutationType is listed.
+     *
+     * @param Synchronization $synchronization    The synchronization to evaluate.
+     * @param string          $eventMutationType  One of create|update|delete.
+     *
+     * @return bool True when the synchronization should run, false when it should be skipped.
+     */
+    private function shouldTriggerOnEvent(Synchronization $synchronization, string $eventMutationType): bool
+    {
+        $allowedEvents = $synchronization->getSourceConfig()['triggerOnlyOnEvents'] ?? [];
+
+        if (empty($allowedEvents) === true) {
+            return true;
+        }
+
+        $normalised = array_map('strtolower', (array) $allowedEvents);
+        return in_array(strtolower($eventMutationType), $normalised, true);
+    }
+
+    /**
      * Resolve and fetch the parent object for a related-object trigger.
      *
      * @param Synchronization $synchronization The synchronization that should run.
@@ -3043,7 +3067,6 @@ class SynchronizationService
 				}
 
 			$contract->setTargetId($targetId);
-			$this->applyResponseMappingToObject(targetConfig: $targetConfig, responseBody: $body ?? [], synchronization: $synchronization, contract: $contract);
 			return $contract;
 		}
 
@@ -3077,7 +3100,6 @@ class SynchronizationService
 			$body = array_merge($decodedResponseBody, ['targetId' => $targetId]);
 	        $targetObject = $body;
 
-			$this->applyResponseMappingToObject(targetConfig: $targetConfig, responseBody: $decodedResponseBody, synchronization: $synchronization, contract: $contract);
 		return $contract;
 	}
 
@@ -3631,66 +3653,6 @@ class SynchronizationService
 		unset($targetConfig['headers']['Content-Type'], $targetConfig['headers']['content-type']);
 
 	}//end applyFileUploadToTargetConfig()
-
-	/**
-	 * Apply a responseMapping to write fields from a target response back onto the source object.
-	 *
-	 * When targetConfig['responseMapping'] is set, the decoded response body is run through the
-	 * named mapping and the result is merged into the local OpenRegister source object, which is
-	 * then saved.  Register and schema are derived from the synchronization's sourceId
-	 * (format: "{registerId}/{schemaId}", e.g. "2/24").  The object is identified by the
-	 * contract's originId.  Only runs when sourceType is "register/schema".
-	 *
-	 * Falls back with a warning log on any error so the surrounding sync flow is never blocked.
-	 *
-	 * @param array                   $targetConfig    The resolved target configuration array.
-	 * @param array                   $responseBody    The decoded JSON response from the target source.
-	 * @param Synchronization         $synchronization The running synchronization.
-	 * @param SynchronizationContract $contract        The contract for this object.
-	 *
-	 * @return void
-	 */
-	private function applyResponseMappingToObject(
-		array $targetConfig,
-		array $responseBody,
-		Synchronization $synchronization,
-		SynchronizationContract $contract
-	): void
-	{
-		if (isset($targetConfig['responseMapping']) === false) {
-			return;
-		}
-
-		if ($synchronization->getSourceType() !== 'register/schema' || empty($contract->getOriginId()) === true) {
-			return;
-		}
-
-		try {
-			$mapping = $this->mappingService->getMapping($targetConfig['responseMapping']);
-			$mapped  = $this->mappingService->executeMapping(mapping: $mapping, input: $responseBody);
-
-			[$registerId, $schemaId] = explode('/', $synchronization->getSourceId(), 2);
-
-			$existing = $this->orObjectService->find(
-				id:       $contract->getOriginId(),
-				register: $registerId,
-				schema:   $schemaId
-			)->getObject();
-
-			$this->orObjectService->saveObject(
-				register: $registerId,
-				schema:   $schemaId,
-				object:   array_merge($existing, $mapped),
-				uuid:     $contract->getOriginId()
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning('responseMapping failed, sync continues: '.$e->getMessage(), [
-				'synchronizationId' => $contract->getSynchronizationId(),
-				'originId'          => $contract->getOriginId(),
-			]);
-		}
-
-	}//end applyResponseMappingToObject()
 
     private function getFilenameFromHeaders(array $response, ObjectEntity $result): ?string
     {
