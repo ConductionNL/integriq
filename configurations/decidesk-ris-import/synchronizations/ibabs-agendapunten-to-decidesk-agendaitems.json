@@ -1,0 +1,20 @@
+{
+    "name": "iBabs agendapunten to decidesk AgendaItems",
+    "description": "Reads agendapunten for a vergadering from the iBabs RIS source and writes them into decidesk's AgendaItem OpenRegister objects. {{vergaderingId}} is supplied per run; targetId is decidesk's register/schema id pair (fill in per instance: <decideskRegisterId>/<agendaItemSchemaId>).",
+    "version": "0.0.1",
+    "sourceId": "ibabs-ris-v1",
+    "sourceType": "api",
+    "sourceTargetMapping": "iBabs Agendapunt to decidesk AgendaItem",
+    "sourceConfig": {
+        "idPosition": "id",
+        "resultsPosition": "items",
+        "endpoint": "/api/v1/organisations/{{organisatieId}}/vergaderingen/{{vergaderingId}}/agendapunten",
+        "deleteInvalidObjects": "false",
+        "headers": [],
+        "query": []
+    },
+    "currentPage": 1,
+    "targetId": "decidesk/agendaitem",
+    "targetType": "register/schema",
+    "conditions": {"!!":{"var":"id"}}
+}

@@ -154,8 +154,7 @@ matching relations.
 
 ### Requirement: OR lifecycle event dispatch to provisioning orchestrators (REQ-004)
 
-`SoftwareCatalogEventListener::handleObjectCreated(ObjectCreatedEvent
-$event): void` MUST inspect the event's `getObject()` result. If the
+`SoftwareCatalogEventListener::handleObjectCreated(ObjectCreatedEvent $event): void` MUST inspect the event's `getObject()` result. If the
 object's `getSchema()` equals `self::ORGANIZATION_SCHEMA_ID`, the
 method MUST call `SoftwareCatalogueService::handleNewOrganization($object)`.
 If it equals `self::CONTACT_SCHEMA_ID`, the method MUST call

@@ -259,7 +259,29 @@ class SynchronizationService
     private function findAllSynchronizationObjects(array $filters=[]): array
     {
         $config  = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization'], $filters)];
-        $matches = $this->orObjectService->findAll(config: $config);
+        try {
+            $matches = $this->orObjectService->findAll(config: $config);
+        } catch (DoesNotExistException $e) {
+            // The `openconnector` register/schema has not been provisioned on this
+            // instance yet (InitializeRegister repair step never ran, or it was
+            // removed). With no synchronization store there is nothing to trigger,
+            // so return an empty set instead of letting the missing-register lookup
+            // escape — this method runs synchronously from the OpenRegister
+            // object-event listener and would otherwise abort completely unrelated
+            // object saves in other apps.
+            //
+            // Logged at debug only: this fires on every object create/update/delete
+            // instance-wide (and several times per event), so an error/warning here
+            // would flood the log on any instance without the register — including
+            // the bulk-import scenario this guard exists for. The operator-facing
+            // signal already lives at app registration ("legacy storage has not been
+            // migrated… run occ openconnector:migrate-storage").
+            $this->logger->debug(
+                'openconnector synchronization store not found; skipping event synchronization: ' . $e->getMessage(),
+                ['exception' => $e]
+            );
+            return [];
+        }
 
         return array_values(($matches['results'] ?? $matches));
     }//end findAllSynchronizationObjects()
@@ -842,6 +864,31 @@ class SynchronizationService
      */
     public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
     {
+        // OpenConnector subscribes to OpenRegister's object lifecycle events
+        // synchronously, so this runs inside the host save that triggered the
+        // event — even when the saving app has nothing to do with OpenConnector.
+        // A failure here must never unwind into that save (which would 500 the
+        // host operation), so swallow everything and log instead.
+        try {
+            $this->doHandleObjectEventSynchronization($object, $eventMutationType);
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to handle object event synchronization: ' . $e->getMessage(), [
+                'exception' => $e,
+                'eventMutationType' => $eventMutationType,
+            ]);
+        }
+    }//end handleObjectEventSynchronization()
+
+    /**
+     * Run direct and related-object-trigger synchronizations for an object event.
+     *
+     * @param ObjectEntity $object The object from the event.
+     * @param string $eventMutationType The triggering mutation: create|update|delete
+     *
+     * @return void
+     */
+    private function doHandleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
+    {
         if (in_array($eventMutationType, self::VALID_MUTATION_TYPES, true) === false) {
             return;
         }
@@ -1318,9 +1365,16 @@ class SynchronizationService
                 $result['_embed']['contracts'] = array_map(function($contractId) {
                     // Contracts are addressed by their OpenRegister id/uuid; resolve
                     // directly via the OR ObjectService (a missing contract is
-                    // tolerated as null).
+                    // tolerated as null). findContract may return an entity, a
+                    // plain array (OR ObjectService), or null — handle all three
+                    // instead of blindly calling jsonSerialize() (which fatals on
+                    // an array and crashes the whole run).
                     try {
-                        return $this->findContract(id: $contractId)->jsonSerialize();
+                        $contract = $this->findContract(id: $contractId);
+                        if (is_object($contract) === true && method_exists($contract, 'jsonSerialize') === true) {
+                            return $contract->jsonSerialize();
+                        }
+                        return $contract;
                     } catch (DoesNotExistException $exception) {
                         return null;
                     }
@@ -1553,6 +1607,13 @@ class SynchronizationService
 		// If no ID was found at the specified position, throw an error
 		if ($originId === null) {
 			throw new Exception('Could not find origin id in object for key: ' . $originIdPosition);
+		}
+
+		// The synchronization contract stores originId as a string. Coerce
+		// scalar source ids (e.g. a numeric latitude or integer id) so they
+		// pass validation instead of failing the whole sync.
+		if (is_scalar($originId) === true) {
+			$originId = (string) $originId;
 		}
 
 		// Return the found ID value

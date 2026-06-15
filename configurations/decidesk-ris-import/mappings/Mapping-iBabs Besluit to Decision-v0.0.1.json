@@ -1,0 +1,40 @@
+{
+    "@context": {
+        "schema": "http:\/\/schema.org",
+        "register": "decidesk"
+    },
+    "@type": "mapping",
+    "@id": "https:\/\/openconnector.app\/mappings\/ibabs-besluit-to-decidesk-decision",
+    "reference": "https:\/\/openconnector.app\/mappings\/ibabs-besluit-to-decidesk-decision",
+    "name": "iBabs Besluit to decidesk Decision",
+    "description": "Maps an iBabs besluit (RIS decision on a motion) onto decidesk's unified Decision schema with decisionType=motion (Motion/Amendment/Resolution were folded into Decision in the decision-model refactor). besluitStatus aangenomen/verworpen maps to outcome adopted/rejected. lifecycle is set to decided since besluiten are final.",
+    "version": "0.0.1",
+    "mapping": {
+        "decisionType": "motion",
+        "motionType": "motion",
+        "title": "{{ values.titel ?? values.onderwerp ?? values.naam }}",
+        "text": "{{ values.besluittekst ?? values.tekst ?? values.omschrijving ?? values.titel }}",
+        "decisionDate": "{{ values.besluitDatum ?? values.datum ?? values.date }}",
+        "outcome": "{% set s = (values.besluitStatus ?? values.status ?? '')|lower %}{% if s == 'aangenomen' or s == 'aangenomen met algemene stemmen' %}adopted{% elseif s == 'verworpen' %}rejected{% else %}{% endif %}",
+        "lifecycle": "decided",
+        "isPublished": "public",
+        "legalBasis": "{{ values.juridischeGrondslag ?? values.legalBasis }}",
+        "subjectRegister": "ibabs",
+        "subjectSchema": "besluit",
+        "subjectId": "{{ values.id ?? values.besluitId }}",
+        "subjectLabel": "{{ values.titel ?? values.onderwerp }}",
+        "externalReference": "{{ 'ibabs-besluit-' ~ (values.id ?? values.besluitId) }}"
+    },
+    "unset": [
+        ""
+    ],
+    "cast": {
+        "title": "unsetIfValue==",
+        "text": "unsetIfValue==",
+        "decisionDate": "unsetIfValue==",
+        "outcome": "unsetIfValue==",
+        "legalBasis": "unsetIfValue==",
+        "subjectId": "unsetIfValue=="
+    },
+    "passThrough": false
+}
