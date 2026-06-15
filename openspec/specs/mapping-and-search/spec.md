@@ -16,11 +16,11 @@ MongoDB / MySQL query fragments and fans out to peer directory instances. This s
 captures the observed behavior of the 24 mapping/search code units retroactively; the
 code already exists.
 
-## ADDED Requirements
+## Requirements
 
 ### REQ-UI-001: Mapping Management UI
 
-OpenConnector provides a Mappings section in its SPA where administrators can
+OpenConnector MUST provide a Mappings section in its SPA where administrators can
 browse, create, edit, and test mapping configurations.
 
 #### Scenario: mappings list page mounts and shows content
@@ -43,8 +43,6 @@ browse, create, edit, and test mapping configurations.
 
 ### REQ-001: Apply a mapping recipe to an input payload
 
-@e2e exclude backend mapping engine internals — covered by PHPUnit, not browser UI
-
 The system MUST transform an input array into an output array according to a mapping
 recipe. `executeMapping()` is the public entry point: it normalises an `ObjectEntity`
 into an OpenRegister `Mapping`, and — when OpenRegister's `MappingService` was resolved
@@ -57,6 +55,8 @@ directives via `handleCast()`, and supports list mode (per-element mapping with 
 `listInput`/`value` injection) and root-level output via the `#` key. Array keys
 containing `.` are encoded to `&#46;` during processing (`encodeArrayKeys()`) and
 decoded back afterward.
+
+@e2e exclude backend mapping engine internals — covered by PHPUnit, not browser UI
 
 #### Scenario: Twig-rendered field mapping
 
@@ -84,8 +84,6 @@ decoded back afterward.
 
 ### REQ-002: Cast a mapped value to a declared type
 
-@e2e exclude backend cast directive internals — covered by PHPUnit, not browser UI
-
 The system MUST coerce a mapped value according to its `cast` directive. `handleCast()`
 supports scalar casts (`string`, `int`/`integer`, `float`, `bool`/`boolean` and their
 nullable `?bool` variants, `array`), encoding casts (`url`, `rawurl`, their decode
@@ -97,6 +95,8 @@ transliteration), domain casts (`date`, `coordinateStringToArray`, `moneyStringT
 parses a space-separated coordinate string into a point array. `areAllArrayKeysNull()`
 is the recursive predicate used by the `unsetIfValue`/`setNullIfValue` empty-array
 checks.
+
+@e2e exclude backend cast directive internals — covered by PHPUnit, not browser UI
 
 #### Scenario: Boolean cast normalises truthy strings
 
@@ -118,13 +118,13 @@ checks.
 
 ### REQ-003: Resolve mappings through the OpenRegister object shim
 
-@e2e exclude backend OR object shim internals — covered by PHPUnit, not browser UI
-
 The system MUST expose mapping entities only through the service layer, never via direct
 storage access. `getMapping()` resolves a single mapping by id from the `openconnector`
 register / `mapping` schema via OpenRegister's `ObjectService::find()`. `getMappings()`
 lists every mapping via `ObjectService::findAll()` and unwraps the `results` envelope
 when present.
+
+@e2e exclude backend OR object shim internals — covered by PHPUnit, not browser UI
 
 #### Scenario: Resolve a single mapping by id
 
@@ -140,8 +140,6 @@ when present.
 
 ### REQ-004: Test, persist, and list mappings via the controller
 
-@e2e exclude backend mapping controller HTTP surface — covered by PHPUnit/Newman, not browser UI
-
 The system MUST provide `@NoAdminRequired @NoCSRFRequired` endpoints for the mapping UI.
 `test()` requires `inputObject` and `mapping` in the request (throwing
 `InvalidArgumentException` otherwise), hydrates an `ObjectEntity` from the supplied
@@ -153,6 +151,8 @@ persists the supplied `object` to the `openconnector` register / `mapping` schem
 (register and schema overridable), returning 412 when OpenRegister is absent and 400 when
 `object` is missing. `getObjects()` reports OpenRegister availability and lists available
 registers via `RegisterMapper::findAll()`.
+
+@e2e exclude backend mapping controller HTTP surface — covered by PHPUnit/Newman, not browser UI
 
 #### Scenario: Test endpoint rejects missing required fields
 
@@ -174,8 +174,6 @@ registers via `RegisterMapper::findAll()`.
 
 ### REQ-005: Compile request filters into search queries and merge facets
 
-@e2e exclude backend search query compilation and facet merging — covered by PHPUnit, not browser UI
-
 The system MUST translate request query parameters into backend-specific query fragments
 and merge results from multiple sources. `parseQueryString()` (with
 `recursiveRequestQueryKey()`) parses a raw query string into a nested filter array,
@@ -189,6 +187,8 @@ build `LOWER(field) LIKE :search` conditions and the bound parameter.
 descending `_score` (`sortResultArray()`), and merges facet aggregations
 (`mergeAggregations()` / `mergeFacets()`, summing counts by `_id`), returning a paginated
 envelope.
+
+@e2e exclude backend search query compilation and facet merging — covered by PHPUnit, not browser UI
 
 #### Scenario: Free-text search compiles to a regex OR clause
 

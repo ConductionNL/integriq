@@ -19,7 +19,7 @@ authentication enforcement (covered by PHPUnit/Newman). It is a retrofit spec.
 
 ### REQ-CON-UI-001: Consumer Management UI
 
-OpenConnector provides a Consumers section in its SPA where administrators can
+OpenConnector MUST provide a Consumers section in its SPA where administrators can
 browse, create, edit, and delete consumer configurations.
 
 #### Scenario: consumers list page mounts and shows content
@@ -36,7 +36,7 @@ browse, create, edit, and delete consumer configurations.
 
 ### REQ-WBHK-UI-001: Webhook Management UI
 
-OpenConnector provides a Webhooks section in its SPA where administrators can
+OpenConnector MUST provide a Webhooks section in its SPA where administrators can
 browse, create, edit, and delete webhook consumers.
 
 #### Scenario: webhooks list page mounts and shows content
@@ -53,21 +53,28 @@ browse, create, edit, and delete webhook consumers.
 
 ### REQ-CON-001: Consumer authentication enforcement
 
-@e2e exclude backend consumer auth enforcement — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL enforce consumer-level authentication on inbound calls to
 OpenConnector endpoints by resolving the `consumer` record associated with the
 request and checking that the caller's credentials match the configured
 `authorizationType` (none, apiKey, jwt, basic, oauth2). Requests failing
 consumer auth SHALL receive HTTP 401.
 
-**Scenarios:**
+@e2e exclude backend consumer auth enforcement — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a consumer with `authorizationType: apiKey` **WHEN** a request
-   arrives without a matching API key header **THEN** the response is HTTP 401.
+#### Scenario: missing API key is rejected
 
-2. **GIVEN** a consumer with `authorizationType: none` **WHEN** any request
-   arrives on a matched endpoint **THEN** auth passes regardless of headers.
+- **GIVEN** a consumer with `authorizationType: apiKey`
+- **WHEN** a request arrives without a matching API key header
+- **THEN** the response is HTTP 401
 
-3. **GIVEN** a consumer with allowed `domains` configured **WHEN** a request
-   originates from an unlisted domain **THEN** the response is HTTP 403.
+#### Scenario: authorizationType none passes regardless of headers
+
+- **GIVEN** a consumer with `authorizationType: none`
+- **WHEN** any request arrives on a matched endpoint
+- **THEN** auth passes regardless of headers
+
+#### Scenario: unlisted domain is forbidden
+
+- **GIVEN** a consumer with allowed `domains` configured
+- **WHEN** a request originates from an unlisted domain
+- **THEN** the response is HTTP 403

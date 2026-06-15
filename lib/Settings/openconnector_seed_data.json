@@ -1,14 +1,267 @@
 {
-  "$comment": "Seed data for openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Only mutable config schemas are seeded; log schemas are append-only at runtime and not pre-populated. This file ships with empty arrays — a fresh openconnector install has no Sources, Endpoints, Jobs, etc. Operators populate these via the UI or via Configuration export/import (local ADR-015). Chain B's storage migration is responsible for translating any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
-  "source": [],
-  "consumer": [],
-  "endpoint": [],
-  "event": [],
-  "event_message": [],
-  "event_subscription": [],
-  "job": [],
-  "mapping": [],
-  "rule": [],
-  "synchronization": [],
-  "synchronization_contract": []
+  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt, authenticationConfig) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
+  "source": [
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "example-rest-api" },
+      "name": "Example REST API",
+      "description": "Placeholder REST source pointing at example.com. Replace `location` and `apikey` before enabling.",
+      "type": "api",
+      "location": "https://api.example.com",
+      "auth": "apikey",
+      "apikey": "YOUR_API_KEY_HERE",
+      "isEnabled": false,
+      "test": true,
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "example-basic-auth" },
+      "name": "Example Basic Auth Source",
+      "description": "Placeholder source using HTTP basic authentication. Replace credentials before enabling.",
+      "type": "api",
+      "location": "https://api.example.org",
+      "auth": "basic",
+      "username": "<placeholder>",
+      "password": "<placeholder>",
+      "isEnabled": false,
+      "test": true,
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "example-oauth2" },
+      "name": "Example OAuth2 Source",
+      "description": "Placeholder source using OAuth2 client credentials. Replace authenticationConfig before enabling.",
+      "type": "api",
+      "location": "https://oauth.example.com",
+      "auth": "oauth",
+      "authenticationConfig": { "client_id": "<placeholder>", "client_secret": "<placeholder>", "token_url": "https://oauth.example.com/token" },
+      "isEnabled": false,
+      "test": true,
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "example-jwt" },
+      "name": "Example JWT Source",
+      "description": "Placeholder source using a pre-issued JWT bearer. Replace `jwt` before enabling.",
+      "type": "api",
+      "location": "https://jwt.example.com",
+      "auth": "jwt",
+      "jwt": "<placeholder>",
+      "jwtId": "00000000-0000-0000-0000-000000000000",
+      "isEnabled": false,
+      "test": true,
+      "version": "1.0.0"
+    }
+  ],
+  "consumer": [
+    {
+      "@self": { "register": "openconnector", "schema": "consumer", "slug": "internal-dashboard" },
+      "name": "Internal Dashboard",
+      "description": "Example consumer representing an internal dashboard subscribing to openconnector endpoints."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "consumer", "slug": "partner-portal" },
+      "name": "Partner Portal",
+      "description": "Example consumer for an external partner integration. Replace identifiers before enabling."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "consumer", "slug": "mobile-app" },
+      "name": "Mobile App",
+      "description": "Example consumer representing the corporate mobile app."
+    }
+  ],
+  "endpoint": [
+    {
+      "@self": { "register": "openconnector", "schema": "endpoint", "slug": "ping" },
+      "name": "Ping",
+      "description": "Sample health endpoint that returns a fixed payload.",
+      "endpoint": "/api/ping",
+      "method": "GET"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "endpoint", "slug": "echo" },
+      "name": "Echo",
+      "description": "Sample endpoint that echoes the request body.",
+      "endpoint": "/api/echo",
+      "method": "POST"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "endpoint", "slug": "version" },
+      "name": "Version",
+      "description": "Sample endpoint returning the running app version.",
+      "endpoint": "/api/version",
+      "method": "GET"
+    }
+  ],
+  "event": [
+    {
+      "@self": { "register": "openconnector", "schema": "event", "slug": "object-created" },
+      "name": "Object Created",
+      "description": "Fired when a new object is created in any subscribed register.",
+      "source": "openconnector",
+      "type": "com.conduction.openconnector.object.created.v1"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event", "slug": "object-updated" },
+      "name": "Object Updated",
+      "description": "Fired when an existing object is updated.",
+      "source": "openconnector",
+      "type": "com.conduction.openconnector.object.updated.v1"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event", "slug": "object-deleted" },
+      "name": "Object Deleted",
+      "description": "Fired when an object is deleted.",
+      "source": "openconnector",
+      "type": "com.conduction.openconnector.object.deleted.v1"
+    }
+  ],
+  "event_message": [
+    {
+      "@self": { "register": "openconnector", "schema": "event_message", "slug": "example-delivery-pending" },
+      "description": "Example pending event-bus delivery referencing the `object-created` event.",
+      "status": "pending"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_message", "slug": "example-delivery-delivered" },
+      "description": "Example delivered event-bus message kept for documentation purposes.",
+      "status": "delivered"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_message", "slug": "example-delivery-failed" },
+      "description": "Example failed delivery to illustrate the retry workflow.",
+      "status": "failed"
+    }
+  ],
+  "event_subscription": [
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "internal-dashboard-subscription" },
+      "description": "Example subscription wiring the Internal Dashboard consumer to object-created events."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "partner-portal-subscription" },
+      "description": "Example subscription wiring the Partner Portal consumer to object-updated events."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "mobile-app-subscription" },
+      "description": "Example subscription wiring the Mobile App consumer to object-deleted events."
+    }
+  ],
+  "job": [
+    {
+      "@self": { "register": "openconnector", "schema": "job", "slug": "example-cron-sync" },
+      "name": "Example Cron Sync",
+      "description": "Placeholder scheduled job. Replace jobClass before enabling.",
+      "jobClass": "OCA\\OpenConnector\\Cron\\ExampleSyncJob",
+      "isEnabled": false
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "job", "slug": "example-cleanup" },
+      "name": "Example Cleanup",
+      "description": "Placeholder maintenance job that prunes stale records.",
+      "jobClass": "OCA\\OpenConnector\\Cron\\ExampleCleanupJob",
+      "isEnabled": false
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "job", "slug": "example-health-check" },
+      "name": "Example Health Check",
+      "description": "Placeholder job that pings configured sources and records health metrics.",
+      "jobClass": "OCA\\OpenConnector\\Cron\\ExampleHealthCheckJob",
+      "isEnabled": false
+    }
+  ],
+  "mapping": [
+    {
+      "@self": { "register": "openconnector", "schema": "mapping", "slug": "passthrough" },
+      "name": "Passthrough",
+      "description": "Identity mapping that copies the input untouched. Useful as a smoke-test mapping."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "mapping", "slug": "lowercase-keys" },
+      "name": "Lowercase Keys",
+      "description": "Example mapping that lower-cases all top-level keys. Replace mapping rules before use."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "mapping", "slug": "iso-date-normalise" },
+      "name": "ISO Date Normalise",
+      "description": "Example mapping that normalises date fields to ISO-8601. Replace mapping rules before use."
+    }
+  ],
+  "rule": [
+    {
+      "@self": { "register": "openconnector", "schema": "rule", "slug": "allow-all" },
+      "name": "Allow All",
+      "description": "Example rule that allows every request through. Replace with concrete policy before relying on it.",
+      "action": "allow"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "rule", "slug": "deny-anonymous" },
+      "name": "Deny Anonymous",
+      "description": "Example rule that denies requests without an authenticated user.",
+      "action": "deny"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "rule", "slug": "transform-payload" },
+      "name": "Transform Payload",
+      "description": "Example rule that applies the `passthrough` mapping to the request payload.",
+      "action": "transform"
+    }
+  ],
+  "synchronization": [
+    {
+      "@self": { "register": "openconnector", "schema": "synchronization", "slug": "example-rest-to-or" },
+      "name": "Example REST to OpenRegister",
+      "description": "Placeholder synchronization wiring `example-rest-api` source to an OpenRegister target. Replace sourceId and targetId before enabling.",
+      "sourceId": "<placeholder>",
+      "sourceType": "api",
+      "targetId": "<placeholder>",
+      "targetType": "register/schema",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "synchronization", "slug": "example-or-to-or" },
+      "name": "Example OpenRegister to OpenRegister",
+      "description": "Placeholder synchronization mirroring objects between two OpenRegister schemas.",
+      "sourceId": "<placeholder>",
+      "sourceType": "register/schema",
+      "targetId": "<placeholder>",
+      "targetType": "register/schema",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "synchronization", "slug": "example-or-to-rest" },
+      "name": "Example OpenRegister to REST",
+      "description": "Placeholder synchronization pushing OpenRegister objects to an external REST source.",
+      "sourceId": "<placeholder>",
+      "sourceType": "register/schema",
+      "targetId": "<placeholder>",
+      "targetType": "api",
+      "version": "1.0.0"
+    }
+  ],
+  "synchronization_contract": [
+    {
+      "@self": { "register": "openconnector", "schema": "synchronization_contract", "slug": "example-contract-1" },
+      "uuid": "00000000-0000-0000-0000-000000000001",
+      "synchronizationId": "<placeholder>",
+      "originId": "<placeholder>",
+      "targetId": "<placeholder>",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "synchronization_contract", "slug": "example-contract-2" },
+      "uuid": "00000000-0000-0000-0000-000000000002",
+      "synchronizationId": "<placeholder>",
+      "originId": "<placeholder>",
+      "targetId": "<placeholder>",
+      "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "synchronization_contract", "slug": "example-contract-3" },
+      "uuid": "00000000-0000-0000-0000-000000000003",
+      "synchronizationId": "<placeholder>",
+      "originId": "<placeholder>",
+      "targetId": "<placeholder>",
+      "version": "1.0.0"
+    }
+  ]
 }

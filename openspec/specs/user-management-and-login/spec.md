@@ -18,7 +18,7 @@ memory monitoring, and security event logging (`SecurityService`). The profile s
 name fields, AccountManager profile properties) and applies capability-gated updates. This
 spec captures the observed behavior of 31 code units retroactively; the code already exists.
 
-## ADDED Requirements
+## Requirements
 
 ### REQ-001: Read and update the authenticated user's own profile
 

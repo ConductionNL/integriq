@@ -40,9 +40,11 @@ import {
 	testSynchronizationHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	manageSigningHandler,
 	viewLogsHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
@@ -58,6 +60,9 @@ export default {
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testMappingModalHandler,
 	addEndpointRuleHandler,
+	// Webhook signing-secret manager (opens SubscriptionSigningModal via
+	// the modal bus). See openconnector-webhook-signing.
+	manageSigningHandler,
 	// Query-aware navigation handler for "View logs" row actions on
 	// parent index pages (#837). Pushes `?<queryParam>=<rowId>` onto the
 	// destination *Logs route. Will be retired once nc-vue#330 lands a
@@ -80,4 +85,9 @@ export default {
 	MappingDetailPage,
 	RuleDetailPage,
 	SynchronizationDetailPage,
+
+	// Dead-letter operations view (custom page): a filtered event_message
+	// surface backed by the admin-only /api/events/dead-letter endpoints with
+	// per-row + bulk Replay/Discard. See openconnector-dead-letter-replay.
+	EventDeliveriesPage,
 }

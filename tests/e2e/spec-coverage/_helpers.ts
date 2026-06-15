@@ -30,6 +30,12 @@ const NOISE_CONSOLE = [
 	// generic "Failed to load resource 500" lines belong to the noisy OCS
 	// calls above; we still capture app-origin errors via the response hook
 	'Failed to load resource',
+	// NC theming/nldesign stylesheet noise: when the active theme's token CSS
+	// is briefly unavailable mid-run it serves the 404 HTML page, tripping a
+	// "Refused to apply style … MIME type ('text/html')" console error. This is
+	// NC theme/environment noise, never an openconnector-origin failure.
+	'Refused to apply style',
+	'is not a supported stylesheet MIME type',
 ]
 
 export interface ErrorSink {
@@ -69,6 +75,30 @@ export function assertNoAppErrors(sink: ErrorSink): void {
 }
 
 /**
+ * Expand every collapsible nav group so entries nested inside a collapsed
+ * group become visible/clickable.
+ *
+ * The nav was clustered into groups (commit 429ec463 — "cluster navigation
+ * into groups for ≤8 top-level items"). Each group renders a collapsible
+ * header (`<a href="#" aria-expanded="false">`); its child entries (Sources,
+ * Endpoints, Jobs, …) are hidden until the group is expanded. Tests that click
+ * a grouped entry must expand its group first, otherwise the entry link is in
+ * the DOM but not visible. We expand all collapsed groups defensively so the
+ * caller doesn't need to know which group an entry lives in.
+ */
+async function expandNavGroups(page: Page): Promise<void> {
+	// Re-query after every click: expanding one group re-renders the nav (its
+	// child entries appear), which invalidates positional locators. Repeatedly
+	// click the FIRST still-collapsed group header until none remain.
+	for (let guard = 0; guard < 10; guard++) {
+		const header = page.locator('.app-navigation a[href="#"][aria-expanded="false"]').first()
+		if (!(await header.isVisible({ timeout: 500 }).catch(() => false))) break
+		await header.click().catch(() => {})
+		await page.waitForTimeout(200)
+	}
+}
+
+/**
  * Land in the app (deep-link the first route once), then click the named
  * navigation entry and wait for the route to settle. This exercises the
  * real in-app navigation rather than a raw deep-link to the target page.
@@ -81,6 +111,8 @@ export async function navTo(page: Page, navLabel: string, expectedRoute: string)
 	if (!page.url().includes('/apps/openconnector')) {
 		await page.goto(`${APP_BASE}/`, { waitUntil: 'domcontentloaded' })
 	}
+	// Reveal entries nested inside collapsed nav groups before locating them.
+	await expandNavGroups(page)
 	// The app-navigation (left sidebar) renders the in-app router-links.
 	// Scope strictly to it — NOT the global NC header nav, whose "Dashboard"
 	// link points at /apps/dashboard/ and would navigate out of the app.

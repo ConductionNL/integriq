@@ -22,7 +22,7 @@ namespace OCA\OpenConnector\Twig;
 use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenRegister\Service\FileService;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
@@ -37,14 +37,14 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
      * @param MappingService                $mappingService               Service that executes mappings.
      * @param CallService                   $callService                  Service that performs outbound calls.
      * @param FileService                   $fileService                  Service that resolves file metadata.
-     * @param ObjectService                 $objectService                Service that resolves OR objects.
+     * @param SourceMappingService          $objectService                Service that resolves OR objects.
      * @param SynchronizationContractMapper $synchronizationContractMapper Mapper for contract lookups.
      */
     public function __construct(
         private readonly MappingService                $mappingService,
         private readonly CallService                   $callService,
         private readonly FileService                   $fileService,
-        private readonly ObjectService                 $objectService,
+        private readonly SourceMappingService          $objectService,
         private readonly SynchronizationContractMapper $synchronizationContractMapper,
     ) {
 
