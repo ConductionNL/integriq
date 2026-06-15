@@ -1,0 +1,24 @@
+{
+    "name": "Notubiz raadsinformatiesysteem",
+    "description": "Notubiz public read API (https://api.notubiz.nl). Reads events (vergaderingen), agenda_items and documents for import into decidesk's OpenRegister objects. The public read API needs no auth for published data; an OAuth2/apikey block is provided for organisations that gate their feed. Fill in organisation_id and (optional) credentials per municipality before enabling (ADR-003 zero-knowledge — no credentials committed).",
+    "version": "0.0.1",
+    "location": "https://api.notubiz.nl",
+    "isEnabled": false,
+    "type": "api",
+    "auth": "none",
+    "authorizationPassthroughMethod": "header",
+    "configuration": {
+        "headers.Accept": "application/json",
+        "query.format": "json",
+        "query.version": "1.21.1",
+        "organisation_id": "",
+        "oauth.clientId": "",
+        "oauth.clientSecret": "",
+        "oauth.tokenEndpoint": ""
+    },
+    "endpointsConfig": [],
+    "logRetention": 3600,
+    "errorRetention": 86400,
+    "objectCount": 0,
+    "test": false
+}
