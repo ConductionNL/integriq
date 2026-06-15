@@ -8,6 +8,7 @@ TBD - created by archiving change retrofit-2026-05-24-http-call-engine. Update P
 ## Requirements
 ### Requirement: Outbound HTTP call orchestration with CallLog persistence (REQ-001)
 
+The outbound HTTP call engine MUST orchestrate dispatch and CallLog persistence as follows.
 `CallService::call(ObjectEntity $source, string $endpoint, string $method, array $config,
 bool $asynchronous, bool $createCertificates, bool $overruleAuth, bool $read, bool
 $runningSupportRequest)` MUST validate that `$source->getObject().isEnabled === true`
@@ -139,6 +140,7 @@ so PEM content shipped as a single-line string still parses.
 
 ### Requirement: Source rate-limit tracking across dispatches (REQ-003)
 
+The engine MUST track source rate-limit state across dispatches as follows.
 `CallService::sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers)`
 MUST inspect the upstream response headers for `X-RateLimit-Reset`, `X-RateLimit-Limit`,
 and `X-RateLimit-Remaining`; when any of those headers are present the method MUST
@@ -191,6 +193,7 @@ dispatch (rate-limit window has rolled over).
 
 ### Requirement: SOAP source invocation via WSDL (REQ-004)
 
+The engine MUST invoke SOAP sources via WSDL as follows.
 `SOAPService::callSoapSource(ObjectEntity $source, string $soapAction, array $config)`
 MUST extract the request body from `$config['body']` (JSON-decoded) or
 `$config['json']`, set the libxml external-entity loader to a permissive callback that

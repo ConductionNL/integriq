@@ -18,7 +18,7 @@ PHPUnit/Newman). It is a retrofit spec.
 
 ### REQ-CE-UI-001: Cloud Event Management UI
 
-OpenConnector provides a Cloud Events section in its SPA where administrators
+OpenConnector MUST provide a Cloud Events section in its SPA where administrators
 can browse, inspect, and manage incoming cloud events and their logs.
 
 #### Scenario: cloud events list page mounts and shows content
@@ -41,24 +41,28 @@ can browse, inspect, and manage incoming cloud events and their logs.
 
 ### REQ-CE-001: CloudEvents inbound routing
 
-@e2e exclude backend CloudEvents inbound routing — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL receive inbound CloudEvents at the configured receiver
 endpoint, validate the CloudEvents envelope (specversion, source, type, id),
 persist the event as an `event` object in OpenRegister, and route it to any
 matching synchronization or rule pipelines based on `type` and `source` filters.
 
-**Scenarios:**
+@e2e exclude backend CloudEvents inbound routing — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a valid CloudEvents 1.0 envelope POSTed to the receiver
-   **WHEN** the inbound handler processes it
-   **THEN** the event is persisted as an `event` object and routed to matching
-   pipelines.
+#### Scenario: valid CloudEvents envelope is persisted and routed
 
-2. **GIVEN** an envelope missing the required `specversion` field
-   **WHEN** the inbound handler validates it
-   **THEN** HTTP 400 is returned with a validation error and nothing is persisted.
+- **GIVEN** a valid CloudEvents 1.0 envelope POSTed to the receiver
+- **WHEN** the inbound handler processes it
+- **THEN** the event is persisted as an `event` object and routed to matching
+  pipelines
 
-3. **GIVEN** an event whose `type` matches a configured synchronization trigger
-   **WHEN** routing runs
-   **THEN** the matching synchronization is invoked with the event payload.
+#### Scenario: envelope missing specversion is rejected
+
+- **GIVEN** an envelope missing the required `specversion` field
+- **WHEN** the inbound handler validates it
+- **THEN** HTTP 400 is returned with a validation error and nothing is persisted
+
+#### Scenario: matching type invokes the synchronization
+
+- **GIVEN** an event whose `type` matches a configured synchronization trigger
+- **WHEN** routing runs
+- **THEN** the matching synchronization is invoked with the event payload

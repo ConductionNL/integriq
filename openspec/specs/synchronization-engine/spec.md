@@ -24,7 +24,7 @@ flag observed-but-suspicious behavior rather than silently correcting it.
 
 ### REQ-UI-001: Synchronization Management UI
 
-OpenConnector provides a Synchronizations section in its SPA where administrators
+OpenConnector MUST provide a Synchronizations section in its SPA where administrators
 can browse, create, edit, and manage synchronization configurations and view their
 contracts and logs.
 
@@ -54,8 +54,6 @@ contracts and logs.
 
 ### REQ-001: Synchronization orchestration and direction routing
 
-@e2e exclude backend sync engine internals — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL run a synchronization given a `Synchronization` object,
 selecting the direction from `sourceType`: when `sourceType` is `register/schema`
 and an in-memory `$object` is supplied it pushes that object intern→extern; in
@@ -70,17 +68,37 @@ objects, evaluate per-synchronization trigger conditions
 (`sourceConfig.triggerOnlyOnEvents`), resolve parent objects up the relation
 graph where required, and run each matching synchronization with `force: true`.
 
-**Scenarios:**
+@e2e exclude backend sync engine internals — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a synchronization with `sourceType: register/schema` and an in-memory object **WHEN** `synchronize()` is called **THEN** a `synchronization_log` of type `internToExtern` is created and `synchronizeInternToExtern()` runs.
+#### Scenario: intern-to-extern push for register/schema source
 
-2. **GIVEN** a synchronization with any other `sourceType` **WHEN** `synchronize()` is called **THEN** a `synchronization_log` of type `externToIntern` is created, `synchronizeExternToIntern()` runs, and the log is finalized with execution time and a success expiry.
+- **GIVEN** a synchronization with `sourceType: register/schema` and an in-memory object
+- **WHEN** `synchronize()` is called
+- **THEN** a `synchronization_log` of type `internToExtern` is created and `synchronizeInternToExtern()` runs.
 
-3. **GIVEN** an invalid `mutationType` (not one of create/update/delete) **WHEN** `synchronize()` is called **THEN** it throws an `Exception` naming the allowed mutation types.
+#### Scenario: extern-to-intern pull for other source types
 
-4. **GIVEN** an OpenRegister object create/update/delete event **WHEN** `handleObjectEventSynchronization()` runs **THEN** every direct and related-object synchronization that passes `shouldTriggerOnEvent()` is run with `force: true`, and a delete event is forwarded with `mutationType: delete`.
+- **GIVEN** a synchronization with any other `sourceType`
+- **WHEN** `synchronize()` is called
+- **THEN** a `synchronization_log` of type `externToIntern` is created, `synchronizeExternToIntern()` runs, and the log is finalized with execution time and a success expiry.
 
-5. **GIVEN** a synchronization configured with `triggerOnlyOnEvents` that does not list the current mutation type **WHEN** the event fires **THEN** `shouldTriggerOnEvent()` returns false and that synchronization is skipped.
+#### Scenario: invalid mutation type is rejected
+
+- **GIVEN** an invalid `mutationType` (not one of create/update/delete)
+- **WHEN** `synchronize()` is called
+- **THEN** it throws an `Exception` naming the allowed mutation types.
+
+#### Scenario: object change event drives matching synchronizations
+
+- **GIVEN** an OpenRegister object create/update/delete event
+- **WHEN** `handleObjectEventSynchronization()` runs
+- **THEN** every direct and related-object synchronization that passes `shouldTriggerOnEvent()` is run with `force: true`, and a delete event is forwarded with `mutationType: delete`.
+
+#### Scenario: trigger conditions skip non-matching synchronizations
+
+- **GIVEN** a synchronization configured with `triggerOnlyOnEvents` that does not list the current mutation type
+- **WHEN** the event fires
+- **THEN** `shouldTriggerOnEvent()` returns false and that synchronization is skipped.
 
 **Notes:**
 
@@ -100,8 +118,6 @@ graph where required, and run each matching synchronization with `force: true`.
 
 ### REQ-002: Source object fetching and pagination
 
-@e2e exclude backend source-fetching internals — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL fetch objects from a synchronization's source according to
 `sourceType`. For `api` sources it SHALL resolve the `source` record, enforce the
 source's rate-limit watermark before any call, apply Twig-templated endpoints,
@@ -113,17 +129,37 @@ fetch per-object extra/sub-resource data when configured, and SHALL support
 `array` (static) sources directly. `register/schema` and `database` source types
 are recognised but not implemented (no-op).
 
-**Scenarios:**
+@e2e exclude backend source-fetching internals — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** an `api` source whose `rateLimitRemaining` is `<= 0` and whose `rateLimitReset` is in the future **WHEN** fetching begins **THEN** `checkRateLimit()` throws a `TooManyRequestsHttpException` (429) carrying `X-RateLimit-*` headers, and the synchronization is cancelled.
+#### Scenario: rate-limit watermark cancels the fetch
 
-2. **GIVEN** an `api` source returning multiple pages **WHEN** `getAllObjectsFromApi()` runs **THEN** pages are followed (parallel when available, sequential otherwise) until no next page is found or the 50-page safety cap is reached.
+- **GIVEN** an `api` source whose `rateLimitRemaining` is `<= 0` and whose `rateLimitReset` is in the future
+- **WHEN** fetching begins
+- **THEN** `checkRateLimit()` throws a `TooManyRequestsHttpException` (429) carrying `X-RateLimit-*` headers, and the synchronization is cancelled.
 
-3. **GIVEN** a response body containing an OData `$nextLink` **WHEN** `getNextlinkFromCall()` / `getNextEndpoint()` evaluate it **THEN** the next endpoint is extracted and the loop continues; absence of a next link terminates pagination.
+#### Scenario: multi-page api source is paginated
 
-4. **GIVEN** a synchronization configured with `extraDataConfigs` **WHEN** an object is processed **THEN** `fetchExtraDataForObject()` / `fetchMultipleExtraData()` fetch the configured sub-resources and merge them per config (dynamic or static endpoint).
+- **GIVEN** an `api` source returning multiple pages
+- **WHEN** `getAllObjectsFromApi()` runs
+- **THEN** pages are followed (parallel when available, sequential otherwise) until no next page is found or the 50-page safety cap is reached.
 
-5. **GIVEN** a synchronization with `sourceType: array` **WHEN** fetching runs **THEN** objects are read directly from the static array source without an HTTP call.
+#### Scenario: OData next link drives pagination
+
+- **GIVEN** a response body containing an OData `$nextLink`
+- **WHEN** `getNextlinkFromCall()` / `getNextEndpoint()` evaluate it
+- **THEN** the next endpoint is extracted and the loop continues; absence of a next link terminates pagination.
+
+#### Scenario: extra sub-resource data is fetched and merged
+
+- **GIVEN** a synchronization configured with `extraDataConfigs`
+- **WHEN** an object is processed
+- **THEN** `fetchExtraDataForObject()` / `fetchMultipleExtraData()` fetch the configured sub-resources and merge them per config (dynamic or static endpoint).
+
+#### Scenario: array source is read without an HTTP call
+
+- **GIVEN** a synchronization with `sourceType: array`
+- **WHEN** fetching runs
+- **THEN** objects are read directly from the static array source without an HTTP call.
 
 **Notes:**
 
@@ -142,8 +178,6 @@ are recognised but not implemented (no-op).
 
 ### REQ-003: Mapping, transformation and object identity
 
-@e2e exclude backend mapping and identity internals — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL compute a stable identity for each source object: it SHALL
 extract an origin id from a configurable `idPosition` (default `id`, dotted-path
 lookup) and compute an order-independent hash by recursively sorting the
@@ -154,17 +188,37 @@ lookups (recursively for nested/sub-objects). The system SHALL provide array- an
 XML-shape utilities (XML→array, key sanitisation, array-type classification) used
 during transformation.
 
-**Scenarios:**
+@e2e exclude backend mapping and identity internals — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a source object and a `sourceConfig.idPosition` (or the default `id`) **WHEN** `getOriginId()` runs **THEN** the value at that dotted path is returned, or an `Exception` is thrown when the position resolves to null.
+#### Scenario: origin id extracted from configured position
 
-2. **GIVEN** two source objects with the same content in different key orders **WHEN** `hashObject()` / `sortNestedArray()` compute their hashes **THEN** the hashes are equal (order-independent identity).
+- **GIVEN** a source object and a `sourceConfig.idPosition` (or the default `id`)
+- **WHEN** `getOriginId()` runs
+- **THEN** the value at that dotted path is returned, or an `Exception` is thrown when the position resolves to null.
 
-3. **GIVEN** a source object containing related-origin ids that already have target contracts **WHEN** `replaceRelatedOriginIds()` runs **THEN** each origin id is rewritten to its target id via `findTargetIdByOriginId()`, recursively for nested arrays.
+#### Scenario: order-independent identity hashing
 
-4. **GIVEN** a synchronization with a configured mapping **WHEN** `processMapping()` / `processMappingRule()` run **THEN** the source object is transformed into the target shape per the mapping definition.
+- **GIVEN** two source objects with the same content in different key orders
+- **WHEN** `hashObject()` / `sortNestedArray()` compute their hashes
+- **THEN** the hashes are equal (order-independent identity).
 
-5. **GIVEN** an XML source payload **WHEN** `xmlToArray()` converts it **THEN** a nested associative array is produced, and `encodeArrayKeys()` sanitises keys for downstream storage.
+#### Scenario: related origin ids rewritten to target ids
+
+- **GIVEN** a source object containing related-origin ids that already have target contracts
+- **WHEN** `replaceRelatedOriginIds()` runs
+- **THEN** each origin id is rewritten to its target id via `findTargetIdByOriginId()`, recursively for nested arrays.
+
+#### Scenario: mapping transforms source into target shape
+
+- **GIVEN** a synchronization with a configured mapping
+- **WHEN** `processMapping()` / `processMappingRule()` run
+- **THEN** the source object is transformed into the target shape per the mapping definition.
+
+#### Scenario: XML payload converted to a sanitised array
+
+- **GIVEN** an XML source payload
+- **WHEN** `xmlToArray()` converts it
+- **THEN** a nested associative array is produced, and `encodeArrayKeys()` sanitises keys for downstream storage.
 
 **Notes:**
 
@@ -182,8 +236,6 @@ during transformation.
 
 ### REQ-004: Target write, deduplication and file handling
 
-@e2e exclude backend target-write internals — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL write each transformed object to its target, branching to an
 OpenRegister-specific write when the target is an OR register/schema, and SHALL
 maintain one `SynchronizationContract` per object carrying origin/target ids and
@@ -195,17 +247,37 @@ objects: download a file via `CallService`, validate the target object id is a
 UUID, persist to storage, optionally run async batch fetching (ReactPHP), and
 remove orphaned files/attachments no longer referenced after a sync.
 
-**Scenarios:**
+@e2e exclude backend target-write internals — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a transformed object whose target is an OR register/schema **WHEN** `updateTarget()` runs **THEN** it delegates to `updateTargetOpenRegister()` and a `SynchronizationContract` records the resulting origin/target ids and hashes.
+#### Scenario: OR target write records a contract
 
-2. **GIVEN** a source no longer returns objects that previously had contracts **WHEN** `deleteInvalidObjects()` runs **THEN** the now-absent target objects are deleted (garbage-collected).
+- **GIVEN** a transformed object whose target is an OR register/schema
+- **WHEN** `updateTarget()` runs
+- **THEN** it delegates to `updateTargetOpenRegister()` and a `SynchronizationContract` records the resulting origin/target ids and hashes.
 
-3. **GIVEN** a sync object referencing a file URL **WHEN** `fetchFile()` runs **THEN** the file is downloaded via `CallService`, the object id is validated as a UUID before write, and the file is persisted to storage; a null response throws an `Exception`.
+#### Scenario: absent source objects are garbage-collected
 
-4. **GIVEN** a batch of file references **WHEN** `startAsyncFileFetching()` / `executeAsyncFileFetching()` / `processMultipleFilesWithCleanup()` run **THEN** files are fetched concurrently and orphaned files are cleaned up afterward via `cleanupOrphanedFiles()`.
+- **GIVEN** a source no longer returns objects that previously had contracts
+- **WHEN** `deleteInvalidObjects()` runs
+- **THEN** the now-absent target objects are deleted (garbage-collected).
 
-5. **GIVEN** a previously-synced object whose attachments are no longer referenced **WHEN** `cleanupFilesFromAttachments()` runs **THEN** the stale attachments are removed from the object.
+#### Scenario: referenced file is fetched and persisted
+
+- **GIVEN** a sync object referencing a file URL
+- **WHEN** `fetchFile()` runs
+- **THEN** the file is downloaded via `CallService`, the object id is validated as a UUID before write, and the file is persisted to storage; a null response throws an `Exception`.
+
+#### Scenario: batch file fetch with cleanup
+
+- **GIVEN** a batch of file references
+- **WHEN** `startAsyncFileFetching()` / `executeAsyncFileFetching()` / `processMultipleFilesWithCleanup()` run
+- **THEN** files are fetched concurrently and orphaned files are cleaned up afterward via `cleanupOrphanedFiles()`.
+
+#### Scenario: unreferenced attachments are removed
+
+- **GIVEN** a previously-synced object whose attachments are no longer referenced
+- **WHEN** `cleanupFilesFromAttachments()` runs
+- **THEN** the stale attachments are removed from the object.
 
 **Notes:**
 
@@ -230,8 +302,6 @@ remove orphaned files/attachments no longer referenced after a sync.
 
 ### REQ-005: Sync rule pipeline and management/integration surface
 
-@e2e exclude backend sync rule pipeline and integration provider — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL run a configurable, ordered rule pipeline at defined timings
 during a sync (mirroring `EndpointService::processRules`): rules are loaded,
 sorted by `order`, condition-checked, and dispatched by type
@@ -245,17 +315,37 @@ statistics/performance/export), and SHALL register an ADR-019
 contracts for an object and reports id/label/icon/group/required-app/storage-
 strategy/health/enablement.
 
-**Scenarios:**
+@e2e exclude backend sync rule pipeline and integration provider — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a synchronization with configured `actions` (rules) **WHEN** `processRules()` runs for a given timing **THEN** rules whose timing matches and whose conditions pass are applied in `order`, each transforming the running data.
+#### Scenario: ordered rule pipeline transforms running data
 
-2. **GIVEN** a rule of type `error` whose conditions pass **WHEN** the pipeline reaches it **THEN** `processErrorRule()` returns a `JSONResponse` and the pipeline returns that error immediately.
+- **GIVEN** a synchronization with configured `actions` (rules)
+- **WHEN** `processRules()` runs for a given timing
+- **THEN** rules whose timing matches and whose conditions pass are applied in `order`, each transforming the running data.
 
-3. **GIVEN** an authenticated user calls `POST .../synchronizations/{id}/run` **WHEN** the controller resolves the synchronization by id **THEN** `synchronize()` runs and the log/contract result is returned; a missing id returns 404 and a sync error returns 400 (with rate-limit headers when present).
+#### Scenario: error rule short-circuits the pipeline
 
-4. **GIVEN** a request to the ADR-019 provider's `list()` for an object id **WHEN** it runs **THEN** the synchronization contracts for that object are returned, alongside provider metadata from `getId/getLabel/getIcon/getGroup/getRequiredApp/getStorageStrategy/health/isEnabled`.
+- **GIVEN** a rule of type `error` whose conditions pass
+- **WHEN** the pipeline reaches it
+- **THEN** `processErrorRule()` returns a `JSONResponse` and the pipeline returns that error immediately.
 
-5. **GIVEN** a rule type not in the supported set **WHEN** `processRules()` dispatches it **THEN** an `Exception` is thrown, caught, logged, and returned as a 500 `JSONResponse` (`Rule processing failed`).
+#### Scenario: run endpoint executes a synchronization by id
+
+- **GIVEN** an authenticated user calls `POST .../synchronizations/{id}/run`
+- **WHEN** the controller resolves the synchronization by id
+- **THEN** `synchronize()` runs and the log/contract result is returned; a missing id returns 404 and a sync error returns 400 (with rate-limit headers when present).
+
+#### Scenario: ADR-019 provider lists contracts with metadata
+
+- **GIVEN** a request to the ADR-019 provider's `list()` for an object id
+- **WHEN** it runs
+- **THEN** the synchronization contracts for that object are returned, alongside provider metadata from `getId/getLabel/getIcon/getGroup/getRequiredApp/getStorageStrategy/health/isEnabled`.
+
+#### Scenario: unsupported rule type fails as a 500
+
+- **GIVEN** a rule type not in the supported set
+- **WHEN** `processRules()` dispatches it
+- **THEN** an `Exception` is thrown, caught, logged, and returned as a 500 `JSONResponse` (`Rule processing failed`).
 
 **Notes:**
 

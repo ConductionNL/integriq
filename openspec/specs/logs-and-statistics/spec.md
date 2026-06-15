@@ -8,6 +8,7 @@ TBD - created by archiving change retrofit-2026-05-24-logs-and-statistics. Updat
 ## Requirements
 ### Requirement: Synchronization log listing, retrieval and deletion (REQ-001)
 
+The system MUST provide listing, retrieval and deletion of synchronization logs as follows.
 `LogsController::index(?int $limit = 20, ?int $offset = 0, ?string
 $level = null, ?string $message = null, ?string $synchronizationId =
 null, ?string $dateFrom = null, ?string $dateTo = null): JSONResponse`
@@ -123,6 +124,7 @@ Both endpoints carry `@NoAdminRequired` + `@NoCSRFRequired`.
 
 ### Requirement: Per-source call log listing and outbound test call (REQ-003)
 
+The system MUST provide per-source call log listing and an outbound test call as follows.
 `SourcesController::logs(SearchService $searchService): JSONResponse`
 MUST list `call_log` objects from OR with pagination via `_page` /
 `_limit`, support special filter parameters (`date_from`, `date_to`,
