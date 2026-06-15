@@ -242,7 +242,18 @@ class SynchronizationService
     private function findAllSynchronizationObjects(array $filters=[]): array
     {
         $config  = ['filters' => array_merge(['register' => 'openconnector', 'schema' => 'synchronization'], $filters)];
-        $matches = $this->orObjectService->findAll(config: $config);
+        try {
+            $matches = $this->orObjectService->findAll(config: $config);
+        } catch (DoesNotExistException $e) {
+            // The `openconnector` register/schema has not been provisioned on this
+            // instance yet (InitializeRegister repair step never ran, or it was
+            // removed). With no synchronization store there is nothing to trigger,
+            // so return an empty set instead of letting the missing-register lookup
+            // escape — this method runs synchronously from the OpenRegister
+            // object-event listener and would otherwise abort completely unrelated
+            // object saves in other apps.
+            return [];
+        }
 
         return array_values(($matches['results'] ?? $matches));
     }//end findAllSynchronizationObjects()
@@ -824,6 +835,31 @@ class SynchronizationService
      * @return void
      */
     public function handleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
+    {
+        // OpenConnector subscribes to OpenRegister's object lifecycle events
+        // synchronously, so this runs inside the host save that triggered the
+        // event — even when the saving app has nothing to do with OpenConnector.
+        // A failure here must never unwind into that save (which would 500 the
+        // host operation), so swallow everything and log instead.
+        try {
+            $this->doHandleObjectEventSynchronization($object, $eventMutationType);
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to handle object event synchronization: ' . $e->getMessage(), [
+                'exception' => $e,
+                'eventMutationType' => $eventMutationType,
+            ]);
+        }
+    }//end handleObjectEventSynchronization()
+
+    /**
+     * Run direct and related-object-trigger synchronizations for an object event.
+     *
+     * @param ObjectEntity $object The object from the event.
+     * @param string $eventMutationType The triggering mutation: create|update|delete
+     *
+     * @return void
+     */
+    private function doHandleObjectEventSynchronization(ObjectEntity $object, string $eventMutationType): void
     {
         if (in_array($eventMutationType, self::VALID_MUTATION_TYPES, true) === false) {
             return;
