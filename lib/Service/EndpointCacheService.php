@@ -223,7 +223,7 @@ class EndpointCacheService
      */
     private function fetchEndpointsFromOr(): array
     {
-        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']]);
+        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']], _rbac: false, _multitenancy: false);
         $endpoints = ($matches['results'] ?? $matches);
         if (is_array($endpoints) === true) {
             return $endpoints;
