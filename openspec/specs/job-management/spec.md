@@ -19,7 +19,7 @@ retrofit spec.
 
 ### REQ-JOB-UI-001: Job Management UI
 
-OpenConnector provides a Jobs section in its SPA where administrators can
+OpenConnector MUST provide a Jobs section in its SPA where administrators can
 browse, create, edit, enable/disable, and manually trigger background jobs.
 
 #### Scenario: jobs list page mounts and shows content
@@ -42,8 +42,6 @@ browse, create, edit, enable/disable, and manually trigger background jobs.
 
 ### REQ-JOB-001: Job execution runtime
 
-@e2e exclude backend job-execution runtime — covered by PHPUnit/Newman, not browser UI
-
 The system SHALL execute registered jobs via the Nextcloud background-job
 framework, resolving the `jobClass`, passing `arguments` (decoded from JSON),
 and persisting a `job_log` on every run. A job disabled via `isEnabled: false`
@@ -51,27 +49,37 @@ SHALL be skipped by the scheduler. The run-on-demand endpoint `POST
 /api/jobs/{id}/run` SHALL execute the job synchronously and return the log
 entry.
 
-**Scenarios:**
+@e2e exclude backend job-execution runtime — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** a job with `isEnabled: false` **WHEN** the scheduler tick runs
-   **THEN** the job is not executed and no `job_log` is written.
+#### Scenario: disabled job is skipped by the scheduler
 
-2. **GIVEN** a job with a valid `jobClass` and `interval` **WHEN** its next
-   execution time is reached **THEN** the job runs and a `job_log` record is
-   persisted with start time, duration, and status.
+- **GIVEN** a job with `isEnabled: false`
+- **WHEN** the scheduler tick runs
+- **THEN** the job is not executed and no `job_log` is written
 
-3. **GIVEN** `POST /api/jobs/{id}/run` is called by an admin **WHEN** the
-   job completes **THEN** the response includes the resulting `job_log` entry.
+#### Scenario: scheduled job runs and persists a job_log
+
+- **GIVEN** a job with a valid `jobClass` and `interval`
+- **WHEN** its next execution time is reached
+- **THEN** the job runs and a `job_log` record is persisted with start time,
+  duration, and status
+
+#### Scenario: run-on-demand returns the resulting log
+
+- **GIVEN** `POST /api/jobs/{id}/run` is called by an admin
+- **WHEN** the job completes
+- **THEN** the response includes the resulting `job_log` entry
 
 ### REQ-JOB-002: Job dry-run (test mode)
-
-@e2e exclude backend job dry-run — covered by PHPUnit/Newman, not browser UI
 
 The system SHALL provide a `POST /api/jobs/{id}/test` endpoint that executes
 the job in dry-run mode (no side-effects committed) and returns a preview log.
 
-**Scenarios:**
+@e2e exclude backend job dry-run — covered by PHPUnit/Newman, not browser UI
 
-1. **GIVEN** `POST /api/jobs/{id}/test` is called **WHEN** the job runs in
-   test mode **THEN** no persistent changes are written to the data store and
-   a preview result is returned.
+#### Scenario: dry-run writes no persistent changes
+
+- **GIVEN** `POST /api/jobs/{id}/test` is called
+- **WHEN** the job runs in test mode
+- **THEN** no persistent changes are written to the data store and a preview
+  result is returned

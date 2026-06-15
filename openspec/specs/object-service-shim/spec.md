@@ -132,8 +132,8 @@ container throws) the method MUST return `null` and MUST NOT propagate the excep
 
 ### Requirement: Mapper resolution via OpenRegister, with hard failure on unknown types (REQ-005)
 
-`ObjectService::getMapper(?string $objectType=null, ?int $schema=null, ?int $register=null)`
-MUST resolve a mapper by delegating to `getOpenRegisters()->getMapper(register, schema)`
+`ObjectService::getMapper(?string $objectType=null, ?int $schema=null, ?int $register=null)` MUST
+resolve a mapper by delegating to `getOpenRegisters()->getMapper(register, schema)`
 when both `$register` and `$schema` are non-null AND `$objectType` is null. In every
 other input combination (any `$objectType` value, or missing `$register`/`$schema` while
 `$objectType` is null) the method MUST throw `InvalidArgumentException` with the

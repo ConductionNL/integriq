@@ -154,8 +154,8 @@ stored array.
 
 ### Requirement: Sync input and sync output snapshot pairs (REQ-003)
 
-`setSyncInputOriginal(array $syncInputOriginal): array` and
-`setSyncOutputOriginal(array $syncOutputOriginal): array` MUST store
+The setters `setSyncInputOriginal(array $syncInputOriginal): array` MUST behave like
+`setSyncOutputOriginal(array $syncOutputOriginal): array` and store
 the argument verbatim and return it. `getSyncInputOriginal(): array`
 and `getSyncOutputOriginal(): array` MUST return the stored array.
 
@@ -175,7 +175,7 @@ No normalisation, no validation, no type coercion.
 
 ### Requirement: Amended-snapshot pass-through accessors (REQ-004)
 
-For each of the four slots there is a paired
+For each of the four slots there MUST be a paired
 `set<Slot>Amended(array): array` / `get<Slot>Amended(): array`
 accessor. The setter MUST store the argument verbatim and return it.
 The getter MUST return the stored array. No type coercion, no

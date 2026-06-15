@@ -109,8 +109,8 @@ return an empty string.
 
 ### Requirement: Recursive DOM walk for arrays with @attributes and #text (REQ-004)
 
-`buildXmlElement(DOMDocument $dom, DOMElement $element, array $data): void`
-MUST process `$data` in this order:
+`buildXmlElement(DOMDocument $dom, DOMElement $element, array $data): void` MUST
+process `$data` in this order:
 
 1. **`@attributes`**: if present and an array, iterate and call
    `$element->setAttribute((string) $key, (string) $value)` for each
@@ -158,8 +158,7 @@ swallowed by the helpers.
 
 ### Requirement: Child-element creation with object-to-string fallback and safe text node (REQ-005)
 
-`createChildElement(DOMDocument $dom, DOMElement $parent, string $tagName,
-$data): void` MUST attempt to create a `<$tagName>` element. If creation
+`createChildElement(DOMDocument $dom, DOMElement $parent, string $tagName, $data): void` MUST attempt to create a `<$tagName>` element. If creation
 fails it MUST return without mutation. Otherwise it MUST append the new
 element to `$parent` and then:
 

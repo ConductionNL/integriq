@@ -8,8 +8,8 @@ TBD - created by archiving change retrofit-2026-05-24-storage-uploads. Update Pu
 ## Requirements
 ### Requirement: Multi-part upload initialisation with cache-tracked parts (REQ-001)
 
-`createUpload(string $path, string $fileName, int $size, ?string $objectId = null): array`
-MUST allocate an empty target file at `{$path}/{$fileName}` plus a sibling parts
+`createUpload(string $path, string $fileName, int $size, ?string $objectId = null): array` MUST
+allocate an empty target file at `{$path}/{$fileName}` plus a sibling parts
 folder at `{$path}/{$fileName}_parts/`. The method MUST split `$size` into
 `ceil($size / openconnector.part-size)` parts, where `part-size` is read from
 `IAppConfig` (default 1,000,000 bytes), and for each part MUST write a cache
@@ -145,8 +145,8 @@ respectively).
 
 ### Requirement: In-memory part reconciliation into target file (REQ-004)
 
-`attemptCloseUpload(array $folderContents, File $target, int $numParts): bool`
-MUST verify that the parts folder contains exactly the set `{1, 2, …, numParts}`
+`attemptCloseUpload(array $folderContents, File $target, int $numParts): bool` MUST
+verify that the parts folder contains exactly the set `{1, 2, …, numParts}`
 of part files matching `^[0-9]+\.part\.{$targetExtension}$`. If the set is
 incomplete, the method MUST return `false` without mutating state.
 
