@@ -129,7 +129,9 @@ class AuthorizationService
                     'schema'   => 'consumer',
                     'name'     => $issuer,
                 ],
-            ]
+            ],
+            _rbac: false,
+            _multitenancy: false
         );
         $consumers = ($matches['results'] ?? $matches);
 
