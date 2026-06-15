@@ -314,4 +314,41 @@ class MappingRuntime implements RuntimeExtensionInterface
 
     }//end getTargetIdByOriginId()
 
+    /**
+     * Look up the originId of the synchronization contract for a given targetId.
+     *
+     * Symmetric counterpart of getTargetIdByOriginId(): given the external ID that
+     * was stored as targetId on a contract, returns the local OpenRegister object UUID
+     * (originId).  Useful when an inbound response or webhook contains an external
+     * reference and you need to find the corresponding local object.
+     *
+     * @param string      $targetId          The external target ID stored on the contract.
+     * @param string|null $synchronizationId Optional: scope the lookup to a specific
+     *                                       synchronization; when omitted the first matching
+     *                                       contract across all synchronizations is returned.
+     *
+     * @return string|null The originId stored on the contract, or null when not found.
+     *
+     * @throws \OCP\DB\Exception
+     */
+    public function getOriginIdByTargetId(string $targetId, ?string $synchronizationId=null): ?string
+    {
+        if ($synchronizationId !== null) {
+            $contract = $this->synchronizationContractMapper->findOnTarget(
+                synchronization: $synchronizationId,
+                targetId: $targetId
+            );
+            return ($contract instanceof \OCA\OpenConnector\Db\SynchronizationContract) ? $contract->getOriginId() : null;
+        }
+
+        $contracts = $this->synchronizationContractMapper->findByTargetId($targetId);
+        if (empty($contracts) === true) {
+            return null;
+        }
+
+        $originId = $contracts[0]->getOriginId();
+        return ($originId !== null && $originId !== '') ? $originId : null;
+
+    }//end getOriginIdByTargetId()
+
 }//end class

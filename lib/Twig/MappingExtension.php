@@ -73,6 +73,7 @@ class MappingExtension extends AbstractExtension
             new TwigFunction(name: 'getFileContents', callable: [MappingRuntime::class, 'getFileContents']),
             new TwigFunction(name: 'getFiles', callable: [MappingRuntime::class, 'getFiles']),
             new TwigFunction(name: 'getTargetIdByOriginId', callable: [MappingRuntime::class, 'getTargetIdByOriginId']),
+            new TwigFunction(name: 'getOriginIdByTargetId', callable: [MappingRuntime::class, 'getOriginIdByTargetId']),
         ];
 
     }//end getFunctions()
