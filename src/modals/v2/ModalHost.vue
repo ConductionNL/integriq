@@ -28,16 +28,22 @@
 			:open="addEndpointRule.open"
 			:endpoint="addEndpointRule.endpoint"
 			@close="closeAddEndpointRule" />
+		<SubscriptionSigningModal
+			:open="subscriptionSigning.open"
+			:subscription="subscriptionSigning.subscription"
+			@close="closeSubscriptionSigning" />
 	</div>
 </template>
 
 <script>
 import TestMappingModal from './TestMappingModal.vue'
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
+import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
+	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 } from '../../handlers/modalBus.js'
 
 export default {
@@ -46,12 +52,14 @@ export default {
 	components: {
 		TestMappingModal,
 		AddEndpointRuleModal,
+		SubscriptionSigningModal,
 	},
 
 	data() {
 		return {
 			testMapping: { open: false, mapping: null },
 			addEndpointRule: { open: false, endpoint: null },
+			subscriptionSigning: { open: false, subscription: null },
 		}
 	},
 
@@ -59,12 +67,14 @@ export default {
 	mounted() {
 		modalBus.$on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.$on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.$on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
 	},
 
 	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
 	beforeDestroy() {
 		modalBus.$off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.$off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.$off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
 	},
 
 	methods: {
@@ -83,6 +93,14 @@ export default {
 		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
 		closeAddEndpointRule() {
 			this.addEndpointRule = { open: false, endpoint: null }
+		},
+		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
+		openSubscriptionSigning(payload) {
+			this.subscriptionSigning = { open: true, subscription: payload?.subscription ?? null }
+		},
+		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
+		closeSubscriptionSigning() {
+			this.subscriptionSigning = { open: false, subscription: null }
 		},
 	},
 }

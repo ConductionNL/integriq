@@ -6,8 +6,10 @@
  * @package  OCA\OpenConnector\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
+ *
+ * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-8
  */
 
 declare(strict_types=1);
@@ -18,11 +20,15 @@ use OCA\OpenConnector\Service\IBabsConnectorService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the iBabs connector service.
+ *
+ * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-8
  */
 class IBabsConnectorServiceTest extends TestCase
 {
@@ -36,6 +42,11 @@ class IBabsConnectorServiceTest extends TestCase
      * @var CallService|\PHPUnit\Framework\MockObject\MockObject
      */
     private $callService;
+
+    /**
+     * @var IRootFolder|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $rootFolder;
 
 
     /**
@@ -54,17 +65,19 @@ class IBabsConnectorServiceTest extends TestCase
         // the moment SourceMapper was looked up (OR removed that class).
         $this->callService = $this->createMock(CallService::class);
         $logger            = $this->createMock(LoggerInterface::class);
+        $this->rootFolder  = $this->createMock(IRootFolder::class);
 
         $this->service = new IBabsConnectorService(
             $this->callService,
-            $logger
+            $logger,
+            $this->rootFolder
         );
 
     }//end setUp()
 
 
     /**
-     * Test that besluit status mapping works correctly.
+     * Test that besluit status mapping works correctly for aangenomen.
      *
      * @return void
      */
@@ -103,6 +116,19 @@ class IBabsConnectorServiceTest extends TestCase
 
 
     /**
+     * Test that besluit status mapping handles doorgeschoven.
+     *
+     * @return void
+     */
+    public function testMapBesluitStatusDoorgeschoven(): void
+    {
+        $result = $this->service->mapBesluitStatus('doorgeschoven');
+        $this->assertSame('Besluit: doorgeschoven', $result);
+
+    }//end testMapBesluitStatusDoorgeschoven()
+
+
+    /**
      * Test that unknown besluit status returns onbekend.
      *
      * @return void
@@ -116,17 +142,12 @@ class IBabsConnectorServiceTest extends TestCase
 
 
     /**
-     * Test that test connection fails without organisatieId.
+     * Test that testConnection fails without organisatieId.
      *
      * @return void
      */
     public function testTestConnectionFailsWithoutOrganisatieId(): void
     {
-        // Real ObjectEntity hydrated with an empty configuration object.
-        // Legacy `OCA\OpenConnector\Db\Source` was removed during the OR
-        // cutover; the impl now consumes OR's ObjectEntity and reads
-        // `configuration` out of the object body (#1015 follow-up to the
-        // engine).
         $source = ObjectServiceMockBuilder::objectEntity(
             $this,
             ['configuration' => []],
@@ -142,18 +163,78 @@ class IBabsConnectorServiceTest extends TestCase
 
 
     /**
-     * Test that push voorstel returns not-implemented placeholder.
+     * Test that testConnection returns success on HTTP 200.
      *
      * @return void
      */
-    public function testPushVoorstelReturnsPlaceholder(): void
+    public function testTestConnectionSuccess(): void
     {
-        // Real ObjectEntity hydrated with a configuration that carries an
-        // organisatieId. Legacy `Source` removed during the OR cutover.
         $source = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['configuration' => ['organisatieId' => 'test-123']],
+            ['configuration' => ['organisatieId' => 'org-123']],
             'ibabs-source-2'
+        );
+
+        $callLogEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '[]']],
+            'call-log-1'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($callLogEntity);
+
+        $result = $this->service->testConnection($source);
+
+        $this->assertTrue($result['success']);
+        $this->assertStringContainsString('successful', $result['message']);
+
+    }//end testTestConnectionSuccess()
+
+
+    /**
+     * Test that testConnection returns failure on HTTP 401.
+     *
+     * @return void
+     */
+    public function testTestConnectionInvalidKey(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-3'
+        );
+
+        $callLogEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 401],
+            'call-log-2'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($callLogEntity);
+
+        $result = $this->service->testConnection($source);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('401', $result['message']);
+
+    }//end testTestConnectionInvalidKey()
+
+
+    /**
+     * Test that pushVoorstel fails without organisatieId.
+     *
+     * @return void
+     */
+    public function testPushVoorstelFailsWithoutOrganisatieId(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => []],
+            'ibabs-source-4'
         );
 
         $result = $this->service->pushVoorstel($source, ['onderwerp' => 'Test voorstel']);
@@ -161,7 +242,330 @@ class IBabsConnectorServiceTest extends TestCase
         $this->assertFalse($result['success']);
         $this->assertNull($result['vergaderstukId']);
 
-    }//end testPushVoorstelReturnsPlaceholder()
+    }//end testPushVoorstelFailsWithoutOrganisatieId()
+
+
+    /**
+     * Test that pushVoorstel returns failure when CallService returns status 0.
+     *
+     * @return void
+     */
+    public function testPushVoorstelFailsWhenCallServiceFails(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'test-123']],
+            'ibabs-source-5'
+        );
+
+        // Return a call log with statusCode 0 (e.g. rate-limit early exit).
+        $failedLog = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 0],
+            'call-log-fail'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($failedLog);
+
+        $result = $this->service->pushVoorstel($source, ['onderwerp' => 'Test voorstel']);
+
+        $this->assertFalse($result['success']);
+        $this->assertNull($result['vergaderstukId']);
+
+    }//end testPushVoorstelFailsWhenCallServiceFails()
+
+
+    /**
+     * Test that pushVoorstel succeeds on HTTP 201.
+     *
+     * @return void
+     */
+    public function testPushVoorstelSuccess(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-6'
+        );
+
+        $responseBody  = json_encode(['id' => 'doc-456']);
+        $callLogEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 201, 'response' => ['statusCode' => 201, 'body' => $responseBody]],
+            'call-log-3'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($callLogEntity);
+
+        $result = $this->service->pushVoorstel(
+            $source,
+            ['onderwerp' => 'Bestemmingsplan Centrum', 'geheimhouding' => false]
+        );
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('doc-456', $result['vergaderstukId']);
+
+    }//end testPushVoorstelSuccess()
+
+
+    /**
+     * Test that pushVoorstel propagates geheimhouding flag.
+     *
+     * @return void
+     */
+    public function testPushVoorstelGeheimhouding(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-7'
+        );
+
+        $capturedConfig = null;
+        $failedLog      = ObjectServiceMockBuilder::objectEntity($this, ['statusCode' => 0], 'call-log-g');
+        $this->callService
+            ->method('call')
+            ->willReturnCallback(
+                function ($s, $e, $m, $config) use (&$capturedConfig, $failedLog) {
+                    $capturedConfig = $config;
+                    return $failedLog;
+                }
+            );
+
+        $this->service->pushVoorstel(
+            $source,
+            ['onderwerp' => 'Geheim voorstel', 'geheimhouding' => true]
+        );
+
+        $this->assertNotNull($capturedConfig);
+        $this->assertTrue($capturedConfig['json']['vertrouwelijk']);
+
+    }//end testPushVoorstelGeheimhouding()
+
+
+    /**
+     * Test that createAgendapunt fails without organisatieId.
+     *
+     * @return void
+     */
+    public function testCreateAgendapuntFailsWithoutOrganisatieId(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => []],
+            'ibabs-source-8'
+        );
+
+        $result = $this->service->createAgendapunt($source, 'doc-123');
+
+        $this->assertFalse($result['success']);
+        $this->assertNull($result['agendapuntId']);
+        $this->assertStringContainsString('Organisation ID', $result['message']);
+
+    }//end testCreateAgendapuntFailsWithoutOrganisatieId()
+
+
+    /**
+     * Test that createAgendapunt returns pending when no vergadering available.
+     *
+     * @return void
+     */
+    public function testCreateAgendapuntNoVergaderingAvailable(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-9'
+        );
+
+        // First call (GET vergaderingen) returns empty list.
+        $emptyListLog = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => json_encode(['items' => []])]],
+            'call-log-4'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($emptyListLog);
+
+        $result = $this->service->createAgendapunt($source, 'doc-123');
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('pending', $result['message']);
+
+    }//end testCreateAgendapuntNoVergaderingAvailable()
+
+
+    /**
+     * Test that pollBesluiten returns empty array without organisatieId.
+     *
+     * @return void
+     */
+    public function testPollBesluitenNoOrganisatieId(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => []],
+            'ibabs-source-10'
+        );
+
+        $result = $this->service->pollBesluiten($source, [['zaakId' => 'z-1', 'risVergaderingId' => 'v-1']]);
+        $this->assertSame([], $result);
+
+    }//end testPollBesluitenNoOrganisatieId()
+
+
+    /**
+     * Test that pollBesluiten returns empty array when no sync items passed.
+     *
+     * @return void
+     */
+    public function testPollBesluitenEmptySyncItems(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-11'
+        );
+
+        $result = $this->service->pollBesluiten($source, []);
+        $this->assertSame([], $result);
+
+    }//end testPollBesluitenEmptySyncItems()
+
+
+    /**
+     * Test that pollBesluiten maps returned besluit status correctly.
+     *
+     * @return void
+     */
+    public function testPollBesluitenMapsStatus(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-12'
+        );
+
+        $besluitBody   = json_encode(['besluitStatus' => 'aangenomen', 'besluitDatum' => '2026-06-01']);
+        $callLogEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => $besluitBody]],
+            'call-log-5'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($callLogEntity);
+
+        $syncItems = [['zaakId' => 'zaak-001', 'risVergaderingId' => 'verg-001']];
+        $result    = $this->service->pollBesluiten($source, $syncItems);
+
+        $this->assertNotEmpty($result);
+        $this->assertSame('Besluit: aangenomen', $result[0]['zaakStatus']);
+        $this->assertSame('zaak-001', $result[0]['zaakId']);
+
+    }//end testPollBesluitenMapsStatus()
+
+
+    /**
+     * Test retrieveBesluitenlijst fails without organisatieId.
+     *
+     * @return void
+     */
+    public function testRetrieveBesluitenlijstNoOrganisatieId(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => []],
+            'ibabs-source-13'
+        );
+
+        $result = $this->service->retrieveBesluitenlijst($source, 'verg-1', '2026-06-01', 'admin');
+
+        $this->assertFalse($result['success']);
+        $this->assertNull($result['filePath']);
+
+    }//end testRetrieveBesluitenlijstNoOrganisatieId()
+
+
+    /**
+     * Test retrieveBesluitenlijst returns pending when besluitenlijst not yet published.
+     *
+     * @return void
+     */
+    public function testRetrieveBesluitenlijstNotYetPublished(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-14'
+        );
+
+        $callLogEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 404],
+            'call-log-6'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($callLogEntity);
+
+        $result = $this->service->retrieveBesluitenlijst($source, 'verg-1', '2026-06-01', 'admin');
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('not yet', $result['message']);
+
+    }//end testRetrieveBesluitenlijstNotYetPublished()
+
+
+    /**
+     * Test retrieveBesluitenlijst stores file in correct path on success.
+     *
+     * @return void
+     */
+    public function testRetrieveBesluitenlijstStoresFile(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['organisatieId' => 'org-123']],
+            'ibabs-source-15'
+        );
+
+        $pdfContent    = '%PDF-1.4 test';
+        $callLogEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => $pdfContent]],
+            'call-log-7'
+        );
+
+        $this->callService
+            ->method('call')
+            ->willReturn($callLogEntity);
+
+        $mockFolder     = $this->createMock(Folder::class);
+        $mockUserFolder = $this->createMock(Folder::class);
+
+        $mockUserFolder->method('nodeExists')->willReturn(false);
+        $mockUserFolder->method('newFolder')->willReturn($mockFolder);
+        $mockUserFolder->method('newFile')->willReturn($this->createMock(\OCP\Files\File::class));
+
+        $this->rootFolder
+            ->method('getUserFolder')
+            ->willReturn($mockUserFolder);
+
+        $result = $this->service->retrieveBesluitenlijst($source, 'verg-1', '2026-06-01', 'admin');
+
+        $this->assertTrue($result['success']);
+        $this->assertStringContainsString('/RIS-besluiten/2026/2026-06-01', $result['filePath']);
+
+    }//end testRetrieveBesluitenlijstStoresFile()
 
 
 }//end class

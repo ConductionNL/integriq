@@ -22,6 +22,17 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\AppInfo;
 
 // @todo Remove ViewUpdatedOrCreatedEventListener once it lives in the software catalog application.
+use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClient as AdapterPdokGeocodingClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientHttp;
+use OCA\OpenConnector\Adapters\Pdok\PdokGeocodingClientMock;
+use OCA\OpenConnector\Adapters\Pdok\PdokWfsClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientHttp;
+use OCA\OpenConnector\Adapters\Pdok\PdokWfsClientMock;
+use OCA\OpenConnector\Adapters\Pdok\PdokWmsClient;
+use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
+use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
+use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
+use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
@@ -30,6 +41,10 @@ use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
 use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
+use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
+use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
+use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -80,6 +95,8 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
+        $this->assertStorageMigrated();
+
         // Register services.
         $context->registerService(
           SettingsService::class,
@@ -118,7 +135,204 @@ class Application extends App implements IBootstrap
                 Util::addInitScript('openconnector', 'openconnector-integration');
             }
         );
+
+        // Dormant + active PDOK source-pattern adapters (lib/Sources/Pdok/).
+        //
+        // The abstract `PdokWmsClient`, `PdokWfsClient`, and
+        // `PdokGeocodingClient` (lib/Adapters/Pdok/) are resolved to the
+        // appropriate concrete flavour based on the `pdok.feature_flag`
+        // app-config flag:
+        //   - `'1'` or `'true'`  → the `*ClientHttp` implementation
+        //     (real outbound HTTPS calls against api.pdok.nl /
+        //     service.pdok.nl).
+        //   - anything else (default) → the `*ClientMock` implementation
+        //     (deterministic canned responses; no network access).
+        //
+        // The Source-pattern facades (`PdokWmsSourceAdapter`,
+        // `PdokWfsSourceAdapter`, `PdokGeocodingClient` under the Sources
+        // namespace) layer logging + Source-row identity on top so they can
+        // be discovered through the openconnector Source registry under
+        // category `geo`.
+        $isPdokActive = static function ($c): bool {
+            $config = $c->get('OCP\IAppConfig');
+            $raw    = $config->getValueString('openconnector', 'pdok.feature_flag', '0');
+            return ($raw === '1' || strtolower($raw) === 'true');
+        };
+
+        $context->registerService(
+            PdokWmsClient::class,
+            static function ($c) use ($isPdokActive) {
+                return $isPdokActive($c) === true
+                    ? $c->get(PdokWmsClientHttp::class)
+                    : $c->get(PdokWmsClientMock::class);
+            }
+        );
+        $context->registerService(
+            PdokWfsClient::class,
+            static function ($c) use ($isPdokActive) {
+                return $isPdokActive($c) === true
+                    ? $c->get(PdokWfsClientHttp::class)
+                    : $c->get(PdokWfsClientMock::class);
+            }
+        );
+        $context->registerService(
+            AdapterPdokGeocodingClient::class,
+            static function ($c) use ($isPdokActive) {
+                return $isPdokActive($c) === true
+                    ? $c->get(PdokGeocodingClientHttp::class)
+                    : $c->get(PdokGeocodingClientMock::class);
+            }
+        );
+
+        // Explicit factories for the *ClientHttp flavours so the Guzzle
+        // ClientInterface is injected via a shared singleton; NC's
+        // auto-wiring can't construct GuzzleHttp\Client directly because
+        // ClientInterface is an interface.
+        $context->registerService(
+            PdokGeocodingClientHttp::class,
+            static function ($c) {
+                return new PdokGeocodingClientHttp(
+                    httpClient: new \GuzzleHttp\Client(),
+                    logger: $c->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+        $context->registerService(
+            PdokWmsClientHttp::class,
+            static function ($c) {
+                return new PdokWmsClientHttp(
+                    httpClient: new \GuzzleHttp\Client(),
+                    logger: $c->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+        $context->registerService(
+            PdokWfsClientHttp::class,
+            static function ($c) {
+                return new PdokWfsClientHttp(
+                    httpClient: new \GuzzleHttp\Client(),
+                    logger: $c->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+        $context->registerService(
+            PdokWmsSourceAdapter::class,
+            static function ($c) {
+                return new PdokWmsSourceAdapter(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    wmsClient: $c->get(PdokWmsClient::class)
+                );
+            }
+        );
+        $context->registerService(
+            PdokWfsSourceAdapter::class,
+            static function ($c) {
+                return new PdokWfsSourceAdapter(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    wfsClient: $c->get(PdokWfsClient::class)
+                );
+            }
+        );
+        $context->registerService(
+            SourcePdokGeocodingClient::class,
+            static function ($c) {
+                return new SourcePdokGeocodingClient(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    geocodingClient: $c->get(AdapterPdokGeocodingClient::class)
+                );
+            }
+        );
+
+        // Wave-4 external-API low-volume families.
+        //
+        // - Logius Berichtenbox (BBK 1.7 — burgerportaal-mijnoverheid-bridge,
+        //   procest berichtenbox-integration spec). The abstract
+        //   BerichtenboxClient resolves to BerichtenboxClientMock by
+        //   default; flip `logius.berichtenbox.feature_flag` and bind
+        //   the BerichtenboxClientHttp implementation to activate.
+        $context->registerService(
+            BerichtenboxClient::class,
+            static function ($c) {
+                return $c->get(BerichtenboxClientMock::class);
+            }
+        );
+        $context->registerService(
+            BerichtenboxSourceAdapter::class,
+            static function ($c) {
+                return new BerichtenboxSourceAdapter(
+                    config: $c->get('OCP\IAppConfig'),
+                    logger: $c->get('Psr\Log\LoggerInterface'),
+                    berichtenboxClient: $c->get(BerichtenboxClient::class)
+                );
+            }
+        );
     }//end register()
+
+    /**
+     * Soft pre-flight check: warn when the legacy→OpenRegister storage migration has
+     * not yet run.
+     *
+     * Chain C removed every `lib/Db/*Mapper.php` and entity class; all domain data
+     * now lives in OpenRegister objects (ADR-001). The connector-specific services
+     * that inject OpenRegister's `ObjectService` only have data to operate on once
+     * the one-shot migrator has copied every legacy row across and flipped the
+     * `openconnector.storage_migrated` IAppConfig flag to `'true'`.
+     *
+     * NOTE (consolidate-merge): PR #29 originally threw a `\LogicException` here as a
+     * hard pre-flight. Development deliberately deferred that hard gate — a boot-time
+     * throw risks bricking instances that re-installed from a fresh dump without
+     * running migrate-storage (see openconnector-services-direct-or-usage/tasks.md).
+     * The guard is therefore kept as PR #29's diagnostic intent but downgraded to a
+     * non-fatal log so neither side's behaviour is lost and app boot is never crashed
+     * by the check itself. The hard gate remains tracked as the OCC command's soft
+     * gate (Task 15) and can be re-enabled in a dedicated change once the
+     * legacy-table-cleanup release ships.
+     *
+     * Bypassable in CI/test (where no real upgrade has run) via
+     * `OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT=1`, and soft-skipped if `IAppConfig`
+     * cannot be resolved during very early bootstrap.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-applicationphp-di-bindings-must-be-updated
+     */
+    private function assertStorageMigrated(): void
+    {
+        // CI / test bypass — no real upgrade has run in those environments.
+        if (getenv('OPENCONNECTOR_SKIP_STORAGE_MIGRATED_ASSERT') !== false) {
+            return;
+        }
+
+        try {
+            $appConfig = $this->getContainer()->get(\OCP\IAppConfig::class);
+        } catch (\Throwable) {
+            // IAppConfig not resolvable this early — don't disturb boot over the guard.
+            return;
+        }
+
+        if ($appConfig->getValueString(self::APP_ID, 'storage_migrated', 'false') === 'true') {
+            return;
+        }
+
+        // Non-fatal: log a warning instead of throwing, so an unmigrated instance
+        // still boots (development's deferral decision) while operators get a signal.
+        try {
+            $logger = $this->getContainer()->get(\Psr\Log\LoggerInterface::class);
+            $logger->warning(
+                'openconnector: legacy storage has not been migrated to OpenRegister. '
+                .'Run "occ openconnector:migrate-storage" to materialise the register and '
+                .'copy legacy rows. Connector services will operate on an empty register '
+                .'until then.'
+            );
+        } catch (\Throwable) {
+            // Logger unavailable this early — nothing more we can safely do.
+            return;
+        }
+
+    }//end assertStorageMigrated()
 
     /**
      * Boot the app and wire integration providers.

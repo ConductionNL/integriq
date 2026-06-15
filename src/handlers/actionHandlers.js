@@ -31,6 +31,7 @@ import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
+	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 
@@ -154,6 +155,16 @@ export function testMappingModalHandler({ item }) {
  */
 export function addEndpointRuleHandler({ item }) {
 	modalBus.$emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
+}
+
+/**
+ * Open the webhook signing-secret manager for a subscription row.
+ *
+ * @param {{ item: object }} ctx Row-action context from CnIndexPage.
+ * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
+ */
+export function manageSigningHandler({ item }) {
+	modalBus.$emit(EVENT_OPEN_SUBSCRIPTION_SIGNING, { subscription: item })
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

@@ -39,7 +39,9 @@ use OAuthException;
 use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Service class for handling authentication on other services.
@@ -91,7 +93,93 @@ class AuthenticationService
         ArrayLoader $loader
     ) {
         $this->twig = new Environment(loader: $loader);
+
+        // Sandbox the authentication Twig environment — templates here expand
+        // OAuth/JWT configuration tokens and should not call any PHP methods on
+        // injected objects.  Only basic control-flow tags and string filters are
+        // needed.
+        $authSandboxPolicy = new SecurityPolicy(
+            allowedTags: ['if', 'for', 'set'],
+            allowedFilters: ['upper', 'lower', 'trim', 'default', 'escape', 'raw', 'replace'],
+            allowedFunctions: ['date', 'max', 'min', 'random'],
+        );
+        $this->twig->addExtension(new SandboxExtension(policy: $authSandboxPolicy, sandboxed: true));
     }//end __construct()
+
+    /**
+     * Assert that a token endpoint URL is safe to call (C4: SSRF guard).
+     *
+     * Blocks URLs that resolve to RFC-1918 private ranges, loopback addresses,
+     * the AWS Instance Metadata Service (169.254.169.254), and cloud-internal
+     * metadata endpoints.  An admin who can set `tokenUrl` on a source could
+     * otherwise pivot to internal services (IMDS, internal APIs, etc.).
+     *
+     * Allowed schemes: https only (http is rejected to prevent credential
+     * exposure in transit and to limit the SSRF blast radius).
+     *
+     * @param string $url The token endpoint URL to validate.
+     *
+     * @return void
+     *
+     * @throws BadRequestException When the URL is missing, uses a disallowed
+     *                             scheme, or resolves to a private/loopback host.
+     */
+    private function assertSafeTokenUrl(string $url): void
+    {
+        if ($url === '') {
+            throw new BadRequestException(message: 'Token URL must not be empty');
+        }
+
+        $scheme = strtolower((string) (parse_url($url, PHP_URL_SCHEME) ?? ''));
+        if ($scheme !== 'https') {
+            throw new BadRequestException(
+                message: 'Token URL scheme not allowed: only https is permitted (got "'.$scheme.'")'
+            );
+        }
+
+        $host = strtolower(trim((string) (parse_url($url, PHP_URL_HOST) ?? ''), '[]'));
+        if ($host === '') {
+            throw new BadRequestException(message: 'Token URL does not contain a valid host');
+        }
+
+        // Block loopback.
+        if ($host === 'localhost' || $host === '::1' || str_starts_with($host, '127.') === true) {
+            throw new BadRequestException(message: 'Token URL resolves to a loopback address - SSRF blocked');
+        }
+
+        // Block link-local (AWS IMDS: 169.254.169.254, Azure: 169.254.169.254, GCP: metadata.google.internal).
+        if (str_starts_with($host, '169.254.') === true) {
+            throw new BadRequestException(message: 'Token URL resolves to a link-local address - SSRF blocked');
+        }
+
+        if ($host === 'metadata.google.internal' || $host === 'metadata') {
+            throw new BadRequestException(message: 'Token URL resolves to a cloud metadata endpoint - SSRF blocked');
+        }
+
+        // Block RFC-1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
+        if (str_starts_with($host, '10.') === true || str_starts_with($host, '192.168.') === true) {
+            throw new BadRequestException(message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked');
+        }
+
+        // 172.16.0.0 – 172.31.255.255 (second octet 16..31).
+        if (str_starts_with($host, '172.') === true) {
+            $parts = explode('.', $host);
+            if (count($parts) >= 2) {
+                $secondOctet = (int) $parts[1];
+                if ($secondOctet >= 16 && $secondOctet <= 31) {
+                    throw new BadRequestException(
+                        message: 'Token URL resolves to an RFC-1918 private address - SSRF blocked'
+                    );
+                }
+            }
+        }
+
+        // Block the unroutable 0.0.0.0 address.
+        if ($host === '0.0.0.0' || $host === '::') {
+            throw new BadRequestException(message: 'Token URL resolves to an unroutable address - SSRF blocked');
+        }
+
+    }//end assertSafeTokenUrl()
 
     /**
      * Create call options for OAuth with Client Credentials
@@ -188,7 +276,8 @@ class AuthenticationService
 
      * @return string The resulting access token
      *
-     * @throws BadRequestException                     Thrown if the configuration is not compatible with OAuth.
+     * @throws BadRequestException                     Thrown if the configuration is not compatible with OAuth,
+     *                                                 or if the tokenUrl is unsafe (C4: SSRF guard).
      * @throws \GuzzleHttp\Exception\GuzzleException Thrown if the token endpoint does not respond with an access token.
      * @todo   Convert GuzzleException to another error.
      *
@@ -203,6 +292,9 @@ class AuthenticationService
         if (isset($configuration['tokenUrl']) === false) {
             throw new BadRequestException(message: 'Token URL not set, cannot request token');
         }
+
+        // C4: SSRF guard — validate the token endpoint before making the outbound call.
+        $this->assertSafeTokenUrl(url: (string) $configuration['tokenUrl']);
 
         switch ($configuration['grant_type']) {
             case 'client_credentials':
@@ -235,6 +327,7 @@ class AuthenticationService
      *
      * @return string The access token
      *
+     * @throws BadRequestException                    When the tokenUrl is unsafe (C4: SSRF guard).
      * @throws \GuzzleHttp\Exception\GuzzleException
      *
      * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-3
@@ -244,6 +337,9 @@ class AuthenticationService
         $url           = $configuration['tokenUrl'];
         $tokenLocation = $configuration['tokenLocation'];
         unset($configuration['tokenUrl']);
+
+        // C4: SSRF guard — validate the token endpoint before making the outbound call.
+        $this->assertSafeTokenUrl(url: (string) $url);
 
         $callConfig['json'] = $configuration;
 
@@ -276,9 +372,9 @@ class AuthenticationService
         // from process metadata. If the process died between
         // file_put_contents and unlink, the key leaked indefinitely.
         // Use tempnam() + chmod 0600 + try/finally so:
-        //   - the filename is unpredictable,
-        //   - the bytes are never readable to other local users,
-        //   - cleanup runs even when JWKFactory::createFromKeyFile throws.
+        // - the filename is unpredictable,
+        // - the bytes are never readable to other local users,
+        // - cleanup runs even when JWKFactory::createFromKeyFile throws.
         $filename = tempnam(sys_get_temp_dir(), 'oc_privatekey_');
         if ($filename === false) {
             throw new Exception('Could not allocate a temp file for the private key.');
@@ -306,6 +402,11 @@ class AuthenticationService
     /**
      * Get OCT key for HS (symmetrical) encryption.
      *
+     * The `k` parameter in an oct JWK must be the raw secret encoded as
+     * base64url (RFC 4648 §5) — NOT base64 with `addslashes` applied.
+     * `addslashes` would corrupt binary secrets and produce non-standard
+     * padding, breaking HMAC verification.
+     *
      * @param array $configuration The source configuration.
      *
      * @return JWK|null
@@ -314,10 +415,12 @@ class AuthenticationService
      */
     private function getHSJWK(array $configuration): ?JWK
     {
+        // Base64url: replace +/ with -_, strip trailing =.
+        $base64url = rtrim(strtr(base64_encode($configuration['secret']), '+/', '-_'), '=');
         return new JWK(
             [
                 'kty' => 'oct',
-                'k'   => rtrim(string: base64_encode(addslashes($configuration['secret'])), characters: '='),
+                'k'   => $base64url,
             ]
         );
     }//end getHSJWK()
@@ -372,6 +475,10 @@ class AuthenticationService
      *
      * @return string The serialised JWT token.
      *
+     * @throws BadRequestException When JWS building fails — callers must NOT silently swallow this.
+     *                             Returning the error message as a Bearer token would send the raw
+     *                             exception text to a third-party endpoint (C1).
+     *
      * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
@@ -395,15 +502,16 @@ class AuthenticationService
             $header['x5t'] = $x5t;
         }
 
-        try {
-            $jws = $jwsBuilder
-                ->create()
-                ->withPayload(json_encode($payload))
-                ->addSignature($jwk, $header)
-                ->build();
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
+        // C1 fix: rethrow instead of returning the error message as a JWT string.
+        // Previously `catch (Exception $e) { return $e->getMessage(); }` would hand the
+        // raw error text to the caller as the Bearer token value, silently sending it to
+        // the remote service.  Now we let the exception propagate so callers can log and
+        // surface a proper error response.
+        $jws = $jwsBuilder
+            ->create()
+            ->withPayload(json_encode($payload))
+            ->addSignature($jwk, $header)
+            ->build();
 
         return $jwsSerializer->serialize($jws, 0);
     }//end generateJWT()
@@ -414,6 +522,9 @@ class AuthenticationService
      * @param array $configuration The auth configuration for the JWT token. Must at least contain payload, algorithm and secret.
      *
      * @return string The generated JWT token
+     *
+     * @throws BadRequestException When required parameters are missing or the JWK cannot be formed.
+     * @throws Exception           When JWS signing fails (propagated from generateJWT — C1 fix).
      *
      * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
      */
@@ -443,4 +554,60 @@ class AuthenticationService
 
         return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
     }//end fetchJWTToken()
+
+    /**
+     * Build a WS-Security UsernameToken SOAP header XML string.
+     *
+     * Supports PasswordText (plaintext) and PasswordDigest
+     * (Base64(SHA1(Nonce + Created + Password))) authentication modes per the
+     * WS-Security UsernameToken 1.0 profile.
+     *
+     * @param array $configuration Auth configuration. Required keys: username, password.
+     *                             Optional: passwordType ('PasswordText'|'PasswordDigest'), nonce.
+     *
+     * @return string The wsse:Security SOAP header XML fragment.
+     *
+     * @throws BadRequestException When required username or password is missing.
+     *
+     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-012
+     */
+    public function buildWsSecurityHeader(array $configuration): string
+    {
+        if (isset($configuration['username']) === false || isset($configuration['password']) === false) {
+            throw new BadRequestException(message: 'WS-Security requires username and password in configuration.');
+        }
+
+        $username     = (string) $configuration['username'];
+        $password     = (string) $configuration['password'];
+        $passwordType = (string) ($configuration['passwordType'] ?? 'PasswordText');
+        $created      = (new \DateTime())->format('Y-m-d\TH:i:s\Z');
+
+        $wsseNs = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd';
+        $wsuNs  = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd';
+        $pwNs   = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0';
+
+        if ($passwordType === 'PasswordDigest') {
+            $nonce         = base64_encode(random_bytes(length: 16));
+            $rawNonce      = base64_decode($nonce);
+            $digestInput   = $rawNonce.$created.$password;
+            $passwordValue = base64_encode(sha1(string: $digestInput, binary: true));
+            $pwTypeUri     = $pwNs.'#PasswordDigest';
+        } else {
+            $nonce         = base64_encode(random_bytes(length: 16));
+            $passwordValue = $password;
+            $pwTypeUri     = $pwNs.'#PasswordText';
+        }
+
+        return '<wsse:Security xmlns:wsse="'.$wsseNs.'" xmlns:wsu="'.$wsuNs.'">'
+            .'<wsse:UsernameToken>'
+            .'<wsse:Username>'.htmlspecialchars(string: $username, flags: ENT_XML1).'</wsse:Username>'
+            .'<wsse:Password Type="'.$pwTypeUri.'">'
+            .htmlspecialchars(string: $passwordValue, flags: ENT_XML1)
+            .'</wsse:Password>'
+            .'<wsse:Nonce>'.htmlspecialchars(string: $nonce, flags: ENT_XML1).'</wsse:Nonce>'
+            .'<wsu:Created>'.$created.'</wsu:Created>'
+            .'</wsse:UsernameToken>'
+            .'</wsse:Security>';
+
+    }//end buildWsSecurityHeader()
 }//end class

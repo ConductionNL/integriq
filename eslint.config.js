@@ -67,5 +67,9 @@ module.exports = defineConfig([{
 		'import/named': 'off',
 		'import/default': 'off',
 		'import/no-named-as-default-member': 'off',
+		// `@spec` is the Conduction OpenSpec cross-reference tag, used to link
+		// every JS function back to its specification task. It is not a standard
+		// JSDoc tag, so we explicitly allowlist it here.
+		'jsdoc/check-tag-names': ['warn', { definedTags: ['spec'] }],
 	},
 }])

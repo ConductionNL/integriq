@@ -2,8 +2,10 @@
 /**
  * OpenConnector Synchronization Action.
  *
- * Cron action that runs the synchronization process for a given
- * synchronization ID, delegating to the SynchronizationService.
+ * Cron action that runs a synchronization. Post OpenRegister-cutover the
+ * synchronization is resolved through SynchronizationService::getSynchronization()
+ * (backed by OpenRegister, register `openconnector`, schema `synchronization`),
+ * the legacy SynchronizationMapper having been removed.
  *
  * @category Action
  * @package  OCA\OpenConnector\Action
@@ -12,8 +14,6 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
- *
  * @link https://www.OpenConnector.nl
  */
 
@@ -21,51 +21,45 @@ namespace OCA\OpenConnector\Action;
 
 use Exception;
 use OCA\OpenConnector\Service\SynchronizationService;
-use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 /**
- * Handles the synchronization of data from a source to the target.
+ * This action handles the synchronization of data from the source to the target.
+ *
+ * @package OCA\OpenConnector\Action
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class SynchronizationAction
 {
 
     /**
-     * Synchronization service used to perform the actual sync.
+     * The synchronization service that runs the synchronization.
      *
      * @var SynchronizationService
      */
-    private SynchronizationService $syncService;
-
-    /**
-     * OpenRegister object service used to resolve synchronization records.
-     *
-     * @var OrObjectService
-     */
-    private OrObjectService $orObjectService;
+    private SynchronizationService $synchronizationService;
 
     /**
      * Constructor.
      *
-     * @param SynchronizationService $syncService     Synchronization service used to perform the sync.
-     * @param OrObjectService        $orObjectService Service used to resolve synchronization records.
+     * @param SynchronizationService $synchronizationService The synchronization service.
      */
     public function __construct(
-        SynchronizationService $syncService,
-        OrObjectService $orObjectService,
+        SynchronizationService $synchronizationService,
     ) {
-        $this->syncService     = $syncService;
-        $this->orObjectService = $orObjectService;
+        $this->synchronizationService = $synchronizationService;
 
     }//end __construct()
 
     /**
      * Executes the synchronization process based on the provided arguments.
      *
-     * This method checks for a valid synchronization ID, processes a synchronization contract if provided,
-     * or performs a general synchronization action. It returns a stack trace of operations performed.
+     * This method checks for a valid synchronization ID and performs the
+     * synchronization action, returning a stack trace of operations performed.
      *
-     * @param array $argument An array of arguments that can include 'synchronizationId' and 'synchronizationContractId'.
+     * @param array $argument An array of arguments that can include 'synchronizationId' and 'force'.
      *
      * @return array Returns an array containing the stack trace of actions performed and any warnings or messages.
      *
@@ -79,34 +73,38 @@ class SynchronizationAction
     {
         $response = [];
 
-        // If we do not have a synchronization Id then everything is wrong.
+        // If we do not have a synchronization id then everything is wrong.
         $response['message'] = $response['stackTrace'][] = 'Check for a valid synchronization ID';
         if (isset($argument['synchronizationId']) === false) {
-            // @todo Implement error handling.
             $response['level']        = 'ERROR';
             $response['stackTrace'][] = $response['message'] = 'No synchronization ID provided';
 
             return $response;
         }
 
-        // Let's find a synchronization.
+        // Resolve the synchronization (OpenRegister ids are UUID strings).
         $response['stackTrace'][] = 'Getting synchronization: '.$argument['synchronizationId'];
-        $synchronization          = $this->orObjectService->find(
-            id: (string) $argument['synchronizationId'],
-            register: 'openconnector',
-            schema: 'synchronization'
-        );
-
-        if ($synchronization === null) {
+        try {
+            $synchronization = $this->synchronizationService->getSynchronization(id: (string) $argument['synchronizationId']);
+        } catch (DoesNotExistException $e) {
             $response['level']        = 'WARNING';
             $response['stackTrace'][] = $response['message'] = 'Synchronization not found: '.$argument['synchronizationId'];
+
             return $response;
         }
 
-        // Doing the synchronization.
+        $force = filter_var(($argument['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
+        if ($force === true) {
+            $response['stackTrace'][] = 'Force enabled for synchronization job';
+        }
+
+        // Run the synchronization.
         $response['stackTrace'][] = 'Doing the synchronization';
         try {
-            $objects = $this->syncService->synchronize($synchronization);
+            $objects = $this->synchronizationService->synchronize(
+                synchronization: $synchronization,
+                force: $force
+            );
         } catch (TooManyRequestsHttpException $e) {
             $response['level']        = 'WARNING';
             $response['stackTrace'][] = $response['message'] = 'Stopped synchronization: '.$e->getMessage();
@@ -119,8 +117,9 @@ class SynchronizationAction
         } catch (Exception $e) {
             $response['level']        = 'ERROR';
             $response['stackTrace'][] = $response['message'] = 'Failed to synchronize: '.$e->getMessage();
+
             return $response;
-        }
+        }//end try
 
         $response['level'] = 'INFO';
 
@@ -135,7 +134,7 @@ class SynchronizationAction
 
         $response['stackTrace'][] = $response['message'] = 'Synchronized '.$objectCount.' successfully';
 
-        // Let's report back about what we have just done.
+        // Report back about what we have just done.
         return $response;
 
     }//end run()

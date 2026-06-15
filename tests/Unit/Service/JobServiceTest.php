@@ -331,8 +331,8 @@ class JobServiceTest extends TestCase
                 $defaultEntity
             ) {
                 $object = ($args[0] ?? []);
-                $schema = ($args[3] ?? null);
-                $uuid   = ($args[4] ?? null);
+                $schema = ($args[2] ?? null);
+                $uuid   = ($args[3] ?? null);
                 if (is_array($object) === false) {
                     $object = [];
                 }
@@ -457,7 +457,7 @@ class JobServiceTest extends TestCase
         $this->objectService->method('saveObject')->willReturnCallback(
             function (...$args) use (&$logLevels) {
                 $object = ($args[0] ?? []);
-                $schema = ($args[3] ?? null);
+                $schema = ($args[2] ?? null);
                 if (is_array($object) === true && $schema === 'job_log') {
                     $logLevels[] = $object['level'] ?? null;
                 }

@@ -18,6 +18,7 @@ use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\StorageService;
+use OCA\OpenConnector\Service\SynchronizationLogService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -61,12 +62,13 @@ class SynchronizationServiceTest extends TestCase
         $this->orObjectService = ObjectServiceMockBuilder::make($this);
         $this->logger          = $this->createMock(LoggerInterface::class);
 
-        $callService    = $this->createMock(CallService::class);
-        $mappingService = $this->createMock(MappingService::class);
-        $container      = $this->createMock(ContainerInterface::class);
-        $objectService  = $this->createMock(ObjectService::class);
-        $storageService = $this->createMock(StorageService::class);
-        $appConfig      = $this->createMock(IAppConfig::class);
+        $callService               = $this->createMock(CallService::class);
+        $mappingService            = $this->createMock(MappingService::class);
+        $container                 = $this->createMock(ContainerInterface::class);
+        $objectService             = $this->createMock(ObjectService::class);
+        $storageService            = $this->createMock(StorageService::class);
+        $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
+        $appConfig                 = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
 
         $this->service = new SynchronizationService(
@@ -77,6 +79,7 @@ class SynchronizationServiceTest extends TestCase
             $objectService,
             $storageService,
             $this->logger,
+            $synchronizationLogService,
             $appConfig,
         );
     }//end setUp()
@@ -228,99 +231,366 @@ class SynchronizationServiceTest extends TestCase
      */
     public function testSynchronizationLogWritesAreCreateOnly(): void
     {
-        // Record every saveObject invocation and reject any UPDATE on the
-        // two append-only log schemas.
-        $disallowedUpdates = [];
-        $defaultEntity     = ObjectServiceMockBuilder::objectEntity(
+        // The OpenRegister `synchronization_log` schema is immutable / append-only:
+        // any saveObject(uuid: ...) UPDATE is rejected. SynchronizationLogService
+        // must therefore persist the run-log via an INSERT (no uuid argument).
+        $observedUuid  = 'sentinel';
+        $observedBody  = null;
+        $defaultEntity = ObjectServiceMockBuilder::objectEntity(
             $this,
             ['result' => []],
             'log-uuid'
         );
 
-        $this->orObjectService->method('saveObject')->willReturnCallback(
+        $orObjectService = $this->createMock(ORObjectService::class);
+        $orObjectService->method('saveObject')->willReturnCallback(
             static function (
                 $object,
                 $extend = null,
                 $register = null,
                 $schema = null,
-                ?string $uuid = null,
-                bool $_rbac = true,
-                bool $_multitenancy = true,
-                bool $silent = false,
-                ?array $uploadedFiles = null
-            ) use (&$disallowedUpdates, $defaultEntity) {
-                if (
-                    $uuid !== null
-                    && in_array(
-                        $schema,
-                        ['synchronization_log', 'synchronization_contract_log'],
-                        true
-                    )
-                ) {
-                    $disallowedUpdates[] = $schema.':'.$uuid;
-                }
+                ?string $uuid = null
+            ) use (&$observedUuid, &$observedBody, $defaultEntity) {
+                $observedUuid = $uuid;
+                $observedBody = $object;
                 return $defaultEntity;
             }
         );
 
-        // Direct property assertion via reflection: pendingContractLogs starts empty
-        // and is the supported buffer used by the refactor.
-        $ref  = new \ReflectionClass($this->service);
-        $prop = $ref->getProperty('pendingContractLogs');
-        $prop->setAccessible(true);
-        $this->assertSame(
-            [],
-            $prop->getValue($this->service),
-            'pendingContractLogs accumulator must start empty (#1007)'
-        );
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $session     = $this->createMock(\OCP\ISession::class);
+        $logService  = new SynchronizationLogService($orObjectService, $userSession, $session);
 
-        // Sanity: assert the disallowedUpdates list is empty (we never made a sync
-        // call here; this just establishes the test recording infrastructure
-        // works). The runtime guarantee is verified live via the deployment
-        // verification documented in the PR body.
-        $this->assertSame(
-            [],
-            $disallowedUpdates,
-            'No UPDATE call on synchronization_log/_contract_log must have happened'
+        $log = $logService->createFromArray(['synchronizationId' => 'sync-1', 'result' => []]);
+        $log->setMessage('Success');
+        $logService->update($log);
+
+        // A CREATE (no uuid argument) must have been used; an `id` in the body
+        // would make OpenRegister treat the write as an UPDATE, so it must be
+        // stripped from the persisted payload.
+        $this->assertNull(
+            $observedUuid,
+            'The run-log must be written with a CREATE (no uuid arg) against the append-only schema'
+        );
+        $this->assertIsArray($observedBody);
+        $this->assertArrayNotHasKey(
+            'id',
+            $observedBody,
+            'The persisted payload must not carry an id (would trigger an append-only UPDATE)'
         );
     }//end testSynchronizationLogWritesAreCreateOnly()
 
 
     /**
-     * #1007 regression test — `bufferContractLog` accumulates payloads in memory
-     * for write-once finalize, instead of saveObject-ing them immediately.
+     * #1007 regression — the append-only run-log is written exactly once.
+     *
+     * SynchronizationLogService::update() is idempotent: the first call INSERTs
+     * the row and marks the log persisted; subsequent calls are no-ops so the
+     * append-only schema is never asked to UPDATE.
      *
      * @return void
      */
-    public function testBufferContractLogAccumulatesInMemory(): void
+    public function testSynchronizationLogIsWrittenExactlyOnce(): void
     {
-        $ref     = new \ReflectionClass($this->service);
-        $buffer  = $ref->getProperty('pendingContractLogs');
-        $buffer->setAccessible(true);
-
-        $bufferMethod = $ref->getMethod('bufferContractLog');
-        $bufferMethod->setAccessible(true);
-
-        // Buffer two payloads — saveObject must NEVER be called for these.
-        $this->orObjectService->expects($this->never())->method('saveObject');
-
-        $payload1 = ['synchronizationContractId' => 'c1', 'targetResult' => 'create'];
-        $payload2 = ['synchronizationContractId' => 'c2', 'targetResult' => 'update'];
-
-        $r1 = $bufferMethod->invoke($this->service, $payload1);
-        $r2 = $bufferMethod->invoke($this->service, $payload2);
-
-        // Buffer holds both payloads.
-        $this->assertSame(
-            [$payload1, $payload2],
-            $buffer->getValue($this->service),
-            'Both contract-log payloads must be buffered for write-once flush (#1007)'
+        $defaultEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['result' => []],
+            'log-uuid'
         );
-        // Return values are the payloads unchanged (callers consume them via the
-        // synchronizeContract return shape's "log" key).
-        $this->assertSame($payload1, $r1);
-        $this->assertSame($payload2, $r2);
-    }//end testBufferContractLogAccumulatesInMemory()
+
+        $orObjectService = $this->createMock(ORObjectService::class);
+        // saveObject must be invoked exactly once across multiple update() calls.
+        $orObjectService->expects($this->once())->method('saveObject')->willReturn($defaultEntity);
+
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $session     = $this->createMock(\OCP\ISession::class);
+        $logService  = new SynchronizationLogService($orObjectService, $userSession, $session);
+
+        $log = $logService->createFromArray(['synchronizationId' => 'sync-1', 'result' => []]);
+        $this->assertFalse($log->isPersisted(), 'createFromArray must NOT persist the row');
+
+        $logService->update($log);
+        $this->assertTrue($log->isPersisted(), 'the first update must persist the row');
+
+        // Second/third calls must not write again (append-only).
+        $logService->update($log);
+        $logService->persist($log);
+    }//end testSynchronizationLogIsWrittenExactlyOnce()
+
+
+    /**
+     * synchronize() throws when an invalid mutationType is passed.
+     *
+     * @return void
+     */
+    public function testSynchronizeThrowsOnInvalidMutationType(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/Invalid mutation type/');
+
+        $this->service->synchronize(
+            synchronization: ['uuid' => 'sync-1'],
+            mutationType: 'not-a-real-type'
+        );
+    }//end testSynchronizeThrowsOnInvalidMutationType()
+
+
+    /**
+     * handleObjectEventSynchronization() short-circuits when the
+     * ObjectEntity has no register/schema (no findAll, no synchronize).
+     *
+     * @return void
+     */
+    public function testHandleObjectEventSkipsWhenObjectHasNoRegister(): void
+    {
+        $objectEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [],
+            'obj-1'
+        );
+        // Leave register/schema unset.
+
+        $this->orObjectService->expects($this->never())->method('findAll');
+
+        $this->service->handleObjectEventSynchronization($objectEntity, 'create');
+        $this->addToAssertionCount(1);
+    }//end testHandleObjectEventSkipsWhenObjectHasNoRegister()
+
+
+    /**
+     * handleObjectEventSynchronization() queries OR for direct syncs on the
+     * object's register/schema when the mutation type is valid.
+     *
+     * @return void
+     */
+    public function testHandleObjectEventQueriesOrForDirectSyncs(): void
+    {
+        $objectEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [],
+            'obj-1'
+        );
+        $objectEntity->setRegister('openconnector');
+        $objectEntity->setSchema('source');
+
+        // OR findAll is invoked at least once on the direct-sync lookup. The
+        // related-trigger lookup may also hit findAll. We assert at least one
+        // call instead of exact count to keep the test resilient.
+        $this->orObjectService->expects($this->atLeastOnce())
+            ->method('findAll')
+            ->willReturn(['results' => [], 'total' => 0]);
+
+        $this->service->handleObjectEventSynchronization($objectEntity, 'create');
+        $this->addToAssertionCount(1);
+    }//end testHandleObjectEventQueriesOrForDirectSyncs()
+
+
+    /**
+     * encodeArrayKeys() rewrites flat keys.
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysReplacesFlatKeys(): void
+    {
+        $input = ['a.b' => 1, 'c.d' => 2];
+
+        $result = $this->service->encodeArrayKeys($input, '.', '|');
+
+        $this->assertSame(['a|b' => 1, 'c|d' => 2], $result);
+    }//end testEncodeArrayKeysReplacesFlatKeys()
+
+
+    /**
+     * encodeArrayKeys() recurses into nested arrays and rewrites their keys
+     * too.
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysRecursesIntoNestedArrays(): void
+    {
+        $input = ['a.b' => ['c.d' => 1, 'e.f' => ['g.h' => 2]]];
+
+        $result = $this->service->encodeArrayKeys($input, '.', '|');
+
+        $this->assertSame(
+            ['a|b' => ['c|d' => 1, 'e|f' => ['g|h' => 2]]],
+            $result
+        );
+    }//end testEncodeArrayKeysRecursesIntoNestedArrays()
+
+
+    /**
+     * encodeArrayKeys() returns an empty array unchanged.
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysReturnsEmptyArrayUnchanged(): void
+    {
+        $this->assertSame([], $this->service->encodeArrayKeys([], '.', '|'));
+    }//end testEncodeArrayKeysReturnsEmptyArrayUnchanged()
+
+
+    /**
+     * encodeArrayKeys() leaves an inner empty array untouched (not recursed
+     * into).
+     *
+     * @return void
+     */
+    public function testEncodeArrayKeysLeavesEmptyInnerArrayUntouched(): void
+    {
+        $input = ['a.b' => []];
+
+        $result = $this->service->encodeArrayKeys($input, '.', '|');
+
+        $this->assertSame(['a|b' => []], $result);
+    }//end testEncodeArrayKeysLeavesEmptyInnerArrayUntouched()
+
+
+    /**
+     * sortNestedArray() returns false when given a non-array value.
+     *
+     * @return void
+     */
+    public function testSortNestedArrayReturnsFalseForNonArray(): void
+    {
+        $value = 'not-an-array';
+        $this->assertFalse($this->service->sortNestedArray($value));
+    }//end testSortNestedArrayReturnsFalseForNonArray()
+
+
+    /**
+     * sortNestedArray() sorts nested associative arrays too.
+     *
+     * @return void
+     */
+    public function testSortNestedArraySortsNestedAssociativeArrays(): void
+    {
+        $array = ['b' => 2, 'a' => ['z' => 26, 'x' => 24], 'c' => 3];
+
+        $this->assertTrue($this->service->sortNestedArray($array));
+        $this->assertSame(['a', 'b', 'c'], array_keys($array));
+        $this->assertSame(['x', 'z'], array_keys($array['a']));
+    }//end testSortNestedArraySortsNestedAssociativeArrays()
+
+
+    /**
+     * replaceRelatedOriginIds() leaves keys absent in the input untouched
+     * (no spurious additions).
+     *
+     * @return void
+     */
+    public function testReplaceRelatedOriginIdsSkipsMissingKeys(): void
+    {
+        $object = ['kept' => 'as-is'];
+        $config = ['absent-key' => 'true'];
+
+        $result = $this->service->replaceRelatedOriginIds($object, $config);
+
+        $this->assertSame(['kept' => 'as-is'], $result);
+    }//end testReplaceRelatedOriginIdsSkipsMissingKeys()
+
+
+    /**
+     * replaceRelatedOriginIds() leaves a non-UUID leaf string unchanged
+     * (replaceIdInString preserves values it can't resolve).
+     *
+     * @return void
+     */
+    public function testReplaceRelatedOriginIdsLeavesNonUuidLeafUnchanged(): void
+    {
+        $object = ['relation' => 'not-a-uuid-value'];
+        $config = ['relation' => 'true'];
+
+        // findAll returns empty so the contract lookup yields null and the
+        // leaf is returned unchanged.
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $result = $this->service->replaceRelatedOriginIds($object, $config);
+
+        $this->assertSame('not-a-uuid-value', $result['relation']);
+    }//end testReplaceRelatedOriginIdsLeavesNonUuidLeafUnchanged()
+
+
+    /**
+     * replaceRelatedOriginIds() recurses into a single nested associative
+     * subobject (config + object both shaped as assoc arrays).
+     *
+     * @return void
+     */
+    public function testReplaceRelatedOriginIdsRecursesIntoNestedAssociativeObject(): void
+    {
+        $object = ['sub' => ['relation' => 'not-a-uuid-value']];
+        $config = ['sub' => ['relation' => 'true']];
+
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $result = $this->service->replaceRelatedOriginIds($object, $config);
+
+        $this->assertSame('not-a-uuid-value', $result['sub']['relation']);
+    }//end testReplaceRelatedOriginIdsRecursesIntoNestedAssociativeObject()
+
+
+    /**
+     * findAllBySourceId() composes the sourceId from register+schema.
+     *
+     * @return void
+     */
+    public function testFindAllBySourceIdComposesSourceFilter(): void
+    {
+        $entity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['sourceId' => 'reg-1/schema-1'],
+            'sync-1'
+        );
+
+        $this->orObjectService->expects($this->once())
+            ->method('findAll')
+            ->with($this->callback(function (array $config): bool {
+                $filters = ($config['filters'] ?? []);
+                return ($filters['sourceId'] ?? null) === 'reg-1/schema-1'
+                    && ($filters['register'] ?? null) === 'openconnector'
+                    && ($filters['schema'] ?? null) === 'synchronization';
+            }))
+            ->willReturn(['results' => [$entity], 'total' => 1]);
+
+        $result = $this->service->findAllBySourceId('reg-1', 'schema-1');
+
+        $this->assertCount(1, $result);
+    }//end testFindAllBySourceIdComposesSourceFilter()
+
+
+    /**
+     * findAllBySourceId() returns an empty array when no syncs match.
+     *
+     * @return void
+     */
+    public function testFindAllBySourceIdReturnsEmptyArrayWhenNoMatch(): void
+    {
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $this->assertSame([], $this->service->findAllBySourceId('reg-x', 'schema-x'));
+    }//end testFindAllBySourceIdReturnsEmptyArrayWhenNoMatch()
+
+
+    /**
+     * getSynchronization() proxies to OR find() against the synchronization
+     * schema.
+     *
+     * @return void
+     */
+    public function testGetSynchronizationDelegatesToFind(): void
+    {
+        $entity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['name' => 'my-sync'],
+            'sync-uuid-3'
+        );
+        $this->orObjectService->method('find')->willReturn($entity);
+
+        $result = $this->service->getSynchronization('sync-uuid-3');
+
+        $this->assertSame($entity, $result);
+    }//end testGetSynchronizationDelegatesToFind()
 
 
 }//end class

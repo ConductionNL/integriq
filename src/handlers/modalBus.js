@@ -35,3 +35,4 @@ export const modalBus = new Vue()
  */
 export const EVENT_OPEN_TEST_MAPPING = 'open-test-mapping'
 export const EVENT_OPEN_ADD_ENDPOINT_RULE = 'open-add-endpoint-rule'
+export const EVENT_OPEN_SUBSCRIPTION_SIGNING = 'open-subscription-signing'

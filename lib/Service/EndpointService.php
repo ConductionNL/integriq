@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -62,6 +63,8 @@ use function React\Promise\all;
  * connecting to a schema within a register or by proxying to a source.
  *
  * @SuppressWarnings(PHPMD)
+ *
+ * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-2
  */
 class EndpointService
 {
@@ -83,18 +86,19 @@ class EndpointService
     /**
      * Constructor for EndpointService.
      *
-     * @param ObjectService          $objectService          Service for handling object operations.
-     * @param CallService            $callService            Service for making external API calls.
-     * @param LoggerInterface        $logger                 Logger interface for error logging.
-     * @param IURLGenerator          $urlGenerator           Nextcloud URL generator used for absolute links.
-     * @param MappingService         $mappingService         Service used to apply request/response mappings.
-     * @param ORObjectService        $orObjectService        OpenRegister object service for register/schema CRUD.
-     * @param IConfig                $config                 Nextcloud system configuration.
-     * @param StorageService         $storageService         Service used for file part and attachment storage.
-     * @param AuthorizationService   $authorizationService   Service used to authorize incoming endpoint requests.
-     * @param ContainerInterface     $containerInterface     PSR container used to resolve optional services.
-     * @param SynchronizationService $synchronizationService Service used to dispatch endpoint synchronizations.
-     * @param RuleService            $ruleService            Service used to load and resolve endpoint rules.
+     * @param ObjectService           $objectService           Service for handling object operations.
+     * @param CallService             $callService             Service for making external API calls.
+     * @param LoggerInterface         $logger                  Logger interface for error logging.
+     * @param IURLGenerator           $urlGenerator            Nextcloud URL generator used for absolute links.
+     * @param MappingService          $mappingService          Service used to apply request/response mappings.
+     * @param ORObjectService         $orObjectService         OpenRegister object service for register/schema CRUD.
+     * @param IConfig                 $config                  Nextcloud system configuration.
+     * @param StorageService          $storageService          Service used for file part and attachment storage.
+     * @param AuthorizationService    $authorizationService    Service used to authorize incoming endpoint requests.
+     * @param ContainerInterface      $containerInterface      PSR container used to resolve optional services.
+     * @param SynchronizationService  $synchronizationService  Service used to dispatch endpoint synchronizations.
+     * @param RuleService             $ruleService             Service used to load and resolve endpoint rules.
+     * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
      *
      * @return void
      */
@@ -111,6 +115,7 @@ class EndpointService
         private readonly ContainerInterface $containerInterface,
         private readonly SynchronizationService $synchronizationService,
         private readonly RuleService $ruleService,
+        private readonly WebhookSignatureService $webhookSignatureService,
     ) {
     }//end __construct()
 
@@ -357,8 +362,9 @@ class EndpointService
                         break;
                 }
 
-                if (isset(($endpointData['configurations'] ?? [])['defaultStatusCode']) === true) {
-                    $statusCode = $endpointData['configurations']['defaultStatusCode'];
+                $configurations = $endpointData['configurations'] ?? [];
+                if (isset($configurations['defaultStatusCode']) === true) {
+                    $statusCode = $configurations['defaultStatusCode'];
                 }
 
                 return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
@@ -373,12 +379,15 @@ class EndpointService
             // Invalid endpoint configuration.
             throw new Exception('Endpoint must specify either a schema or source connection');
         } catch (Exception $e) {
-            $this->logger->error('Error handling endpoint request: '.$e->getMessage());
+            // C3 fix: never disclose the stack trace in the response body.
+            // This endpoint is @PublicPage — unauthenticated callers must not see internal file
+            // paths or class names.  Log the full trace server-side for support lookup.
+            $this->logger->error(
+                'Error handling endpoint request: '.$e->getMessage(),
+                ['exception' => $e]
+            );
             return new JSONResponse(
-                [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTrace(),
-                ],
+                ['error' => 'Internal server error'],
                 400
             );
         }//end try
@@ -1345,9 +1354,10 @@ class EndpointService
                         'extend_input' => $this->processExtendInputRule(rule: $rule, data: $data),
                         'extend_external_input' => $this->ruleService->extendExternalUrl(rule: $rule, data: $data),
                         'audit_trail' => $this->processAuditTrailRule(rule: $rule, endpoint: $endpoint, data: $data, objectId: $objectId),
-                        'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId),
+                        'write_file' => $this->processWriteFileRule(rule: $rule, data: $data, objectId: $objectId, flowToken: $flowToken),
                         'locking' => $this->processLockingRule(rule: $rule, data: $data, objectId: $objectId),
                         'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
+                        'webhook_signature' => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $request),
                         'custom' => $this->processCustomRule(rule: $rule, data: $data),
                         default => throw new Exception('Unsupported rule type: '.($ruleData['type'] ?? '')),
                     };
@@ -1357,7 +1367,7 @@ class EndpointService
                         .' of type '.($ruleData['type'] ?? '')
                         .'. With error message: '.$e->getMessage();
                     $this->logger->error($message);
-                    return new JSONResponse(['error' => $message], 500);
+                    return new JSONResponse(['error' => 'Rule processing failed'], 500);
                 }//end try
 
                 // If result is JSONResponse, return error immediately.
@@ -1380,7 +1390,7 @@ class EndpointService
             return $data;
         } catch (Exception $e) {
             $this->logger->error('Error processing rules: '.$e->getMessage());
-            return new JSONResponse(['error' => 'Rule processing failed: '.$e->getMessage()], 500);
+            return new JSONResponse(['error' => 'Rule processing failed'], 500);
         }//end try
     }//end processRules()
 
@@ -1440,6 +1450,64 @@ class EndpointService
     }//end getRuleById()
 
     /**
+     * Verify an inbound webhook signature over the RAW request body.
+     *
+     * Acts as a pre-pipeline gate: it reads the raw body bytes (before any
+     * decode/mapping), verifies the configured signature header with
+     * constant-time comparison via WebhookSignatureService, and short-circuits
+     * the pipeline with an undifferentiated 401 on ANY verification failure
+     * (missing/malformed header, digest mismatch, stale timestamp). On success
+     * the unchanged $data flows on to the remaining rules.
+     *
+     * Operators MUST order this rule ahead of any body-transforming or
+     * side-effecting rule (lowest `order`); it never mutates $data.
+     *
+     * @param ObjectEntity $rule    The webhook_signature rule.
+     * @param array        $data    The request data of the pipeline.
+     * @param IRequest     $request The inbound request (for raw body access).
+     *
+     * @return array|JSONResponse The unchanged $data on pass, or a 401 JSONResponse.
+     *
+     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-4
+     */
+    private function processWebhookSignatureRule(ObjectEntity $rule, array $data, IRequest $request): array|JSONResponse
+    {
+        $configuration = ($rule->getObject()['configuration'] ?? []);
+        // Config lives in the type slot (configuration.webhook_signature), with
+        // a root-level fallback for hand-authored rules.
+        $config = ($configuration['webhook_signature'] ?? $configuration);
+
+        $scheme     = ($config['scheme'] ?? 'openconnector');
+        $secret     = (string) ($config['secret'] ?? '');
+        $headerName = ($config['header'] ?? 'X-OpenConnector-Signature');
+        $tolerance  = (int) ($config['toleranceSeconds'] ?? WebhookSignatureService::DEFAULT_TOLERANCE_SECONDS);
+
+        // Read the raw body bytes BEFORE any decode/mapping.
+        $rawBody = $this->getRawContent();
+
+        // Case-insensitive header lookup.
+        $headerValue = (string) $request->getHeader($headerName);
+
+        $verified = $this->webhookSignatureService->verify(
+            rawBody: $rawBody,
+            headerValue: $headerValue,
+            config: [
+                'scheme'           => $scheme,
+                'secret'           => $secret,
+                'toleranceSeconds' => $tolerance,
+            ]
+        );
+
+        if ($verified === false) {
+            // Undifferentiated error body: never leak which check failed.
+            return new JSONResponse(['error' => 'invalid signature'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        return $data;
+
+    }//end processWebhookSignatureRule()
+
+    /**
      * Processes authentication rules
      *
      * @param ObjectEntity $rule The rule to process
@@ -1452,17 +1520,26 @@ class EndpointService
     private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
         $configuration = $rule->getObject()['configuration'] ?? [];
-        $header        = $data['headers']['Authorization'] ?? $data['headers']['authorization'] ?? '';
+
+        // Normalise all incoming header keys to lowercase once so all subsequent
+        // lookups are case-insensitive without multiple fallback variants.
+        $normalisedHeaders = [];
+        foreach (($data['headers'] ?? []) as $key => $value) {
+            $normalisedHeaders[strtolower((string) $key)] = $value;
+        }
+
+        // Default to the Authorization header (lowercase-normalised lookup).
+        $header = ($normalisedHeaders['authorization'] ?? '');
 
         if (isset($configuration['authentication']) === false) {
             return $data;
         }
 
         if (isset($configuration['authentication']['header']) === true) {
-            $headerName    = $configuration['authentication']['header'];
-            $lowerName     = strtolower($headerName);
-            $underscoreKey = str_replace(search: '-', replace: '_', subject: $lowerName);
-            $header        = ($data['headers'][$headerName] ?? $data['headers'][$lowerName] ?? $data['headers'][$underscoreKey] ?? null);
+            // Convert configured header name to lowercase + underscore variant
+            // for a single normalised lookup against $normalisedHeaders.
+            $lookupKey = strtolower((string) $configuration['authentication']['header']);
+            $header    = ($normalisedHeaders[$lookupKey] ?? null);
         }
 
         if ($header === '' || $header === null) {
@@ -1770,9 +1847,10 @@ class EndpointService
     /**
      * Process a rule to write files.
      *
-     * @param ObjectEntity $rule     The rule to process.
-     * @param array        $data     The data to write.
-     * @param string       $objectId The object to write the data to.
+     * @param ObjectEntity $rule      The rule to process.
+     * @param array        $data      The data to write.
+     * @param string       $objectId  The object to write the data to.
+     * @param FlowToken    $flowToken The flow token carrying the request/response state.
      *
      * @return array
      *
@@ -1782,16 +1860,20 @@ class EndpointService
      *
      * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
-    private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId): array
+    private function processWriteFileRule(Rule $rule, array $data, string $objectId, FlowToken $flowToken): array
     {
         $ruleConfig = $rule->getObject()['configuration'] ?? [];
         if (isset($ruleConfig['write_file']) === false) {
             throw new Exception('No configuration found for write_file');
         }
 
-        $config  = $ruleConfig['write_file'];
-        $dataDot = new Dot($data);
-        $files   = $dataDot[$config['filePath']];
+        $config         = $ruleConfig['write_file'];
+        $dataDot        = new Dot($data);
+        $flowTokenArray = $flowToken->getRequestOriginal();
+        $flowTokenArray['body'] = $flowTokenArray['parameters'];
+        $flowTokenDot           = new Dot($flowTokenArray);
+
+        $files = $dataDot[$config['filePath']] ?? $flowTokenDot[$config['filePath']];
         if (isset($files) === false || empty($files) === true) {
             return $dataDot->jsonSerialize();
         }
@@ -1812,7 +1894,7 @@ class EndpointService
                     }
 
                     if (isset($value['filename']) === true) {
-                        $fileName = $value['filename'];
+                        $fileName = basename($value['filename']);
                     }
                 } else {
                     $content = $value;
@@ -1842,7 +1924,7 @@ class EndpointService
             $dataDot[$config['filePath']] = $result;
         } else {
             $content  = $files;
-            $fileName = $dataDot[$config['fileNamePath']];
+            $fileName = basename($dataDot[$config['fileNamePath']] ?? $flowTokenDot[$config['fileNamePath']]);
 
             try {
                 // Write file with OpenRegister ObjectService.
@@ -2392,7 +2474,7 @@ class EndpointService
             || ($contentType === '' && $this->looksLikeXml(content: $content) === true)
         ) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($content);
+            $xml = SafeXmlParser::parse($content);
             libxml_clear_errors();
 
             if ($xml !== false) {
@@ -2418,8 +2500,8 @@ class EndpointService
         // Suppress XML errors.
         libxml_use_internal_errors(true);
 
-        // Attempt to parse the content as XML.
-        $result = simplexml_load_string($content) !== false;
+        // Use the safe parser so the XXE loader cannot leak in from SOAPService.
+        $result = SafeXmlParser::parse($content) !== false;
 
         // Clear any XML errors.
         libxml_clear_errors();

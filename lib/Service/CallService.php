@@ -61,7 +61,9 @@ use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Executes outbound API calls against configured Sources and persists CallLog entries.
@@ -71,9 +73,7 @@ class CallService
 
     private const BASE_FILENAME_LOCATION = "%s-%s";
 
-    private const DEFAULT_SUCCESS_LOG_RETENTION = 3600000;
-
-    private const DEFAULT_ERROR_LOG_RETENTION = 2592000000;
+    // Retention defaults moved to job_log / call_log x-openregister-archival annotations (adr-004).
 
     /**
      * Guzzle HTTP client used to dispatch outbound requests.
@@ -128,19 +128,30 @@ class CallService
     ) {
         $this->client = new Client([]);
         $this->twig   = new Environment($loader);
+
+        // Sandbox the call Twig environment — authentication templates should
+        // only need to call the declared auth-helper functions; no PHP method
+        // calls on arbitrary objects are permitted.
+        $callSandboxPolicy = new SecurityPolicy(
+            allowedTags: ['if', 'for', 'set', 'block'],
+            allowedFilters: ['upper', 'lower', 'trim', 'default', 'escape', 'raw', 'replace'],
+            allowedFunctions: ['oauthToken', 'decosToken', 'jwtToken', 'date', 'max', 'min', 'random'],
+        );
+        $this->twig->addExtension(new SandboxExtension(policy: $callSandboxPolicy, sandboxed: true));
+
         $this->twig->addExtension(new AuthenticationExtension());
         $this->twig->addRuntimeLoader(new AuthenticationRuntimeLoader(authenticationService: $authenticationService));
         $this->cookieJar = new CookieJar();
 
-        $this->errorRetention   = self::DEFAULT_ERROR_LOG_RETENTION;
-        $this->successRetention = self::DEFAULT_SUCCESS_LOG_RETENTION;
+        $this->errorRetention   = 2592000000;
+        $this->successRetention = 3600000;
         if ($this->appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
             $retentionPayload       = json_decode(
                 $this->appConfig->getValueString(app: 'openconnector', key: 'retention'),
                 true
             );
-            $this->errorRetention   = ($retentionPayload['callLogRetention'] ?? self::DEFAULT_ERROR_LOG_RETENTION);
-            $this->successRetention = ($retentionPayload['successLogRetention'] ?? self::DEFAULT_SUCCESS_LOG_RETENTION);
+            $this->errorRetention   = ($retentionPayload['callLogRetention'] ?? 2592000000);
+            $this->successRetention = ($retentionPayload['successLogRetention'] ?? 3600000);
         }
 
     }//end __construct()
@@ -316,7 +327,7 @@ class CallService
         // Replace escaped new lines with actual new lines for certificates.
         $contents = str_replace('\n', "\n", $contents);
 
-        // chmod BEFORE the contents land so the race window between create and
+        // Chmod BEFORE the contents land so the race window between create and
         // chmod is empty (tempnam creates with 0600 on Linux but we re-assert).
         @chmod($tempLocation, 0600);
         file_put_contents($tempLocation, $contents);
@@ -465,7 +476,7 @@ class CallService
                 'statusCode'    => $statusCode,
                 'statusMessage' => $statusMessage,
                 'created'       => (new \DateTime())->format('c'),
-                'expires'       => $this->formatExpires($expires),
+                'expires'       => $this->formatExpires(expires: $expires),
             ],
             register: 'openconnector',
             schema: 'call_log'
@@ -556,8 +567,9 @@ class CallService
      * Fires the preRequest sub-call synchronously (unless already in a support request),
      * strips both keys from config, and returns the captured postRequest data (if any).
      *
-     * @param ObjectEntity $source               The source ObjectEntity.
-     * @param array        $config               The call configuration (modified in place — preRequest/postRequest removed).
+     * @param ObjectEntity $source                The source ObjectEntity.
+     * @param array        $config                The call configuration (modified in place — preRequest/postRequest
+     *                                            removed).
      * @param boolean      $runningSupportRequest Whether we are already inside a support request.
      *
      * @return array|null The postRequest descriptor array, or null if none was set.
@@ -607,6 +619,7 @@ class CallService
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      */
+
     /**
      * Returns true when the source location points at a loopback interface
      * (localhost, 127.x.x.x, ::1 — including http://, https://, with or
@@ -626,9 +639,18 @@ class CallService
         $host = (string) (parse_url($location, PHP_URL_HOST) ?? '');
         if ($host === '') {
             // Some sources carry just `localhost:8080` with no scheme.
-            $location = preg_replace('/^https?:\/\//i', '', $location);
-            $host     = (string) (strstr((string) $location, '/', true) ?: $location);
-            $host     = (string) (strstr($host, ':', true) ?: $host);
+            $location   = preg_replace('/^https?:\/\//i', '', $location);
+            $hostNoPath = strstr((string) $location, '/', true);
+            if ($hostNoPath !== false) {
+                $host = (string) $hostNoPath;
+            } else {
+                $host = (string) $location;
+            }
+
+            $hostNoPort = strstr($host, ':', true);
+            if ($hostNoPort !== false) {
+                $host = (string) $hostNoPort;
+            }
         }
 
         $host = strtolower(trim($host, "[]"));
@@ -651,8 +673,8 @@ class CallService
      * decades in the future could otherwise wedge OpenConnector into a
      * permanent 429 against that source (#1012c).
      *
-     * @param mixed   $rawValue  The raw value pulled from the response header.
-     * @param string  $kind      One of: 'reset', 'limit', 'remaining', 'window'.
+     * @param mixed  $rawValue The raw value pulled from the response header.
+     * @param string $kind     One of: 'reset', 'limit', 'remaining', 'window'.
      *
      * @return integer|null The clamped integer value, or null if the value cannot be sanely cast.
      */
@@ -686,7 +708,6 @@ class CallService
                 if ($value > $maxFuture) {
                     return $maxFuture;
                 }
-
                 return $value;
 
             case 'limit':
@@ -697,15 +718,24 @@ class CallService
                 if ($value > $maxCounter) {
                     return $maxCounter;
                 }
-
                 return $value;
 
             default:
                 return $value;
-        }
+        }//end switch
 
     }//end clampRateLimitHeader()
 
+    /**
+     * Normalise Guzzle request config with TLS and secret-redaction guards.
+     *
+     * @param array $config     Raw Guzzle config array to normalise.
+     * @param array $sourceData Source configuration data.
+     *
+     * @return array The normalised config with TLS and secret guards applied.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md
+     */
     private function normaliseRequestConfig(array $config, array $sourceData): array
     {
         // #1011: a source can disable TLS certificate verification by setting
@@ -713,12 +743,12 @@ class CallService
         // honours it silently and the connection is exposed to MITM — which
         // also leaks any credentials carried in the request. We refuse
         // `verify: false` unless either:
-        //  - the source location is loopback (localhost / 127.x / [::1]), or
-        //  - the admin has explicitly opted-in via the NC app config flag
-        //    `openconnector.allow_insecure_tls = true`.
+        // - the source location is loopback (localhost / 127.x / [::1]), or
+        // - the admin has explicitly opted-in via the NC app config flag
+        // `openconnector.allow_insecure_tls = true`.
         if (array_key_exists('verify', $config) === true && $config['verify'] === false) {
-            $location           = (string) ($sourceData['location'] ?? '');
-            $isLocalhost        = $this->isLoopbackLocation($location);
+            $location            = (string) ($sourceData['location'] ?? '');
+            $isLocalhost         = $this->isLoopbackLocation(location: $location);
             $allowInsecureTlsRaw = $this->appConfig->getValueString(
                 'openconnector',
                 'allow_insecure_tls',
@@ -736,7 +766,7 @@ class CallService
                     ['location' => $location]
                 );
             }
-        }
+        }//end if
 
         // Check if the config has a Content-Type header and overwrite it if it does.
         if (isset($config['headers']['Content-Type']) === true) {
@@ -840,7 +870,7 @@ class CallService
                     // same eventual response or rejection.
                     // We snapshot the certificate paths NOW because the caller
                     // mutates $config after we return.
-                    $certPaths = $this->snapshotCertPaths($config);
+                    $certPaths = $this->snapshotCertPaths(config: $config);
                     $promise   = $this->client->requestAsync($method, $url, $config);
                     $promise->then(
                         function ($asyncResponse) use ($certPaths) {
@@ -856,15 +886,15 @@ class CallService
                     );
 
                     return $promise;
-                }
+                }//end if
             } catch (BadResponseException $e) {
                 $this->removeFiles(config: $config);
                 $response = $e->getResponse();
             } catch (ConnectException $exception) {
                 $this->removeFiles(config: $config);
                 $response = new Response(status: 503, body: $exception->getMessage());
-            }
-        }
+            }//end try
+        }//end if
 
         $this->removeFiles(config: $config);
 
@@ -905,10 +935,10 @@ class CallService
      * Decodes the response body, determines encoding, resolves remote IP, and
      * assembles the structured $data array that contains both request and response info.
      *
-     * @param \Psr\Http\Message\ResponseInterface $response The HTTP response.
-     * @param string                              $url      The URL that was called.
-     * @param string                              $method   The HTTP method used.
-     * @param array                               $config   The Guzzle request config that was sent.
+     * @param \Psr\Http\Message\ResponseInterface $response  The HTTP response.
+     * @param string                              $url       The URL that was called.
+     * @param string                              $method    The HTTP method used.
+     * @param array                               $config    The Guzzle request config that was sent.
      * @param float                               $timeStart Microtime at request start.
      * @param float                               $timeEnd   Microtime after response received.
      *
@@ -947,10 +977,10 @@ class CallService
         // (which may carry query-string secrets), and from the response body (which can
         // echo the request URL with its query secrets). The actual outbound call has
         // already been dispatched with the REAL secrets before this method runs.
-        $secretValues   = $this->collectSecretValues($config, $url);
-        $redactedConfig = $this->redactSecretsFromConfig($config);
-        $redactedUrl    = $this->redactSecretsFromUrl($url);
-        $bodyForLog     = $this->redactSecretValuesFromString($bodyForLog, $secretValues);
+        $secretValues   = $this->collectSecretValues(config: $config, url: $url);
+        $redactedConfig = $this->redactSecretsFromConfig(config: $config);
+        $redactedUrl    = $this->redactSecretsFromUrl(url: $url);
+        $bodyForLog     = $this->redactSecretValuesFromString(body: $bodyForLog, secretValues: $secretValues);
 
         return [
             'request'  => [
@@ -1009,7 +1039,7 @@ class CallService
 
                 // Also redact any header whose name matches the secret-key pattern
                 // (covers X-Api-Key, X-Auth-Token, Api-Key, etc.).
-                if ($this->isSecretKeyName((string) $headerName) === true) {
+                if ($this->isSecretKeyName(name: (string) $headerName) === true) {
                     $config['headers'][$headerName] = $placeholder;
                 }
             }
@@ -1024,7 +1054,7 @@ class CallService
         foreach (['query', 'form_params'] as $bag) {
             if (isset($config[$bag]) === true && is_array($config[$bag]) === true) {
                 foreach ($config[$bag] as $paramName => $paramValue) {
-                    if ($this->isSecretKeyName((string) $paramName) === true) {
+                    if ($this->isSecretKeyName(name: (string) $paramName) === true) {
                         $config[$bag][$paramName] = $placeholder;
                     }
                 }
@@ -1051,7 +1081,9 @@ class CallService
      */
     private function isSecretKeyName(string $name): bool
     {
-        return (preg_match('/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token|bearer|auth)/i', $name) === 1);
+        $pattern = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
+            .'|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret)/i';
+        return (preg_match($pattern, $name) === 1);
 
     }//end isSecretKeyName()
 
@@ -1079,9 +1111,9 @@ class CallService
 
         $changed = false;
         foreach ($params as $paramName => $paramValue) {
-            if ($this->isSecretKeyName((string) $paramName) === true) {
+            if ($this->isSecretKeyName(name: (string) $paramName) === true) {
                 $params[$paramName] = '***REDACTED***';
-                $changed = true;
+                $changed            = true;
             }
         }
 
@@ -1099,7 +1131,7 @@ class CallService
      * reflects the request, or an error page that includes credentials).
      *
      * @param array  $config The Guzzle request config sent for the call.
-     * @param string $url     The full request URL (may contain query-string secrets).
+     * @param string $url    The full request URL (may contain query-string secrets).
      *
      * @return array<int, string> A list of secret string values to redact.
      */
@@ -1112,23 +1144,23 @@ class CallService
             $secretHeaderNames = ['authorization', 'proxy-authorization', 'cookie', 'set-cookie'];
             foreach ($config['headers'] as $headerName => $headerValue) {
                 $lower = strtolower((string) $headerName);
-                if (in_array($lower, $secretHeaderNames, true) === true || $this->isSecretKeyName((string) $headerName) === true) {
-                    $values = array_merge($values, $this->flattenSecretValue($headerValue));
+                if (in_array($lower, $secretHeaderNames, true) === true || $this->isSecretKeyName(name: (string) $headerName) === true) {
+                    $values = array_merge($values, $this->flattenSecretValue(value: $headerValue));
                 }
             }
         }
 
         // Basic-auth credentials.
         if (isset($config['auth']) === true) {
-            $values = array_merge($values, $this->flattenSecretValue($config['auth']));
+            $values = array_merge($values, $this->flattenSecretValue(value: $config['auth']));
         }
 
         // Secret query / form parameters from the config.
         foreach (['query', 'form_params'] as $bag) {
             if (isset($config[$bag]) === true && is_array($config[$bag]) === true) {
                 foreach ($config[$bag] as $paramName => $paramValue) {
-                    if ($this->isSecretKeyName((string) $paramName) === true) {
-                        $values = array_merge($values, $this->flattenSecretValue($paramValue));
+                    if ($this->isSecretKeyName(name: (string) $paramName) === true) {
+                        $values = array_merge($values, $this->flattenSecretValue(value: $paramValue));
                     }
                 }
             }
@@ -1139,8 +1171,8 @@ class CallService
         if ($queryStart !== false) {
             parse_str(substr($url, ($queryStart + 1)), $urlParams);
             foreach ($urlParams as $paramName => $paramValue) {
-                if ($this->isSecretKeyName((string) $paramName) === true) {
-                    $values = array_merge($values, $this->flattenSecretValue($paramValue));
+                if ($this->isSecretKeyName(name: (string) $paramName) === true) {
+                    $values = array_merge($values, $this->flattenSecretValue(value: $paramValue));
                 }
             }
         }
@@ -1263,7 +1295,11 @@ class CallService
             }
         }
 
-        $expiresChosen = ($statusCode < 400) ? $successExpires : $errorExpires;
+        if ($statusCode < 400) {
+            $expiresChosen = $successExpires;
+        } else {
+            $expiresChosen = $errorExpires;
+        }
 
         $callLogData = [
             'source'        => $source->getUuid(),
@@ -1272,7 +1308,7 @@ class CallService
             'request'       => $data['request'],
             'response'      => $responseData,
             'created'       => (new \DateTime())->format('c'),
-            'expires'       => $this->formatExpires($expiresChosen),
+            'expires'       => $this->formatExpires(expires: $expiresChosen),
         ];
 
         $callLog = $this->objectService->saveObject(
@@ -1326,7 +1362,7 @@ class CallService
         $sourceData = $source->getObject();
 
         // Phase 1: Compute expiry values for log retention.
-        $expiries       = $this->buildExpiryValues($sourceData);
+        $expiries       = $this->buildExpiryValues(sourceData: $sourceData);
         $errorExpires   = $expiries['errorExpires'];
         $successExpires = $expiries['successExpires'];
 
@@ -1389,7 +1425,6 @@ class CallService
         // Let's log the call.
         $sourceData['lastCall'] = (new \DateTime())->format('c');
         // @todo: save the source.
-
         // Phase 10: Dispatch the HTTP request.
         $timeStart = microtime(true);
         $response  = $this->dispatchRequest(
@@ -1463,7 +1498,7 @@ class CallService
         // into a permanent 429 (the engine's checkRateLimit guard would refuse
         // every subsequent call until the year 5138).
         if (isset($headers['X-RateLimit-Reset']) === true) {
-            $clampedReset = $this->clampRateLimitHeader($headers['X-RateLimit-Reset'], 'reset');
+            $clampedReset = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Reset'], kind: 'reset');
             if ($clampedReset !== null) {
                 $sourceData['rateLimitReset'] = $clampedReset;
                 $changed = true;
@@ -1488,7 +1523,7 @@ class CallService
 
         // Check if RateLimit-Limit is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Limit']) === true) {
-            $clampedLimit = $this->clampRateLimitHeader($headers['X-RateLimit-Limit'], 'limit');
+            $clampedLimit = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Limit'], kind: 'limit');
             if ($clampedLimit !== null) {
                 $sourceData['rateLimitLimit'] = $clampedLimit;
                 $rateLimitLimit = $clampedLimit;
@@ -1498,7 +1533,7 @@ class CallService
 
         // Check if RateLimit-Remaining is present in response headers. If so, save it in the source.
         if (isset($headers['X-RateLimit-Remaining']) === true) {
-            $clampedRemaining = $this->clampRateLimitHeader($headers['X-RateLimit-Remaining'], 'remaining');
+            $clampedRemaining = $this->clampRateLimitHeader(rawValue: $headers['X-RateLimit-Remaining'], kind: 'remaining');
             if ($clampedRemaining !== null) {
                 $sourceData['rateLimitRemaining'] = $clampedRemaining;
                 $rateLimitRemaining = $clampedRemaining;

@@ -20,13 +20,11 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use InvalidArgumentException;
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
-use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SourceMappingService;
 use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -68,7 +66,7 @@ class MappingsController extends Controller
         $appName,
         IRequest $request,
         private readonly MappingService $mappingService,
-        private readonly ObjectService $objectService,
+        private readonly SourceMappingService $objectService,
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
@@ -82,8 +80,8 @@ class MappingsController extends Controller
      *
      * This method tests a mapping with provided input data and optional schema validation.
      *
-     * @param ObjectService $objectService Object service used to access OpenRegister.
-     * @param IURLGenerator $urlGenerator  URL generator used to resolve schema URLs during validation.
+     * @param SourceMappingService $objectService Source mapping service used to access OpenRegister.
+     * @param IURLGenerator        $urlGenerator  URL generator used to resolve schema URLs during validation.
      *
      * @return JSONResponse A JSON response containing the test results.
      *
@@ -123,7 +121,7 @@ class MappingsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function test(ObjectService $objectService, IURLGenerator $urlGenerator): JSONResponse
+    public function test(SourceMappingService $objectService, IURLGenerator $urlGenerator): JSONResponse
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -137,9 +135,16 @@ class MappingsController extends Controller
         // Get all parameters from the request.
         $data = $this->request->getParams();
 
-        // Validate that required parameters are present.
+        // Validate that required parameters are present. Missing params are a client
+        // error, so return a clean 400 rather than letting an exception escape as a 500.
         if (isset($data['inputObject']) === false || isset($data['mapping']) === false) {
-            throw new InvalidArgumentException('Both `inputObject` and `mapping` are required');
+            return new JSONResponse(
+                data: [
+                    'error'   => $this->l->t('Bad request'),
+                    'message' => $this->l->t('Both `inputObject` and `mapping` are required'),
+                ],
+                statusCode: 400
+            );
         }
 
         // Decode the input object from JSON.
@@ -183,19 +188,19 @@ class MappingsController extends Controller
             $validation = $data['validation'];
         }
 
-        // Create a new ObjectEntity representing the mapping configuration.
+        // Build a polymorphic mapping payload accepted directly by
+        // MappingService::executeMapping(): post chain-C the service hydrates
+        // arrays into an \OCA\OpenRegister\Db\Mapping value object internally,
+        // so the controller no longer constructs a typed entity here.
         if (is_array($mapping) === true) {
             $mappingPayload = $mapping;
         } else {
             $mappingPayload = ['mapping' => $mapping];
         }
 
-        $mappingObject = new ObjectEntity();
-        $mappingObject->hydrate($mappingPayload);
-
         // Perform the mapping operation.
         try {
-            $resultObject = $this->mappingService->executeMapping(mapping: $mappingObject, input: $inputObject);
+            $resultObject = $this->mappingService->executeMapping(mapping: $mappingPayload, input: $inputObject);
         } catch (Exception $e) {
             // If mapping fails, return an error response.
             return new JSONResponse(
@@ -246,7 +251,7 @@ class MappingsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function saveObject(): ?JSONResponse
     {
         // Check if the OpenRegister service is available.
@@ -285,7 +290,7 @@ class MappingsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function getObjects(): JSONResponse
     {
         // Check if the OpenRegister service is available.

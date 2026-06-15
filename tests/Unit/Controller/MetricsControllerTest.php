@@ -16,6 +16,7 @@ namespace OCA\OpenConnector\Tests\Unit\Controller;
 
 use OCA\OpenConnector\Controller\MetricsController;
 use OCP\AppFramework\Http\TextPlainResponse;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\DB\IResult;
@@ -44,6 +45,11 @@ class MetricsControllerTest extends TestCase
     private $config;
 
     /**
+     * @var IAppConfig|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $appConfig;
+
+    /**
      * @var IDBConnection|\PHPUnit\Framework\MockObject\MockObject
      */
     private $db;
@@ -63,15 +69,17 @@ class MetricsControllerTest extends TestCase
     {
         parent::setUp();
 
-        $request      = $this->createMock(IRequest::class);
-        $this->config = $this->createMock(IConfig::class);
-        $this->db     = $this->createMock(IDBConnection::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $request         = $this->createMock(IRequest::class);
+        $this->config    = $this->createMock(IConfig::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->db        = $this->createMock(IDBConnection::class);
+        $this->logger    = $this->createMock(LoggerInterface::class);
 
         $this->controller = new MetricsController(
             'openconnector',
             $request,
             $this->config,
+            $this->appConfig,
             $this->db,
             $this->logger
         );
@@ -86,10 +94,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexReturnsTextPlainResponse(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -107,10 +113,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexContainsInfoMetric(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('2.1.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('2.1.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -131,10 +135,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexContainsUpMetric(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -153,10 +155,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexContainsSourceMetrics(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -176,10 +176,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexContainsEndpointMetrics(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -200,10 +198,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexContainsJobMetrics(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -225,10 +221,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testIndexContainsMappingRuleMetrics(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $this->mockDbForAllCollectors();
 
@@ -250,10 +244,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testDatabaseErrorProducesZeroFallback(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('1.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('30.0.0');
+        $this->appConfig->method('getValueString')->willReturn('1.0.0');
+        $this->config->method('getSystemValueString')->willReturn('30.0.0');
 
         $qb = $this->createMock(IQueryBuilder::class);
         $qb->method('select')->willReturnSelf();
@@ -283,10 +275,8 @@ class MetricsControllerTest extends TestCase
      */
     public function testDefaultVersionIsZero(): void
     {
-        $this->config->method('getAppValue')
-            ->willReturn('0.0.0');
-        $this->config->method('getSystemValueString')
-            ->willReturn('0.0.0');
+        $this->appConfig->method('getValueString')->willReturn('0.0.0');
+        $this->config->method('getSystemValueString')->willReturn('0.0.0');
 
         $this->mockDbForAllCollectors();
 

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -103,9 +103,9 @@ class SynchronizationContractsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
         $this->orObjectService = $orObjectService;
-        $this->l               = $l;
-        $this->userSession     = $userSession;
-        $this->actionAuth      = $actionAuth;
+        $this->l           = $l;
+        $this->userSession = $userSession;
+        $this->actionAuth  = $actionAuth;
 
     }//end __construct()
 
@@ -220,7 +220,7 @@ class SynchronizationContractsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function statistics(): JSONResponse
     {
         try {
@@ -257,7 +257,7 @@ class SynchronizationContractsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function performance(): JSONResponse
     {
         try {
@@ -303,7 +303,7 @@ class SynchronizationContractsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function export(
         ?string $synchronizationId=null,
         ?string $status=null,

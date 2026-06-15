@@ -12,9 +12,8 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 - 📰 Send cloud events
 - 🆓 Map and translate API calls
 
-**Support:** For support, contact support@conduction.nl. For a Service Level Agreement (SLA), contact sales@conduction.nl.
     ]]></description>
-	<version>0.2.10</version>
+	<version>0.2.15</version>
 	<licence>agpl</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -32,16 +31,26 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
         <lib>curl</lib>
 
         <owncloud max-version="0" min-version="0"/>
-
-        <!-- Chain B/C OR cutover: openconnector now stores domain data in OpenRegister.
-             OR's ObjectService is required to boot openconnector controllers. -->
-        <nextcloud-app id="openregister" min-version="0.2.0"/>
 	</dependencies>
 
 	<background-jobs>
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
+		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
 	</background-jobs>
+
+	<commands>
+		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
+		     row migration (dry-run, per-entity retry, verify). -->
+		<command>OCA\OpenConnector\Command\MigrateToOpenRegister</command>
+	</commands>
+
+	<repair-steps>
+		<post-migration>
+			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
+			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+		</post-migration>
+	</repair-steps>
 
 	<navigations>
 		<navigation>
@@ -56,17 +65,4 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 		<admin>OCA\OpenConnector\Settings\OpenConnectorAdmin</admin>
 		<admin-section>OCA\OpenConnector\Sections\OpenConnectorAdmin</admin-section>
 	</settings>
-
-	<repair-steps>
-		<install>
-			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
-			<!-- ADR-023: seed the action-authorization matrix (default admin-only). -->
-			<step>OCA\OpenConnector\Repair\InitializeActions</step>
-		</install>
-		<post-migration>
-			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
-			<!-- ADR-023: seed the action-authorization matrix (default admin-only). -->
-			<step>OCA\OpenConnector\Repair\InitializeActions</step>
-		</post-migration>
-	</repair-steps>
 </info>

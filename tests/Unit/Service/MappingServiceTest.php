@@ -1,6 +1,6 @@
 <?php
 /**
- * Unit tests for MappingService.
+ * Unit tests for MappingService (chain-C, OR-direct).
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\Service
@@ -17,16 +17,20 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Db\Mapping as OrMapping;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Twig\Loader\ArrayLoader;
 
 /**
- * Tests for the mapping execution service (OR cutover — no deleted Db types).
+ * Tests for the mapping execution service after chain-C cutover.
+ *
+ * MappingService now consumes OpenRegister's ObjectService directly; the legacy
+ * `OCA\OpenConnector\Db\Mapping*` types are no longer referenced.
  */
 class MappingServiceTest extends TestCase
 {
@@ -37,9 +41,9 @@ class MappingServiceTest extends TestCase
     private MappingService $service;
 
     /**
-     * @var ORObjectService|\PHPUnit\Framework\MockObject\MockObject
+     * @var OrObjectService&MockObject
      */
-    private $orObjectService;
+    private OrObjectService $orObjectService;
 
 
     /**
@@ -51,17 +55,12 @@ class MappingServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->orObjectService = ObjectServiceMockBuilder::make($this);
+        $this->orObjectService = $this->createMock(OrObjectService::class);
 
         $loader        = new ArrayLoader([]);
         $callService   = $this->createMock(CallService::class);
         $fileService   = $this->createMock(FileService::class);
         $objectService = $this->createMock(ObjectService::class);
-        $container     = $this->createMock(ContainerInterface::class);
-        $logger        = $this->createMock(LoggerInterface::class);
-
-        // Container::get throws so the service falls back to local implementation.
-        $container->method('get')->willThrowException(new \RuntimeException('not available'));
 
         $this->service = new MappingService(
             $loader,
@@ -69,8 +68,6 @@ class MappingServiceTest extends TestCase
             $fileService,
             $objectService,
             $this->orObjectService,
-            $container,
-            $logger,
         );
     }//end setUp()
 
@@ -93,13 +90,9 @@ class MappingServiceTest extends TestCase
      */
     public function testEncodeArrayKeysReplacesDots(): void
     {
-        // Arrange
-        $array = ['foo.bar' => 'value', 'baz' => 'other'];
-
-        // Act
+        $array  = ['foo.bar' => 'value', 'baz' => 'other'];
         $result = $this->service->encodeArrayKeys($array, '.', '__DOT__');
 
-        // Assert
         $this->assertArrayHasKey('foo__DOT__bar', $result);
         $this->assertArrayNotHasKey('foo.bar', $result);
         $this->assertSame('value', $result['foo__DOT__bar']);
@@ -114,76 +107,220 @@ class MappingServiceTest extends TestCase
      */
     public function testEncodeArrayKeysRecursesIntoNestedArrays(): void
     {
-        // Arrange
-        $array = ['parent' => ['child.key' => 'deep-value']];
-
-        // Act
+        $array  = ['parent' => ['child.key' => 'deep-value']];
         $result = $this->service->encodeArrayKeys($array, '.', '_');
 
-        // Assert
         $this->assertArrayHasKey('child_key', $result['parent']);
         $this->assertSame('deep-value', $result['parent']['child_key']);
     }//end testEncodeArrayKeysRecursesIntoNestedArrays()
 
 
     /**
-     * Test that getMappings returns the results array from OR findAll.
+     * Test that getMapping resolves an OpenRegister ObjectEntity into an OrMapping.
      *
      * @return void
      */
-    public function testGetMappingsReturnsResultsFromFindAll(): void
+    public function testGetMappingHydratesOrMappingFromObjectEntity(): void
     {
-        // Arrange
-        $mappingEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['name' => 'test-mapping', 'mapping' => []],
-            'mapping-uuid-1'
-        );
-
-        $this->orObjectService->method('findAll')
-            ->willReturn(['results' => [$mappingEntity], 'total' => 1]);
-
-        // Act
-        $result = $this->service->getMappings();
-
-        // Assert
-        $this->assertIsArray($result);
-        $this->assertCount(1, $result);
-        $this->assertSame($mappingEntity, $result[0]);
-    }//end testGetMappingsReturnsResultsFromFindAll()
-
-
-    /**
-     * Test that getMapping delegates to OR find with the correct register and schema.
-     *
-     * @return void
-     */
-    public function testGetMappingDelegatesToORFind(): void
-    {
-        // Arrange
-        $mappingEntity = ObjectServiceMockBuilder::objectEntity(
-            $this,
-            ['name' => 'my-map'],
-            'map-uuid-42'
+        $object = new ObjectEntity();
+        $object->setObject(
+            [
+                'name'        => 'demo',
+                'mapping'     => ['greet' => 'hi'],
+                'passThrough' => true,
+            ]
         );
 
         $this->orObjectService->expects($this->once())
             ->method('find')
-            ->with(
-                'map-uuid-42',
-                $this->anything(),
-                $this->anything(),
-                'openconnector',
-                'mapping'
-            )
-            ->willReturn($mappingEntity);
+            ->with(id: 'map-uuid-42', register: 'openconnector', schema: 'mapping')
+            ->willReturn($object);
 
-        // Act
         $result = $this->service->getMapping('map-uuid-42');
 
-        // Assert
-        $this->assertSame($mappingEntity, $result);
-    }//end testGetMappingDelegatesToORFind()
+        $this->assertInstanceOf(OrMapping::class, $result);
+        $this->assertSame('demo', $result->getName());
+        $this->assertSame(['greet' => 'hi'], $result->getMapping());
+    }//end testGetMappingHydratesOrMappingFromObjectEntity()
 
+
+    /**
+     * Test that getMapping raises DoesNotExistException when OR returns null.
+     *
+     * @return void
+     */
+    public function testGetMappingThrowsWhenObjectMissing(): void
+    {
+        $this->orObjectService->expects($this->once())
+            ->method('find')
+            ->willReturn(null);
+
+        $this->expectException(DoesNotExistException::class);
+        $this->service->getMapping('missing-uuid');
+    }//end testGetMappingThrowsWhenObjectMissing()
+
+
+    /**
+     * Test that getMappings delegates to OR findAll and hydrates the results.
+     *
+     * @return void
+     */
+    public function testGetMappingsHydratesAllResults(): void
+    {
+        $first  = new ObjectEntity();
+        $first->setObject(['name' => 'first', 'mapping' => ['a' => 'b']]);
+
+        $second = new ObjectEntity();
+        $second->setObject(['name' => 'second', 'mapping' => ['c' => 'd']]);
+
+        $this->orObjectService->expects($this->once())
+            ->method('findAll')
+            ->willReturn(['results' => [$first, $second], 'total' => 2]);
+
+        $result = $this->service->getMappings();
+
+        $this->assertCount(2, $result);
+        $this->assertContainsOnlyInstancesOf(OrMapping::class, $result);
+        $this->assertSame('first', $result[0]->getName());
+        $this->assertSame('second', $result[1]->getName());
+    }//end testGetMappingsHydratesAllResults()
+
+
+    /**
+     * Test that executeMapping accepts an array payload directly.
+     *
+     * @return void
+     */
+    public function testExecuteMappingAcceptsArrayPayload(): void
+    {
+        $payload = [
+            'name'        => 'inline',
+            'mapping'     => ['out' => 'in.value'],
+            'passThrough' => false,
+        ];
+
+        $result = $this->service->executeMapping(
+            $payload,
+            ['in' => ['value' => 'hello']],
+            false
+        );
+
+        $this->assertSame(['out' => 'hello'], $result);
+    }//end testExecuteMappingAcceptsArrayPayload()
+
+
+    /**
+     * Test that executeMapping accepts a hydrated OrMapping value object.
+     *
+     * @return void
+     */
+    public function testExecuteMappingAcceptsHydratedOrMapping(): void
+    {
+        $mapping = (new OrMapping())->hydrate(
+            [
+                'name'        => 'hydrated',
+                'mapping'     => ['copy' => 'src'],
+                'passThrough' => false,
+            ]
+        );
+
+        $result = $this->service->executeMapping($mapping, ['src' => 'value']);
+
+        $this->assertSame(['copy' => 'value'], $result);
+    }//end testExecuteMappingAcceptsHydratedOrMapping()
+
+
+    /**
+     * Test that executeMapping accepts an ObjectEntity directly.
+     *
+     * @return void
+     */
+    public function testExecuteMappingAcceptsObjectEntity(): void
+    {
+        $object = new ObjectEntity();
+        $object->setObject(
+            [
+                'name'        => 'entity-form',
+                'mapping'     => ['x' => 'a.b'],
+                'passThrough' => false,
+            ]
+        );
+
+        $result = $this->service->executeMapping($object, ['a' => ['b' => 'deep']]);
+
+        $this->assertSame(['x' => 'deep'], $result);
+    }//end testExecuteMappingAcceptsObjectEntity()
+
+
+    /**
+     * Test that executeMapping resolves a string id through OR.
+     *
+     * @return void
+     */
+    public function testExecuteMappingResolvesStringIdThroughOr(): void
+    {
+        $object = new ObjectEntity();
+        $object->setObject(
+            [
+                'name'        => 'resolved',
+                'mapping'     => ['out' => 'in'],
+                'passThrough' => false,
+            ]
+        );
+
+        $this->orObjectService->expects($this->once())
+            ->method('find')
+            ->with(id: 'lookup-uuid', register: 'openconnector', schema: 'mapping')
+            ->willReturn($object);
+
+        $result = $this->service->executeMapping('lookup-uuid', ['in' => 'value']);
+
+        $this->assertSame(['out' => 'value'], $result);
+    }//end testExecuteMappingResolvesStringIdThroughOr()
+
+
+    /**
+     * Test that executeMapping renders Twig template strings.
+     *
+     * @return void
+     */
+    public function testExecuteMappingRendersTwigTemplate(): void
+    {
+        $payload = [
+            'name'        => 'twig',
+            'mapping'     => ['rendered' => '{{ name | upper }}'],
+            'passThrough' => false,
+        ];
+
+        $result = $this->service->executeMapping($payload, ['name' => 'world']);
+
+        $this->assertSame(['rendered' => 'WORLD'], $result);
+    }//end testExecuteMappingRendersTwigTemplate()
+
+
+    /**
+     * Test that coordinateStringToArray splits a coordinate pair list.
+     *
+     * @return void
+     */
+    public function testCoordinateStringToArraySplitsPairs(): void
+    {
+        $result = $this->service->coordinateStringToArray('4.88525 52.37025');
+
+        $this->assertSame(['4.88525', '52.37025'], $result);
+    }//end testCoordinateStringToArraySplitsPairs()
+
+
+    /**
+     * Test that coordinateStringToArray collects multiple pairs.
+     *
+     * @return void
+     */
+    public function testCoordinateStringToArrayCollectsMultiplePairs(): void
+    {
+        $result = $this->service->coordinateStringToArray('1.0 2.0 3.0 4.0');
+
+        $this->assertSame([['1.0', '2.0'], ['3.0', '4.0']], $result);
+    }//end testCoordinateStringToArrayCollectsMultiplePairs()
 
 }//end class

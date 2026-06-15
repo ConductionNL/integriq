@@ -17,11 +17,21 @@ return [
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
-		// DSO / Omgevingsloket STAM koppelvlak — inbound webhook for
-		// vergunningaanvragen, meldingen, informatieverzoeken, vooroverleg.
-		// Re-enabled with the post-OR-cutover surface (issue #881).
-		// Route name uses camelCase-slug convention (dSO = lowercase-first of DSO).
-		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// DSO / Omgevingsloket STAM koppelvlak — route REMOVED (wave-3 security fix).
+		//
+		// The `validateSignature` method that backs this endpoint accepts any
+		// non-empty X-DSO-Signature header without cryptographic verification
+		// (the PKIoverheid HMAC/RSA verifier, REQ-DSO-050, was never implemented).
+		// Leaving a #[PublicPage]+#[NoCSRFRequired] webhook with only a
+		// string-presence check in production is a CRITICAL vulnerability.
+		//
+		// The route is held here as a commented-out placeholder so that the
+		// controller, openspec spec, and TODO are not lost.  Re-enable only after
+		// the real verifier has been implemented and reviewed.
+		//
+		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1041
+		//
+		// ['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
@@ -86,6 +96,18 @@ return [
 
 		// Pull-based delivery
 		['name' => 'events#pull', 'url' => '/api/events/subscriptions/{subscriptionId}/pull', 'verb' => 'GET'],
+
+		// Webhook signing secret lifecycle (admin-only, CSRF intact)
+		['name' => 'events#generateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret', 'verb' => 'POST'],
+		['name' => 'events#rotateSigningSecret', 'url' => '/api/events/subscriptions/{subscriptionId}/signing-secret/rotate', 'verb' => 'POST'],
+
+		// Dead-letter queue inspection and replay (admin-only, CSRF intact)
+		['name' => 'events#deadLetterIndex', 'url' => '/api/events/dead-letter', 'verb' => 'GET'],
+		['name' => 'events#bulkReplay', 'url' => '/api/events/dead-letter/replay', 'verb' => 'POST'],
+		['name' => 'events#bulkDiscard', 'url' => '/api/events/dead-letter/discard', 'verb' => 'POST'],
+		['name' => 'events#deadLetterShow', 'url' => '/api/events/dead-letter/{id}', 'verb' => 'GET'],
+		['name' => 'events#replay', 'url' => '/api/events/dead-letter/{id}/replay', 'verb' => 'POST'],
+		['name' => 'events#discard', 'url' => '/api/events/dead-letter/{id}/discard', 'verb' => 'POST'],
 
 		// Logs endpoints (LogsController — synchronization_log schema)
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],

@@ -64,3 +64,5 @@ bom-npm.cdx.json
 
 # Newman run artifacts
 /tests/postman/newman-report.json
+/coverage-vitest/
+/coverage/

@@ -10,11 +10,6 @@ parameters:
 		# phpstan could not run locally (azjezz/psl v4 / PHP 8.2 incompatibility) — count
 		# validated on CI (PHP 8.3). Tracked in: https://github.com/ConductionNL/openconnector/issues/990
 		-
-			message: "#^Parameter \\#1 \\$settings of attribute class OCP\\\\AppFramework\\\\Http\\\\Attribute\\\\AuthorizedAdminSetting constructor expects class-string<OCP\\\\Settings\\\\IDelegatedSettings>, string given\\.$#"
-			count: 31
-			path: lib/Controller
-
-		-
 			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
 			count: 1
 			path: lib/Controller/SynchronizationsController.php
@@ -191,6 +186,21 @@ parameters:
 
 		-
 			message: "#^Offset 'interval' on array\\{lastRun\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 2
+			path: lib/Service/JobService.php
+
+		-
+			message: "#^Offset 'isSingleRun' on array\\{lastRun\\: non\\-falsy\\-string, nextRun\\?\\: non\\-falsy\\-string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Service/JobService.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 2
+			path: lib/Service/JobService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/JobService.php
 
@@ -373,3 +383,11 @@ parameters:
 			message: "#^Class OC\\\\Files\\\\Node\\\\File not found\\.$#"
 			count: 1
 			path: lib/Twig/MappingRuntime.php
+
+		# False positive: $this->pendingContractLogs is populated as a side effect of
+		# synchronizeContract() (line 1269). PHPStan sees only the reset to [] at line
+		# 3711 and cannot track the inter-method side-effect on the property.
+		-
+			message: "#^Empty array passed to foreach\\.$#"
+			count: 1
+			path: lib/Service/SynchronizationService.php

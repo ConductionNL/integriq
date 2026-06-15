@@ -7,6 +7,8 @@
     "npm": "^10.0.0"
   },
   "scripts": {
+    "test:l10n": "node tests/l10n/check-l10n.js",
+    "test:l10n:write": "node tests/l10n/check-l10n.js --write",
     "build": "NODE_ENV=production webpack --config webpack.config.js --progress",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
@@ -14,6 +16,10 @@
     "lint-fix": "npm run lint -- --fix",
     "test": "jest --silent",
     "test-coverage": "jest --silent --coverage",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text-summary --coverage.include=src/** --coverage.reportsDirectory=coverage-vitest",
+    "test:coverage-ratchet": "npm run test:coverage && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json",
+    "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
     "stylelint": "stylelint src/**/*.vue src/**/*.scss src/**/*.css",
@@ -22,14 +28,14 @@
     "check:register": "node tests/validate-register.js",
     "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
     "test:newman": "newman run tests/postman/openconnector.postman_collection.json --environment tests/postman/openconnector.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/newman-report.json",
-    "test:regression": "playwright test --project regression"
+    "test:regression": "playwright test --project regression --workers=4"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
   ],
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "^1.0.0-beta.108",
+    "@conduction/nextcloud-vue": "github:ConductionNL/nextcloud-vue#14572a471fa908e5e7b8070246bb089a7569f36a",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@mdi/js": "^7.4.47",
@@ -111,6 +117,7 @@
     "ts-jest": "^29.2.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.5.4",
+    "vitest": "^1.6.1",
     "vue-eslint-parser": "^9.4.3",
     "vue-jest": "^3.0.7",
     "webpack": "^5.88.2",

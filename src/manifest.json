@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "dependencies": [
     "openregister"
   ],
@@ -13,67 +13,30 @@
       "order": 10
     },
     {
-      "id": "Sources",
-      "label": "Sources",
-      "icon": "DatabaseArrowLeftOutline",
-      "route": "Sources",
-      "order": 20
-    },
-    {
-      "id": "Endpoints",
-      "label": "Endpoints",
-      "icon": "Api",
-      "route": "Endpoints",
-      "order": 30
-    },
-    {
-      "id": "Consumers",
-      "label": "Consumers",
-      "icon": "AccountMultipleOutline",
-      "route": "Consumers",
-      "order": 40
-    },
-    {
-      "id": "Webhooks",
-      "label": "Webhooks",
+      "id": "ConnectionsGroup",
+      "label": "Connections",
       "icon": "Webhook",
-      "route": "Webhooks",
-      "order": 50
+      "order": 20,
+      "children": [
+        { "id": "Sources", "label": "Sources", "icon": "DatabaseArrowLeftOutline", "route": "Sources", "order": 20 },
+        { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
+        { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
+        { "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "Webhooks", "order": 50 }
+      ]
     },
     {
-      "id": "Jobs",
-      "label": "Jobs",
-      "icon": "Update",
-      "route": "Jobs",
-      "order": 60
-    },
-    {
-      "id": "Mappings",
-      "label": "Mappings",
-      "icon": "SitemapOutline",
-      "route": "Mappings",
-      "order": 70
-    },
-    {
-      "id": "Rules",
-      "label": "Rules",
-      "icon": "ScaleBalance",
-      "route": "Rules",
-      "order": 80
-    },
-    {
-      "id": "Synchronizations",
-      "label": "Synchronizations",
+      "id": "AutomationGroup",
+      "label": "Automation",
       "icon": "VectorPolylinePlus",
-      "route": "Synchronizations",
-      "order": 90
-    },
-    {
-      "id": "CloudEvents",
-      "label": "Cloud events",
-      "icon": "CloudUploadOutline",
-      "route": "CloudEvents",
-      "order": 100
+      "order": 30,
+      "children": [
+        { "id": "Jobs", "label": "Jobs", "icon": "Update", "route": "Jobs", "order": 60 },
+        { "id": "Mappings", "label": "Mappings", "icon": "SitemapOutline", "route": "Mappings", "order": 70 },
+        { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
+        { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
+        { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
+        { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 }
+      ]
     },
     {
       "id": "Documentation",
@@ -146,7 +109,8 @@
           { "id": "L10", "widgetId": "jobs-hourly",          "gridX": 6,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
           { "id": "L11", "widgetId": "sync-daily",           "gridX": 0,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 },
           { "id": "L12", "widgetId": "sync-hourly",          "gridX": 6,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -166,7 +130,8 @@
         "actions": [
           { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
           { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -176,7 +141,8 @@
       "title": "Source",
       "config": {
         "register": "openconnector",
-        "schema": "source"
+        "schema": "source",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -206,7 +172,8 @@
         "actions": [
           { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
           { "id": "view-endpoint-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -216,7 +183,8 @@
       "title": "Endpoint",
       "config": {
         "register": "openconnector",
-        "schema": "endpoint"
+        "schema": "endpoint",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -239,7 +207,8 @@
         "schema": "consumer",
         "columns": ["name", "authorizationType", "domains", "updated"],
         "includeFields": ["name", "description", "authorizationType"],
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -249,7 +218,8 @@
       "title": "Consumer",
       "config": {
         "register": "openconnector",
-        "schema": "consumer"
+        "schema": "consumer",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -257,12 +227,18 @@
       "route": "/webhooks",
       "type": "index",
       "title": "Webhooks",
+      "_note": "A webhook is an EventSubscription with a delivery sink URL (push/pull). The register has no separate 'webhook' schema — per ADR-013 the EventSubscription entity (sink + protocol + style) IS the webhook. addLabel overrides the schema-title-derived default so the create button reads 'Add Webhook' rather than 'Add EventSubscription'.",
       "config": {
         "register": "openconnector",
-        "schema": "consumer",
-        "columns": ["name", "authorizationType", "domains", "updated"],
-        "includeFields": ["name", "description", "authorizationType"],
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "schema": "event_subscription",
+        "addLabel": "Add Webhook",
+        "columns": ["sink", "protocol", "style", "status", "updated"],
+        "includeFields": ["source", "types", "sink", "protocol", "style", "status"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "actions": [
+          { "id": "manage-signing", "label": "Webhook signing", "icon": "ShieldKeyOutline", "handler": "manageSigningHandler" }
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -286,7 +262,8 @@
           { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
           { "id": "view-job-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       },
       "slots": {
         "form-fields": "JobFormFields"
@@ -315,7 +292,8 @@
         "sidebar": { "enabled": true, "showMetadata": true },
         "actions": [
           { "id": "test", "label": "Test mapping", "icon": "icon-play", "handler": "testMappingModalHandler" }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -340,7 +318,8 @@
         "schema": "rule",
         "columns": ["name", "action", "timing", "type", "order"],
         "includeFields": ["name", "description", "action", "timing", "type"],
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -377,7 +356,8 @@
           { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
           { "id": "view-synchronization-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" },
           { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -389,7 +369,8 @@
         "register": "openconnector",
         "schema": "synchronization_contract",
         "columns": ["synchronization", "originId", "targetId", "sourceLastSynced", "updated"],
-        "sidebar": { "enabled": true, "showMetadata": true }
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -430,7 +411,8 @@
         ],
         "actions": [
           { "id": "view-cloud-event-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ]
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -440,7 +422,8 @@
       "title": "Cloud event",
       "config": {
         "register": "openconnector",
-        "schema": "event"
+        "schema": "event",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
@@ -451,6 +434,19 @@
       "config": {
         "register": "openconnector",
         "schema": "call_log"
+      }
+    },
+    {
+      "id": "EventDeliveries",
+      "route": "/cloud-events/deliveries",
+      "type": "custom",
+      "component": "EventDeliveriesPage",
+      "_note": "Custom page: dead-letter operations view over event_message (failed/abandoned by default) backed by the admin-only /api/events/dead-letter endpoints with per-row + bulk Replay/Discard and a detail modal. Not expressible as a generic CnIndexPage.",
+      "title": "Event deliveries",
+      "config": {
+        "register": "openconnector",
+        "schema": "event_message",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {

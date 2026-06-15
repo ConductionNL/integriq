@@ -24,6 +24,7 @@ use OCA\OpenConnector\Controller\DSOController;
 use OCA\OpenConnector\Service\DSOParserService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -52,6 +53,11 @@ class DSOControllerTest extends TestCase
     private $logger;
 
     /**
+     * @var \PHPUnit\Framework\MockObject\MockObject|IAppConfig
+     */
+    private $appConfig;
+
+    /**
      * @var DSOController
      */
     private DSOController $controller;
@@ -65,25 +71,33 @@ class DSOControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->parser  = $this->createMock(DSOParserService::class);
-        $this->logger  = $this->createMock(LoggerInterface::class);
+        $this->request   = $this->createMock(IRequest::class);
+        $this->parser    = $this->createMock(DSOParserService::class);
+        $this->logger    = $this->createMock(LoggerInterface::class);
+        $this->appConfig = $this->createMock(IAppConfig::class);
+
+        // Default: enforcement flag is OFF (do not enable full PKIoverheid verifier).
+        $this->appConfig->method('getValueBool')->willReturn(false);
 
         $this->controller = new DSOController(
             appName: 'openconnector',
             request: $this->request,
             parser: $this->parser,
-            logger: $this->logger
+            logger: $this->logger,
+            appConfig: $this->appConfig
         );
 
     }//end setUp()
 
     /**
-     * Test that a valid verzoek without signature returns 202.
+     * Test that a request without X-DSO-Signature header returns 403.
+     *
+     * Missing signature must be rejected — anonymous callers cannot inject
+     * verzoeken without at least providing a signature token (C1 fix).
      *
      * @return void
      */
-    public function testValidVerzoekWithoutSignatureReturns202(): void
+    public function testMissingSignatureHeaderReturns403(): void
     {
         $body = [
             'verzoekId'       => 'dso-12345',
@@ -96,6 +110,44 @@ class DSOControllerTest extends TestCase
 
         $this->request->method('getParams')->willReturn($body);
         $this->request->method('getHeader')->willReturn('');
+
+        $response = $this->controller->receiveVerzoek();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+        $data = $response->getData();
+        $this->assertSame('invalid_signature', $data['error']);
+
+    }//end testMissingSignatureHeaderReturns403()
+
+    /**
+     * Test that a valid verzoek with a signature header returns 202.
+     *
+     * @return void
+     */
+    public function testValidVerzoekWithSignatureReturns202(): void
+    {
+        $body = [
+            'verzoekId'       => 'dso-12345',
+            'type'            => 'aanvraag',
+            'indieningsdatum' => '2024-06-15',
+            'aanvrager'       => ['bsn' => '999993653'],
+            'locatie'         => ['bagAdres' => []],
+            'activiteiten'    => [['code' => 'bouwen-01']],
+        ];
+
+        $this->request->method('getParams')->willReturn($body);
+        $this->request->method('getHeader')
+            ->willReturnCallback(
+                static function (string $header): string {
+                    if ($header === 'X-DSO-Signature') {
+                        return 'sha256=abc123';
+                    }
+
+                    return '';
+                }
+            );
 
         $this->parser->method('validatePayload')->willReturn([]);
         $this->parser->method('parseVerzoek')->willReturn(
@@ -111,7 +163,7 @@ class DSOControllerTest extends TestCase
         $this->assertArrayHasKey('verzoekId', $data);
         $this->assertSame('ontvangen', $data['status']);
 
-    }//end testValidVerzoekWithoutSignatureReturns202()
+    }//end testValidVerzoekWithSignatureReturns202()
 
     /**
      * Test that a payload validation failure returns 400.
@@ -121,7 +173,17 @@ class DSOControllerTest extends TestCase
     public function testValidationFailureReturns400(): void
     {
         $this->request->method('getParams')->willReturn([]);
-        $this->request->method('getHeader')->willReturn('');
+        // Provide a signature header so signature validation passes.
+        $this->request->method('getHeader')
+            ->willReturnCallback(
+                static function (string $header): string {
+                    if ($header === 'X-DSO-Signature') {
+                        return 'sha256=placeholder';
+                    }
+
+                    return '';
+                }
+            );
 
         $validationErrors = [
             [
@@ -154,7 +216,16 @@ class DSOControllerTest extends TestCase
         $body = ['verzoekId' => 'test-id-999'];
 
         $this->request->method('getParams')->willReturn($body);
-        $this->request->method('getHeader')->willReturn('');
+        $this->request->method('getHeader')
+            ->willReturnCallback(
+                static function (string $header): string {
+                    if ($header === 'X-DSO-Signature') {
+                        return 'sha256=placeholder';
+                    }
+
+                    return '';
+                }
+            );
 
         $this->parser->method('validatePayload')->willReturn([]);
         $this->parser->method('parseVerzoek')->willReturn(['verzoekId' => 'test-id-999', 'type' => 'aanvraag']);
@@ -181,6 +252,10 @@ class DSOControllerTest extends TestCase
                 static function (string $header): string {
                     if ($header === 'X-DSO-Environment') {
                         return 'pre-productie';
+                    }
+
+                    if ($header === 'X-DSO-Signature') {
+                        return 'sha256=placeholder';
                     }
 
                     return '';

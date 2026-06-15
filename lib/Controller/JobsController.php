@@ -20,10 +20,10 @@
 namespace OCA\OpenConnector\Controller;
 
 use Exception;
-use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
+use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -85,7 +85,7 @@ class JobsController extends Controller
      *
      * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-1
      */
-    #[AuthorizedAdminSetting(Application::APP_ID)]
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
     {
         try {
@@ -243,7 +243,14 @@ class JobsController extends Controller
                 return new JSONResponse(null);
             }
 
-            return new JSONResponse($result->jsonSerialize());
+            // L4: Surface the real error code when the job failed.
+            // executeJob() now always returns a log entry — check its level.
+            $resultData = $result->jsonSerialize();
+            if (($resultData['level'] ?? '') === 'ERROR') {
+                return new JSONResponse($resultData, 500);
+            }
+
+            return new JSONResponse($resultData);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try
@@ -302,7 +309,13 @@ class JobsController extends Controller
                 return new JSONResponse(null);
             }
 
-            return new JSONResponse($result->jsonSerialize());
+            // L4: Surface the real error code when the job failed.
+            $resultData = $result->jsonSerialize();
+            if (($resultData['level'] ?? '') === 'ERROR') {
+                return new JSONResponse($resultData, 500);
+            }
+
+            return new JSONResponse($resultData);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $this->l->t('Failed to execute job: %s', [$e->getMessage()])], 500);
         }//end try

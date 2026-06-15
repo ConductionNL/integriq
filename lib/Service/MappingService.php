@@ -17,15 +17,44 @@
  * @link https://www.OpenConnector.nl
  */
 
+/**
+ * MappingService.
+ *
+ * Twig-driven mapping service that transforms inbound payloads against
+ * configured Mapping objects + runtime authentication helpers.
+ *
+ * Post chain-C cutover (services-direct-or-usage) this service consumes the
+ * OpenRegister-owned mapping value object directly via
+ * {@see \OCA\OpenRegister\Service\ObjectService}: no more references to the
+ * legacy `OCA\OpenConnector\Db\Mapping*` types.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://conduction.nl
+ */
+
+// SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+
 namespace OCA\OpenConnector\Service;
 
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenConnector\Twig\MappingExtension;
 use OCA\OpenConnector\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService as ORObjectService;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\Files\IRootFolder;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Adbar\Dot;
 use Twig\Environment;
 use Twig\Error\LoaderError;
@@ -33,26 +62,35 @@ use Twig\Error\SyntaxError;
 use Twig\Loader\ArrayLoader;
 use Throwable;
 use Exception;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
 /**
- * Mapping service that delegates core execution to OpenRegister's MappingService
- * when available, falling back to its own implementation.
+ * MappingService — Twig-driven payload transformer.
  *
- * @deprecated The mapping engine has moved to OpenRegister. This service delegates
- *             to OCA\OpenRegister\Service\MappingService for executeMapping().
+ * Consumes either a fully hydrated OpenRegister Mapping value object, a raw
+ * ObjectEntity, or a plain array describing a mapping configuration. The
+ * normalisation helper resolves any of those into an OrMapping internally,
+ * preserving the existing per-key Twig + cast pipeline.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Mapping execution requires comprehensive handling
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      $list parameter clearly indicates list processing mode
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class MappingService
 {
+    /**
+     * The OpenRegister register slug mappings live in.
+     *
+     * @var string
+     */
+    private const REGISTER = 'openconnector';
+
+    /**
+     * The OpenRegister schema slug for mapping objects.
+     *
+     * @var string
+     */
+    private const SCHEMA = 'mapping';
 
     /**
      * Create a private variable to store the twig environment.
@@ -62,31 +100,20 @@ class MappingService
     private Environment $twig;
 
     /**
-     * The OpenRegister mapping service (if available).
-     *
-     * @var \OCA\OpenRegister\Service\MappingService|null
-     */
-    private $openRegisterMappingService = null;
-
-    /**
      * Setting up the base class with required services.
      *
-     * @param ArrayLoader        $loader          The ArrayLoader for Twig.
-     * @param CallService        $callService     The call service.
-     * @param FileService        $fileService     The file service.
-     * @param ObjectService      $objectService   The OpenConnector object service.
-     * @param ORObjectService    $orObjectService The OpenRegister object service.
-     * @param ContainerInterface $container       The PSR container (injected; replaces \OC::$server for service lookup).
-     * @param LoggerInterface    $logger          The logger (injected; replaces \OC::$server->getLogger()).
+     * @param ArrayLoader    $loader        The ArrayLoader for Twig.
+     * @param CallService    $callService   Outbound HTTP caller used by the Twig runtime.
+     * @param FileService    $fileService   The OR-side file lookup helper.
+     * @param ObjectService  $objectService The OpenConnector object service.
+     * @param OrObjectService $orObjectService The OpenRegister object service (chain-C entry point).
      */
     public function __construct(
         ArrayLoader $loader,
         CallService $callService,
         FileService $fileService,
         ObjectService $objectService,
-        private readonly ORObjectService $orObjectService,
-        ContainerInterface $container,
-        private readonly LoggerInterface $logger,
+        private readonly OrObjectService $orObjectService,
     ) {
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new MappingExtension());
@@ -99,19 +126,6 @@ class MappingService
             )
         );
 
-        // Try to load OpenRegister's MappingService for delegation.
-        try {
-            $this->openRegisterMappingService = $container->get(
-                \OCA\OpenRegister\Service\MappingService::class
-            );
-        } catch (\Throwable $e) {
-            // OpenRegister not available, falling back to local implementation.
-            $this->openRegisterMappingService = null;
-            $this->logger->info(
-                'OpenConnector MappingService: OpenRegister not available, using local implementation',
-                ['app' => 'openconnector']
-            );
-        }
     }//end __construct()
 
     /**
@@ -151,11 +165,9 @@ class MappingService
      *
      * @return string The rendered template result.
      *
-     * @throws LoaderError|SyntaxError Twig exceptions.
+     * @throws LoaderError|SyntaxError Twig exceptions
      *
-     * @psalm-param array<string, mixed> $context
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
     public function renderTemplateString(string $template, array $context=[]): string
     {
@@ -164,60 +176,78 @@ class MappingService
     }//end renderTemplateString()
 
     /**
-     * Maps (transforms) an array (input) to a different array (output).
+     * Normalise the polymorphic $mapping input to a concrete OR Mapping value object.
      *
-     * Delegates to OpenRegister's MappingService when available, otherwise
-     * uses the local implementation.
+     * Accepts:
+     *  - {@see OrMapping}: returned as-is.
+     *  - {@see ObjectEntity}: hydrates a fresh OrMapping from `getObject()`.
+     *  - array: hydrates a fresh OrMapping from the raw array shape.
+     *  - string|int: resolved through {@see OrObjectService::find()} as an
+     *    `openconnector/mapping` lookup.
      *
-     * @param \OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping The mapping object that forms the recipe for the mapping
-     * @param array                                     $input   The array that need to be mapped (transformed) otherwise known as input
-     * @param bool                                      $list    Whether we want a list instead of a single item
+     * @param OrMapping|ObjectEntity|array|string|int $mapping The polymorphic mapping reference.
      *
-     * @return array The result (output) of the mapping process
-     * @throws LoaderError|SyntaxError Twig Exceptions
+     * @return OrMapping The normalised value object.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
+     * @throws \InvalidArgumentException When the reference cannot be resolved.
      */
-    public function executeMapping(\OCA\OpenRegister\Db\Mapping|ObjectEntity $mapping, array $input, bool $list=false): array
+    private function normaliseMapping(OrMapping|ObjectEntity|array|string|int $mapping): OrMapping
     {
-        // Normalise: if we received an ObjectEntity, hydrate an OR Mapping from it.
-        if ($mapping instanceof ObjectEntity) {
-            $orMapping = new \OCA\OpenRegister\Db\Mapping();
-            $orMapping->hydrate($mapping->getObject());
-            $mapping = $orMapping;
+        if ($mapping instanceof OrMapping) {
+            return $mapping;
         }
 
-        // Delegate to OpenRegister's MappingService if available.
-        if ($this->openRegisterMappingService !== null) {
-            return $this->openRegisterMappingService->executeMapping(
-                mapping: $mapping,
-                input: $input,
-                list: $list
+        if ($mapping instanceof ObjectEntity) {
+            return (new OrMapping())->hydrate($mapping->getObject());
+        }
+
+        if (is_array($mapping) === true) {
+            return (new OrMapping())->hydrate($mapping);
+        }
+
+        // String/int -> resolve via OpenRegister.
+        try {
+            $object = $this->orObjectService->find(
+                id: (string) $mapping,
+                register: self::REGISTER,
+                schema: self::SCHEMA
+            );
+        } catch (DoesNotExistException $e) {
+            throw new \InvalidArgumentException(
+                sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping),
+                0,
+                $e
             );
         }
 
-        return $this->executeMappingLocal(mapping: $mapping, input: $input, list: $list);
+        if ($object === null) {
+            throw new \InvalidArgumentException(
+                sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping)
+            );
+        }
 
-    }//end executeMapping()
+        return (new OrMapping())->hydrate($object->getObject());
+
+    }//end normaliseMapping()
 
     /**
-     * Local mapping execution (fallback when OpenRegister is not available).
+     * Maps (transforms) an array (input) to a different array (output).
      *
-     * @param \OCA\OpenRegister\Db\Mapping $mapping The mapping object
-     * @param array                        $input   The input array
-     * @param bool                         $list    Whether to process as list
+     * @param OrMapping|ObjectEntity|array|string|int $mapping The mapping recipe (polymorphic).
+     * @param array                                   $input   The array to be mapped.
+     * @param bool                                    $list    Whether we want a list instead of a single item.
      *
-     * @return array The mapped output
+     * @return array The result (output) of the mapping process.
      *
-     * @throws Exception When mapping fails
+     * @throws LoaderError|SyntaxError Twig Exceptions.
      *
-     * @SuppressWarnings(PHPMD.ElseExpression)
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
-    private function executeMappingLocal(\OCA\OpenRegister\Db\Mapping $mapping, array $input, bool $list=false): array
+    public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list=false): array
     {
-        // Check for list.
+        $mapping = $this->normaliseMapping($mapping);
+
+        // Check for list
         if ($list === true) {
             $list        = [];
             $extraValues = [];
@@ -252,7 +282,6 @@ class MappingService
         } else {
             $dotArray = new Dot();
         }
-
         $dotInput = new Dot($input);
 
         // Let's do the actual mapping.
@@ -305,22 +334,17 @@ class MappingService
 
         // Back to array.
         $output = $dotArray->all();
-
-        $output = $this->encodeArrayKeys(array: $output, toReplace: '&#46;', replacement: '.');
+        $output = $this->encodeArrayKeys($output, '&#46;', '.');
 
         // If something has been defined to work on root level (i.e. the object lives on root level), we can use # to define writing the root object.
         $keys = array_keys($output);
         if (count($keys) === 1 && $keys[0] === '#') {
             // Ensure we always return an array, even if the value is null.
             $rootValue = $output['#'];
-            if (is_array($rootValue) === true) {
-                $output = $rootValue;
-            } else {
-                $output = [$rootValue];
-            }
-
             if ($rootValue === null) {
                 $output = [];
+            } else {
+                $output = is_array($rootValue) ? $rootValue : [$rootValue];
             }
         }
 
@@ -333,7 +357,7 @@ class MappingService
 
         return $output;
 
-    }//end executeMappingLocal()
+    }//end executeMapping()
 
     /**
      * Handles a single cast.
@@ -356,157 +380,152 @@ class MappingService
         if (str_starts_with($cast, 'unsetIfValue==') === true) {
             $unsetIfValue = substr($cast, 14);
             $cast         = 'unsetIfValue';
-        }
-
-        if (str_starts_with($cast, 'setNullIfValue==') === true) {
+        } else if (str_starts_with($cast, 'setNullIfValue==') === true) {
             $setNullIfValue = substr($cast, 16);
             $cast           = 'setNullIfValue';
-        }
-
-        if (str_starts_with($cast, 'countValue:') === true) {
+        } else if (str_starts_with($cast, 'countValue:') === true) {
             $countValue = substr($cast, 11);
             $cast       = 'countValue';
         }
 
         // Todo: Add more casts.
         switch ($cast) {
-            case 'string':
-                $value = (string) $value;
+        case 'string':
+            $value = (string) $value;
+            break;
+        case 'bool':
+        case 'boolean':
+            if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
+                $value = true;
                 break;
-            case 'bool':
-            case 'boolean':
-                if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-                    $value = true;
-                    break;
-                }
+            }
 
-                $value = false;
+            $value = false;
+            break;
+        case '?bool':
+        case '?boolean':
+            if ($value === null) {
                 break;
-            case '?bool':
-            case '?boolean':
-                if ($value === null) {
-                    break;
-                }
+            }
+            if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
+                $value = true;
+                break;
+            }
 
-                if ((int) $value === 1 || strtolower($value) === 'true' || strtolower($value) === 'yes') {
-                    $value = true;
-                    break;
-                }
+            $value = false;
 
-                $value = false;
+            break;
+        case 'int':
+        case 'integer':
+            $value = (int) $value;
+            break;
+        case 'float':
+            $value = (float) $value;
+            break;
+        case 'array':
+            $value = (array) $value;
+            break;
+        case 'date':
+            $value = date($value);
+            break;
+        case 'url':
+            $value = urlencode($value);
+            break;
+        case 'urlDecode':
+            $value = urldecode($value);
+            break;
+        case 'rawurl':
+            $value = rawurlencode($value);
+            break;
+        case 'rawurlDecode':
+            $value = rawurldecode($value);
+            break;
+        case 'html':
+            $value = htmlentities($value);
+            break;
+        case 'htmlDecode':
+            $value = html_entity_decode($value);
+            break;
+        case 'base64':
+            $value = base64_encode($value);
+            break;
+        case 'base64Decode':
+            $value = base64_decode($value);
+            break;
+        case 'json':
+            $value = json_encode($value);
+            break;
+        case 'jsonToArray':
+            if (is_array($value) === true) {
+                break;
+            }
+            $value = html_entity_decode($value);
+            $value = json_decode($value, true);
+            break;
+        case 'utf8':
+            // https://www.php.net/manual/en/function.iconv.php
+            setlocale(LC_CTYPE, 'cs_CZ');
+            $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
+            break;
+        case 'nullStringToNull':
+            if ($value === 'null') {
+                $value = null;
+            }
+            break;
+        case 'coordinateStringToArray':
+            $value = $this->coordinateStringToArray($value);
+            break;
+        case 'keyCantBeValue':
+            if ($key == $value) {
+                $dotArray->delete($key);
+            }
+            break;
+        case 'unsetIfValue':
+            if (isset($unsetIfValue) === true
+                && $value == $unsetIfValue
+                || ($unsetIfValue === '' && empty($value))
+                || ($unsetIfValue === '' && $value === null)
+            ) {
+                $dotArray->delete($key);
+            }
 
-                break;
-            case 'int':
-            case 'integer':
-                $value = (int) $value;
-                break;
-            case 'float':
-                $value = (float) $value;
-                break;
-            case 'array':
-                $value = (array) $value;
-                break;
-            case 'date':
-                $value = date($value);
-                break;
-            case 'url':
-                $value = urlencode($value);
-                break;
-            case 'urlDecode':
-                $value = urldecode($value);
-                break;
-            case 'rawurl':
-                $value = rawurlencode($value);
-                break;
-            case 'rawurlDecode':
-                $value = rawurldecode($value);
-                break;
-            case 'html':
-                $value = htmlentities($value);
-                break;
-            case 'htmlDecode':
-                $value = html_entity_decode($value);
-                break;
-            case 'base64':
-                $value = base64_encode($value);
-                break;
-            case 'base64Decode':
-                $value = base64_decode($value);
-                break;
-            case 'json':
-                $value = json_encode($value);
-                break;
-            case 'jsonToArray':
-                if (is_array($value) === true) {
-                    break;
-                }
+            if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                $dotArray->delete($key);
+            }
+            break;
+        case 'setNullIfValue':
+            if (isset($setNullIfValue) === true
+                && $value == $setNullIfValue
+                || ($setNullIfValue === '' && empty($value))
+                || ($setNullIfValue === '' && $value === null)
+            ) {
+                $value = null;
+            }
 
-                $value = html_entity_decode($value);
-                $value = json_decode($value, true);
-                break;
-            case 'utf8':
-                // See https://www.php.net/manual/en/function.iconv.php.
-                setlocale(LC_CTYPE, 'cs_CZ');
-                $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
-                break;
-            case 'nullStringToNull':
-                if ($value === 'null') {
-                    $value = null;
-                }
-                break;
-            case 'coordinateStringToArray':
-                $value = $this->coordinateStringToArray(coordinates: $value);
-                break;
-            case 'keyCantBeValue':
-                if ($key === $value) {
-                    $dotArray->delete($key);
-                }
-                break;
-            case 'unsetIfValue':
-                if (isset($unsetIfValue) === true
-                    && $value === $unsetIfValue
-                    || ($unsetIfValue === '' && empty($value) === true)
-                    || ($unsetIfValue === '' && $value === null)
-                ) {
-                    $dotArray->delete($key);
-                }
-
-                if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
-                    $dotArray->delete($key);
-                }
-                break;
-            case 'setNullIfValue':
-                if (isset($setNullIfValue) === true
-                    && $value === $setNullIfValue
-                    || ($setNullIfValue === '' && empty($value) === true)
-                    || ($setNullIfValue === '' && $value === null)
-                ) {
-                    $value = null;
-                }
-
-                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
-                    $value = null;
-                }
-                break;
-            case 'countValue':
-                if (isset($countValue) === true
-                    && empty($countValue) === false
-                    && $dotArray->has($countValue) === true
-                    && is_countable($dotArray->get($countValue)) === true
-                ) {
-                    $value = count($dotArray->get($countValue));
-                }
-                break;
-            case 'moneyStringToInt':
-                $value = str_replace('.', '', $value);
-                $value = (int) str_replace(',', '', $value);
-                break;
-            case 'intToMoneyString':
-                $value = ($value / 100);
-                $value = number_format($value, 2, ',', '.');
-                break;
-            default:
-                break;
+            if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                $value = null;
+            }
+            break;
+        case 'countValue':
+            if (isset($countValue) === true
+                && empty($countValue) === false
+                && $dotArray->has($countValue) === true
+                && is_countable($dotArray->get($countValue)) === true
+            ) {
+                $value = count($dotArray->get($countValue));
+            }
+            break;
+        case 'moneyStringToInt':
+            $value = str_replace('.', '', $value);
+            $value = (int) str_replace(',', '', $value);
+            break;
+        case 'intToMoneyString':
+            $value = ($value / 100);
+            $value = number_format($value, 2, ',', '.');
+            break;
+        default:
+            // @todo: error handling
+            break;
         }//end switch
 
         // Don't reset key that was deleted on purpose.
@@ -536,11 +555,7 @@ class MappingService
                 if ($this->areAllArrayKeysNull(array: $value) === false) {
                     return false;
                 }
-
-                continue;
-            }
-
-            if (empty($value) === false) {
+            } else if (empty($value) === false) {
                 return false;
             }
         }
@@ -566,7 +581,7 @@ class MappingService
         foreach ($halves as $half) {
             if (count($point) > 1) {
                 $coordinateArray[] = $point;
-                $point = [];
+                $point             = [];
             }
 
             $point[] = $half;
@@ -582,42 +597,69 @@ class MappingService
 
     }//end coordinateStringToArray()
 
+
     /**
-     * Retrieves a single mapping by its ID.
+     * Retrieves a single mapping by its ID/UUID/slug.
      *
-     * This is a wrapper function that provides controlled access to the mapping data.
-     * We use this wrapper pattern to ensure other Nextcloud apps can only interact with
-     * mappings through this service layer, rather than accessing the storage directly.
-     * This maintains proper encapsulation and separation of concerns.
+     * Post chain-C cutover this routes directly through OpenRegister's ObjectService.
+     * The returned OR Mapping value object exposes the same methods the previous
+     * `OCA\OpenConnector\Db\Mapping` shape did (`getMapping`, `getPassThrough`, ...).
      *
      * @param string $mappingId The unique identifier of the mapping to retrieve.
      *
-     * @return ObjectEntity The requested mapping entity.
+     * @return OrMapping The hydrated mapping value object.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-3
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If mapping is not found.
+     *
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
-    public function getMapping(string $mappingId): ObjectEntity
+    public function getMapping(string $mappingId): OrMapping
     {
-        return $this->orObjectService->find(id: $mappingId, register: 'openconnector', schema: 'mapping');
+        $object = $this->orObjectService->find(
+            id: $mappingId,
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        if ($object === null) {
+            throw new DoesNotExistException(
+                sprintf('Mapping "%s" does not exist.', $mappingId)
+            );
+        }
+
+        return (new OrMapping())->hydrate($object->getObject());
 
     }//end getMapping()
 
     /**
      * Retrieves all available mappings.
      *
-     * This is a wrapper function that provides controlled access to the mapping data.
-     * We use this wrapper pattern to ensure other Nextcloud apps can only interact with
-     * mappings through this service layer, rather than accessing the storage directly.
-     * This maintains proper encapsulation and separation of concerns.
+     * Routes directly through OpenRegister's ObjectService.
      *
-     * @return array<ObjectEntity> An array containing all mapping entities
+     * @return array<OrMapping> An array containing all hydrated mapping value objects.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-3
+     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
     public function getMappings(): array
     {
-        $result = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'mapping']]);
-        return ($result['results'] ?? $result);
+        $results = $this->orObjectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => self::REGISTER,
+                    'schema'   => self::SCHEMA,
+                ],
+            ]
+        );
+
+        $rows = ($results['results'] ?? $results);
+
+        return array_map(
+            fn ($object): OrMapping => (new OrMapping())->hydrate(
+                $object instanceof ObjectEntity ? $object->getObject() : (array) $object
+            ),
+            $rows
+        );
 
     }//end getMappings()
+
 }//end class

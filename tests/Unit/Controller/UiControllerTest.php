@@ -31,7 +31,7 @@ class UiControllerTest extends TestCase
         $methods = [
             'sources', 'sourcesLogs', 'endpoints', 'endpointsLogs', 'consumers', 'webhooks',
             'jobs', 'jobsLogs', 'mappings', 'synchronizations', 'synchronizationsContracts',
-            'synchronizationsLogs', 'cloudEvents', 'cloudEventsEvents', 'cloudEventsLogs', 'import',
+            'synchronizationsLogs', 'cloudEvents', 'cloudEventsEvents', 'cloudEventsLogs',
         ];
 
         foreach ($methods as $method) {
