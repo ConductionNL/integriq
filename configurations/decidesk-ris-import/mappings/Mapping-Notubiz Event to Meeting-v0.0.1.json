@@ -1,0 +1,38 @@
+{
+    "@context": {
+        "schema": "http:\/\/schema.org",
+        "register": "decidesk"
+    },
+    "@type": "mapping",
+    "@id": "https:\/\/openconnector.app\/mappings\/notubiz-event-to-decidesk-meeting",
+    "reference": "https:\/\/openconnector.app\/mappings\/notubiz-event-to-decidesk-meeting",
+    "name": "Notubiz Event to decidesk Meeting",
+    "description": "Maps a Notubiz event (RIS meeting/vergadering) onto decidesk's ORI-aligned Meeting schema. Source fields follow the Notubiz public events payload (title, plannedstart, location, attributes[]). Lifecycle defaults to scheduled; chair/quorum are not exposed by the public feed and are left unset.",
+    "version": "0.0.1",
+    "mapping": {
+        "title": "{{ values.title ?? values.name ?? values.subject }}",
+        "meetingType": "{{ values.gremium_type ?? 'regular' }}",
+        "scheduledDate": "{{ values.plannedstart ?? values.date ?? values.start }}",
+        "endDate": "{{ values.plannedend ?? values.end }}",
+        "location": "{{ values.location ?? values.locatie }}",
+        "meetingMode": "in-person",
+        "lifecycle": "scheduled",
+        "isPublic": true,
+        "subjectRegister": "notubiz",
+        "subjectSchema": "event",
+        "subjectId": "{{ values.id ?? values.event_id }}",
+        "subjectLabel": "{{ values.title ?? values.name }}",
+        "externalReference": "{{ 'notubiz-event-' ~ (values.id ?? values.event_id) }}"
+    },
+    "unset": [
+        ""
+    ],
+    "cast": {
+        "title": "unsetIfValue==",
+        "scheduledDate": "unsetIfValue==",
+        "endDate": "unsetIfValue==",
+        "location": "unsetIfValue==",
+        "subjectId": "unsetIfValue=="
+    },
+    "passThrough": false
+}
