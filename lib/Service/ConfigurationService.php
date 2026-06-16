@@ -620,10 +620,18 @@ class ConfigurationService
      */
     private function buildRegisterAndSchemaMappings(array $registerIds=[], array $schemaIds=[]): void
     {
-        // Get register slugs and build mappings.
+        // Get register slugs and build mappings. Resolve each id individually:
+        // OpenRegister's mappers bind an `['id' => [ids]]` filter as a single
+        // scalar, so passing an array fails with "invalid input syntax for type
+        // bigint: Array" and broke the whole register export.
         if (empty($registerIds) === false) {
-            $registers = $this->registerMapper->findAll(filters: ['id' => $registerIds]);
-            foreach ($registers as $register) {
+            foreach ($registerIds as $registerId) {
+                try {
+                    $register = $this->registerMapper->find($registerId);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+
                 $id   = (string) $register->getId();
                 $slug = $register->getSlug();
                 $this->mappings['register']['idToSlug'][$id]   = $slug;
@@ -631,10 +639,15 @@ class ConfigurationService
             }
         }
 
-        // Get schema slugs and build mappings.
+        // Get schema slugs and build mappings (same id-array caveat as above).
         if (empty($schemaIds) === false) {
-            $schemas = $this->schemaMapper->findAll(filters: ['id' => $schemaIds]);
-            foreach ($schemas as $schema) {
+            foreach ($schemaIds as $schemaId) {
+                try {
+                    $schema = $this->schemaMapper->find($schemaId);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+
                 $id   = (string) $schema->getId();
                 $slug = $schema->getSlug();
                 $this->mappings['schema']['idToSlug'][$id]   = $slug;
