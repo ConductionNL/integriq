@@ -6,7 +6,9 @@ status: proposed
 
 ## Purpose
 
-OpenConnector serves its health, metrics, preferences, and SPA-shell endpoints through the OpenRegister AppHost (declarative observability descriptors + generic boilerplate controllers), with output parity to the hand-written code it deletes, and with the four pre-existing defects (admin-only health, 200-on-critical health, unwired repair steps, dead settings methods) fixed.
+OpenConnector serves its health and metrics endpoints through the OpenRegister AppHost declarative observability engine, with output parity to the hand-written controllers it deletes, fixing the pre-existing admin-only-health and 200-on-critical defects (ADR-006) and removing dead `SettingsService` methods.
+
+**Scope note (2026-06-16):** Only the **observability half** of the AppHost adoption is delivered in this change. The boilerplate half (`GenericPreferencesController`, `GenericDashboardController`, `GenericAdminSettings`/`GenericSettingsSection`, `GenericInitializeSettings`/`GenericInitializeActions`, and the `AppHost\Bootstrap`/`AppHost\Routes` helpers) does **not yet exist** in the OpenRegister release this app builds against — the OpenRegister change `apphost-boilerplate-controllers` is still in `proposed` state and its classes are absent from `lib/AppHost/`. Adopting controllers that do not exist would 500 every aliased route, so the Preferences/SPA-shell/Settings/Repair-step boilerplate stays bespoke until that engine half ships. Those requirements are retained below under **Deferred** so the contract is preserved.
 
 **Cross-references**: `openregister/openspec/changes/apphost-observability-engine/specs/apphost-observability/spec.md`, `openregister/openspec/changes/apphost-boilerplate-controllers/`
 
@@ -64,6 +66,23 @@ OpenConnector SHALL serve `GET /apps/openconnector/api/health` through the AppHo
 - **THEN** the response MUST be HTTP 200 with `status = "degraded"` and `checks.openregister` reporting failure, while `checks.database` remains `"ok"`
 - @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
 
+### Requirement: App-Specific Residue Preserved
+
+The app-specific `SettingsController::rebase()` action and the `SettingsService` rebase implementation SHALL remain in openconnector (they are not boilerplate), and the dead `getStats()`/`getSettings()`/`updateSettings()` methods on `SettingsService` SHALL be deleted (zero callers since the chain-C OR cutover).
+
+#### Scenario: Rebase action unchanged after adoption
+
+- **GIVEN** an admin user with log-retention settings configured
+- **WHEN** `POST /apps/openconnector/api/settings/rebase` is called
+- **THEN** the rebase MUST recompute log deletion timestamps and return the same response shape as before adoption, guarded by `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]`
+- @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
+
+---
+
+## Deferred (blocked on `apphost-boilerplate-controllers`)
+
+The following requirements are retained as the target contract but are NOT implemented in this change — the generic classes they depend on do not exist in OpenRegister yet. OpenConnector keeps its bespoke `PreferencesController`, `UiController` (SPA shell + `connect-src *` CSP), `OpenConnectorAdmin` settings/section, and `InitializeRegister`/`InitializeActions` repair steps until the OpenRegister boilerplate engine ships.
+
 ### Requirement: Generic Preferences Controller
 
 OpenConnector SHALL serve `GET|PUT /apps/openconnector/api/preferences/{key}` through the AppHost `GenericPreferencesController`, preserving the `pref_` key namespace and the `[a-z0-9-]`/64-char key sanitisation so values written before adoption keep resolving.
@@ -101,14 +120,3 @@ OpenConnector's admin settings panel/section and its register/action initialisat
 - **GIVEN** an admin user
 - **WHEN** the admin opens Settings → Administration → OpenConnector
 - **THEN** the settings panel MUST render through the generic admin settings stub in the existing section
-
-### Requirement: App-Specific Residue Preserved
-
-The app-specific `SettingsController::rebase()` action and `SettingsService` rebase implementation SHALL remain in openconnector (they are not boilerplate), and the dead `getStats()`/`getSettings()`/`updateSettings()` methods on `SettingsService` SHALL be deleted.
-
-#### Scenario: Rebase action unchanged after adoption
-
-- **GIVEN** an admin user with log-retention settings configured
-- **WHEN** `POST /apps/openconnector/api/settings/rebase` is called
-- **THEN** the rebase MUST recompute log deletion timestamps and return the same response shape as before adoption, guarded by `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]`
-- @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection

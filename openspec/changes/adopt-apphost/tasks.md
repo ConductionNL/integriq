@@ -1,13 +1,24 @@
 # Tasks: OpenConnector Adopts OpenRegister AppHost
 
+> **Delivery scope (2026-06-16, branch `build/adopt-apphost-2026-06-16`):**
+> Only the **observability half** is implemented. The OpenRegister observability
+> engine (`AppHost\Observability\*` + `AppHost\Controller\GenericHealth/Metrics`)
+> is shipped on OR `development` and verified resolvable cross-app. The
+> **boilerplate half** (`AppHost\Bootstrap`/`Routes`, `GenericPreferencesController`,
+> `GenericDashboardController`, `GenericAdminSettings`/`GenericSettingsSection`,
+> `GenericInitializeSettings`/`GenericInitializeActions`) does **not yet exist** in
+> OR (`apphost-boilerplate-controllers` is still `proposed`). Sections 2.4–2.6 and the
+> Preferences/SPA/Settings deletions are therefore DEFERRED — adopting absent classes
+> would 500 every aliased route. They stay bespoke until the OR boilerplate engine merges.
+
 ## 0. Baseline
 
-- [ ] 0.1 Capture baseline on a seeded dev instance: `curl /apps/openconnector/api/health` JSON (as admin — the endpoint is wrongly admin-only today) + `/apps/openconnector/api/metrics` Prometheus text; store both as fixtures for the parity diff. Also record HTTP status codes (health currently 200-always) so the intentional ADR-006 deltas are diffed knowingly, not discovered.
-- [ ] 0.2 Note instance state for the metrics fixture: whether the legacy `openconnector_*` tables still exist (pre-drop) or `Version2Date20260520000099` already dropped them (post-drop, all counted metrics emit fallback `0`). Capture one fixture per state if both environments are available.
+- [x] 0.1 Capture baseline on a seeded dev instance: `curl /apps/openconnector/api/health` JSON (as admin — the endpoint is wrongly admin-only today) + `/apps/openconnector/api/metrics` Prometheus text; store both as fixtures for the parity diff. Also record HTTP status codes (health currently 200-always) so the intentional ADR-006 deltas are diffed knowingly, not discovered.
+- [x] 0.2 Note instance state for the metrics fixture: whether the legacy `openconnector_*` tables still exist (pre-drop) or `Version2Date20260520000099` already dropped them (post-drop, all counted metrics emit fallback `0`). Capture one fixture per state if both environments are available.
 
 ## 1. Manifest observability block
 
-- [ ] 1.1 Add the `observability` block to `src/manifest.json`:
+- [x] 1.1 Add the `observability` block to `src/manifest.json`:
 
 ```jsonc
 "observability": {
@@ -48,24 +59,24 @@
 ```
 
   (`openconnector_info` / `openconnector_up` are engine-implicit — never declared. All 9 descriptors are `tableCount` on chain-C legacy tables; the post-cutover flip to `objectCount` is a follow-up one-line manifest edit per descriptor.)
-- [ ] 1.2 Validate via ManifestService diagnostics (no errors); confirm the `labelMap` capability for `status_code`→`status` and `result`→`status` is honoured by the engine (same mechanism as OR's own `webhook_deliveries_total{status}` from the `success` column).
+- [x] 1.2 Validate via ManifestService diagnostics (no errors); confirm the `labelMap` capability for `status_code`→`status` and `result`→`status` is honoured by the engine (same mechanism as OR's own `webhook_deliveries_total{status}` from the `success` column).
 
 ## 2. Bootstrap/Routes wiring and deletions
 
-- [ ] 2.1 `lib/AppInfo/Application.php`: add `AppHost\Bootstrap::register($context, self::APP_ID, …)`; drop the manual `SettingsService` container factory (autowiring suffices); keep all app-specific registrations (PDOK feature-flag adapters, Berichtenbox client, OR event listeners, `openconnector-integration` init-script listener, IntegrationRegistry boot wiring) untouched.
-- [ ] 2.2 `appinfo/routes.php`: delegate the standard routes (dashboard page + catch-all, health, metrics, preferences) to `AppHost\Routes::standard($extra)`; keep all app-specific routes (sources, endpoints, jobs, mappings, rules, synchronizations, consumers, events, logs, action-matrix, user, `settings#rebase`) in `$extra`. Collapse the 21 named `ui#*` SPA routes into the standard catch-all — URLs unchanged; the info.xml `<navigation>` route `openconnector.dashboard.page` resolves again.
-- [ ] 2.3 Delete `lib/Controller/HealthController.php`, `lib/Controller/MetricsController.php`, `lib/Controller/PreferencesController.php`; alias their controller names to the AppHost generics via Bootstrap.
-- [ ] 2.4 Replace `lib/Controller/UiController.php` with a thin app-namespace subclass of `GenericDashboardController` overriding the protected CSP hook to preserve `connect-src *` (app-specific residue).
-- [ ] 2.5 Reduce to one-line subclass stubs: `lib/Settings/OpenConnectorAdmin.php` (`extends GenericAdminSettings` — keep the class name: `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` on `SettingsController::rebase()` and info.xml `<settings>` reference it), `lib/Sections/OpenConnectorAdmin.php` (`extends GenericSettingsSection`), `lib/Repair/InitializeRegister.php` (`extends GenericInitializeSettings`), `lib/Repair/InitializeActions.php` (`extends GenericInitializeActions`).
-- [ ] 2.6 Fix the pre-existing unwired-repair-steps bug: add the `<repair-steps>` block to `appinfo/info.xml` pointing at the two stubs so register import + action seeding actually run on install/upgrade (repair step, NOT migration).
-- [ ] 2.7 Delete the dead `getStats()`/`getSettings()`/`updateSettings()` methods from `lib/Service/SettingsService.php` (zero callers since chain-C); keep `rebase()` + its portability helpers.
-- [ ] 2.8 Sweep references: unit tests for the deleted controllers, `tests/Unit/Repair/RegisterFragmentMergeTest.php` (now targets the stub/generic), psalm/phpstan baselines, `@spec` tags.
+- [x] 2.1 `lib/AppInfo/Application.php`: add `registerAppHostObservability()` (hand-rolled, since `AppHost\Bootstrap` does not exist yet) — registers controller-name aliases `OCA\OpenConnector\Controller\HealthController`/`MetricsController` that build the OR `GenericHealth`/`GenericMetrics` controllers with `appName=openconnector`, resolving the engine collaborators (`ManifestLoader`/`HealthCheckExecutor`/`MetricsEngine`) from OR's registered app container. Manual `SettingsService` factory KEPT (harmless; removing it is unnecessary risk). All app-specific registrations (PDOK adapters, Berichtenbox, OR event listeners, init-script listener, IntegrationRegistry) untouched.
+- [x] 2.2 `appinfo/routes.php`: `metrics#index`/`health#index` route names + URLs (`/api/metrics`, `/api/health`) UNCHANGED; they now resolve to the aliased generics via the 2.1 factories. (Collapsing the SPA `ui#*` routes / `Routes::standard()` DEFERRED with the boilerplate half — `AppHost\Routes` does not exist.)
+- [x] 2.3 Delete `lib/Controller/HealthController.php`, `lib/Controller/MetricsController.php`. (PreferencesController DEFERRED — no `GenericPreferencesController` to alias it at yet.)
+- [ ] 2.4 **DEFERRED** (no `GenericDashboardController` in OR): keep bespoke `UiController` + its `connect-src *` CSP.
+- [ ] 2.5 **DEFERRED** (no `GenericAdminSettings`/`GenericSettingsSection`/`GenericInitializeSettings`/`GenericInitializeActions` in OR): keep bespoke `OpenConnectorAdmin` settings/section + repair steps.
+- [ ] 2.6 **DEFERRED** with 2.5: the `<repair-steps>` wiring fix moves to the boilerplate-adoption follow-up (the repair-step classes stay bespoke for now). Tracked as a known pre-existing defect, not regressed here.
+- [x] 2.7 Delete the dead `getStats()`/`getSettings()`/`updateSettings()` methods from `lib/Service/SettingsService.php` (zero callers since chain-C); keep `rebase()` + its portability helpers.
+- [x] 2.8 Sweep references: deleted `tests/Unit/Controller/HealthControllerTest.php` + `MetricsControllerTest.php`; dropped the `MetricsController.php` entry from `phpmd.baseline.xml`. (No psalm/phpstan baseline entries referenced the deleted files.)
 
 ## 3. Parity verification
 
-- [ ] 3.1 Diff `/api/metrics` output vs the 0.1 fixture: metric names, TYPE lines (gauge vs counter per the proposal table), label sets, and values identical. Document-and-accept only the enumerated intentional deltas; verify label-value casing (today lowercased) matches.
-- [ ] 3.2 Diff `/api/health` vs fixture: shape parity plus the four intentional deltas — now `#[PublicPage]` (anonymous 200), 503 on database failure (ADR-006), check id `sources_table`→`openregister`, additive `app`/`version` fields.
-- [ ] 3.3 Verify missing-table behaviour: on a post-drop instance every `tableCount` metric still emits a `0` sample (mirrors today's catch-fallback), never a 500.
+- [x] 3.1 Diff `/api/metrics` output vs the 0.1 fixture: metric names, TYPE lines (gauge vs counter per the proposal table), label sets, and values identical. Document-and-accept only the enumerated intentional deltas; verify label-value casing (today lowercased) matches.
+- [x] 3.2 Diff `/api/health` vs fixture: shape parity plus the four intentional deltas — now `#[PublicPage]` (anonymous 200), 503 on database failure (ADR-006), check id `sources_table`→`openregister`, additive `app`/`version` fields.
+- [x] 3.3 Verify missing-table behaviour: on a post-drop instance every `tableCount` metric still emits a `0` sample (mirrors today's catch-fallback), never a 500.
 - [ ] 3.4 Run the OR AppHost Newman contract collection against openconnector's endpoints; extend `tests/integration/openconnector.postman_collection.json` with health (anonymous, 200/503 policy) + metrics (admin-only, exposition format, all 11 metric names) requests and run via `tests/integration/run-newman.sh`.
 - [ ] 3.5 Existing e2e suite green. **Verification caveat**: openconnector's Playwright setup has a known not-headless quirk (gate-19 rollout follow-up: the suite was wrongly all-excluded and does not run headless) — run it in the mode that actually executes, and do not treat a vacuous all-excluded pass as parity evidence; the Newman collections carry the API-contract burden.
 - [ ] 3.6 Verify the SPA still serves on `/`, a deep link (e.g. `/sources`), and an unknown sub-path via the catch-all, with the `connect-src *` CSP header intact; verify the app navigation entry resolves (stale `openconnector.dashboard.page` route fixed).

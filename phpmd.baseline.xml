@@ -10,7 +10,6 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/LogsController.php" method="export"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/MappingsController.php" method="test"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/MappingsController.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/MetricsController.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Controller/PdokController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/PreferencesController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/SourcesController.php"/>
