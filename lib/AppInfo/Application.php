@@ -344,8 +344,73 @@ class Application extends App implements IBootstrap
     public function boot(IBootContext $context): void
     {
         $this->registerIntegrationProviders(context: $context);
+        $this->ensureRegisterBootstrapped();
 
     }//end boot()
+
+    /**
+     * Ensure the openconnector register + schemas exist in OpenRegister.
+     *
+     * The InitializeRegister repair step runs during app install/upgrade, but
+     * bails when OpenRegister isn't loaded yet at that moment (install order or
+     * autoloader timing), leaving the app non-functional out of the box until
+     * an admin runs `occ maintenance:repair`. As a safety net, run the same
+     * repair step once at boot — when OR is guaranteed loaded — guarded by an
+     * app-config flag keyed to the installed version so it is a cheap no-op on
+     * every subsequent request.
+     *
+     * @return void
+     */
+    private function ensureRegisterBootstrapped(): void
+    {
+        if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
+            return;
+        }
+
+        try {
+            $container = $this->getContainer();
+            $appConfig = $container->get(\OCP\IAppConfig::class);
+
+            $installedVersion    = $appConfig->getValueString(self::APP_ID, 'installed_version', '');
+            $bootstrappedVersion = $appConfig->getValueString(self::APP_ID, 'register_bootstrapped_version', '');
+            if ($installedVersion !== '' && $bootstrappedVersion === $installedVersion) {
+                return;
+            }
+
+            $repair = $container->get(\OCA\OpenConnector\Repair\InitializeRegister::class);
+            $repair->run(
+                new class implements \OCP\Migration\IOutput {
+                    public function debug(string $message): void
+                    {
+                    }
+                    public function info($message)
+                    {
+                    }
+                    public function warning($message)
+                    {
+                    }
+                    public function startProgress($max=0)
+                    {
+                    }
+                    public function advance($step=1, $description='')
+                    {
+                    }
+                    public function finishProgress()
+                    {
+                    }
+                }
+            );
+
+            $appConfig->setValueString(self::APP_ID, 'register_bootstrapped_version', $installedVersion);
+        } catch (\Throwable $e) {
+            // Soft-fail so a bootstrap hiccup never breaks page loads; the next
+            // boot retries (the flag is only set on success).
+            \OCP\Server::get(\Psr\Log\LoggerInterface::class)->warning(
+                '[openconnector] boot-time register bootstrap failed: '.$e->getMessage()
+            );
+        }
+
+    }//end ensureRegisterBootstrapped()
 
     /**
      * Register openconnector-side IntegrationProviders with OR's IntegrationRegistry.
