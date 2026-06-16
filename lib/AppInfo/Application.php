@@ -310,13 +310,15 @@ class Application extends App implements IBootstrap
      */
     private function registerAppHostObservability(IRegistrationContext $context): void
     {
-        // Alias the `health#index` route name (URL /api/health, unchanged) at
-        // the engine's GenericHealthController, scoped to this app's manifest.
+        // Build the thin openconnector HealthController subclass (URL
+        // /api/health, route name health#index — both unchanged) with the
+        // engine collaborators resolved from OpenRegister's app container,
+        // scoped to this app's manifest via appName.
         $context->registerService(
-            'OCA\\OpenConnector\\Controller\\HealthController',
+            \OCA\OpenConnector\Controller\HealthController::class,
             static function (ContainerInterface $c) {
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-                return new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
+                return new \OCA\OpenConnector\Controller\HealthController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
                     manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -325,14 +327,14 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Alias the `metrics#index` route name (URL /api/metrics, unchanged)
-        // at the engine's GenericMetricsController (admin-only — the engine
-        // owns that posture; ADR-006).
+        // Build the thin openconnector MetricsController subclass (URL
+        // /api/metrics, route name metrics#index — both unchanged). Admin-only
+        // posture is engine-owned and re-declared on the subclass method.
         $context->registerService(
-            'OCA\\OpenConnector\\Controller\\MetricsController',
+            \OCA\OpenConnector\Controller\MetricsController::class,
             static function (ContainerInterface $c) {
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-                return new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
+                return new \OCA\OpenConnector\Controller\MetricsController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
                     manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
