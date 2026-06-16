@@ -4,6 +4,137 @@
   "dependencies": [
     "openregister"
   ],
+  "observability": {
+    "_note": "OpenConnector adopts the OpenRegister AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index (registered in lib/AppInfo/Application.php with appName=openconnector), so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract. Intentional improvements: /api/health is now #[PublicPage] and returns 503 on a failed database check (ADR-006); the bespoke `sources_table` OR-join probe is subsumed by the generic `openregister` availability check (degraded). All 9 counted descriptors are tableCount over chain-C legacy openconnector_* tables; on a drained instance every tableCount emits zero samples (never a 500). The post-cutover flip to objectCount is a one-line per-descriptor manifest edit.",
+    "health": {
+      "statusCodePolicy": "adr006",
+      "checks": [
+        {
+          "id": "database",
+          "type": "database",
+          "severity": "critical"
+        },
+        {
+          "id": "openregister",
+          "type": "orAvailable",
+          "severity": "degraded"
+        }
+      ]
+    },
+    "metrics": [
+      {
+        "name": "sources_total",
+        "type": "gauge",
+        "help": "Total sources by type",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_sources",
+          "groupBy": [
+            "type"
+          ],
+          "labelDefaults": {
+            "type": "rest"
+          }
+        }
+      },
+      {
+        "name": "calls_total",
+        "type": "counter",
+        "help": "Total API calls by status",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_call_logs",
+          "groupBy": [
+            "status_code"
+          ],
+          "labelMap": {
+            "status_code": "status"
+          },
+          "labelDefaults": {
+            "status_code": "unknown"
+          }
+        }
+      },
+      {
+        "name": "synchronizations_total",
+        "type": "gauge",
+        "help": "Total synchronization runs",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_synchronizations"
+        }
+      },
+      {
+        "name": "synchronization_runs_total",
+        "type": "counter",
+        "help": "Total synchronization log entries by result",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_synchronization_logs",
+          "groupBy": [
+            "result"
+          ],
+          "labelMap": {
+            "result": "status"
+          },
+          "labelDefaults": {
+            "result": "unknown"
+          }
+        }
+      },
+      {
+        "name": "endpoints_total",
+        "type": "gauge",
+        "help": "Total registered endpoints",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_endpoints"
+        }
+      },
+      {
+        "name": "jobs_total",
+        "type": "gauge",
+        "help": "Total configured jobs",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_jobs"
+        }
+      },
+      {
+        "name": "job_runs_total",
+        "type": "counter",
+        "help": "Total job log entries by status",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_job_logs",
+          "groupBy": [
+            "status"
+          ],
+          "labelDefaults": {
+            "status": "unknown"
+          }
+        }
+      },
+      {
+        "name": "mappings_total",
+        "type": "gauge",
+        "help": "Total configured mappings",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_mappings"
+        }
+      },
+      {
+        "name": "rules_total",
+        "type": "gauge",
+        "help": "Total configured rules",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_rules"
+        }
+      }
+    ]
+  },
   "menu": [
     {
       "id": "Dashboard",

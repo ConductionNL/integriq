@@ -1,0 +1,109 @@
+diff --git a/src/schemas/app-manifest-v2.schema.json b/src/schemas/app-manifest-v2.schema.json
+index 4ee3639e..4dc8a240 100644
+--- a/src/schemas/app-manifest-v2.schema.json
++++ b/src/schemas/app-manifest-v2.schema.json
+@@ -3,7 +3,7 @@
+ 	"$id": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+ 	"title": "Conduction App Manifest v2",
+ 	"description": "v2 schema for the JSON-driven page and navigation manifest consumed by @conduction/nextcloud-vue. Introduces a uniform widgets[] array on every page type with a per-slot grid coordinate system, a typed actions[] discriminator, and the required $schema field for version detection. v1 manifests continue to validate against app-manifest.schema.json (unchanged).",
+-	"version": "2.9.0",
++	"version": "2.10.0",
+ 	"type": "object",
+ 	"required": ["$schema", "version", "menu", "pages"],
+ 	"additionalProperties": false,
+@@ -65,9 +65,95 @@
+ 			"type": "array",
+ 			"items": { "$ref": "#/$defs/page" },
+ 			"description": "Page definitions dispatched by CnPageRenderer. Each page's id is also its vue-router route name. Ids MUST be unique across the array; uniqueness is enforced by validateManifestV2 as a post-schema check."
++		},
++		"observability": {
++			"$ref": "#/$defs/observability",
++			"description": "Declarative observability block (ADR-040). Consumed at request time by the OpenRegister AppHost observability engine (GenericHealthController + GenericMetricsController), NOT by the Vue renderer. Declares the app's health checks and Prometheus metric descriptors so adopting apps ship zero hand-written observability PHP while keeping their /api/health + /api/metrics URLs and the ADR-006 contract."
+ 		}
+ 	},
+ 	"$defs": {
++		"observability": {
++			"type": "object",
++			"additionalProperties": false,
++			"description": "Health checks + metric descriptors executed by the AppHost engine.",
++			"properties": {
++				"_note": { "type": "string", "description": "Free-form note for maintainers; ignored by the engine." },
++				"health": {
++					"type": "object",
++					"additionalProperties": false,
++					"description": "Declarative health checks rendered as the ADR-006 {status, app, version, checks} shape.",
++					"properties": {
++						"statusCodePolicy": {
++							"type": "string",
++							"enum": ["adr006", "always200"],
++							"default": "adr006",
++							"description": "HTTP status-code policy. 'adr006' returns 503 on a failed critical check; 'always200' always returns 200."
++						},
++						"checks": {
++							"type": "array",
++							"description": "Health check descriptors.",
++							"items": {
++								"type": "object",
++								"additionalProperties": false,
++								"required": ["id", "type"],
++								"properties": {
++									"id": { "type": "string", "description": "Check id, surfaced as the key in the response's checks map." },
++									"type": {
++										"type": "string",
++										"enum": ["database", "filesystem", "appEnabled", "appConfig", "orAvailable"],
++										"description": "Engine check kind."
++									},
++									"severity": {
++										"type": "string",
++										"enum": ["critical", "degraded"],
++										"default": "critical",
++										"description": "critical → a failure flips status to error (503 under adr006); degraded → status degraded (200)."
++									},
++									"app": { "type": "string", "description": "App id, for the appEnabled check." },
++									"key": { "type": "string", "description": "Config key, for the appConfig check." }
++								}
++							}
++						}
++					}
++				},
++				"metrics": {
++					"type": "array",
++					"description": "Prometheus metric descriptors. The {app}_ prefix, exposition format, and implicit {app}_info / {app}_up gauges are engine-owned.",
++					"items": {
++						"type": "object",
++						"additionalProperties": false,
++						"required": ["name", "type", "source"],
++						"properties": {
++							"name": { "type": "string", "description": "Metric name (without the {app}_ prefix the engine adds)." },
++							"type": { "type": "string", "enum": ["gauge", "counter"], "description": "Prometheus metric type." },
++							"help": { "type": "string", "description": "HELP text for the metric family." },
++							"source": {
++								"type": "object",
++								"additionalProperties": false,
++								"required": ["kind"],
++								"description": "Where the engine sources the value.",
++								"properties": {
++									"kind": {
++										"type": "string",
++										"enum": ["tableCount", "objectCount", "appConfig", "provider"],
++										"description": "Source kind. tableCount = COUNT over an allowlisted own-table; objectCount = OR objects by register/schema; appConfig = a numeric app-config value; provider = an IMetricsProvider implementation."
++									},
++									"table": { "type": "string", "description": "tableCount: allowlisted [a-z0-9_] table name." },
++									"register": { "type": "string", "description": "objectCount: OR register slug." },
++									"schema": { "type": "string", "description": "objectCount: OR schema slug." },
++									"groupBy": { "type": "array", "items": { "type": "string" }, "description": "Columns to GROUP BY (one label per column)." },
++									"labelMap": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Rename a groupBy column to a different Prometheus label name." },
++									"labelDefaults": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] }, "description": "Default label value for NULL/empty group columns." },
++									"filter": { "type": "object", "additionalProperties": true, "description": "Per-column operator filters (eq/neq/lt/lte/gt/gte/like)." },
++									"key": { "type": "string", "description": "appConfig: the config key whose numeric value is the sample." },
++									"id": { "type": "string", "description": "provider: the IMetricsProvider id to invoke." }
++								}
++							}
++						}
++					}
++				}
++			}
++		},
+ 		"primaryAction": {
+ 			"type": "object",
+ 			"required": ["label"],

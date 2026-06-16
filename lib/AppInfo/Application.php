@@ -55,7 +55,9 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IRequest;
 use OCP\Util;
+use Psr\Container\ContainerInterface;
 
 /**
  * Bootstrap entry point for the OpenConnector app.
@@ -269,7 +271,78 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        $this->registerAppHostObservability(context: $context);
     }//end register()
+
+    /**
+     * Wire the OpenRegister AppHost declarative observability engine.
+     *
+     * ADR-040 / ADR-006. OpenConnector adopts OpenRegister's AppHost
+     * observability engine instead of hand-writing its `/api/health` +
+     * `/api/metrics` controllers. The `metrics#index` and `health#index`
+     * route names (URLs `/api/metrics`, `/api/health`) are aliased here at
+     * the engine-owned generic controllers — built with `appName` =
+     * `openconnector` so the engine reads THIS app's manifest
+     * `observability` block, while the engine's own collaborators
+     * (ManifestLoader / HealthCheckExecutor / MetricsEngine) are resolved
+     * from OpenRegister's registered app container where they are pre-wired.
+     *
+     * Lazy + fail-soft: if OpenRegister is not present the factories throw
+     * `QueryException` at route-resolution time (the standard NC "controller
+     * could not be built" path) rather than fataling app bootstrap — every
+     * Conduction app hard-requires OpenRegister (ADR-022), so this only fires
+     * on a broken install, and the route 500s instead of bricking the SPA.
+     *
+     * NOTE: the boilerplate half of the AppHost adoption (the
+     * `apphost-boilerplate-controllers` `Bootstrap::register()` /
+     * `Routes::standard()` helpers and the generic Settings / Dashboard /
+     * Preferences / repair-step classes) is intentionally NOT adopted here:
+     * those generic classes do not yet exist in the OpenRegister release this
+     * app builds against. OpenConnector keeps its bespoke SPA/UiController,
+     * Preferences, Settings and repair plumbing until that engine half ships.
+     *
+     * @param IRegistrationContext $context Registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+     */
+    private function registerAppHostObservability(IRegistrationContext $context): void
+    {
+        // Build the thin openconnector HealthController subclass (URL
+        // /api/health, route name health#index — both unchanged) with the
+        // engine collaborators resolved from OpenRegister's app container,
+        // scoped to this app's manifest via appName.
+        $context->registerService(
+            \OCA\OpenConnector\Controller\HealthController::class,
+            static function (ContainerInterface $c) {
+                $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                return new \OCA\OpenConnector\Controller\HealthController(
+                    appName: self::APP_ID,
+                    request: $c->get(IRequest::class),
+                    manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    executor: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
+                );
+            }
+        );
+
+        // Build the thin openconnector MetricsController subclass (URL
+        // /api/metrics, route name metrics#index — both unchanged). Admin-only
+        // posture is engine-owned and re-declared on the subclass method.
+        $context->registerService(
+            \OCA\OpenConnector\Controller\MetricsController::class,
+            static function (ContainerInterface $c) {
+                $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                return new \OCA\OpenConnector\Controller\MetricsController(
+                    appName: self::APP_ID,
+                    request: $c->get(IRequest::class),
+                    manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
+                );
+            }
+        );
+    }//end registerAppHostObservability()
 
     /**
      * Soft pre-flight check: warn when the legacy→OpenRegister storage migration has

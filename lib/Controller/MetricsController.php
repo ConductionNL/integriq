@@ -1,14 +1,29 @@
 <?php
+
 /**
- * OpenConnector Metrics Controller
+ * OpenConnector Metrics Controller — AppHost adapter.
  *
- * Controller for exposing Prometheus metrics in text exposition format.
+ * Thin app-namespace subclass of the OpenRegister AppHost
+ * {@see \OCA\OpenRegister\AppHost\Controller\GenericMetricsController}. It
+ * carries no metric logic of its own: the engine reads openconnector's
+ * `src/manifest.json` `observability.metrics` block (resolved by `appName`)
+ * and renders Prometheus text exposition 0.0.4. This class exists only so the
+ * `metrics#index` route name (URL `/api/metrics`, unchanged) resolves in
+ * openconnector's namespace and so the admin-only posture is declared on a
+ * concrete openconnector method (ADR-006 / ADR-016).
+ *
+ * The metrics endpoint stays admin-only: the method declares no
+ * `#[NoAdminRequired]`, so the Nextcloud SecurityMiddleware requires an admin
+ * session — the intended ADR-006 posture, owned by the engine and preserved
+ * here. The constructor + service wiring (resolving `MetricsEngine` from
+ * OpenRegister's app container, with `appName = openconnector`) is registered
+ * in {@see \OCA\OpenConnector\AppInfo\Application::registerAppHostObservability()}.
  *
  * @category Controller
  * @package  OCA\OpenConnector\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git_id>
@@ -20,401 +35,30 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
-use OCP\AppFramework\Controller;
+use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TextPlainResponse;
-use OCP\IAppConfig;
-use OCP\IConfig;
-use OCP\IDBConnection;
-use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
- * Controller for exposing Prometheus metrics.
+ * Admin-only declarative Prometheus metrics endpoint, delegated to the engine.
  *
- * Provides a metrics endpoint returning data in Prometheus text exposition format
- * for monitoring sources, calls, and synchronizations.
- *
- * @SuppressWarnings(PHPMD.ShortVariable)
- *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
+ * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
  */
-class MetricsController extends Controller
+class MetricsController extends GenericMetricsController
 {
     /**
-     * MetricsController constructor.
+     * GET /api/metrics — declarative Prometheus metrics (admin-only, ADR-006).
      *
-     * @param string          $appName   The name of the app
-     * @param IRequest        $request   Request object
-     * @param IConfig         $config    The config service (retained for getSystemValueString)
-     * @param IAppConfig      $appConfig The typed app config service
-     * @param IDBConnection   $db        The database connection
-     * @param LoggerInterface $logger    Logger for error handling
+     * Delegates entirely to the engine. No `#[NoAdminRequired]` — admin
+     * session required (engine-owned posture).
+     *
+     * @return TextPlainResponse Prometheus text exposition 0.0.4.
+     *
+     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Declarative Metrics Parity
      */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        private readonly IConfig $config,
-        private readonly IAppConfig $appConfig,
-        private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(appName: $appName, request: $request);
-
-    }//end __construct()
-
-    /**
-     * Expose Prometheus metrics.
-     *
-     * @return TextPlainResponse Plain text response with Prometheus metrics.
-     *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-3
-     */
+    #[NoCSRFRequired]
     public function index(): TextPlainResponse
     {
-        $lines = [];
-
-        $appVersion = $this->appConfig->getValueString('openconnector', 'installed_version', '0.0.0');
-        $phpVersion = PHP_VERSION;
-        $ncVersion  = $this->config->getSystemValueString('version', '0.0.0');
-
-        // Info gauge.
-        $lines[] = '# HELP openconnector_info Application information';
-        $lines[] = '# TYPE openconnector_info gauge';
-        $lines[] = 'openconnector_info{version="'.$appVersion.'",php_version="'.$phpVersion.'",nextcloud_version="'.$ncVersion.'"} 1';
-
-        // Up gauge.
-        $lines[] = '# HELP openconnector_up Whether the application is up';
-        $lines[] = '# TYPE openconnector_up gauge';
-        $lines[] = 'openconnector_up 1';
-
-        // Sources total by type.
-        $this->collectSourceMetrics(lines: $lines);
-
-        // Calls total by status.
-        $this->collectCallMetrics(lines: $lines);
-
-        // Synchronizations total by status.
-        $this->collectSyncMetrics(lines: $lines);
-
-        // Endpoints total.
-        $this->collectEndpointMetrics(lines: $lines);
-
-        // Jobs total and job runs by status.
-        $this->collectJobMetrics(lines: $lines);
-
-        // Mappings and rules totals.
-        $this->collectMappingRuleMetrics(lines: $lines);
-
-        $body     = implode("\n", $lines)."\n";
-        $response = new TextPlainResponse($body);
-        $response->addHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
-
-        return $response;
-
+        return parent::index();
     }//end index()
-
-    /**
-     * Collect source metrics grouped by type.
-     *
-     * @param array $lines Reference to the metrics output lines.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
-     */
-    private function collectSourceMetrics(array &$lines): void
-    {
-        $lines[] = '# HELP openconnector_sources_total Total sources by type';
-        $lines[] = '# TYPE openconnector_sources_total gauge';
-
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('type', $qb->createFunction('COUNT(*) AS cnt'))
-                ->from('openconnector_sources')
-                ->groupBy('type');
-
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
-
-            $counts = [];
-            foreach ($rows as $row) {
-                if ($row['type'] !== null && $row['type'] !== '') {
-                    $type = strtolower($row['type']);
-                } else {
-                    $type = 'rest';
-                }
-
-                if (isset($counts[$type]) === true) {
-                    $counts[$type] = ($counts[$type] + (int) $row['cnt']);
-                } else {
-                    $counts[$type] = (int) $row['cnt'];
-                }
-            }
-
-            if (empty($counts) === true) {
-                $lines[] = 'openconnector_sources_total{type="rest"} 0';
-            }
-
-            foreach ($counts as $type => $count) {
-                $lines[] = 'openconnector_sources_total{type="'.$type.'"} '.$count;
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count sources for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_sources_total{type="rest"} 0';
-        }//end try
-
-    }//end collectSourceMetrics()
-
-    /**
-     * Collect call log metrics grouped by status code.
-     *
-     * @param array $lines Reference to the metrics output lines.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-5
-     */
-    private function collectCallMetrics(array &$lines): void
-    {
-        $lines[] = '# HELP openconnector_calls_total Total API calls by status';
-        $lines[] = '# TYPE openconnector_calls_total counter';
-
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('status_code', $qb->createFunction('COUNT(*) AS cnt'))
-                ->from('openconnector_call_logs')
-                ->groupBy('status_code');
-
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
-
-            if (empty($rows) === true) {
-                $lines[] = 'openconnector_calls_total{status="200"} 0';
-            }
-
-            foreach ($rows as $row) {
-                $statusCode = $row['status_code'] ?? 'unknown';
-                $lines[]    = 'openconnector_calls_total{status="'.$statusCode.'"} '.(int) $row['cnt'];
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count calls for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_calls_total{status="200"} 0';
-        }//end try
-
-    }//end collectCallMetrics()
-
-    /**
-     * Collect synchronization metrics grouped by status.
-     *
-     * @param array $lines Reference to the metrics output lines.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
-     */
-    private function collectSyncMetrics(array &$lines): void
-    {
-        $lines[] = '# HELP openconnector_synchronizations_total Total synchronization runs';
-        $lines[] = '# TYPE openconnector_synchronizations_total gauge';
-
-        try {
-            $total   = $this->countTable(tableName: 'openconnector_synchronizations');
-            $lines[] = 'openconnector_synchronizations_total '.$total;
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count synchronizations for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_synchronizations_total 0';
-        }
-
-        // Sync logs by result for counter metric.
-        $lines[] = '# HELP openconnector_synchronization_runs_total Total synchronization log entries by result';
-        $lines[] = '# TYPE openconnector_synchronization_runs_total counter';
-
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('result', $qb->createFunction('COUNT(*) AS cnt'))
-                ->from('openconnector_synchronization_logs')
-                ->groupBy('result');
-
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
-
-            if (empty($rows) === true) {
-                $lines[] = 'openconnector_synchronization_runs_total{status="success"} 0';
-            }
-
-            foreach ($rows as $row) {
-                if ($row['result'] !== null && $row['result'] !== '') {
-                    $resultLabel = strtolower($row['result']);
-                } else {
-                    $resultLabel = 'unknown';
-                }
-
-                $lines[] = 'openconnector_synchronization_runs_total{status="'.$resultLabel.'"} '.(int) $row['cnt'];
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count sync logs for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_synchronization_runs_total{status="success"} 0';
-        }//end try
-
-    }//end collectSyncMetrics()
-
-    /**
-     * Collect endpoint metrics.
-     *
-     * Counts total registered endpoints from the openconnector_endpoints table.
-     *
-     * @param array $lines Reference to the metrics output lines.
-     *
-     * @return void
-     */
-    private function collectEndpointMetrics(array &$lines): void
-    {
-        $lines[] = '# HELP openconnector_endpoints_total Total registered endpoints';
-        $lines[] = '# TYPE openconnector_endpoints_total gauge';
-
-        try {
-            $total   = $this->countTable(tableName: 'openconnector_endpoints');
-            $lines[] = 'openconnector_endpoints_total '.$total;
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count endpoints for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_endpoints_total 0';
-        }
-
-    }//end collectEndpointMetrics()
-
-    /**
-     * Collect job queue metrics.
-     *
-     * Counts total configured jobs and job log entries grouped by status
-     * from the openconnector_jobs and openconnector_job_logs tables.
-     *
-     * @param array $lines Reference to the metrics output lines.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
-     */
-    private function collectJobMetrics(array &$lines): void
-    {
-        $lines[] = '# HELP openconnector_jobs_total Total configured jobs';
-        $lines[] = '# TYPE openconnector_jobs_total gauge';
-
-        try {
-            $total   = $this->countTable(tableName: 'openconnector_jobs');
-            $lines[] = 'openconnector_jobs_total '.$total;
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count jobs for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_jobs_total 0';
-        }
-
-        $lines[] = '# HELP openconnector_job_runs_total Total job log entries by status';
-        $lines[] = '# TYPE openconnector_job_runs_total counter';
-
-        try {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('status', $qb->createFunction('COUNT(*) AS cnt'))
-                ->from('openconnector_job_logs')
-                ->groupBy('status');
-
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
-
-            if (empty($rows) === true) {
-                $lines[] = 'openconnector_job_runs_total{status="success"} 0';
-            }
-
-            foreach ($rows as $row) {
-                if ($row['status'] !== null && $row['status'] !== '') {
-                    $statusLabel = strtolower($row['status']);
-                } else {
-                    $statusLabel = 'unknown';
-                }
-
-                $lines[] = 'openconnector_job_runs_total{status="'.$statusLabel.'"} '.(int) $row['cnt'];
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count job logs for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_job_runs_total{status="success"} 0';
-        }//end try
-
-    }//end collectJobMetrics()
-
-    /**
-     * Collect mapping and rule metrics.
-     *
-     * Counts total configured mappings and rules from the
-     * openconnector_mappings and openconnector_rules tables.
-     *
-     * @param array $lines Reference to the metrics output lines.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
-     */
-    private function collectMappingRuleMetrics(array &$lines): void
-    {
-        $lines[] = '# HELP openconnector_mappings_total Total configured mappings';
-        $lines[] = '# TYPE openconnector_mappings_total gauge';
-
-        try {
-            $total   = $this->countTable(tableName: 'openconnector_mappings');
-            $lines[] = 'openconnector_mappings_total '.$total;
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count mappings for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_mappings_total 0';
-        }
-
-        $lines[] = '# HELP openconnector_rules_total Total configured rules';
-        $lines[] = '# TYPE openconnector_rules_total gauge';
-
-        try {
-            $total   = $this->countTable(tableName: 'openconnector_rules');
-            $lines[] = 'openconnector_rules_total '.$total;
-        } catch (\Exception $e) {
-            $this->logger->warning('Could not count rules for metrics', ['exception' => $e->getMessage()]);
-            $lines[] = 'openconnector_rules_total 0';
-        }
-
-    }//end collectMappingRuleMetrics()
-
-    /**
-     * Count rows in a given table.
-     *
-     * @param string $tableName The table name.
-     *
-     * @return int The row count.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-4
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-6
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-7
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openconnector/tasks.md#task-8
-     */
-    private function countTable(string $tableName): int
-    {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->createFunction('COUNT(*) AS cnt'))
-            ->from($tableName);
-
-        $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        return $count;
-
-    }//end countTable()
 }//end class
