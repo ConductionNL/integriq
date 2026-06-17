@@ -157,9 +157,12 @@ return [
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
 
-		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog).
-		['name' => 'preferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
-		['name' => 'preferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
+		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
+		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The leaf-namespaced
+		// controller class is bound to the engine generic in lib/AppInfo/Application.php (appName=openconnector,
+		// so the `pref_` user-value namespace stays scoped to this app). URLs + JSON contract unchanged.
+		['name' => 'AppHost\Controller\GenericPreferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
+		['name' => 'AppHost\Controller\GenericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
 		// UI page routes for SPA deep links
 		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],
