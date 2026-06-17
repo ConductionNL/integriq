@@ -177,6 +177,19 @@ class EndpointCacheService
             return $matchedEndpoint;
         }
 
+        // Reconstruct ObjectEntity from distributed cache (stored as jsonSerialize() output with @self).
+        // NOTE: hydrateObject() is not used because it calls setObject(object: $x) with a named
+        // parameter, which PHP's __call() receives as ['object'=>$x], making $args[0] undefined
+        // and leaving $this->object empty.  We reconstruct manually instead.
+        if (is_array($matchedEndpoint) === true) {
+            $entity  = new ObjectEntity();
+            $payload = $matchedEndpoint;
+            unset($payload['@self']);
+            // setObject via positional call to avoid named-arg / __call bug.
+            $entity->setObject($payload);
+            return $entity;
+        }
+
         return null;
 
     }//end findByPathRegex()
@@ -235,7 +248,7 @@ class EndpointCacheService
      */
     private function fetchEndpointsFromOr(): array
     {
-        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']]);
+        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']], _rbac: false, _multitenancy: false);
         $endpoints = ($matches['results'] ?? $matches);
         if (is_array($endpoints) === true) {
             return $endpoints;
@@ -266,7 +279,7 @@ class EndpointCacheService
             $serialisable = array_map(
                 static function ($ep) {
                     if ($ep instanceof ObjectEntity) {
-                        return $ep->getObject();
+                        return $ep->jsonSerialize();
                     } else if (is_array($ep) === true) {
                         return $ep;
                     }

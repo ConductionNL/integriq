@@ -24,6 +24,7 @@ use OC\Files\Node\File;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\SourceMappingService;
+use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -48,16 +49,18 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Constructor.
      *
-     * @param MappingService $mappingService Service that executes mappings.
-     * @param CallService    $callService    Service that performs outbound calls.
-     * @param FileService    $fileService    Service that resolves file metadata.
-     * @param ObjectService  $objectService  Service that resolves OR objects.
+     * @param MappingService                $mappingService               Service that executes mappings.
+     * @param CallService                   $callService                  Service that performs outbound calls.
+     * @param FileService                   $fileService                  Service that resolves file metadata.
+     * @param SourceMappingService              $objectService                 Service that resolves OR objects.
+     * @param SynchronizationContractService    $synchronizationContractService Service for contract lookups.
      */
     public function __construct(
-        private readonly MappingService $mappingService,
-        private readonly CallService $callService,
-        private readonly FileService $fileService,
-        private readonly SourceMappingService $objectService,
+        private readonly MappingService                 $mappingService,
+        private readonly CallService                    $callService,
+        private readonly FileService                    $fileService,
+        private readonly SourceMappingService           $objectService,
+        private readonly SynchronizationContractService $synchronizationContractService,
     ) {
 
     }//end __construct()
@@ -278,4 +281,72 @@ class MappingRuntime implements RuntimeExtensionInterface
         return $slug;
 
     }//end createSlug()
+
+    /**
+     * Look up the targetId of the synchronization contract for a given originId.
+     *
+     * Use this in a mapping when a related object has already been pushed to an external
+     * system and you need its external ID (targetId) as a reference. For example, after
+     * uploading a file to zaaksysteem /case/prepare_file the returned UUID is stored as
+     * targetId; this function lets a subsequent mapping retrieve that UUID by the
+     * OpenRegister object's own id (@self.id / originId).
+     *
+     * @param string      $originId          UUID of the OpenRegister object (@self.id).
+     * @param string|null $synchronizationId Optional: scope the lookup to a specific
+     *                                       synchronization; when omitted the first matching
+     *                                       contract across all synchronizations is returned.
+     *
+     * @return string|null The targetId stored on the contract, or null when not found.
+     *
+     * @throws \OCP\DB\Exception
+     */
+    public function getTargetIdByOriginId(string $originId, ?string $synchronizationId=null): ?string
+    {
+        if ($synchronizationId !== null) {
+            $contract = $this->synchronizationContractService->findBySyncAndOrigin(
+                synchronizationId: $synchronizationId,
+                originId: $originId
+            );
+            return ($contract !== null) ? ($contract['targetId'] ?? null) : null;
+        }
+
+        return $this->synchronizationContractService->findTargetIdByOriginId($originId);
+
+    }//end getTargetIdByOriginId()
+
+    /**
+     * Look up the originId of the synchronization contract for a given targetId.
+     *
+     * Symmetric counterpart of getTargetIdByOriginId(): given the external ID that
+     * was stored as targetId on a contract, returns the local OpenRegister object UUID
+     * (originId).  Useful when an inbound response or webhook contains an external
+     * reference and you need to find the corresponding local object.
+     *
+     * @param string      $targetId          The external target ID stored on the contract.
+     * @param string|null $synchronizationId Optional: scope the lookup to a specific
+     *                                       synchronization; when omitted the first matching
+     *                                       contract across all synchronizations is returned.
+     *
+     * @return string|null The originId stored on the contract, or null when not found.
+     *
+     * @throws \OCP\DB\Exception
+     */
+    public function getOriginIdByTargetId(string $targetId, ?string $synchronizationId=null): ?string
+    {
+        $filters = ['targetId' => $targetId];
+        if ($synchronizationId !== null) {
+            $filters['synchronizationId'] = $synchronizationId;
+        }
+
+        $contracts = $this->synchronizationContractService->findAllObjects(filters: $filters);
+        if (empty($contracts) === true) {
+            return null;
+        }
+
+        $contract = $contracts[0]->jsonSerialize();
+        $originId = ($contract['originId'] ?? null);
+        return ($originId !== null && $originId !== '') ? $originId : null;
+
+    }//end getOriginIdByTargetId()
+
 }//end class
