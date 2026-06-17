@@ -45,6 +45,7 @@ use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingCli
 use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
 use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -273,6 +274,7 @@ class Application extends App implements IBootstrap
         );
 
         $this->registerAppHostObservability(context: $context);
+        $this->registerAppHostBoilerplate(context: $context);
     }//end register()
 
     /**
@@ -294,13 +296,14 @@ class Application extends App implements IBootstrap
      * Conduction app hard-requires OpenRegister (ADR-022), so this only fires
      * on a broken install, and the route 500s instead of bricking the SPA.
      *
-     * NOTE: the boilerplate half of the AppHost adoption (the
-     * `apphost-boilerplate-controllers` `Bootstrap::register()` /
-     * `Routes::standard()` helpers and the generic Settings / Dashboard /
-     * Preferences / repair-step classes) is intentionally NOT adopted here:
-     * those generic classes do not yet exist in the OpenRegister release this
-     * app builds against. OpenConnector keeps its bespoke SPA/UiController,
-     * Preferences, Settings and repair plumbing until that engine half ships.
+     * NOTE: the boilerplate half of the AppHost adoption is now PARTIALLY
+     * adopted — see {@see registerAppHostBoilerplate()} for the per-user
+     * Preferences controller. The remaining bespoke plumbing (SPA/UiController
+     * with its permissive `connect-src *` CSP, the domain SettingsController
+     * `rebase` action + register.d-merging SettingsService, and the
+     * OpenConnectorAdmin AdminSettings/Section) is intentionally KEPT bespoke
+     * because each diverges behaviourally from the manifest-driven generics
+     * (see that method's docblock for the per-class rationale).
      *
      * @param IRegistrationContext $context Registration context.
      *
@@ -343,6 +346,74 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerAppHostObservability()
+
+    /**
+     * Adopt the AppHost boilerplate generics that are a clean, behaviour-preserving win.
+     *
+     * ADR-040. Only the per-user Preferences controller is adopted here. The
+     * bespoke `OCA\OpenConnector\Controller\PreferencesController` was a
+     * byte-for-byte copy of OpenRegister's engine-owned
+     * {@see GenericPreferencesController} (same `pref_` user-value namespace,
+     * same `[a-z0-9-]{0,64}` key sanitisation, same `{value: string|null}`
+     * envelope, same per-session user scoping), so it is deleted and the
+     * `/api/preferences/{key}` GET/PUT routes now resolve to the leaf-namespaced
+     * class `OCA\OpenConnector\AppHost\Controller\GenericPreferencesController`,
+     * registered here as a service that constructs the OpenRegister generic with
+     * `appName = openconnector` injected — so every user value stays scoped to
+     * THIS app's namespace, never OpenRegister's. URLs + JSON contract unchanged;
+     * the engine owns the (identical, user-scoped, no-IDOR) auth posture so the
+     * leaf can never drift it. Mirrors opencatalogi's just-merged adoption.
+     *
+     * Lazy + fail-soft: the factory closure references the OR generic only when
+     * a `/api/preferences/*` route is dispatched, so a disabled OpenRegister
+     * never fatals app bootstrap (it 5xxs that one route — the correct DEGRADED
+     * behaviour for a hard-required dependency under ADR-022).
+     *
+     * Deliberately NOT adopted (kept bespoke — each would CHANGE behaviour):
+     *   - Dashboard / UiController SPA shell: its `makeSpaResponse()` sets a
+     *     permissive `connect-src *` ContentSecurityPolicy so the SPA can call
+     *     externally-configured source APIs. The engine GenericDashboardController
+     *     returns a plain `TemplateResponse` with NO custom CSP — adopting it
+     *     would silently tighten the CSP and break outbound source calls. The
+     *     bespoke UiController + every `ui#*`/catch-all route therefore stay.
+     *   - SettingsController: only the openconnector-specific `rebase` action
+     *     (recompute log-retention deletion timestamps) survives chain-C; the
+     *     generic SettingsController does index/create/load with force-reimport
+     *     semantics and has no `rebase` equivalent.
+     *   - OpenConnectorAdmin AdminSettings + Section: referenced by
+     *     `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` on
+     *     SettingsController::rebase for delegated-admin gating, and renders the
+     *     bespoke `settings/admin` template — the manifest-driven
+     *     GenericAdminSettings reproduces neither.
+     *   - The source/mapping/synchronization domain engine, PDOK/Berichtenbox
+     *     adapters, and event-retry/dead-letter/webhook plumbing.
+     *
+     * @param IRegistrationContext $context Registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+     */
+    private function registerAppHostBoilerplate(IRegistrationContext $context): void
+    {
+        // Bind the leaf-namespaced AppHost preferences controller class (which
+        // does not physically exist in this app — same pattern as the
+        // Health/Metrics observability aliases) to the OpenRegister generic,
+        // with appName=openconnector so the `pref_` user-value namespace is
+        // scoped to this app.
+        $context->registerService(
+            'OCA\\OpenConnector\\AppHost\\Controller\\GenericPreferencesController',
+            static function (ContainerInterface $c) {
+                return new GenericPreferencesController(
+                    appName: self::APP_ID,
+                    request: $c->get(IRequest::class),
+                    config: $c->get(\OCP\IConfig::class),
+                    userSession: $c->get(\OCP\IUserSession::class)
+                );
+            }
+        );
+
+    }//end registerAppHostBoilerplate()
 
     /**
      * Soft pre-flight check: warn when the legacy→OpenRegister storage migration has
