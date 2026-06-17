@@ -1442,7 +1442,7 @@ class EndpointService
     private function getRuleById(string $id): ?ObjectEntity
     {
         try {
-            return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'rule');
+            return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'rule', _rbac: false, _multitenancy: false);
         } catch (Exception $e) {
             $this->logger->error('Error fetching rule: '.$e->getMessage());
             return null;

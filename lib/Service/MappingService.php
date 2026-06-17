@@ -43,6 +43,7 @@
 
 namespace OCA\OpenConnector\Service;
 
+use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenConnector\Twig\MappingExtension;
@@ -114,15 +115,17 @@ class MappingService
         FileService $fileService,
         ObjectService $objectService,
         private readonly OrObjectService $orObjectService,
+        SynchronizationContractService $synchronizationContractService,
     ) {
         $this->twig = new Environment($loader);
         $this->twig->addExtension(new MappingExtension());
         $this->twig->addRuntimeLoader(
             new MappingRuntimeLoader(
-                mappingService: $this,
-                callService: $callService,
-                fileService: $fileService,
-                objectService: $objectService
+                mappingService:                 $this,
+                callService:                    $callService,
+                fileService:                    $fileService,
+                objectService:                  $objectService,
+                synchronizationContractService: $synchronizationContractService,
             )
         );
 
@@ -161,19 +164,15 @@ class MappingService
      * Renders a Twig template string using the mapping Twig environment.
      *
      * @param string $template The Twig template to render.
-     * @param array  $context  The context available inside the template.
+     * @param array $context The context available inside the template.
      *
      * @return string The rendered template result.
-     *
      * @throws LoaderError|SyntaxError Twig exceptions
-     *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
      */
-    public function renderTemplateString(string $template, array $context=[]): string
+    public function renderTemplateString(string $template, array $context = []): string
     {
         return html_entity_decode($this->twig->createTemplate($template)->render($context));
-
-    }//end renderTemplateString()
+    }
 
     /**
      * Normalise the polymorphic $mapping input to a concrete OR Mapping value object.
