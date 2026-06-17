@@ -21,10 +21,10 @@ namespace OCA\OpenConnector\Twig;
 
 use GuzzleHttp\Exception\GuzzleException;
 use OC\Files\Node\File;
-use OCA\OpenConnector\Db\SynchronizationContractMapper;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\SourceMappingService;
+use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -52,15 +52,15 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param MappingService                $mappingService               Service that executes mappings.
      * @param CallService                   $callService                  Service that performs outbound calls.
      * @param FileService                   $fileService                  Service that resolves file metadata.
-     * @param SourceMappingService          $objectService                Service that resolves OR objects.
-     * @param SynchronizationContractMapper $synchronizationContractMapper Mapper for contract lookups.
+     * @param SourceMappingService              $objectService                 Service that resolves OR objects.
+     * @param SynchronizationContractService    $synchronizationContractService Service for contract lookups.
      */
     public function __construct(
-        private readonly MappingService                $mappingService,
-        private readonly CallService                   $callService,
-        private readonly FileService                   $fileService,
-        private readonly SourceMappingService          $objectService,
-        private readonly SynchronizationContractMapper $synchronizationContractMapper,
+        private readonly MappingService                 $mappingService,
+        private readonly CallService                    $callService,
+        private readonly FileService                    $fileService,
+        private readonly SourceMappingService           $objectService,
+        private readonly SynchronizationContractService $synchronizationContractService,
     ) {
 
     }//end __construct()
@@ -303,14 +303,14 @@ class MappingRuntime implements RuntimeExtensionInterface
     public function getTargetIdByOriginId(string $originId, ?string $synchronizationId=null): ?string
     {
         if ($synchronizationId !== null) {
-            $contract = $this->synchronizationContractMapper->findSyncContractByOriginId(
+            $contract = $this->synchronizationContractService->findBySyncAndOrigin(
                 synchronizationId: $synchronizationId,
                 originId: $originId
             );
-            return $contract?->getTargetId();
+            return ($contract !== null) ? ($contract['targetId'] ?? null) : null;
         }
 
-        return $this->synchronizationContractMapper->findTargetIdByOriginId($originId);
+        return $this->synchronizationContractService->findTargetIdByOriginId($originId);
 
     }//end getTargetIdByOriginId()
 
@@ -333,20 +333,18 @@ class MappingRuntime implements RuntimeExtensionInterface
      */
     public function getOriginIdByTargetId(string $targetId, ?string $synchronizationId=null): ?string
     {
+        $filters = ['targetId' => $targetId];
         if ($synchronizationId !== null) {
-            $contract = $this->synchronizationContractMapper->findOnTarget(
-                synchronization: $synchronizationId,
-                targetId: $targetId
-            );
-            return ($contract instanceof \OCA\OpenConnector\Db\SynchronizationContract) ? $contract->getOriginId() : null;
+            $filters['synchronizationId'] = $synchronizationId;
         }
 
-        $contracts = $this->synchronizationContractMapper->findByTargetId($targetId);
+        $contracts = $this->synchronizationContractService->findAllObjects(filters: $filters);
         if (empty($contracts) === true) {
             return null;
         }
 
-        $originId = $contracts[0]->getOriginId();
+        $contract = $contracts[0]->jsonSerialize();
+        $originId = ($contract['originId'] ?? null);
         return ($originId !== null && $originId !== '') ? $originId : null;
 
     }//end getOriginIdByTargetId()
