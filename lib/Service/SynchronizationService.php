@@ -1364,9 +1364,16 @@ class SynchronizationService
                 $result['_embed']['contracts'] = array_map(function($contractId) {
                     // Contracts are addressed by their OpenRegister id/uuid; resolve
                     // directly via the OR ObjectService (a missing contract is
-                    // tolerated as null).
+                    // tolerated as null). findContract may return an entity, a
+                    // plain array (OR ObjectService), or null — handle all three
+                    // instead of blindly calling jsonSerialize() (which fatals on
+                    // an array and crashes the whole run).
                     try {
-                        return $this->findContract(id: $contractId)->jsonSerialize();
+                        $contract = $this->findContract(id: $contractId);
+                        if (is_object($contract) === true && method_exists($contract, 'jsonSerialize') === true) {
+                            return $contract->jsonSerialize();
+                        }
+                        return $contract;
                     } catch (DoesNotExistException $exception) {
                         return null;
                     }
@@ -1599,6 +1606,13 @@ class SynchronizationService
 		// If no ID was found at the specified position, throw an error
 		if ($originId === null) {
 			throw new Exception('Could not find origin id in object for key: ' . $originIdPosition);
+		}
+
+		// The synchronization contract stores originId as a string. Coerce
+		// scalar source ids (e.g. a numeric latitude or integer id) so they
+		// pass validation instead of failing the whole sync.
+		if (is_scalar($originId) === true) {
+			$originId = (string) $originId;
 		}
 
 		// Return the found ID value

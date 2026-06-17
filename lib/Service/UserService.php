@@ -364,7 +364,7 @@ class UserService
             }
             
             // Try to get size from database if available (NextCloud stores this)
-            $connection = \OC::$server->getDatabaseConnection();
+            $connection = \OCP\Server::get(\OCP\IDBConnection::class);
             $query = $connection->getQueryBuilder();
             
             // Check if NextCloud has cached storage stats
@@ -419,7 +419,7 @@ class UserService
             $language = $user->getLanguage();
             // If empty, try to get from browser or system default
             if (empty($language)) {
-                $language = \OC::$server->getL10NFactory()->findLanguage();
+                $language = \OCP\Server::get(\OCP\L10N\IFactory::class)->findLanguage();
             }
         }
         
