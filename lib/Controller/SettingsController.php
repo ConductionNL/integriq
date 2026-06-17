@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Controller;
 
+use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SettingsService;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCP\AppFramework\Controller;

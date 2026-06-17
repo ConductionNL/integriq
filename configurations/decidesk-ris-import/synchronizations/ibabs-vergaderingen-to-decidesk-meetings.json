@@ -1,0 +1,20 @@
+{
+    "name": "iBabs vergaderingen to decidesk Meetings",
+    "description": "Reads vergaderingen from the iBabs RIS source and writes them into decidesk's Meeting OpenRegister objects. targetId is decidesk's register/schema id pair (fill in per instance: <decideskRegisterId>/<meetingSchemaId>).",
+    "version": "0.0.1",
+    "sourceId": "ibabs-ris-v1",
+    "sourceType": "api",
+    "sourceTargetMapping": "iBabs Vergadering to decidesk Meeting",
+    "sourceConfig": {
+        "idPosition": "id",
+        "resultsPosition": "items",
+        "endpoint": "/api/v1/organisations/{{organisatieId}}/vergaderingen",
+        "deleteInvalidObjects": "false",
+        "headers": [],
+        "query": []
+    },
+    "currentPage": 1,
+    "targetId": "decidesk/meeting",
+    "targetType": "register/schema",
+    "conditions": {"!!":{"var":"id"}}
+}

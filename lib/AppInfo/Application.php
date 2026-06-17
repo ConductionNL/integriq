@@ -55,7 +55,9 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IRequest;
 use OCP\Util;
+use Psr\Container\ContainerInterface;
 
 /**
  * Bootstrap entry point for the OpenConnector app.
@@ -269,7 +271,78 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        $this->registerAppHostObservability(context: $context);
     }//end register()
+
+    /**
+     * Wire the OpenRegister AppHost declarative observability engine.
+     *
+     * ADR-040 / ADR-006. OpenConnector adopts OpenRegister's AppHost
+     * observability engine instead of hand-writing its `/api/health` +
+     * `/api/metrics` controllers. The `metrics#index` and `health#index`
+     * route names (URLs `/api/metrics`, `/api/health`) are aliased here at
+     * the engine-owned generic controllers — built with `appName` =
+     * `openconnector` so the engine reads THIS app's manifest
+     * `observability` block, while the engine's own collaborators
+     * (ManifestLoader / HealthCheckExecutor / MetricsEngine) are resolved
+     * from OpenRegister's registered app container where they are pre-wired.
+     *
+     * Lazy + fail-soft: if OpenRegister is not present the factories throw
+     * `QueryException` at route-resolution time (the standard NC "controller
+     * could not be built" path) rather than fataling app bootstrap — every
+     * Conduction app hard-requires OpenRegister (ADR-022), so this only fires
+     * on a broken install, and the route 500s instead of bricking the SPA.
+     *
+     * NOTE: the boilerplate half of the AppHost adoption (the
+     * `apphost-boilerplate-controllers` `Bootstrap::register()` /
+     * `Routes::standard()` helpers and the generic Settings / Dashboard /
+     * Preferences / repair-step classes) is intentionally NOT adopted here:
+     * those generic classes do not yet exist in the OpenRegister release this
+     * app builds against. OpenConnector keeps its bespoke SPA/UiController,
+     * Preferences, Settings and repair plumbing until that engine half ships.
+     *
+     * @param IRegistrationContext $context Registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+     */
+    private function registerAppHostObservability(IRegistrationContext $context): void
+    {
+        // Build the thin openconnector HealthController subclass (URL
+        // /api/health, route name health#index — both unchanged) with the
+        // engine collaborators resolved from OpenRegister's app container,
+        // scoped to this app's manifest via appName.
+        $context->registerService(
+            \OCA\OpenConnector\Controller\HealthController::class,
+            static function (ContainerInterface $c) {
+                $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                return new \OCA\OpenConnector\Controller\HealthController(
+                    appName: self::APP_ID,
+                    request: $c->get(IRequest::class),
+                    manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    executor: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
+                );
+            }
+        );
+
+        // Build the thin openconnector MetricsController subclass (URL
+        // /api/metrics, route name metrics#index — both unchanged). Admin-only
+        // posture is engine-owned and re-declared on the subclass method.
+        $context->registerService(
+            \OCA\OpenConnector\Controller\MetricsController::class,
+            static function (ContainerInterface $c) {
+                $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                return new \OCA\OpenConnector\Controller\MetricsController(
+                    appName: self::APP_ID,
+                    request: $c->get(IRequest::class),
+                    manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
+                );
+            }
+        );
+    }//end registerAppHostObservability()
 
     /**
      * Soft pre-flight check: warn when the legacy→OpenRegister storage migration has
@@ -344,8 +417,73 @@ class Application extends App implements IBootstrap
     public function boot(IBootContext $context): void
     {
         $this->registerIntegrationProviders(context: $context);
+        $this->ensureRegisterBootstrapped();
 
     }//end boot()
+
+    /**
+     * Ensure the openconnector register + schemas exist in OpenRegister.
+     *
+     * The InitializeRegister repair step runs during app install/upgrade, but
+     * bails when OpenRegister isn't loaded yet at that moment (install order or
+     * autoloader timing), leaving the app non-functional out of the box until
+     * an admin runs `occ maintenance:repair`. As a safety net, run the same
+     * repair step once at boot — when OR is guaranteed loaded — guarded by an
+     * app-config flag keyed to the installed version so it is a cheap no-op on
+     * every subsequent request.
+     *
+     * @return void
+     */
+    private function ensureRegisterBootstrapped(): void
+    {
+        if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
+            return;
+        }
+
+        try {
+            $container = $this->getContainer();
+            $appConfig = $container->get(\OCP\IAppConfig::class);
+
+            $installedVersion    = $appConfig->getValueString(self::APP_ID, 'installed_version', '');
+            $bootstrappedVersion = $appConfig->getValueString(self::APP_ID, 'register_bootstrapped_version', '');
+            if ($installedVersion !== '' && $bootstrappedVersion === $installedVersion) {
+                return;
+            }
+
+            $repair = $container->get(\OCA\OpenConnector\Repair\InitializeRegister::class);
+            $repair->run(
+                new class implements \OCP\Migration\IOutput {
+                    public function debug(string $message): void
+                    {
+                    }
+                    public function info($message)
+                    {
+                    }
+                    public function warning($message)
+                    {
+                    }
+                    public function startProgress($max=0)
+                    {
+                    }
+                    public function advance($step=1, $description='')
+                    {
+                    }
+                    public function finishProgress()
+                    {
+                    }
+                }
+            );
+
+            $appConfig->setValueString(self::APP_ID, 'register_bootstrapped_version', $installedVersion);
+        } catch (\Throwable $e) {
+            // Soft-fail so a bootstrap hiccup never breaks page loads; the next
+            // boot retries (the flag is only set on success).
+            \OCP\Server::get(\Psr\Log\LoggerInterface::class)->warning(
+                '[openconnector] boot-time register bootstrap failed: '.$e->getMessage()
+            );
+        }
+
+    }//end ensureRegisterBootstrapped()
 
     /**
      * Register openconnector-side IntegrationProviders with OR's IntegrationRegistry.

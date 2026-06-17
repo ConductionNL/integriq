@@ -43,6 +43,8 @@ use function React\Promise\all;
 class SoftwareCatalogueService
 {
 
+    public const SUFFIX = '-sc';
+
     /**
      * Software catalogue slug suffix — read from admin-config
      * `openconnector.software_catalogue.suffix` (default `-sc`).

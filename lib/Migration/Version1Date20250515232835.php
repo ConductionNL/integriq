@@ -1,4 +1,22 @@
 <?php
+/**
+ * Add configurations and slug columns to all main tables.
+ *
+ * Adds the configurations JSON column, the slug string column (plus index and
+ * unique constraint) and a status column on jobs and synchronizations. The
+ * post-schema step backfills slugs from the existing name columns.
+ *
+ * @category Migration
+ * @package  OCA\OpenConnector\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2025 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 declare(strict_types=1);
 

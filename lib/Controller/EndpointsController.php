@@ -28,6 +28,7 @@ use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\EndpointCacheService;
 use OCA\OpenConnector\Service\EndpointService;
 use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\AppInfo\Application;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Db\ObjectEntity;

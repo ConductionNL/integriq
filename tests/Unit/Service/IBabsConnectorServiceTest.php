@@ -58,6 +58,11 @@ class IBabsConnectorServiceTest extends TestCase
     {
         parent::setUp();
 
+        // IBabsConnectorService constructor signature (2 args): CallService,
+        // LoggerInterface. The previous version mocked the legacy SourceMapper
+        // and passed it as arg 2 — a pre-existing test bug from before OR
+        // cutover, surfaced once #1015 unblocked the suite from crashing at
+        // the moment SourceMapper was looked up (OR removed that class).
         $this->callService = $this->createMock(CallService::class);
         $logger            = $this->createMock(LoggerInterface::class);
         $this->rootFolder  = $this->createMock(IRootFolder::class);
