@@ -23,8 +23,11 @@
 import { test, expect } from '@playwright/test'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
-// /index.php/apps/openconnector/* strips the path on redirect; use /apps/ prefix.
-const APP_BASE = '/apps/openconnector'
+// The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
+// path-form deep-link (`/apps/openconnector/consumers`) is ignored and lands
+// on the dashboard; the hash form (`/apps/openconnector/#/consumers`) renders
+// the target page. APP_BASE carries the `/#`.
+const APP_BASE = '/apps/openconnector/#'
 
 // ---------------------------------------------------------------------------
 // REQ-CON-UI-001: Consumer Management UI
