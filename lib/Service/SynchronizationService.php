@@ -1,4 +1,23 @@
 <?php
+/**
+ * OpenConnector Synchronization Service.
+ *
+ * Service for handling synchronization operations between internal and external
+ * data sources. Provides functionality for mapping, transforming, and synchronizing
+ * data with support for asynchronous file fetching using ReactPHP for improved
+ * performance.
+ *
+ * @category Service
+ * @package  OCA\OpenConnector\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenConnector.nl
+ */
 
 namespace OCA\OpenConnector\Service;
 
@@ -32,8 +51,6 @@ use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
 
 /**
- * SynchronizationService
- *
  * Service for handling synchronization operations between internal and external data sources.
  * Provides functionality for mapping, transforming, and synchronizing data with support for
  * asynchronous file fetching using ReactPHP for improved performance.
@@ -2542,6 +2559,10 @@ class SynchronizationService
                     $targetObject[$propertyName][$key] = $this->updateIdsOnSubObjects(subObjectsConfig: $subObjectsConfig, synchronizationId: $synchronizationId, targetObject: $subValue);
                 }
             }
+
+            // @todo log error.
+            // Throw an exception if the specified position doesn't exist.
+            return [];
         }
 
 		return $targetObject;
@@ -3558,12 +3579,14 @@ class SynchronizationService
 	}
 
     /**
-     * Saves object to OpenRegister
+     * Saves object to OpenRegister.
      *
      * @param array $rule The OpenRegister rule payload array.
      * @param array $data
      *
-     * @return array $data
+     * @return array The serialized saved object payload.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processSaveObjectRule(array $rule, array $data): array
     {
@@ -3596,14 +3619,17 @@ class SynchronizationService
     }
 
     /**
-     * Extends input for performing business logic
+     * Extends input for performing business logic.
      *
      * @param array $config The rule configuration which parameters could be extended
      * @param array $data The data array containing the input parameters.
      *
-     * @return array The data array with the extended parameters in the 'extendedParameters' key.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * @return array The data array with the extended parameters merged in.
+     *
+     * @throws ContainerExceptionInterface When the container fails to resolve a service.
+     * @throws NotFoundExceptionInterface  When a required service is not found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processExtendInputRule(array $config, array $data): array
     {
@@ -3612,16 +3638,25 @@ class SynchronizationService
 
         // If the extends are given as a comma separated string, separate them into an array.
         if (is_string($config['extend_input']['properties']) === true) {
-            $config['extend_input']['properties'] = explode(separator: ',', string: $config['extend_input']['properties']);
+            $config['extend_input']['properties'] = explode(
+                separator: ',',
+                string: $config['extend_input']['properties']
+            );
         }
 
-        if (isset($data['id']) === true || isset($data['@self']['id']) === true || $data['uuid'] === true) {
-            $id = $data['@self']['id'] ?? $data['id'] ?? $data['uuid'];
+        if (isset($data['id']) === true || isset($data['@self']['id']) === true || ($data['uuid'] ?? null) === true) {
+            $id = ($data['@self']['id'] ?? $data['id'] ?? $data['uuid']);
         }
 
         // If we can fetch the object to extend again, use OpenRegister to fetch the extended object.
-        if (isset($id) === true && isset($config['extend_input']['fetchObject']) === true && ($config['extend_input']['fetchObject'] === true || $config['extend_input']['fetchObject'] === 'true')) {
-            $object = $this->objectService->getOpenRegisters()->find(id: $id, extend: $config['extend_input']['properties']);
+        $fetchObject = ($config['extend_input']['fetchObject'] ?? null);
+        if (isset($id) === true && isset($config['extend_input']['fetchObject']) === true
+            && ($fetchObject === true || $fetchObject === 'true')
+        ) {
+            $object = $this->objectService->getOpenRegisters()->find(
+                id: $id,
+                extend: $config['extend_input']['properties']
+            );
             return $object->jsonSerialize();
         }
 
@@ -3669,10 +3704,10 @@ class SynchronizationService
         }
 
         try {
-            // Get all rules at once and sort by order
+            // Get all rules at once and sort by order.
             $ruleEntities = array_filter(
                 array_map(
-                    fn($ruleId) => $this->getRuleById($ruleId),
+                    fn($ruleId) => $this->getRuleById(id: $ruleId),
                     $rules
                 )
             );
@@ -3680,7 +3715,7 @@ class SynchronizationService
             // Sort rules by order
             usort($ruleEntities, fn($a, $b) => ((int) ($a['order'] ?? 0)) - ((int) ($b['order'] ?? 0)));
 
-            // Process each rule in order
+            // Process each rule in order.
             foreach ($ruleEntities as $rule) {
                 if($flowToken !== null) {
                     $data['flowToken'] = $flowToken->__serialize();
@@ -3708,12 +3743,12 @@ class SynchronizationService
                     default => throw new Exception('Unsupported rule type: ' . ($rule['type'] ?? '')),
                 };
 
-                // If result is JSONResponse, return error immediately
+                // If result is JSONResponse, return error immediately.
                 if ($result instanceof JSONResponse) {
                     return $result;
                 }
 
-                // Update data with rule result
+                // Update data with rule result.
                 $data = $result;
 
                 $this->logger->info('Successfully applied rule for synchronization ' . ($synchronization['name'] ?? '') . ' with rule ' . ($rule['name'] ?? '') . ' of type ' . ($rule['type'] ?? ''));
@@ -4273,7 +4308,7 @@ class SynchronizationService
 		}
 
 
-        // If no endpoint is found, return data unchanged
+        // If no endpoint is found, return data unchanged.
         if ($endpoint === null) {
             return $dataDot->jsonSerialize();
         }
@@ -4391,20 +4426,34 @@ class SynchronizationService
             $published = null;
             $registerId = null;
 
-            switch ($this->getArrayType($endpoint)) {
-                // Single file endpoint
+            switch ($this->getArrayType(array: $endpoint)) {
+                // Single file endpoint.
                 case 'Not array':
-                    $this->fetchFileSafely($source, $endpoint, $config, $objectId);
+                    $this->fetchFileSafely(
+                        source: $source,
+                        endpoint: $endpoint,
+                        config: $config,
+                        objectId: $objectId
+                    );
                     break;
 
-                // Array of object that has file(s)
+                // Array of object that has file(s).
                 case 'Associative array':
                     $contextObjectId = null; // Separate variable to avoid overwriting the original
                     $actualEndpoint = $this->getFileContext(config: $config, endpoint: $endpoint, filename: $filename, tags: $tags, objectId: $contextObjectId, published: $published, registerId: $registerId);
                     // Use context object ID if specified, otherwise fall back to the original object ID
                     $targetObjectId = $contextObjectId ?? $objectId;
                     if ($actualEndpoint !== null) {
-                        $this->fetchFileSafely(source: $source, endpoint: $actualEndpoint, config: $config, objectId: $targetObjectId, filename: $filename, tags: $tags, published: $published, registerId: $registerId);
+                        $this->fetchFileSafely(
+                            source: $source,
+                            endpoint: $actualEndpoint,
+                            config: $config,
+                            objectId: $targetObjectId,
+                            filename: $filename,
+                            tags: $tags,
+                            published: $published,
+                            registerId: $registerId
+                        );
                     }
                     break;
 
@@ -4414,7 +4463,12 @@ class SynchronizationService
                 case "Multidimensional array":
                 // Array of just endpoints - use cleanup logic
                 case "Indexed array":
-                    $this->processMultipleFilesWithCleanup($source, $config, $endpoint, $objectId);
+                    $this->processMultipleFilesWithCleanup(
+                        source: $source,
+                        config: $config,
+                        endpoints: $endpoint,
+                        objectId: $objectId
+                    );
                     break;
             }
         } catch (Exception $e) {
@@ -4446,7 +4500,7 @@ class SynchronizationService
 	private function fetchFileSafely(array $source, string $endpoint, array $config, string $objectId, ?string $filename = null, array $tags = [], int|string|null $published = null, int|string|null $registerId = null): void
 	{
         try {
-            // Execute the file fetching operation
+            // Execute the file fetching operation.
             $result = $this->fetchFile(
                 source: $source,
                 endpoint: $endpoint,
@@ -4522,12 +4576,12 @@ class SynchronizationService
             return $dataDot->jsonSerialize();
         }
 
-        // Get the object entity and file service
+        // Get the object entity and file service.
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
         $objectEntity = $objectService->find(id: $objectId);
         $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
 
-        // Check if associative array (multiple files with metadata)
+        // Check if associative array (multiple files with metadata).
         if (is_array($files) === true && isset($files[0]) === true && array_keys($files[0]) !== range(0, count($files[0]) - 1)) {
             $result = [];
 			foreach ($files as $key => $value) {
@@ -4535,7 +4589,7 @@ class SynchronizationService
                 $fileName = '';
                 $tags = [];
 
-                // Extract file data
+                // Extract file data.
                 if (is_array($value) === true) {
                     $content = $value['content'];
                     $fileName = $value['filename'] ?? "file_$key";
@@ -4550,14 +4604,14 @@ class SynchronizationService
                     $fileName = "file_$key";
                 }
 
-                // Merge with configured tags
-                $allTags = array_unique(array_merge($config['tags'] ?? [], $tags));
+                // Merge with configured tags.
+                $allTags = array_unique(array_merge(($config['tags'] ?? []), $tags));
 
-                // Determine if we should share the file - only if there are user-defined tags
-                $shouldShare = !empty($allTags);
+                // Determine if we should share the file - only if there are user-defined tags.
+                $shouldShare = (empty($allTags) === false);
 
                 try {
-                    // Use the new saveFile method
+                    // Use the new saveFile method.
                     $file = $fileService->saveFile(
                         objectEntity: $objectEntity,
                         fileName: $fileName,
@@ -4578,14 +4632,14 @@ class SynchronizationService
             $content = $files;
             $fileName = $dataDot[$config['fileNamePath']] ?? 'default_file';
 
-            // Get configured tags
-            $tags = $config['tags'] ?? [];
+            // Get configured tags.
+            $tags = ($config['tags'] ?? []);
 
-            // Determine if we should share the file - only if there are user-defined tags
-            $shouldShare = !empty($tags);
+            // Determine if we should share the file - only if there are user-defined tags.
+            $shouldShare = (empty($tags) === false);
 
             try {
-                // Use the new saveFile method
+                // Use the new saveFile method.
                 $file = $fileService->saveFile(
                     objectEntity: $objectEntity,
                     fileName: $fileName,
@@ -4607,11 +4661,13 @@ class SynchronizationService
 
 
     /**
-     * Processes an error rule
+     * Processes an error rule.
      *
      * @param array $rule The OpenRegister rule payload array containing error details.
      *
-     * @return JSONResponse Response containing error details and HTTP status code
+     * @return JSONResponse Response containing error details and HTTP status code.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processErrorRule(array $rule): JSONResponse
     {
@@ -4626,16 +4682,19 @@ class SynchronizationService
     }
 
     /**
-     * Processes a mapping rule
+     * Processes a mapping rule.
      *
      * @param array $rule The OpenRegister rule payload array containing mapping details.
      * @param array $data The data to be processed through the mapping rule
      *
-     * @return array The processed data after applying the mapping rule
-     * @throws DoesNotExistException When the mapping configuration does not exist
-     * @throws MultipleObjectsReturnedException When multiple mapping objects are returned unexpectedly
-     * @throws LoaderError When there is an error loading the mapping
-     * @throws SyntaxError When there is a syntax error in the mapping configuration
+     * @return array The processed data after applying the mapping rule.
+     *
+     * @throws DoesNotExistException            When the mapping configuration does not exist.
+     * @throws MultipleObjectsReturnedException When multiple mapping objects are returned unexpectedly.
+     * @throws LoaderError                      When there is an error loading the mapping.
+     * @throws SyntaxError                      When there is a syntax error in the mapping configuration.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function processMappingRule(array $rule, array $data): array
     {
@@ -4646,12 +4705,15 @@ class SynchronizationService
     }
 
     /**
-     * Executes mapping on data from endpoint flow
+     * Executes mapping on data from endpoint flow.
+     *
+     * @param ObjectEntity $mapping The mapping entity.
+     * @param array        $data    The data to be mapped.
      *
      * @param mapping $mapping
      * @param array $data
      *
-     * @return array $data
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     private function processMapping(OrMapping|ObjectEntity|array $mapping, array $data): array
     {
@@ -4659,12 +4721,15 @@ class SynchronizationService
     }
 
     /**
-     * Processes a synchronization rule
+     * Processes a synchronization rule.
+     *
+     * @param ObjectEntity $rule The rule object containing synchronization details.
+     * @param array        $data The data to be synchronized.
      *
      * @param array $rule The OpenRegister rule payload array containing synchronization details.
      * @param array $data The data to be synchronized
      *
-     * @return array The data after synchronization processing
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processSyncRule(array $rule, array $data): array
     {
@@ -4675,13 +4740,17 @@ class SynchronizationService
     }
 
     /**
-     * Checks if rule conditions are met
+     * Checks if rule conditions are met.
+     *
+     * @param ObjectEntity $rule The rule object containing conditions to be checked.
+     * @param array        $data The input data against which the conditions are evaluated.
      *
      * @param array $rule The OpenRegister rule payload array containing conditions to be checked.
      * @param array $data The input data against which the conditions are evaluated
      *
-     * @return bool True if conditions are met, false otherwise
-     * @throws Exception
+     * @throws Exception When the JsonLogic evaluator throws.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function checkRuleConditions(array $rule, array $data): bool
     {
@@ -4701,6 +4770,8 @@ class SynchronizationService
      * @param string $replacement The encoded character.
      *
      * @return array The array with encoded array keys
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -4709,7 +4780,11 @@ class SynchronizationService
             $newKey = str_replace($toReplace, $replacement, $key);
 
             if (is_array($value) === true && $value !== []) {
-                $result[$newKey] = $this->encodeArrayKeys($value, $toReplace, $replacement);
+                $result[$newKey] = $this->encodeArrayKeys(
+                    array: $value,
+                    toReplace: $toReplace,
+                    replacement: $replacement
+                );
                 continue;
             }
 
@@ -4838,7 +4913,9 @@ class SynchronizationService
 
 		// Get the synchronization contract for this object
         $findContractByOriginId = false;
-        if (isset($sourceConfig['findContractByOriginIdOnly']) === true && filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true) {
+        if (isset($sourceConfig['findContractByOriginIdOnly']) === true
+            && filter_var($sourceConfig['findContractByOriginIdOnly'], FILTER_VALIDATE_BOOLEAN) === true
+        ) {
             $findContractByOriginId = true;
         }
 
@@ -4862,7 +4939,6 @@ class SynchronizationService
                 object: $object,
                 isTest: $isTest,
                 force: $force,
-                log: $log,
                 mutationType: $mutationType
 			);
 
@@ -4961,24 +5037,26 @@ class SynchronizationService
      *
      * @psalm-param array<float|int> $numbers
      * @phpstan-param array<float|int> $numbers
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function calculateMedian(array $numbers): float
     {
-        if (empty($numbers)) {
+        if (empty($numbers) === true) {
             return 0.0;
         }
 
-        // Sort the array to find the median
+        // Sort the array to find the median.
         sort($numbers);
         $count = count($numbers);
 
-        // If odd number of elements, return the middle one
-        if ($count % 2 === 1) {
+        // If odd number of elements, return the middle one.
+        if (($count % 2) === 1) {
             return (float) $numbers[intval($count / 2)];
         }
 
-        // If even number of elements, return average of two middle values
-        $middle1 = $numbers[intval($count / 2) - 1];
+        // If even number of elements, return average of two middle values.
+        $middle1 = $numbers[(intval($count / 2) - 1)];
         $middle2 = $numbers[intval($count / 2)];
         return ($middle1 + $middle2) / 2.0;
     }
@@ -4997,10 +5075,12 @@ class SynchronizationService
      * @phpstan-param array<string, array{duration_ms: float, description: string}> $stages
      * @psalm-return array{name: string, duration_ms: float, description: string}
      * @phpstan-return array{name: string, duration_ms: float, description: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function getSlowestStage(array $stages): array
     {
-        if (empty($stages)) {
+        if (empty($stages) === true) {
             return [
                 'name' => 'none',
                 'duration_ms' => 0.0,
@@ -5040,10 +5120,12 @@ class SynchronizationService
      *
      * @psalm-param array<string, array{duration_ms: float}> $stages
      * @phpstan-param array<string, array{duration_ms: float}> $stages
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function calculateEfficiencyRatio(array $stages): float
     {
-        if (empty($stages)) {
+        if (empty($stages) === true) {
             return 0.0;
         }
 
@@ -5053,7 +5135,7 @@ class SynchronizationService
         foreach ($stages as $stageName => $stageData) {
             $totalDuration += $stageData['duration_ms'];
 
-            // Consider 'process_objects' as the core processing stage
+            // Consider 'process_objects' as the core processing stage.
             if ($stageName === 'process_objects') {
                 $processingDuration = $stageData['duration_ms'];
             }
@@ -5213,8 +5295,8 @@ class SynchronizationService
                     }
                 }
 
-                // Add to tracking array BEFORE attempting fetch (so failures don't affect cleanup)
-                if (!empty($trackingFilename)) {
+                // Add to tracking array BEFORE attempting fetch (so failures don't affect cleanup).
+                if (empty($trackingFilename) === false) {
                     $newFileNames[] = $trackingFilename;
                 }
 			}

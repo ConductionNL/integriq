@@ -64,6 +64,10 @@ class SynchronizationAction
      * @return array Returns an array containing the stack trace of actions performed and any warnings or messages.
      *
      * @throws Exception Throws an exception if the synchronization process fails or encounters an error.
+     *
+     * @todo Make this method more generic to handle different synchronization processes.
+     * @todo Implement proper error handling when 'synchronizationId' is missing or invalid.
+     * @todo Improve handling for testing purposes and synchronization contract logic.
      */
     public function run(array $argument=[]): array
     {

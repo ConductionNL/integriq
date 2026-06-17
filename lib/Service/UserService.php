@@ -5,9 +5,9 @@ declare(strict_types=1);
 /**
  * UserService
  *
- * This service handles all user-related business logic including user data retrieval,
- * updates, and profile management. It centralizes user operations and provides
- * a clean interface for controllers and other services.
+ * This service handles all user-related business logic including user data
+ * retrieval, updates, and profile management. It centralizes user operations
+ * and provides a clean interface for controllers and other services.
  *
  * @category  Service
  * @package   OpenConnector
@@ -21,10 +21,11 @@ declare(strict_types=1);
  * @link      https://conduction.nl
  */
 
+declare(strict_types=1);
+
 namespace OCA\OpenConnector\Service;
 
 use OCP\IUser;
-use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -56,7 +57,6 @@ class UserService
      * @param OrganisationBridgeService $organisationBridgeService The organization bridge service
      */
     public function __construct(
-        private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly IConfig $config,
         private readonly IGroupManager $groupManager,
@@ -76,6 +76,8 @@ class UserService
      * 
      * @psalm-return IUser|null
      * @phpstan-return IUser|null
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function getCurrentUser(): ?IUser
     {
@@ -96,23 +98,75 @@ class UserService
      * @psalm-return array
      * @phpstan-param IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function buildUserDataArray(IUser $user): array
     {
-        // Get user groups from group manager
+        // Get user groups from group manager.
         $userGroups = $this->groupManager->getUserGroups($user);
         $groupNames = array_values(array_map(fn($group) => $group->getGID(), $userGroups));
 
-        // Build quota information safely
-        $quota = $this->buildQuotaInformation($user);
+        // Build quota information safely.
+        $quota = $this->buildQuotaInformation(user: $user);
 
-        // Get language and locale with proper fallbacks
-        [$language, $locale] = $this->getLanguageAndLocale($user);
+        // Get language and locale with proper fallbacks.
+        [$language, $locale] = $this->getLanguageAndLocale(user: $user);
 
-        // Get additional profile information from AccountManager and custom fields
-        $additionalInfo = $this->getAdditionalProfileInfo($user);
+        // Get additional profile information from AccountManager and custom fields.
+        $additionalInfo = $this->getAdditionalProfileInfo(user: $user);
 
-        // Build comprehensive user data array with all available information
+        // Resolve optional user-object methods with explicit fallbacks (Nextcloud
+        // backends differ in which IUser methods they implement, so feature-detect).
+        if (method_exists($user, 'getEmailVerified') === true) {
+            $emailVerified = $user->getEmailVerified();
+        } else {
+            $emailVerified = null;
+        }
+
+        if (method_exists($user, 'getAvatarScope') === true) {
+            $avatarScope = $user->getAvatarScope();
+        } else {
+            $avatarScope = 'contacts';
+        }
+
+        if (method_exists($user, 'getLastLogin') === true) {
+            $lastLogin = $user->getLastLogin();
+        } else {
+            $lastLogin = 0;
+        }
+
+        if (method_exists($user, 'getBackendClassName') === true) {
+            $backend = $user->getBackendClassName();
+        } else {
+            $backend = 'unknown';
+        }
+
+        if (method_exists($user, 'canChangeDisplayName') === true) {
+            $canChangeDisplayName = $user->canChangeDisplayName();
+        } else {
+            $canChangeDisplayName = false;
+        }
+
+        if (method_exists($user, 'canChangeMailAddress') === true) {
+            $canChangeMailAddress = $user->canChangeMailAddress();
+        } else {
+            $canChangeMailAddress = false;
+        }
+
+        if (method_exists($user, 'canChangePassword') === true) {
+            $canChangePassword = $user->canChangePassword();
+        } else {
+            $canChangePassword = false;
+        }
+
+        if (method_exists($user, 'canChangeAvatar') === true) {
+            $canChangeAvatar = $user->canChangeAvatar();
+        } else {
+            $canChangeAvatar = false;
+        }
+
+        // Build comprehensive user data array with all available information.
         $result = [
             'uid' => $user->getUID(),
             'displayName' => $user->getDisplayName(),
@@ -173,6 +227,8 @@ class UserService
      * @phpstan-param IUser $user
      * @phpstan-param array $data
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
@@ -182,8 +238,8 @@ class UserService
             'organisation_updated' => false
         ];
 
-        // Handle organization switching if requested
-        if (isset($data['activeOrganisation']) && is_string($data['activeOrganisation'])) {
+        // Handle organization switching if requested.
+        if (isset($data['activeOrganisation']) === true && is_string($data['activeOrganisation']) === true) {
             $organisationResult = $this->organisationBridgeService->setActiveOrganisation($data['activeOrganisation']);
             $result['organisation_updated'] = $organisationResult['success'];
             $result['organisation_message'] = $organisationResult['message'];
@@ -192,11 +248,11 @@ class UserService
             unset($data['activeOrganisation']);
         }
 
-        // Update standard user properties
-        $this->updateStandardUserProperties($user, $data);
+        // Update standard user properties.
+        $this->updateStandardUserProperties(user: $user, data: $data);
 
-        // Update profile fields via AccountManager and custom fields
-        $this->updateProfileProperties($user, $data);
+        // Update profile fields via AccountManager and custom fields.
+        $this->updateProfileProperties(user: $user, data: $data);
 
         return $result;
     }
@@ -215,6 +271,8 @@ class UserService
      * @psalm-return array{firstName: string|null, lastName: string|null, middleName: string|null}
      * @phpstan-param IUser $user
      * @phpstan-return array{firstName: string|null, lastName: string|null, middleName: string|null}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function getCustomNameFields(IUser $user): array
     {
@@ -243,6 +301,8 @@ class UserService
      * @phpstan-param IUser $user
      * @phpstan-param array $nameFields
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     public function setCustomNameFields(IUser $user, array $nameFields): void
     {
@@ -273,11 +333,18 @@ class UserService
      * @psalm-return array
      * @phpstan-param IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function buildQuotaInformation(IUser $user): array
     {
         try {
-            $userQuota = method_exists($user, 'getQuota') ? $user->getQuota() : 'none';
+            if (method_exists($user, 'getQuota') === true) {
+                $userQuota = $user->getQuota();
+            } else {
+                $userQuota = 'none';
+            }
+
             $usedSpace = 0;
             
             // MEMORY FIX: Use NextCloud's built-in quota system instead of recursive folder size calculation
@@ -313,7 +380,7 @@ class UserService
             if ($userQuota !== 'none' && $userQuota !== 'unlimited' && is_numeric($userQuota)) {
                 $totalBytes = (int)$userQuota;
                 if ($totalBytes > 0) {
-                    $quota['relative'] = round(($usedSpace / $totalBytes) * 100, 2);
+                    $quota['relative'] = round((($usedSpace / $totalBytes) * 100), 2);
                 }
             }
             
@@ -346,11 +413,13 @@ class UserService
      * @psalm-return int
      * @phpstan-param string $userId
      * @phpstan-return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getUsedSpaceMemorySafe(string $userId): int
     {
         try {
-            // Set memory limit and timeout for safety
+            // Set memory limit and timeout for safety.
             $originalMemoryLimit = ini_get('memory_limit');
             $currentMemoryUsage = memory_get_usage(true);
             
@@ -409,6 +478,8 @@ class UserService
      * @psalm-return array{0: string, 1: string}
      * @phpstan-param IUser $user
      * @phpstan-return array{0: string, 1: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getLanguageAndLocale(IUser $user): array
     {
@@ -447,15 +518,17 @@ class UserService
      * @psalm-return array
      * @phpstan-param IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getAdditionalProfileInfo(IUser $user): array
     {
         $additionalInfo = [];
         
         try {
-            // MEMORY FIX: Use selective property loading instead of getAllProperties()
-            // This prevents loading unnecessary data and reduces memory usage
-            $additionalInfo = $this->getAccountManagerPropertiesSelectively($user);
+            // MEMORY FIX: Use selective property loading instead of getAllProperties().
+            // This prevents loading unnecessary data and reduces memory usage.
+            $additionalInfo = $this->getAccountManagerPropertiesSelectively(user: $user);
         } catch (\Exception $e) {
             // If AccountManager fails, try to get some info from user config
             $this->logger->warning('AccountManager failed for user: ' . $user->getUID(), [
@@ -466,17 +539,17 @@ class UserService
             
             // Try to get some basic profile info from user preferences
             $phone = $this->config->getUserValue($userId, 'settings', 'phone', '');
-            if (!empty($phone)) {
+            if (empty($phone) === false) {
                 $additionalInfo['phone'] = $phone;
             }
             
             $website = $this->config->getUserValue($userId, 'settings', 'website', '');
-            if (!empty($website)) {
+            if (empty($website) === false) {
                 $additionalInfo['website'] = $website;
             }
             
             $twitter = $this->config->getUserValue($userId, 'settings', 'twitter', '');
-            if (!empty($twitter)) {
+            if (empty($twitter) === false) {
                 $additionalInfo['twitter'] = $twitter;
             }
         }
@@ -488,7 +561,7 @@ class UserService
         // Get organization UUID from core namespace (set by SoftwareCatalog)
         $userId = $user->getUID();
         $organizationUuid = $this->config->getUserValue($userId, 'core', 'organisation', '');
-        if (!empty($organizationUuid)) {
+        if (empty($organizationUuid) === false) {
             $additionalInfo['organisation'] = $organizationUuid;
         }
         
@@ -508,6 +581,8 @@ class UserService
      * @psalm-return array
      * @phpstan-param IUser $user
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getAccountManagerPropertiesSelectively(IUser $user): array
     {
@@ -535,7 +610,7 @@ class UserService
                 $property = $account->getProperty($propertyName);
                 if ($property !== null) {
                     $value = $property->getValue();
-                    if (!empty($value)) {
+                    if (empty($value) === false) {
                         $additionalInfo[$apiField] = $value;
                     }
                 }
@@ -567,6 +642,8 @@ class UserService
      * @phpstan-param IUser $user
      * @phpstan-param array $data
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function updateStandardUserProperties(IUser $user, array $data): void
     {
@@ -591,12 +668,12 @@ class UserService
             $user->setPassword($data['password']);
         }
 
-        // Update language if provided
+        // Update language if provided.
         if (isset($data['language']) === true && method_exists($user, 'setLanguage') === true) {
             $user->setLanguage($data['language']);
         }
 
-        // Update locale if provided
+        // Update locale if provided.
         if (isset($data['locale']) === true && method_exists($user, 'setLocale') === true) {
             $user->setLocale($data['locale']);
         }
@@ -618,6 +695,8 @@ class UserService
      * @phpstan-param IUser $user
      * @phpstan-param array $data
      * @phpstan-return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function updateProfileProperties(IUser $user, array $data): void
     {
@@ -626,7 +705,7 @@ class UserService
             $account = $this->accountManager->getAccount($user);
             $accountUpdated = false;
 
-            // Define the standard profile fields we can update via AccountManager
+            // Define the standard profile fields we can update via AccountManager.
             $standardFields = [
                 'phone' => IAccountManager::PROPERTY_PHONE,
                 'address' => IAccountManager::PROPERTY_ADDRESS,
@@ -639,7 +718,7 @@ class UserService
                 'biography' => IAccountManager::PROPERTY_BIOGRAPHY
             ];
 
-            // Update standard AccountManager fields
+            // Update standard AccountManager fields.
             foreach ($standardFields as $apiField => $accountProperty) {
                 if (isset($data[$apiField])) {
                     $value = (string)$data[$apiField];
@@ -668,8 +747,8 @@ class UserService
                 }
             }
 
-            // Save the account if any properties were updated
-            if ($accountUpdated) {
+            // Save the account if any properties were updated.
+            if ($accountUpdated === true) {
                 $this->accountManager->updateAccount($account);
             }
         } catch (\Exception $e) {
@@ -679,12 +758,12 @@ class UserService
             ]);
         }
 
-        // Handle custom name fields separately (accessible to other apps via 'core' namespace)
+        // Handle custom name fields separately (accessible to other apps via 'core' namespace).
         $customFields = ['firstName', 'lastName', 'middleName'];
         $nameFields = [];
         
         foreach ($customFields as $field) {
-            if (isset($data[$field])) {
+            if (isset($data[$field]) === true) {
                 $nameFields[$field] = $data[$field];
             }
         }
@@ -707,10 +786,12 @@ class UserService
      * @psalm-return string
      * @phpstan-param string $propertyName
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
      */
     private function getDefaultPropertyScope(string $propertyName): string
     {
-        // Define default scopes for different property types
+        // Define default scopes for different property types.
         $scopeMap = [
             IAccountManager::PROPERTY_PHONE => IAccountManager::SCOPE_PRIVATE,
             IAccountManager::PROPERTY_ADDRESS => IAccountManager::SCOPE_PRIVATE,

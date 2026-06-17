@@ -89,6 +89,8 @@ class DSOController extends Controller
      *
      * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
      */
+    #[NoCSRFRequired]
+    #[PublicPage]
     public function receiveVerzoek(): JSONResponse
     {
         $body = $this->request->getParams();
