@@ -13,7 +13,15 @@
  */
 import { type Page, expect } from '@playwright/test'
 
-export const APP_BASE = '/apps/openconnector'
+// The in-app router runs in HASH mode (`mode: 'hash'`, src/main.js). A
+// path-form deep-link such as `/apps/openconnector/sources` is therefore
+// ignored by the router and silently lands on the dashboard (`#/`); only
+// a hash-form link (`/apps/openconnector/#/sources`) renders the target
+// page. APP_BASE carries the `/#` so `${APP_BASE}/<route>` is a valid
+// hash deep-link. (NC32→NC34 note: this is router behaviour, not NC
+// chrome — the NC34 migration surfaced it because the weak dashboard
+// fallback masked it before.)
+export const APP_BASE = '/apps/openconnector/#'
 
 /**
  * URLs / console substrings that are Nextcloud core framework noise,
