@@ -281,6 +281,11 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
             if (isset($data[$arrayKey]) === true && is_array($data[$arrayKey]) === true) {
                 $data[$arrayKey] = array_map(
                     function ($slug) use ($mappings, $arrayKey) {
+                        // Skip non-scalar entries (nested arrays, objects) — can't be slugs.
+                        if (is_scalar($slug) === false) {
+                            return $slug;
+                        }
+
                         // For actions, use rule mapping.
                         if ($arrayKey === 'actions' && isset($mappings['rule']['slugToId'][$slug]) === true) {
                             return $mappings['rule']['slugToId'][$slug];
