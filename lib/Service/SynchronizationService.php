@@ -44,7 +44,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use React\Promise\Timer;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
 use Twig\Error\LoaderError;
@@ -1204,26 +1203,10 @@ class SynchronizationService
 					'originId' => $originId,
 				]);
 			} else {
-				$synchronizationContract = new SynchronizationContract();
-				$synchronizationContract->setSynchronizationId($synchronization->getId());
-				$synchronizationContract->setOriginId($originId);
-			}
-
-			$synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization,  flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
-
-			if ($isTest === true && is_array($synchronizationContract) === true) {
-				// If this is a log and contract array return for the test endpoint.
-				return $synchronizationContract;
-			}
-		} else {
-			// @todo this is wierd
-			$synchronizationContract = $this->synchronizeContract(synchronizationContract: $synchronizationContract, synchronization: $synchronization, flowToken: $flowToken, object: $object, isTest: $isTest, force: $force, log: $log, mutationType: $mutationType);
-			if ($isTest === false && $synchronizationContract instanceof SynchronizationContract === true) {
-				// If this is a regular synchronizationContract update it to the database.
-				$this->synchronizationContractMapper->update(entity: $synchronizationContract);
-			} elseif ($isTest === true && is_array($synchronizationContract) === true) {
-				// If this is a log and contract array return for the test endpoint.
-				return $synchronizationContract;
+				$synchronizationContract = [
+					'synchronizationId' => ($synchronization['id'] ?? null),
+					'originId' => $originId,
+				];
 			}
 		}
 
@@ -2280,6 +2263,10 @@ class SynchronizationService
 		// Extract register and schema from the targetId
 		// The targetId needs to be filled in as: {registerId} + / + {schemaId} for example: 1/1
 		$targetId = ($synchronization['targetId'] ?? null);
+		if ($targetId === null || str_contains($targetId, '/') === false) {
+			return $synchronizationContract;
+		}
+
 		list($register, $schema) = explode('/', $targetId);
 
 		// Save the object to the target
@@ -2310,7 +2297,7 @@ class SynchronizationService
 				$synchronizationContract['targetLastAction'] = (($synchronizationContract['targetId'] ?? null) ? 'update' : 'create');
 				break;
 			case 'delete':
-				$objectService->delete(object: ['id' => ($synchronizationContract['targetId'] ?? null)]);
+				$objectService->deleteObject(uuid: ($synchronizationContract['targetId'] ?? null));
 				$synchronizationContract['targetId'] = null;
 				$synchronizationContract['targetLastAction'] = 'delete';
 				break;
@@ -2587,7 +2574,7 @@ class SynchronizationService
 			);
 
 			if ($subObjectContract !== null) {
-				$subObject['id'] = $subObjectContract->getTargetId();
+				$subObject['id'] = $subObjectContract['targetId'] ?? null;
 			}
 		}
 
@@ -3406,8 +3393,9 @@ class SynchronizationService
 
 		$targetConfig = $this->callService->applyConfigDot(($synchronization['targetConfig'] ?? []));
 
-		if (str_starts_with($endpoint, $target->getLocation()) === true) {
-			$endpoint = str_replace(search: $target->getLocation(), replace: '', subject: $endpoint);
+		$targetLocation = $target['location'] ?? '';
+		if ($targetLocation !== '' && str_starts_with($endpoint, $targetLocation) === true) {
+			$endpoint = str_replace(search: $targetLocation, replace: '', subject: $endpoint);
 		}
 
 		if ($mutationType === 'delete') {
@@ -3997,7 +3985,7 @@ class SynchronizationService
 	 * When no file can be resolved the method logs a warning and leaves targetConfig unchanged
 	 * so the caller falls back to a normal JSON request.
 	 */
-	private function applyFileUploadToTargetConfig(array &$targetConfig, SynchronizationContract $contract): void
+	private function applyFileUploadToTargetConfig(array &$targetConfig, array $contract): void
 	{
 		if (isset($targetConfig['fileUpload']) === false) {
 			return;
@@ -4018,11 +4006,12 @@ class SynchronizationService
 			}
 		} else {
 			// Resolve the OpenRegister object whose files we want.
-			$objectId = $fileUploadConfig['objectId'] ?? $contract->getOriginId();
+			$contractOriginId = $contract['originId'] ?? null;
+			$objectId = $fileUploadConfig['objectId'] ?? $contractOriginId;
 			if ($objectId !== null) {
 				$objectId = str_replace(
 					['{{ originId }}', '{{originId}}'],
-					(string) ($contract->getOriginId() ?? ''),
+					(string) ($contractOriginId ?? ''),
 					(string) $objectId
 				);
 			}
@@ -4052,8 +4041,8 @@ class SynchronizationService
 
 		if (empty($filesToUpload) === true) {
 			$this->logger->warning('fileUpload configured but no file resolved; falling back to JSON payload', [
-				'synchronizationId' => $contract->getSynchronizationId(),
-				'originId'          => $contract->getOriginId(),
+				'synchronizationId' => $contract['synchronizationId'] ?? null,
+				'originId'          => $contract['originId'] ?? null,
 			]);
 			return;
 		}
