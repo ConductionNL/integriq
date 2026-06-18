@@ -5495,16 +5495,16 @@
         },
         {
             "name": "web-token/jwt-framework",
-            "version": "3.4.9",
+            "version": "3.4.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/web-token/jwt-framework.git",
-                "reference": "112045db98dc78f10611647cab49e0b3d8a59057"
+                "reference": "1e231cb4c2630c154be38e6010ff8c0b965bd487"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/web-token/jwt-framework/zipball/112045db98dc78f10611647cab49e0b3d8a59057",
-                "reference": "112045db98dc78f10611647cab49e0b3d8a59057",
+                "url": "https://api.github.com/repos/web-token/jwt-framework/zipball/1e231cb4c2630c154be38e6010ff8c0b965bd487",
+                "reference": "1e231cb4c2630c154be38e6010ff8c0b965bd487",
                 "shasum": ""
             },
             "require": {
@@ -5648,7 +5648,7 @@
             ],
             "support": {
                 "issues": "https://github.com/web-token/jwt-framework/issues",
-                "source": "https://github.com/web-token/jwt-framework/tree/3.4.9"
+                "source": "https://github.com/web-token/jwt-framework/tree/3.4.10"
             },
             "funding": [
                 {
@@ -5660,7 +5660,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2025-11-17T20:20:37+00:00"
+            "time": "2026-06-06T16:30:13+00:00"
         },
         {
             "name": "webmozart/assert",

@@ -17,6 +17,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
+use OCA\OpenConnector\Service\SynchronizationContractService;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -57,10 +58,11 @@ class MappingServiceTest extends TestCase
 
         $this->orObjectService = $this->createMock(OrObjectService::class);
 
-        $loader        = new ArrayLoader([]);
-        $callService   = $this->createMock(CallService::class);
-        $fileService   = $this->createMock(FileService::class);
-        $objectService = $this->createMock(ObjectService::class);
+        $loader                         = new ArrayLoader([]);
+        $callService                    = $this->createMock(CallService::class);
+        $fileService                    = $this->createMock(FileService::class);
+        $objectService                  = $this->createMock(ObjectService::class);
+        $synchronizationContractService = $this->createMock(SynchronizationContractService::class);
 
         $this->service = new MappingService(
             $loader,
@@ -68,6 +70,7 @@ class MappingServiceTest extends TestCase
             $fileService,
             $objectService,
             $this->orObjectService,
+            $synchronizationContractService,
         );
     }//end setUp()
 
