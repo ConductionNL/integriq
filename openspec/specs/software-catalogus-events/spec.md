@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # software-catalogus-events Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-software-catalogus-events. Update Purpose after archive.
+Extends VNG-GEMMA ArchiMate model graphs asynchronously through a ReactPHP promise-based service that resolves the OpenRegister model, walks its views, and enriches each node and connection with its matching element and relations using identifier-suffix normalisation. It also listens to OpenRegister object lifecycle events and routes organisation and contact create/update/delete to provisioning orchestrators that drive per-event helpers (user, email, security-group, and VNG-notification provisioning).
 
 @e2e exclude backend ReactPHP ArchiMate model-graph extension service (async promises, no browser UI) — covered by PHPUnit
 

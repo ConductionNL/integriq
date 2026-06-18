@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # http-call-engine Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-http-call-engine. Update Purpose after archive.
+Dispatches outbound HTTP and SOAP calls to configured sources and records each one as a CallLog. It renders templated request configuration, materialises inline certificates to temp files, enforces per-source enablement and rate limits (short-circuiting with synthetic 409/429 logs), translates HTTP verbs to per-CRUD method overrides, supports pre- and post-request support calls, and persists each call with retention-bounded expiry.
 
 @e2e exclude backend outbound HTTP call engine + CallLog persistence (no browser UI) — covered by PHPUnit/Newman
 

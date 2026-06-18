@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # object-service-shim Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-object-service-shim. Update Purpose after archive.
+Provides a MongoDB Data API CRUD shim that translates caller arrays into insertOne/findOne/find/updateOne/deleteOne/aggregate requests over a Guzzle client built from caller-supplied configuration, minting a fresh UUIDv4 as both `id` and `_id` on insert. It also resolves the OpenRegister ObjectService opportunistically — returning null when the app is absent or the container cannot bind it — and resolves mappers by register and schema, throwing on unknown object types.
 
 @e2e exclude backend MongoDB Data API CRUD shim service (no browser UI) — covered by PHPUnit
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # organisation-bridge Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-organisation-bridge. Update Purpose after archive.
+Bridges OpenConnector to OpenRegister's OrganisationService through a soft-fail lazy accessor that returns null (logging a warning on container failure) when OpenRegister is absent, plus an availability predicate consumers switch on. It forwards organisation operations — user organisation statistics, setting the active organisation, and reading the active and listing user organisations as serialized arrays — returning defined unavailable-shape fallbacks when the service is missing or throws.
 
 @e2e exclude backend OR OrganisationService bridge accessor (no browser UI) — covered by PHPUnit
 

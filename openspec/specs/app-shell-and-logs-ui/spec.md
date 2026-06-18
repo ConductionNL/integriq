@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # app-shell-and-logs-ui Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-25-app-shell-and-logs-ui. Update Purpose after archive.
+Provides the OpenConnector application shell and log viewer UI. The root component resolves the current user's effective permissions (injecting an admin marker when applicable) and supplies an app-scoped translate adapter, a modal host opens test-mapping and add-endpoint-rule dialogs in response to a shared event bus, and a unified log index page lists, paginates, and drills into call, endpoint, job, and sync logs.
 
 @e2e exclude Vue component-internal method/computed behaviour (permissions admin-marker, translateForApp adapter, modal-bus subscribe/unsubscribe, LogIndex config/refresh/pagination/openDetail) reverse-engineered from App.vue/ModalHost.vue/LogIndex.vue — unit-level (vitest), not browser-observable; the app shell render + log sub-page renders are covered by manifest-pages e2e
 

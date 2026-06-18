@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # logs-and-statistics Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-logs-and-statistics. Update Purpose after archive.
+Exposes the log, statistics, and retention-management APIs for OpenConnector. It lists, retrieves, and deletes synchronization and per-source call logs, aggregates per-level log statistics and CSV exports, reads and updates app-wide retention settings, and reports instance-wide totals and sizes while rebasing log expiry dates with database-vendor-aware SQL.
 
 @e2e exclude backend logs/statistics API (LogsController + StatisticsService aggregation + CSV export, no browser UI) — covered by Newman/PHPUnit; the log sub-pages render is covered by manifest-pages e2e
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # xml-response Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-xml-response. Update Purpose after archive.
+Provides an XML response type that serialises an array payload to a well-formed XML string via DOMDocument, honouring an `@root` key (or explicit root tag) for the document element and supporting `@attributes`, `#text`, indexed-array fan-out, and numeric-key rewriting in the recursive walk. It allows a render callback to fully override the default serialisation, applies carriage-return normalisation, and uses safe text nodes with an object-to-string fallback that hides IQueryBuilder SQL fragments.
 
 @e2e exclude backend XML serialisation helper (array→XML rendering, no browser UI) — covered by PHPUnit
 

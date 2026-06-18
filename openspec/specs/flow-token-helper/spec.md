@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # flow-token-helper Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-flow-token-helper. Update Purpose after archive.
+Captures and carries request, response, sync-input, and sync-output snapshots through the rule pipeline. It normalises an incoming Nextcloud request (parsing JSON, XML, and multipart bodies) and response object into a uniform array shape, keeps an editable "amended" copy of each slot alongside the original so rules can rewrite payloads, and serialises all eight slots for transport, caching, and logging.
 
 @e2e exclude backend flow-token request/response snapshot helper (no browser UI) — covered by PHPUnit
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # job-scheduling Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-job-scheduling. Update Purpose after archive.
+Schedules, runs, and logs OpenConnector background jobs. It registers jobs as Nextcloud timed tasks, sweeps and executes due jobs on a cron cadence (honouring enablement, next-run time, single-run, and force-run semantics), exposes manual run/test endpoints and a paginated job-log API, and periodically deletes expired call, job, and synchronization logs according to per-job and global retention.
 
 @e2e exclude backend job log API + cron scheduling internals (no browser UI) — covered by PHPUnit/Newman
 

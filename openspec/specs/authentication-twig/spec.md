@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # authentication-twig Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-authentication-twig. Update Purpose after archive.
+Fetches and mints outbound authentication tokens for configured sources and exposes them to source-configuration templates. It supports OAuth client-credentials and password grants, JWT minting across HS/RS/PS algorithms (including JWT-bearer client assertions), and the Decos non-standard token flow, then surfaces tokens and mapping helpers (encoding, mapping execution, source calls, file lookup, slug) as Twig functions for direct injection into templated request headers.
 
 @e2e exclude backend authentication service (OAuth token fetch + Twig config rendering, no browser UI) — covered by PHPUnit
 

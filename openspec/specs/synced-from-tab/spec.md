@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # synced-from-tab Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-26-integration-synced-from. Update Purpose after archive.
+Renders a synced-from tab inside OpenRegister that shows the synchronization provenance of the current object. It resolves the per-object sync-contract sub-resource endpoint (preferring an injected apiBase, otherwise the OpenRegister API path scoped to the object's register, schema, and id), fetches and normalizes the provenance rows, and degrades quietly by flagging the surface unavailable on a 5xx or network failure rather than throwing.
 
 @e2e exclude integration-helper internals (endpoint-URL resolution, response normalisation, quiet-degrade flag) for a sub-resource tab rendered inside OpenRegister — not an openconnector SPA surface; covered by Vue component/unit tests
 
