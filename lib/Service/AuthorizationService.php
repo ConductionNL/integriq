@@ -48,6 +48,7 @@ use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCP\AppFramework\Http\Attribute\CORS;
 use OCP\AppFramework\Http\Response;
 use OCP\IGroup;
+use OCP\IGroupManager;
 use OCP\ISession;
 use OCP\IUserManager;
 use OCP\IUserSession;
