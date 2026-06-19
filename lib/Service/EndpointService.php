@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Util\SafeXmlParser;
+use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1250,7 +1251,7 @@ class EndpointService
         $mapping       = $configuration['save_object']['mapping'] ?? null;
 
         if (isset($mapping) === true) {
-            $data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
+            $data = $this->processMapping(rule: $rule, mapping: $this->mappingService->getMapping($mapping), data: $data);
         }
 
         $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
@@ -1640,14 +1641,14 @@ class EndpointService
      * Executes mapping on data from endpoint flow.
      *
      * @param ObjectEntity $rule    The mapping rule context.
-     * @param ObjectEntity $mapping The mapping object to apply.
+     * @param Mapping      $mapping The mapping object to apply.
      * @param array        $data    The current rule data envelope (body/headers/parameters).
      *
      * @return array The updated $data with mapped body merged in.
      *
      * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
      */
-    private function processMapping(ObjectEntity $rule, ObjectEntity $mapping, array $data): array
+    private function processMapping(ObjectEntity $rule, Mapping $mapping, array $data): array
     {
         $config   = $rule->getObject()['configuration'] ?? [];
         $ruleData = $rule->getObject();
