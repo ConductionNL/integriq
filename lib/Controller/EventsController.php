@@ -100,7 +100,7 @@ class EventsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'event.messages');
 
         try {
-            $event = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'event');
+            $event = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'event', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Event not found')], 404);
         }
@@ -239,7 +239,7 @@ class EventsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'event.unsubscribe');
 
         try {
-            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
@@ -323,7 +323,7 @@ class EventsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'event.subscription-messages');
 
         try {
-            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
@@ -371,7 +371,7 @@ class EventsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'event.pull');
 
         try {
-            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+            $subscription = $this->orObjectService->find(id: (string) $subscriptionId, register: 'openconnector', schema: 'event_subscription', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
@@ -407,7 +407,7 @@ class EventsController extends Controller
     public function generateSigningSecret(string $subscriptionId): JSONResponse
     {
         try {
-            $subscription = $this->orObjectService->find(id: $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+            $subscription = $this->orObjectService->find(id: $subscriptionId, register: 'openconnector', schema: 'event_subscription', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
@@ -454,7 +454,7 @@ class EventsController extends Controller
     public function rotateSigningSecret(string $subscriptionId): JSONResponse
     {
         try {
-            $subscription = $this->orObjectService->find(id: $subscriptionId, register: 'openconnector', schema: 'event_subscription');
+            $subscription = $this->orObjectService->find(id: $subscriptionId, register: 'openconnector', schema: 'event_subscription', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         }
@@ -636,7 +636,7 @@ class EventsController extends Controller
     public function deadLetterShow(string $id): JSONResponse
     {
         try {
-            $message = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'event_message');
+            $message = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'event_message', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Message not found')], 404);
         }
@@ -649,7 +649,9 @@ class EventsController extends Controller
                 $subscription    = $this->orObjectService->find(
                     id: (string) $subscriptionId,
                     register: 'openconnector',
-                    schema: 'event_subscription'
+                    schema: 'event_subscription',
+                    _rbac: false,
+                    _multitenancy: false
                 );
                 $subData         = $subscription->getObject();
                 $subscriptionCtx = [
