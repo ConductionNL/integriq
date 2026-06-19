@@ -195,7 +195,7 @@ class LogsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log');
+        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log', _rbac: false, _multitenancy: false);
         if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         }
@@ -226,7 +226,7 @@ class LogsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
         }
 
-        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log');
+        $log = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_log', _rbac: false, _multitenancy: false);
         if ($log === null) {
             return new JSONResponse(['error' => $this->l->t('Log not found or could not be deleted')], 404);
         }

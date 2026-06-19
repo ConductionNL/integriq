@@ -132,7 +132,7 @@ class SynchronizationContractsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'synchronization-contract.activate');
 
         try {
-            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be activated')], 404);
         }
@@ -166,7 +166,7 @@ class SynchronizationContractsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'synchronization-contract.deactivate');
 
         try {
-            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be deactivated')], 404);
         }
@@ -200,7 +200,7 @@ class SynchronizationContractsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'synchronization-contract.execute');
 
         try {
-            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract');
+            $contract = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization_contract', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Contract not found or could not be executed')], 404);
         }
