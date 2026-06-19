@@ -276,7 +276,7 @@ class SynchronizationsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'synchronization.test');
 
         try {
-            $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization');
+            $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
@@ -355,7 +355,7 @@ class SynchronizationsController extends Controller
         $data       = ($parameters['data'] ?? []);
 
         try {
-            $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization');
+            $synchronization = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'synchronization', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
@@ -653,7 +653,7 @@ class SynchronizationsController extends Controller
         $this->actionAuth->requireAction(user: $user, action: 'synchronization.delete-log');
 
         try {
-            $log = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization_log');
+            $log = $this->orObjectService->find(id: (string) $id, register: 'openconnector', schema: 'synchronization_log', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Log not found')], 404);
         }

@@ -255,7 +255,7 @@ class SourcesController extends Controller
         // ObjectService::find() throws DoesNotExistException on a missing
         // UUID — catch it so the response is a clean 404 instead of 500.
         try {
-            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source');
+            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
