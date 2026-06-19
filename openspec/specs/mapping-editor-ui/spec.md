@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # mapping-editor-ui Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-25-mapping-editor-ui. Update Purpose after archive.
+Provides the mapping editor frontend for OpenConnector, where users open a mapping detail page to edit its title, description, pass-through flag, and its mapping, cast, and unset rule collections with create/edit/delete, reordering, and duplicate-key validation. Users can run a mapping test against the backend with a JSON input object and target schema, render the transformed result, and save that result as an OpenRegister object in a chosen register.
 
 @e2e exclude Vue component-internal method/computed behaviour (ensureRegistered, persistPatch, derived rule collections, load-error state) reverse-engineered from the mapping detail-page .vue components — unit-level (vitest), not browser-observable; the mapping detail-page render + Add Mapping modal surfaces are covered by manifest-pages e2e under mapping-and-search
 

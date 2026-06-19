@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # rule-editor-ui Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-25-rule-editor-ui. Update Purpose after archive.
+Provides the rule editor frontend for OpenConnector, where users edit a rule's fields with dirty-state tracking, build JsonLogic condition trees through a recursive editor of and/or groups and typed leaf conditions, and configure action-type-specific forms (authentication, mapping, save-object, synchronization, file operations, and more). It also manages dynamic repeating lists with auto-appended blank rows and lets users attach existing rules to an endpoint via the OpenRegister object API.
 
 @e2e exclude Vue component-internal method/computed behaviour (dirty flag, normaliseConditions, argsForKind, onTypePick/formComponent, dynamic-row prune, onSave guard) reverse-engineered from RuleDetailPage/RuleConditionGroup/RuleConditionLeaf/RuleActionConfig/EditRule/AddEndpointRule .vue files — unit-level (vitest), not browser-observable; the rule detail-page render + Add Rule modal surfaces are covered by manifest-pages e2e under rule-pipeline
 

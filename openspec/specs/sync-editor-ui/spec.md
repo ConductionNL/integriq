@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # sync-editor-ui Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-25-sync-editor-ui. Update Purpose after archive.
+Provides the synchronization editor frontend for OpenConnector, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists, an edit modal that loads option collections and can install OpenRegister on demand, and modals to run or dry-run test a synchronization against the backend.
 
 @e2e exclude Vue component-internal method/computed behaviour (updateDraft, normalizeForDiff dirty flag, normaliseConditions/serializeConditions round-trip, save guards) reverse-engineered from the synchronization detail-page .vue components — unit-level (vitest), not browser-observable; the synchronization detail-page render surface is covered by manifest-pages e2e under synchronization-engine
 

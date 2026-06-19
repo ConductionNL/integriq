@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # endpoint-job-editor-ui Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-25-endpoint-job-editor-ui. Update Purpose after archive.
+Provides the editing and execution dialogs for endpoints and jobs. Users can edit an endpoint with register- and schema-aware selectors, configure a job's class, synchronization, and typed JSON arguments, and run or test-run a job or test a source directly against the backend with the response surfaced in the modal.
 
 @e2e exclude Vue component-internal method/computed behaviour (editEndpoint/setSchemaOptions derived selectors, draft init, modal close/re-derive) reverse-engineered from the endpoint/job edit-modal .vue components — unit-level (vitest), not browser-observable; the endpoint/job detail-page renders + Add modal surfaces are covered by manifest-pages e2e under endpoint-runtime and job-management
 

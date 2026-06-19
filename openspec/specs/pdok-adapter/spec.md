@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # pdok-adapter Specification
 
 ## Purpose
-TBD - created by archiving change add-pdok-adapter. Update Purpose after archive.
+Provides a PDOK Locatieserver connector that exposes four authenticated REST endpoints (`/api/pdok/suggest`, `/lookup`, `/free`, `/reverse`) and normalizes PDOK responses into the canonical OpenRegister PostalAddress shape with GeoJSON coordinates. It caches responses in APCu with per-endpoint TTLs, writes looked-up addresses through to the OR addresses register, and stays resilient under load via exponential backoff on rate limits, a circuit breaker, stale-result graceful degradation, and structured per-call observability logging.
 
 @e2e exclude backend PDOK connector PHP class (HTTP adapter, no browser UI) — covered by PHPUnit/Newman
 

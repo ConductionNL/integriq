@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # repair-and-app-boot Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-repair-and-app-boot. Update Purpose after archive.
+Handles OpenConnector install/upgrade and boot-time wiring with OpenRegister: a repair step imports the app's register descriptor into OR via ConfigurationService on every install and upgrade, and boot registers the SynchronizationContractProvider with OR's IntegrationRegistry so SyncContract leaves render in OR object sidebars. Both paths resolve OR lazily and soft-fail with a warning when OpenRegister is absent or resolution throws, so OpenConnector can install and boot independently without crashing.
 
 @e2e exclude backend install/upgrade repair steps + provider registration (OR import, runs at app boot, no browser UI) — covered by PHPUnit
 

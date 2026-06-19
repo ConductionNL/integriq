@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # authorization-jwt Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-24-authorization-jwt. Update Purpose after archive.
+Authorizes inbound API requests against OpenConnector endpoints using consumer-registered credentials. It verifies JWT bearer tokens against a consumer's registered public key and algorithm, supports HTTP Basic, OAuth-session, and API-key authorization schemes, maps a successful caller to a Nextcloud user session, and injects CORS response headers with a credentials guard for cross-origin callers.
 
 @e2e exclude backend JWT authorization service (token verification, no browser UI) — covered by PHPUnit/Newman
 

@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # preferences-api Specification
 
 ## Purpose
-TBD - created by archiving change retrofit-2026-05-26-preferences-api. Update Purpose after archive.
+Provides a per-user preferences API that stores and retrieves preference values scoped to the authenticated user within a sanitized `pref_` key namespace. Reads return the stored value or a default when unset, writes persist non-empty values and clear the preference when an empty string is supplied, and both reject unauthenticated requests and invalid keys.
 
 @e2e exclude backend per-user preferences API (controller auth + key sanitization, no browser UI) — covered by Newman/PHPUnit
 
