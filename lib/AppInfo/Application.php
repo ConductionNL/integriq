@@ -165,19 +165,31 @@ class Application extends App implements IBootstrap
         $context->registerService(
             PdokWmsClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true ? $c->get(PdokWmsClientHttp::class) : $c->get(PdokWmsClientMock::class);
+                if ($isPdokActive($c) === true) {
+                    return $c->get(PdokWmsClientHttp::class);
+                }
+
+                return $c->get(PdokWmsClientMock::class);
             }
         );
         $context->registerService(
             PdokWfsClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true ? $c->get(PdokWfsClientHttp::class) : $c->get(PdokWfsClientMock::class);
+                if ($isPdokActive($c) === true) {
+                    return $c->get(PdokWfsClientHttp::class);
+                }
+
+                return $c->get(PdokWfsClientMock::class);
             }
         );
         $context->registerService(
             AdapterPdokGeocodingClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true ? $c->get(PdokGeocodingClientHttp::class) : $c->get(PdokGeocodingClientMock::class);
+                if ($isPdokActive($c) === true) {
+                    return $c->get(PdokGeocodingClientHttp::class);
+                }
+
+                return $c->get(PdokGeocodingClientMock::class);
             }
         );
 
@@ -520,26 +532,67 @@ class Application extends App implements IBootstrap
             $repair = $container->get(\OCA\OpenConnector\Repair\InitializeRegister::class);
             $repair->run(
                 new class implements \OCP\Migration\IOutput {
+                    /**
+                     * Log a debug message.
+                     *
+                     * @param string $message The debug message to log.
+                     *
+                     * @return void
+                     */
                     public function debug(string $message): void
                     {
                     }//end debug()
 
+                    /**
+                     * Log an informational message.
+                     *
+                     * @param string $message The informational message to log.
+                     *
+                     * @return void
+                     */
                     public function info($message)
                     {
                     }//end info()
 
+                    /**
+                     * Log a warning message.
+                     *
+                     * @param string $message The warning message to log.
+                     *
+                     * @return void
+                     */
                     public function warning($message)
                     {
                     }//end warning()
 
+                    /**
+                     * Start the progress reporting.
+                     *
+                     * @param int $max The maximum number of progress units.
+                     *
+                     * @return void
+                     */
                     public function startProgress($max=0)
                     {
                     }//end startProgress()
 
+                    /**
+                     * Advance the progress by the given step.
+                     *
+                     * @param int    $step        The number of units to advance.
+                     * @param string $description The description for the current step.
+                     *
+                     * @return void
+                     */
                     public function advance($step=1, $description='')
                     {
                     }//end advance()
 
+                    /**
+                     * Finish the progress reporting.
+                     *
+                     * @return void
+                     */
                     public function finishProgress()
                     {
                     }//end finishProgress()

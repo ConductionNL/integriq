@@ -39,7 +39,7 @@
  */
 
 // SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
-// SPDX-License-Identifier: EUPL-1.2
+// SPDX-License-Identifier: EUPL-1.2.
 namespace OCA\OpenConnector\Service;
 
 use OCA\OpenConnector\Service\SynchronizationContractService;
@@ -102,11 +102,12 @@ class MappingService
     /**
      * Setting up the base class with required services.
      *
-     * @param ArrayLoader     $loader          The ArrayLoader for Twig.
-     * @param CallService     $callService     Outbound HTTP caller used by the Twig runtime.
-     * @param FileService     $fileService     The OR-side file lookup helper.
-     * @param ObjectService   $objectService   The OpenConnector object service.
-     * @param OrObjectService $orObjectService The OpenRegister object service (chain-C entry point).
+     * @param ArrayLoader                    $loader                         The ArrayLoader for Twig.
+     * @param CallService                    $callService                    Outbound HTTP caller used by the Twig runtime.
+     * @param FileService                    $fileService                    The OR-side file lookup helper.
+     * @param ObjectService                  $objectService                  The OpenConnector object service.
+     * @param OrObjectService                $orObjectService                The OpenRegister object service (chain-C entry point).
+     * @param SynchronizationContractService $synchronizationContractService The synchronization contract service.
      */
     public function __construct(
         ArrayLoader $loader,
@@ -243,9 +244,9 @@ class MappingService
      */
     public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list=false): array
     {
-        $mapping = $this->normaliseMapping($mapping);
+        $mapping = $this->normaliseMapping(mapping: $mapping);
 
-        // Check for list
+        // Check for list.
         if ($list === true) {
             $list        = [];
             $extraValues = [];
@@ -333,7 +334,7 @@ class MappingService
 
         // Back to array.
         $output = $dotArray->all();
-        $output = $this->encodeArrayKeys($output, '&#46;', '.');
+        $output = $this->encodeArrayKeys(array: $output, toReplace: '&#46;', replacement: '.');
 
         // If something has been defined to work on root level (i.e. the object lives on root level), we can use # to define writing the root object.
         $keys = array_keys($output);
@@ -342,8 +343,10 @@ class MappingService
             $rootValue = $output['#'];
             if ($rootValue === null) {
                 $output = [];
+            } else if (is_array($rootValue) === true) {
+                $output = $rootValue;
             } else {
-                $output = is_array($rootValue) ? $rootValue : [$rootValue];
+                $output = [$rootValue];
             }
         }
 
@@ -464,7 +467,7 @@ class MappingService
                 $value = json_decode($value, true);
                 break;
             case 'utf8':
-                // https://www.php.net/manual/en/function.iconv.php
+                // See https://www.php.net/manual/en/function.iconv.php for details.
                 setlocale(LC_CTYPE, 'cs_CZ');
                 $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
                 break;
@@ -474,36 +477,36 @@ class MappingService
                 }
                 break;
             case 'coordinateStringToArray':
-                $value = $this->coordinateStringToArray($value);
+                $value = $this->coordinateStringToArray(coordinates: $value);
                 break;
             case 'keyCantBeValue':
-                if ($key == $value) {
+                if ($key === $value) {
                     $dotArray->delete($key);
                 }
                 break;
             case 'unsetIfValue':
                 if (isset($unsetIfValue) === true
-                    && $value == $unsetIfValue
-                    || ($unsetIfValue === '' && empty($value))
+                    && $value === $unsetIfValue
+                    || ($unsetIfValue === '' && empty($value) === true)
                     || ($unsetIfValue === '' && $value === null)
                 ) {
                     $dotArray->delete($key);
                 }
 
-                if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                if ($unsetIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
                     $dotArray->delete($key);
                 }
                 break;
             case 'setNullIfValue':
                 if (isset($setNullIfValue) === true
-                    && $value == $setNullIfValue
-                    || ($setNullIfValue === '' && empty($value))
+                    && $value === $setNullIfValue
+                    || ($setNullIfValue === '' && empty($value) === true)
                     || ($setNullIfValue === '' && $value === null)
                 ) {
                     $value = null;
                 }
 
-                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true) {
                     $value = null;
                 }
                 break;
@@ -654,9 +657,15 @@ class MappingService
         $rows = ($results['results'] ?? $results);
 
         return array_map(
-            fn ($object): OrMapping => (new OrMapping())->hydrate(
-                $object instanceof ObjectEntity ? $object->getObject() : (array) $object
-            ),
+            function ($object): OrMapping {
+                if ($object instanceof ObjectEntity) {
+                    $objectData = $object->getObject();
+                } else {
+                    $objectData = (array) $object;
+                }
+
+                return (new OrMapping())->hydrate($objectData);
+            },
             $rows
         );
 

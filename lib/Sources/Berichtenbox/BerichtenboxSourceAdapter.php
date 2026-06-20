@@ -127,10 +127,15 @@ final class BerichtenboxSourceAdapter
         // Compute a non-PII-bearing summary of the message for the
         // debug log — never log the recipientBsn, body, or
         // attachment bytes.
+        $attachmentCount = 0;
+        if (is_array($message['attachments'] ?? null) === true) {
+            $attachmentCount = count($message['attachments']);
+        }
+
         $summary = [
             'conversationId'  => (string) ($message['conversationId'] ?? ''),
             'priority'        => (string) ($message['priority'] ?? ''),
-            'attachmentCount' => is_array($message['attachments'] ?? null) === true ? count($message['attachments']) : 0,
+            'attachmentCount' => $attachmentCount,
         ];
 
         $this->logger->debug(

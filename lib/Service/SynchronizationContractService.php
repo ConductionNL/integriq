@@ -234,11 +234,17 @@ class SynchronizationContractService
         // would break OR's `trim($object['id'])` upsert probe, so drop it.
         unset($object['id']);
 
+        if ($uuid !== null && $uuid !== '') {
+            $uuidParam = (string) $uuid;
+        } else {
+            $uuidParam = null;
+        }
+
         $saved = $this->orObjectService->saveObject(
             object: $object,
             register: self::REGISTER,
             schema: self::SCHEMA,
-            uuid: ($uuid !== null && $uuid !== '' ? (string) $uuid : null)
+            uuid: $uuidParam
         );
 
         return $saved->jsonSerialize();
@@ -308,12 +314,18 @@ class SynchronizationContractService
         $merged = array_merge($existing, $object);
         unset($merged['id']);
 
-        $uuid  = ($merged['uuid'] ?? null);
+        $uuid = ($merged['uuid'] ?? null);
+        if ($uuid !== null && $uuid !== '') {
+            $uuidParam = (string) $uuid;
+        } else {
+            $uuidParam = null;
+        }
+
         $saved = $this->orObjectService->saveObject(
             object: $merged,
             register: self::REGISTER,
             schema: self::SCHEMA,
-            uuid: ($uuid !== null && $uuid !== '' ? (string) $uuid : null)
+            uuid: $uuidParam
         );
 
         return $saved->jsonSerialize();

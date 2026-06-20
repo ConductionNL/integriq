@@ -163,7 +163,7 @@ class SynchronizationContractLogService
         // INSERT only (no uuid parameter): OpenRegister treats this as a CREATE,
         // which the append-only schema permits.
         $saved = $this->orObjectService->saveObject(
-            object: $this->normalize($log),
+            object: $this->normalize(object: $log),
             register: self::REGISTER,
             schema: self::SCHEMA
         );
@@ -185,7 +185,7 @@ class SynchronizationContractLogService
      */
     public function insert(array $log): array
     {
-        return $this->update($log);
+        return $this->update(log: $log);
 
     }//end insert()
 

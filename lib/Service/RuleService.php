@@ -504,7 +504,7 @@ class RuleService
         $datumExport = new DateTime();
         $data['body']['properties'][] = [
             // Datum export.
-            'propertyDefinitionRef' => $this->resolvePropertyRef('swc_datum_export_property', self::PROP_DATUM_EXPORT),
+            'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_datum_export_property', default: self::PROP_DATUM_EXPORT),
             'value'                 => $datumExport->format('Y-m-d H:i:s'),
             'value-lang'            => 'nl',
         ];
@@ -648,11 +648,11 @@ class RuleService
                 'type'               => 'ApplicationComponent',
                 'properties'         => [
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_type_property', self::PROP_SWC_TYPE),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_type_property', default: self::PROP_SWC_TYPE),
                         'value'                 => 'Pakket',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_object_id_property', self::PROP_OBJECT_ID),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_object_id_property', default: self::PROP_OBJECT_ID),
                         'value'                 => $voorziening['id'],
                     ],
                     [
@@ -660,15 +660,21 @@ class RuleService
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_extern_pakket_property', self::PROP_EXTERN_PAKKET),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(
+                            configKey: 'swc_extern_pakket_property',
+                            default: self::PROP_EXTERN_PAKKET
+                        ),
                         'value'                 => 'n',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_omschrijving_property', self::PROP_OMSCHRIJVING),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(
+                            configKey: 'swc_omschrijving_property',
+                            default: self::PROP_OMSCHRIJVING
+                        ),
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_bron_property', self::BRON),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_bron_property', default: self::BRON),
                         'value'                 => 'Softwarecatalogus',
                     ],
                 ],
@@ -940,11 +946,11 @@ class RuleService
             'properties' => [
                 [
                     // Object ID.
-                    'propertyDefinitionRef' => $this->resolvePropertyRef('swc_object_id_property', self::PROP_OBJECT_ID),
+                    'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_object_id_property', default: self::PROP_OBJECT_ID),
                     'value'                 => $relationUuid,
                 ],
                 [
-                    'propertyDefinitionRef' => $this->resolvePropertyRef('swc_bron_property', self::BRON),
+                    'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_bron_property', default: self::BRON),
                     'value'                 => 'Softwarecatalogus',
                 ],
             ],

@@ -69,7 +69,11 @@ final class PdokWfsClientHttp extends PdokWfsClient
         private readonly LoggerInterface $logger,
         ?string $baseUri=null
     ) {
-        $this->baseUri = ($baseUri !== null && $baseUri !== '') ? $baseUri : self::DEFAULT_BASE_URI;
+        if ($baseUri !== null && $baseUri !== '') {
+            $this->baseUri = $baseUri;
+        } else {
+            $this->baseUri = self::DEFAULT_BASE_URI;
+        }
 
     }//end __construct()
 
@@ -83,13 +87,13 @@ final class PdokWfsClientHttp extends PdokWfsClient
     public function getCapabilities(string $dataset): string
     {
         return $this->requestRaw(
-            $dataset,
-            [
+            dataset: $dataset,
+            query: [
                 'service' => 'WFS',
                 'request' => 'GetCapabilities',
                 'version' => '2.0.0',
             ],
-            'application/xml'
+            expectedAccept: 'application/xml'
         );
 
     }//end getCapabilities()
@@ -105,14 +109,14 @@ final class PdokWfsClientHttp extends PdokWfsClient
     public function describeFeatureType(string $dataset, string $featureType): string
     {
         return $this->requestRaw(
-            $dataset,
-            [
+            dataset: $dataset,
+            query: [
                 'service'   => 'WFS',
                 'request'   => 'DescribeFeatureType',
                 'version'   => '2.0.0',
                 'typeNames' => $featureType,
             ],
-            'application/xml'
+            expectedAccept: 'application/xml'
         );
 
     }//end describeFeatureType()
@@ -161,10 +165,10 @@ final class PdokWfsClientHttp extends PdokWfsClient
         }
 
         if ($filterFields !== []) {
-            $query['filter'] = $this->buildOgcFilter($filterFields);
+            $query['filter'] = $this->buildOgcFilter(filterFields: $filterFields);
         }
 
-        $body    = $this->requestRaw($dataset, $query, 'application/json');
+        $body    = $this->requestRaw(dataset: $dataset, query: $query, expectedAccept: 'application/json');
         $decoded = json_decode($body, true);
 
         if (is_array($decoded) === false) {

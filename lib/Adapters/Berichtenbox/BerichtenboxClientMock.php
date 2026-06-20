@@ -38,7 +38,11 @@ namespace OCA\OpenConnector\Adapters\Berichtenbox;
 final class BerichtenboxClientMock extends BerichtenboxClient
 {
     /**
+     * Flavour identifier.
+     *
      * @inheritDoc
+     *
+     * @return string
      */
     public function flavour(): string
     {

@@ -87,7 +87,11 @@ final class PdokWmsClientMock extends PdokWmsClient
         unset($dataset, $layer, $bbox, $crs, $width, $height, $format);
 
         $decoded = base64_decode(self::TRANSPARENT_PNG_BASE64, true);
-        return $decoded === false ? '' : $decoded;
+        if ($decoded === false) {
+            return '';
+        }
+
+        return $decoded;
 
     }//end getMap()
 

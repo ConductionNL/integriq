@@ -70,7 +70,11 @@ final class PdokWmsClientHttp extends PdokWmsClient
         private readonly LoggerInterface $logger,
         ?string $baseUri=null
     ) {
-        $this->baseUri = ($baseUri !== null && $baseUri !== '') ? $baseUri : self::DEFAULT_BASE_URI;
+        if ($baseUri !== null && $baseUri !== '') {
+            $this->baseUri = $baseUri;
+        } else {
+            $this->baseUri = self::DEFAULT_BASE_URI;
+        }
 
     }//end __construct()
 
@@ -84,13 +88,13 @@ final class PdokWmsClientHttp extends PdokWmsClient
     public function getCapabilities(string $dataset): string
     {
         return $this->request(
-            $dataset,
-            [
+            dataset: $dataset,
+            query: [
                 'service' => 'WMS',
                 'request' => 'GetCapabilities',
                 'version' => '1.3.0',
             ],
-            'application/xml'
+            expectedAccept: 'application/xml'
         );
 
     }//end getCapabilities()
@@ -126,8 +130,8 @@ final class PdokWmsClientHttp extends PdokWmsClient
         );
 
         return $this->request(
-            $dataset,
-            [
+            dataset: $dataset,
+            query: [
                 'service'     => 'WMS',
                 'request'     => 'GetMap',
                 'version'     => '1.3.0',
@@ -140,7 +144,7 @@ final class PdokWmsClientHttp extends PdokWmsClient
                 'format'      => $format,
                 'transparent' => 'true',
             ],
-            $format
+            expectedAccept: $format
         );
 
     }//end getMap()

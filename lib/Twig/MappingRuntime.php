@@ -307,7 +307,11 @@ class MappingRuntime implements RuntimeExtensionInterface
                 synchronizationId: $synchronizationId,
                 originId: $originId
             );
-            return ($contract !== null) ? ($contract['targetId'] ?? null) : null;
+            if ($contract !== null) {
+                return ($contract['targetId'] ?? null);
+            }
+
+            return null;
         }
 
         return $this->synchronizationContractService->findTargetIdByOriginId($originId);
@@ -345,7 +349,11 @@ class MappingRuntime implements RuntimeExtensionInterface
 
         $contract = $contracts[0]->jsonSerialize();
         $originId = ($contract['originId'] ?? null);
-        return ($originId !== null && $originId !== '') ? $originId : null;
+        if ($originId !== null && $originId !== '') {
+            return $originId;
+        }
+
+        return null;
 
     }//end getOriginIdByTargetId()
 }//end class
