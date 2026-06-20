@@ -314,6 +314,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenConnector\Controller\HealthController::class,
             static function (ContainerInterface $c) {
+                // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
                 return new \OCA\OpenConnector\Controller\HealthController(
                     appName: self::APP_ID,
@@ -330,6 +331,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenConnector\Controller\MetricsController::class,
             static function (ContainerInterface $c) {
+                // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
                 return new \OCA\OpenConnector\Controller\MetricsController(
                     appName: self::APP_ID,
