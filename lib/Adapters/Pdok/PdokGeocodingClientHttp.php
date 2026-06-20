@@ -65,16 +65,21 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     /**
      * Constructor.
      *
-     * @param ClientInterface  $httpClient The Guzzle HTTP client (injected for testability).
-     * @param LoggerInterface  $logger     Structured logger.
-     * @param string|null      $baseUri    Optional override of the Locatieserver base URI.
+     * @param ClientInterface $httpClient The Guzzle HTTP client (injected for testability).
+     * @param LoggerInterface $logger     Structured logger.
+     * @param string|null     $baseUri    Optional override of the Locatieserver base URI.
      */
     public function __construct(
         private readonly ClientInterface $httpClient,
         private readonly LoggerInterface $logger,
         ?string $baseUri=null
     ) {
-        $base          = ($baseUri !== null && $baseUri !== '') ? $baseUri : self::DEFAULT_BASE_URI;
+        if ($baseUri !== null && $baseUri !== '') {
+            $base = $baseUri;
+        } else {
+            $base = self::DEFAULT_BASE_URI;
+        }
+
         $this->baseUri = rtrim($base, '/').'/';
 
     }//end __construct()
@@ -90,8 +95,8 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     public function suggest(string $query, int $rows=10): array
     {
         $payload = $this->get(
-            'suggest',
-            [
+            path: 'suggest',
+            query: [
                 'q'    => $query,
                 'rows' => max(1, min(50, $rows)),
                 'fl'   => 'id,weergavenaam,straatnaam,huisnummer,postcode,woonplaatsnaam,provincienaam,centroide_ll',
@@ -104,7 +109,8 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
             if (is_array($doc) === false) {
                 continue;
             }
-            $out[] = $this->normaliseDoc($doc);
+
+            $out[] = $this->normaliseDoc(doc: $doc);
         }
 
         return $out;
@@ -121,10 +127,11 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     public function lookup(string $pdokId): ?array
     {
         $payload = $this->get(
-            'lookup',
-            [
+            path: 'lookup',
+            query: [
                 'id' => $pdokId,
-                'fl' => 'id,weergavenaam,straatnaam,huisnummer,postcode,woonplaatsnaam,provincienaam,centroide_ll,nummeraanduiding_id,adresseerbaarobject_id',
+                'fl' => 'id,weergavenaam,straatnaam,huisnummer,postcode,woonplaatsnaam,'
+                    .'provincienaam,centroide_ll,nummeraanduiding_id,adresseerbaarobject_id',
             ]
         );
 
@@ -134,7 +141,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
             return null;
         }
 
-        return $this->normaliseDoc($doc);
+        return $this->normaliseDoc(doc: $doc);
 
     }//end lookup()
 
@@ -149,8 +156,8 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     public function reverse(float $latitude, float $longitude): array
     {
         $payload = $this->get(
-            'reverse',
-            [
+            path: 'reverse',
+            query: [
                 'lat'  => $latitude,
                 'lon'  => $longitude,
                 'fl'   => 'id,weergavenaam,straatnaam,huisnummer,postcode,woonplaatsnaam,provincienaam,centroide_ll',
@@ -164,7 +171,8 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
             if (is_array($doc) === false) {
                 continue;
             }
-            $out[] = $this->normaliseDoc($doc);
+
+            $out[] = $this->normaliseDoc(doc: $doc);
         }
 
         return $out;
@@ -185,8 +193,8 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     /**
      * Execute a GET request against the Locatieserver and decode the JSON body.
      *
-     * @param string               $path  Relative path under the base URI.
-     * @param array<string,mixed>  $query Query-string parameters.
+     * @param string              $path  Relative path under the base URI.
+     * @param array<string,mixed> $query Query-string parameters.
      *
      * @return array<string,mixed> Decoded JSON payload.
      */
@@ -214,7 +222,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
                 ]
             );
             return ['response' => ['docs' => []]];
-        }
+        }//end try
 
         $body    = (string) $response->getBody();
         $decoded = json_decode($body, true);
@@ -243,7 +251,22 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
      */
     private function normaliseDoc(array $doc): array
     {
-        $coords = $this->parseCentroidLl(($doc['centroide_ll'] ?? null));
+        $coords = $this->parseCentroidLl(raw: ($doc['centroide_ll'] ?? null));
+
+        $bagAddressId = null;
+        if (isset($doc['nummeraanduiding_id']) === true) {
+            $bagAddressId = (string) $doc['nummeraanduiding_id'];
+        }
+
+        $bagBuildingId = null;
+        if (isset($doc['adresseerbaarobject_id']) === true) {
+            $bagBuildingId = (string) $doc['adresseerbaarobject_id'];
+        }
+
+        $pdokId = null;
+        if (isset($doc['id']) === true) {
+            $pdokId = (string) $doc['id'];
+        }
 
         $normalised = [
             'displayName'     => (string) ($doc['weergavenaam'] ?? ''),
@@ -252,9 +275,9 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
             'postalCode'      => (string) ($doc['postcode'] ?? ''),
             'addressLocality' => (string) ($doc['woonplaatsnaam'] ?? ''),
             'addressRegion'   => (string) ($doc['provincienaam'] ?? ''),
-            'bagAddressId'    => isset($doc['nummeraanduiding_id']) ? (string) $doc['nummeraanduiding_id'] : null,
-            'bagBuildingId'   => isset($doc['adresseerbaarobject_id']) ? (string) $doc['adresseerbaarobject_id'] : null,
-            'pdokId'          => isset($doc['id']) ? (string) $doc['id'] : null,
+            'bagAddressId'    => $bagAddressId,
+            'bagBuildingId'   => $bagBuildingId,
+            'pdokId'          => $pdokId,
             'source'          => 'pdok',
         ];
 
@@ -291,5 +314,4 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
         return [(float) $matches[1], (float) $matches[2]];
 
     }//end parseCentroidLl()
-
 }//end class

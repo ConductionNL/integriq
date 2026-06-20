@@ -145,11 +145,11 @@ class Application extends App implements IBootstrap
         // `PdokGeocodingClient` (lib/Adapters/Pdok/) are resolved to the
         // appropriate concrete flavour based on the `pdok.feature_flag`
         // app-config flag:
-        //   - `'1'` or `'true'`  → the `*ClientHttp` implementation
-        //     (real outbound HTTPS calls against api.pdok.nl /
-        //     service.pdok.nl).
-        //   - anything else (default) → the `*ClientMock` implementation
-        //     (deterministic canned responses; no network access).
+        // - `'1'` or `'true'`  → the `*ClientHttp` implementation
+        // (real outbound HTTPS calls against api.pdok.nl /
+        // service.pdok.nl).
+        // - anything else (default) → the `*ClientMock` implementation
+        // (deterministic canned responses; no network access).
         //
         // The Source-pattern facades (`PdokWmsSourceAdapter`,
         // `PdokWfsSourceAdapter`, `PdokGeocodingClient` under the Sources
@@ -165,25 +165,31 @@ class Application extends App implements IBootstrap
         $context->registerService(
             PdokWmsClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true
-                    ? $c->get(PdokWmsClientHttp::class)
-                    : $c->get(PdokWmsClientMock::class);
+                if ($isPdokActive($c) === true) {
+                    return $c->get(PdokWmsClientHttp::class);
+                }
+
+                return $c->get(PdokWmsClientMock::class);
             }
         );
         $context->registerService(
             PdokWfsClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true
-                    ? $c->get(PdokWfsClientHttp::class)
-                    : $c->get(PdokWfsClientMock::class);
+                if ($isPdokActive($c) === true) {
+                    return $c->get(PdokWfsClientHttp::class);
+                }
+
+                return $c->get(PdokWfsClientMock::class);
             }
         );
         $context->registerService(
             AdapterPdokGeocodingClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true
-                    ? $c->get(PdokGeocodingClientHttp::class)
-                    : $c->get(PdokGeocodingClientMock::class);
+                if ($isPdokActive($c) === true) {
+                    return $c->get(PdokGeocodingClientHttp::class);
+                }
+
+                return $c->get(PdokGeocodingClientMock::class);
             }
         );
 
@@ -252,10 +258,10 @@ class Application extends App implements IBootstrap
         // Wave-4 external-API low-volume families.
         //
         // - Logius Berichtenbox (BBK 1.7 — burgerportaal-mijnoverheid-bridge,
-        //   procest berichtenbox-integration spec). The abstract
-        //   BerichtenboxClient resolves to BerichtenboxClientMock by
-        //   default; flip `logius.berichtenbox.feature_flag` and bind
-        //   the BerichtenboxClientHttp implementation to activate.
+        // procest berichtenbox-integration spec). The abstract
+        // BerichtenboxClient resolves to BerichtenboxClientMock by
+        // default; flip `logius.berichtenbox.feature_flag` and bind
+        // the BerichtenboxClientHttp implementation to activate.
         $context->registerService(
             BerichtenboxClient::class,
             static function ($c) {
@@ -320,6 +326,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenConnector\Controller\HealthController::class,
             static function (ContainerInterface $c) {
+                // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
                 return new \OCA\OpenConnector\Controller\HealthController(
                     appName: self::APP_ID,
@@ -336,6 +343,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
             \OCA\OpenConnector\Controller\MetricsController::class,
             static function (ContainerInterface $c) {
+                // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
                 return new \OCA\OpenConnector\Controller\MetricsController(
                     appName: self::APP_ID,
@@ -524,24 +532,70 @@ class Application extends App implements IBootstrap
             $repair = $container->get(\OCA\OpenConnector\Repair\InitializeRegister::class);
             $repair->run(
                 new class implements \OCP\Migration\IOutput {
+                    /**
+                     * Log a debug message.
+                     *
+                     * @param string $message The debug message to log.
+                     *
+                     * @return void
+                     */
                     public function debug(string $message): void
                     {
-                    }
+                    }//end debug()
+
+                    /**
+                     * Log an informational message.
+                     *
+                     * @param string $message The informational message to log.
+                     *
+                     * @return void
+                     */
                     public function info($message)
                     {
-                    }
+                    }//end info()
+
+                    /**
+                     * Log a warning message.
+                     *
+                     * @param string $message The warning message to log.
+                     *
+                     * @return void
+                     */
                     public function warning($message)
                     {
-                    }
+                    }//end warning()
+
+                    /**
+                     * Start the progress reporting.
+                     *
+                     * @param int $max The maximum number of progress units.
+                     *
+                     * @return void
+                     */
                     public function startProgress($max=0)
                     {
-                    }
+                    }//end startProgress()
+
+                    /**
+                     * Advance the progress by the given step.
+                     *
+                     * @param int    $step        The number of units to advance.
+                     * @param string $description The description for the current step.
+                     *
+                     * @return void
+                     */
                     public function advance($step=1, $description='')
                     {
-                    }
+                    }//end advance()
+
+                    /**
+                     * Finish the progress reporting.
+                     *
+                     * @return void
+                     */
                     public function finishProgress()
                     {
-                    }
+                    }//end finishProgress()
                 }
             );
 
@@ -552,7 +606,7 @@ class Application extends App implements IBootstrap
             \OCP\Server::get(\Psr\Log\LoggerInterface::class)->warning(
                 '[openconnector] boot-time register bootstrap failed: '.$e->getMessage()
             );
-        }
+        }//end try
 
     }//end ensureRegisterBootstrapped()
 

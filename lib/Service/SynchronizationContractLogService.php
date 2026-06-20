@@ -76,7 +76,6 @@ class SynchronizationContractLogService
      */
     private array $persisted = [];
 
-
     /**
      * Constructor.
      *
@@ -91,7 +90,6 @@ class SynchronizationContractLogService
     ) {
 
     }//end __construct()
-
 
     /**
      * Build a new in-memory synchronization contract log handle.
@@ -142,7 +140,6 @@ class SynchronizationContractLogService
 
     }//end createFromArray()
 
-
     /**
      * Persist a contract log to OpenRegister, write-once.
      *
@@ -166,7 +163,7 @@ class SynchronizationContractLogService
         // INSERT only (no uuid parameter): OpenRegister treats this as a CREATE,
         // which the append-only schema permits.
         $saved = $this->orObjectService->saveObject(
-            object: $this->normalize($log),
+            object: $this->normalize(object: $log),
             register: self::REGISTER,
             schema: self::SCHEMA
         );
@@ -179,7 +176,6 @@ class SynchronizationContractLogService
 
     }//end update()
 
-
     /**
      * Persist a contract log to OpenRegister, write-once (alias of update()).
      *
@@ -189,10 +185,9 @@ class SynchronizationContractLogService
      */
     public function insert(array $log): array
     {
-        return $this->update($log);
+        return $this->update(log: $log);
 
     }//end insert()
-
 
     /**
      * Strip null/system keys OpenRegister manages itself before saving.
@@ -213,6 +208,4 @@ class SynchronizationContractLogService
         );
 
     }//end normalize()
-
-
 }//end class

@@ -172,15 +172,16 @@ class RuleService
     /**
      * Constructor for RuleService.
      *
-     * @param ObjectService                 $objectService    OpenConnector object-service facade.
-     * @param SoftwareCatalogueService      $catalogueService Software-catalog rule helper.
-     * @param RegisterMapper                $registerMapper   Mapper used to resolve register IDs.
-     * @param SchemaMapper                  $schemaMapper     Mapper used to resolve schema IDs.
-     * @param CallService                   $callService      Service used for outbound HTTP calls during rule evaluation.
-     * @param ORObjectService               $orObjectService  OpenRegister object-service used by extend / save rules.
-     * @param RegisterResolverService|null  $registerResolver Resolves `<context>_property` config keys to property
-     *                                                       identifiers; nullable so unit tests that don't exercise
-     *                                                       the catalogue rule path can omit the dependency.
+     * @param ObjectService                $objectService    OpenConnector object-service facade.
+     * @param SoftwareCatalogueService     $catalogueService Software-catalog rule helper.
+     * @param RegisterMapper               $registerMapper   Mapper used to resolve register IDs.
+     * @param SchemaMapper                 $schemaMapper     Mapper used to resolve schema IDs.
+     * @param CallService                  $callService      Service used for outbound HTTP calls during rule evaluation.
+     * @param ORObjectService              $orObjectService  OpenRegister object-service used by extend / save rules.
+     * @param RegisterResolverService|null $registerResolver Resolves `<context>_property` config keys to property
+     *                                                       identifiers; nullable so unit tests that don't
+     *                                                       exercise the catalogue rule path can omit the
+     *                                                       dependency.
      *
      * @return void
      */
@@ -194,7 +195,6 @@ class RuleService
         private readonly ?RegisterResolverService $registerResolver=null,
     ) {
     }//end __construct()
-
 
     /**
      * Resolve a software-catalogue propertyDefinitionRef through app config.
@@ -504,7 +504,7 @@ class RuleService
         $datumExport = new DateTime();
         $data['body']['properties'][] = [
             // Datum export.
-            'propertyDefinitionRef' => $this->resolvePropertyRef('swc_datum_export_property', self::PROP_DATUM_EXPORT),
+            'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_datum_export_property', default: self::PROP_DATUM_EXPORT),
             'value'                 => $datumExport->format('Y-m-d H:i:s'),
             'value-lang'            => 'nl',
         ];
@@ -648,11 +648,11 @@ class RuleService
                 'type'               => 'ApplicationComponent',
                 'properties'         => [
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_type_property', self::PROP_SWC_TYPE),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_type_property', default: self::PROP_SWC_TYPE),
                         'value'                 => 'Pakket',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_object_id_property', self::PROP_OBJECT_ID),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_object_id_property', default: self::PROP_OBJECT_ID),
                         'value'                 => $voorziening['id'],
                     ],
                     [
@@ -660,15 +660,21 @@ class RuleService
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_extern_pakket_property', self::PROP_EXTERN_PAKKET),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(
+                            configKey: 'swc_extern_pakket_property',
+                            default: self::PROP_EXTERN_PAKKET
+                        ),
                         'value'                 => 'n',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_omschrijving_property', self::PROP_OMSCHRIJVING),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(
+                            configKey: 'swc_omschrijving_property',
+                            default: self::PROP_OMSCHRIJVING
+                        ),
                         'value'                 => '',
                     ],
                     [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef('swc_bron_property', self::BRON),
+                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_bron_property', default: self::BRON),
                         'value'                 => 'Softwarecatalogus',
                     ],
                 ],
@@ -940,11 +946,11 @@ class RuleService
             'properties' => [
                 [
                     // Object ID.
-                    'propertyDefinitionRef' => $this->resolvePropertyRef('swc_object_id_property', self::PROP_OBJECT_ID),
+                    'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_object_id_property', default: self::PROP_OBJECT_ID),
                     'value'                 => $relationUuid,
                 ],
                 [
-                    'propertyDefinitionRef' => $this->resolvePropertyRef('swc_bron_property', self::BRON),
+                    'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_bron_property', default: self::BRON),
                     'value'                 => 'Softwarecatalogus',
                 ],
             ],

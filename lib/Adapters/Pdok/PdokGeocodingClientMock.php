@@ -43,20 +43,20 @@ final class PdokGeocodingClientMock extends PdokGeocodingClient
     private function cannedLauriergracht(): array
     {
         return [
-            'displayName'    => 'Lauriergracht 37, 1016 RG Amsterdam',
-            'streetAddress'  => 'Lauriergracht',
-            'houseNumber'    => '37',
-            'postalCode'     => '1016 RG',
+            'displayName'     => 'Lauriergracht 37, 1016 RG Amsterdam',
+            'streetAddress'   => 'Lauriergracht',
+            'houseNumber'     => '37',
+            'postalCode'      => '1016 RG',
             'addressLocality' => 'Amsterdam',
-            'addressRegion'  => 'Noord-Holland',
-            'location'       => [
+            'addressRegion'   => 'Noord-Holland',
+            'location'        => [
                 'type'        => 'Point',
                 'coordinates' => [4.88525, 52.37025],
             ],
-            'bagAddressId'   => '0363200000406543',
-            'bagBuildingId'  => '0363100012180043',
-            'pdokId'         => 'adr-mock-lauriergracht-37',
-            'source'         => 'pdok',
+            'bagAddressId'    => '0363200000406543',
+            'bagBuildingId'   => '0363100012180043',
+            'pdokId'          => 'adr-mock-lauriergracht-37',
+            'source'          => 'pdok',
         ];
     }//end cannedLauriergracht()
 
@@ -68,7 +68,7 @@ final class PdokGeocodingClientMock extends PdokGeocodingClient
      *
      * @return array<int,array<string,mixed>>
      */
-    public function suggest(string $query, int $rows = 10): array
+    public function suggest(string $query, int $rows=10): array
     {
         unset($query, $rows);
         return [$this->cannedLauriergracht()];
@@ -110,5 +110,4 @@ final class PdokGeocodingClientMock extends PdokGeocodingClient
     {
         return 'mock';
     }//end flavour()
-
 }//end class

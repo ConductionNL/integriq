@@ -49,17 +49,17 @@ class MappingRuntime implements RuntimeExtensionInterface
     /**
      * Constructor.
      *
-     * @param MappingService                $mappingService               Service that executes mappings.
-     * @param CallService                   $callService                  Service that performs outbound calls.
-     * @param FileService                   $fileService                  Service that resolves file metadata.
-     * @param SourceMappingService              $objectService                 Service that resolves OR objects.
-     * @param SynchronizationContractService    $synchronizationContractService Service for contract lookups.
+     * @param MappingService                 $mappingService                 Service that executes mappings.
+     * @param CallService                    $callService                    Service that performs outbound calls.
+     * @param FileService                    $fileService                    Service that resolves file metadata.
+     * @param SourceMappingService           $objectService                  Service that resolves OR objects.
+     * @param SynchronizationContractService $synchronizationContractService Service for contract lookups.
      */
     public function __construct(
-        private readonly MappingService                 $mappingService,
-        private readonly CallService                    $callService,
-        private readonly FileService                    $fileService,
-        private readonly SourceMappingService           $objectService,
+        private readonly MappingService $mappingService,
+        private readonly CallService $callService,
+        private readonly FileService $fileService,
+        private readonly SourceMappingService $objectService,
         private readonly SynchronizationContractService $synchronizationContractService,
     ) {
 
@@ -307,7 +307,11 @@ class MappingRuntime implements RuntimeExtensionInterface
                 synchronizationId: $synchronizationId,
                 originId: $originId
             );
-            return ($contract !== null) ? ($contract['targetId'] ?? null) : null;
+            if ($contract !== null) {
+                return ($contract['targetId'] ?? null);
+            }
+
+            return null;
         }
 
         return $this->synchronizationContractService->findTargetIdByOriginId($originId);
@@ -345,8 +349,11 @@ class MappingRuntime implements RuntimeExtensionInterface
 
         $contract = $contracts[0]->jsonSerialize();
         $originId = ($contract['originId'] ?? null);
-        return ($originId !== null && $originId !== '') ? $originId : null;
+        if ($originId !== null && $originId !== '') {
+            return $originId;
+        }
+
+        return null;
 
     }//end getOriginIdByTargetId()
-
 }//end class

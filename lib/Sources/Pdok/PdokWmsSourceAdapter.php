@@ -115,9 +115,9 @@ final class PdokWmsSourceAdapter
     public function getMap(
         string $layer,
         array $bbox,
-        int $width = 256,
-        int $height = 256,
-        array $extras = []
+        int $width=256,
+        int $height=256,
+        array $extras=[]
     ): string {
         $this->logger->debug(
             'pdok-wms.getMap',
@@ -183,5 +183,4 @@ final class PdokWmsSourceAdapter
             'reference'     => 'pdok.feature_flag',
         ];
     }//end sourceDescriptor()
-
 }//end class

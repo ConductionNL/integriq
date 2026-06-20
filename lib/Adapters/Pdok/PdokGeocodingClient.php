@@ -79,5 +79,4 @@ abstract class PdokGeocodingClient
      * @return string
      */
     abstract public function flavour(): string;
-
 }//end class

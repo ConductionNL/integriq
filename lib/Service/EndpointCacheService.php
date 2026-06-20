@@ -185,7 +185,7 @@ class EndpointCacheService
             $entity  = new ObjectEntity();
             $payload = $matchedEndpoint;
             unset($payload['@self']);
-            // setObject via positional call to avoid named-arg / __call bug.
+            // SetObject via positional call to avoid named-arg / __call bug.
             $entity->setObject($payload);
             return $entity;
         }
@@ -248,7 +248,11 @@ class EndpointCacheService
      */
     private function fetchEndpointsFromOr(): array
     {
-        $matches   = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']], _rbac: false, _multitenancy: false);
+        $matches   = $this->orObjectService->findAll(
+            config: ['filters' => ['register' => 'openconnector', 'schema' => 'endpoint']],
+            _rbac: false,
+            _multitenancy: false
+        );
         $endpoints = ($matches['results'] ?? $matches);
         if (is_array($endpoints) === true) {
             return $endpoints;

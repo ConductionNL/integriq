@@ -61,16 +61,20 @@ final class PdokWmsClientHttp extends PdokWmsClient
     /**
      * Constructor.
      *
-     * @param ClientInterface  $httpClient The Guzzle HTTP client.
-     * @param LoggerInterface  $logger     Structured logger.
-     * @param string|null      $baseUri    Optional override of the base URI template (must contain `{dataset}`).
+     * @param ClientInterface $httpClient The Guzzle HTTP client.
+     * @param LoggerInterface $logger     Structured logger.
+     * @param string|null     $baseUri    Optional override of the base URI template (must contain `{dataset}`).
      */
     public function __construct(
         private readonly ClientInterface $httpClient,
         private readonly LoggerInterface $logger,
         ?string $baseUri=null
     ) {
-        $this->baseUri = ($baseUri !== null && $baseUri !== '') ? $baseUri : self::DEFAULT_BASE_URI;
+        if ($baseUri !== null && $baseUri !== '') {
+            $this->baseUri = $baseUri;
+        } else {
+            $this->baseUri = self::DEFAULT_BASE_URI;
+        }
 
     }//end __construct()
 
@@ -84,13 +88,13 @@ final class PdokWmsClientHttp extends PdokWmsClient
     public function getCapabilities(string $dataset): string
     {
         return $this->request(
-            $dataset,
-            [
+            dataset: $dataset,
+            query: [
                 'service' => 'WMS',
                 'request' => 'GetCapabilities',
                 'version' => '1.3.0',
             ],
-            'application/xml'
+            expectedAccept: 'application/xml'
         );
 
     }//end getCapabilities()
@@ -126,8 +130,8 @@ final class PdokWmsClientHttp extends PdokWmsClient
         );
 
         return $this->request(
-            $dataset,
-            [
+            dataset: $dataset,
+            query: [
                 'service'     => 'WMS',
                 'request'     => 'GetMap',
                 'version'     => '1.3.0',
@@ -140,7 +144,7 @@ final class PdokWmsClientHttp extends PdokWmsClient
                 'format'      => $format,
                 'transparent' => 'true',
             ],
-            $format
+            expectedAccept: $format
         );
 
     }//end getMap()
@@ -190,10 +194,9 @@ final class PdokWmsClientHttp extends PdokWmsClient
                 ]
             );
             return '';
-        }
+        }//end try
 
         return (string) $response->getBody();
 
     }//end request()
-
 }//end class

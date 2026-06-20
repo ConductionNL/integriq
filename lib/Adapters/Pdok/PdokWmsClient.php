@@ -42,7 +42,6 @@ namespace OCA\OpenConnector\Adapters\Pdok;
  */
 abstract class PdokWmsClient
 {
-
     /**
      * Return the GetCapabilities XML for the requested dataset.
      *
@@ -55,13 +54,13 @@ abstract class PdokWmsClient
     /**
      * Render a GetMap PNG for the requested dataset, bbox and crs.
      *
-     * @param string                            $dataset PDOK WMS dataset key.
-     * @param string                            $layer   Layer name (per the dataset capabilities).
-     * @param array{0:float,1:float,2:float,3:float} $bbox  Bounding box (minx,miny,maxx,maxy).
-     * @param string                            $crs     CRS identifier (e.g. `EPSG:28992`).
-     * @param int                               $width   Pixel width.
-     * @param int                               $height  Pixel height.
-     * @param string                            $format  Image MIME type (default `image/png`).
+     * @param string                                 $dataset PDOK WMS dataset key.
+     * @param string                                 $layer   Layer name (per the dataset capabilities).
+     * @param array{0:float,1:float,2:float,3:float} $bbox    Bounding box (minx,miny,maxx,maxy).
+     * @param string                                 $crs     CRS identifier (e.g. `EPSG:28992`).
+     * @param int                                    $width   Pixel width.
+     * @param int                                    $height  Pixel height.
+     * @param string                                 $format  Image MIME type (default `image/png`).
      *
      * @return string Raw image bytes.
      */
@@ -81,5 +80,4 @@ abstract class PdokWmsClient
      * @return string
      */
     abstract public function flavour(): string;
-
 }//end class
