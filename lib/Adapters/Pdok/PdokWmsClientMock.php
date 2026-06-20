@@ -101,5 +101,4 @@ final class PdokWmsClientMock extends PdokWmsClient
         return 'mock';
 
     }//end flavour()
-
 }//end class

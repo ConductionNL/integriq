@@ -60,9 +60,9 @@ final class PdokWfsClientHttp extends PdokWfsClient
     /**
      * Constructor.
      *
-     * @param ClientInterface  $httpClient The Guzzle HTTP client.
-     * @param LoggerInterface  $logger     Structured logger.
-     * @param string|null      $baseUri    Optional override of the base URI template (must contain `{dataset}`).
+     * @param ClientInterface $httpClient The Guzzle HTTP client.
+     * @param LoggerInterface $logger     Structured logger.
+     * @param string|null     $baseUri    Optional override of the base URI template (must contain `{dataset}`).
      */
     public function __construct(
         private readonly ClientInterface $httpClient,
@@ -107,10 +107,10 @@ final class PdokWfsClientHttp extends PdokWfsClient
         return $this->requestRaw(
             $dataset,
             [
-                'service'     => 'WFS',
-                'request'     => 'DescribeFeatureType',
-                'version'     => '2.0.0',
-                'typeNames'   => $featureType,
+                'service'   => 'WFS',
+                'request'   => 'DescribeFeatureType',
+                'version'   => '2.0.0',
+                'typeNames' => $featureType,
             ],
             'application/xml'
         );
@@ -261,10 +261,9 @@ final class PdokWfsClientHttp extends PdokWfsClient
                 ]
             );
             return '';
-        }
+        }//end try
 
         return (string) $response->getBody();
 
     }//end requestRaw()
-
 }//end class

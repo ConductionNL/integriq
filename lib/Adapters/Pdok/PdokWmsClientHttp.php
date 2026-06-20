@@ -61,9 +61,9 @@ final class PdokWmsClientHttp extends PdokWmsClient
     /**
      * Constructor.
      *
-     * @param ClientInterface  $httpClient The Guzzle HTTP client.
-     * @param LoggerInterface  $logger     Structured logger.
-     * @param string|null      $baseUri    Optional override of the base URI template (must contain `{dataset}`).
+     * @param ClientInterface $httpClient The Guzzle HTTP client.
+     * @param LoggerInterface $logger     Structured logger.
+     * @param string|null     $baseUri    Optional override of the base URI template (must contain `{dataset}`).
      */
     public function __construct(
         private readonly ClientInterface $httpClient,
@@ -190,10 +190,9 @@ final class PdokWmsClientHttp extends PdokWmsClient
                 ]
             );
             return '';
-        }
+        }//end try
 
         return (string) $response->getBody();
 
     }//end request()
-
 }//end class

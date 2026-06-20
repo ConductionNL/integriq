@@ -145,11 +145,11 @@ class Application extends App implements IBootstrap
         // `PdokGeocodingClient` (lib/Adapters/Pdok/) are resolved to the
         // appropriate concrete flavour based on the `pdok.feature_flag`
         // app-config flag:
-        //   - `'1'` or `'true'`  → the `*ClientHttp` implementation
-        //     (real outbound HTTPS calls against api.pdok.nl /
-        //     service.pdok.nl).
-        //   - anything else (default) → the `*ClientMock` implementation
-        //     (deterministic canned responses; no network access).
+        // - `'1'` or `'true'`  → the `*ClientHttp` implementation
+        // (real outbound HTTPS calls against api.pdok.nl /
+        // service.pdok.nl).
+        // - anything else (default) → the `*ClientMock` implementation
+        // (deterministic canned responses; no network access).
         //
         // The Source-pattern facades (`PdokWmsSourceAdapter`,
         // `PdokWfsSourceAdapter`, `PdokGeocodingClient` under the Sources
@@ -165,25 +165,19 @@ class Application extends App implements IBootstrap
         $context->registerService(
             PdokWmsClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true
-                    ? $c->get(PdokWmsClientHttp::class)
-                    : $c->get(PdokWmsClientMock::class);
+                return $isPdokActive($c) === true ? $c->get(PdokWmsClientHttp::class) : $c->get(PdokWmsClientMock::class);
             }
         );
         $context->registerService(
             PdokWfsClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true
-                    ? $c->get(PdokWfsClientHttp::class)
-                    : $c->get(PdokWfsClientMock::class);
+                return $isPdokActive($c) === true ? $c->get(PdokWfsClientHttp::class) : $c->get(PdokWfsClientMock::class);
             }
         );
         $context->registerService(
             AdapterPdokGeocodingClient::class,
             static function ($c) use ($isPdokActive) {
-                return $isPdokActive($c) === true
-                    ? $c->get(PdokGeocodingClientHttp::class)
-                    : $c->get(PdokGeocodingClientMock::class);
+                return $isPdokActive($c) === true ? $c->get(PdokGeocodingClientHttp::class) : $c->get(PdokGeocodingClientMock::class);
             }
         );
 
@@ -252,10 +246,10 @@ class Application extends App implements IBootstrap
         // Wave-4 external-API low-volume families.
         //
         // - Logius Berichtenbox (BBK 1.7 — burgerportaal-mijnoverheid-bridge,
-        //   procest berichtenbox-integration spec). The abstract
-        //   BerichtenboxClient resolves to BerichtenboxClientMock by
-        //   default; flip `logius.berichtenbox.feature_flag` and bind
-        //   the BerichtenboxClientHttp implementation to activate.
+        // procest berichtenbox-integration spec). The abstract
+        // BerichtenboxClient resolves to BerichtenboxClientMock by
+        // default; flip `logius.berichtenbox.feature_flag` and bind
+        // the BerichtenboxClientHttp implementation to activate.
         $context->registerService(
             BerichtenboxClient::class,
             static function ($c) {
@@ -526,22 +520,27 @@ class Application extends App implements IBootstrap
                 new class implements \OCP\Migration\IOutput {
                     public function debug(string $message): void
                     {
-                    }
+                    }//end debug()
+
                     public function info($message)
                     {
-                    }
+                    }//end info()
+
                     public function warning($message)
                     {
-                    }
+                    }//end warning()
+
                     public function startProgress($max=0)
                     {
-                    }
+                    }//end startProgress()
+
                     public function advance($step=1, $description='')
                     {
-                    }
+                    }//end advance()
+
                     public function finishProgress()
                     {
-                    }
+                    }//end finishProgress()
                 }
             );
 
@@ -552,7 +551,7 @@ class Application extends App implements IBootstrap
             \OCP\Server::get(\Psr\Log\LoggerInterface::class)->warning(
                 '[openconnector] boot-time register bootstrap failed: '.$e->getMessage()
             );
-        }
+        }//end try
 
     }//end ensureRegisterBootstrapped()
 

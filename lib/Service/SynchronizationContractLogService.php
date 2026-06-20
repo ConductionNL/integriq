@@ -76,7 +76,6 @@ class SynchronizationContractLogService
      */
     private array $persisted = [];
 
-
     /**
      * Constructor.
      *
@@ -91,7 +90,6 @@ class SynchronizationContractLogService
     ) {
 
     }//end __construct()
-
 
     /**
      * Build a new in-memory synchronization contract log handle.
@@ -142,7 +140,6 @@ class SynchronizationContractLogService
 
     }//end createFromArray()
 
-
     /**
      * Persist a contract log to OpenRegister, write-once.
      *
@@ -179,7 +176,6 @@ class SynchronizationContractLogService
 
     }//end update()
 
-
     /**
      * Persist a contract log to OpenRegister, write-once (alias of update()).
      *
@@ -192,7 +188,6 @@ class SynchronizationContractLogService
         return $this->update($log);
 
     }//end insert()
-
 
     /**
      * Strip null/system keys OpenRegister manages itself before saving.
@@ -213,6 +208,4 @@ class SynchronizationContractLogService
         );
 
     }//end normalize()
-
-
 }//end class

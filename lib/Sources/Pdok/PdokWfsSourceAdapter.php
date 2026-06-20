@@ -111,9 +111,9 @@ final class PdokWfsSourceAdapter
      */
     public function getFeatures(
         string $typeName,
-        ?array $bbox = null,
-        int $count = 100,
-        array $extras = []
+        ?array $bbox=null,
+        int $count=100,
+        array $extras=[]
     ): array {
         $this->logger->debug(
             'pdok-wfs.getFeatures',
@@ -174,5 +174,4 @@ final class PdokWfsSourceAdapter
             'reference'     => 'pdok.feature_flag',
         ];
     }//end sourceDescriptor()
-
 }//end class

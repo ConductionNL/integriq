@@ -32,7 +32,6 @@ namespace OCA\OpenConnector\Adapters\Pdok;
  */
 final class PdokWfsClientMock extends PdokWfsClient
 {
-
     /**
      * Render a canned GetCapabilities XML document.
      *
@@ -100,8 +99,8 @@ final class PdokWfsClientMock extends PdokWfsClient
         unset($dataset, $featureType, $bbox, $count, $srsName, $filterFields);
 
         return [
-            'type'     => 'FeatureCollection',
-            'features' => [
+            'type'           => 'FeatureCollection',
+            'features'       => [
                 [
                     'type'       => 'Feature',
                     'id'         => 'bag-mock-lauriergracht-37',
@@ -110,21 +109,21 @@ final class PdokWfsClientMock extends PdokWfsClient
                         'coordinates' => [4.88525, 52.37025],
                     ],
                     'properties' => [
-                        'identificatie'   => '0363010000406543',
-                        'huisnummer'      => 37,
-                        'postcode'        => '1016 RG',
-                        'openbareruimte'  => 'Lauriergracht',
-                        'woonplaats'      => 'Amsterdam',
-                        'gebruiksdoel'    => 'kantoorfunctie',
-                        'oppervlakte_m2'  => 142,
-                        'status'          => 'Verblijfsobject in gebruik',
+                        'identificatie'  => '0363010000406543',
+                        'huisnummer'     => 37,
+                        'postcode'       => '1016 RG',
+                        'openbareruimte' => 'Lauriergracht',
+                        'woonplaats'     => 'Amsterdam',
+                        'gebruiksdoel'   => 'kantoorfunctie',
+                        'oppervlakte_m2' => 142,
+                        'status'         => 'Verblijfsobject in gebruik',
                     ],
                 ],
             ],
-            'totalFeatures' => 1,
-            'numberMatched' => 1,
+            'totalFeatures'  => 1,
+            'numberMatched'  => 1,
             'numberReturned' => 1,
-            'crs'           => [
+            'crs'            => [
                 'type'       => 'name',
                 'properties' => ['name' => 'urn:ogc:def:crs:EPSG::4326'],
             ],
@@ -142,5 +141,4 @@ final class PdokWfsClientMock extends PdokWfsClient
         return 'mock';
 
     }//end flavour()
-
 }//end class

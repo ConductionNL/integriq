@@ -163,7 +163,7 @@ class InitializeRegister implements IRepairStep
 
                 $descriptor   = self::deepMergeConfig($descriptor, $fragmentData);
                 $fragmentSig .= basename($fragmentFile).':'.md5($fragmentContent).';';
-            }
+            }//end foreach
         }//end if
 
         // Fold the fragment signature into the version so OpenRegister's

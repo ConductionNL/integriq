@@ -65,9 +65,9 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     /**
      * Constructor.
      *
-     * @param ClientInterface  $httpClient The Guzzle HTTP client (injected for testability).
-     * @param LoggerInterface  $logger     Structured logger.
-     * @param string|null      $baseUri    Optional override of the Locatieserver base URI.
+     * @param ClientInterface $httpClient The Guzzle HTTP client (injected for testability).
+     * @param LoggerInterface $logger     Structured logger.
+     * @param string|null     $baseUri    Optional override of the Locatieserver base URI.
      */
     public function __construct(
         private readonly ClientInterface $httpClient,
@@ -104,6 +104,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
             if (is_array($doc) === false) {
                 continue;
             }
+
             $out[] = $this->normaliseDoc($doc);
         }
 
@@ -164,6 +165,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
             if (is_array($doc) === false) {
                 continue;
             }
+
             $out[] = $this->normaliseDoc($doc);
         }
 
@@ -185,8 +187,8 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
     /**
      * Execute a GET request against the Locatieserver and decode the JSON body.
      *
-     * @param string               $path  Relative path under the base URI.
-     * @param array<string,mixed>  $query Query-string parameters.
+     * @param string              $path  Relative path under the base URI.
+     * @param array<string,mixed> $query Query-string parameters.
      *
      * @return array<string,mixed> Decoded JSON payload.
      */
@@ -214,7 +216,7 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
                 ]
             );
             return ['response' => ['docs' => []]];
-        }
+        }//end try
 
         $body    = (string) $response->getBody();
         $decoded = json_decode($body, true);
@@ -291,5 +293,4 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
         return [(float) $matches[1], (float) $matches[2]];
 
     }//end parseCentroidLl()
-
 }//end class

@@ -143,7 +143,6 @@ final class SyncRefResolver
 
     }//end lookupSourceUuidByInt()
 
-
     /**
      * Extract a non-empty uuid from an OpenRegister result row.
      *

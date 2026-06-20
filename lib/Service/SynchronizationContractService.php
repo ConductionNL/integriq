@@ -53,7 +53,6 @@ class SynchronizationContractService
      */
     private const SCHEMA = 'synchronization_contract';
 
-
     /**
      * Constructor.
      *
@@ -64,7 +63,6 @@ class SynchronizationContractService
     ) {
 
     }//end __construct()
-
 
     /**
      * Find a single contract object by id/uuid.
@@ -82,7 +80,6 @@ class SynchronizationContractService
         );
 
     }//end findObject()
-
 
     /**
      * Find all contract objects matching the supplied filters.
@@ -104,7 +101,6 @@ class SynchronizationContractService
         return array_values(($matches['results'] ?? $matches));
 
     }//end findAllObjects()
-
 
     /**
      * Find a single contract by id/uuid and return its payload array.
@@ -129,7 +125,6 @@ class SynchronizationContractService
         return $object->jsonSerialize();
 
     }//end find()
-
 
     /**
      * Find a contract by synchronizationId + originId (or just originId).
@@ -166,7 +161,6 @@ class SynchronizationContractService
 
     }//end findBySyncAndOrigin()
 
-
     /**
      * Find a contract by origin id (single match).
      *
@@ -186,7 +180,6 @@ class SynchronizationContractService
         return $matches[0]->jsonSerialize();
 
     }//end findByOriginId()
-
 
     /**
      * Find the targetId for a contract addressed by originId.
@@ -213,7 +206,6 @@ class SynchronizationContractService
         return (string) $targetId;
 
     }//end findTargetIdByOriginId()
-
 
     /**
      * Persist a contract payload array to OpenRegister.
@@ -253,7 +245,6 @@ class SynchronizationContractService
 
     }//end persist()
 
-
     /**
      * Persist a contract from array data, auto-filling uuid + version.
      *
@@ -286,7 +277,6 @@ class SynchronizationContractService
         return $saved->jsonSerialize();
 
     }//end createFromArray()
-
 
     /**
      * Update an existing contract from array data, bumping the patch version.
@@ -329,6 +319,4 @@ class SynchronizationContractService
         return $saved->jsonSerialize();
 
     }//end updateFromArray()
-
-
 }//end class

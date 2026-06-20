@@ -172,15 +172,16 @@ class RuleService
     /**
      * Constructor for RuleService.
      *
-     * @param ObjectService                 $objectService    OpenConnector object-service facade.
-     * @param SoftwareCatalogueService      $catalogueService Software-catalog rule helper.
-     * @param RegisterMapper                $registerMapper   Mapper used to resolve register IDs.
-     * @param SchemaMapper                  $schemaMapper     Mapper used to resolve schema IDs.
-     * @param CallService                   $callService      Service used for outbound HTTP calls during rule evaluation.
-     * @param ORObjectService               $orObjectService  OpenRegister object-service used by extend / save rules.
-     * @param RegisterResolverService|null  $registerResolver Resolves `<context>_property` config keys to property
-     *                                                       identifiers; nullable so unit tests that don't exercise
-     *                                                       the catalogue rule path can omit the dependency.
+     * @param ObjectService                $objectService    OpenConnector object-service facade.
+     * @param SoftwareCatalogueService     $catalogueService Software-catalog rule helper.
+     * @param RegisterMapper               $registerMapper   Mapper used to resolve register IDs.
+     * @param SchemaMapper                 $schemaMapper     Mapper used to resolve schema IDs.
+     * @param CallService                  $callService      Service used for outbound HTTP calls during rule evaluation.
+     * @param ORObjectService              $orObjectService  OpenRegister object-service used by extend / save rules.
+     * @param RegisterResolverService|null $registerResolver Resolves `<context>_property` config keys to property
+     *                                                       identifiers; nullable so unit tests that don't
+     *                                                       exercise the catalogue rule path can omit the
+     *                                                       dependency.
      *
      * @return void
      */
@@ -194,7 +195,6 @@ class RuleService
         private readonly ?RegisterResolverService $registerResolver=null,
     ) {
     }//end __construct()
-
 
     /**
      * Resolve a software-catalogue propertyDefinitionRef through app config.
