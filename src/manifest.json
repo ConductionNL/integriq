@@ -431,6 +431,11 @@
         "sidebar": { "enabled": true, "showMetadata": true },
         "showViewAction": false,
         "showEditAction": false,
+        "exportFormats": [
+          { "id": "json", "label": "JSON (.json)" },
+          { "id": "excel", "label": "Excel (.xlsx)" },
+          { "id": "csv", "label": "CSV (.csv)" }
+        ],
         "actions": [
           { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "MappingDetail" },
           { "id": "edit", "label": "Edit", "icon": "Pencil", "handler": "navigate", "route": "MappingDetail" },
