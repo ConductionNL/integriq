@@ -1,0 +1,28 @@
+{
+  "$comment": "ADR-037 register fragment (seed-cmcom-sms-source). Seeds the pre-built `cmcom-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's CmComSmsClient. CM.com Business Messaging API v1.0 authenticates with a `X-CM-PRODUCTTOKEN` request header carrying the product token (a UUID). Ships dormant (isEnabled:false) with the real CM.com messaging base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. Operators paste their CM.com product token onto `configuration.headers.X-CM-PRODUCTTOKEN` and flip isEnabled via the OpenConnector Sources UI. The send leaf is admin-owned: the base URL is fixed on the source and only the message body/recipient travel in the POST body, so there is no SSRF surface. This source is OUTBOUND (side-effecting POST /v1.0/message) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "cmcom-sms"
+        },
+        "name": "CM.com SMS",
+        "description": "CM.com Business Messaging API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder — the base URL is the production CM.com messaging endpoint; set your CM.com product token on `configuration.headers.X-CM-PRODUCTTOKEN` (CM.com authenticates via this header) and enable. Send path is `message` (POST /v1.0/message).",
+        "type": "api",
+        "location": "https://gw.cmtelecom.com/v1.0",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

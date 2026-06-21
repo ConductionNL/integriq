@@ -1,0 +1,33 @@
+{
+  "$comment": "ADR-037 register fragment (seed-twilio-sms-source). Seeds the pre-built `twilio-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's TwilioSmsClient. The Twilio Messaging API authenticates with HTTP Basic (username=AccountSID, password=AuthToken) and the AccountSID also appears in the request path (`/2010-04-01/Accounts/{AccountSID}/Messages.json`). Ships dormant (isEnabled:false) with the Twilio API base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. To enable: (1) set `configuration.authentication.username` to your AccountSID and `configuration.authentication.password` to your AuthToken (HTTP Basic); (2) the consuming app composes the `Accounts/{AccountSID}/Messages.json` send path so the AccountSID is supplied by the operator, not by end-user input; (3) flip isEnabled via the OpenConnector Sources UI. Twilio expects an application/x-www-form-urlencoded body. The base URL is admin-owned on the source (no SSRF surface). OUTBOUND (side-effecting POST) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "twilio-sms"
+        },
+        "name": "Twilio SMS",
+        "description": "Twilio Messaging API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder — the base URL is the production Twilio API endpoint; set `configuration.authentication.username` (AccountSID) + `configuration.authentication.password` (AuthToken) for HTTP Basic and enable. Send path is `2010-04-01/Accounts/{AccountSID}/Messages.json` (form-encoded body From/To/Body).",
+        "type": "api",
+        "location": "https://api.twilio.com",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "authentication": {
+            "authentication": "basic",
+            "username": "",
+            "password": ""
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

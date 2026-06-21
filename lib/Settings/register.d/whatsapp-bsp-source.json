@@ -1,0 +1,29 @@
+{
+  "$comment": "ADR-037 register fragment (seed-whatsapp-bsp-source). Seeds the pre-built `whatsapp-bsp` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's WhatsAppProviderClient (BSP-fallback leg). This is the generic Business Solution Provider relay slot — modelled on CM.com's WhatsApp Business API, which authenticates with an `X-CM-PRODUCTTOKEN` request header and accepts a Meta-shaped messages payload. Ships dormant (isEnabled:false) with the CM.com WhatsApp base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. Operators repoint `location` at their chosen BSP (e.g. Twilio Content API, 360dialog, MessageBird WhatsApp) and set the matching credential header, then flip isEnabled via the OpenConnector Sources UI. The base URL is admin-owned on the source (no SSRF surface). OUTBOUND (side-effecting POST) — template-approval gating, the 24h session window, provider selection (Meta-primary, this BSP as fallback), STOP opt-out, dedupe and delivery-status reconciliation all stay in the consuming app (pipelinq WhatsAppAdapter); this source is a pure transport.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "whatsapp-bsp"
+        },
+        "name": "WhatsApp BSP relay",
+        "description": "Generic WhatsApp Business Solution Provider relay (default base: CM.com WhatsApp Business API). Consumed by the OpenRegister outbound-messaging dispatch leaf as the BSP-fallback WhatsApp leg. Dormant placeholder — repoint `location` at your BSP and set its credential header (default models CM.com `X-CM-PRODUCTTOKEN`), then enable. Send path follows the BSP's messages endpoint (Meta-shaped JSON body).",
+        "type": "api",
+        "location": "https://api.whatsapp.cm.com",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-CM-PRODUCTTOKEN": ""
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

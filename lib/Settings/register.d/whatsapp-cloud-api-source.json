@@ -1,0 +1,29 @@
+{
+  "$comment": "ADR-037 register fragment (seed-whatsapp-cloud-api-source). Seeds the pre-built `whatsapp-cloud-api` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's WhatsAppProviderClient (Meta-primary leg). The Meta WhatsApp Cloud API (Graph) authenticates with an `Authorization: Bearer {system-user-token}` request header; the Phone-Number-ID appears in the send path (`/{PhoneNumberID}/messages`). Ships dormant (isEnabled:false) with the Meta Graph base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. To enable: (1) set `configuration.headers.Authorization` to `Bearer {your-system-user-token}`; (2) the consuming app composes the `{PhoneNumberID}/messages` send path so the Phone-Number-ID is operator-supplied; (3) flip isEnabled via the OpenConnector Sources UI. The base URL is admin-owned on the source (no SSRF surface). OUTBOUND (side-effecting POST) — template-approval gating, the 24h customer-service session window, provider selection, STOP opt-out, dedupe and delivery-status reconciliation all stay in the consuming app (pipelinq WhatsAppAdapter); this source is a pure transport.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "whatsapp-cloud-api"
+        },
+        "name": "WhatsApp Cloud API (Meta)",
+        "description": "Meta WhatsApp Cloud API (Graph v19.0). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a template or free-form WhatsApp message). Dormant placeholder — the base URL is the production Meta Graph endpoint; set `configuration.headers.Authorization` to `Bearer {system-user-token}` and enable. Send path is `{PhoneNumberID}/messages` (JSON body `messaging_product:whatsapp`). Template approval state is read via `{WABA-ID}/message_templates`.",
+        "type": "api",
+        "location": "https://graph.facebook.com/v19.0",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer "
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

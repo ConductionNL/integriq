@@ -1,0 +1,29 @@
+{
+  "$comment": "ADR-037 register fragment (seed-messagebird-sms-source). Seeds the pre-built `messagebird-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's MessageBirdSmsClient. MessageBird (Bird) REST API authenticates with an `Authorization: AccessKey {key}` request header. Ships dormant (isEnabled:false) with the real MessageBird REST base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. Operators paste their MessageBird access key onto `configuration.headers.Authorization` (replacing the empty AccessKey placeholder) and flip isEnabled via the OpenConnector Sources UI. The base URL is admin-owned on the source (no SSRF surface). OUTBOUND (side-effecting POST /messages) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "messagebird-sms"
+        },
+        "name": "MessageBird SMS",
+        "description": "MessageBird (Bird) REST API (SMS). Consumed by the OpenRegister outbound-messaging dispatch leaf (POST a single SMS). Dormant placeholder — the base URL is the production MessageBird REST endpoint; set your access key on `configuration.headers.Authorization` as `AccessKey {your-key}` and enable. Send path is `messages` (POST /messages).",
+        "type": "api",
+        "location": "https://rest.messagebird.com",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "AccessKey "
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
