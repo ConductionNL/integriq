@@ -1,0 +1,27 @@
+{
+  "$comment": "ADR-037 register fragment (seed-kvk-source). Seeds the pre-built `kvk` OpenConnector source consumed by the OpenRegister KvK company-lookup integration leaf (KvkProvider SOURCE_ID='kvk'). Ships dormant (isEnabled:false) with the real KvK Handelsregister Zoeken API base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. The KvK API authenticates with an `apikey` request header — operators paste their KvK API key into the source's `configuration.headers.apikey` (or the auth credential field) and flip isEnabled via the OpenConnector Sources UI. No end-user input reaches the request URL, so there is no SSRF surface (the base URL is admin-owned on the source).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "kvk"
+        },
+        "name": "KvK Handelsregister",
+        "description": "Dutch Chamber of Commerce (KvK) Handelsregister Zoeken API. Consumed by the OpenRegister KvK integration leaf (company lookup by KvK number + free-text/SBI search). Dormant placeholder — the base URL is the production KvK v2 endpoint; set your KvK API key on `configuration.headers.apikey` (the KvK API authenticates via an `apikey` request header) and enable.",
+        "type": "api",
+        "location": "https://api.kvk.nl/api/v2",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

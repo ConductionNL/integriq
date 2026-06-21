@@ -1,0 +1,27 @@
+{
+  "$comment": "ADR-037 register fragment (seed-opencorporates-source). Seeds the pre-built `opencorporates` OpenConnector source consumed by the OpenRegister OpenCorporates company-search integration leaf (OpenCorporatesProvider SOURCE_ID='opencorporates'). Ships dormant (isEnabled:false) with the real OpenCorporates v0.4 API base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. The OpenCorporates API authenticates with an `api_token` query parameter — operators paste their OpenCorporates API token into the source's `configuration.query.api_token` (or the auth credential field) and flip isEnabled via the OpenConnector Sources UI. No end-user input reaches the request URL, so there is no SSRF surface (the base URL is admin-owned on the source).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "opencorporates"
+        },
+        "name": "OpenCorporates",
+        "description": "OpenCorporates open company register API (v0.4). Consumed by the OpenRegister OpenCorporates integration leaf (company search across jurisdictions). Dormant placeholder — the base URL is the production OpenCorporates v0.4 endpoint; set your OpenCorporates API token on `configuration.query.api_token` (the OpenCorporates API authenticates via an `api_token` query parameter) and enable.",
+        "type": "api",
+        "location": "https://api.opencorporates.com/v0.4",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
