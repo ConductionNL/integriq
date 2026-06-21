@@ -430,8 +430,10 @@
         "includeFields": ["name", "description"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "showViewAction": false,
+        "showEditAction": false,
         "actions": [
           { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "MappingDetail" },
+          { "id": "edit", "label": "Edit", "icon": "Pencil", "handler": "navigate", "route": "MappingDetail" },
           { "id": "test", "label": "Test mapping", "icon": "icon-play", "handler": "testMappingModalHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"

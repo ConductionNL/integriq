@@ -17,6 +17,7 @@ import App from './App.vue'
 import bundledManifest from './manifest.json'
 import customComponents from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
+import { createMappingAndOpen } from './handlers/actionHandlers.js'
 
 // MDI icons referenced by manifest `headerActions[]` / `actions[]` /
 // `menu[]` entries. CnActionsBar + CnAppNav render them via CnIcon,
@@ -34,7 +35,9 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Finance from 'vue-material-design-icons/Finance.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
@@ -60,7 +63,9 @@ registerIcons({
 	CloudUploadOutline,
 	Cog,
 	DatabaseArrowLeftOutline,
+	EyeOutline,
 	Finance,
+	Pencil,
 	ScaleBalance,
 	SitemapOutline,
 	TextBoxOutline,
@@ -98,6 +103,21 @@ function tryLoadTranslations() {
 // not extensible". Cloning gives Vue Router an extensible
 // component-options object without altering the lib's internals.
 const RoutePageRenderer = { ...CnPageRenderer }
+
+// The Mappings index Add button must open the bespoke MappingDetail editor
+// (a page) rather than the generic name/description form dialog. The primary
+// Add button delegates to a parent `@add` listener when one is present
+// (CnIndexPage.onAddClick), so this thin wrapper — used only for the Mappings
+// route — attaches that listener while keeping the primary button intact.
+// CnPageRenderer forwards $listeners down to CnIndexPage, so `@add` here
+// reaches the button; all other routes use the plain RoutePageRenderer and
+// keep the default form-dialog create.
+const MappingsPageRenderer = {
+	name: 'MappingsPageRenderer',
+	render(h) {
+		return h(RoutePageRenderer, { on: { add: createMappingAndOpen } })
+	},
+}
 
 /**
  * ADR-037: merge modular manifest fragments from src/manifest.d/*.json onto the
@@ -141,7 +161,7 @@ function routesFromManifest(manifest) {
 	const routes = manifest.pages.map((page) => ({
 		name: page.id,
 		path: page.route,
-		component: RoutePageRenderer,
+		component: page.id === 'Mappings' ? MappingsPageRenderer : RoutePageRenderer,
 		props: page.route.includes(':'),
 	}))
 	// Legacy redirect: /cloud-events → /cloud-events/events (preserves bookmarks)
