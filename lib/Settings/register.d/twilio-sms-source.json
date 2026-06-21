@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (seed-twilio-sms-source). Seeds the pre-built `twilio-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's TwilioSmsClient. The Twilio Messaging API authenticates with HTTP Basic (username=AccountSID, password=AuthToken) and the AccountSID also appears in the request path (`/2010-04-01/Accounts/{AccountSID}/Messages.json`). Ships dormant (isEnabled:false) with the Twilio API base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. To enable: (1) set `configuration.authentication.username` to your AccountSID and `configuration.authentication.password` to your AuthToken (HTTP Basic); (2) the consuming app composes the `Accounts/{AccountSID}/Messages.json` send path so the AccountSID is supplied by the operator, not by end-user input; (3) flip isEnabled via the OpenConnector Sources UI. Twilio expects an application/x-www-form-urlencoded body. The base URL is admin-owned on the source (no SSRF surface). OUTBOUND (side-effecting POST) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
+  "$comment": "ADR-037 register fragment (seed-twilio-sms-source). Seeds the pre-built `twilio-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's TwilioSmsClient. The Twilio Messaging API authenticates with HTTP Basic (username=AccountSID, password=AuthToken) and the AccountSID also appears in the request path (`/2010-04-01/Accounts/{AccountSID}/Messages.json`). MOCK MODE (integration-mock-mode): ships with `configuration.mock:true` + a realistic `configuration.mockResponse` (Twilio Messages.json shape, mock SID `MOCK-SMS-TWILIO-0001`, status `queued`) and isEnabled:true, so the dispatch leaf is demonstrably functional end-to-end WITHOUT Twilio Basic credentials — the OpenRegister ExternalIntegrationRouter short-circuits the mock-flagged source and returns the canned success body WITHOUT sending an SMS. To go live: (1) set `configuration.authentication.username` to your AccountSID and `configuration.authentication.password` to your AuthToken (HTTP Basic); (2) the consuming app composes the `Accounts/{AccountSID}/Messages.json` send path so the AccountSID is supplied by the operator, not by end-user input; (3) REMOVE `configuration.mock`. Twilio expects an application/x-www-form-urlencoded body. The base URL is admin-owned on the source (no SSRF surface). OUTBOUND (side-effecting POST) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
   "components": {
     "objects": [
       {
@@ -22,9 +22,24 @@
             "authentication": "basic",
             "username": "",
             "password": ""
+          },
+          "mock": true,
+          "mockResponse": {
+            "sid": "MOCK-SMS-TWILIO-0001",
+            "account_sid": "ACmock00000000000000000000000000",
+            "to": "+31600000000",
+            "from": "+12025550100",
+            "body": "Mock message",
+            "status": "queued",
+            "num_segments": "1",
+            "direction": "outbound-api",
+            "price": null,
+            "error_code": null,
+            "error_message": null,
+            "date_created": "Sun, 21 Jun 2026 09:00:00 +0000"
           }
         },
-        "isEnabled": false,
+        "isEnabled": true,
         "test": false,
         "version": "1.0.0"
       }

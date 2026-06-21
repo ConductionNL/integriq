@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (seed-cmcom-sms-source). Seeds the pre-built `cmcom-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's CmComSmsClient. CM.com Business Messaging API v1.0 authenticates with a `X-CM-PRODUCTTOKEN` request header carrying the product token (a UUID). Ships dormant (isEnabled:false) with the real CM.com messaging base URL and auth:apikey so a fresh install resolves the endpoint without carrying a secret. Operators paste their CM.com product token onto `configuration.headers.X-CM-PRODUCTTOKEN` and flip isEnabled via the OpenConnector Sources UI. The send leaf is admin-owned: the base URL is fixed on the source and only the message body/recipient travel in the POST body, so there is no SSRF surface. This source is OUTBOUND (side-effecting POST /v1.0/message) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
+  "$comment": "ADR-037 register fragment (seed-cmcom-sms-source). Seeds the pre-built `cmcom-sms` OpenConnector source consumed by the OpenRegister outbound-messaging dispatch leaf (MessageDispatchProvider) and, transitively, pipelinq's CmComSmsClient. CM.com Business Messaging API v1.0 authenticates with a `X-CM-PRODUCTTOKEN` request header carrying the product token (a UUID). MOCK MODE (integration-mock-mode): ships with `configuration.mock:true` + a realistic `configuration.mockResponse` (CM.com `/v1.0/message` accepted shape, a mock message id `MOCK-SMS-CMCOM-0001`) and isEnabled:true, so the dispatch leaf is demonstrably functional end-to-end WITHOUT a CM.com product token — the OpenRegister ExternalIntegrationRouter short-circuits the mock-flagged source and returns the canned success body WITHOUT actually sending an SMS. To go live: paste your CM.com product token onto `configuration.headers.X-CM-PRODUCTTOKEN` and REMOVE `configuration.mock` (the production base URL is already set). The send leaf is admin-owned: the base URL is fixed on the source and only the message body/recipient travel in the POST body, so there is no SSRF surface. This source is OUTBOUND (side-effecting POST /v1.0/message) — provider selection / STOP opt-out / dedupe / delivery-status reconciliation stay in the consuming app (pipelinq SmsAdapter).",
   "components": {
     "objects": [
       {
@@ -17,9 +17,24 @@
           "headers": {
             "Accept": "application/json",
             "Content-Type": "application/json"
+          },
+          "mock": true,
+          "mockResponse": {
+            "details": "Created 1 message(s)",
+            "errorCode": 0,
+            "messages": [
+              {
+                "to": "0031600000000",
+                "status": "Accepted",
+                "reference": "MOCK-SMS-CMCOM-0001",
+                "parts": 1,
+                "messageDetails": null,
+                "messageErrorCode": null
+              }
+            ]
           }
         },
-        "isEnabled": false,
+        "isEnabled": true,
         "test": false,
         "version": "1.0.0"
       }
