@@ -1,0 +1,39 @@
+{
+  "$comment": "ADR-037 register fragment (seed-brp-haalcentraal-source). Seeds the pre-built `brp-haalcentraal` OpenConnector source consumed by the OpenRegister BRP person-lookup integration leaf (BrpPersoonProvider SOURCE_ID='brp-haalcentraal'). The RvIG HaalCentraal Personen v2.0 API authenticates with OAuth2 client_credentials AND mutual-TLS (PKIoverheid). Both are first-class on OpenConnector's CallService: the bearer is injected per-call via the `{{ oauthToken(source) }}` Twig placeholder in `configuration.headers.Authorization` (AuthenticationService::fetchOAuthTokens, grant_type=client_credentials), and the client certificate / private key flow through `configuration.cert` + `configuration.ssl_key` (CallService::getCertificate writes them to temp files for Guzzle's TLS handshake). Ships dormant (isEnabled:false) with the production HaalCentraal base + token URLs and EMPTY credential / cert fields so a fresh install resolves the endpoint without carrying any secret or certificate. Operators paste their RvIG client_id/client_secret, scope, and PEM cert+key onto `configuration.authentication` + `configuration.cert`/`configuration.ssl_key` via the OpenConnector Sources UI and flip isEnabled. No end-user input reaches the request URL (the BSN travels in the POST body, never the path), so there is no SSRF surface — the base URL is admin-owned on the source. BSN values are PII (AVG art. 9 adjacent): the consuming app (pipelinq) masks them before logging; this source never logs the request body (logBody defaults off).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "brp-haalcentraal"
+        },
+        "name": "BRP HaalCentraal Personen",
+        "description": "RvIG HaalCentraal BRP Personen v2.0 API (basisregistratie personen). Consumed by the OpenRegister BRP integration leaf (person lookup by BSN — RaadpleegMetBurgerservicenummer). Dormant placeholder — the base URL is the production HaalCentraal v2 endpoint. To enable: (1) set `configuration.authentication.client_id` / `client_secret` / `scope` (OAuth2 client_credentials, tokenUrl already set to the RvIG token endpoint); (2) set `configuration.cert` + `configuration.ssl_key` to your PKIoverheid client certificate + private key PEM (mutual TLS, required by RvIG); (3) flip isEnabled. The Authorization header is rendered per-call from `{{ oauthToken(source) }}`.",
+        "type": "api",
+        "location": "https://api.haalcentraal.nl/brp/v2.0",
+        "auth": "oauth",
+        "configuration": {
+          "headers": {
+            "Accept": "application/hal+json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{ oauthToken(source) }}"
+          },
+          "authentication": {
+            "grant_type": "client_credentials",
+            "authentication": "body",
+            "tokenUrl": "https://oauth.haalcentraal.nl/token",
+            "scope": "",
+            "client_id": "",
+            "client_secret": ""
+          },
+          "cert": "",
+          "ssl_key": ""
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
