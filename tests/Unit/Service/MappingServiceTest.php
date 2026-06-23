@@ -283,6 +283,46 @@ class MappingServiceTest extends TestCase
 
 
     /**
+     * Test that executeMapping resolves a string slug through OR.
+     *
+     * @return void
+     */
+    public function testExecuteMappingResolvesStringSlugThroughOr(): void
+    {
+        $object = new ObjectEntity();
+        $object->setObject(
+            [
+                'name'        => 'resolved',
+                'mapping'     => ['out' => 'in'],
+                'passThrough' => false,
+            ]
+        );
+
+        $this->orObjectService->expects($this->once())
+            ->method('find')
+            ->with(id: 'lookup-slug', register: 'openconnector', schema: 'mapping')
+            ->willReturn(null);
+
+        $this->orObjectService->expects($this->once())
+            ->method('findAll')
+            ->with(
+                config: [
+                    'filters' => [
+                        'register' => 'openconnector',
+                        'schema'   => 'mapping',
+                        'slug'     => 'lookup-slug',
+                    ],
+                ]
+            )
+            ->willReturn(['results' => [$object]]);
+
+        $result = $this->service->executeMapping('lookup-slug', ['in' => 'value']);
+
+        $this->assertSame(['out' => 'value'], $result);
+    }//end testExecuteMappingResolvesStringSlugThroughOr()
+
+
+    /**
      * Test that executeMapping renders Twig template strings.
      *
      * @return void

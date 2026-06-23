@@ -204,7 +204,8 @@ class MappingService
             return (new OrMapping())->hydrate($mapping);
         }
 
-        // String/int -> resolve via OpenRegister.
+        // String/int -> resolve via OpenRegister UUID first, then imported
+        // configuration identifiers (`slug`/`reference`).
         try {
             $object = $this->orObjectService->find(
                 id: (string) $mapping,
@@ -220,6 +221,10 @@ class MappingService
         }
 
         if ($object === null) {
+            $object = $this->findMappingByIdentifier(identifier: (string) $mapping);
+        }
+
+        if ($object === null) {
             throw new \InvalidArgumentException(
                 sprintf('Mapping "%s" could not be resolved through OpenRegister.', (string) $mapping)
             );
@@ -228,6 +233,40 @@ class MappingService
         return (new OrMapping())->hydrate($object->getObject());
 
     }//end normaliseMapping()
+
+    /**
+     * Find a mapping by imported configuration identifiers.
+     *
+     * @param string $identifier The mapping slug/reference to resolve.
+     *
+     * @return ObjectEntity|null The matching mapping object, when found.
+     */
+    private function findMappingByIdentifier(string $identifier): ?ObjectEntity
+    {
+        foreach (['slug', 'reference'] as $field) {
+            try {
+                $matches = $this->orObjectService->findAll(
+                    config: [
+                        'filters' => [
+                            'register' => self::REGISTER,
+                            'schema'   => self::SCHEMA,
+                            $field     => $identifier,
+                        ],
+                    ]
+                );
+            } catch (DoesNotExistException) {
+                continue;
+            }
+
+            $results = ($matches['results'] ?? $matches);
+            if (empty($results) === false) {
+                return $results[0];
+            }
+        }
+
+        return null;
+
+    }//end findMappingByIdentifier()
 
     /**
      * Maps (transforms) an array (input) to a different array (output).
