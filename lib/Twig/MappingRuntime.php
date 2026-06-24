@@ -160,23 +160,6 @@ class MappingRuntime implements RuntimeExtensionInterface
      */
     public function executeMapping(\OCA\OpenRegister\Db\Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
-        if (is_array($mapping) === true) {
-            $mappingObject = new \OCA\OpenRegister\Db\Mapping();
-            $mappingObject->hydrate($mapping);
-
-            $mapping = $mappingObject;
-        }
-
-        if ((is_string($mapping) === true || is_int($mapping) === true)) {
-            $orObjectService = $this->objectService->getOpenRegisters();
-            $mappingEntity   = $orObjectService->find(id: (string) $mapping, register: 'openconnector', schema: 'mapping');
-            if ($mappingEntity !== null) {
-                $mappingObject = new \OCA\OpenRegister\Db\Mapping();
-                $mappingObject->hydrate($mappingEntity->getObject());
-                $mapping = $mappingObject;
-            }
-        }
-
         return $this->mappingService->executeMapping(
             mapping: $mapping,
             input: $input,
