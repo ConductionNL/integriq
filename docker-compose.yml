@@ -29,7 +29,7 @@ services:
     user: root
     container_name: nextcloud
 #    entrypoint: occ app:enable openconnector
-    image: nextcloud
+    image: nextcloud:34.0.0-apache
     restart: always
     ports:
       - 8080:80
