@@ -139,7 +139,7 @@
     {
       "id": "Dashboard",
       "label": "Dashboard",
-      "icon": "Finance",
+      "icon": "icon-category-dashboard",
       "route": "Dashboard",
       "order": 10
     },
@@ -182,7 +182,6 @@
       "label": "Settings",
       "icon": "Cog",
       "route": "AppSettings",
-      "section": "settings",
       "order": 20
     },
     {
