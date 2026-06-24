@@ -78,7 +78,7 @@ jobs:
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
         # carrying pre-existing tests/Unit debt (see TESTING-CI-ROLLOUT.md).
-        continue-on-error: ${{ inputs.unit-gating == false }}
+        continue-on-error: false
         run: ./vendor/bin/phpunit --configuration phpunit-unit.xml --no-coverage --colors=never
 
   # ---------------------------------------------------------------------------
@@ -131,7 +131,7 @@ jobs:
     runs-on: docker
     container:
       image: code.forgejo.org/oci/ci-php:8.3
-    continue-on-error: ${{ inputs.unit-gating == false }}
+    continue-on-error: false
     steps:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
