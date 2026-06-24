@@ -15,6 +15,7 @@ import {
 import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
+import menuLayout from './menu-layout.json'
 import customComponents from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 import { createMappingAndOpen } from './handlers/actionHandlers.js'
@@ -36,7 +37,6 @@ import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Finance from 'vue-material-design-icons/Finance.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
@@ -64,7 +64,6 @@ registerIcons({
 	Cog,
 	DatabaseArrowLeftOutline,
 	EyeOutline,
-	Finance,
 	Pencil,
 	ScaleBalance,
 	SitemapOutline,
@@ -143,7 +142,49 @@ function mergeManifestFragments(base) {
 			merged.menu.push(...frag.menu)
 		}
 	})
+	merged.menu = applySettingsSection(merged.menu, menuLayout.settingsSection)
 	return merged
+}
+
+/**
+ * Promote the menu entries listed in `src/menu-layout.json#settingsSection`
+ * into Nextcloud's settings foldout — the NcAppNavigationSettings gear at the
+ * bottom-left of the navigation, OUTSIDE the scrollable list. CnAppNav renders
+ * every TOP-LEVEL item carrying `section: "settings"` as a flat entry inside
+ * that foldout. This lifts each listed id out of wherever it currently sits,
+ * tags it `section: "settings"`, flattens it (the foldout has no nested
+ * groups), and appends it to the top level. Empty non-clickable groups left
+ * behind are dropped; a clickable group (route/href/action) is kept.
+ *
+ * Fragments stay the canonical source of WHAT exists in the menu (ADR-037);
+ * this map keeps the WHERE decision in the canonical layout file.
+ *
+ * @param {Array<object>} menu        The merged menu.
+ * @param {Array<string>|undefined} settingsIds Entry ids to move to the foldout.
+ * @return {Array<object>} The menu with the settings entries lifted out.
+ */
+function applySettingsSection(menu, settingsIds) {
+	if (!Array.isArray(settingsIds) || settingsIds.length === 0) return menu
+	const want = new Set(settingsIds)
+	const isClickable = (n) => n.route !== undefined || n.href !== undefined || n.action !== undefined
+	const lifted = []
+	const strip = (nodes) => nodes.reduce((acc, n) => {
+		if (want.has(n.id)) {
+			const { children, ...leaf } = n
+			lifted.push({ ...leaf, section: 'settings' })
+			return acc
+		}
+		if (Array.isArray(n.children)) {
+			const children = strip(n.children)
+			if (children.length === 0 && n.children.length > 0 && !isClickable(n)) return acc
+			acc.push({ ...n, children })
+			return acc
+		}
+		acc.push(n)
+		return acc
+	}, [])
+	const remaining = strip(menu)
+	return [...remaining, ...lifted]
 }
 
 const mergedManifest = mergeManifestFragments(bundledManifest)
