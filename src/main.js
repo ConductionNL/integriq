@@ -11,6 +11,7 @@ import {
 	defaultPageTypes,
 	registerIcons,
 	registerTranslations,
+	buildManifest,
 } from '@conduction/nextcloud-vue'
 import pinia from './pinia.js'
 import App from './App.vue'
@@ -118,76 +119,12 @@ const MappingsPageRenderer = {
 	},
 }
 
-/**
- * ADR-037: merge modular manifest fragments from src/manifest.d/*.json onto the
- * bundled base manifest. Each OpenSpec change drops its own fragment (pages/menu)
- * instead of editing the monolith src/manifest.json, so concurrent builds touch
- * disjoint files. `pages` and `menu` arrays are concatenated.
- *
- * @param {object} base The bundled base manifest.
- * @return {object} The manifest with all fragment pages/menu appended.
- */
-function mergeManifestFragments(base) {
-	const merged = { ...base, pages: [...(base.pages || [])], menu: [...(base.menu || [])] }
-	// require.context is resolved at build time; src/manifest.d/ must exist (it
-	// ships with a _placeholder.json). It is a no-op when the directory holds no
-	// real fragments beyond the empty placeholder.
-	const ctx = require.context('./manifest.d/', false, /\.json$/)
-	ctx.keys().sort().forEach((key) => {
-		const frag = ctx(key)
-		if (Array.isArray(frag.pages)) {
-			merged.pages.push(...frag.pages)
-		}
-		if (Array.isArray(frag.menu)) {
-			merged.menu.push(...frag.menu)
-		}
-	})
-	merged.menu = applySettingsSection(merged.menu, menuLayout.settingsSection)
-	return merged
-}
-
-/**
- * Promote the menu entries listed in `src/menu-layout.json#settingsSection`
- * into Nextcloud's settings foldout — the NcAppNavigationSettings gear at the
- * bottom-left of the navigation, OUTSIDE the scrollable list. CnAppNav renders
- * every TOP-LEVEL item carrying `section: "settings"` as a flat entry inside
- * that foldout. This lifts each listed id out of wherever it currently sits,
- * tags it `section: "settings"`, flattens it (the foldout has no nested
- * groups), and appends it to the top level. Empty non-clickable groups left
- * behind are dropped; a clickable group (route/href/action) is kept.
- *
- * Fragments stay the canonical source of WHAT exists in the menu (ADR-037);
- * this map keeps the WHERE decision in the canonical layout file.
- *
- * @param {Array<object>} menu        The merged menu.
- * @param {Array<string>|undefined} settingsIds Entry ids to move to the foldout.
- * @return {Array<object>} The menu with the settings entries lifted out.
- */
-function applySettingsSection(menu, settingsIds) {
-	if (!Array.isArray(settingsIds) || settingsIds.length === 0) return menu
-	const want = new Set(settingsIds)
-	const isClickable = (n) => n.route !== undefined || n.href !== undefined || n.action !== undefined
-	const lifted = []
-	const strip = (nodes) => nodes.reduce((acc, n) => {
-		if (want.has(n.id)) {
-			const { children, ...leaf } = n
-			lifted.push({ ...leaf, section: 'settings' })
-			return acc
-		}
-		if (Array.isArray(n.children)) {
-			const children = strip(n.children)
-			if (children.length === 0 && n.children.length > 0 && !isClickable(n)) return acc
-			acc.push({ ...n, children })
-			return acc
-		}
-		acc.push(n)
-		return acc
-	}, [])
-	const remaining = strip(menu)
-	return [...remaining, ...lifted]
-}
-
-const mergedManifest = mergeManifestFragments(bundledManifest)
+// Collect the app's manifest.d/*.json fragments — require.context is resolved
+// by this app's own webpack build, so it stays app-local — then hand the base
+// manifest, fragments, and menu-layout to the shared pipeline.
+const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
+const fragments = fragmentCtx.keys().sort().map((key) => fragmentCtx(key))
+const mergedManifest = buildManifest(bundledManifest, fragments, menuLayout)
 
 /**
  * Build the vue-router config from the manifest. Each manifest page becomes
