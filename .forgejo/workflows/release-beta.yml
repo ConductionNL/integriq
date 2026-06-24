@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    uses: https://codeberg.org/Conduction/.github/.forgejo/workflows/release-beta.yml@main
+    uses: Conduction/.github/.forgejo/workflows/release-beta.yml@main
     with:
       app-name: openconnector
     secrets:
