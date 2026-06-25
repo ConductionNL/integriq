@@ -267,7 +267,12 @@ class MappingsController extends Controller
 
         // OR's ObjectService::saveObject signature is positional; avoid named
         // arguments here so this action remains compatible across OR versions.
-        $saved = $openRegisters->saveObject($data['object'], [], ($data['register'] ?? 'openconnector'), ($data['schema'] ?? 'mapping'));
+        $saved = $openRegisters->saveObject(
+            object: $data['object'],
+            extend: [],
+            register: ($data['register'] ?? 'openconnector'),
+            schema: ($data['schema'] ?? 'mapping')
+        );
 
         return new JSONResponse($saved->getObject());
 

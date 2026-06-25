@@ -222,7 +222,13 @@ class JobService
             // @todo fix this (call to protected method).
             // $this->jobList->removeById($jobData['jobListId']);
             $jobData['jobListId'] = null;
-            return $this->objectService->saveObject($jobData, [], 'openconnector', 'job', $job->getUuid());
+            return $this->objectService->saveObject(
+                object: $jobData,
+                extend: [],
+                register: 'openconnector',
+                schema: 'job',
+                uuid: $job->getUuid()
+            );
         }
 
         // Oke this is a new job let's schedule it.
@@ -243,7 +249,13 @@ class JobService
         // Set the job list id.
         $jobData['jobListId'] = $this->getJobListId(job: \OCA\OpenConnector\Cron\JobTask::class);
         // Save the job to the database.
-        return $this->objectService->saveObject($jobData, [], 'openconnector', 'job', $job->getUuid());
+        return $this->objectService->saveObject(
+            object: $jobData,
+            extend: [],
+            register: 'openconnector',
+            schema: 'job',
+            uuid: $job->getUuid()
+        );
 
     }//end scheduleJob()
 
@@ -540,7 +552,13 @@ class JobService
         }//end if
 
         // M1: Advance the job's timeline only AFTER the log entry is safely written.
-        $this->objectService->saveObject($jobData, [], 'openconnector', 'job', $job->getUuid());
+        $this->objectService->saveObject(
+            object: $jobData,
+            extend: [],
+            register: 'openconnector',
+            schema: 'job',
+            uuid: $job->getUuid()
+        );
 
         return $logEntry;
     }//end executeJob()
@@ -603,7 +621,12 @@ class JobService
             }
         }
 
-        return $this->objectService->saveObject($logObject, [], 'openconnector', 'job_log');
+        return $this->objectService->saveObject(
+            object: $logObject,
+            extend: [],
+            register: 'openconnector',
+            schema: 'job_log'
+        );
     }//end saveJobLog()
 
     /**

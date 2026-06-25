@@ -146,11 +146,22 @@ class MappingHandler implements ConfigurationHandlerInterface
         $slug = $data['slug'] ?? null;
         if ($slug !== null && isset($mappings['mapping']['slugToId'][$slug]) === true) {
             // Update existing mapping.
-            return $this->orObjectService->saveObject($data, [], 'openconnector', 'mapping', $mappings['mapping']['slugToId'][$slug]);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                extend: [],
+                register: 'openconnector',
+                schema: 'mapping',
+                uuid: $mappings['mapping']['slugToId'][$slug]
+            );
         }
 
         // Create new mapping.
-        return $this->orObjectService->saveObject($data, [], 'openconnector', 'mapping');
+        return $this->orObjectService->saveObject(
+            object: $data,
+            extend: [],
+            register: 'openconnector',
+            schema: 'mapping'
+        );
 
     }//end import()
 

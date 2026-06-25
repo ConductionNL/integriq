@@ -315,16 +315,21 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
         if ($slug !== null && isset($mappings['synchronization']['slugToId'][$slug]) === true) {
             // Update existing synchronization.
             return $this->orObjectService->saveObject(
-                $data,
-                [],
-                'openconnector',
-                'synchronization',
-                $mappings['synchronization']['slugToId'][$slug]
+                object: $data,
+                extend: [],
+                register: 'openconnector',
+                schema: 'synchronization',
+                uuid: $mappings['synchronization']['slugToId'][$slug]
             );
         }
 
         // Create new synchronization.
-        return $this->orObjectService->saveObject($data, [], 'openconnector', 'synchronization');
+        return $this->orObjectService->saveObject(
+            object: $data,
+            extend: [],
+            register: 'openconnector',
+            schema: 'synchronization'
+        );
 
     }//end import()
 

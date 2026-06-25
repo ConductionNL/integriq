@@ -1254,7 +1254,12 @@ class EndpointService
             $data = $this->processMapping(rule: $rule, mapping: $this->mappingService->getMapping($mapping), data: $data);
         }
 
-        $data['body'] = $this->orObjectService->saveObject($data['body'], [], $register, $schema);
+        $data['body'] = $this->orObjectService->saveObject(
+            object: $data['body'],
+            extend: [],
+            register: $register,
+            schema: $schema
+        );
 
         return $data;
     }//end processSaveObjectRule()
@@ -1418,11 +1423,11 @@ class EndpointService
         $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($objectId);
         $object->setObject($data['body']);
         $object = $this->orObjectService->saveObject(
-            $object,
-            [],
-            $object->getRegister(),
-            $object->getSchema(),
-            $object->getUuid()
+            object: $object,
+            extend: [],
+            register: $object->getRegister(),
+            schema: $object->getSchema(),
+            uuid: $object->getUuid()
         );
         $this->objectService->getOpenRegisters()->clearCurrents();
 
@@ -2184,11 +2189,11 @@ class EndpointService
 
             try {
                 $object = $this->orObjectService->saveObject(
-                    $formatted,
-                    [],
-                    $registerId,
-                    $schemaId,
-                    $formatted['id']
+                    object: $formatted,
+                    extend: [],
+                    register: $registerId,
+                    schema: $schemaId,
+                    uuid: $formatted['id']
                 );
                 return $this->replaceInternalReferences(mapper: $openRegister, object: $object);
             } catch (ValidationException $exception) {
@@ -2224,7 +2229,12 @@ class EndpointService
         $saveObject = clone $dataDot;
         $saveObject[$filePartLocation] = $filepartIds;
 
-        $this->orObjectService->saveObject($saveObject->jsonSerialize(), [], $registerId, $schemaId);
+        $this->orObjectService->saveObject(
+            object: $saveObject->jsonSerialize(),
+            extend: [],
+            register: $registerId,
+            schema: $schemaId
+        );
 
         return $dataDot->jsonSerialize();
     }//end processFilePartRule()

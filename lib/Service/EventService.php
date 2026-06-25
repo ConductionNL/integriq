@@ -243,7 +243,7 @@ class EventService
         $subscriptionData = $subscription->getObject();
 
         return $this->objectService->saveObject(
-            [
+            object: [
                 'eventId'        => $event->getUuid(),
                 'consumerId'     => ($subscriptionData['consumerId'] ?? null),
                 'subscriptionId' => $subscription->getUuid(),
@@ -252,9 +252,9 @@ class EventService
                 'created'        => (new DateTime())->format('c'),
                 'updated'        => (new DateTime())->format('c'),
             ],
-            [],
-            'openconnector',
-            'event_message'
+            extend: [],
+            register: 'openconnector',
+            schema: 'event_message'
         );
 
     }//end createEventMessage()
@@ -350,7 +350,13 @@ class EventService
                     statusCode: $response->getStatusCode(),
                     error: null
                 );
-                $this->objectService->saveObject($messageData, [], 'openconnector', 'event_message', $message->getUuid());
+                $this->objectService->saveObject(
+                    object: $messageData,
+                    extend: [],
+                    register: 'openconnector',
+                    schema: 'event_message',
+                    uuid: $message->getUuid()
+                );
                 return true;
             }//end if
 
@@ -444,7 +450,13 @@ class EventService
             );
         }
 
-        $this->objectService->saveObject($messageData, [], 'openconnector', 'event_message', $message->getUuid());
+        $this->objectService->saveObject(
+            object: $messageData,
+            extend: [],
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
 
     }//end recordFailure()
 
@@ -575,7 +587,13 @@ class EventService
         $messageData['replayedBy']  = $actorUid;
         $messageData['replayedAt']  = $now;
         // Attempts[] is deliberately preserved across the replay campaign.
-        $saved = $this->objectService->saveObject($messageData, [], 'openconnector', 'event_message', $message->getUuid());
+        $saved = $this->objectService->saveObject(
+            object: $messageData,
+            extend: [],
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
 
         // Re-enter the delivery machine immediately.
         $this->deliverMessage(message: $saved);
@@ -628,7 +646,13 @@ class EventService
         $messageData['discardedBy'] = $actorUid;
         $messageData['discardedAt'] = $now;
 
-        return $this->objectService->saveObject($messageData, [], 'openconnector', 'event_message', $message->getUuid());
+        return $this->objectService->saveObject(
+            object: $messageData,
+            extend: [],
+            register: 'openconnector',
+            schema: 'event_message',
+            uuid: $message->getUuid()
+        );
 
     }//end discardMessage()
 
@@ -749,7 +773,7 @@ class EventService
     {
         $objectData = $object->getObject();
         $event      = $this->objectService->saveObject(
-            [
+            object: [
                 'source'  => ('/objects/'.($objectData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.created',
                 'time'    => (new DateTime())->format('c'),
@@ -761,9 +785,9 @@ class EventService
                 ],
                 'userId'  => ($objectData['userId'] ?? null),
             ],
-            [],
-            'openconnector',
-            'event'
+            extend: [],
+            register: 'openconnector',
+            schema: 'event'
         );
 
         return $this->processEvent(event: $event);
@@ -789,7 +813,7 @@ class EventService
         $newData = $newObject->getObject();
 
         $event = $this->objectService->saveObject(
-            [
+            object: [
                 'source'  => ('/objects/'.($newData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.updated',
                 'time'    => (new DateTime())->format('c'),
@@ -804,9 +828,9 @@ class EventService
                 ],
                 'userId'  => ($newData['userId'] ?? null),
             ],
-            [],
-            'openconnector',
-            'event'
+            extend: [],
+            register: 'openconnector',
+            schema: 'event'
         );
 
         return $this->processEvent(event: $event);
@@ -830,7 +854,7 @@ class EventService
         $objectData = $object->getObject();
 
         $event = $this->objectService->saveObject(
-            [
+            object: [
                 'source'  => ('/objects/'.($objectData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.deleted',
                 'time'    => (new DateTime())->format('c'),
@@ -841,9 +865,9 @@ class EventService
                 ],
                 'userId'  => ($objectData['userId'] ?? null),
             ],
-            [],
-            'openconnector',
-            'event'
+            extend: [],
+            register: 'openconnector',
+            schema: 'event'
         );
 
         return $this->processEvent(event: $event);

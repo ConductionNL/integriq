@@ -163,11 +163,22 @@ class RuleHandler implements ConfigurationHandlerInterface
         $slug = $data['slug'] ?? null;
         if ($slug !== null && isset($mappings['rule']['slugToId'][$slug]) === true) {
             // Update existing rule.
-            return $this->orObjectService->saveObject($data, [], 'openconnector', 'rule', $mappings['rule']['slugToId'][$slug]);
+            return $this->orObjectService->saveObject(
+                object: $data,
+                extend: [],
+                register: 'openconnector',
+                schema: 'rule',
+                uuid: $mappings['rule']['slugToId'][$slug]
+            );
         }
 
         // Create new rule.
-        return $this->orObjectService->saveObject($data, [], 'openconnector', 'rule');
+        return $this->orObjectService->saveObject(
+            object: $data,
+            extend: [],
+            register: 'openconnector',
+            schema: 'rule'
+        );
 
     }//end import()
 

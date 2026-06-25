@@ -266,7 +266,13 @@ class SoftwareCatalogueService
                                 );
 
                                 // Save the updated view.
-                                $this->objectService->getOpenRegisters()->saveObject($view, [], null, null, $id);
+                                $this->objectService->getOpenRegisters()->saveObject(
+                                    object: $view,
+                                    extend: [],
+                                    register: null,
+                                    schema: null,
+                                    uuid: $id
+                                );
                             }
                             )
                             ->otherwise(

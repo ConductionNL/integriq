@@ -343,7 +343,13 @@ class SynchronizationService
             $uuidValue = (string) $uuid;
         }
 
-        $this->orObjectService->saveObject($object, [], 'openconnector', 'synchronization', $uuidValue);
+        $this->orObjectService->saveObject(
+            object: $object,
+            extend: [],
+            register: 'openconnector',
+            schema: 'synchronization',
+            uuid: $uuidValue
+        );
     }//end persistSynchronization()
 
     /**
@@ -521,7 +527,13 @@ class SynchronizationService
             $uuidValue = (string) $uuid;
         }
 
-        $saved = $this->orObjectService->saveObject($object, [], 'openconnector', 'synchronization_contract', $uuidValue);
+        $saved = $this->orObjectService->saveObject(
+            object: $object,
+            extend: [],
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $uuidValue
+        );
 
         return $saved->jsonSerialize();
     }//end persistContract()
@@ -552,7 +564,13 @@ class SynchronizationService
         unset($object['id']);
 
         $uuid  = $object['uuid'];
-        $saved = $this->orObjectService->saveObject($object, [], 'openconnector', 'synchronization_contract', $uuid);
+        $saved = $this->orObjectService->saveObject(
+            object: $object,
+            extend: [],
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $uuid
+        );
 
         return $saved->jsonSerialize();
     }//end createContractFromArray()
@@ -598,7 +616,13 @@ class SynchronizationService
             $uuidValue = (string) $uuid;
         }
 
-        $saved = $this->orObjectService->saveObject($merged, [], 'openconnector', 'synchronization_contract', $uuidValue);
+        $saved = $this->orObjectService->saveObject(
+            object: $merged,
+            extend: [],
+            register: 'openconnector',
+            schema: 'synchronization_contract',
+            uuid: $uuidValue
+        );
 
         return $saved->jsonSerialize();
     }//end updateContractFromArray()
@@ -689,7 +713,12 @@ class SynchronizationService
         // upsert probe (trim($object['id'])).
         unset($sourceData['id']);
 
-        $saved = $this->orObjectService->saveObject($sourceData, [], 'openconnector', 'source');
+        $saved = $this->orObjectService->saveObject(
+            object: $sourceData,
+            extend: [],
+            register: 'openconnector',
+            schema: 'source'
+        );
 
         return $saved->jsonSerialize();
     }//end findOrCreateSourceByLocation()
@@ -2485,11 +2514,11 @@ class SynchronizationService
                 $targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
 
                 $target = $this->orObjectService->saveObject(
-                    $targetObject,
-                    [],
-                    $register,
-                    $schema,
-                    ($synchronizationContract['targetId'] ?? null)
+                    object: $targetObject,
+                    extend: [],
+                    register: $register,
+                    schema: $schema,
+                    uuid: ($synchronizationContract['targetId'] ?? null)
                 );
                 // Get the id form the target object.
                 $synchronizationContract['targetId'] = $target->getUuid();
@@ -2500,7 +2529,7 @@ class SynchronizationService
                 // removed after the fetch-rule path was verified.
                 // Handle sub-objects synchronization if sourceConfig is defined.
                 if (isset($sourceConfig['subObjects']) === true) {
-                    $targetObject = $this->orObjectService->renderEntity($target, ['all']);
+                    $targetObject = $this->orObjectService->renderEntity(entity: $target, _extend: ['all']);
                     $this->updateContractsForSubObjects(
                         subObjectsConfig: $sourceConfig['subObjects'],
                         synchronizationId: ($synchronization['id'] ?? null),
@@ -2517,7 +2546,7 @@ class SynchronizationService
                 break;
             case 'delete':
                 if (empty($synchronizationContract['targetId'] ?? null) === false) {
-                    $this->orObjectService->deleteObject((string) $synchronizationContract['targetId']);
+                    $this->orObjectService->deleteObject(uuid: (string) $synchronizationContract['targetId']);
                 }
 
                 $synchronizationContract['targetId']         = null;
@@ -3962,7 +3991,12 @@ class SynchronizationService
             $data   = array_merge($object->getObject(), ['id' => $object->getId()], $data);
         }
 
-        $object = $this->orObjectService->saveObject($data, [], $register, $schema)->jsonSerialize();
+        $object = $this->orObjectService->saveObject(
+            object: $data,
+            extend: [],
+            register: $register,
+            schema: $schema
+        )->jsonSerialize();
 
         return $object;
     }//end processSaveObjectRule()
@@ -4351,14 +4385,14 @@ class SynchronizationService
             }
 
             $file = $fileService->addFile(
-                $objectId,
-                $filename,
-                $response['body'],
-                $addFileShare,
-                $tags,
-                $schema,
-                $register,
-                $registerId
+                objectEntity: $objectId,
+                fileName: $filename,
+                content: $response['body'],
+                share: $addFileShare,
+                tags: $tags,
+                _schema: $schema,
+                _register: $register,
+                registerId: $registerId
             );
 
             // For the addFile case, we'll need to get the object entity to publish.
