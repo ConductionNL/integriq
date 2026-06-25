@@ -11,12 +11,15 @@ import {
 	defaultPageTypes,
 	registerIcons,
 	registerTranslations,
+	buildManifest,
 } from '@conduction/nextcloud-vue'
 import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
+import menuLayout from './menu-layout.json'
 import customComponents from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
+import { createMappingAndOpen } from './handlers/actionHandlers.js'
 
 // MDI icons referenced by manifest `headerActions[]` / `actions[]` /
 // `menu[]` entries. CnActionsBar + CnAppNav render them via CnIcon,
@@ -34,7 +37,8 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
-import Finance from 'vue-material-design-icons/Finance.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
@@ -60,7 +64,8 @@ registerIcons({
 	CloudUploadOutline,
 	Cog,
 	DatabaseArrowLeftOutline,
-	Finance,
+	EyeOutline,
+	Pencil,
 	ScaleBalance,
 	SitemapOutline,
 	TextBoxOutline,
@@ -99,34 +104,27 @@ function tryLoadTranslations() {
 // component-options object without altering the lib's internals.
 const RoutePageRenderer = { ...CnPageRenderer }
 
-/**
- * ADR-037: merge modular manifest fragments from src/manifest.d/*.json onto the
- * bundled base manifest. Each OpenSpec change drops its own fragment (pages/menu)
- * instead of editing the monolith src/manifest.json, so concurrent builds touch
- * disjoint files. `pages` and `menu` arrays are concatenated.
- *
- * @param {object} base The bundled base manifest.
- * @return {object} The manifest with all fragment pages/menu appended.
- */
-function mergeManifestFragments(base) {
-	const merged = { ...base, pages: [...(base.pages || [])], menu: [...(base.menu || [])] }
-	// require.context is resolved at build time; src/manifest.d/ must exist (it
-	// ships with a _placeholder.json). It is a no-op when the directory holds no
-	// real fragments beyond the empty placeholder.
-	const ctx = require.context('./manifest.d/', false, /\.json$/)
-	ctx.keys().sort().forEach((key) => {
-		const frag = ctx(key)
-		if (Array.isArray(frag.pages)) {
-			merged.pages.push(...frag.pages)
-		}
-		if (Array.isArray(frag.menu)) {
-			merged.menu.push(...frag.menu)
-		}
-	})
-	return merged
+// The Mappings index Add button must open the bespoke MappingDetail editor
+// (a page) rather than the generic name/description form dialog. The primary
+// Add button delegates to a parent `@add` listener when one is present
+// (CnIndexPage.onAddClick), so this thin wrapper — used only for the Mappings
+// route — attaches that listener while keeping the primary button intact.
+// CnPageRenderer forwards $listeners down to CnIndexPage, so `@add` here
+// reaches the button; all other routes use the plain RoutePageRenderer and
+// keep the default form-dialog create.
+const MappingsPageRenderer = {
+	name: 'MappingsPageRenderer',
+	render(h) {
+		return h(RoutePageRenderer, { on: { add: createMappingAndOpen } })
+	},
 }
 
-const mergedManifest = mergeManifestFragments(bundledManifest)
+// Collect the app's manifest.d/*.json fragments — require.context is resolved
+// by this app's own webpack build, so it stays app-local — then hand the base
+// manifest, fragments, and menu-layout to the shared pipeline.
+const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
+const fragments = fragmentCtx.keys().sort().map((key) => fragmentCtx(key))
+const mergedManifest = buildManifest(bundledManifest, fragments, menuLayout)
 
 /**
  * Build the vue-router config from the manifest. Each manifest page becomes
@@ -141,7 +139,7 @@ function routesFromManifest(manifest) {
 	const routes = manifest.pages.map((page) => ({
 		name: page.id,
 		path: page.route,
-		component: RoutePageRenderer,
+		component: page.id === 'Mappings' ? MappingsPageRenderer : RoutePageRenderer,
 		props: page.route.includes(':'),
 	}))
 	// Legacy redirect: /cloud-events → /cloud-events/events (preserves bookmarks)

@@ -85,11 +85,12 @@ final class BerichtenboxSourceAdapter
     /**
      * Constructor.
      *
-     * @param IAppConfig         $config            App-config service
-     *                                              (feature-flag check).
-     * @param LoggerInterface    $logger            Structured logger.
+     * @param IAppConfig         $config             App-config service
+     *                                               (feature-flag
+     *                                               check).
+     * @param LoggerInterface    $logger             Structured logger.
      * @param BerichtenboxClient $berichtenboxClient Resolved client
-     *                                              (mock or http).
+     *                                               (mock or http).
      */
     public function __construct(
         private readonly IAppConfig $config,
@@ -114,10 +115,10 @@ final class BerichtenboxSourceAdapter
     /**
      * Dispatch a BBK 1.7 message envelope.
      *
-     * @param array<string,mixed> $message  BBK 1.7-shaped envelope.
-     * @param string              $pkiCert  PEM-encoded PKIoverheid
-     *                                      Services-server cert.
-     * @param string              $pkiKey   PEM-encoded private key.
+     * @param array<string,mixed> $message BBK 1.7-shaped envelope.
+     * @param string              $pkiCert PEM-encoded PKIoverheid
+     *                                     Services-server cert.
+     * @param string              $pkiKey  PEM-encoded private key.
      *
      * @return array<string,mixed> Logius response envelope.
      */
@@ -126,10 +127,15 @@ final class BerichtenboxSourceAdapter
         // Compute a non-PII-bearing summary of the message for the
         // debug log — never log the recipientBsn, body, or
         // attachment bytes.
+        $attachmentCount = 0;
+        if (is_array($message['attachments'] ?? null) === true) {
+            $attachmentCount = count($message['attachments']);
+        }
+
         $summary = [
             'conversationId'  => (string) ($message['conversationId'] ?? ''),
             'priority'        => (string) ($message['priority'] ?? ''),
-            'attachmentCount' => is_array($message['attachments'] ?? null) === true ? count($message['attachments']) : 0,
+            'attachmentCount' => $attachmentCount,
         ];
 
         $this->logger->debug(
@@ -149,7 +155,7 @@ final class BerichtenboxSourceAdapter
     /**
      * Verify an inbound delivery-receipt webhook.
      *
-     * @param string              $rawBody Raw inbound body bytes.
+     * @param string               $rawBody Raw inbound body bytes.
      * @param array<string,string> $headers Inbound headers.
      *
      * @return array<string,mixed> Verified envelope.

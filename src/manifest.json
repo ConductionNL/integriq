@@ -139,7 +139,7 @@
     {
       "id": "Dashboard",
       "label": "Dashboard",
-      "icon": "Finance",
+      "icon": "icon-category-dashboard",
       "route": "Dashboard",
       "order": 10
     },
@@ -182,7 +182,6 @@
       "label": "Settings",
       "icon": "Cog",
       "route": "AppSettings",
-      "section": "settings",
       "order": 20
     },
     {
@@ -258,7 +257,9 @@
         "headerActions": [
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SourceLogs" }
         ],
+        "showViewAction": false,
         "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "SourceDetail" },
           { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
           { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
@@ -300,7 +301,9 @@
         "headerActions": [
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "EndpointLogs" }
         ],
+        "showViewAction": false,
         "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "EndpointDetail" },
           { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
           { "id": "view-endpoint-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
@@ -339,6 +342,10 @@
         "columns": ["name", "authorizationType", "domains", "updated"],
         "includeFields": ["name", "description", "authorizationType"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "showViewAction": false,
+        "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "ConsumerDetail" }
+        ],
         "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
@@ -421,7 +428,16 @@
         "columns": ["name", "description", "passThrough", "dateModified"],
         "includeFields": ["name", "description"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "showViewAction": false,
+        "showEditAction": false,
+        "exportFormats": [
+          { "id": "json", "label": "JSON (.json)" },
+          { "id": "excel", "label": "Excel (.xlsx)" },
+          { "id": "csv", "label": "CSV (.csv)" }
+        ],
         "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "MappingDetail" },
+          { "id": "edit", "label": "Edit", "icon": "Pencil", "handler": "navigate", "route": "MappingDetail" },
           { "id": "test", "label": "Test mapping", "icon": "icon-play", "handler": "testMappingModalHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -450,6 +466,10 @@
         "columns": ["name", "action", "timing", "type", "order"],
         "includeFields": ["name", "description", "action", "timing", "type"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "showViewAction": false,
+        "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "RuleDetail" }
+        ],
         "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
@@ -476,6 +496,7 @@
         "columns": ["name", "sourceType", "targetType", "status", "sourceLastSynced"],
         "includeFields": ["name", "description", "sourceType", "targetType"],
         "sidebar": { "enabled": true, "showMetadata": true },
+        "showViewAction": false,
         "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
         "headerActions": [
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SynchronizationLogs" },
@@ -540,7 +561,9 @@
         "headerActions": [
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "CloudEventLogs" }
         ],
+        "showViewAction": false,
         "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "CloudEventDetail" },
           { "id": "view-cloud-event-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"

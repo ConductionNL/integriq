@@ -1,0 +1,27 @@
+{
+  "$comment": "ADR-037 register fragment (seed-xwiki-source). Seeds the pre-built `xwiki` OpenConnector source consumed by the OpenRegister xWiki integration leaf (XwikiProvider SOURCE_ID='xwiki'). Ships dormant (isEnabled:false) with a placeholder dev-stack location and auth:none so a fresh install resolves a base URL without pointing at an unintended host or carrying secrets. Operators set the real location/credentials and flip isEnabled via the OpenConnector Sources UI.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "xwiki"
+        },
+        "name": "xWiki",
+        "description": "xWiki knowledge-base REST API. Consumed by the OpenRegister xWiki integration leaf (article links + free-text page search). Dormant placeholder — set `location` to your xWiki REST base URL (e.g. https://wiki.example.org/xwiki), configure auth if required, and enable.",
+        "type": "api",
+        "location": "http://xwiki:8080/xwiki",
+        "auth": "none",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": false,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

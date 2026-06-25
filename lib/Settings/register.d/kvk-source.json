@@ -1,0 +1,74 @@
+{
+  "$comment": "ADR-037 register fragment (seed-kvk-source). Seeds the pre-built `kvk` OpenConnector source consumed by the OpenRegister KvK company-lookup integration leaf (KvkProvider SOURCE_ID='kvk'). MOCK MODE (integration-mock-mode): ships with `configuration.mock:true` + a realistic `configuration.mockResponse` (KvK `/zoeken` shape) and isEnabled:true, so the leaf is demonstrably functional end-to-end WITHOUT a KvK API key — the OpenRegister ExternalIntegrationRouter short-circuits the mock-flagged source and returns the canned body without any HTTP call. To go live against the real KvK Handelsregister Zoeken API: set your KvK API key on `configuration.headers.apikey` (the KvK API authenticates via an `apikey` request header) and REMOVE `configuration.mock` (the production base URL `location` is already the real KvK v2 endpoint). No end-user input reaches the request URL, so there is no SSRF surface (the base URL is admin-owned on the source).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "kvk"
+        },
+        "name": "KvK Handelsregister",
+        "description": "Dutch Chamber of Commerce (KvK) Handelsregister Zoeken API. Consumed by the OpenRegister KvK integration leaf (company lookup by KvK number + free-text/SBI search). Dormant placeholder — the base URL is the production KvK v2 endpoint; set your KvK API key on `configuration.headers.apikey` (the KvK API authenticates via an `apikey` request header) and enable.",
+        "type": "api",
+        "location": "https://api.kvk.nl/api/v2",
+        "auth": "apikey",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          },
+          "mock": true,
+          "mockResponse": {
+            "resultaten": [
+              {
+                "kvkNummer": "69599084",
+                "naam": "Conduction B.V.",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Kerkewijk",
+                    "huisnummer": 119,
+                    "postcode": "3904JB",
+                    "plaats": "Veenendaal"
+                  }
+                },
+                "type": "hoofdvestiging"
+              },
+              {
+                "kvkNummer": "90004760",
+                "naam": "Acme Holding B.V.",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Stationsplein",
+                    "huisnummer": 12,
+                    "postcode": "3511ED",
+                    "plaats": "Utrecht"
+                  }
+                },
+                "type": "rechtspersoon"
+              },
+              {
+                "kvkNummer": "34374610",
+                "naam": "De Bakkerij Hoofdstraat V.O.F.",
+                "adres": {
+                  "binnenlandsAdres": {
+                    "type": "bezoekadres",
+                    "straatnaam": "Hoofdstraat",
+                    "huisnummer": 8,
+                    "postcode": "1011AA",
+                    "plaats": "Amsterdam"
+                  }
+                },
+                "type": "hoofdvestiging"
+              }
+            ]
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

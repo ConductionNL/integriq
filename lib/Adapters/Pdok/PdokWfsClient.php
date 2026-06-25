@@ -39,7 +39,6 @@ namespace OCA\OpenConnector\Adapters\Pdok;
  */
 abstract class PdokWfsClient
 {
-
     /**
      * Return the GetCapabilities XML for the requested dataset.
      *
@@ -62,12 +61,12 @@ abstract class PdokWfsClient
     /**
      * Execute a GetFeature request and return the result as a GeoJSON FeatureCollection.
      *
-     * @param string                                   $dataset       PDOK WFS dataset key.
-     * @param string                                   $featureType   Feature type name.
+     * @param string                                      $dataset      PDOK WFS dataset key.
+     * @param string                                      $featureType  Feature type name.
      * @param array{0:float,1:float,2:float,3:float}|null $bbox         Optional bbox filter (minx,miny,maxx,maxy).
-     * @param int                                      $count         Maximum features (default 10).
-     * @param string                                   $srsName       CRS (default `EPSG:28992`).
-     * @param array<string,string>                     $filterFields  Optional name=value filter pairs.
+     * @param int                                         $count        Maximum features (default 10).
+     * @param string                                      $srsName      CRS (default `EPSG:28992`).
+     * @param array<string,string>                        $filterFields Optional name=value filter pairs.
      *
      * @return array<string,mixed> Parsed GeoJSON FeatureCollection.
      */
@@ -86,5 +85,4 @@ abstract class PdokWfsClient
      * @return string
      */
     abstract public function flavour(): string;
-
 }//end class

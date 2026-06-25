@@ -55,12 +55,17 @@ abstract class BerichtenboxClient
     /**
      * Dispatch a BBK 1.7 message envelope to Logius.
      *
-     * @param array<string,mixed> $message  BBK 1.7-shaped envelope.
-     * @param string              $pkiCert  PEM-encoded
-     *                                      PKIoverheid Services-server
-     *                                      cert — required by live
-     *                                      binding, ignored by mock.
-     * @param string              $pkiKey   PEM-encoded private key.
+     * @param array<string,mixed> $message BBK 1.7-shaped envelope.
+     * @param string              $pkiCert PEM-encoded
+     *                                     PKIoverheid
+     *                                     Services-server
+     *                                     cert —
+     *                                     required by
+     *                                     live
+     *                                     binding,
+     *                                     ignored by
+     *                                     mock.
+     * @param string              $pkiKey  PEM-encoded private key.
      *
      * @return array<string,mixed> Logius response envelope —
      *                             logiusKenmerk, deliveryStatus,
@@ -72,10 +77,10 @@ abstract class BerichtenboxClient
      * Verify the HMAC signature on an inbound Logius delivery-receipt
      * webhook body + load the matching delivery record.
      *
-     * @param string              $rawBody Raw inbound body bytes.
+     * @param string               $rawBody Raw inbound body bytes.
      * @param array<string,string> $headers Inbound headers (Logius
-     *                                     signature in
-     *                                     `X-Logius-Signature`).
+     *                                      signature in
+     *                                      `X-Logius-Signature`).
      *
      * @return array<string,mixed> Verified envelope —
      *                             signatureValid, logiusKenmerk,

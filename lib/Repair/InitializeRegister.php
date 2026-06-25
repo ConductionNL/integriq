@@ -161,9 +161,9 @@ class InitializeRegister implements IRepairStep
                     continue;
                 }
 
-                $descriptor   = self::deepMergeConfig($descriptor, $fragmentData);
+                $descriptor   = self::deepMergeConfig(base: $descriptor, overlay: $fragmentData);
                 $fragmentSig .= basename($fragmentFile).':'.md5($fragmentContent).';';
-            }
+            }//end foreach
         }//end if
 
         // Fold the fragment signature into the version so OpenRegister's
@@ -213,7 +213,7 @@ class InitializeRegister implements IRepairStep
                 if ($baseIsList === true && $overlayIsList === true) {
                     $base[$key] = array_merge($base[$key], $value);
                 } else {
-                    $base[$key] = self::deepMergeConfig($base[$key], $value);
+                    $base[$key] = self::deepMergeConfig(base: $base[$key], overlay: $value);
                 }
             } else {
                 $base[$key] = $value;

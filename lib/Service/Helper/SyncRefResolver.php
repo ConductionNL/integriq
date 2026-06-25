@@ -139,10 +139,9 @@ final class SyncRefResolver
             return null;
         }
 
-        return $this->extractUuid($objects[0]);
+        return $this->extractUuid(row: $objects[0]);
 
     }//end lookupSourceUuidByInt()
-
 
     /**
      * Extract a non-empty uuid from an OpenRegister result row.

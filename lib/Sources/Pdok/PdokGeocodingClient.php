@@ -111,7 +111,7 @@ final class PdokGeocodingClient
      *
      * @return array<int,array<string,mixed>> Normalized PostalAddress entries.
      */
-    public function suggest(string $query, int $rows = 10): array
+    public function suggest(string $query, int $rows=10): array
     {
         $this->logger->debug(
             'pdok-geocoding.suggest',
@@ -201,5 +201,4 @@ final class PdokGeocodingClient
             'reference'     => 'pdok.feature_flag',
         ];
     }//end sourceDescriptor()
-
 }//end class

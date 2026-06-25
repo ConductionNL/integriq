@@ -38,7 +38,11 @@ namespace OCA\OpenConnector\Adapters\Berichtenbox;
 final class BerichtenboxClientMock extends BerichtenboxClient
 {
     /**
+     * Flavour identifier.
+     *
      * @inheritDoc
+     *
+     * @return string
      */
     public function flavour(): string
     {
@@ -69,7 +73,7 @@ final class BerichtenboxClientMock extends BerichtenboxClient
      * Dormant verify — returns signatureValid=false so a downstream
      * caller never treats a mock-verified webhook as authentic.
      *
-     * @param string              $rawBody Raw body (ignored).
+     * @param string               $rawBody Raw body (ignored).
      * @param array<string,string> $headers Headers (ignored).
      *
      * @return array<string,mixed>
@@ -99,9 +103,9 @@ final class BerichtenboxClientMock extends BerichtenboxClient
     {
         unset($bsn);
         return [
-            'active'      => false,
-            'lastUsedAt'  => null,
-            'flavour'     => 'mock',
+            'active'     => false,
+            'lastUsedAt' => null,
+            'flavour'    => 'mock',
         ];
     }//end checkMailbox()
 }//end class
