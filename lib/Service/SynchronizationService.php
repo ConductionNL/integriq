@@ -2475,7 +2475,7 @@ class SynchronizationService
         ?string $action='save'
     ): array {
         // Setup the object service.
-        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+        $objectService = $this->orObjectService;
         $sourceConfig  = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
         // If we already have an id, we need to get the object and update it.
@@ -2540,7 +2540,10 @@ class SynchronizationService
                 }
                 break;
             case 'delete':
-                $objectService->deleteObject(uuid: ($synchronizationContract['targetId'] ?? null));
+                if (empty($synchronizationContract['targetId'] ?? null) === false) {
+                    $objectService->deleteObject(uuid: (string) $synchronizationContract['targetId']);
+                }
+
                 $synchronizationContract['targetId']         = null;
                 $synchronizationContract['targetLastAction'] = 'delete';
                 break;
@@ -3978,13 +3981,12 @@ class SynchronizationService
             $data    = $this->processMapping(mapping: $mapping, data: $data);
         }
 
-        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
         if ($patch === true || $patch === 'true') {
             $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($id);
             $data   = array_merge($object->getObject(), ['id' => $object->getId()], $data);
         }
 
-        $object = $objectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
+        $object = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
 
         return $object;
     }//end processSaveObjectRule()
@@ -4026,7 +4028,7 @@ class SynchronizationService
         ) {
             $object = $this->objectService->getOpenRegisters()->find(
                 id: $id,
-                extend: $config['extend_input']['properties']
+                _extend: $config['extend_input']['properties']
             );
             return $object->jsonSerialize();
         }
@@ -4378,8 +4380,8 @@ class SynchronizationService
                 content: $response['body'],
                 share: $addFileShare,
                 tags: $tags,
-                register: $register,
-                schema: $schema,
+                _schema: $schema,
+                _register: $register,
                 registerId: $registerId
             );
 
