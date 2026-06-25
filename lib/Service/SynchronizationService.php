@@ -2500,7 +2500,7 @@ class SynchronizationService
                 // removed after the fetch-rule path was verified.
                 // Handle sub-objects synchronization if sourceConfig is defined.
                 if (isset($sourceConfig['subObjects']) === true) {
-                    $targetObject = $objectService->renderEntity($target, ['all']);
+                    $targetObject = $this->orObjectService->renderEntity($target, ['all']);
                     $this->updateContractsForSubObjects(
                         subObjectsConfig: $sourceConfig['subObjects'],
                         synchronizationId: ($synchronization['id'] ?? null),
@@ -2516,7 +2516,10 @@ class SynchronizationService
                 }
                 break;
             case 'delete':
-                $objectService->deleteObject(uuid: ($synchronizationContract['targetId'] ?? null));
+                if (empty($synchronizationContract['targetId'] ?? null) === false) {
+                    $this->orObjectService->deleteObject((string) $synchronizationContract['targetId']);
+                }
+
                 $synchronizationContract['targetId']         = null;
                 $synchronizationContract['targetLastAction'] = 'delete';
                 break;
@@ -4001,7 +4004,7 @@ class SynchronizationService
         ) {
             $object = $this->objectService->getOpenRegisters()->find(
                 id: $id,
-                extend: $config['extend_input']['properties']
+                _extend: $config['extend_input']['properties']
             );
             return $object->jsonSerialize();
         }
@@ -4348,14 +4351,14 @@ class SynchronizationService
             }
 
             $file = $fileService->addFile(
-                objectEntity: $objectId,
-                fileName: $filename,
-                content: $response['body'],
-                share: $addFileShare,
-                tags: $tags,
-                register: $register,
-                schema: $schema,
-                registerId: $registerId
+                $objectId,
+                $filename,
+                $response['body'],
+                $addFileShare,
+                $tags,
+                $schema,
+                $register,
+                $registerId
             );
 
             // For the addFile case, we'll need to get the object entity to publish.

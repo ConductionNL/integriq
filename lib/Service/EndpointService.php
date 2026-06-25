@@ -1730,7 +1730,7 @@ class EndpointService
             }
 
             try {
-                $object = $this->objectService->getOpenRegisters()->find(id: $value, extend: $extends);
+                $object = $this->orObjectService->find($value, $extends);
                 $this->objectService->getOpenRegisters()->clearCurrents();
             } catch (DoesNotExistException $exception) {
                 $this->objectService->getOpenRegisters()->clearCurrents();
@@ -1825,7 +1825,7 @@ class EndpointService
             return $data;
         }
 
-        $data['body'] = $object->jsonSerialize();
+        $data['body'] = $object;
 
         return $data;
     }//end processLockingRule()
@@ -2358,27 +2358,10 @@ class EndpointService
             throw new Exception('File could not be determined');
         }
 
-        if (isset($data['parameters']['version']) === true) {
-            /*
-             * @var File $file
-             */
-
-             $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
-        } else if (isset($data['parameters']['versie']) === true) {
-            /*
-             * @var File $file
-             *
-             * @TODO: This can be nicer by mapping, but let's first get something sure.
-             */
-
-             $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
-        } else {
-            /*
-             * @var File $file
-             */
-
-            $file = $fileService->getFile(object: $object, file: $filename);
-        }//end if
+        /*
+         * @var File $file
+         */
+        $file = $fileService->getFile(object: $object, file: $filename);
 
         $response = new DataDownloadResponse(data: $file->getContent(), filename: $file->getName(), contentType: $file->getMimeType());
 
