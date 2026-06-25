@@ -2368,10 +2368,31 @@ class EndpointService
             throw new Exception('File could not be determined');
         }
 
-        /*
-         * @var File $file
-         */
-        $file = $fileService->getFile(object: $object, file: $filename);
+        if (isset($data['parameters']['version']) === true) {
+            /*
+             * @var File $file
+             */
+
+            // OpenRegister beta FileService::getFile() has no version argument yet.
+            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
+            $file = $fileService->getFile(object: $object, file: $filename);
+        } else if (isset($data['parameters']['versie']) === true) {
+            /*
+             * @var File $file
+             *
+             * @TODO: This can be nicer by mapping, but let's first get something sure.
+             */
+
+            // OpenRegister beta FileService::getFile() has no version argument yet.
+            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
+            $file = $fileService->getFile(object: $object, file: $filename);
+        } else {
+            /*
+             * @var File $file
+             */
+
+            $file = $fileService->getFile(object: $object, file: $filename);
+        }//end if
 
         $response = new DataDownloadResponse(data: $file->getContent(), filename: $file->getName(), contentType: $file->getMimeType());
 
