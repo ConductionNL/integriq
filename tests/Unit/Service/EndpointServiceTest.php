@@ -47,6 +47,11 @@ class EndpointServiceTest extends TestCase
      */
     private $orObjectService;
 
+    /**
+     * @var ObjectService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $objectService;
+
 
     /**
      * Set up test fixtures.
@@ -59,7 +64,7 @@ class EndpointServiceTest extends TestCase
 
         $this->orObjectService = ObjectServiceMockBuilder::make($this);
 
-        $objectService   = $this->createMock(ObjectService::class);
+        $this->objectService = $this->createMock(ObjectService::class);
         $callService     = $this->createMock(CallService::class);
         $logger          = $this->createMock(LoggerInterface::class);
         $urlGenerator    = $this->createMock(IURLGenerator::class);
@@ -82,7 +87,7 @@ class EndpointServiceTest extends TestCase
         // surfaced once #1015 unblocked the suite from crashing in setUp.
         unset($appConfig);
         $this->service = new EndpointService(
-            $objectService,
+            $this->objectService,
             $callService,
             $logger,
             $urlGenerator,
@@ -210,6 +215,58 @@ class EndpointServiceTest extends TestCase
         // Assert
         $this->assertIsString($url);
     }//end testGenerateEndpointUrlReturnsString()
+
+
+    /**
+     * Test that locking rules keep the OpenRegister lock payload shape.
+     *
+     * @return void
+     */
+    public function testProcessLockingRuleReturnsLockPayloadArray(): void
+    {
+        $openRegisters = ObjectServiceMockBuilder::make($this);
+        $openRegisters->method('lockObject')->willReturn(['locked' => true, 'process' => 'test-process']);
+        $this->objectService->method('getOpenRegisters')->willReturn($openRegisters);
+
+        $rule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['locking' => ['action' => 'lock', 'duration' => 60]]],
+            'rule-lock'
+        );
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+
+        $this->assertSame(['locked' => true, 'process' => 'test-process'], $result['body']);
+    }//end testProcessLockingRuleReturnsLockPayloadArray()
+
+
+    /**
+     * Test that unlock boolean results are normalised to an object-shaped body.
+     *
+     * @return void
+     */
+    public function testProcessLockingRuleNormalisesUnlockBoolean(): void
+    {
+        $openRegisters = ObjectServiceMockBuilder::make($this);
+        $openRegisters->method('unlockObject')->willReturn(true);
+        $this->objectService->method('getOpenRegisters')->willReturn($openRegisters);
+
+        $rule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['configuration' => ['locking' => ['action' => 'unlock']]],
+            'rule-unlock'
+        );
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processLockingRule');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $rule, ['body' => []], 'object-uuid');
+
+        $this->assertSame(['unlocked' => true], $result['body']);
+    }//end testProcessLockingRuleNormalisesUnlockBoolean()
 
 
 }//end class
