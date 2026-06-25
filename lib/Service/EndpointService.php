@@ -1730,7 +1730,7 @@ class EndpointService
             }
 
             try {
-                $object = $this->objectService->getOpenRegisters()->find(id: $value, extend: $extends);
+                $object = $this->objectService->getOpenRegisters()->find(id: $value, _extend: $extends);
                 $this->objectService->getOpenRegisters()->clearCurrents();
             } catch (DoesNotExistException $exception) {
                 $this->objectService->getOpenRegisters()->clearCurrents();
@@ -1825,7 +1825,7 @@ class EndpointService
             return $data;
         }
 
-        $data['body'] = $object->jsonSerialize();
+        $data['body'] = is_bool($object) === true ? ['unlocked' => $object] : $object;
 
         return $data;
     }//end processLockingRule()
@@ -2362,7 +2362,9 @@ class EndpointService
              * @var File $file
              */
 
-             $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
+            // OpenRegister beta FileService::getFile() has no version argument yet.
+            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
+            $file = $fileService->getFile(object: $object, file: $filename);
         } else if (isset($data['parameters']['versie']) === true) {
             /*
              * @var File $file
@@ -2370,7 +2372,9 @@ class EndpointService
              * @TODO: This can be nicer by mapping, but let's first get something sure.
              */
 
-             $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
+            // OpenRegister beta FileService::getFile() has no version argument yet.
+            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
+            $file = $fileService->getFile(object: $object, file: $filename);
         } else {
             /*
              * @var File $file
