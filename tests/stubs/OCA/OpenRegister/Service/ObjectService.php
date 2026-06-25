@@ -105,4 +105,28 @@ class ObjectService
     {
         return $this;
     }
+
+    /**
+     * Lock an object by identifier.
+     *
+     * @param  string   $identifier Object identifier.
+     * @param  string|null $process Lock process identifier.
+     * @param  int|null $duration Lock duration in seconds.
+     * @return array<string, mixed>
+     */
+    public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array
+    {
+        return ['id' => $identifier, 'process' => $process, 'duration' => $duration];
+    }
+
+    /**
+     * Unlock an object by identifier.
+     *
+     * @param  string|int $identifier Object identifier.
+     * @return bool
+     */
+    public function unlockObject(string|int $identifier): bool
+    {
+        return true;
+    }
 }

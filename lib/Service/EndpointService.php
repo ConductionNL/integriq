@@ -1825,7 +1825,7 @@ class EndpointService
             return $data;
         }
 
-        $data['body'] = $object;
+        $data['body'] = is_bool($object) === true ? ['unlocked' => $object] : $object;
 
         return $data;
     }//end processLockingRule()
