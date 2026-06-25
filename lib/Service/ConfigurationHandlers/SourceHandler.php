@@ -119,7 +119,6 @@ class SourceHandler implements ConfigurationHandlerInterface
             // Update existing source.
             return $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'source',
                 uuid: $mappings['source']['slugToId'][$slug]
@@ -129,7 +128,6 @@ class SourceHandler implements ConfigurationHandlerInterface
         // Create new source.
         return $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'source'
         );

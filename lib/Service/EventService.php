@@ -252,7 +252,6 @@ class EventService
                 'created'        => (new DateTime())->format('c'),
                 'updated'        => (new DateTime())->format('c'),
             ],
-            extend: [],
             register: 'openconnector',
             schema: 'event_message'
         );
@@ -352,7 +351,6 @@ class EventService
                 );
                 $this->objectService->saveObject(
                     object: $messageData,
-                    extend: [],
                     register: 'openconnector',
                     schema: 'event_message',
                     uuid: $message->getUuid()
@@ -452,7 +450,6 @@ class EventService
 
         $this->objectService->saveObject(
             object: $messageData,
-            extend: [],
             register: 'openconnector',
             schema: 'event_message',
             uuid: $message->getUuid()
@@ -589,7 +586,6 @@ class EventService
         // Attempts[] is deliberately preserved across the replay campaign.
         $saved = $this->objectService->saveObject(
             object: $messageData,
-            extend: [],
             register: 'openconnector',
             schema: 'event_message',
             uuid: $message->getUuid()
@@ -648,7 +644,6 @@ class EventService
 
         return $this->objectService->saveObject(
             object: $messageData,
-            extend: [],
             register: 'openconnector',
             schema: 'event_message',
             uuid: $message->getUuid()
@@ -785,7 +780,6 @@ class EventService
                 ],
                 'userId'  => ($objectData['userId'] ?? null),
             ],
-            extend: [],
             register: 'openconnector',
             schema: 'event'
         );
@@ -828,7 +822,6 @@ class EventService
                 ],
                 'userId'  => ($newData['userId'] ?? null),
             ],
-            extend: [],
             register: 'openconnector',
             schema: 'event'
         );
@@ -865,7 +858,6 @@ class EventService
                 ],
                 'userId'  => ($objectData['userId'] ?? null),
             ],
-            extend: [],
             register: 'openconnector',
             schema: 'event'
         );

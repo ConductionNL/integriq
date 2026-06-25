@@ -1022,7 +1022,6 @@ class RuleService
                     'type'      => 'api',
                     'isEnabled' => true,
                 ],
-                extend: [],
                 register: 'openconnector',
                 schema: 'source',
             );

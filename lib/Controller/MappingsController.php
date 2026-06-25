@@ -269,7 +269,6 @@ class MappingsController extends Controller
         // arguments here so this action remains compatible across OR versions.
         $saved = $openRegisters->saveObject(
             object: $data['object'],
-            extend: [],
             register: ($data['register'] ?? 'openconnector'),
             schema: ($data['schema'] ?? 'mapping')
         );

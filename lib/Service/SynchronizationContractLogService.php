@@ -164,7 +164,6 @@ class SynchronizationContractLogService
         // which the append-only schema permits.
         $saved = $this->orObjectService->saveObject(
             object: $this->normalize(object: $log),
-            extend: [],
             register: self::REGISTER,
             schema: self::SCHEMA
         );

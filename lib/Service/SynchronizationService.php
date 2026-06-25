@@ -345,7 +345,6 @@ class SynchronizationService
 
         $this->orObjectService->saveObject(
             object: $object,
-            extend: [],
             register: 'openconnector',
             schema: 'synchronization',
             uuid: $uuidValue
@@ -529,7 +528,6 @@ class SynchronizationService
 
         $saved = $this->orObjectService->saveObject(
             object: $object,
-            extend: [],
             register: 'openconnector',
             schema: 'synchronization_contract',
             uuid: $uuidValue
@@ -566,7 +564,6 @@ class SynchronizationService
         $uuid  = $object['uuid'];
         $saved = $this->orObjectService->saveObject(
             object: $object,
-            extend: [],
             register: 'openconnector',
             schema: 'synchronization_contract',
             uuid: $uuid
@@ -618,7 +615,6 @@ class SynchronizationService
 
         $saved = $this->orObjectService->saveObject(
             object: $merged,
-            extend: [],
             register: 'openconnector',
             schema: 'synchronization_contract',
             uuid: $uuidValue
@@ -715,7 +711,6 @@ class SynchronizationService
 
         $saved = $this->orObjectService->saveObject(
             object: $sourceData,
-            extend: [],
             register: 'openconnector',
             schema: 'source'
         );
@@ -2515,7 +2510,6 @@ class SynchronizationService
 
                 $target = $this->orObjectService->saveObject(
                     object: $targetObject,
-                    extend: [],
                     register: $register,
                     schema: $schema,
                     uuid: ($synchronizationContract['targetId'] ?? null)
@@ -3993,7 +3987,6 @@ class SynchronizationService
 
         $object = $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: $register,
             schema: $schema
         )->jsonSerialize();

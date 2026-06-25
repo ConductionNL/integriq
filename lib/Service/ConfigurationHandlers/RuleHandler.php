@@ -165,7 +165,6 @@ class RuleHandler implements ConfigurationHandlerInterface
             // Update existing rule.
             return $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'rule',
                 uuid: $mappings['rule']['slugToId'][$slug]
@@ -175,7 +174,6 @@ class RuleHandler implements ConfigurationHandlerInterface
         // Create new rule.
         return $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'rule'
         );

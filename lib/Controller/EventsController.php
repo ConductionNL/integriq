@@ -158,7 +158,6 @@ class EventsController extends Controller
             // Create subscription.
             $subscription = $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'event_subscription'
             );
@@ -206,7 +205,6 @@ class EventsController extends Controller
             // Update subscription.
             $subscription = $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'event_subscription',
                 uuid: (string) $subscriptionId
@@ -453,7 +451,6 @@ class EventsController extends Controller
 
         $saved = $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'event_subscription',
             uuid: $subscription->getUuid()
@@ -512,7 +509,6 @@ class EventsController extends Controller
 
         $saved = $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'event_subscription',
             uuid: $subscription->getUuid()

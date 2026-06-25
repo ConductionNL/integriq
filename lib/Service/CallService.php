@@ -478,7 +478,6 @@ class CallService
                 'created'       => (new \DateTime())->format('c'),
                 'expires'       => $this->formatExpires(expires: $expires),
             ],
-            extend: [],
             register: 'openconnector',
             schema: 'call_log'
         );
@@ -533,7 +532,6 @@ class CallService
 
             $this->objectService->saveObject(
                 object: $sourceData,
-                extend: [],
                 register: 'openconnector',
                 schema: 'source',
                 uuid: $source->getUuid()
@@ -1315,7 +1313,6 @@ class CallService
 
         $callLog = $this->objectService->saveObject(
             object: $callLogData,
-            extend: [],
             register: 'openconnector',
             schema: 'call_log'
         );
@@ -1559,7 +1556,6 @@ class CallService
         if ($changed === true) {
             $this->objectService->saveObject(
                 object: $sourceData,
-                extend: [],
                 register: 'openconnector',
                 schema: 'source',
                 uuid: $source->getUuid()

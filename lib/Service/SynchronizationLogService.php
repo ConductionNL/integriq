@@ -149,7 +149,6 @@ class SynchronizationLogService
         // identifier; the pre-generated uuid travels in the body for traceability.
         $saved = $this->orObjectService->saveObject(
             object: $this->normalize(object: $object),
-            extend: [],
             register: self::REGISTER,
             schema: self::SCHEMA
         );

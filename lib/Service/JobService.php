@@ -224,7 +224,6 @@ class JobService
             $jobData['jobListId'] = null;
             return $this->objectService->saveObject(
                 object: $jobData,
-                extend: [],
                 register: 'openconnector',
                 schema: 'job',
                 uuid: $job->getUuid()
@@ -251,7 +250,6 @@ class JobService
         // Save the job to the database.
         return $this->objectService->saveObject(
             object: $jobData,
-            extend: [],
             register: 'openconnector',
             schema: 'job',
             uuid: $job->getUuid()
@@ -554,7 +552,6 @@ class JobService
         // M1: Advance the job's timeline only AFTER the log entry is safely written.
         $this->objectService->saveObject(
             object: $jobData,
-            extend: [],
             register: 'openconnector',
             schema: 'job',
             uuid: $job->getUuid()
@@ -623,7 +620,6 @@ class JobService
 
         return $this->objectService->saveObject(
             object: $logObject,
-            extend: [],
             register: 'openconnector',
             schema: 'job_log'
         );

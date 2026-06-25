@@ -242,7 +242,6 @@ class SynchronizationContractService
 
         $saved = $this->orObjectService->saveObject(
             object: $object,
-            extend: [],
             register: self::REGISTER,
             schema: self::SCHEMA,
             uuid: $uuidParam
@@ -276,7 +275,6 @@ class SynchronizationContractService
         $uuid  = $object['uuid'];
         $saved = $this->orObjectService->saveObject(
             object: $object,
-            extend: [],
             register: self::REGISTER,
             schema: self::SCHEMA,
             uuid: $uuid
@@ -325,7 +323,6 @@ class SynchronizationContractService
 
         $saved = $this->orObjectService->saveObject(
             object: $merged,
-            extend: [],
             register: self::REGISTER,
             schema: self::SCHEMA,
             uuid: $uuidParam

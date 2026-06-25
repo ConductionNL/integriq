@@ -316,7 +316,6 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
             // Update existing synchronization.
             return $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'synchronization',
                 uuid: $mappings['synchronization']['slugToId'][$slug]
@@ -326,7 +325,6 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
         // Create new synchronization.
         return $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'synchronization'
         );

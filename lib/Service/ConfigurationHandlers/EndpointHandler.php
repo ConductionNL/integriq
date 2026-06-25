@@ -212,7 +212,6 @@ class EndpointHandler implements ConfigurationHandlerInterface
             // Update existing endpoint.
             return $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'endpoint',
                 uuid: $mappings['endpoint']['slugToId'][$slug]
@@ -222,7 +221,6 @@ class EndpointHandler implements ConfigurationHandlerInterface
         // Create new endpoint.
         return $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'endpoint'
         );

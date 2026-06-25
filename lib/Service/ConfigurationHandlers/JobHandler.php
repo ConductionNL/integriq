@@ -147,7 +147,6 @@ class JobHandler implements ConfigurationHandlerInterface
             // Update existing job.
             return $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'job',
                 uuid: $mappings['job']['slugToId'][$slug]
@@ -157,7 +156,6 @@ class JobHandler implements ConfigurationHandlerInterface
         // Create new job.
         return $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'job'
         );

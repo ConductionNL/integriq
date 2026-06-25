@@ -338,7 +338,6 @@ class StUFZKNService
                 $merged = array_merge($existingData, $zaakData);
                 $this->orObjectService->saveObject(
                     object: $merged,
-                    extend: [],
                     register: self::REGISTER_ZKN,
                     schema: self::SCHEMA_ZAAK
                 );
@@ -348,7 +347,6 @@ class StUFZKNService
 
         $saved = $this->orObjectService->saveObject(
             object: $zaakData,
-            extend: [],
             register: self::REGISTER_ZKN,
             schema: self::SCHEMA_ZAAK
         );

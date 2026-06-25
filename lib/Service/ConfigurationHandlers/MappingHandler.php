@@ -148,7 +148,6 @@ class MappingHandler implements ConfigurationHandlerInterface
             // Update existing mapping.
             return $this->orObjectService->saveObject(
                 object: $data,
-                extend: [],
                 register: 'openconnector',
                 schema: 'mapping',
                 uuid: $mappings['mapping']['slugToId'][$slug]
@@ -158,7 +157,6 @@ class MappingHandler implements ConfigurationHandlerInterface
         // Create new mapping.
         return $this->orObjectService->saveObject(
             object: $data,
-            extend: [],
             register: 'openconnector',
             schema: 'mapping'
         );

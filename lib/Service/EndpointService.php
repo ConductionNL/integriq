@@ -1256,7 +1256,6 @@ class EndpointService
 
         $data['body'] = $this->orObjectService->saveObject(
             object: $data['body'],
-            extend: [],
             register: $register,
             schema: $schema
         );
@@ -1424,7 +1423,6 @@ class EndpointService
         $object->setObject($data['body']);
         $object = $this->orObjectService->saveObject(
             object: $object,
-            extend: [],
             register: $object->getRegister(),
             schema: $object->getSchema(),
             uuid: $object->getUuid()
@@ -2190,7 +2188,6 @@ class EndpointService
             try {
                 $object = $this->orObjectService->saveObject(
                     object: $formatted,
-                    extend: [],
                     register: $registerId,
                     schema: $schemaId,
                     uuid: $formatted['id']
@@ -2231,7 +2228,6 @@ class EndpointService
 
         $this->orObjectService->saveObject(
             object: $saveObject->jsonSerialize(),
-            extend: [],
             register: $registerId,
             schema: $schemaId
         );
