@@ -156,7 +156,7 @@ class EventsController extends Controller
             }
 
             // Create subscription.
-            $subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
+            $subscription = $this->orObjectService->saveObject($data, [], 'openconnector', 'event_subscription');
 
             return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
         } catch (Exception $e) {
@@ -200,10 +200,11 @@ class EventsController extends Controller
 
             // Update subscription.
             $subscription = $this->orObjectService->saveObject(
-                object: $data,
-                register: 'openconnector',
-                schema: 'event_subscription',
-                uuid: (string) $subscriptionId
+                $data,
+                [],
+                'openconnector',
+                'event_subscription',
+                (string) $subscriptionId
             );
 
             return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
@@ -446,10 +447,11 @@ class EventsController extends Controller
         $data['protocolSettings'] = $protocolSettings;
 
         $saved = $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'event_subscription',
-            uuid: $subscription->getUuid()
+            $data,
+            [],
+            'openconnector',
+            'event_subscription',
+            $subscription->getUuid()
         );
 
         return new JSONResponse(
@@ -504,10 +506,11 @@ class EventsController extends Controller
         $data['protocolSettings'] = $protocolSettings;
 
         $saved = $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'event_subscription',
-            uuid: $subscription->getUuid()
+            $data,
+            [],
+            'openconnector',
+            'event_subscription',
+            $subscription->getUuid()
         );
 
         return new JSONResponse(

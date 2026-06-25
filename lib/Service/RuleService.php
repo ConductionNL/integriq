@@ -1016,14 +1016,15 @@ class RuleService
             $source = $sources[0];
         } else {
             $source = $this->orObjectService->saveObject(
-                object: [
+                [
                     'location'  => $url,
                     'name'      => basename($url),
                     'type'      => 'api',
                     'isEnabled' => true,
                 ],
-                register: 'openconnector',
-                schema: 'source',
+                [],
+                'openconnector',
+                'source',
             );
         }
 

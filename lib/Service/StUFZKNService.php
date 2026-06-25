@@ -336,20 +336,12 @@ class StUFZKNService
                 }
 
                 $merged = array_merge($existingData, $zaakData);
-                $this->orObjectService->saveObject(
-                    register: self::REGISTER_ZKN,
-                    schema: self::SCHEMA_ZAAK,
-                    object: $merged
-                );
+                $this->orObjectService->saveObject($merged, [], self::REGISTER_ZKN, self::SCHEMA_ZAAK);
                 return $identificatie;
             }
         }//end if
 
-        $saved = $this->orObjectService->saveObject(
-            register: self::REGISTER_ZKN,
-            schema: self::SCHEMA_ZAAK,
-            object: $zaakData
-        );
+        $saved = $this->orObjectService->saveObject($zaakData, [], self::REGISTER_ZKN, self::SCHEMA_ZAAK);
         if (is_array($saved) === true) {
             $savedData = $saved;
         } else {

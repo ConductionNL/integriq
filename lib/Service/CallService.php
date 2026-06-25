@@ -471,15 +471,16 @@ class CallService
         ?\DateTime $expires,
     ): ObjectEntity {
         return $this->objectService->saveObject(
-            object: [
+            [
                 'source'        => $source->getUuid(),
                 'statusCode'    => $statusCode,
                 'statusMessage' => $statusMessage,
                 'created'       => (new \DateTime())->format('c'),
                 'expires'       => $this->formatExpires(expires: $expires),
             ],
-            register: 'openconnector',
-            schema: 'call_log'
+            [],
+            'openconnector',
+            'call_log'
         );
 
     }//end saveEarlyErrorLog()
@@ -530,12 +531,7 @@ class CallService
             $sourceData['rateLimitReset']     = null;
             $sourceData['rateLimitRemaining'] = null;
 
-            $this->objectService->saveObject(
-                object: $sourceData,
-                register: 'openconnector',
-                schema: 'source',
-                uuid: $source->getUuid()
-            );
+            $this->objectService->saveObject($sourceData, [], 'openconnector', 'source', $source->getUuid());
         }
 
     }//end checkAndResetRateLimit()
@@ -1311,11 +1307,7 @@ class CallService
             'expires'       => $this->formatExpires(expires: $expiresChosen),
         ];
 
-        $callLog = $this->objectService->saveObject(
-            object: $callLogData,
-            register: 'openconnector',
-            schema: 'call_log'
-        );
+        $callLog = $this->objectService->saveObject($callLogData, [], 'openconnector', 'call_log');
 
         // Set full response (with body) on the returned entity for processing.
         $callLogFullData = $callLog->getObject();
@@ -1554,12 +1546,7 @@ class CallService
         }
 
         if ($changed === true) {
-            $this->objectService->saveObject(
-                object: $sourceData,
-                register: 'openconnector',
-                schema: 'source',
-                uuid: $source->getUuid()
-            );
+            $this->objectService->saveObject($sourceData, [], 'openconnector', 'source', $source->getUuid());
         }
 
         if ($rateLimitLimit !== null || $rateLimitWindow !== null) {

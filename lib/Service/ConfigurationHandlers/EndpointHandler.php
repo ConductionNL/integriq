@@ -210,16 +210,11 @@ class EndpointHandler implements ConfigurationHandlerInterface
         $slug = $data['slug'] ?? null;
         if ($slug !== null && isset($mappings['endpoint']['slugToId'][$slug]) === true) {
             // Update existing endpoint.
-            return $this->orObjectService->saveObject(
-                object: $data,
-                register: 'openconnector',
-                schema: 'endpoint',
-                uuid: $mappings['endpoint']['slugToId'][$slug]
-            );
+            return $this->orObjectService->saveObject($data, [], 'openconnector', 'endpoint', $mappings['endpoint']['slugToId'][$slug]);
         }
 
         // Create new endpoint.
-        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'endpoint');
+        return $this->orObjectService->saveObject($data, [], 'openconnector', 'endpoint');
 
     }//end import()
 

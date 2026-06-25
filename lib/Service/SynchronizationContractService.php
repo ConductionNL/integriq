@@ -240,12 +240,7 @@ class SynchronizationContractService
             $uuidParam = null;
         }
 
-        $saved = $this->orObjectService->saveObject(
-            object: $object,
-            register: self::REGISTER,
-            schema: self::SCHEMA,
-            uuid: $uuidParam
-        );
+        $saved = $this->orObjectService->saveObject($object, [], self::REGISTER, self::SCHEMA, $uuidParam);
 
         return $saved->jsonSerialize();
 
@@ -273,12 +268,7 @@ class SynchronizationContractService
         unset($object['id']);
 
         $uuid  = $object['uuid'];
-        $saved = $this->orObjectService->saveObject(
-            object: $object,
-            register: self::REGISTER,
-            schema: self::SCHEMA,
-            uuid: $uuid
-        );
+        $saved = $this->orObjectService->saveObject($object, [], self::REGISTER, self::SCHEMA, $uuid);
 
         return $saved->jsonSerialize();
 
@@ -321,12 +311,7 @@ class SynchronizationContractService
             $uuidParam = null;
         }
 
-        $saved = $this->orObjectService->saveObject(
-            object: $merged,
-            register: self::REGISTER,
-            schema: self::SCHEMA,
-            uuid: $uuidParam
-        );
+        $saved = $this->orObjectService->saveObject($merged, [], self::REGISTER, self::SCHEMA, $uuidParam);
 
         return $saved->jsonSerialize();
 

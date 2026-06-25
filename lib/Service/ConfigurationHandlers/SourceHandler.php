@@ -117,16 +117,11 @@ class SourceHandler implements ConfigurationHandlerInterface
         $slug = $data['slug'] ?? null;
         if ($slug !== null && isset($mappings['source']['slugToId'][$slug]) === true) {
             // Update existing source.
-            return $this->orObjectService->saveObject(
-                object: $data,
-                register: 'openconnector',
-                schema: 'source',
-                uuid: $mappings['source']['slugToId'][$slug]
-            );
+            return $this->orObjectService->saveObject($data, [], 'openconnector', 'source', $mappings['source']['slugToId'][$slug]);
         }
 
         // Create new source.
-        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'source');
+        return $this->orObjectService->saveObject($data, [], 'openconnector', 'source');
 
     }//end import()
 

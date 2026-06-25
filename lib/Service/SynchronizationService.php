@@ -343,12 +343,7 @@ class SynchronizationService
             $uuidValue = (string) $uuid;
         }
 
-        $this->orObjectService->saveObject(
-            object: $object,
-            register: 'openconnector',
-            schema: 'synchronization',
-            uuid: $uuidValue
-        );
+        $this->orObjectService->saveObject($object, [], 'openconnector', 'synchronization', $uuidValue);
     }//end persistSynchronization()
 
     /**
@@ -526,12 +521,7 @@ class SynchronizationService
             $uuidValue = (string) $uuid;
         }
 
-        $saved = $this->orObjectService->saveObject(
-            object: $object,
-            register: 'openconnector',
-            schema: 'synchronization_contract',
-            uuid: $uuidValue
-        );
+        $saved = $this->orObjectService->saveObject($object, [], 'openconnector', 'synchronization_contract', $uuidValue);
 
         return $saved->jsonSerialize();
     }//end persistContract()
@@ -562,12 +552,7 @@ class SynchronizationService
         unset($object['id']);
 
         $uuid  = $object['uuid'];
-        $saved = $this->orObjectService->saveObject(
-            object: $object,
-            register: 'openconnector',
-            schema: 'synchronization_contract',
-            uuid: $uuid
-        );
+        $saved = $this->orObjectService->saveObject($object, [], 'openconnector', 'synchronization_contract', $uuid);
 
         return $saved->jsonSerialize();
     }//end createContractFromArray()
@@ -613,12 +598,7 @@ class SynchronizationService
             $uuidValue = (string) $uuid;
         }
 
-        $saved = $this->orObjectService->saveObject(
-            object: $merged,
-            register: 'openconnector',
-            schema: 'synchronization_contract',
-            uuid: $uuidValue
-        );
+        $saved = $this->orObjectService->saveObject($merged, [], 'openconnector', 'synchronization_contract', $uuidValue);
 
         return $saved->jsonSerialize();
     }//end updateContractFromArray()
@@ -709,11 +689,7 @@ class SynchronizationService
         // upsert probe (trim($object['id'])).
         unset($sourceData['id']);
 
-        $saved = $this->orObjectService->saveObject(
-            object: $sourceData,
-            register: 'openconnector',
-            schema: 'source'
-        );
+        $saved = $this->orObjectService->saveObject($sourceData, [], 'openconnector', 'source');
 
         return $saved->jsonSerialize();
     }//end findOrCreateSourceByLocation()
@@ -2475,7 +2451,6 @@ class SynchronizationService
         ?string $action='save'
     ): array {
         // Setup the object service.
-        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
         $sourceConfig  = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
         // If we already have an id, we need to get the object and update it.
@@ -2509,11 +2484,12 @@ class SynchronizationService
 
                 $targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
 
-                $target = $objectService->saveObject(
-                    register: $register,
-                    schema: $schema,
-                    object: $targetObject,
-                    uuid: ($synchronizationContract['targetId'] ?? null)
+                $target = $this->orObjectService->saveObject(
+                    $targetObject,
+                    [],
+                    $register,
+                    $schema,
+                    ($synchronizationContract['targetId'] ?? null)
                 );
                 // Get the id form the target object.
                 $synchronizationContract['targetId'] = $target->getUuid();
@@ -3978,13 +3954,12 @@ class SynchronizationService
             $data    = $this->processMapping(mapping: $mapping, data: $data);
         }
 
-        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
         if ($patch === true || $patch === 'true') {
             $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($id);
             $data   = array_merge($object->getObject(), ['id' => $object->getId()], $data);
         }
 
-        $object = $objectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
+        $object = $this->orObjectService->saveObject($data, [], $register, $schema)->jsonSerialize();
 
         return $object;
     }//end processSaveObjectRule()

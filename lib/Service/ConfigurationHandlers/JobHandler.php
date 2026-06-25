@@ -145,16 +145,11 @@ class JobHandler implements ConfigurationHandlerInterface
         $slug = $data['slug'] ?? null;
         if ($slug !== null && isset($mappings['job']['slugToId'][$slug]) === true) {
             // Update existing job.
-            return $this->orObjectService->saveObject(
-                object: $data,
-                register: 'openconnector',
-                schema: 'job',
-                uuid: $mappings['job']['slugToId'][$slug]
-            );
+            return $this->orObjectService->saveObject($data, [], 'openconnector', 'job', $mappings['job']['slugToId'][$slug]);
         }
 
         // Create new job.
-        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'job');
+        return $this->orObjectService->saveObject($data, [], 'openconnector', 'job');
 
     }//end import()
 

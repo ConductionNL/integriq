@@ -162,11 +162,7 @@ class SynchronizationContractLogService
 
         // INSERT only (no uuid parameter): OpenRegister treats this as a CREATE,
         // which the append-only schema permits.
-        $saved = $this->orObjectService->saveObject(
-            object: $this->normalize(object: $log),
-            register: self::REGISTER,
-            schema: self::SCHEMA
-        );
+        $saved = $this->orObjectService->saveObject($this->normalize(object: $log), [], self::REGISTER, self::SCHEMA);
 
         if ($uuid !== '') {
             $this->persisted[$uuid] = true;

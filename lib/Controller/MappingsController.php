@@ -265,14 +265,9 @@ class MappingsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Missing required `object` field')], 400);
         }
 
-        // OR's ObjectService::saveObject signature is `(object, register?,
-        // schema?)`. Prior code passed the register slug as the first arg
-        // — a TypeError under the new signature, which surfaced as 500.
-        $saved = $openRegisters->saveObject(
-            object:   $data['object'],
-            register: ($data['register'] ?? 'openconnector'),
-            schema:   ($data['schema'] ?? 'mapping')
-        );
+        // OR's ObjectService::saveObject signature is positional; avoid named
+        // arguments here so this action remains compatible across OR versions.
+        $saved = $openRegisters->saveObject($data['object'], [], ($data['register'] ?? 'openconnector'), ($data['schema'] ?? 'mapping'));
 
         return new JSONResponse($saved->getObject());
 

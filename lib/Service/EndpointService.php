@@ -1254,8 +1254,7 @@ class EndpointService
             $data = $this->processMapping(rule: $rule, mapping: $this->mappingService->getMapping($mapping), data: $data);
         }
 
-        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-        $data['body']  = $objectService->saveObject(register: $register, schema: $schema, object: $data['body']);
+        $data['body'] = $this->orObjectService->saveObject($data['body'], [], $register, $schema);
 
         return $data;
     }//end processSaveObjectRule()
@@ -1418,11 +1417,12 @@ class EndpointService
         $this->objectService->getOpenRegisters()->clearCurrents();
         $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($objectId);
         $object->setObject($data['body']);
-        $object = $this->objectService->getOpenRegisters()->saveObject(
-            object: $object,
-            register: $object->getRegister(),
-            schema: $object->getSchema(),
-            uuid: $object->getUuid()
+        $object = $this->orObjectService->saveObject(
+            $object,
+            [],
+            $object->getRegister(),
+            $object->getSchema(),
+            $object->getUuid()
         );
         $this->objectService->getOpenRegisters()->clearCurrents();
 
@@ -2183,11 +2183,12 @@ class EndpointService
             }
 
             try {
-                $object = $this->objectService->getOpenRegisters()->saveObject(
-                    register: $registerId,
-                    schema: $schemaId,
-                    object: $formatted,
-                    uuid: $formatted['id']
+                $object = $this->orObjectService->saveObject(
+                    $formatted,
+                    [],
+                    $registerId,
+                    $schemaId,
+                    $formatted['id']
                 );
                 return $this->replaceInternalReferences(mapper: $openRegister, object: $object);
             } catch (ValidationException $exception) {
@@ -2223,7 +2224,7 @@ class EndpointService
         $saveObject = clone $dataDot;
         $saveObject[$filePartLocation] = $filepartIds;
 
-        $openRegister->saveObject(register: $registerId, schema: $schemaId, object: $saveObject->jsonSerialize());
+        $this->orObjectService->saveObject($saveObject->jsonSerialize(), [], $registerId, $schemaId);
 
         return $dataDot->jsonSerialize();
     }//end processFilePartRule()
