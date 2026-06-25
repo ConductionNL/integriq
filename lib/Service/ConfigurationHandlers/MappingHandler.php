@@ -155,11 +155,7 @@ class MappingHandler implements ConfigurationHandlerInterface
         }
 
         // Create new mapping.
-        return $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'mapping'
-        );
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'mapping');
 
     }//end import()
 

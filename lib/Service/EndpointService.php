@@ -1254,11 +1254,8 @@ class EndpointService
             $data = $this->processMapping(rule: $rule, mapping: $this->mappingService->getMapping($mapping), data: $data);
         }
 
-        $data['body'] = $this->orObjectService->saveObject(
-            object: $data['body'],
-            register: $register,
-            schema: $schema
-        );
+        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+        $data['body']  = $objectService->saveObject(register: $register, schema: $schema, object: $data['body']);
 
         return $data;
     }//end processSaveObjectRule()
@@ -1421,7 +1418,7 @@ class EndpointService
         $this->objectService->getOpenRegisters()->clearCurrents();
         $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find($objectId);
         $object->setObject($data['body']);
-        $object = $this->orObjectService->saveObject(
+        $object = $this->objectService->getOpenRegisters()->saveObject(
             object: $object,
             register: $object->getRegister(),
             schema: $object->getSchema(),
@@ -1733,7 +1730,7 @@ class EndpointService
             }
 
             try {
-                $object = $this->orObjectService->find($value, $extends);
+                $object = $this->objectService->getOpenRegisters()->find(id: $value, _extend: $extends);
                 $this->objectService->getOpenRegisters()->clearCurrents();
             } catch (DoesNotExistException $exception) {
                 $this->objectService->getOpenRegisters()->clearCurrents();
@@ -2186,10 +2183,10 @@ class EndpointService
             }
 
             try {
-                $object = $this->orObjectService->saveObject(
-                    object: $formatted,
+                $object = $this->objectService->getOpenRegisters()->saveObject(
                     register: $registerId,
                     schema: $schemaId,
+                    object: $formatted,
                     uuid: $formatted['id']
                 );
                 return $this->replaceInternalReferences(mapper: $openRegister, object: $object);
@@ -2226,11 +2223,7 @@ class EndpointService
         $saveObject = clone $dataDot;
         $saveObject[$filePartLocation] = $filepartIds;
 
-        $this->orObjectService->saveObject(
-            object: $saveObject->jsonSerialize(),
-            register: $registerId,
-            schema: $schemaId
-        );
+        $openRegister->saveObject(register: $registerId, schema: $schemaId, object: $saveObject->jsonSerialize());
 
         return $dataDot->jsonSerialize();
     }//end processFilePartRule()

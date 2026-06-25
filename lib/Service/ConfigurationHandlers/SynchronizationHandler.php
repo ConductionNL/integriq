@@ -323,11 +323,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
         }
 
         // Create new synchronization.
-        return $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'synchronization'
-        );
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'synchronization');
 
     }//end import()
 

@@ -172,11 +172,7 @@ class RuleHandler implements ConfigurationHandlerInterface
         }
 
         // Create new rule.
-        return $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'rule'
-        );
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'rule');
 
     }//end import()
 

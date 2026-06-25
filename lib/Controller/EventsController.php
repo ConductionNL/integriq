@@ -156,11 +156,7 @@ class EventsController extends Controller
             }
 
             // Create subscription.
-            $subscription = $this->orObjectService->saveObject(
-                object: $data,
-                register: 'openconnector',
-                schema: 'event_subscription'
-            );
+            $subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
 
             return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
         } catch (Exception $e) {

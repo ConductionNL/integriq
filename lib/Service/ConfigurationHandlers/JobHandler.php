@@ -154,11 +154,7 @@ class JobHandler implements ConfigurationHandlerInterface
         }
 
         // Create new job.
-        return $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'job'
-        );
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'job');
 
     }//end import()
 

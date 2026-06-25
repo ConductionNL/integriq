@@ -219,11 +219,7 @@ class EndpointHandler implements ConfigurationHandlerInterface
         }
 
         // Create new endpoint.
-        return $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'endpoint'
-        );
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'endpoint');
 
     }//end import()
 

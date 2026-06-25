@@ -2475,6 +2475,7 @@ class SynchronizationService
         ?string $action='save'
     ): array {
         // Setup the object service.
+        $objectService = $this->orObjectService;
         $sourceConfig  = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
         // If we already have an id, we need to get the object and update it.
@@ -2508,10 +2509,10 @@ class SynchronizationService
 
                 $targetObject = $this->replaceRelatedOriginIds(object: $targetObject, config: $sourceConfig['originIdsToReplace'] ?? []);
 
-                $target = $this->orObjectService->saveObject(
-                    object: $targetObject,
+                $target = $objectService->saveObject(
                     register: $register,
                     schema: $schema,
+                    object: $targetObject,
                     uuid: ($synchronizationContract['targetId'] ?? null)
                 );
                 // Get the id form the target object.
@@ -2523,7 +2524,7 @@ class SynchronizationService
                 // removed after the fetch-rule path was verified.
                 // Handle sub-objects synchronization if sourceConfig is defined.
                 if (isset($sourceConfig['subObjects']) === true) {
-                    $targetObject = $this->orObjectService->renderEntity(entity: $target, _extend: ['all']);
+                    $targetObject = $objectService->renderEntity($target, ['all']);
                     $this->updateContractsForSubObjects(
                         subObjectsConfig: $sourceConfig['subObjects'],
                         synchronizationId: ($synchronization['id'] ?? null),
@@ -2540,7 +2541,7 @@ class SynchronizationService
                 break;
             case 'delete':
                 if (empty($synchronizationContract['targetId'] ?? null) === false) {
-                    $this->orObjectService->deleteObject(uuid: (string) $synchronizationContract['targetId']);
+                    $objectService->deleteObject(uuid: (string) $synchronizationContract['targetId']);
                 }
 
                 $synchronizationContract['targetId']         = null;
@@ -3985,11 +3986,7 @@ class SynchronizationService
             $data   = array_merge($object->getObject(), ['id' => $object->getId()], $data);
         }
 
-        $object = $this->orObjectService->saveObject(
-            object: $data,
-            register: $register,
-            schema: $schema
-        )->jsonSerialize();
+        $object = $this->orObjectService->saveObject(register: $register, schema: $schema, object: $data)->jsonSerialize();
 
         return $object;
     }//end processSaveObjectRule()

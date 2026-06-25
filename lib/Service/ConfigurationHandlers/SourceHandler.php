@@ -126,11 +126,7 @@ class SourceHandler implements ConfigurationHandlerInterface
         }
 
         // Create new source.
-        return $this->orObjectService->saveObject(
-            object: $data,
-            register: 'openconnector',
-            schema: 'source'
-        );
+        return $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'source');
 
     }//end import()
 
