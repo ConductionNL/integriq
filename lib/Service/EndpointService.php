@@ -1848,7 +1848,7 @@ class EndpointService
     /**
      * Process a rule to write files.
      *
-     * @param ObjectEntity $rule      The rule to process.
+     * @param ObjectEntity $rule      The rule ObjectEntity containing configuration.
      * @param array        $data      The data to write.
      * @param string       $objectId  The object to write the data to.
      * @param FlowToken    $flowToken The flow token carrying the request/response state.
@@ -1861,7 +1861,7 @@ class EndpointService
      *
      * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
      */
-    private function processWriteFileRule(Rule $rule, array $data, string $objectId, FlowToken $flowToken): array
+    private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId, FlowToken $flowToken): array
     {
         $ruleConfig = $rule->getObject()['configuration'] ?? [];
         if (isset($ruleConfig['write_file']) === false) {

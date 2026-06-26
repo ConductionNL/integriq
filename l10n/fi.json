@@ -849,7 +849,11 @@
         "Replay this message now?": "Lähetetäänkö tämä viesti nyt uudelleen?",
         "Replayed by {who} at {when}": "Lähetti uudelleen {who} {when}",
         "Retries": "Uudelleenyritykset",
-        "Subscription": "Tilaus"
+        "Subscription": "Tilaus",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

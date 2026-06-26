@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Cron;
 
 use OCA\OpenConnector\Service\IBabsConnectorService;
-use OCA\OpenConnector\Service\NotuBizConnectorService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -54,18 +53,16 @@ class RISPollJob extends TimedJob
     /**
      * RISPollJob constructor.
      *
-     * @param ITimeFactory            $time                    Time factory for job scheduling.
-     * @param IBabsConnectorService   $ibabsConnectorService   iBabs connector service.
-     * @param NotuBizConnectorService $notuBizConnectorService NotuBiz connector service.
-     * @param OrObjectService         $orObjectService         OR object service for sync records.
-     * @param LoggerInterface         $logger                  Logger for error handling.
+     * @param ITimeFactory          $time                  Time factory for job scheduling.
+     * @param IBabsConnectorService $ibabsConnectorService iBabs connector service.
+     * @param OrObjectService       $orObjectService       OR object service for sync records.
+     * @param LoggerInterface       $logger                Logger for error handling.
      *
      * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
      */
     public function __construct(
         ITimeFactory $time,
         private readonly IBabsConnectorService $ibabsConnectorService,
-        private readonly NotuBizConnectorService $notuBizConnectorService,
         private readonly OrObjectService $orObjectService,
         private readonly LoggerInterface $logger
     ) {
@@ -94,6 +91,8 @@ class RISPollJob extends TimedJob
      * @psalm-param   mixed $argument
      * @phpstan-param mixed $argument
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-4
      */
     public function run(mixed $argument): void
@@ -119,8 +118,8 @@ class RISPollJob extends TimedJob
         $this->logger->info(
             'RISPollJob: poll complete',
             [
-                'ibabsCount'   => count($byRisType['ibabs'] ?? []),
-                'notubizCount' => count($byRisType['notubiz'] ?? []),
+                'ibabsCount'   => count($byRisType['ibabs']),
+                'notubizCount' => count($byRisType['notubiz']),
             ]
         );
 
@@ -208,7 +207,7 @@ class RISPollJob extends TimedJob
                 foreach ($besluiten as $besluit) {
                     $this->logger->info(
                         'RISPollJob: iBabs besluit received',
-                        ['zaakId' => $besluit['zaakId'] ?? 'unknown', 'status' => $besluit['zaakStatus'] ?? 'unknown']
+                        ['zaakId' => $besluit['zaakId'], 'status' => $besluit['zaakStatus']]
                     );
                 }
             } catch (\Exception $e) {

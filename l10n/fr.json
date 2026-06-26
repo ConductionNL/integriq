@@ -849,7 +849,11 @@
         "Replay this message now?": "Rejouer ce message maintenant ?",
         "Replayed by {who} at {when}": "Rejoué par {who} le {when}",
         "Retries": "Nouvelles tentatives",
-        "Subscription": "Abonnement"
+        "Subscription": "Abonnement",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

@@ -316,7 +316,7 @@ class MigrateToOpenRegister extends Command
         $rows     = [];
         $allEqual = true;
         foreach ($report as $entry) {
-            $equal = (bool) ($entry['equal'] ?? false);
+            $equal = $entry['equal'];
             if ($equal === false) {
                 $allEqual = false;
             }
@@ -327,10 +327,10 @@ class MigrateToOpenRegister extends Command
             }
 
             $rows[] = [
-                (string) ($entry['slug'] ?? '?'),
-                (int) ($entry['legacy'] ?? 0),
-                (int) ($entry['register'] ?? 0),
-                (int) ($entry['skipped'] ?? 0),
+                $entry['slug'],
+                $entry['legacy'],
+                $entry['register'],
+                $entry['skipped'],
                 $parityCell,
             ];
         }//end foreach

@@ -16,7 +16,6 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\StUFFieldMapper;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the StUF field mapper service.
@@ -39,8 +38,7 @@ class StUFFieldMapperTest extends TestCase
     {
         parent::setUp();
 
-        $logger       = $this->createMock(LoggerInterface::class);
-        $this->mapper = new StUFFieldMapper($logger);
+        $this->mapper = new StUFFieldMapper();
 
     }//end setUp()
 

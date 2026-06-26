@@ -39,9 +39,9 @@ class ViewDeletedEventListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param SchemaMapper   $schemaMapper   Schema mapper used to resolve view + extendview schemas.
-     * @param RegisterMapper $registerMapper Register mapper used to resolve the vng-gemma register.
-     * @param ObjectService  $objectService  Service providing access to the OR object layer.
+     * @param SchemaMapper         $schemaMapper   Schema mapper used to resolve view + extendview schemas.
+     * @param RegisterMapper       $registerMapper Register mapper used to resolve the vng-gemma register.
+     * @param SourceMappingService $objectService  Service providing access to the OR object layer.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,

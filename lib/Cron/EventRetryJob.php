@@ -90,6 +90,8 @@ class EventRetryJob extends TimedJob
      * @psalm-param   mixed $argument
      * @phpstan-param mixed $argument
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-4
      */
     public function run(mixed $argument): void

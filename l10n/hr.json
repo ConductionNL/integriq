@@ -849,7 +849,11 @@
         "Replay this message now?": "Ponovno isporučiti ovu poruku sada?",
         "Replayed by {who} at {when}": "Ponovno isporučio {who} u {when}",
         "Retries": "Ponovni pokušaji",
-        "Subscription": "Pretplata"
+        "Subscription": "Pretplata",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

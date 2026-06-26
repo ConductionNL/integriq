@@ -849,7 +849,11 @@
         "Visual builder": "Construtor visual",
         "We encountered an unexpected problem": "Encontrámos um problema inesperado",
         "When (conditions)": "Quando (condições)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Quando ativado, a sincronização continua a ser executada, mas a regra preserva o corpo da resposta original em vez de o substituir."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Quando ativado, a sincronização continua a ser executada, mas a regra preserva o corpo da resposta original em vez de o substituir.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

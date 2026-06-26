@@ -244,9 +244,11 @@ class StUFZKNService
      *
      * @param SimpleXMLElement $body   The SOAP body element.
      * @param string           $zknNs  The ZKN namespace URI.
-     * @param string           $stufNs The StUF namespace URI.
+     * @param string           $stufNs The StUF namespace URI (reserved for future multi-namespace criteria).
      *
      * @return array Associative array of OpenRegister filter criteria.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
      */
@@ -291,7 +293,7 @@ class StUFZKNService
     private function mapZaakToStuf(array $zaak): array
     {
         $stufData = [];
-        foreach (self::ZAAK_FIELD_MAP as $xmlName => $registerField) {
+        foreach (array_values(self::ZAAK_FIELD_MAP) as $registerField) {
             if (isset($zaak[$registerField]) === true) {
                 $stufData[$registerField] = $zaak[$registerField];
             }

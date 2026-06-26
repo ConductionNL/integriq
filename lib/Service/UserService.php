@@ -444,9 +444,8 @@ class UserService
     private function getUsedSpaceMemorySafe(string $userId): int
     {
         try {
-            // Set memory limit and timeout for safety.
-            $originalMemoryLimit = ini_get('memory_limit');
-            $currentMemoryUsage  = memory_get_usage(true);
+            // Check current memory usage for safety.
+            $currentMemoryUsage = memory_get_usage(true);
 
             // If we're already using too much memory, return 0 to prevent OOM.
             if ($currentMemoryUsage > 128 * 1024 * 1024) {
@@ -772,25 +771,10 @@ class UserService
                 if (isset($data[$apiField]) === true) {
                     $value = (string) $data[$apiField];
 
-                    // Create or update the account property.
-                    if ($account->getProperty($accountProperty) !== null) {
-                        // Update existing property.
-                        $property = $account->getProperty($accountProperty);
-                        if ($property->getValue() !== $value) {
-                            $property->setValue($value);
-                            $accountUpdated = true;
-                        }
-                    } else {
-                        // Create new property with appropriate scope and verification.
-                        $scope    = $this->getDefaultPropertyScope(propertyName: $accountProperty);
-                        $verified = IAccountManager::NOT_VERIFIED;
-
-                        $account->setProperty(
-                            $accountProperty,
-                            $value,
-                            $scope,
-                            $verified
-                        );
+                    // Update existing account property (getProperty() always returns non-null).
+                    $property = $account->getProperty($accountProperty);
+                    if ($property->getValue() !== $value) {
+                        $property->setValue($value);
                         $accountUpdated = true;
                     }
                 }//end if
@@ -825,38 +809,4 @@ class UserService
         }
     }//end updateProfileProperties()
 
-    /**
-     * Get default property scope for account properties
-     *
-     * This method returns appropriate default visibility scopes for different
-     * types of account properties to ensure proper privacy settings.
-     *
-     * @param string $propertyName The property name
-     *
-     * @return string The default scope for the property
-     *
-     * @psalm-param    string $propertyName
-     * @psalm-return   string
-     * @phpstan-param  string $propertyName
-     * @phpstan-return string
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
-     */
-    private function getDefaultPropertyScope(string $propertyName): string
-    {
-        // Define default scopes for different property types.
-        $scopeMap = [
-            IAccountManager::PROPERTY_PHONE        => IAccountManager::SCOPE_PRIVATE,
-            IAccountManager::PROPERTY_ADDRESS      => IAccountManager::SCOPE_PRIVATE,
-            IAccountManager::PROPERTY_WEBSITE      => IAccountManager::SCOPE_PUBLISHED,
-            IAccountManager::PROPERTY_TWITTER      => IAccountManager::SCOPE_PUBLISHED,
-            IAccountManager::PROPERTY_FEDIVERSE    => IAccountManager::SCOPE_PUBLISHED,
-            IAccountManager::PROPERTY_ORGANISATION => IAccountManager::SCOPE_LOCAL,
-            IAccountManager::PROPERTY_ROLE         => IAccountManager::SCOPE_LOCAL,
-            IAccountManager::PROPERTY_HEADLINE     => IAccountManager::SCOPE_LOCAL,
-            IAccountManager::PROPERTY_BIOGRAPHY    => IAccountManager::SCOPE_LOCAL,
-        ];
-
-        return $scopeMap[$propertyName] ?? IAccountManager::SCOPE_PRIVATE;
-    }//end getDefaultPropertyScope()
 }//end class

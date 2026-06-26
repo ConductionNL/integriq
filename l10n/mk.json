@@ -849,7 +849,11 @@
         "Visual builder": "Визуелен градител",
         "We encountered an unexpected problem": "Наидовме на неочекуван проблем",
         "When (conditions)": "Кога (услови)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Кога е овозможено, синхронизацијата сè уште се извршува, но правилото го зачувува оригиналното тело на одговорот наместо да го замени."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Кога е овозможено, синхронизацијата сè уште се извршува, но правилото го зачувува оригиналното тело на одговорот наместо да го замени.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

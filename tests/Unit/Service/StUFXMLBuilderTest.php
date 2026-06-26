@@ -19,7 +19,6 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\StUFXMLBuilder;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the StUF XML builder service.
@@ -53,8 +52,7 @@ class StUFXMLBuilderTest extends TestCase
     {
         parent::setUp();
 
-        $logger        = $this->createMock(originalClassName: LoggerInterface::class);
-        $this->builder = new StUFXMLBuilder(logger: $logger);
+        $this->builder = new StUFXMLBuilder();
 
         $this->stuurgegevens = [
             'zenderOrganisatie'    => '001122334',

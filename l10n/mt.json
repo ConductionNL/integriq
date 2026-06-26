@@ -849,7 +849,11 @@
         "Visual builder": "Builder viżwali",
         "We encountered an unexpected problem": "Iltqajna ma' problema mhux mistennija",
         "When (conditions)": "Meta (kundizzjonijiet)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Meta attivat, is-sinkronizzazzjoni xorta tiġri imma r-regola tippreserva l-body tar-rispons oriġinali minflok ma tibdlu."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Meta attivat, is-sinkronizzazzjoni xorta tiġri imma r-regola tippreserva l-body tar-rispons oriġinali minflok ma tibdlu.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }
