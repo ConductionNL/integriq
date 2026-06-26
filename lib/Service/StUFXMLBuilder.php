@@ -24,7 +24,6 @@ namespace OCA\OpenConnector\Service;
 
 use DOMDocument;
 use DOMElement;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -71,10 +70,8 @@ class StUFXMLBuilder
 
     /**
      * StUFXMLBuilder constructor.
-     *
-     * @param LoggerInterface $logger PSR-3 logger.
      */
-    public function __construct(private readonly LoggerInterface $logger)
+    public function __construct()
     {
 
     }//end __construct()

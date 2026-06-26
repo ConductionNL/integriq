@@ -208,8 +208,6 @@ class EventsController extends Controller
             );
 
             return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try

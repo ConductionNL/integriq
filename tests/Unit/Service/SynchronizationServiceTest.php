@@ -17,7 +17,6 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
-use OCA\OpenConnector\Service\StorageService;
 use OCA\OpenConnector\Service\SynchronizationLogService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
@@ -66,7 +65,6 @@ class SynchronizationServiceTest extends TestCase
         $mappingService            = $this->createMock(MappingService::class);
         $container                 = $this->createMock(ContainerInterface::class);
         $objectService             = $this->createMock(ObjectService::class);
-        $storageService            = $this->createMock(StorageService::class);
         $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
         $appConfig                 = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
@@ -77,7 +75,6 @@ class SynchronizationServiceTest extends TestCase
             $container,
             $this->orObjectService,
             $objectService,
-            $storageService,
             $this->logger,
             $synchronizationLogService,
             $appConfig,

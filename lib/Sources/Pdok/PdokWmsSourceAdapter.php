@@ -98,51 +98,66 @@ final class PdokWmsSourceAdapter
     }//end isActive()
 
     /**
-     * Fetch a WMS map tile for a layer + bounding box.
+     * Fetch a WMS map tile for a dataset + layer + bounding box.
      *
      * In dormant mode returns the canned 1×1 transparent PNG below and logs
      * the requested parameters at debug level. In active mode delegates to
      * the resolved `PdokWmsClient` (HTTP variant).
      *
-     * @param string               $layer  WMS layer name (e.g. `top10nl`, `2020_ortho25`).
-     * @param array<int,float>     $bbox   `[minx, miny, maxx, maxy]` in EPSG:28992 metres.
-     * @param int                  $width  Output width in pixels.
-     * @param int                  $height Output height in pixels.
-     * @param array<string,string> $extras Optional WMS overrides (`format`, `styles`, …).
+     * @param string                                 $dataset PDOK WMS dataset key (e.g. `bgt`, `bag`).
+     * @param string                                 $layer   WMS layer name (e.g. `top10nl`, `2020_ortho25`).
+     * @param array{0:float,1:float,2:float,3:float} $bbox    `[minx, miny, maxx, maxy]` in EPSG:28992 metres.
+     * @param string                                 $crs     CRS identifier (default `EPSG:28992`).
+     * @param int                                    $width   Output width in pixels.
+     * @param int                                    $height  Output height in pixels.
+     * @param string                                 $format  Image MIME type (default `image/png`).
      *
      * @return string Image bytes (PNG/JPEG).
      */
     public function getMap(
+        string $dataset,
         string $layer,
         array $bbox,
-        int $width=256,
-        int $height=256,
-        array $extras=[]
+        string $crs='EPSG:28992',
+        int $width=512,
+        int $height=512,
+        string $format='image/png'
     ): string {
         $this->logger->debug(
             'pdok-wms.getMap',
             [
                 'source'   => self::SOURCE_ID,
                 'category' => self::SOURCE_CATEGORY,
+                'dataset'  => $dataset,
                 'layer'    => $layer,
                 'bbox'     => $bbox,
+                'crs'      => $crs,
                 'width'    => $width,
                 'height'   => $height,
-                'extras'   => $extras,
                 'active'   => $this->isActive(),
                 'flavour'  => $this->wmsClient->flavour(),
             ]
         );
 
-        return $this->wmsClient->getMap($layer, $bbox, $width, $height, $extras);
+        return $this->wmsClient->getMap(
+            dataset: $dataset,
+            layer: $layer,
+            bbox: $bbox,
+            crs: $crs,
+            width: $width,
+            height: $height,
+            format: $format
+        );
     }//end getMap()
 
     /**
-     * Return the parsed WMS GetCapabilities document.
+     * Return the raw XML GetCapabilities document for a dataset.
      *
-     * @return array<string,mixed> Capabilities tree.
+     * @param string $dataset PDOK WMS dataset key (e.g. `bgt`, `bag`).
+     *
+     * @return string Raw capabilities XML.
      */
-    public function getCapabilities(): array
+    public function getCapabilities(string $dataset=''): string
     {
         $this->logger->debug(
             'pdok-wms.getCapabilities',
@@ -154,7 +169,7 @@ final class PdokWmsSourceAdapter
             ]
         );
 
-        return $this->wmsClient->getCapabilities();
+        return $this->wmsClient->getCapabilities(dataset: $dataset);
     }//end getCapabilities()
 
     /**

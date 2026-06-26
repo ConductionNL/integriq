@@ -660,8 +660,10 @@ class IBabsConnectorService
 
         $existingNode = $userFolder->nodeExists(path: $filePath);
         if ($existingNode === true) {
-            $file = $userFolder->get(path: $filePath);
-            $file->putContent(data: $content);
+            $node = $userFolder->get(path: $filePath);
+            if ($node instanceof \OCP\Files\File) {
+                $node->putContent($content);
+            }
         } else {
             $userFolder->newFile(path: $filePath, content: $content);
         }

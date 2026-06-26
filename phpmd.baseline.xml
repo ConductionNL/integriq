@@ -1,42 +1,30 @@
 <?xml version="1.0"?>
 <phpmd-baseline>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Action/SynchronizationAction.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/AppInfo/Application.php" method="register"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppInfo/Application.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Connectors/PdokConnector.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/DSOController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/EndpointsController.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/EventsController.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/EventsController.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/EventsController.php" method="withinWindow"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/EventsController.php" method="withinWindow"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/JobsController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/LogsController.php"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/LogsController.php" method="export"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/MappingsController.php" method="test"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/MappingsController.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Controller/PdokController.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/PreferencesController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/SourcesController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/SynchronizationsController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/UserController.php"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/UserController.php" method="login"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Cron/EventRetryJob.php"/>
   <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Cron/LogCleanUpTask.php"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Cron/RISPollJob.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Http/XMLResponse.php"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Migration/Version1Date20250515232835.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Migration/Version1Date20250515232835.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Migration/Version2Date20260520000001.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Migration/Version2Date20260520000001.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Migration/Version2Date20260520000099.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Repair/InitializeRegister.php" method="run"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Repair/InitializeRegister.php" method="run"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Repair/InitializeRegister.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/AuthenticationService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/AuthenticationService.php" method="assertSafeTokenUrl"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/AuthenticationService.php" method="assertSafeTokenUrl"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/AuthenticationService.php" method="getRSJWK"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/AuthenticationService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/AuthorizationService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/AuthorizationService.php" method="getJWK"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/AuthorizationService.php" method="validatePayload"/>
@@ -76,27 +64,20 @@
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/ConfigurationService.php"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/EndpointCacheService.php" method="findByPathRegex"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/EndpointCacheService.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/EventService.php"/>
   <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/EventService.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/EventService.php" method="deliverMessage"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/EventService.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/EventService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/Helper/FlowToken.php"/>
   <violation rule="PHPMD\Rule\Controversial\Superglobals" file="lib/Service/Helper/FlowToken.php" method="setRequestOriginal"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Helper/FlowToken.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/IBabsConnectorService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/IBabsConnectorService.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/IBabsConnectorService.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/Integration/SynchronizationContractProvider.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Integration/SynchronizationContractProvider.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/JobService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/JobService.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/JobService.php"/>
   <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/JobService.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/MappingService.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/MappingService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Service/MappingService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/MappingService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/MappingService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Migration/LegacyToRegisterMigrator.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Migration/LegacyToRegisterMigrator.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Migration/LegacyToRegisterMigrator.php" method="migrateAll"/>
@@ -107,7 +88,6 @@
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Migration/LegacyToRegisterMigrator.php" method="migrateEntity"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/Migration/LegacyToRegisterMigrator.php" method="buildJsonBody"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/Migration/LegacyToRegisterMigrator.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/NotuBizConnectorService.php"/>
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/RuleService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/RuleService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/SOAPService.php"/>
@@ -119,102 +99,8 @@
   <violation rule="PHPMD\Rule\UnusedPrivateMethod" file="lib/Service/SoftwareCatalogueService.php" method="extendNode"/>
   <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/SoftwareCatalogueService.php"/>
   <violation rule="PHPMD\Rule\UnusedPrivateMethod" file="lib/Service/SoftwareCatalogueService.php" method="extendConnection"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/StUFBGService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/StUFBGService.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/StUFBGService.php"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/StUFBGService.php"/>
-  <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/StUFBGService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/StUFBGService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/StUFFieldMapper.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/StUFXMLBuilder.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/StUFXMLBuilder.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/StUFXMLBuilder.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/StUFZKNService.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/StUFZKNService.php"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/StUFZKNService.php"/>
-  <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/StUFZKNService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/StUFZKNService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/SynchronizationContractService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/SynchronizationContractService.php"/>
-  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\Design\TooManyMethods" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\Design\TooManyPublicMethods" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="doHandleObjectEventSynchronization"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="doHandleObjectEventSynchronization"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="doHandleObjectEventSynchronization"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="resolveParentObjectForRelatedObjectTrigger"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="resolveParentObjectForRelatedObjectTrigger"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeInternToExtern"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeInternToExtern"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronizeInternToExtern"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeExternToIntern"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeExternToIntern"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronizeExternToIntern"/>
-  <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/SynchronizationService.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronize"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="fetchExtraDataForObject"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="fetchExtraDataForObject"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="fetchExtraDataForObject"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="deleteInvalidObjects"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="deleteInvalidObjects"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="deleteInvalidObjects"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="synchronizeContract"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateTargetOpenRegister"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="replaceRelatedOriginIds"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="updateContractsForSubObjects"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="getAllObjectsFromApi"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="getAllObjectsFromApi"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="getAllObjectsFromApi"/>
-  <violation rule="PHPMD\Rule\UnusedPrivateMethod" file="lib/Service/SynchronizationService.php" method="fetchAllPagesSequential"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="fetchAllPagesSequential"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="writeObjectToTarget"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="writeObjectToTarget"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="writeObjectToTarget"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="processExtendInputRule"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="processExtendInputRule"/>
-  <violation rule="PHPMD\Rule\UnusedPrivateMethod" file="lib/Service/SynchronizationService.php" method="writeFile"/>
-  <violation rule="PHPMD\Rule\CleanCode\IfStatementAssignment" file="lib/Service/SynchronizationService.php" method="fetchFile"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="fetchFile"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="fetchFile"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="fetchFile"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="applyFileUploadToTargetConfig"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="applyFileUploadToTargetConfig"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="applyFileUploadToTargetConfig"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="getFileContext"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="getFileContext"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="processFetchFileRule"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="processFetchFileRule"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="processWriteFileRule"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="xmlToArray"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="xmlToArray"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="processSynchronizationObject"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="processSynchronizationObject"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/SynchronizationService.php" method="processSynchronizationObject"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="processMultipleFilesWithCleanup"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/SynchronizationService.php" method="shouldPublishFile"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/SynchronizationService.php" method="shouldPublishFile"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/UserService.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/UserService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/UserService.php" method="buildUserDataArray"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/UserService.php" method="buildUserDataArray"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/UserService.php" method="buildUserDataArray"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/UserService.php"/>
-  <violation rule="PHPMD\Rule\UnusedLocalVariable" file="lib/Service/UserService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/UserService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/UserService.php" method="updateStandardUserProperties"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/UserService.php" method="updateStandardUserProperties"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/UserService.php" method="updateProfileProperties"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/WebhookSignatureService.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Twig/MappingRuntime.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Twig/MappingRuntimeLoader.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/Twig/MappingRuntime.php"/>
 </phpmd-baseline>
