@@ -56,35 +56,42 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID assigned by OpenRegister"
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
           },
           "name": {
             "type": "string",
             "description": "Human-readable name",
-            "maxLength": 255
+            "maxLength": 255,
+            "title": "Name"
           },
           "description": {
             "type": "string",
             "description": "Free-form description",
-            "maxLength": 2555
+            "maxLength": 2555,
+            "title": "Description"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference identifier (slug)"
+            "description": "Cross-environment reference identifier (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver of the source configuration",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "location": {
             "type": "string",
-            "description": "Base URL or connection string"
+            "description": "Base URL or connection string",
+            "title": "Location"
           },
           "isEnabled": {
             "type": "boolean",
             "description": "Whether this source is active",
-            "default": true
+            "default": true,
+            "title": "Enabled"
           },
           "type": {
             "type": "string",
@@ -95,155 +102,191 @@
               "file",
               "soap",
               "dso"
-            ]
+            ],
+            "title": "Type"
           },
           "authorizationHeader": {
             "type": "string",
-            "description": "Header name used for authentication"
+            "description": "Header name used for authentication",
+            "title": "Authorization Header"
           },
           "auth": {
             "type": "string",
-            "description": "Authentication strategy slug (apikey, basic, oauth, jwt, none)"
+            "description": "Authentication strategy slug (apikey, basic, oauth, jwt, none)",
+            "title": "Authentication Strategy"
           },
           "authenticationConfig": {
             "type": "object",
-            "description": "Provider-specific auth configuration (object). Credential strings here are stored plaintext per local ADR-007 until EncryptionService ships (local ADR-016)."
+            "description": "Provider-specific auth configuration (object). Credential strings here are stored plaintext per local ADR-007 until EncryptionService ships (local ADR-016).",
+            "title": "Authentication Configuration"
           },
           "authorizationPassthroughMethod": {
             "type": "string",
-            "description": "How auth flows to the upstream target"
+            "description": "How auth flows to the upstream target",
+            "title": "Authorization Passthrough Method"
           },
           "locale": {
             "type": "string",
-            "description": "Locale hint for upstream (e.g. nl_NL)"
+            "description": "Locale hint for upstream (e.g. nl_NL)",
+            "title": "Locale"
           },
           "accept": {
             "type": "string",
-            "description": "Default Accept header for outbound requests"
+            "description": "Default Accept header for outbound requests",
+            "title": "Accept Header"
           },
           "jwt": {
             "type": "string",
-            "description": "JWT bearer token (plaintext per ADR-007)"
+            "description": "JWT bearer token (plaintext per ADR-007)",
+            "title": "JWT Token"
           },
           "jwtId": {
             "type": "string",
-            "description": "Reference to JWT credential record"
+            "description": "Reference to JWT credential record",
+            "title": "JWT ID"
           },
           "secret": {
             "type": "string",
-            "description": "OAuth client secret (plaintext per ADR-007)"
+            "description": "OAuth client secret (plaintext per ADR-007)",
+            "title": "Client Secret"
           },
           "username": {
             "type": "string",
-            "description": "Basic-auth username (plaintext per ADR-007)"
+            "description": "Basic-auth username (plaintext per ADR-007)",
+            "title": "Username"
           },
           "password": {
             "type": "string",
-            "description": "Basic-auth password (plaintext per ADR-007)"
+            "description": "Basic-auth password (plaintext per ADR-007)",
+            "title": "Password"
           },
           "apikey": {
             "type": "string",
-            "description": "API key value (plaintext per ADR-007)"
+            "description": "API key value (plaintext per ADR-007)",
+            "title": "API Key"
           },
           "documentation": {
             "type": "string",
-            "description": "Public docs URL for the upstream API"
+            "description": "Public docs URL for the upstream API",
+            "title": "Documentation URL"
           },
           "loggingConfig": {
             "type": "object",
-            "description": "Per-source override for CallLog retention windows"
+            "description": "Per-source override for CallLog retention windows",
+            "title": "Logging Configuration"
           },
           "oas": {
             "type": "string",
-            "description": "OpenAPI spec URL or inline reference for the upstream"
+            "description": "OpenAPI spec URL or inline reference for the upstream",
+            "title": "OpenAPI Spec"
           },
           "paths": {
             "type": "object",
-            "description": "Per-path overrides (auth, headers, transformations)"
+            "description": "Per-path overrides (auth, headers, transformations)",
+            "title": "Path Overrides"
           },
           "headers": {
             "type": "object",
-            "description": "Default headers applied to outbound requests"
+            "description": "Default headers applied to outbound requests",
+            "title": "Default Headers"
           },
           "translationConfig": {
             "type": "object",
-            "description": "Mapping/translation hooks applied to outbound payloads"
+            "description": "Mapping/translation hooks applied to outbound payloads",
+            "title": "Translation Configuration"
           },
           "configuration": {
             "type": "object",
-            "description": "Free-form structured config (provider-specific)"
+            "description": "Free-form structured config (provider-specific)",
+            "title": "Configuration"
           },
           "endpointsConfig": {
             "type": "object",
-            "description": "Per-endpoint overrides nested under this source"
+            "description": "Per-endpoint overrides nested under this source",
+            "title": "Endpoints Configuration"
           },
           "status": {
             "type": "string",
-            "description": "Operational status (ok, degraded, error, disabled)"
+            "description": "Operational status (ok, degraded, error, disabled)",
+            "title": "Status"
           },
           "logRetention": {
             "type": "integer",
-            "description": "Per-source override for success log retention. Stored in seconds (legacy Source.php convention); JobService DEFAULT_SUCCESS_LOG_RETENTION is 3600000 ms = 3600 s. See chain-B Note on retention unit conversion."
+            "description": "Per-source override for success log retention. Stored in seconds (legacy Source.php convention); JobService DEFAULT_SUCCESS_LOG_RETENTION is 3600000 ms = 3600 s. See chain-B Note on retention unit conversion.",
+            "title": "Log Retention"
           },
           "errorRetention": {
             "type": "integer",
-            "description": "Per-source override for error log retention. Stored in seconds; JobService DEFAULT_ERROR_LOG_RETENTION is 2592000000 ms = 2592000 s = P30D."
+            "description": "Per-source override for error log retention. Stored in seconds; JobService DEFAULT_ERROR_LOG_RETENTION is 2592000000 ms = 2592000 s = P30D.",
+            "title": "Error Retention"
           },
           "objectCount": {
             "type": "integer",
-            "description": "Cached count of objects in this source's last sync"
+            "description": "Cached count of objects in this source's last sync",
+            "title": "Object Count"
           },
           "test": {
             "type": "boolean",
             "description": "Whether to run in test/dry-run mode",
-            "default": false
+            "default": false,
+            "title": "Test Mode"
           },
           "rateLimitLimit": {
             "type": "integer",
-            "description": "Rate limit cap (requests per window)"
+            "description": "Rate limit cap (requests per window)",
+            "title": "Rate Limit Cap"
           },
           "rateLimitRemaining": {
             "type": "integer",
-            "description": "Remaining requests in the current window"
+            "description": "Remaining requests in the current window",
+            "title": "Rate Limit Remaining"
           },
           "rateLimitReset": {
             "type": "integer",
-            "description": "Unix timestamp when the rate-limit window resets"
+            "description": "Unix timestamp when the rate-limit window resets",
+            "title": "Rate Limit Reset"
           },
           "rateLimitWindow": {
             "type": "integer",
-            "description": "Rate-limit window size in seconds"
+            "description": "Rate-limit window size in seconds",
+            "title": "Rate Limit Window"
           },
           "lastCall": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of the most recent outbound call"
+            "description": "Timestamp of the most recent outbound call",
+            "title": "Last Call"
           },
           "lastSync": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of the most recent successful sync"
+            "description": "Timestamp of the most recent successful sync",
+            "title": "Last Sync"
           },
           "dateCreated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed; mirrors `created` for legacy compatibility"
+            "description": "OR-managed; mirrors `created` for legacy compatibility",
+            "title": "Date Created"
           },
           "dateModified": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed; mirrors `updated` for legacy compatibility"
+            "description": "OR-managed; mirrors `updated` for legacy compatibility",
+            "title": "Date Modified"
           },
           "configurations": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Configuration profile slugs this source participates in"
+            "description": "Configuration profile slugs this source participates in",
+            "title": "Configuration Profiles"
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier for cross-environment portability (local ADR-015)"
+            "description": "Machine-readable identifier for cross-environment portability (local ADR-015)",
+            "title": "Slug"
           }
         },
         "x-openregister-seed": [],
@@ -264,52 +307,62 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID assigned by OpenRegister"
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
           },
           "name": {
             "type": "string",
             "description": "Consumer name",
-            "maxLength": 255
+            "maxLength": 255,
+            "title": "Name"
           },
           "description": {
             "type": "string",
-            "description": "Free-form description"
+            "description": "Free-form description",
+            "title": "Description"
           },
           "domains": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Allowed source domains (CIDR-style or hostname patterns)"
+            "description": "Allowed source domains (CIDR-style or hostname patterns)",
+            "title": "Allowed Domains"
           },
           "ips": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Allowed source IP addresses"
+            "description": "Allowed source IP addresses",
+            "title": "Allowed IPs"
           },
           "authorizationType": {
             "type": "string",
-            "description": "Auth strategy used by this consumer"
+            "description": "Auth strategy used by this consumer",
+            "title": "Authorization Type"
           },
           "authorizationConfiguration": {
             "type": "object",
-            "description": "Provider-specific auth config (plaintext per ADR-007)"
+            "description": "Provider-specific auth config (plaintext per ADR-007)",
+            "title": "Authorization Configuration"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that created the consumer (null for system-created)"
+            "description": "Nextcloud user id that created the consumer (null for system-created)",
+            "title": "User ID"
           }
         },
         "x-openregister-seed": [],
@@ -332,94 +385,113 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "name": {
             "type": "string",
-            "description": "Endpoint name"
+            "description": "Endpoint name",
+            "title": "Name"
           },
           "description": {
             "type": "string",
-            "description": "Free-form description"
+            "description": "Free-form description",
+            "title": "Description"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference (slug)"
+            "description": "Cross-environment reference (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "endpoint": {
             "type": "string",
-            "description": "Path pattern (with optional `{param}` placeholders)"
+            "description": "Path pattern (with optional `{param}` placeholders)",
+            "title": "Endpoint Path"
           },
           "endpointArray": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Parsed endpoint path segments"
+            "description": "Parsed endpoint path segments",
+            "title": "Endpoint Path Segments"
           },
           "endpointRegex": {
             "type": "string",
-            "description": "Compiled regex used by the dispatch router"
+            "description": "Compiled regex used by the dispatch router",
+            "title": "Endpoint Regex"
           },
           "method": {
             "type": "string",
-            "description": "HTTP method (GET/POST/PUT/PATCH/DELETE)"
+            "description": "HTTP method (GET/POST/PUT/PATCH/DELETE)",
+            "title": "HTTP Method"
           },
           "targetType": {
             "type": "string",
-            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`. See local ADR-008."
+            "description": "Polymorphic target kind: `register/schema`, `api`, `job`, `synchronization`. See local ADR-008.",
+            "title": "Target Type"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID (post-chain-B); for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID. See local ADR-008 + chain-B sourceId overload documentation."
+            "description": "Polymorphic target identifier. Shape depends on targetType: for `register/schema` → `<register>/<schema>` slug pair; for `api` → integer Source PK (legacy) or UUID (post-chain-B); for `job` → integer Job PK or UUID; for `synchronization` → integer Synchronization PK or UUID. See local ADR-008 + chain-B sourceId overload documentation.",
+            "title": "Target ID"
           },
           "conditions": {
             "type": "array",
             "items": {
               "type": "object"
             },
-            "description": "Conditional pre-dispatch rules"
+            "description": "Conditional pre-dispatch rules",
+            "title": "Conditions"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "inputMapping": {
             "type": "string",
-            "description": "Mapping slug applied to incoming request payload"
+            "description": "Mapping slug applied to incoming request payload",
+            "title": "Input Mapping"
           },
           "outputMapping": {
             "type": "string",
-            "description": "Mapping slug applied to outgoing response payload"
+            "description": "Mapping slug applied to outgoing response payload",
+            "title": "Output Mapping"
           },
           "rules": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Ordered list of Rule slugs applied to this endpoint"
+            "description": "Ordered list of Rule slugs applied to this endpoint",
+            "title": "Rules"
           },
           "configurations": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Configuration profile slugs this endpoint participates in"
+            "description": "Configuration profile slugs this endpoint participates in",
+            "title": "Configuration Profiles"
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)"
+            "description": "Machine-readable identifier (local ADR-015)",
+            "title": "Slug"
           }
         },
         "x-openregister-seed": [],
@@ -441,64 +513,78 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID (CloudEvents `id` attribute)"
+            "description": "Canonical UUID (CloudEvents `id` attribute)",
+            "title": "UUID"
           },
           "source": {
             "type": "string",
-            "description": "CloudEvents `source` attribute — the producing component identity"
+            "description": "CloudEvents `source` attribute — the producing component identity",
+            "title": "Source"
           },
           "type": {
             "type": "string",
-            "description": "CloudEvents `type` attribute (event-type slug, e.g. `org.openconnector.source.created`)"
+            "description": "CloudEvents `type` attribute (event-type slug, e.g. `org.openconnector.source.created`)",
+            "title": "Type"
           },
           "specversion": {
             "type": "string",
             "description": "CloudEvents spec version",
-            "default": "1.0"
+            "default": "1.0",
+            "title": "Spec Version"
           },
           "time": {
             "type": "string",
             "format": "date-time",
-            "description": "CloudEvents `time` attribute — when the event happened"
+            "description": "CloudEvents `time` attribute — when the event happened",
+            "title": "Time"
           },
           "datacontenttype": {
             "type": "string",
-            "description": "CloudEvents `datacontenttype` (e.g. `application/json`)"
+            "description": "CloudEvents `datacontenttype` (e.g. `application/json`)",
+            "title": "Data Content Type"
           },
           "dataschema": {
             "type": "string",
-            "description": "CloudEvents `dataschema` URI"
+            "description": "CloudEvents `dataschema` URI",
+            "title": "Data Schema"
           },
           "subject": {
             "type": "string",
-            "description": "CloudEvents `subject` (optional sub-context within source)"
+            "description": "CloudEvents `subject` (optional sub-context within source)",
+            "title": "Subject"
           },
           "data": {
             "type": "object",
-            "description": "CloudEvents `data` payload"
+            "description": "CloudEvents `data` payload",
+            "title": "Data Payload"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that produced this event (null for system-produced)"
+            "description": "Nextcloud user id that produced this event (null for system-produced)",
+            "title": "User ID"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "processed": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp when EventService finished fan-out for this event"
+            "description": "Timestamp when EventService finished fan-out for this event",
+            "title": "Processed At"
           },
           "status": {
             "type": "string",
-            "description": "Processing status (pending, processed, failed)"
+            "description": "Processing status (pending, processed, failed)",
+            "title": "Status"
           }
         },
         "x-openregister-seed": [],
@@ -544,40 +630,47 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "eventId": {
             "type": "integer",
-            "description": "Legacy integer FK to event (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)"
+            "description": "Legacy integer FK to event (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)",
+            "title": "Event ID (Legacy)"
           },
           "event": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/event",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to source event (UUID; many-to-one; onDelete=CASCADE — when the source Event is destroyed, all delivery records cascade-delete with it)"
+            "description": "FK to source event (UUID; many-to-one; onDelete=CASCADE — when the source Event is destroyed, all delivery records cascade-delete with it)",
+            "title": "Event"
           },
           "consumerId": {
             "type": "integer",
-            "description": "Legacy integer FK to consumer (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy integer FK to consumer (kept during transition per chain-A REQ-A-008)",
+            "title": "Consumer ID (Legacy)"
           },
           "consumer": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/consumer",
             "x-openregister-onDelete": "SET NULL",
-            "description": "FK to subscriber consumer (UUID; many-to-one; onDelete=SET NULL — when a Consumer is destroyed, delivery records remain for audit but lose their consumer pointer)"
+            "description": "FK to subscriber consumer (UUID; many-to-one; onDelete=SET NULL — when a Consumer is destroyed, delivery records remain for audit but lose their consumer pointer)",
+            "title": "Consumer"
           },
           "subscriptionId": {
             "type": "integer",
-            "description": "Legacy integer FK to event_subscription (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy integer FK to event_subscription (kept during transition per chain-A REQ-A-008)",
+            "title": "Subscription ID (Legacy)"
           },
           "subscription": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/event_subscription",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to matching subscription (UUID; many-to-one; onDelete=CASCADE — when a Subscription is destroyed, its in-flight delivery records cascade-delete)"
+            "description": "FK to matching subscription (UUID; many-to-one; onDelete=CASCADE — when a Subscription is destroyed, its in-flight delivery records cascade-delete)",
+            "title": "Subscription"
           },
           "status": {
             "type": "string",
@@ -588,30 +681,36 @@
               "abandoned",
               "discarded"
             ],
-            "description": "Delivery state. Enforced lifecycle: pending → delivered (terminal, 2xx) | failed (non-2xx/exception, retryCount < maxRetries) → abandoned (terminal, retryCount >= maxRetries). An operator may replay a failed/abandoned message (→ pending) or discard it (→ discarded, terminal); discarded is never swept and never hard-deleted."
+            "description": "Delivery state. Enforced lifecycle: pending → delivered (terminal, 2xx) | failed (non-2xx/exception, retryCount < maxRetries) → abandoned (terminal, retryCount >= maxRetries). An operator may replay a failed/abandoned message (→ pending) or discard it (→ discarded, terminal); discarded is never swept and never hard-deleted.",
+            "title": "Status"
           },
           "payload": {
             "type": "object",
-            "description": "Materialised payload sent to the consumer (may differ from raw event data after mapping)"
+            "description": "Materialised payload sent to the consumer (may differ from raw event data after mapping)",
+            "title": "Payload"
           },
           "lastResponse": {
             "type": "object",
-            "description": "Most recent response from the consumer (status, headers, body)"
+            "description": "Most recent response from the consumer (status, headers, body)",
+            "title": "Last Response"
           },
           "retryCount": {
             "type": "integer",
             "description": "Number of delivery attempts made",
-            "default": 0
+            "default": 0,
+            "title": "Retry Count"
           },
           "lastAttempt": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of most recent delivery attempt"
+            "description": "Timestamp of most recent delivery attempt",
+            "title": "Last Attempt"
           },
           "nextAttempt": {
             "type": "string",
             "format": "date-time",
-            "description": "Scheduled time of next retry (null when terminal state reached)"
+            "description": "Scheduled time of next retry (null when terminal state reached)",
+            "title": "Next Attempt"
           },
           "attempts": {
             "type": "array",
@@ -622,46 +721,56 @@
                 "at": {
                   "type": "string",
                   "format": "date-time",
-                  "description": "ISO 8601 timestamp of the attempt"
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
                 },
                 "statusCode": {
                   "type": "integer",
-                  "description": "HTTP status code returned by the sink, or null on a transport exception"
+                  "description": "HTTP status code returned by the sink, or null on a transport exception",
+                  "title": "HTTP Status Code"
                 },
                 "error": {
                   "type": "string",
-                  "description": "Transport/exception message, or null on an HTTP-level outcome"
+                  "description": "Transport/exception message, or null on an HTTP-level outcome",
+                  "title": "Error Message"
                 }
               }
-            }
+            },
+            "title": "Delivery Attempts"
           },
           "replayedBy": {
             "type": "string",
-            "description": "UID of the operator who last replayed this message out of failed/abandoned"
+            "description": "UID of the operator who last replayed this message out of failed/abandoned",
+            "title": "Replayed By"
           },
           "replayedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of the last operator replay"
+            "description": "Timestamp of the last operator replay",
+            "title": "Replayed At"
           },
           "discardedBy": {
             "type": "string",
-            "description": "UID of the operator who discarded this message"
+            "description": "UID of the operator who discarded this message",
+            "title": "Discarded By"
           },
           "discardedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of the operator discard (terminal)"
+            "description": "Timestamp of the operator discard (terminal)",
+            "title": "Discarded At"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           }
         },
         "x-openregister-seed": [],
@@ -680,69 +789,84 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference (slug)"
+            "description": "Cross-environment reference (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver of subscription configuration",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "source": {
             "type": "string",
-            "description": "CloudEvents source filter (exact match)"
+            "description": "CloudEvents source filter (exact match)",
+            "title": "Source"
           },
           "types": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "List of CloudEvents type filters (any-of match)"
+            "description": "List of CloudEvents type filters (any-of match)",
+            "title": "Event Type Filters"
           },
           "config": {
             "type": "object",
-            "description": "Free-form subscription configuration"
+            "description": "Free-form subscription configuration",
+            "title": "Subscription Configuration"
           },
           "filters": {
             "type": "object",
-            "description": "CloudEvents Subscriptions API filters block"
+            "description": "CloudEvents Subscriptions API filters block",
+            "title": "Subscription Filters"
           },
           "sink": {
             "type": "string",
-            "description": "Delivery target URL (or AMQP/MQTT endpoint)"
+            "description": "Delivery target URL (or AMQP/MQTT endpoint)",
+            "title": "Delivery Sink URL"
           },
           "protocol": {
             "type": "string",
-            "description": "Delivery protocol (HTTP, AMQP, MQTT, NATS)"
+            "description": "Delivery protocol (HTTP, AMQP, MQTT, NATS)",
+            "title": "Delivery Protocol"
           },
           "protocolSettings": {
             "type": "object",
-            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed — when present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted)."
+            "description": "Protocol-specific delivery settings (free-form). Recognised keys: `headers` (object, extra outbound headers); `signingSecret` (string, `whsec_`-prefixed — when present, every push delivery is HMAC-SHA256 signed via the X-OpenConnector-Signature header; redacted on every read surface, set only via the generate/rotate endpoints); `previousSigningSecret` + `secretRotatedAt` (rotation grace, dual-signed for 24h; redacted).",
+            "title": "Protocol Settings"
           },
           "style": {
             "type": "string",
-            "description": "Delivery style (push, pull)"
+            "description": "Delivery style (push, pull)",
+            "title": "Delivery Style"
           },
           "status": {
             "type": "string",
-            "description": "Subscription status (active, paused, expired)"
+            "description": "Subscription status (active, paused, expired)",
+            "title": "Status"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that owns the subscription"
+            "description": "Nextcloud user id that owns the subscription",
+            "title": "User ID"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           }
         },
         "x-openregister-seed": [],
@@ -802,116 +926,141 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "name": {
             "type": "string",
-            "description": "Job name"
+            "description": "Job name",
+            "title": "Name"
           },
           "description": {
             "type": "string",
-            "description": "Free-form description"
+            "description": "Free-form description",
+            "title": "Description"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference (slug)"
+            "description": "Cross-environment reference (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "jobClass": {
             "type": "string",
-            "description": "PHP class name implementing the job logic"
+            "description": "PHP class name implementing the job logic",
+            "title": "Job Class"
           },
           "arguments": {
             "type": "object",
-            "description": "Arguments passed to the job class at invocation"
+            "description": "Arguments passed to the job class at invocation",
+            "title": "Arguments"
           },
           "interval": {
             "type": "integer",
-            "description": "Cron interval in seconds between runs"
+            "description": "Cron interval in seconds between runs",
+            "title": "Interval (Seconds)"
           },
           "executionTime": {
             "type": "integer",
-            "description": "Last execution duration in milliseconds (observability)"
+            "description": "Last execution duration in milliseconds (observability)",
+            "title": "Execution Time"
           },
           "timeSensitive": {
             "type": "boolean",
             "description": "Whether this job has a hard scheduling window",
-            "default": false
+            "default": false,
+            "title": "Time Sensitive"
           },
           "allowParallelRuns": {
             "type": "boolean",
             "description": "Whether multiple instances may run concurrently",
-            "default": false
+            "default": false,
+            "title": "Allow Parallel Runs"
           },
           "isEnabled": {
             "type": "boolean",
             "description": "Whether this job is active",
-            "default": true
+            "default": true,
+            "title": "Enabled"
           },
           "singleRun": {
             "type": "boolean",
             "description": "Whether this is a one-shot job (auto-disabled after success)",
-            "default": false
+            "default": false,
+            "title": "Single Run"
           },
           "scheduleAfter": {
             "type": "string",
             "format": "date-time",
-            "description": "Earliest run time (delayed-start jobs)"
+            "description": "Earliest run time (delayed-start jobs)",
+            "title": "Schedule After"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that owns the job (null for system jobs)"
+            "description": "Nextcloud user id that owns the job (null for system jobs)",
+            "title": "User ID"
           },
           "jobListId": {
             "type": "string",
-            "description": "Nextcloud job-list reference for cross-system tracking"
+            "description": "Nextcloud job-list reference for cross-system tracking",
+            "title": "Job List ID"
           },
           "logRetention": {
             "type": "integer",
-            "description": "Per-job override for success log retention (seconds)"
+            "description": "Per-job override for success log retention (seconds)",
+            "title": "Log Retention"
           },
           "errorRetention": {
             "type": "integer",
-            "description": "Per-job override for error log retention (seconds)"
+            "description": "Per-job override for error log retention (seconds)",
+            "title": "Error Retention"
           },
           "lastRun": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of most recent execution"
+            "description": "Timestamp of most recent execution",
+            "title": "Last Run"
           },
           "nextRun": {
             "type": "string",
             "format": "date-time",
-            "description": "Scheduled time of next execution"
+            "description": "Scheduled time of next execution",
+            "title": "Next Run"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "configurations": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Configuration profile slugs this job participates in"
+            "description": "Configuration profile slugs this job participates in",
+            "title": "Configuration Profiles"
           },
           "status": {
             "type": "string",
-            "description": "Operational status (idle, running, error, disabled)"
+            "description": "Operational status (idle, running, error, disabled)",
+            "title": "Status"
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)"
+            "description": "Machine-readable identifier (local ADR-015)",
+            "title": "Slug"
           }
         },
         "x-openregister-seed": [],
@@ -932,65 +1081,78 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference (slug)"
+            "description": "Cross-environment reference (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "name": {
             "type": "string",
-            "description": "Mapping name"
+            "description": "Mapping name",
+            "title": "Name"
           },
           "description": {
             "type": "string",
-            "description": "Free-form description"
+            "description": "Free-form description",
+            "title": "Description"
           },
           "mapping": {
             "type": "object",
-            "description": "The field-to-field transformation rules (Twig templates or property paths)"
+            "description": "The field-to-field transformation rules (Twig templates or property paths)",
+            "title": "Mapping Rules"
           },
           "unset": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Field paths to remove from the output"
+            "description": "Field paths to remove from the output",
+            "title": "Fields to Unset"
           },
           "cast": {
             "type": "object",
-            "description": "Per-field type-cast directives (e.g. string→int)"
+            "description": "Per-field type-cast directives (e.g. string→int)",
+            "title": "Type Cast Directives"
           },
           "passThrough": {
             "type": "boolean",
             "description": "Whether unmapped fields flow through to the output",
-            "default": true
+            "default": true,
+            "title": "Pass Through"
           },
           "dateCreated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp (legacy column name)"
+            "description": "OR-managed creation timestamp (legacy column name)",
+            "title": "Date Created"
           },
           "dateModified": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp (legacy column name)"
+            "description": "OR-managed update timestamp (legacy column name)",
+            "title": "Date Modified"
           },
           "configurations": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Configuration profile slugs"
+            "description": "Configuration profile slugs",
+            "title": "Configuration Profiles"
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)"
+            "description": "Machine-readable identifier (local ADR-015)",
+            "title": "Slug"
           }
         },
         "x-openregister-seed": [],
@@ -1012,70 +1174,85 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "name": {
             "type": "string",
-            "description": "Rule name"
+            "description": "Rule name",
+            "title": "Name"
           },
           "description": {
             "type": "string",
-            "description": "Free-form description"
+            "description": "Free-form description",
+            "title": "Description"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference (slug)"
+            "description": "Cross-environment reference (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "action": {
             "type": "string",
-            "description": "Action verb (e.g. `error`, `replace`, `appendHeader`)"
+            "description": "Action verb (e.g. `error`, `replace`, `appendHeader`)",
+            "title": "Action"
           },
           "timing": {
             "type": "string",
-            "description": "Pipeline timing slot (pre-request, post-request, pre-response, post-response)"
+            "description": "Pipeline timing slot (pre-request, post-request, pre-response, post-response)",
+            "title": "Timing"
           },
           "conditions": {
             "type": "object",
-            "description": "JsonLogic expression tree (canonical top-level object shape, e.g. {\"and\": [{\"var\": [\"user.email\"]}]}). Backend evaluator (jwadhams/json-logic-php) accepts either object or array; the schema mandates object to match what the visual builder emits."
+            "description": "JsonLogic expression tree (canonical top-level object shape, e.g. {\"and\": [{\"var\": [\"user.email\"]}]}). Backend evaluator (jwadhams/json-logic-php) accepts either object or array; the schema mandates object to match what the visual builder emits.",
+            "title": "Conditions"
           },
           "type": {
             "type": "string",
-            "description": "Rule kind (authorization, transformation, validation, audit)"
+            "description": "Rule kind (authorization, transformation, validation, audit)",
+            "title": "Type"
           },
           "configuration": {
             "type": "object",
-            "description": "Action-specific configuration"
+            "description": "Action-specific configuration",
+            "title": "Configuration"
           },
           "order": {
             "type": "integer",
             "description": "Execution order within its timing slot",
-            "default": 100
+            "default": 100,
+            "title": "Execution Order"
           },
           "configurations": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Configuration profile slugs"
+            "description": "Configuration profile slugs",
+            "title": "Configuration Profiles"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)"
+            "description": "Machine-readable identifier (local ADR-015)",
+            "title": "Slug"
           }
         },
         "x-openregister-seed": [],
@@ -1096,149 +1273,180 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "name": {
             "type": "string",
-            "description": "Synchronization name"
+            "description": "Synchronization name",
+            "title": "Name"
           },
           "description": {
             "type": "string",
-            "description": "Free-form description"
+            "description": "Free-form description",
+            "title": "Description"
           },
           "reference": {
             "type": "string",
-            "description": "Cross-environment reference (slug)"
+            "description": "Cross-environment reference (slug)",
+            "title": "Reference"
           },
           "version": {
             "type": "string",
             "description": "Semver",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "sourceId": {
             "type": "string",
-            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = post-chain-B canonical OR identifier. Chain B's migrator branches on the format to translate (1) to (3). Cross-ref: chain-B REQ on sourceId 3-format branching."
+            "description": "Polymorphic source identifier. Overloaded format: (1) numeric string `'42'` = legacy integer Source PK; (2) `register/schema` slug pair = OR-internal source; (3) UUID string = post-chain-B canonical OR identifier. Chain B's migrator branches on the format to translate (1) to (3). Cross-ref: chain-B REQ on sourceId 3-format branching.",
+            "title": "Source ID"
           },
           "sourceType": {
             "type": "string",
-            "description": "Source kind discriminator (api, register/schema, file)"
+            "description": "Source kind discriminator (api, register/schema, file)",
+            "title": "Source Type"
           },
           "sourceHash": {
             "type": "string",
-            "description": "Hash of last-known source state (for change detection)"
+            "description": "Hash of last-known source state (for change detection)",
+            "title": "Source Hash"
           },
           "sourceHashMapping": {
             "type": "string",
-            "description": "Mapping slug used to compute the source hash"
+            "description": "Mapping slug used to compute the source hash",
+            "title": "Source Hash Mapping"
           },
           "sourceTargetMapping": {
             "type": "string",
-            "description": "Mapping slug for source-to-target field transformation"
+            "description": "Mapping slug for source-to-target field transformation",
+            "title": "Source Target Mapping"
           },
           "sourceConfig": {
             "type": "object",
-            "description": "Source-specific configuration overrides"
+            "description": "Source-specific configuration overrides",
+            "title": "Source Configuration"
           },
           "sourceLastChanged": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent change timestamp from the source side"
+            "description": "Most recent change timestamp from the source side",
+            "title": "Source Last Changed"
           },
           "sourceLastChecked": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful check of the source"
+            "description": "Most recent successful check of the source",
+            "title": "Source Last Checked"
           },
           "sourceLastSynced": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful sync from the source"
+            "description": "Most recent successful sync from the source",
+            "title": "Source Last Synced"
           },
           "currentPage": {
             "type": "integer",
             "description": "Pagination cursor for in-flight sync passes",
-            "default": 1
+            "default": 1,
+            "title": "Current Page"
           },
           "targetId": {
             "type": "string",
-            "description": "Polymorphic target identifier. Same overloaded format as `sourceId`."
+            "description": "Polymorphic target identifier. Same overloaded format as `sourceId`.",
+            "title": "Target ID"
           },
           "targetType": {
             "type": "string",
-            "description": "Target kind discriminator (api, register/schema, file)"
+            "description": "Target kind discriminator (api, register/schema, file)",
+            "title": "Target Type"
           },
           "targetHash": {
             "type": "string",
-            "description": "Hash of last-known target state"
+            "description": "Hash of last-known target state",
+            "title": "Target Hash"
           },
           "targetSourceMapping": {
             "type": "string",
-            "description": "Mapping slug for target-to-source reverse transformation (bidirectional sync)"
+            "description": "Mapping slug for target-to-source reverse transformation (bidirectional sync)",
+            "title": "Target Source Mapping"
           },
           "targetConfig": {
             "type": "object",
-            "description": "Target-specific configuration overrides"
+            "description": "Target-specific configuration overrides",
+            "title": "Target Configuration"
           },
           "targetLastChanged": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent change timestamp from the target side"
+            "description": "Most recent change timestamp from the target side",
+            "title": "Target Last Changed"
           },
           "targetLastChecked": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful check of the target"
+            "description": "Most recent successful check of the target",
+            "title": "Target Last Checked"
           },
           "targetLastSynced": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful sync to the target"
+            "description": "Most recent successful sync to the target",
+            "title": "Target Last Synced"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "conditions": {
             "type": "array",
             "items": {
               "type": "object"
             },
-            "description": "Per-pass conditional filters"
+            "description": "Per-pass conditional filters",
+            "title": "Conditions"
           },
           "followUps": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Synchronization slugs to trigger after this one completes"
+            "description": "Synchronization slugs to trigger after this one completes",
+            "title": "Follow-Up Synchronizations"
           },
           "actions": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Rule slugs applied during sync"
+            "description": "Rule slugs applied during sync",
+            "title": "Actions"
           },
           "configurations": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Configuration profile slugs"
+            "description": "Configuration profile slugs",
+            "title": "Configuration Profiles"
           },
           "status": {
             "type": "string",
-            "description": "Operational status (idle, syncing, error, disabled)"
+            "description": "Operational status (idle, syncing, error, disabled)",
+            "title": "Status"
           },
           "slug": {
             "type": "string",
-            "description": "Machine-readable identifier (local ADR-015)"
+            "description": "Machine-readable identifier (local ADR-015)",
+            "title": "Slug"
           }
         },
         "x-openregister-seed": [],
@@ -1257,90 +1465,109 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "version": {
             "type": "string",
             "description": "Semver of the contract record",
-            "default": "1.0.0"
+            "default": "1.0.0",
+            "title": "Version"
           },
           "synchronizationId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization",
-            "description": "FK to parent Synchronization (UUID; many-to-one)"
+            "description": "FK to parent Synchronization (UUID; many-to-one)",
+            "title": "Synchronization"
           },
           "originId": {
             "type": "string",
-            "description": "Origin-side object identifier (UUID or external system id)"
+            "description": "Origin-side object identifier (UUID or external system id)",
+            "title": "Origin ID"
           },
           "originHash": {
             "type": "string",
-            "description": "Hash of the origin-side object payload at last sync"
+            "description": "Hash of the origin-side object payload at last sync",
+            "title": "Origin Hash"
           },
           "sourceLastChanged": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent change timestamp on the origin side"
+            "description": "Most recent change timestamp on the origin side",
+            "title": "Source Last Changed"
           },
           "sourceLastChecked": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful check of the origin object"
+            "description": "Most recent successful check of the origin object",
+            "title": "Source Last Checked"
           },
           "sourceLastSynced": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful sync from origin"
+            "description": "Most recent successful sync from origin",
+            "title": "Source Last Synced"
           },
           "targetId": {
             "type": "string",
-            "description": "Target-side object identifier"
+            "description": "Target-side object identifier",
+            "title": "Target ID"
           },
           "targetHash": {
             "type": "string",
-            "description": "Hash of the target-side object payload at last sync"
+            "description": "Hash of the target-side object payload at last sync",
+            "title": "Target Hash"
           },
           "targetLastChanged": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent change timestamp on the target side"
+            "description": "Most recent change timestamp on the target side",
+            "title": "Target Last Changed"
           },
           "targetLastChecked": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful check of the target object"
+            "description": "Most recent successful check of the target object",
+            "title": "Target Last Checked"
           },
           "targetLastSynced": {
             "type": "string",
             "format": "date-time",
-            "description": "Most recent successful sync to target"
+            "description": "Most recent successful sync to target",
+            "title": "Target Last Synced"
           },
           "targetLastAction": {
             "type": "string",
-            "description": "Most recent action applied to the target (created, updated, deleted)"
+            "description": "Most recent action applied to the target (created, updated, deleted)",
+            "title": "Target Last Action"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           },
           "sourceId": {
             "type": "string",
-            "description": "Deprecated alias for `originId` — retained for backwards compatibility per chain-A REQ-A-008"
+            "description": "Deprecated alias for `originId` — retained for backwards compatibility per chain-A REQ-A-008",
+            "title": "Source ID"
           },
           "sourceHash": {
             "type": "string",
-            "description": "Deprecated alias for `originHash` — retained for backwards compatibility per chain-A REQ-A-008"
+            "description": "Deprecated alias for `originHash` — retained for backwards compatibility per chain-A REQ-A-008",
+            "title": "Source Hash"
           }
         },
         "x-openregister-seed": [],
@@ -1392,71 +1619,86 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "statusCode": {
             "type": "integer",
-            "description": "HTTP status code returned by the upstream"
+            "description": "HTTP status code returned by the upstream",
+            "title": "HTTP Status Code"
           },
           "statusMessage": {
             "type": "string",
-            "description": "Reason phrase or short error description"
+            "description": "Reason phrase or short error description",
+            "title": "Status Message"
           },
           "request": {
             "type": "object",
-            "description": "Captured outbound request (method, URL, headers, body)"
+            "description": "Captured outbound request (method, URL, headers, body)",
+            "title": "Request"
           },
           "response": {
             "type": "object",
-            "description": "Captured upstream response (status, headers, body)"
+            "description": "Captured upstream response (status, headers, body)",
+            "title": "Response"
           },
           "sourceId": {
             "type": "integer",
-            "description": "Legacy integer FK to source (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)"
+            "description": "Legacy integer FK to source (kept during transition per chain-A REQ-A-008; cleanup tracked at #821)",
+            "title": "Source ID"
           },
           "source": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/source",
             "x-openregister-onDelete": "SET NULL",
-            "description": "FK to originating Source (UUID; many-to-one; onDelete=SET NULL — when a Source is destroyed, its CallLog rows remain for audit but lose their source pointer)"
+            "description": "FK to originating Source (UUID; many-to-one; onDelete=SET NULL — when a Source is destroyed, its CallLog rows remain for audit but lose their source pointer)",
+            "title": "Source"
           },
           "actionId": {
             "type": "integer",
-            "description": "Polymorphic integer FK to the action that triggered this call. Target schema unresolved — see chain-B DEFERRED Q2."
+            "description": "Polymorphic integer FK to the action that triggered this call. Target schema unresolved — see chain-B DEFERRED Q2.",
+            "title": "Action ID (Legacy)"
           },
           "synchronizationId": {
             "type": "integer",
-            "description": "Legacy integer FK to synchronization (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy integer FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization",
             "x-openregister-onDelete": "SET NULL",
-            "description": "FK to originating Synchronization (UUID; many-to-one; onDelete=SET NULL — when a Synchronization is destroyed, its CallLog rows remain for audit)"
+            "description": "FK to originating Synchronization (UUID; many-to-one; onDelete=SET NULL — when a Synchronization is destroyed, its CallLog rows remain for audit)",
+            "title": "Synchronization"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id at the time of the call (null for system calls)"
+            "description": "Nextcloud user id at the time of the call (null for system calls)",
+            "title": "User ID"
           },
           "sessionId": {
             "type": "string",
-            "description": "Session token for correlating multi-call traces"
+            "description": "Session token for correlating multi-call traces",
+            "title": "Session ID"
           },
           "expires": {
             "type": "string",
             "format": "date-time",
-            "description": "Computed retention horizon — when this log row becomes eligible for archival"
+            "description": "Computed retention horizon — when this log row becomes eligible for archival",
+            "title": "Expires At"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "size": {
             "type": "integer",
-            "description": "Combined request+response byte size for storage accounting"
+            "description": "Combined request+response byte size for storage accounting",
+            "title": "Size (Bytes)"
           }
         },
         "x-openregister-seed": [],
@@ -1525,77 +1767,94 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "level": {
             "type": "string",
-            "description": "Log level (info, warning, error)"
+            "description": "Log level (info, warning, error)",
+            "title": "Log Level"
           },
           "message": {
             "type": "string",
-            "description": "Free-form log message"
+            "description": "Free-form log message",
+            "title": "Message"
           },
           "jobId": {
             "type": "string",
-            "description": "Legacy string FK to job (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy string FK to job (kept during transition per chain-A REQ-A-008)",
+            "title": "Job ID (Legacy)"
           },
           "job": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/job",
-            "description": "FK to executing Job (UUID; many-to-one)"
+            "description": "FK to executing Job (UUID; many-to-one)",
+            "title": "Job"
           },
           "jobListId": {
             "type": "string",
-            "description": "Nextcloud job-list reference"
+            "description": "Nextcloud job-list reference",
+            "title": "Job List ID"
           },
           "jobClass": {
             "type": "string",
-            "description": "PHP class that executed the job (denormalised for log archival)"
+            "description": "PHP class that executed the job (denormalised for log archival)",
+            "title": "Job Class"
           },
           "arguments": {
             "type": "object",
-            "description": "Arguments passed at invocation (denormalised)"
+            "description": "Arguments passed at invocation (denormalised)",
+            "title": "Arguments"
           },
           "executionTime": {
             "type": "integer",
-            "description": "Execution duration in milliseconds"
+            "description": "Execution duration in milliseconds",
+            "title": "Execution Time"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id (null for system jobs)"
+            "description": "Nextcloud user id (null for system jobs)",
+            "title": "User ID"
           },
           "sessionId": {
             "type": "string",
-            "description": "Session token for multi-event correlation"
+            "description": "Session token for multi-event correlation",
+            "title": "Session ID"
           },
           "stackTrace": {
             "type": "object",
-            "description": "Captured exception stack (when level=error)"
+            "description": "Captured exception stack (when level=error)",
+            "title": "Stack Trace"
           },
           "expires": {
             "type": "string",
             "format": "date-time",
-            "description": "Computed retention horizon"
+            "description": "Computed retention horizon",
+            "title": "Expires At"
           },
           "lastRun": {
             "type": "string",
             "format": "date-time",
-            "description": "Job's lastRun snapshot at log time"
+            "description": "Job's lastRun snapshot at log time",
+            "title": "Last Run"
           },
           "nextRun": {
             "type": "string",
             "format": "date-time",
-            "description": "Job's nextRun snapshot at log time"
+            "description": "Job's nextRun snapshot at log time",
+            "title": "Next Run"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "size": {
             "type": "integer",
-            "description": "Approximate row size for storage accounting"
+            "description": "Approximate row size for storage accounting",
+            "title": "Size (Bytes)"
           }
         },
         "x-openregister-seed": [],
@@ -1658,61 +1917,74 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "message": {
             "type": "string",
-            "description": "Free-form log message"
+            "description": "Free-form log message",
+            "title": "Message"
           },
           "synchronizationId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization",
-            "description": "FK to executing Synchronization (UUID; many-to-one)"
+            "description": "FK to executing Synchronization (UUID; many-to-one)",
+            "title": "Synchronization"
           },
           "result": {
             "type": "object",
-            "description": "Sync pass result summary (counts, errors, durations)"
+            "description": "Sync pass result summary (counts, errors, durations)",
+            "title": "Result"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that triggered the sync (null for cron-triggered)"
+            "description": "Nextcloud user id that triggered the sync (null for cron-triggered)",
+            "title": "User ID"
           },
           "sessionId": {
             "type": "string",
-            "description": "Session token for multi-event correlation"
+            "description": "Session token for multi-event correlation",
+            "title": "Session ID"
           },
           "test": {
             "type": "boolean",
             "description": "Whether this entry comes from a dry-run/test execution",
-            "default": false
+            "default": false,
+            "title": "Test Mode"
           },
           "force": {
             "type": "boolean",
             "description": "Whether this entry comes from a forced (skip-hash) execution",
-            "default": false
+            "default": false,
+            "title": "Force Execution"
           },
           "executionTime": {
             "type": "integer",
-            "description": "Execution duration in milliseconds"
+            "description": "Execution duration in milliseconds",
+            "title": "Execution Time"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "expires": {
             "type": "string",
             "format": "date-time",
-            "description": "Computed retention horizon"
+            "description": "Computed retention horizon",
+            "title": "Expires At"
           },
           "size": {
             "type": "integer",
-            "description": "Approximate row size for storage accounting"
+            "description": "Approximate row size for storage accounting",
+            "title": "Size (Bytes)"
           }
         },
         "x-openregister-seed": [],
@@ -1748,86 +2020,104 @@
         "properties": {
           "uuid": {
             "type": "string",
-            "description": "Canonical UUID"
+            "description": "Canonical UUID",
+            "title": "UUID"
           },
           "message": {
             "type": "string",
-            "description": "Free-form log message"
+            "description": "Free-form log message",
+            "title": "Message"
           },
           "synchronizationId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)"
+            "description": "Legacy string FK to synchronization (kept during transition per chain-A REQ-A-008)",
+            "title": "Synchronization ID (Legacy)"
           },
           "synchronization": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization",
-            "description": "FK to parent Synchronization (UUID; many-to-one)"
+            "description": "FK to parent Synchronization (UUID; many-to-one)",
+            "title": "Synchronization"
           },
           "synchronizationContractId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization_contract (kept during transition)"
+            "description": "Legacy string FK to synchronization_contract (kept during transition)",
+            "title": "Synchronization Contract ID (Legacy)"
           },
           "synchronization_contract": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_contract",
             "x-openregister-onDelete": "CASCADE",
-            "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)"
+            "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)",
+            "title": "Synchronization Contract"
           },
           "synchronizationLogId": {
             "type": "string",
-            "description": "Legacy string FK to synchronization_log (kept during transition)"
+            "description": "Legacy string FK to synchronization_log (kept during transition)",
+            "title": "Synchronization Log ID (Legacy)"
           },
           "synchronization_log": {
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_log",
-            "description": "FK to parent synchronization_log entry (UUID; many-to-one)"
+            "description": "FK to parent synchronization_log entry (UUID; many-to-one)",
+            "title": "Synchronization Log"
           },
           "source": {
             "type": "object",
-            "description": "Source-side object payload snapshot at sync time"
+            "description": "Source-side object payload snapshot at sync time",
+            "title": "Source"
           },
           "target": {
             "type": "object",
-            "description": "Target-side object payload snapshot at sync time"
+            "description": "Target-side object payload snapshot at sync time",
+            "title": "Target Snapshot"
           },
           "targetResult": {
             "type": "string",
-            "description": "Action taken on target (created, updated, deleted, skipped, error)"
+            "description": "Action taken on target (created, updated, deleted, skipped, error)",
+            "title": "Target Result"
           },
           "userId": {
             "type": "string",
-            "description": "Nextcloud user id that triggered the sync"
+            "description": "Nextcloud user id that triggered the sync",
+            "title": "User ID"
           },
           "sessionId": {
             "type": "string",
-            "description": "Session token for multi-event correlation"
+            "description": "Session token for multi-event correlation",
+            "title": "Session ID"
           },
           "test": {
             "type": "boolean",
             "description": "Whether this entry comes from a dry-run/test execution",
-            "default": false
+            "default": false,
+            "title": "Test Mode"
           },
           "force": {
             "type": "boolean",
             "description": "Whether this entry comes from a forced execution",
-            "default": false
+            "default": false,
+            "title": "Force Execution"
           },
           "expires": {
             "type": "string",
             "format": "date-time",
-            "description": "Computed retention horizon"
+            "description": "Computed retention horizon",
+            "title": "Expires At"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "size": {
             "type": "integer",
-            "description": "Approximate row size for storage accounting"
+            "description": "Approximate row size for storage accounting",
+            "title": "Size (Bytes)"
           }
         },
         "x-openregister-seed": [],
@@ -1869,7 +2159,8 @@
           "zaakId": {
             "type": "string",
             "format": "uuid",
-            "description": "Source zaak UUID in Procest"
+            "description": "Source zaak UUID in Procest",
+            "title": "Zaak ID"
           },
           "risType": {
             "type": "string",
@@ -1877,15 +2168,18 @@
               "ibabs",
               "notubiz"
             ],
-            "description": "Which RIS was used"
+            "description": "Which RIS was used",
+            "title": "RIS Type"
           },
           "risDocumentId": {
             "type": "string",
-            "description": "Document or vergaderstuk ID in the RIS"
+            "description": "Document or vergaderstuk ID in the RIS",
+            "title": "RIS Document ID"
           },
           "risVergaderingId": {
             "type": "string",
-            "description": "Vergadering ID in the RIS"
+            "description": "Vergadering ID in the RIS",
+            "title": "RIS Vergadering ID"
           },
           "direction": {
             "type": "string",
@@ -1893,7 +2187,8 @@
               "outbound",
               "inbound"
             ],
-            "description": "Push (outbound) or pull (inbound)"
+            "description": "Push (outbound) or pull (inbound)",
+            "title": "Sync Direction"
           },
           "status": {
             "type": "string",
@@ -1903,33 +2198,39 @@
               "failed",
               "conflict"
             ],
-            "description": "Current sync state"
+            "description": "Current sync state",
+            "title": "Status"
           },
           "syncedAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Timestamp of last successful sync"
+            "description": "Timestamp of last successful sync",
+            "title": "Synced At"
           },
           "retryCount": {
             "type": "integer",
             "default": 0,
-            "description": "Number of retries attempted"
+            "description": "Number of retries attempted",
+            "title": "Retry Count"
           },
           "nextRetryAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Scheduled time for next retry"
+            "description": "Scheduled time for next retry",
+            "title": "Next Retry At"
           },
           "errorMessage": {
             "type": "string",
-            "description": "Error details if status is failed"
+            "description": "Error details if status is failed",
+            "title": "Error Message"
           },
           "documents": {
             "type": "array",
             "items": {
               "type": "object"
             },
-            "description": "List of document references (Nextcloud file ID + RIS doc ID)"
+            "description": "List of document references (Nextcloud file ID + RIS doc ID)",
+            "title": "Documents"
           },
           "besluitStatus": {
             "type": "string",
@@ -1939,26 +2240,31 @@
               "aangehouden",
               "doorgeschoven"
             ],
-            "description": "Besluit result from the RIS"
+            "description": "Besluit result from the RIS",
+            "title": "Besluit Status"
           },
           "paraferingStatus": {
             "type": "object",
-            "description": "Current parafering progress (completed/total, current step)"
+            "description": "Current parafering progress (completed/total, current step)",
+            "title": "Parafering Status"
           },
           "sourceId": {
             "type": "string",
             "format": "uuid",
-            "description": "UUID of the Source entity used for this sync"
+            "description": "UUID of the Source entity used for this sync",
+            "title": "Source ID"
           },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed creation timestamp"
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
           },
           "updated": {
             "type": "string",
             "format": "date-time",
-            "description": "OR-managed update timestamp"
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           }
         },
         "x-openregister-seed": [
