@@ -849,7 +849,11 @@
         "Replay this message now?": "Kas saata see sõnum nüüd uuesti?",
         "Replayed by {who} at {when}": "Uuesti saatis {who} kell {when}",
         "Retries": "Korduskatsed",
-        "Subscription": "Tellimus"
+        "Subscription": "Tellimus",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

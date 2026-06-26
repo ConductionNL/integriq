@@ -18,6 +18,7 @@
 
 namespace OCA\OpenConnector\Controller;
 
+use DateTime;
 use Exception;
 use OCA\OpenConnector\Exception\InvalidMessageStateException;
 use OCA\OpenConnector\Service\ActionAuthService;
@@ -500,7 +501,7 @@ class EventsController extends Controller
         $newSecret = $this->signatureService->generateSecret();
         $protocolSettings['previousSigningSecret'] = $current;
         $protocolSettings['signingSecret']         = $newSecret;
-        $protocolSettings['secretRotatedAt']       = (new \DateTime())->format('c');
+        $protocolSettings['secretRotatedAt']       = (new DateTime())->format('c');
         $data['protocolSettings'] = $protocolSettings;
 
         $saved = $this->orObjectService->saveObject(

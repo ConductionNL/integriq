@@ -849,7 +849,11 @@
         "Visual builder": "Vizuálny zostavovač",
         "We encountered an unexpected problem": "Narazili sme na neočakávaný problém",
         "When (conditions)": "Kedy (podmienky)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Keď je povolené, synchronizácia stále beží, ale pravidlo zachová pôvodné telo odpovede namiesto jeho nahradenia."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Keď je povolené, synchronizácia stále beží, ale pravidlo zachová pôvodné telo odpovede namiesto jeho nahradenia.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

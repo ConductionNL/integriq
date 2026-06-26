@@ -67,6 +67,11 @@ foreach ($routes as $route) {
         continue;
     }
     [$ctl, $method] = explode('#', $route['name'], 2);
+    // Skip routes served by OR AppHost controllers (registered via DI alias
+    // in Application::registerAppHostBoilerplate, not as physical files).
+    if (str_starts_with($ctl, 'AppHost\\')) {
+        continue;
+    }
     // Nextcloud's route → controller resolution is case-insensitive on the
     // controller segment. Try common transforms: ucfirst (lowerCamel →
     // PascalCase) and all-uppercase (e.g. dso → DSO).

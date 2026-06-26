@@ -839,7 +839,7 @@ class SynchronizationService
             return null;
         }
 
-        return new \DateTime('now +'.max($retentions).'milliseconds');
+        return new DateTime('now +'.max($retentions).'milliseconds');
     }//end calculateExpires()
 
     /**
@@ -1697,7 +1697,7 @@ class SynchronizationService
         );
 
         // Finalize log.
-        $executionTime = round((microtime(true) - $startTime) * 1000);
+        $executionTime = (int) round((microtime(true) - $startTime) * 1000);
         $log->setExecutionTime($executionTime);
         $log->setMessage('Success');
         $log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
@@ -1712,11 +1712,11 @@ class SynchronizationService
      * @param array $synchronization The synchronization containing the source config.
      * @param array $object          The object to extract the origin id from.
      *
-     * @return string|int The origin id.
+     * @return string The origin id.
      *
      * @throws Exception
      */
-    private function getOriginId(array $synchronization, array $object): int|string
+    private function getOriginId(array $synchronization, array $object): string
     {
         // Default ID position is 'id' if not specified in source config.
         $originIdPosition = 'id';
@@ -3928,9 +3928,12 @@ class SynchronizationService
 
         $serializedObject = $object->jsonSerialize();
 
+        $flowToken = new FlowToken(syncInputOriginal: $serializedObject);
+
         $synchronizationContract = $this->synchronizeContract(
             synchronizationContract: $synchronizationContract,
             synchronization: $synchronization,
+            flowToken: $flowToken,
             object: $serializedObject,
             isTest: $test,
             force: $force,
@@ -4595,7 +4598,7 @@ class SynchronizationService
      * @param string|null     $published  A reference to the published status (if available) that will be updated.
      * @param int|string|null $registerId A reference to the registerId (if available) that will be updated.
      *
-     * @return string The extracted endpoint from the data.
+     * @return mixed The extracted endpoint from the data, or null if not found.
      */
     private function getFileContext(
         array $config,
@@ -4605,7 +4608,7 @@ class SynchronizationService
         ?string &$objectId=null,
         ?string &$published=null,
         int|string|null &$registerId=null
-    ) {
+    ): mixed {
         $dataDot = new Dot($endpoint);
         if (isset($config['objectIdPath']) === true && empty($config['objectIdPath']) === false) {
             $objectId = $dataDot->get($config['objectIdPath']);

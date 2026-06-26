@@ -45,6 +45,9 @@ use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingCli
 use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
 use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use GuzzleHttp\Client as GuzzleHttpClient;
+use OCA\OpenConnector\Controller\HealthController;
+use OCA\OpenConnector\Controller\MetricsController;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -201,7 +204,7 @@ class Application extends App implements IBootstrap
             PdokGeocodingClientHttp::class,
             static function ($c) {
                 return new PdokGeocodingClientHttp(
-                    httpClient: new \GuzzleHttp\Client(),
+                    httpClient: new GuzzleHttpClient(),
                     logger: $c->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -210,7 +213,7 @@ class Application extends App implements IBootstrap
             PdokWmsClientHttp::class,
             static function ($c) {
                 return new PdokWmsClientHttp(
-                    httpClient: new \GuzzleHttp\Client(),
+                    httpClient: new GuzzleHttpClient(),
                     logger: $c->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -219,7 +222,7 @@ class Application extends App implements IBootstrap
             PdokWfsClientHttp::class,
             static function ($c) {
                 return new PdokWfsClientHttp(
-                    httpClient: new \GuzzleHttp\Client(),
+                    httpClient: new GuzzleHttpClient(),
                     logger: $c->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -324,11 +327,11 @@ class Application extends App implements IBootstrap
         // engine collaborators resolved from OpenRegister's app container,
         // scoped to this app's manifest via appName.
         $context->registerService(
-            \OCA\OpenConnector\Controller\HealthController::class,
+            HealthController::class,
             static function (ContainerInterface $c) {
                 // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-                return new \OCA\OpenConnector\Controller\HealthController(
+                return new HealthController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
                     manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -341,11 +344,11 @@ class Application extends App implements IBootstrap
         // /api/metrics, route name metrics#index — both unchanged). Admin-only
         // posture is engine-owned and re-declared on the subclass method.
         $context->registerService(
-            \OCA\OpenConnector\Controller\MetricsController::class,
+            MetricsController::class,
             static function (ContainerInterface $c) {
                 // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-                return new \OCA\OpenConnector\Controller\MetricsController(
+                return new MetricsController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
                     manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),

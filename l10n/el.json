@@ -849,7 +849,11 @@
         "Visual builder": "Οπτικός δομητής",
         "We encountered an unexpected problem": "Αντιμετωπίσαμε ένα απροσδόκητο πρόβλημα",
         "When (conditions)": "When (συνθήκες)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Όταν είναι ενεργοποιημένο, ο συγχρονισμός εκτελείται ακόμη, αλλά ο κανόνας διατηρεί το αρχικό σώμα απόκρισης αντί να το αντικαταστήσει."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Όταν είναι ενεργοποιημένο, ο συγχρονισμός εκτελείται ακόμη, αλλά ο κανόνας διατηρεί το αρχικό σώμα απόκρισης αντί να το αντικαταστήσει.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service;
 
+use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Files\IRootFolder;
 use Psr\Log\LoggerInterface;
@@ -413,7 +415,7 @@ class IBabsConnectorService
             return null;
         }
 
-        $now      = new \DateTime();
+        $now      = new DateTime();
         $upcoming = array_filter(
             $vergaderingen,
             static function (array $v) use ($now): bool {
@@ -423,7 +425,7 @@ class IBabsConnectorService
                 }
 
                 try {
-                    return new \DateTime($datum) > $now;
+                    return new DateTime($datum) > $now;
                 } catch (\Exception) {
                     return false;
                 }

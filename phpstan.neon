@@ -19,6 +19,12 @@ parameters:
         # available at runtime (registered via IntegrationRegistry at app boot).
         # PHPStan cannot baseline "extends unknown class" errors — exclusion is required.
         - lib/Service/Integration/SynchronizationContractProvider.php
+        # HealthController and MetricsController extend GenericHealthController /
+        # GenericMetricsController from OCA\OpenRegister\AppHost which is only
+        # available at runtime. PHPStan cannot baseline these "extends unknown class"
+        # errors — exclusion is required (same pattern as SynchronizationContractProvider).
+        - lib/Controller/HealthController.php
+        - lib/Controller/MetricsController.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
@@ -61,3 +67,9 @@ parameters:
         - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
         - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
         - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'
+        # HealthController and MetricsController are excluded from analysis (they extend
+        # unknown OR classes) — Application.php registers them via DI without knowing
+        # the parent constructor. The "does not have a constructor" error in Application.php
+        # is a downstream effect of the excludePaths exclusion.
+        - '#Class OCA\\OpenConnector\\Controller\\HealthController does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Controller\\MetricsController does not have a constructor#'
