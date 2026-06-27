@@ -389,7 +389,7 @@ class StUFBGService
         $scopeKids = $scope->children($bgNs);
         if (isset($scopeKids->object) === true) {
             $objectChildren = $scopeKids->object->children($bgNs);
-            for ($objectChildren->rewind(); $objectChildren->valid(); $objectChildren->next()) {
+            for ($objectChildren->rewind(); $objectChildren->valid() === true; $objectChildren->next()) {
                 $fields[] = $objectChildren->key();
             }
         }
