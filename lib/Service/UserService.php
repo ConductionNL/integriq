@@ -808,5 +808,4 @@ class UserService
             $this->setCustomNameFields(user: $user, nameFields: $nameFields);
         }
     }//end updateProfileProperties()
-
 }//end class

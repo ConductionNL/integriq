@@ -1825,7 +1825,11 @@ class EndpointService
             return $data;
         }
 
-        $data['body'] = is_bool($object) === true ? ['unlocked' => $object] : $object;
+        if (is_bool($object) === true) {
+            $data['body'] = ['unlocked' => $object];
+        } else {
+            $data['body'] = $object;
+        }
 
         return $data;
     }//end processLockingRule()
@@ -2363,7 +2367,6 @@ class EndpointService
              */
 
             // OpenRegister beta FileService::getFile() has no version argument yet.
-            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
             $file = $fileService->getFile(object: $object, file: $filename);
         } else if (isset($data['parameters']['versie']) === true) {
             /*
@@ -2372,8 +2375,7 @@ class EndpointService
              * @TODO: This can be nicer by mapping, but let's first get something sure.
              */
 
-            // OpenRegister beta FileService::getFile() has no version argument yet.
-            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
+            // OpenRegister beta FileService::getFile() has no versie argument yet.
             $file = $fileService->getFile(object: $object, file: $filename);
         } else {
             /*

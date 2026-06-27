@@ -69,7 +69,11 @@ final class PdokWfsClientHttp extends PdokWfsClient
         private readonly LoggerInterface $logger,
         ?string $baseUri=null
     ) {
-        $this->baseUri = ($baseUri !== null && $baseUri !== '') ? $baseUri : self::DEFAULT_BASE_URI;
+        if ($baseUri !== null && $baseUri !== '') {
+            $this->baseUri = $baseUri;
+        } else {
+            $this->baseUri = self::DEFAULT_BASE_URI;
+        }
 
     }//end __construct()
 

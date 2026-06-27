@@ -334,8 +334,8 @@ class EventService
                     );
 
             if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-                $now             = (new DateTime())->format('c');
-                $priorAttempts   = (array) ($messageData['attempts'] ?? []);
+                $now           = (new DateTime())->format('c');
+                $priorAttempts = (array) ($messageData['attempts'] ?? []);
                 $messageData['status']           = 'delivered';
                 $messageData['deliveredAt']      = $now;
                 $messageData['lastAttempt']      = $now;

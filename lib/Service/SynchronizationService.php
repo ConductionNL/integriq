@@ -2185,6 +2185,8 @@ class SynchronizationService
      *                                                            'create', 'update' or 'delete'. Used for
      *                                                            syncs to external sources.
      *
+     * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     *
      * @return array|Exception
      *
      * @throws ContainerExceptionInterface
@@ -2206,7 +2208,9 @@ class SynchronizationService
         $contractLog = null;
 
         // We are doing something so lets log it.
-        if (isset($synchronizationContract['id']) === true && $synchronizationContract['id'] !== null && $this->synchronizationContractLogService !== null) {
+        $hasContractId = isset($synchronizationContract['id']) === true && $synchronizationContract['id'] !== null;
+        $hasLogService = $this->synchronizationContractLogService !== null;
+        if ($hasContractId === true && $hasLogService === true) {
             $contractLog = $this->synchronizationContractLogService->createFromArray(
                 object: [
                     'synchronizationId'         => ($synchronization['id'] ?? null),

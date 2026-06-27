@@ -74,10 +74,13 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
         private readonly LoggerInterface $logger,
         ?string $baseUri=null
     ) {
-        $this->baseUri = rtrim(
-            ($baseUri !== null && $baseUri !== '') ? $baseUri : self::DEFAULT_BASE_URI,
-            '/'
-        ).'/';
+        if ($baseUri !== null && $baseUri !== '') {
+            $resolvedUri = $baseUri;
+        } else {
+            $resolvedUri = self::DEFAULT_BASE_URI;
+        }
+
+        $this->baseUri = rtrim($resolvedUri, '/').'/';
 
     }//end __construct()
 
