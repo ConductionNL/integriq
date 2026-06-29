@@ -122,6 +122,8 @@ jobs:
           node-version: ${{ inputs.node-version }}
 
       - name: Install composer deps (production)
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: composer install --no-dev --no-interaction --no-progress --prefer-dist
 
       - name: Install npm deps + Newman
@@ -151,6 +153,8 @@ jobs:
         # The app under test stores its objects in OpenRegister, so OR must be
         # deployed+enabled regardless of which app we're testing. When the app
         # UNDER TEST *is* openregister, this single deploy covers it.
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
         run: |
           if [ "${{ inputs.is-openregister }}" = "true" ]; then
             OR_SRC="."
