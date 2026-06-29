@@ -35,6 +35,7 @@ permissions:
 jobs:
   live:
     uses: ./.forgejo/workflows/tests-live.yml
+    secrets: inherit
     with:
       app-id: openconnector
       is-openregister: false
