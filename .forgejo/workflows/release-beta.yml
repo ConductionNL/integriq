@@ -1,0 +1,142 @@
+name: Beta Release
+
+on:
+  push:
+    branches: ['feat/file-upload-intern-to-extern']
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+
+    steps:
+      - name: Install base tooling
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq git curl php8.2 php8.2-cli php8.2-xml php8.2-mbstring php8.2-zip rsync openssl
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+          npm install -g \
+            semantic-release \
+            @semantic-release/git \
+            @semantic-release/changelog \
+            @semantic-release/exec \
+            conventional-changelog-conventionalcommits
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write semantic-release config
+        run: |
+          cat > .releaserc.json << 'EOF'
+          {
+            "branches": [
+              "main",
+              {"name": "beta", "prerelease": true},
+              {"name": "feat/file-upload-intern-to-extern", "prerelease": "file-upload"}
+            ],
+            "tagFormat": "v${version}",
+            "plugins": [
+              ["@semantic-release/commit-analyzer", {
+                "preset": "conventionalcommits",
+                "releaseRules": [
+                  {"type": "feat",     "release": "minor"},
+                  {"type": "fix",      "release": "patch"},
+                  {"type": "perf",     "release": "patch"},
+                  {"type": "revert",   "release": "patch"},
+                  {"type": "docs",     "release": false},
+                  {"type": "style",    "release": false},
+                  {"type": "refactor", "release": false},
+                  {"type": "test",     "release": false},
+                  {"type": "build",    "release": false},
+                  {"type": "ci",       "release": false},
+                  {"type": "chore",    "release": false}
+                ]
+              }],
+              "@semantic-release/release-notes-generator",
+              ["@semantic-release/exec", {
+                "prepareCmd": "bash prepare.sh ${nextRelease.version}",
+                "publishCmd": "bash publish.sh ${nextRelease.version} ${nextRelease.notes}"
+              }],
+              ["@semantic-release/git", {
+                "assets": ["appinfo/info.xml"],
+                "message": "chore(release): ${nextRelease.version} [skip ci]"
+              }]
+            ]
+          }
+          EOF
+
+      - name: Write prepare script
+        run: |
+          cat > prepare.sh << 'SCRIPT'
+          #!/bin/bash
+          set -e
+          VERSION=$1
+          echo "Preparing version $VERSION"
+
+          # Update version in appinfo/info.xml
+          sed -i "s|<version>.*</version>|<version>${VERSION}</version>|" appinfo/info.xml
+
+          # Install PHP dependencies
+          composer install --no-dev --optimize-autoloader
+
+          # Install and build JS
+          npm ci
+          npm run build
+
+          # Package
+          mkdir -p /tmp/build
+          rsync -a --exclude='.git' --exclude='node_modules' --exclude='.forgejo' \
+            --exclude='tests' --exclude='coverage*' --exclude='*.lock' \
+            . /tmp/build/openconnector/
+          cd /tmp/build
+          tar -czf openconnector-${VERSION}.tar.gz openconnector/
+          mv openconnector-${VERSION}.tar.gz $GITHUB_WORKSPACE/
+          SCRIPT
+          chmod +x prepare.sh
+
+      - name: Write publish script
+        run: |
+          cat > publish.sh << 'SCRIPT'
+          #!/bin/bash
+          set -e
+          VERSION=$1
+          NOTES=$2
+          TARBALL="openconnector-${VERSION}.tar.gz"
+
+          # Create release on Codeberg
+          RELEASE_ID=$(curl -s -X POST \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://codeberg.org/api/v1/repos/${CODEBERG_USERNAME}/openconnector/releases" \
+            -d "{
+              \"tag_name\": \"v${VERSION}\",
+              \"name\": \"v${VERSION}\",
+              \"body\": $(echo "$NOTES" | jq -Rs .),
+              \"prerelease\": true,
+              \"draft\": false
+            }" | jq -r '.id')
+
+          # Upload tarball asset
+          curl -s -X POST \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"${TARBALL}" \
+            "https://codeberg.org/api/v1/repos/${CODEBERG_USERNAME}/openconnector/releases/${RELEASE_ID}/assets?name=${TARBALL}"
+
+          echo "Released v${VERSION} on Codeberg"
+          SCRIPT
+          chmod +x publish.sh
+
+      - name: Run semantic-release
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          CODEBERG_USERNAME: ${{ secrets.CODEBERG_USERNAME }}
+          GIT_AUTHOR_NAME: 'semantic-release-bot'
+          GIT_AUTHOR_EMAIL: 'semantic-release-bot@example.com'
+          GIT_COMMITTER_NAME: 'semantic-release-bot'
+          GIT_COMMITTER_EMAIL: 'semantic-release-bot@example.com'
+        run: npx semantic-release
