@@ -22,5 +22,5 @@
 - Bug fixes for this release
 
 ### Added
-- Initial release
+- Initial release 
 
