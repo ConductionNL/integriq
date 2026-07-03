@@ -29,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Write semantic-release config
+      - name: Write semantic-release config 
         run: |
           cat > .releaserc.json << 'EOF'
           {
