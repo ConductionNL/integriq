@@ -65,17 +65,28 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-unit:
     name: PHPUnit unit (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
+      image: php:8.3-cli
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          # Node is required by actions/checkout@v4 (a JS action) which runs
+          # inside this php:8.3-cli container; the stock image ships no node.
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install composer deps
-        env:
-          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
-        run: composer install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite (phpunit-unit.xml)
         # unit-gating=false reports failures without failing the job, for apps
@@ -88,12 +99,12 @@ jobs:
   # ---------------------------------------------------------------------------
   l10n-check:
     name: l10n extraction check (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Assert every t() source string is in l10n/en.json
         run: node tests/l10n/check-l10n.js
@@ -102,18 +113,19 @@ jobs:
   # HARD GATE 3 — frontend unit suite (Vitest, OFFLINE; no NC needed).
   #
   # Runs the pure-logic Vitest suite under tests/vitest/** (Pinia store
-  # state transitions, util/formatter calc, form-validation mappers). These
-  # need no DOM/NC runtime — @nextcloud/* and @conduction/nextcloud-vue are
-  # aliased to deterministic stubs in vitest.config.js. Always gating.
+  # state transitions, util/formatter calc, form-validation mappers, and any
+  # offline component mounts). These need no DOM/NC runtime — @nextcloud/* and
+  # @conduction/nextcloud-vue are aliased to deterministic stubs in
+  # vitest.config.js. Always gating.
   # ---------------------------------------------------------------------------
   frontend-unit:
     name: Frontend unit (Vitest — ${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install npm deps
         run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
@@ -130,13 +142,26 @@ jobs:
   # ---------------------------------------------------------------------------
   phpunit-coverage-ratchet:
     name: PHPUnit coverage ratchet (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-php:8.3
+      image: php:8.3-cli
     continue-on-error: false
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git curl ca-certificates gnupg jq unzip zip \
+            libzip-dev libpng-dev python3
+          # Node is required by actions/checkout@v4 (a JS action) which runs
+          # inside this php:8.3-cli container; the stock image ships no node.
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y --no-install-recommends nodejs
+          docker-php-ext-install -j"$(nproc)" zip gd
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Ensure a coverage driver (PCOV)
         run: |
@@ -148,9 +173,7 @@ jobs:
             || echo "coverage driver: ABSENT (ratchet will no-op; see TESTING-CI-ROLLOUT.md)"
 
       - name: Install composer deps
-        env:
-          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GH_COMPOSER_TOKEN }}"}}'
-        run: composer install --no-interaction --no-progress --prefer-dist
+        run: composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: Run unit suite WITH coverage (clover)
         run: |
@@ -171,12 +194,12 @@ jobs:
   # ---------------------------------------------------------------------------
   frontend-coverage-ratchet:
     name: Frontend coverage ratchet (${{ inputs.app-id }})
-    runs-on: docker
+    runs-on: codeberg-medium
     container:
-      image: code.forgejo.org/oci/ci-node:${{ inputs.node-version }}
+      image: node:${{ inputs.node-version }}
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: Install npm deps (+ coverage-v8)
         run: |
@@ -219,7 +242,7 @@ jobs:
     runs-on: docker
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: TODO — boot seeded NC, then run deep e2e
         run: |
@@ -242,7 +265,7 @@ jobs:
     runs-on: docker
     steps:
       - name: Checkout
-        uses: https://code.forgejo.org/actions/checkout@v4
+        uses: https://github.com/actions/checkout@v4
 
       - name: TODO — boot NC, then run Newman
         run: |
