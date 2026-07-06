@@ -17,6 +17,49 @@ A **Source** is a configured connection to an external system. Sources are the f
 
 Sources support multiple authentication strategies configured in the source's `authenticationConfig` field.
 
+### Brokered Credentials (`credentialRef`) — recommended
+
+Instead of embedding an API key or client secret in the source, reference a credential held by the **OpenRegister credential broker**. The secret stays in the broker's vault; OpenConnector never holds it — every call is dispatched in-process through the broker, which enforces its guard chain (credential owner → `allowedApps` → provider allow-rules → host-lock) and injects the secret server-side.
+
+Set `configuration.authentication` to **exactly** one of:
+
+```json
+{
+  "authentication": {
+    "credentialRef": { "credentialId": "00000000-0000-0000-0000-000000000000" }
+  }
+}
+```
+
+```json
+{
+  "authentication": {
+    "credentialRef": { "credentialName": "doffin-subscription" }
+  }
+}
+```
+
+`credentialId` (the credential's UUID) is the primary form; `credentialName` is a convenience resolved at call time against the acting user's credentials — it must match **exactly one** credential, otherwise the call fails with a 409 config error naming the match count (never a guess).
+
+**Hard rules (each violation is a synthetic 409 config-error CallLog; the request is never sent):**
+
+- Any sibling field next to `credentialRef` under `authentication` (e.g. `client_secret`) is **forbidden** — embedded secrets are never merged or dispatched for a brokered source.
+- Setting both `credentialId` and `credentialName`, or an empty value, is rejected.
+- Not supported in v1: SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` client-certificate config alongside `credentialRef`.
+- If the broker is unavailable (openregister disabled or too old) or the credential no longer exists, the call **soft-fails** with an actionable 409 — there is **no fallback** to embedded secrets.
+
+**Operator recipe:**
+
+1. Create the credential in OpenRegister's credential broker (provider, secret, owner). Note its UUID.
+2. Add `openconnector` to the credential's `allowedApps` — a broker refusal is logged as a 403 CallLog with this exact hint.
+3. Make sure the provider catalogue entry allows the methods + paths your source calls (allow-rules) — the provider's `baseUrl` host is the **sole** authority for where the call goes; the source `location` only documents it and supplies the request path.
+4. Replace the source's embedded auth fields with the `credentialRef` block shown above (remove ALL other keys under `authentication`).
+5. Test the source: a 200/upstream status means the brokered path works; a 403 CallLog names the broker refusal; a 409 CallLog names the config problem.
+
+**Background jobs:** cron-driven synchronizations run without a user session. OpenConnector then passes the credential's **owner** as acting user via the broker's acting-user parameter (requires an OpenRegister version that supports it; older brokers make sessionless brokered calls fail with an explanatory 409). The broker still enforces `allowedApps`, allow-rules, and host-lock.
+
+**Secret hygiene:** the secret value never appears in source configuration, sync logs, CallLogs, or error messages — with brokering it never enters the OpenConnector process at all. Broker refusals are logged as refusals (guard hint), never with the request payload.
+
 ### API Key
 
 Set a static value directly in the `headers` or `query` fields of the source:

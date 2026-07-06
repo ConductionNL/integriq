@@ -6,23 +6,23 @@
 > `credential-provider-doffin`) are tracked in openregister — the
 > background-job task below feature-detects rather than assumes them.
 
-- [ ] Define the `credentialRef` contract on source authentication config: accept `{credentialId}` or `{credentialName}` under `configuration.authentication.credentialRef`; document it in the source schema description in `lib/Settings/` register JSON (no schema shape change — `authentication` is already free-form object config)
-- [ ] Add a config validator used at call time: `credentialRef` present → reject sibling secret-bearing fields under `authentication` (anything beyond `credentialRef`) as a hard config error; reject `credentialId` + `credentialName` both set; reject nil/empty values
-- [ ] Create `lib/Service/BrokeredCallService.php`: broker availability check (`class_exists` on `OCA\OpenRegister\Service\Credential\CredentialBrokerService` + `IAppManager::isEnabledForUser('openregister')`), `\OCP\Server::get` resolution, and a typed `isBrokered(array $sourceData): bool` helper
-- [ ] Implement `credentialName` → `credentialId` resolution against the acting user's OR `brokeredcredential` metadata objects; zero or >1 matches → config error carrying the name and match count
-- [ ] Implement request derivation: compose URL as today (`location` + `endpoint`), extract path + query (serialising `config['query']` into the query string), pass normalised `config['headers']` and `config['body']`/JSON-encoded `config['json']` to `CredentialBrokerService::request(credentialId, 'openconnector', method, path, headers, body)`
-- [ ] Adapt the broker's `array{status, headers, body}` return to a `GuzzleHttp\Psr7\Response` so `buildResponseData()` / `buildAndPersistCallLog()` / `sourceRateLimit()` run unchanged
-- [ ] Wire the brokered branch into `CallService::dispatchRequest()` ahead of the Guzzle dispatch, selected on `authentication.credentialRef` in the merged source configuration
-- [ ] Add the v1 scope guards as 409 config errors via `saveEarlyErrorLog()`: `credentialRef` on `type: soap` sources, `asynchronous=true`, and `cert`/`ssl_key` config alongside `credentialRef`
-- [ ] Implement soft-fail: broker classes absent or openregister disabled → 409 config-error CallLog with an actionable message; assert there is NO code path that falls back to embedded authentication when `credentialRef` is set
-- [ ] Thread the acting user: session user when present; in background context pass `actingUserId` = the credential's owner via the broker's optional acting-user parameter, feature-detected by reflection on the `request()` signature — parameter absent + no session → soft-fail config error, never a TypeError
-- [ ] Map broker exceptions to CallLogs: `CredentialAccessDeniedException` → 403 with the broker-surfaced guard name and the "add openconnector to allowedApps" hint; `CredentialUpstreamException` → 502; both messages secret-free and payload-free
-- [ ] Secret-hygiene audit of the brokered path: confirm the secret value cannot appear in source config, sync logs, CallLogs, or error messages (it never enters the process); extend the existing redaction unit tests with a brokered-call fixture
-- [ ] Unit tests for `BrokeredCallService`: availability guard, name resolution (0/1/many), request derivation (path+query, headers, body), response adaptation (2xx, upstream non-2xx, header shapes)
-- [ ] Unit tests for `CallService` brokered branch: branch selection, sibling-secret rejection, SOAP/async/cert scope guards, soft-fail without OR, 403/502 mapping, CallLog envelope parity with the Guzzle path
-- [ ] Synchronization pagination test: a multi-page sync against a brokered source issues one brokered request per page and honours the engine's existing rate-limit tracking from returned headers
+- [x] Define the `credentialRef` contract on source authentication config: accept `{credentialId}` or `{credentialName}` under `configuration.authentication.credentialRef`; document it in the source schema description in `lib/Settings/` register JSON (no schema shape change — `authentication` is already free-form object config)
+- [x] Add a config validator used at call time: `credentialRef` present → reject sibling secret-bearing fields under `authentication` (anything beyond `credentialRef`) as a hard config error; reject `credentialId` + `credentialName` both set; reject nil/empty values
+- [x] Create `lib/Service/BrokeredCallService.php`: broker availability check (`class_exists` on `OCA\OpenRegister\Service\Credential\CredentialBrokerService` + `IAppManager::isEnabledForUser('openregister')`), `\OCP\Server::get` resolution, and a typed `isBrokered(array $sourceData): bool` helper
+- [x] Implement `credentialName` → `credentialId` resolution against the acting user's OR `brokeredcredential` metadata objects; zero or >1 matches → config error carrying the name and match count
+- [x] Implement request derivation: compose URL as today (`location` + `endpoint`), extract path + query (serialising `config['query']` into the query string), pass normalised `config['headers']` and `config['body']`/JSON-encoded `config['json']` to `CredentialBrokerService::request(credentialId, 'openconnector', method, path, headers, body)`
+- [x] Adapt the broker's `array{status, headers, body}` return to a `GuzzleHttp\Psr7\Response` so `buildResponseData()` / `buildAndPersistCallLog()` / `sourceRateLimit()` run unchanged
+- [x] Wire the brokered branch into `CallService::dispatchRequest()` ahead of the Guzzle dispatch, selected on `authentication.credentialRef` in the merged source configuration
+- [x] Add the v1 scope guards as 409 config errors via `saveEarlyErrorLog()`: `credentialRef` on `type: soap` sources, `asynchronous=true`, and `cert`/`ssl_key` config alongside `credentialRef`
+- [x] Implement soft-fail: broker classes absent or openregister disabled → 409 config-error CallLog with an actionable message; assert there is NO code path that falls back to embedded authentication when `credentialRef` is set
+- [x] Thread the acting user: session user when present; in background context pass `actingUserId` = the credential's owner via the broker's optional acting-user parameter, feature-detected by reflection on the `request()` signature — parameter absent + no session → soft-fail config error, never a TypeError
+- [x] Map broker exceptions to CallLogs: `CredentialAccessDeniedException` → 403 with the broker-surfaced guard name and the "add openconnector to allowedApps" hint; `CredentialUpstreamException` → 502; both messages secret-free and payload-free
+- [x] Secret-hygiene audit of the brokered path: confirm the secret value cannot appear in source config, sync logs, CallLogs, or error messages (it never enters the process); extend the existing redaction unit tests with a brokered-call fixture
+- [x] Unit tests for `BrokeredCallService`: availability guard, name resolution (0/1/many), request derivation (path+query, headers, body), response adaptation (2xx, upstream non-2xx, header shapes)
+- [x] Unit tests for `CallService` brokered branch: branch selection, sibling-secret rejection, SOAP/async/cert scope guards, soft-fail without OR, 403/502 mapping, CallLog envelope parity with the Guzzle path
+- [x] Synchronization pagination test: a multi-page sync against a brokered source issues one brokered request per page and honours the engine's existing rate-limit tracking from returned headers
 - [ ] Verify e2e on a dev instance with OR present: a source with `credentialRef` (nil-UUID fixture credential, `YOUR_API_KEY_HERE` secret in the vault fixture) round-trips through the broker; a 403 refusal logs the guard name; docs page under `website/docs` updated for source authentication
-- [ ] Run `composer check:strict` and fix anything it flags in touched files
+- [x] Run `composer check:strict` and fix anything it flags in touched files
 
 Acceptance criteria (plain bullets — verified by /opsx-verify):
 

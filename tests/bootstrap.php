@@ -103,6 +103,22 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
         }
+
+        // Credential-broker stubs (source-broker-credentials change). The
+        // broker stub mirrors the OR origin/development request() signature
+        // WITHOUT the acting-user parameter, so the reflection-based
+        // feature-detection path is exercised realistically in tests.
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialBrokerService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialAccessDeniedException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialAccessDeniedException.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialUpstreamException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialUpstreamException.php';
+        }
     }
 }
 

@@ -48,6 +48,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Response;
+use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
@@ -67,6 +68,9 @@ use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Executes outbound API calls against configured Sources and persists CallLog entries.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+ * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
 class CallService
 {
@@ -118,6 +122,9 @@ class CallService
      * @param AuthenticationService $authenticationService Authentication service exposed to Twig templates.
      * @param IAppConfig            $appConfig             App config used to read global retention overrides.
      * @param LoggerInterface       $logger                Nextcloud logger used for security-policy warnings (#1011).
+     * @param BrokeredCallService   $brokeredCallService   Brokered (credentialRef) dispatch through the OpenRegister credential broker.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -125,6 +132,7 @@ class CallService
         AuthenticationService $authenticationService,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
+        private readonly BrokeredCallService $brokeredCallService,
     ) {
         $this->client = new Client([]);
         $this->twig   = new Environment($loader);
@@ -824,16 +832,20 @@ class CallService
      * (same behaviour as the original inline code — the caller returns it immediately).
      * Removes TLS certificate files from disk after the request completes or fails.
      *
-     * @param ObjectEntity $source       The source ObjectEntity.
-     * @param string       $method       The HTTP method to use.
-     * @param string       $url          The full URL to request (used for Guzzle; SOAP uses $endpoint as the action).
-     * @param string       $endpoint     The raw endpoint path (used as the SOAPAction for SOAP sources).
-     * @param array        $config       The Guzzle request configuration (passed by reference so cert files can be cleaned up).
-     * @param boolean      $asynchronous Whether to dispatch asynchronously.
+     * @param ObjectEntity $source             The source ObjectEntity.
+     * @param string       $method             The HTTP method to use.
+     * @param string       $url                The full URL to request (used for Guzzle; SOAP uses $endpoint as the action).
+     * @param string       $endpoint           The raw endpoint path (used as the SOAPAction for SOAP sources).
+     * @param array        $config             The Guzzle request configuration (passed by reference so cert files can be cleaned up).
+     * @param boolean      $asynchronous       Whether to dispatch asynchronously.
+     * @param array|null   $brokeredCredential Resolved brokered identity ({credentialId, actingUserId}) from
+     *                                         BrokeredCallService::prepare(), or null for the legacy Guzzle/SOAP path.
      *
      * @return mixed A Guzzle Response (sync), a Guzzle Promise (async), or a Response from SOAPService.
      *
      * @throws GuzzleException On HTTP transport failure.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function dispatchRequest(
         ObjectEntity $source,
@@ -842,7 +854,23 @@ class CallService
         string $endpoint,
         array &$config,
         bool $asynchronous,
+        ?array $brokeredCredential=null,
     ): mixed {
+        // Brokered branch (REQ-SBC-002): a credentialRef source dispatches
+        // IN-PROCESS through the OpenRegister credential broker — the internal
+        // Guzzle client is NOT invoked. The broker return is adapted to a
+        // PSR-7 response so buildResponseData() / buildAndPersistCallLog() /
+        // sourceRateLimit() run unchanged (one write path, CallLog parity).
+        if ($brokeredCredential !== null) {
+            return $this->brokeredCallService->dispatch(
+                credentialId: (string) $brokeredCredential['credentialId'],
+                actingUserId: $brokeredCredential['actingUserId'],
+                method: $method,
+                url: $url,
+                config: $config,
+            );
+        }
+
         $sourceData = $source->getObject();
         $sourceType = ($sourceData['type'] ?? null);
 
@@ -1327,51 +1355,32 @@ class CallService
     }//end buildAndPersistCallLog()
 
     /**
-     * Calls a source according to given configuration.
+     * Phases 3-6 helper: source-precondition guards before any dispatch work.
      *
-     * @param ObjectEntity $source                The source ObjectEntity to call.
-     * @param string       $endpoint              The endpoint on the source to call.
-     * @param string       $method                The method on which to call the source.
-     * @param array        $config                The additional configuration to call the source.
-     * @param boolean      $asynchronous          Whether to call the source asynchronously.
-     * @param boolean      $createCertificates    Whether to create certificates for this source.
-     * @param boolean      $overruleAuth          Whether to overrule the source authentication.
-     * @param boolean      $read                  Whether this is a singular read (vs list) call.
-     * @param boolean      $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+     * Verbatim extraction of the pre-existing guards from call(): the source
+     * must be enabled (409), must have a location (409), rate-limit windows
+     * are reset when expired, and an exhausted rate limit short-circuits with
+     * a 429. Returns the persisted early-error CallLog, or null when the call
+     * may proceed.
      *
-     * @return ObjectEntity
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $sourceData   The mutable source data array (rate-limit reset mutates it).
+     * @param \DateTime|null $errorExpires Expiry for error log entries.
      *
-     * @throws GuzzleException   On HTTP transport failure.
-     * @throws LoaderError       On Twig loader error.
-     * @throws SyntaxError       On Twig syntax error.
+     * @return ObjectEntity|null The early-error CallLog, or null to proceed.
+     *
      * @throws \OCP\DB\Exception On persistence failure.
      *
      * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      */
-    public function call(
+    private function guardCallPreconditions(
         ObjectEntity $source,
-        string $endpoint='',
-        string $method='GET',
-        array $config=[],
-        bool $asynchronous=false,
-        bool $createCertificates=true,
-        bool $overruleAuth=false,
-        bool $read=false,
-        bool $runningSupportRequest=false,
-    ): ObjectEntity {
-        $sourceData = $source->getObject();
-
-        // Phase 1: Compute expiry values for log retention.
-        $expiries       = $this->buildExpiryValues(sourceData: $sourceData);
-        $errorExpires   = $expiries['errorExpires'];
-        $successExpires = $expiries['successExpires'];
-
-        // Phase 2: Resolve HTTP method; strip method-override keys from config.
-        $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
-        unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
-
+        array &$sourceData,
+        ?\DateTime $errorExpires,
+    ): ?ObjectEntity {
         // Phase 3: Guard — source must be enabled.
-        if (($sourceData['isEnabled'] ?? null) === null || ($sourceData['isEnabled'] ?? false) === false) {
+        $isEnabled = ($sourceData['isEnabled'] ?? null);
+        if ($isEnabled === null || $isEnabled === false) {
             return $this->saveEarlyErrorLog(
                 source: $source,
                 statusCode: 409,
@@ -1404,8 +1413,131 @@ class CallService
             );
         }
 
+        return null;
+
+    }//end guardCallPreconditions()
+
+    /**
+     * Phase 7b helper: detect + validate a brokered (credentialRef) source call.
+     *
+     * Returns null when the merged configuration carries no credentialRef
+     * (legacy path), the resolved dispatch identity array when the brokered
+     * call may proceed, or a persisted synthetic 409 config-error CallLog
+     * ObjectEntity when any brokered config guard fails — the caller must
+     * return that entity immediately (no outbound request, no fallback to
+     * embedded secrets, REQ-SBC-004).
+     *
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $config       The merged call configuration (Phase 7 output).
+     * @param array          $sourceData   The raw source data array.
+     * @param boolean        $asynchronous Whether asynchronous dispatch was requested.
+     * @param \DateTime|null $errorExpires Expiry for error log entries.
+     *
+     * @return ObjectEntity|array{credentialId: string, actingUserId: string|null}|null
+     *
+     * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function resolveBrokeredDispatch(
+        ObjectEntity $source,
+        array $config,
+        array $sourceData,
+        bool $asynchronous,
+        ?\DateTime $errorExpires,
+    ): ObjectEntity|array|null {
+        if ($this->brokeredCallService->hasCredentialRef(config: $config) === false) {
+            return null;
+        }
+
+        try {
+            return $this->brokeredCallService->prepare(
+                config: $config,
+                sourceData: $sourceData,
+                asynchronous: $asynchronous,
+            );
+        } catch (BrokeredCallConfigurationException $exception) {
+            return $this->saveEarlyErrorLog(
+                source: $source,
+                statusCode: 409,
+                statusMessage: $exception->getMessage(),
+                expires: $errorExpires,
+            );
+        }
+
+    }//end resolveBrokeredDispatch()
+
+    /**
+     * Calls a source according to given configuration.
+     *
+     * @param ObjectEntity $source                The source ObjectEntity to call.
+     * @param string       $endpoint              The endpoint on the source to call.
+     * @param string       $method                The method on which to call the source.
+     * @param array        $config                The additional configuration to call the source.
+     * @param boolean      $asynchronous          Whether to call the source asynchronously.
+     * @param boolean      $createCertificates    Whether to create certificates for this source.
+     * @param boolean      $overruleAuth          Whether to overrule the source authentication.
+     * @param boolean      $read                  Whether this is a singular read (vs list) call.
+     * @param boolean      $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+     *
+     * @return ObjectEntity
+     *
+     * @throws GuzzleException   On HTTP transport failure.
+     * @throws LoaderError       On Twig loader error.
+     * @throws SyntaxError       On Twig syntax error.
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function call(
+        ObjectEntity $source,
+        string $endpoint='',
+        string $method='GET',
+        array $config=[],
+        bool $asynchronous=false,
+        bool $createCertificates=true,
+        bool $overruleAuth=false,
+        bool $read=false,
+        bool $runningSupportRequest=false,
+    ): ObjectEntity {
+        $sourceData = $source->getObject();
+
+        // Phase 1: Compute expiry values for log retention.
+        $expiries       = $this->buildExpiryValues(sourceData: $sourceData);
+        $errorExpires   = $expiries['errorExpires'];
+        $successExpires = $expiries['successExpires'];
+
+        // Phase 2: Resolve HTTP method; strip method-override keys from config.
+        $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
+        unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
+
+        // Phases 3-6: source-precondition guards (enabled, location, rate limit).
+        $earlyError = $this->guardCallPreconditions(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+        if ($earlyError !== null) {
+            return $earlyError;
+        }
+
         // Phase 7: Merge source-level configuration.
         $config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
+
+        // Phase 7b: Brokered-credential guards + resolution (REQ-SBC-001/002/003).
+        // Selection happens HERE, on the merged configuration, because Phase 9
+        // strips every `authentication` key before dispatch. Any config error is
+        // a hard synthetic 409 CallLog — embedded secrets are never merged,
+        // rendered, or dispatched for a credentialRef source, and there is NO
+        // fallback path (REQ-SBC-004).
+        $brokeredCredential = $this->resolveBrokeredDispatch(
+            source: $source,
+            config: $config,
+            sourceData: $sourceData,
+            asynchronous: $asynchronous,
+            errorExpires: $errorExpires,
+        );
+        if ($brokeredCredential instanceof ObjectEntity) {
+            // A synthetic 409 config-error CallLog was persisted — hard stop.
+            return $brokeredCredential;
+        }
 
         // Phase 8: Handle preRequest hook; capture postRequest descriptor.
         $postRequest = $this->extractAndFirePreRequest(
@@ -1434,6 +1566,7 @@ class CallService
             endpoint: $endpoint,
             config: $config,
             asynchronous: $asynchronous,
+            brokeredCredential: $brokeredCredential,
         );
 
         // Async path returns the Promise directly (same as original behaviour).

@@ -46,7 +46,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad — see local ADR-005.",
         "required": [
@@ -197,7 +197,7 @@
           },
           "configuration": {
             "type": "object",
-            "description": "Free-form structured config (provider-specific)",
+            "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. See http-call-engine spec REQ-SBC-001/002 (change source-broker-credentials).",
             "title": "Configuration"
           },
           "endpointsConfig": {
