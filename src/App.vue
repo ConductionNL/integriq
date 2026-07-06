@@ -2,6 +2,7 @@
 <template>
 	<div class="openconnector-app-root">
 		<CnAppRoot
+			:ai-companion="true"
 			:manifest="manifest"
 			:custom-components="customComponents"
 			:page-types="pageTypes"
