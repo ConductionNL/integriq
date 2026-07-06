@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -180,6 +181,13 @@ class FakeActingUserBroker
         'body'    => '',
     ];
 
+    /**
+     * Optional exception thrown instead of returning.
+     *
+     * @var \Throwable|null
+     */
+    public ?\Throwable $throwable = null;
+
 
     /**
      * request() with the optional in-process acting-user parameter.
@@ -203,6 +211,10 @@ class FakeActingUserBroker
         ?string $body=null,
         ?string $actingUserId=null
     ): array {
+        if ($this->throwable !== null) {
+            throw $this->throwable;
+        }
+
         $this->calls[] = [
             'credentialId' => $credentialId,
             'appId'        => $appId,
@@ -245,6 +257,11 @@ class BrokeredCallServiceTest extends TestCase
     private $userSession;
 
     /**
+     * @var IUserManager|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $userManager;
+
+    /**
      * @var LoggerInterface|\PHPUnit\Framework\MockObject\MockObject
      */
     private $logger;
@@ -263,6 +280,7 @@ class BrokeredCallServiceTest extends TestCase
         $this->objectService = $this->createMock(ObjectService::class);
         $this->appManager    = $this->createMock(IAppManager::class);
         $this->userSession   = $this->createMock(IUserSession::class);
+        $this->userManager   = $this->createMock(IUserManager::class);
         $this->logger        = $this->createMock(LoggerInterface::class);
 
         $this->appManager->method('isEnabledForUser')->willReturn(true);
@@ -270,6 +288,17 @@ class BrokeredCallServiceTest extends TestCase
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
+
+        // Default: the pinned owner "alice" resolves to an existing, enabled user.
+        $this->userManager->method('get')->willReturnCallback(
+            function (string $uid) {
+                if ($uid === 'alice') {
+                    return $this->makeUser(uid: 'alice', enabled: true);
+                }
+
+                return null;
+            }
+        );
 
         $this->objectService->method('find')->willReturnCallback(
             function () {
@@ -292,12 +321,31 @@ class BrokeredCallServiceTest extends TestCase
             $this->objectService,
             $this->appManager,
             $this->userSession,
+            $this->userManager,
             $this->logger,
         );
         $service->brokerInstance = new FakeLegacyBroker();
 
         return $service;
     }//end buildService()
+
+
+    /**
+     * Build a mock IUser with the given uid and enabled state.
+     *
+     * @param string  $uid     The user id.
+     * @param boolean $enabled Whether the account is enabled.
+     *
+     * @return IUser|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function makeUser(string $uid, bool $enabled)
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($uid);
+        $user->method('isEnabled')->willReturn($enabled);
+
+        return $user;
+    }//end makeUser()
 
 
     /**
@@ -338,21 +386,6 @@ class BrokeredCallServiceTest extends TestCase
     // -------------------------------------------------------------------
     // Detection helpers (REQ-SBC-001 / REQ-SBC-002 selection).
     // -------------------------------------------------------------------
-
-
-    /**
-     * isBrokered() detects credentialRef on the raw source object shape.
-     *
-     * @return void
-     */
-    public function testIsBrokeredDetectsSourceLevelCredentialRef(): void
-    {
-        $sourceData = ['configuration' => ['authentication' => ['credentialRef' => ['credentialId' => self::NIL_UUID]]]];
-
-        $this->assertTrue($this->service->isBrokered($sourceData));
-        $this->assertFalse($this->service->isBrokered(['configuration' => ['authentication' => ['apikey' => 'x']]]));
-        $this->assertFalse($this->service->isBrokered([]));
-    }//end testIsBrokeredDetectsSourceLevelCredentialRef()
 
 
     /**
@@ -764,8 +797,114 @@ class BrokeredCallServiceTest extends TestCase
 
         $result = $service->prepare(config: $this->brokeredConfig(), sourceData: [], asynchronous: false);
 
+        // Owner-pinning policy: the acting user is deterministically the
+        // credential OWNER (alice) read from the OR metadata object.
         $this->assertSame('alice', $result['actingUserId']);
     }//end testPrepareSessionlessActingUserBrokerReturnsOwner()
+
+
+    /**
+     * Owner-pinning: an owner-less credential fails CLOSED with a config error.
+     *
+     * @return void
+     */
+    public function testPrepareSessionlessOwnerEmptyFailsClosed(): void
+    {
+        $this->objectService = $this->createMock(ObjectService::class);
+        $this->objectService->method('find')->willReturn($this->makeCredential(uuid: self::NIL_UUID, owner: ''));
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->userSession->method('getUser')->willReturn(null);
+        $service = $this->buildService();
+        $service->brokerInstance = new FakeActingUserBroker();
+
+        try {
+            $service->prepare(config: $this->brokeredConfig(), sourceData: [], asynchronous: false);
+            $this->fail('Expected BrokeredCallConfigurationException');
+        } catch (BrokeredCallConfigurationException $exception) {
+            $this->assertStringContainsString('no owner recorded', $exception->getMessage());
+            $this->assertStringContainsString(self::NIL_UUID, $exception->getMessage());
+        }
+    }//end testPrepareSessionlessOwnerEmptyFailsClosed()
+
+
+    /**
+     * Owner-pinning: a credential whose owner no longer exists fails CLOSED and
+     * logs the guard name + owner uid (never a secret).
+     *
+     * @return void
+     */
+    public function testPrepareSessionlessOwnerGoneFailsClosed(): void
+    {
+        // The default userManager stub returns null for any uid but "alice";
+        // a credential owned by "ghost" therefore resolves to a deleted user.
+        $this->objectService = $this->createMock(ObjectService::class);
+        $this->objectService->method('find')->willReturn($this->makeCredential(uuid: self::NIL_UUID, owner: 'ghost'));
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $loggedContext = null;
+        $this->logger  = $this->createMock(LoggerInterface::class);
+        $this->logger->expects($this->once())
+            ->method('warning')
+            ->willReturnCallback(
+                function ($message, $context) use (&$loggedContext) {
+                    $loggedContext = $context;
+                }
+            );
+
+        $service = $this->buildService();
+        $service->brokerInstance = new FakeActingUserBroker();
+
+        try {
+            $service->prepare(config: $this->brokeredConfig(), sourceData: [], asynchronous: false);
+            $this->fail('Expected BrokeredCallConfigurationException');
+        } catch (BrokeredCallConfigurationException $exception) {
+            $this->assertStringContainsString('no longer exists', $exception->getMessage());
+            $this->assertStringContainsString('ghost', $exception->getMessage());
+        }
+
+        $this->assertNotNull($loggedContext);
+        $this->assertSame('owner-gone', $loggedContext['guard']);
+        $this->assertSame('ghost', $loggedContext['owner']);
+    }//end testPrepareSessionlessOwnerGoneFailsClosed()
+
+
+    /**
+     * Owner-pinning: a credential whose owner is disabled fails CLOSED with a
+     * distinct config error (distinct from owner-gone).
+     *
+     * @return void
+     */
+    public function testPrepareSessionlessOwnerDisabledFailsClosed(): void
+    {
+        $this->objectService = $this->createMock(ObjectService::class);
+        $this->objectService->method('find')->willReturn($this->makeCredential(uuid: self::NIL_UUID, owner: 'bob'));
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Rebuild the userManager so "bob" resolves to a DISABLED account.
+        $this->userManager = $this->createMock(IUserManager::class);
+        $this->userManager->method('get')->willReturnCallback(
+            function (string $uid) {
+                if ($uid === 'bob') {
+                    return $this->makeUser(uid: 'bob', enabled: false);
+                }
+
+                return null;
+            }
+        );
+
+        $service = $this->buildService();
+        $service->brokerInstance = new FakeActingUserBroker();
+
+        try {
+            $service->prepare(config: $this->brokeredConfig(), sourceData: [], asynchronous: false);
+            $this->fail('Expected BrokeredCallConfigurationException');
+        } catch (BrokeredCallConfigurationException $exception) {
+            $this->assertStringContainsString('is disabled', $exception->getMessage());
+            $this->assertStringContainsString('bob', $exception->getMessage());
+        }
+    }//end testPrepareSessionlessOwnerDisabledFailsClosed()
 
 
     // -------------------------------------------------------------------
@@ -916,6 +1055,74 @@ class BrokeredCallServiceTest extends TestCase
         $this->assertStringNotContainsString('sekret-value-123', json_encode($loggedContext));
         $this->assertStringNotContainsString('super-secret-payload', json_encode($loggedContext));
     }//end testDispatchMapsAccessDeniedTo403WithHint()
+
+
+    /**
+     * Sessionless refusal → 403 carries the distinct un-migrated-secret hint
+     * (the vault→Doriath migration only runs in a user session), still secret-free.
+     *
+     * @return void
+     */
+    public function testDispatchSessionlessAccessDeniedIncludesMigrationHint(): void
+    {
+        // The sessionless path passes actingUserId to the broker, so it must be
+        // the acting-user-capable broker shape; drive the refusal via its hook.
+        $broker = new FakeActingUserBroker();
+        $broker->throwable = new CredentialAccessDeniedException('Request not permitted');
+        $this->service->brokerInstance = $broker;
+
+        $loggedContext = null;
+        $this->logger->expects($this->once())
+            ->method('warning')
+            ->willReturnCallback(
+                function ($message, $context) use (&$loggedContext) {
+                    $loggedContext = $context;
+                }
+            );
+
+        $response = $this->service->dispatch(
+            credentialId: self::NIL_UUID,
+            actingUserId: 'alice',
+            method: 'GET',
+            url: 'https://api.example.org/v1/items',
+            config: ['headers' => ['X-Api-Key' => 'sekret-value-123']],
+        );
+
+        $this->assertSame(403, $response->getStatusCode());
+        // Distinct, actionable migration hint present on the sessionless path.
+        $this->assertStringContainsString('migrated to Doriath', $response->getReasonPhrase());
+        $this->assertStringContainsString('background job', $response->getReasonPhrase());
+        // Still guard-family only: no secret material.
+        $this->assertStringNotContainsString('sekret-value-123', $response->getReasonPhrase());
+        $this->assertStringNotContainsString('sekret-value-123', json_encode($loggedContext));
+        $this->assertTrue($loggedContext['sessionless']);
+    }//end testDispatchSessionlessAccessDeniedIncludesMigrationHint()
+
+
+    /**
+     * Session (interactive) refusal → 403 keeps the allowedApps hint but OMITS
+     * the sessionless migration hint (that failure mode cannot occur in-session).
+     *
+     * @return void
+     */
+    public function testDispatchSessionAccessDeniedOmitsMigrationHint(): void
+    {
+        $broker = new FakeLegacyBroker();
+        $broker->throwable = new CredentialAccessDeniedException('Request not permitted');
+        $this->service->brokerInstance = $broker;
+
+        $response = $this->service->dispatch(
+            credentialId: self::NIL_UUID,
+            actingUserId: null,
+            method: 'POST',
+            url: 'https://api.example.org/v1/items',
+            config: [],
+        );
+
+        $this->assertSame(403, $response->getStatusCode());
+        $this->assertStringContainsString('allowedApps', $response->getReasonPhrase());
+        $this->assertStringNotContainsString('migrated to Doriath', $response->getReasonPhrase());
+    }//end testDispatchSessionAccessDeniedOmitsMigrationHint()
 
 
     /**

@@ -56,9 +56,21 @@ Set `configuration.authentication` to **exactly** one of:
 4. Replace the source's embedded auth fields with the `credentialRef` block shown above (remove ALL other keys under `authentication`).
 5. Test the source: a 200/upstream status means the brokered path works; a 403 CallLog names the broker refusal; a 409 CallLog names the config problem.
 
-**Background jobs:** cron-driven synchronizations run without a user session. OpenConnector then passes the credential's **owner** as acting user via the broker's acting-user parameter (requires an OpenRegister version that supports it; older brokers make sessionless brokered calls fail with an explanatory 409). The broker still enforces `allowedApps`, allow-rules, and host-lock.
+**Background jobs — owner-pinning policy:** cron-driven synchronizations run without a user session. OpenConnector then **pins the acting user to the credential's `owner`** — read from the OpenRegister credential metadata object **at call time**, never cached, guessed, or configured — and passes it via the broker's acting-user parameter (requires an OpenRegister version that supports it; older brokers make sessionless brokered calls fail with an explanatory 409). The acting user substitutes **only** the session identity: the broker still enforces `allowedApps`, allow-rules, and host-lock against it. Owner-pinning is the deliberate default because it is deterministic and auditable — a background sync always acts as exactly the human who owns the secret.
 
-**Secret hygiene:** the secret value never appears in source configuration, sync logs, CallLogs, or error messages — with brokering it never enters the OpenConnector process at all. Broker refusals are logged as refusals (guard hint), never with the request payload.
+**Sessionless failure modes** (each fails **closed** — a background call never proceeds as no-one or as an administrator):
+
+| Situation | CallLog | Message theme |
+|-----------|---------|---------------|
+| Broker too old (no acting-user parameter) | 409 | Upgrade OpenRegister, or run from a user session |
+| Credential has no `owner` recorded | 409 | Corrupt credential — re-assign the owner |
+| Owner account no longer exists (deleted) | 409 | Cannot act as a deleted user — re-assign or remove the source |
+| Owner account is disabled | 409 | Cannot act as a disabled user — re-enable or re-assign |
+| Secret not yet migrated to Doriath | 403 | Sign in once as the owner to trigger the one-time vault→Doriath migration, then re-run |
+
+The **un-migrated-secret** case is subtle: OpenRegister's lazy vault→Doriath secret migration only runs in a **user-session** context (the legacy vault is session-scoped). A background (sessionless) read of a secret that has never been read interactively therefore fails closed inside the broker. Because the broker's refusal message is deliberately opaque (secret hygiene — see below), OpenConnector cannot tell this apart from an `allowedApps`/allow-rule refusal, so the **sessionless 403** always carries the additional, actionable migration hint (distinct from the owner-gone / owner-disabled 409s above). The fix is a one-time interactive read: sign in as the owner (or open the credential in OpenRegister), then re-run the sync.
+
+**Secret hygiene & trust boundary:** the secret value never appears in source configuration, sync logs, CallLogs, or error messages — with brokering it never enters the OpenConnector process at all. The OpenRegister broker is the trust boundary: it resolves and injects the secret server-side and returns only `{status, headers, body}`. Its **refusal reason is logged inside OpenRegister and never crosses the boundary** — the exception OpenConnector catches is a single opaque "Request not permitted", which is why the 403 guidance covers the likely fixes for its context rather than naming the exact guard. OpenConnector's own owner-pin refusals are logged with the **guard name + owner uid + credential id only** — never any secret material.
 
 ### API Key
 

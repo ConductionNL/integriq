@@ -44,6 +44,7 @@ import {
 	viewLogsHandler,
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
@@ -76,6 +77,12 @@ export default {
 	// (per #847). Open follow-up upstream: CnFormDialog has no native
 	// per-field `condition`/`visibleWhen` prop — tracked as a ncv issue.
 	JobFormFields,
+
+	// The Sources page wires `form-fields` to SourceFormFields so the
+	// CnFormDialog authentication section can offer a brokered-credential
+	// (credentialRef) picker backed by OpenRegister's credential broker, and
+	// hide the embedded-secret fields while brokered (openconnector#102).
+	SourceFormFields,
 
 	// Custom-page components — referenced by manifest `pages[].component`
 	// when `pages[].type === 'custom'`. The 3 bespoke editors below
