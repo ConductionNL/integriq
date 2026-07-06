@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # http-call-engine Specification
@@ -8,6 +8,9 @@ status: done
 Dispatches outbound HTTP and SOAP calls to configured sources and records each one as a CallLog. It renders templated request configuration, materialises inline certificates to temp files, enforces per-source enablement and rate limits (short-circuiting with synthetic 409/429 logs), translates HTTP verbs to per-CRUD method overrides, supports pre- and post-request support calls, and persists each call with retention-bounded expiry.
 
 @e2e exclude backend outbound HTTP call engine + CallLog persistence (no browser UI) — covered by PHPUnit/Newman
+
+**OpenSpec changes**
+- `source-broker-credentials` (active) — Sources gain a `credentialRef` authentication option; brokered sources dispatch in-process through OpenRegister's `CredentialBrokerService` (constrained proxy, secret injected server-side, never held by OpenConnector). While active, the normative brokered-dispatch requirements (REQ-SBC-001..004) live in the change's delta spec and merge here on archive.
 
 ## Requirements
 ### Requirement: Outbound HTTP call orchestration with CallLog persistence (REQ-001)
