@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\App\IAppManager;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionException;
@@ -130,39 +131,18 @@ class BrokeredCallService
      * @param ORObjectService $objectService OR object service (credential metadata reads; hard app dependency).
      * @param IAppManager     $appManager    App manager used for the openregister availability guard.
      * @param IUserSession    $userSession   Session used to determine the acting user.
+     * @param IUserManager    $userManager   User manager used to assert the pinned owner still exists and is enabled.
      * @param LoggerInterface $logger        Logger for secret-free refusal diagnostics.
      */
     public function __construct(
         private readonly ORObjectService $objectService,
         private readonly IAppManager $appManager,
         private readonly IUserSession $userSession,
+        private readonly IUserManager $userManager,
         private readonly LoggerInterface $logger,
     ) {
 
     }//end __construct()
-
-    /**
-     * Returns true when a Source's own data carries an authentication credentialRef.
-     *
-     * Typed convenience helper over the raw source object shape
-     * (`configuration.authentication.credentialRef`).
-     *
-     * @param array $sourceData The raw source data array.
-     *
-     * @return boolean Whether the source is a brokered source.
-     *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
-     */
-    public function isBrokered(array $sourceData): bool
-    {
-        $configuration = ($sourceData['configuration'] ?? []);
-        if (is_array($configuration) === false) {
-            return false;
-        }
-
-        return $this->hasCredentialRef(config: $configuration);
-
-    }//end isBrokered()
 
     /**
      * Returns true when a merged call configuration carries an authentication credentialRef.
@@ -294,12 +274,15 @@ class BrokeredCallService
                 '[BrokeredCallService] credential broker refused the call',
                 [
                     'credentialId' => $credentialId,
+                    'sessionless'  => ($actingUserId !== null),
                     'reason'       => $exception->getMessage(),
                 ]
             );
-            $message = 'Credential broker refused the request ('.$exception->getMessage().'). '
-                .'If OpenConnector should be allowed to use this credential, add "openconnector" to the '
-                ."credential's allowedApps and verify the provider allow-rules cover ".$method.' requests.';
+            $message = $this->buildRefusalMessage(
+                brokerReason: $exception->getMessage(),
+                method: $method,
+                sessionless: ($actingUserId !== null)
+            );
 
             return new Response(status: 403, headers: [], body: $message, version: '1.1', reason: $message);
         } catch (CredentialUpstreamException $exception) {
@@ -318,6 +301,50 @@ class BrokeredCallService
         return $this->adaptBrokerResponse(result: $result);
 
     }//end dispatch()
+
+    /**
+     * Builds the secret-free 403 refusal message for a broker access denial.
+     *
+     * The broker's own denial message is deliberately opaque ("Request not
+     * permitted") — the real refusal reason (allowedApps miss, allow-rule
+     * miss, host-lock, owner mismatch, OR an un-migrated vault secret that a
+     * sessionless read cannot decrypt) is logged INSIDE OpenRegister and never
+     * surfaced across the trust boundary. OpenConnector therefore cannot tell
+     * the causes apart from the exception; the guidance instead covers the
+     * likely fixes for the context it is in.
+     *
+     * For the SESSIONLESS (cron / background) path the message additionally
+     * names the lazy-migration failure mode: the vault→Doriath migration only
+     * runs in a user-session context, so a background read of a secret that
+     * has never been read interactively fails CLOSED. The actionable fix —
+     * sign in once as the owner (or open the credential) to trigger the
+     * one-time migration — is distinct from the owner-gone / owner-disabled
+     * config errors raised earlier in {@see resolveOwner()}.
+     *
+     * @param string  $brokerReason The broker's (opaque, secret-free) denial message.
+     * @param string  $method       The HTTP method (echoed into the allow-rule hint).
+     * @param boolean $sessionless  Whether the call ran without a user session (acting-user pinned).
+     *
+     * @return string The actionable, secret-free refusal message.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+     */
+    private function buildRefusalMessage(string $brokerReason, string $method, bool $sessionless): string
+    {
+        $message = 'Credential broker refused the request ('.$brokerReason.'). '
+            .'If OpenConnector should be allowed to use this credential, add "openconnector" to the '
+            ."credential's allowedApps and verify the provider allow-rules cover ".$method.' requests.';
+
+        if ($sessionless === true) {
+            $message .= ' This call ran as a background job (no user session): if the credential\'s secret has '
+                .'not yet been migrated to Doriath, a sessionless read of it fails closed because the '
+                .'vault→Doriath migration only runs in a user session. Sign in once as the credential owner '
+                .'(or open the credential in OpenRegister) to trigger the one-time migration, then re-run the sync.';
+        }
+
+        return $message;
+
+    }//end buildRefusalMessage()
 
     /**
      * Returns whether the broker class is loadable (protected seam for tests).
@@ -646,15 +673,22 @@ class BrokeredCallService
     }//end loadCredential()
 
     /**
-     * Derives the acting user for the brokered dispatch.
+     * Derives the acting user for the brokered dispatch (owner-pinning policy).
      *
      * Interactive calls (a session user exists) rely on the broker's own
      * session-derived owner guard — no acting user is passed. Sessionless
-     * (cron) calls pass the credential OWNER via the broker's optional
-     * acting-user parameter, feature-detected by reflection on `request()`
-     * so an older broker soft-fails with a config error — never a TypeError.
-     * The acting user substitutes only the session identity: allowedApps,
-     * allowRules, and host-lock remain enforced by the broker.
+     * (cron) calls pin the acting user to the credential OWNER read from the
+     * OR metadata object at call time (design: owner-pinning — the simple,
+     * robust default), passed via the broker's optional acting-user
+     * parameter (feature-detected by reflection on `request()` so an older
+     * broker soft-fails with a config error — never a TypeError). The acting
+     * user substitutes ONLY the session identity: allowedApps, allowRules,
+     * and host-lock remain enforced by the broker.
+     *
+     * A resolved owner that is empty, no longer exists, or is disabled fails
+     * CLOSED with an actionable config error (see {@see resolveOwner()}) — a
+     * sessionless brokered call NEVER falls back to acting as no-one or as an
+     * administrator.
      *
      * @param ObjectEntity $credential   The credential metadata object.
      * @param string       $credentialId The credential UUID (for error messages).
@@ -681,17 +715,93 @@ class BrokeredCallService
             );
         }
 
+        return $this->resolveOwner(credential: $credential, credentialId: $credentialId);
+
+    }//end resolveActingUser()
+
+    /**
+     * Owner-pinning: read the credential OWNER and assert it is usable.
+     *
+     * The acting user for a sessionless brokered call is deterministically the
+     * OR credential object's `owner` at call time — never a cached, guessed,
+     * or configured identity. Three fail-closed guards protect the pin:
+     *
+     *   1. empty owner        — a corrupt / owner-less credential metadata object;
+     *   2. owner gone         — the owner uid no longer resolves to a Nextcloud user
+     *                           (deleted account);
+     *   3. owner disabled     — the owner account exists but is disabled.
+     *
+     * Each is a hard config error (mapped to a 409 CallLog) and is logged at
+     * warning level with the guard name, the owner uid, and the credential id
+     * ONLY — never any secret material (the metadata object holds none, but the
+     * log is deliberately restricted to the pin identity regardless).
+     *
+     * @param ObjectEntity $credential   The credential metadata object.
+     * @param string       $credentialId The credential UUID (for error messages).
+     *
+     * @return string The pinned owner uid.
+     *
+     * @throws BrokeredCallConfigurationException When the owner is empty, gone, or disabled.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
+     */
+    private function resolveOwner(ObjectEntity $credential, string $credentialId): string
+    {
         $owner = (string) ($credential->getOwner() ?? '');
         if ($owner === '') {
+            $this->logOwnerRefusal(guard: 'owner-empty', owner: '', credentialId: $credentialId);
             throw new BrokeredCallConfigurationException(
-                message: 'The credential referenced by credentialRef ("'.$credentialId.'") has no owner — '
+                message: 'The credential referenced by credentialRef ("'.$credentialId.'") has no owner recorded — '
                     .'cannot derive the acting user for a background (sessionless) brokered call.'
+            );
+        }
+
+        $ownerUser = $this->userManager->get($owner);
+        if ($ownerUser === null) {
+            $this->logOwnerRefusal(guard: 'owner-gone', owner: $owner, credentialId: $credentialId);
+            throw new BrokeredCallConfigurationException(
+                message: 'The owner ("'.$owner.'") of the credential referenced by credentialRef ("'.$credentialId
+                    .'") no longer exists — a background (sessionless) brokered call cannot act as a deleted user. '
+                    .'Re-assign the credential to a current user or remove the source.'
+            );
+        }
+
+        if ($ownerUser->isEnabled() === false) {
+            $this->logOwnerRefusal(guard: 'owner-disabled', owner: $owner, credentialId: $credentialId);
+            throw new BrokeredCallConfigurationException(
+                message: 'The owner ("'.$owner.'") of the credential referenced by credentialRef ("'.$credentialId
+                    .'") is disabled — a background (sessionless) brokered call cannot act as a disabled user. '
+                    .'Re-enable the account or re-assign the credential to a current user.'
             );
         }
 
         return $owner;
 
-    }//end resolveActingUser()
+    }//end resolveOwner()
+
+    /**
+     * Logs an owner-pin refusal — guard name + pin identity only, never a secret.
+     *
+     * @param string $guard        The refusal guard name (owner-empty / owner-gone / owner-disabled).
+     * @param string $owner        The pinned owner uid (a Nextcloud user id, not secret material).
+     * @param string $credentialId The credential UUID.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+     */
+    private function logOwnerRefusal(string $guard, string $owner, string $credentialId): void
+    {
+        $this->logger->warning(
+            '[BrokeredCallService] sessionless brokered call refused: '.$guard,
+            [
+                'guard'        => $guard,
+                'owner'        => $owner,
+                'credentialId' => $credentialId,
+            ]
+        );
+
+    }//end logOwnerRefusal()
 
     /**
      * Feature-detects the broker's optional acting-user parameter via reflection.
