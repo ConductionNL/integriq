@@ -1,6 +1,16 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Brokered credential" : "Bemiddelde referentie",
+    "Brokered credential (OpenRegister)" : "Bemiddelde referentie (OpenRegister)",
+    "Credential" : "Referentie",
+    "Pick a source type" : "Kies een brontype",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Verwijs naar een referentie die door de OpenRegister-referentiebemiddelaar wordt beheerd, in plaats van een geheim op deze bron op te slaan. Het geheim komt nooit in OpenConnector terecht.",
+    "Select a brokered credential" : "Selecteer een bemiddelde referentie",
+    "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "De referentie moet de aanroepende app \"openconnector\" toestaan in allowedApps. Let op: de app die de referentie heeft aangemaakt kan een andere zijn.",
+    "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here." : "De OpenRegister-referentiebemiddelaar is niet beschikbaar (de openregister-app is uitgeschakeld of te oud). Bemiddelde referenties kunnen hier niet worden getoond.",
+    "The transport used to reach this source." : "Het transport dat wordt gebruikt om deze bron te bereiken.",
+    "You have no brokered credentials yet. Create one in OpenRegister first." : "U heeft nog geen bemiddelde referenties. Maak er eerst een aan in OpenRegister.",
     "Address lookup temporarily unavailable" : "Adresopzoeking tijdelijk niet beschikbaar",
     "Query parameter q is required" : "Parameter q is vereist",
     "Address not found" : "Adres niet gevonden",
