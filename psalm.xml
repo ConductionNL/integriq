@@ -70,6 +70,9 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialBrokerService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialUpstreamException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>

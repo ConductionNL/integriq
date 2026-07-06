@@ -14,9 +14,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
+use GuzzleHttp\Psr7\Response;
+use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Service\AuthenticationService;
+use OCA\OpenConnector\Service\BrokeredCallService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -58,21 +62,374 @@ class CallServiceTest extends TestCase
         // IAppConfig::hasKey defaults to false so no retention config is applied.
         $appConfig->method('hasKey')->willReturn(false);
 
-        // CallService constructor signature (5 args): ORObjectService,
-        // ArrayLoader, AuthenticationService, IAppConfig, LoggerInterface.
-        // The previous version passed only 4 — the LoggerInterface arg was
-        // added by #1011 (security-policy warnings) but the test wasn't
-        // updated, causing 5 ArgumentCountErrors that only surfaced once
-        // #1023 unblocked setUp() and the post-#1024 Service-suite peel
-        // (#1026) brought the remaining 3 cited #1025 suites to green.
+        // CallService constructor signature (6 args): ORObjectService,
+        // ArrayLoader, AuthenticationService, IAppConfig, LoggerInterface,
+        // BrokeredCallService (source-broker-credentials). The previous
+        // version passed only 4 — the LoggerInterface arg was added by #1011
+        // (security-policy warnings) but the test wasn't updated, causing 5
+        // ArgumentCountErrors that only surfaced once #1023 unblocked setUp()
+        // and the post-#1024 Service-suite peel (#1026) brought the remaining
+        // 3 cited #1025 suites to green.
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
         $this->service = new CallService(
             $this->objectService,
             new ArrayLoader([]),
             $authService,
             $appConfig,
             $logger,
+            $brokered,
         );
     }//end setUp()
+
+
+    /**
+     * Captured saveObject() invocations from buildBrokeredCallService().
+     *
+     * @var array
+     */
+    private array $saved = [];
+
+
+    /**
+     * Build a CallService with a capturing ObjectService and the given broker double.
+     *
+     * @param BrokeredCallService|\PHPUnit\Framework\MockObject\MockObject $brokered The brokered-call double.
+     *
+     * @return CallService
+     */
+    private function buildBrokeredCallService($brokered): CallService
+    {
+        $this->saved = [];
+
+        $objectService = $this->createMock(ObjectService::class);
+        $objectService->method('saveObject')->willReturnCallback(
+            function ($object=[], $register=null, $schema=null, $uuid=null) {
+                $this->saved[] = [
+                    'object'   => $object,
+                    'register' => $register,
+                    'schema'   => $schema,
+                    'uuid'     => $uuid,
+                ];
+                $entity = new ObjectEntity();
+                $entity->setUuid('saved-'.count($this->saved));
+                $entity->setObject(is_array($object) === true ? $object : []);
+
+                return $entity;
+            }
+        );
+
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('hasKey')->willReturn(false);
+
+        return new CallService(
+            $objectService,
+            new ArrayLoader([]),
+            $this->createMock(AuthenticationService::class),
+            $appConfig,
+            $this->createMock(LoggerInterface::class),
+            $brokered,
+        );
+    }//end buildBrokeredCallService()
+
+
+    /**
+     * Hydrate an enabled brokered source entity.
+     *
+     * The location deliberately points at a non-resolvable host: if the
+     * engine ever fell back to the Guzzle client, the call would surface as a
+     * synthetic 503 ConnectException log — not the brokered response asserted
+     * by the tests below.
+     *
+     * @param array|null $configuration Source configuration override.
+     *
+     * @return ObjectEntity
+     */
+    private function makeBrokeredSource(?array $configuration=null): ObjectEntity
+    {
+        if ($configuration === null) {
+            $configuration = [
+                'authentication' => [
+                    'credentialRef' => ['credentialId' => '00000000-0000-0000-0000-000000000000'],
+                ],
+            ];
+        }
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-1');
+        $source->setObject(
+            [
+                'name'          => 'brokered-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => $configuration,
+            ]
+        );
+
+        return $source;
+    }//end makeBrokeredSource()
+
+
+    /**
+     * Return the captured call_log payloads.
+     *
+     * @return array
+     */
+    private function savedCallLogs(): array
+    {
+        return array_values(
+            array_filter(
+                $this->saved,
+                function ($row) {
+                    return ($row['schema'] === 'call_log');
+                }
+            )
+        );
+    }//end savedCallLogs()
+
+
+    /**
+     * A brokered call bypasses Guzzle and persists a normal-envelope CallLog.
+     *
+     * REQ-SBC-002: dispatch goes through the broker double (statusCode 200
+     * against an unresolvable host proves the Guzzle client was not invoked)
+     * and the persisted CallLog carries the standard request/response envelope.
+     *
+     * @return void
+     */
+    public function testBrokeredCallBypassesGuzzleAndPersistsNormalCallLog(): void
+    {
+        $dispatched = [];
+        $brokered   = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->expects($this->once())
+            ->method('dispatch')
+            ->willReturnCallback(
+                function (string $credentialId, ?string $actingUserId, string $method, string $url, array $config) use (&$dispatched) {
+                    $dispatched[] = [
+                        'credentialId' => $credentialId,
+                        'actingUserId' => $actingUserId,
+                        'method'       => $method,
+                        'url'          => $url,
+                        'config'       => $config,
+                    ];
+
+                    return new Response(200, ['Content-Type' => ['application/json']], '{"ok":true}');
+                }
+            );
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $callLog = $service->call(source: $this->makeBrokeredSource(), endpoint: '/v1/items');
+
+        $this->assertSame('00000000-0000-0000-0000-000000000000', $dispatched[0]['credentialId']);
+        $this->assertSame('GET', $dispatched[0]['method']);
+        $this->assertSame('https://api.example.invalid/v1/items', $dispatched[0]['url']);
+        // The stripped config never carries authentication material.
+        $this->assertArrayNotHasKey('authentication', $dispatched[0]['config']);
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertSame(200, $log['statusCode']);
+        $this->assertSame('source-uuid-1', $log['source']);
+        $this->assertArrayHasKey('request', $log);
+        $this->assertArrayHasKey('response', $log);
+        $this->assertSame('GET', $log['request']['method']);
+        $this->assertArrayHasKey('responseTime', $log['response']);
+        $this->assertInstanceOf(ObjectEntity::class, $callLog);
+    }//end testBrokeredCallBypassesGuzzleAndPersistsNormalCallLog()
+
+
+    /**
+     * A brokered config error persists a synthetic 409 CallLog; dispatch never runs.
+     *
+     * REQ-SBC-001: sibling embedded secrets are a hard config error — no
+     * outbound request is dispatched, brokered or Guzzle.
+     *
+     * @return void
+     */
+    public function testBrokeredConfigErrorPersists409EarlyLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willThrowException(
+            new BrokeredCallConfigurationException(
+                message: 'Embedded authentication fields are forbidden alongside credentialRef (found: client_secret).'
+            )
+        );
+        $brokered->expects($this->never())->method('dispatch');
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $service->call(source: $this->makeBrokeredSource(), endpoint: '/v1/items');
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(409, $logs[0]['object']['statusCode']);
+        $this->assertStringContainsString('forbidden alongside credentialRef', $logs[0]['object']['statusMessage']);
+    }//end testBrokeredConfigErrorPersists409EarlyLog()
+
+
+    /**
+     * Broker unavailable soft-fails as a 409 config log with NO fallback dispatch.
+     *
+     * REQ-SBC-004: only the synthetic 409 log is persisted — no call_log with
+     * an upstream status exists, proving no embedded-secret fallback ran.
+     *
+     * @return void
+     */
+    public function testBrokeredSoftFailWithoutBrokerNeverFallsBack(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willThrowException(
+            new BrokeredCallConfigurationException(
+                message: 'credentialRef is configured but the OpenRegister credential broker is unavailable.'
+            )
+        );
+        $brokered->expects($this->never())->method('dispatch');
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $service->call(source: $this->makeBrokeredSource(), endpoint: '/v1/items');
+
+        $this->assertCount(1, $this->saved);
+        $this->assertSame('call_log', $this->saved[0]['schema']);
+        $this->assertSame(409, $this->saved[0]['object']['statusCode']);
+        $this->assertStringContainsString('credential broker is unavailable', $this->saved[0]['object']['statusMessage']);
+    }//end testBrokeredSoftFailWithoutBrokerNeverFallsBack()
+
+
+    /**
+     * Brokered CallLogs run through the same redaction pipeline as Guzzle logs.
+     *
+     * REQ-SBC-004 (task 12 fixture): a secret-looking request header is
+     * redacted in the persisted request config, and a response body echoing
+     * the value is scrubbed — identical to the Guzzle-path redaction tests.
+     *
+     * @return void
+     */
+    public function testBrokeredCallLogRedactsSecretsLikeGuzzlePath(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->method('dispatch')->willReturn(
+            new Response(500, [], 'upstream error echoing sekret-value-123 back')
+        );
+
+        $configuration = [
+            'headers'        => ['X-Api-Key' => 'sekret-value-123'],
+            'authentication' => [
+                'credentialRef' => ['credentialId' => '00000000-0000-0000-0000-000000000000'],
+            ],
+        ];
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $service->call(source: $this->makeBrokeredSource(configuration: $configuration), endpoint: '/v1/items');
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertSame(500, $log['statusCode']);
+        // Request header value redacted.
+        $this->assertSame('***REDACTED***', $log['request']['headers']['X-Api-Key']);
+        // Echoed secret scrubbed from the persisted response body.
+        $this->assertStringContainsString('***REDACTED***', $log['response']['body']);
+        $this->assertStringNotContainsString('sekret-value-123', json_encode($log));
+    }//end testBrokeredCallLogRedactsSecretsLikeGuzzlePath()
+
+
+    /**
+     * A paginated brokered sync issues ONE brokered request per page and the
+     * engine's rate-limit tracking keeps working off the returned headers.
+     *
+     * REQ-SBC-002: `SynchronizationService::fetchSinglePageData()` performs
+     * one `CallService::call()` per page (with `config['pagination']`); this
+     * exercises exactly that engine seam for three pages.
+     *
+     * @return void
+     */
+    public function testBrokeredPaginationOneRequestPerPageWithRateLimitTracking(): void
+    {
+        $dispatched = [];
+        $brokered   = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->expects($this->exactly(3))
+            ->method('dispatch')
+            ->willReturnCallback(
+                function (string $credentialId, ?string $actingUserId, string $method, string $url, array $config) use (&$dispatched) {
+                    $dispatched[] = $config;
+                    $page         = count($dispatched);
+
+                    return new Response(
+                        200,
+                        [
+                            'X-RateLimit-Limit'     => ['100'],
+                            'X-RateLimit-Remaining' => [(string) (100 - $page)],
+                            'X-RateLimit-Reset'     => [(string) (time() + 3600)],
+                        ],
+                        '[]'
+                    );
+                }
+            );
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $source  = $this->makeBrokeredSource();
+
+        foreach ([1, 2, 3] as $page) {
+            $service->call(
+                source: $source,
+                endpoint: '/v1/items',
+                config: [
+                    'pagination' => [
+                        'paginationQuery' => 'page',
+                        'page'            => $page,
+                    ],
+                ],
+            );
+        }
+
+        // One brokered request per page, with the page mapped into the query.
+        $this->assertCount(3, $dispatched);
+        $this->assertSame(1, $dispatched[0]['query']['page']);
+        $this->assertSame(2, $dispatched[1]['query']['page']);
+        $this->assertSame(3, $dispatched[2]['query']['page']);
+
+        // Rate-limit headers fed the source tracking (one source save per call).
+        $sourceSaves = array_values(
+            array_filter(
+                $this->saved,
+                function ($row) {
+                    return ($row['schema'] === 'source');
+                }
+            )
+        );
+        $this->assertCount(3, $sourceSaves);
+        $this->assertSame(97, $sourceSaves[2]['object']['rateLimitRemaining']);
+        $this->assertSame(100, $sourceSaves[2]['object']['rateLimitLimit']);
+
+        // The persisted CallLogs expose the merged X-RateLimit-* headers.
+        $logs = $this->savedCallLogs();
+        $this->assertCount(3, $logs);
+        $this->assertArrayHasKey('X-RateLimit-Remaining', $logs[2]['object']['response']['headers']);
+    }//end testBrokeredPaginationOneRequestPerPageWithRateLimitTracking()
 
 
     /**
