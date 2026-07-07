@@ -27,6 +27,8 @@ namespace OCA\OpenConnector\Service\RateLimit;
  * Immutable result of an inbound rate-limit + quota check.
  *
  * @spec openspec/specs/consumer-management/spec.md
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 final class RateLimitDecision
 {

@@ -39,6 +39,8 @@ use OCP\SetupCheck\SetupResult;
  * Reports OpenRegister as a required, missing dependency in the admin overview.
  *
  * @spec openspec/specs/app-distribution-metadata/spec.md
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class OpenRegisterDependencyCheck implements ISetupCheck
 {
