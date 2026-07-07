@@ -654,7 +654,10 @@
         ],
         "sidebar": {
           "enabled": true,
-          "showMetadata": true
+          "showMetadata": true,
+          "tabs": [
+            { "id": "audit", "label": "Audit trail", "component": "CnAuditTrailTab" }
+          ]
         },
         "documentationUrl": "https://openconnector.conduction.nl"
       }
