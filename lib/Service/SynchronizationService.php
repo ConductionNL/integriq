@@ -3664,6 +3664,16 @@ class SynchronizationService
                 continue;
             }
 
+            // Skip in-document anchors ("#section") and scheme-less/relative
+            // targets. Awesome-list style entries always carry an absolute URL
+            // ("https://..."); a table-of-contents or "back to top" link points
+            // at a fragment. Only absolute-URI links (carrying a scheme)
+            // describe an external-resource record — the rest is navigation
+            // noise, not data. Skip gracefully, do not throw.
+            if (preg_match('~^[a-z][a-z0-9+.\-]*:~i', trim($matches['url'])) !== 1) {
+                continue;
+            }
+
             $rest        = ($matches['rest'] ?? '');
             $firstTagPos = strpos($rest, '`');
             if ($firstTagPos === false) {
