@@ -62,6 +62,13 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
         }
 
+        // OCA\OpenRegister AppHost stubs — peer app not in vendor. Used by the
+        // openconnector HealthController delegation path (licence-and-or-
+        // requirement-honesty change).
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Controller/GenericHealthController.php';
+        }
+
         // OCA\OpenRegister stubs — peer app not in vendor.
         if (class_exists('OCA\\OpenRegister\\Db\\ObjectEntity') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
