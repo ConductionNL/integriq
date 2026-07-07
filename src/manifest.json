@@ -297,7 +297,7 @@
           "enabled": true,
           "showMetadata": true,
           "tabs": [
-            { "id": "audit", "label": "Audit trail", "component": "CnAuditTrailTab" }
+            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
           ]
         },
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -357,7 +357,7 @@
           "enabled": true,
           "showMetadata": true,
           "tabs": [
-            { "id": "audit", "label": "Audit trail", "component": "CnAuditTrailTab" }
+            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
           ]
         },
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -418,7 +418,7 @@
           "enabled": true,
           "showMetadata": true,
           "tabs": [
-            { "id": "audit", "label": "Audit trail", "component": "CnAuditTrailTab" }
+            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
           ]
         },
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -656,7 +656,7 @@
           "enabled": true,
           "showMetadata": true,
           "tabs": [
-            { "id": "audit", "label": "Audit trail", "component": "CnAuditTrailTab" }
+            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
           ]
         },
         "documentationUrl": "https://openconnector.conduction.nl"
