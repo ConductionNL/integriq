@@ -1,6 +1,8 @@
 ---
-status: done
+status: in-progress
 retrofit: true
+openspec-changes:
+  - guard-deletion-on-failed-fetch
 ---
 
 # Synchronization Engine
