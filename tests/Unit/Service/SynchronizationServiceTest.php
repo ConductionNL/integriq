@@ -924,6 +924,193 @@ class SynchronizationServiceTest extends TestCase
 
 
     /**
+     * oc#107 — a `Source.configuration.format: "markdown"` source (the
+     * awesome_selfhosted README shape) is parsed into one record per
+     * `- [Name](url) - description \`Tag\`` list item. Fixture includes: an
+     * item with two tags (license + language), an item with one tag, an
+     * item with zero tags, a heading line, a blank line, and a non-matching
+     * plain-text list item — all five non-record lines MUST be skipped
+     * without throwing, leaving exactly three records.
+     *
+     * @return void
+     */
+    public function testMarkdownSourceParsesAwesomeListItemsIntoRecords(): void
+    {
+        $this->stubSource(
+            [
+                'uuid'          => 'source-uuid-md',
+                'location'      => 'https://raw.githubusercontent.com/awesome-selfhosted/awesome-selfhosted-data/master/README.md',
+                'configuration' => ['format' => 'markdown'],
+            ]
+        );
+
+        $markdown = implode(
+            "\n",
+            [
+                '# Awesome-Selfhosted',
+                '',
+                '## Automation',
+                '- [n8n](https://n8n.io/) - Workflow automation tool. `Sustainable use license` `TypeScript`',
+                '- [Huginn](https://github.com/huginn/huginn) - Build agents that monitor things. `MIT`',
+                '- Just a plain bullet with no link, describing something.',
+                '- [Cronicle](https://github.com/jhuckaby/Cronicle) - Task scheduler with no tags at all',
+            ]
+        );
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => $markdown,
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['text/markdown']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-md',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/README.md',
+                    'resultsPosition' => '_root',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertCount(3, $objects);
+
+        $this->assertSame('n8n', $objects[0]['name']);
+        $this->assertSame('https://n8n.io/', $objects[0]['url']);
+        $this->assertSame('Workflow automation tool.', $objects[0]['description']);
+        $this->assertSame(['Sustainable use license', 'TypeScript'], $objects[0]['tags']);
+
+        $this->assertSame('Huginn', $objects[1]['name']);
+        $this->assertSame(['MIT'], $objects[1]['tags']);
+
+        $this->assertSame('Cronicle', $objects[2]['name']);
+        $this->assertSame('Task scheduler with no tags at all', $objects[2]['description']);
+        $this->assertSame([], $objects[2]['tags']);
+    }//end testMarkdownSourceParsesAwesomeListItemsIntoRecords()
+
+
+    /**
+     * oc#107 — a `Source.configuration.format: "html"` source (openalternative/
+     * don_oss_register-shaped: a plain HTML table with no API) extracts one
+     * record per `htmlSelector`-matched row, with `htmlFields` sub-selectors
+     * pulling text content and — via the `selector@attr` syntax — the `href`
+     * attribute off the name column's anchor.
+     *
+     * @return void
+     */
+    public function testHtmlSourceExtractsTableRowsViaCssSelectors(): void
+    {
+        $this->stubSource(
+            [
+                'uuid'          => 'source-uuid-html',
+                'location'      => 'https://www.opensourcealternative.to/',
+                'configuration' => [
+                    'format'       => 'html',
+                    'htmlSelector' => 'table tbody tr',
+                    'htmlFields'   => [
+                        'name'        => 'td.name a',
+                        'url'         => 'td.name a@href',
+                        'description' => 'td.description',
+                    ],
+                ],
+            ]
+        );
+
+        $html = <<<HTML
+<html><body>
+<table>
+  <tbody>
+    <tr>
+      <td class="name"><a href="https://example.test/tools/alpha">Alpha</a></td>
+      <td class="description">An alternative to Acme</td>
+    </tr>
+    <tr>
+      <td class="name"><a href="https://example.test/tools/beta">Beta</a></td>
+      <td class="description">Another alternative</td>
+    </tr>
+  </tbody>
+</table>
+</body></html>
+HTML;
+
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => $html,
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['text/html']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-html',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/',
+                    'resultsPosition' => '_root',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertCount(2, $objects);
+        $this->assertSame('Alpha', $objects[0]['name']);
+        $this->assertSame('https://example.test/tools/alpha', $objects[0]['url']);
+        $this->assertSame('An alternative to Acme', $objects[0]['description']);
+        $this->assertSame('Beta', $objects[1]['name']);
+        $this->assertSame('https://example.test/tools/beta', $objects[1]['url']);
+    }//end testHtmlSourceExtractsTableRowsViaCssSelectors()
+
+
+    /**
+     * Regression — a source with neither `Source.configuration.format:
+     * "markdown"` nor `"html"` (and no other new oc#107 config key) is
+     * unaffected: the markdown/html branches are never entered, and an
+     * ordinary JSON body still parses through the pre-existing
+     * `resultsPosition` extraction exactly as before.
+     *
+     * @return void
+     */
+    public function testExistingJsonSourceWithoutMarkdownOrHtmlFormatIsUnaffected(): void
+    {
+        $this->stubSource(
+            [
+                'uuid'          => 'source-uuid-plain-json-2',
+                'location'      => 'https://example.test',
+                'configuration' => [],
+            ]
+        );
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => json_encode(['items' => [['id' => 1], ['id' => 2]]]),
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['application/json']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-plain-json-2',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/items',
+                    'resultsPosition' => 'items',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertSame([['id' => 1], ['id' => 2]], $objects);
+    }//end testExistingJsonSourceWithoutMarkdownOrHtmlFormatIsUnaffected()
+
+
+    /**
      * oc#94 — a synchronization whose `sourceConfig.paginationIn` is `"body"`
      * threads that directive (plus the incrementing page number) into
      * `CallService::call()`'s `config.pagination` for every page after the
