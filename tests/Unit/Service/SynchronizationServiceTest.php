@@ -48,6 +48,11 @@ class SynchronizationServiceTest extends TestCase
      */
     private $logger;
 
+    /**
+     * @var CallService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $callService;
+
 
     /**
      * Set up test fixtures.
@@ -60,8 +65,8 @@ class SynchronizationServiceTest extends TestCase
 
         $this->orObjectService = ObjectServiceMockBuilder::make($this);
         $this->logger          = $this->createMock(LoggerInterface::class);
+        $this->callService     = $this->createMock(CallService::class);
 
-        $callService               = $this->createMock(CallService::class);
         $mappingService            = $this->createMock(MappingService::class);
         $container                 = $this->createMock(ContainerInterface::class);
         $objectService             = $this->createMock(ObjectService::class);
@@ -70,7 +75,7 @@ class SynchronizationServiceTest extends TestCase
         $appConfig->method('hasKey')->willReturn(false);
 
         $this->service = new SynchronizationService(
-            $callService,
+            $this->callService,
             $mappingService,
             $container,
             $this->orObjectService,
@@ -588,6 +593,446 @@ class SynchronizationServiceTest extends TestCase
 
         $this->assertSame($entity, $result);
     }//end testGetSynchronizationDelegatesToFind()
+
+
+    /**
+     * Stub `orObjectService::find()` to return a `source` entity carrying the
+     * given body, and `callService::applyConfigDot()` to pass its argument
+     * through unchanged (matching the real Adbar\Dot behaviour for configs
+     * with no dotted keys, which every fixture below uses).
+     *
+     * @param array $sourceBody The source object body (location/configuration/etc).
+     *
+     * @return void
+     */
+    private function stubSource(array $sourceBody): void
+    {
+        $entity = ObjectServiceMockBuilder::objectEntity($this, $sourceBody, ($sourceBody['uuid'] ?? 'source-uuid'));
+        $this->orObjectService->method('find')->willReturn($entity);
+        $this->callService->method('applyConfigDot')->willReturnArgument(0);
+    }//end stubSource()
+
+
+    /**
+     * Stub `callService::call()` to return one canned call-log response for
+     * every invocation (single-page fixtures).
+     *
+     * @param array $response The `response` sub-array (statusCode/body/encoding/headers).
+     *
+     * @return void
+     */
+    private function stubSingleCallResponse(array $response): void
+    {
+        $callLog = ObjectServiceMockBuilder::objectEntity($this, ['response' => $response], 'call-log-1');
+        $this->callService->method('call')->willReturn($callLog);
+    }//end stubSingleCallResponse()
+
+
+    /**
+     * oc#97 — a `.jsonl.gz` bulk source (the OpenTender/OCP registry shape:
+     * Slovenia pub-93, Romania pub-75, Croatia pub-80) is gunzipped and each
+     * JSONL line decoded as one record. Includes a blank line to prove line
+     * skipping does not lose subsequent records. The gzip bytes are
+     * base64-encoded exactly as CallService encodes any non-UTF8 response
+     * body (real gzip binary always fails `mb_check_encoding`).
+     *
+     * @return void
+     */
+    public function testGzipJsonlBulkSourceDecodesEachLineAsARecord(): void
+    {
+        $this->stubSource(
+            [
+                'uuid'          => 'source-uuid-gz',
+                'location'      => 'https://data.open-contracting.org',
+                'configuration' => [],
+            ]
+        );
+
+        $jsonl = implode(
+            "\n",
+            [
+                json_encode(['ocid' => 'ocds-1', 'tender' => ['title' => 'Tender A']]),
+                '',
+                json_encode(['ocid' => 'ocds-2', 'tender' => ['title' => 'Tender B']]),
+            ]
+        );
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => base64_encode((string) gzencode($jsonl)),
+                'encoding'   => 'base64',
+                'headers'    => ['Content-Type' => ['application/gzip']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'   => 'source-uuid-gz',
+                'sourceType' => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/download?name=full.jsonl.gz',
+                    'resultsPosition' => '_root',
+                    'format'          => 'jsonl',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertCount(2, $objects);
+        $this->assertSame('ocds-1', $objects[0]['ocid']);
+        $this->assertSame('Tender B', $objects[1]['tender']['title']);
+    }//end testGzipJsonlBulkSourceDecodesEachLineAsARecord()
+
+
+    /**
+     * oc#97 — `format: "jsonl"` also works standalone (no compression), e.g.
+     * an already-decompressed bulk export or an ETL pre-processing step.
+     *
+     * @return void
+     */
+    public function testPlainJsonlSourceWithoutGzipStillParsesLines(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-plain-jsonl', 'location' => 'https://example.test']);
+
+        $jsonl = implode(
+            "\n",
+            [
+                json_encode(['id' => 1]),
+                json_encode(['id' => 2]),
+                json_encode(['id' => 3]),
+            ]
+        );
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => $jsonl,
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['application/x-ndjson']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-plain-jsonl',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/export.jsonl',
+                    'resultsPosition' => '_root',
+                    'format'          => 'jsonl',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertSame([['id' => 1], ['id' => 2], ['id' => 3]], $objects);
+    }//end testPlainJsonlSourceWithoutGzipStillParsesLines()
+
+
+    /**
+     * oc#97 — gzip detection also works for an ordinary (non-JSONL) JSON
+     * body via the response `Content-Type: application/gzip` header alone
+     * (no `.gz`-suffixed endpoint, no `configuration.decompress` hint).
+     *
+     * @return void
+     */
+    public function testGzipDetectionViaContentTypeHeaderDecompressesOrdinaryJson(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-gz-ct', 'location' => 'https://example.test']);
+
+        $json = json_encode(['items' => [['id' => 1], ['id' => 2]]]);
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => base64_encode((string) gzencode((string) $json)),
+                'encoding'   => 'base64',
+                'headers'    => ['content-type' => ['application/gzip']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-gz-ct',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/export',
+                    'resultsPosition' => 'items',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertCount(2, $objects);
+        $this->assertSame(1, $objects[0]['id']);
+    }//end testGzipDetectionViaContentTypeHeaderDecompressesOrdinaryJson()
+
+
+    /**
+     * oc#97 — `Source.configuration.decompress: "gzip"` is an explicit hint
+     * that works even when neither the endpoint nor the response
+     * Content-Type gives it away.
+     *
+     * @return void
+     */
+    public function testDecompressConfigHintTriggersGzipDecompression(): void
+    {
+        $this->stubSource(
+            [
+                'uuid'          => 'source-uuid-hint',
+                'location'      => 'https://example.test',
+                'configuration' => ['decompress' => 'gzip'],
+            ]
+        );
+
+        $json = json_encode(['items' => [['id' => 7]]]);
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => base64_encode((string) gzencode((string) $json)),
+                'encoding'   => 'base64',
+                'headers'    => ['Content-Type' => ['application/octet-stream']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-hint',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/export',
+                    'resultsPosition' => 'items',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertSame([['id' => 7]], $objects);
+    }//end testDecompressConfigHintTriggersGzipDecompression()
+
+
+    /**
+     * oc#97 — `.tar.gz` bulk archives are explicitly deferred (gzip alone
+     * cannot unpack a tar archive): the fetch short-circuits to zero objects
+     * with a logged warning, rather than the pre-existing silent-empty
+     * failure mode.
+     *
+     * @return void
+     */
+    public function testTarGzEndpointShortCircuitsWithWarningAndNoObjects(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-targz', 'location' => 'https://example.test']);
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => base64_encode('not-actually-parsed'),
+                'encoding'   => 'base64',
+                'headers'    => ['Content-Type' => ['application/gzip']],
+            ]
+        );
+
+        $this->logger->expects($this->once())->method('warning');
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-targz',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/download?name=archive.tar.gz',
+                    'resultsPosition' => '_root',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertSame([], $objects);
+    }//end testTarGzEndpointShortCircuitsWithWarningAndNoObjects()
+
+
+    /**
+     * Regression — a plain JSON source with none of the new oc#97 config
+     * keys (`format`, `decompress`) and no gzip signal at all behaves exactly
+     * as before: the gzip/JSONL branches are never entered.
+     *
+     * @return void
+     */
+    public function testExistingJsonSourceWithoutNewConfigKeysIsUnaffected(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-plain-json', 'location' => 'https://example.test']);
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => json_encode(['items' => [['id' => 1], ['id' => 2]]]),
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['application/json']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-plain-json',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/items',
+                    'resultsPosition' => 'items',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertSame([['id' => 1], ['id' => 2]], $objects);
+    }//end testExistingJsonSourceWithoutNewConfigKeysIsUnaffected()
+
+
+    /**
+     * Regression — the pre-existing XML fallback (simplexml, added
+     * 2026-06-20) is unaffected by the gzip/JSONL additions: a plain XML
+     * body with no gzip signal parses exactly as before.
+     *
+     * @return void
+     */
+    public function testExistingXmlFallbackIsUnaffected(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-xml', 'location' => 'https://example.test']);
+        $xml = '<root><items><item><id>1</id><name>Alpha</name></item></items></root>';
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => $xml,
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['application/xml']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-xml',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/items.xml',
+                    'resultsPosition' => 'items.item',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertCount(1, $objects);
+        // xmlToArray() represents a leaf text node as ['#text' => value] —
+        // pre-existing shape, unrelated to this change, asserted here only to
+        // prove the XML fallback path itself still runs unaffected.
+        $this->assertSame('1', $objects[0]['id']['#text']);
+        $this->assertSame('Alpha', $objects[0]['name']['#text']);
+    }//end testExistingXmlFallbackIsUnaffected()
+
+
+    /**
+     * oc#94 — a synchronization whose `sourceConfig.paginationIn` is `"body"`
+     * threads that directive (plus the incrementing page number) into
+     * `CallService::call()`'s `config.pagination` for every page after the
+     * first, via `getNextPage()`. `CallService::normaliseRequestConfig()`
+     * itself (which performs the actual JSON-body substitution) is exercised
+     * separately in `CallServiceTest`; this proves the synchronization engine
+     * correctly derives and forwards the directive across a real multi-page
+     * loop.
+     *
+     * @return void
+     */
+    public function testBodyPaginationDirectiveThreadsAcrossPages(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-ted', 'location' => 'https://api.ted.europa.eu']);
+
+        $captured = [];
+        $this->callService->method('call')->willReturnCallback(
+            function ($source, string $endpoint='', string $method='GET', array $config=[], ...$rest) use (&$captured) {
+                $captured[] = $config;
+                $page       = count($captured);
+
+                return ObjectServiceMockBuilder::objectEntity(
+                    $this,
+                    [
+                        'response' => [
+                            'statusCode' => 200,
+                            'body'       => json_encode(['notices' => [['publication-number' => (string) $page]]]),
+                            'encoding'   => 'UTF-8',
+                            'headers'    => [],
+                        ],
+                    ],
+                    'call-log-'.$page
+                );
+            }
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-ted',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/search',
+                    'resultsPosition' => 'notices',
+                    'usesPagination'  => true,
+                    'maxPages'        => 3,
+                    'paginationQuery' => 'page',
+                    'paginationIn'    => 'body',
+                ],
+            ]
+        );
+
+        $this->assertCount(3, $captured);
+        $this->assertArrayNotHasKey('pagination', $captured[0], 'page 1 carries no pagination directive yet');
+        $this->assertSame('body', $captured[1]['pagination']['paginationIn']);
+        $this->assertSame(2, $captured[1]['pagination']['page']);
+        $this->assertSame('body', $captured[2]['pagination']['paginationIn']);
+        $this->assertSame(3, $captured[2]['pagination']['page']);
+        $this->assertCount(3, $objects);
+    }//end testBodyPaginationDirectiveThreadsAcrossPages()
+
+
+    /**
+     * Regression — omitting `paginationIn` keeps threading the pre-existing
+     * default (`"query"`), byte-for-byte, for every synchronization that
+     * doesn't opt in to body-based pagination.
+     *
+     * @return void
+     */
+    public function testDefaultPaginationInIsQueryWhenOmitted(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-query-pg', 'location' => 'https://example.test']);
+
+        $captured = [];
+        $this->callService->method('call')->willReturnCallback(
+            function ($source, string $endpoint='', string $method='GET', array $config=[], ...$rest) use (&$captured) {
+                $captured[] = $config;
+                $page       = count($captured);
+
+                return ObjectServiceMockBuilder::objectEntity(
+                    $this,
+                    [
+                        'response' => [
+                            'statusCode' => 200,
+                            'body'       => json_encode(['items' => [['id' => $page]]]),
+                            'encoding'   => 'UTF-8',
+                            'headers'    => [],
+                        ],
+                    ],
+                    'call-log-q-'.$page
+                );
+            }
+        );
+
+        $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-query-pg',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/items',
+                    'resultsPosition' => 'items',
+                    'usesPagination'  => true,
+                    'maxPages'        => 2,
+                ],
+            ]
+        );
+
+        $this->assertCount(2, $captured);
+        $this->assertSame('query', $captured[1]['pagination']['paginationIn']);
+    }//end testDefaultPaginationInIsQueryWhenOmitted()
 
 
 }//end class

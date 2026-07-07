@@ -3316,6 +3316,14 @@ class SynchronizationService
     /**
      * Fetches and parses a single page.
      *
+     * Bulk-file sources (oc#97) MAY serve a gzip-compressed body (a genuine
+     * `.gz` file, not transport `Content-Encoding: gzip` — Guzzle already
+     * transparently unwraps the latter) and/or line-delimited JSON (JSONL,
+     * one record per line, no wrapping array/object). Both are detected and
+     * handled BEFORE the existing JSON/XML parse attempts, which are
+     * otherwise unchanged — a source with neither signal takes the exact
+     * pre-existing code path.
+     *
      * @param array  $source          The data source configuration
      * @param string $endpoint        The page endpoint to fetch
      * @param array  $config          The request configuration
@@ -3323,6 +3331,8 @@ class SynchronizationService
      *
      * @return array{objects: array, result: array}
      * @throws TooManyRequestsHttpException When rate limit is exceeded
+     *
+     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      */
     private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array
     {
@@ -3345,6 +3355,57 @@ class SynchronizationService
         }
 
         $body = $response['body'];
+
+        // #97: .tar.gz bulk archives are NOT supported — gzip decompression
+        // alone unpacks to a tar byte stream, not parseable JSON/JSONL. Short
+        // circuit with a clear log entry instead of silently returning zero
+        // objects like the pre-existing (undetected) failure mode did.
+        if ($this->isTarGzEndpoint(endpoint: $endpoint) === true) {
+            $this->logger->warning(
+                'SynchronizationService: .tar.gz bulk sources are not supported (gzip '.
+                'decompression alone cannot unpack a tar archive) — skipping fetch for '.
+                '{endpoint}. Deferred per oc#97; use an ETL-style loader instead.',
+                ['endpoint' => $endpoint]
+            );
+            return ['objects' => [], 'result' => []];
+        }
+
+        // CallService base64-encodes any response body that fails UTF-8
+        // validation (gzip-compressed bytes always will) and records that in
+        // `encoding`; decode back to raw bytes before attempting gunzip.
+        if (($response['encoding'] ?? 'UTF-8') === 'base64') {
+            $decodedBody = base64_decode($body, true);
+            if ($decodedBody !== false) {
+                $body = $decodedBody;
+            }
+        }
+
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+
+        // #97: gzip-compressed bulk files (OpenTender/OCP `.jsonl.gz` registry
+        // exports). Detected via an explicit `Source.configuration.decompress:
+        // "gzip"` hint, a `.gz`-suffixed endpoint, or an `application/gzip`
+        // response Content-Type — first match wins, no further guessing.
+        if ($this->isGzipPayload(source: $source, endpoint: $endpoint, response: $response) === true) {
+            $decompressed = @gzdecode($body);
+            if ($decompressed !== false) {
+                $body = $decompressed;
+            }
+        }
+
+        // #97: line-delimited JSON (JSONL) — each non-empty line is one
+        // record, no wrapping array/object. Bypasses the json_decode/XML
+        // attempts below entirely (a JSONL body is not valid whole-document
+        // JSON). Guarded against the whole-file-in-memory ceiling by
+        // tokenising line-by-line rather than exploding a second full copy.
+        if (($sourceConfig['format'] ?? null) === 'jsonl') {
+            $result = $this->parseJsonLines(body: $body);
+
+            return [
+                'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+                'result'  => $result,
+            ];
+        }
 
         // Try parsing the response body in different formats, starting with JSON.
         $result = json_decode($body, true);
@@ -3369,6 +3430,147 @@ class SynchronizationService
             'result'  => $result,
         ];
     }//end fetchSinglePageData()
+
+    /**
+     * Determines whether a fetched page body is gzip-compressed.
+     *
+     * Checked in order: an explicit `Source.configuration.decompress: "gzip"`
+     * hint, a `.gz`-suffixed endpoint (path or a `name=`-style query value
+     * carrying the filename), or an `application/gzip` response Content-Type
+     * header. Any one signal is sufficient.
+     *
+     * @param array  $source   The data source configuration.
+     * @param string $endpoint The page endpoint that was fetched.
+     * @param array  $response The decoded call-log response array.
+     *
+     * @return bool True when the body is expected to be gzip-compressed.
+     *
+     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     */
+    private function isGzipPayload(array $source, string $endpoint, array $response): bool
+    {
+        $decompressHint = strtolower((string) ($source['configuration']['decompress'] ?? ''));
+        if ($decompressHint === 'gzip') {
+            return true;
+        }
+
+        if ($this->endpointSuggestsSuffix(endpoint: $endpoint, suffix: '.gz') === true) {
+            return true;
+        }
+
+        foreach (($response['headers'] ?? []) as $name => $value) {
+            if (strtolower((string) $name) !== 'content-type') {
+                continue;
+            }
+
+            $values = $value;
+            if (is_array($values) === false) {
+                $values = [$values];
+            }
+
+            foreach ($values as $singleValue) {
+                if (str_contains(strtolower((string) $singleValue), 'gzip') === true) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }//end isGzipPayload()
+
+    /**
+     * Determines whether the endpoint identifies a `.tar.gz` bulk archive.
+     *
+     * @param string $endpoint The page endpoint that was fetched.
+     *
+     * @return bool True when the endpoint (path or `name=`-style query value)
+     *              ends in `.tar.gz` or `.tar`.
+     */
+    private function isTarGzEndpoint(string $endpoint): bool
+    {
+        return $this->endpointSuggestsSuffix(endpoint: $endpoint, suffix: '.tar.gz')
+            || $this->endpointSuggestsSuffix(endpoint: $endpoint, suffix: '.tar');
+    }//end isTarGzEndpoint()
+
+    /**
+     * Checks whether an endpoint's path, or any of its query-string values,
+     * ends with the given suffix (case-insensitive). Handles the common bulk
+     * registry shape `/download?name=full.jsonl.gz`, where the meaningful
+     * filename lives in a query value rather than the path itself.
+     *
+     * @param string $endpoint The endpoint to inspect.
+     * @param string $suffix   The suffix to check for (e.g. `.gz`).
+     *
+     * @return bool True when the path or a query value ends with the suffix.
+     */
+    private function endpointSuggestsSuffix(string $endpoint, string $suffix): bool
+    {
+        $suffix       = strtolower($suffix);
+        $questionMark = strpos($endpoint, '?');
+        $path         = $endpoint;
+        if ($questionMark !== false) {
+            $path = substr($endpoint, 0, $questionMark);
+        }
+
+        if (str_ends_with(strtolower($path), $suffix) === true) {
+            return true;
+        }
+
+        if ($questionMark === false) {
+            return false;
+        }
+
+        parse_str(substr($endpoint, ($questionMark + 1)), $queryParams);
+        foreach ($queryParams as $value) {
+            if (is_string($value) === true && str_ends_with(strtolower($value), $suffix) === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end endpointSuggestsSuffix()
+
+    /**
+     * Parses a line-delimited JSON (JSONL) body into an array of records.
+     *
+     * Each non-empty, non-whitespace line is decoded independently; lines
+     * that fail to decode as a JSON array/object are skipped rather than
+     * aborting the whole page (one malformed record should not lose the
+     * rest of a bulk file). Tokenises the body line-by-line (`strtok`)
+     * instead of `explode()`-ing a second full in-memory copy — bulk files
+     * can run into the tens of megabytes once decompressed, so this keeps
+     * the peak overhead to roughly one extra line's worth rather than one
+     * extra whole-body copy. The body itself is still held fully in memory
+     * by this point (CallService/Guzzle already buffer the whole response),
+     * so this is a partial mitigation, not true streaming — a genuine
+     * streaming re-read (fetch → decompress → parse without ever holding the
+     * full decompressed string) would need a lower-level change to how
+     * CallService reads the HTTP response body, which is out of scope here.
+     *
+     * @param string $body The decompressed (or already-plain) JSONL body.
+     *
+     * @return array<int, array> The decoded records, in file order.
+     *
+     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     */
+    private function parseJsonLines(string $body): array
+    {
+        $records = [];
+        $line    = strtok($body, "\n");
+        while ($line !== false) {
+            $trimmed = trim($line);
+            if ($trimmed !== '') {
+                $decoded = json_decode($trimmed, true);
+                if (is_array($decoded) === true) {
+                    $records[] = $decoded;
+                }
+            }
+
+            $line = strtok("\n");
+        }
+
+        return $records;
+    }//end parseJsonLines()
 
     /**
      * Checks if the source has exceeded its rate limit and throws an exception if true.
@@ -3502,16 +3704,28 @@ class SynchronizationService
     /**
      * Updates the API request configuration with pagination details for the next page.
      *
+     * Defaults to query-string pagination (unchanged, pre-existing behaviour).
+     * When the synchronization's `sourceConfig.paginationIn` is `"body"` (oc#94
+     * — sources like TED's v3 search that require a static POST body and can
+     * only advance by rewriting a field inside that body, not a query
+     * parameter), `CallService::normaliseRequestConfig()` substitutes the page
+     * value into the JSON body at the `paginationQuery` dot-path instead of
+     * the query string. A source that omits `paginationIn` keeps today's
+     * query-string substitution byte-for-byte.
+     *
      * @param array $config       The current request configuration.
      * @param array $sourceConfig The source configuration containing pagination settings.
      * @param int   $currentPage  The current page number for pagination.
      *
      * @return array Updated configuration with pagination settings.
+     *
+     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
      */
     private function getNextPage(array $config, array $sourceConfig, int $currentPage): array
     {
         $config['pagination'] = [
             'paginationQuery' => $sourceConfig['paginationQuery'] ?? 'page',
+            'paginationIn'    => $sourceConfig['paginationIn'] ?? 'query',
             'page'            => $currentPage,
         ];
 

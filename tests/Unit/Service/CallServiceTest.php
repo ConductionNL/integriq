@@ -516,4 +516,252 @@ class CallServiceTest extends TestCase
     }//end testGetCertificatePassesThroughWhenNoCertKey()
 
 
+    /**
+     * oc#94 regression — a Source's own `configuration.listMethod` MUST
+     * promote a default-GET list/fetch call to POST, and the static
+     * `configuration.body` template MUST be sent as the request body.
+     *
+     * Diagnostic run against HEAD before the fix (decideMethod() ran BEFORE
+     * mergeSourceConfiguration()) proved the dispatched method stayed 'GET'
+     * even with `configuration.listMethod = 'POST'` set — the Source-level
+     * override was invisible to decideMethod(). This is the exact shape TED's
+     * v3 search endpoint needs (`sync_ted_eu`/`ted_eu.json`): POST-only,
+     * static JSON body, no explicit `method:` argument from the caller (mirrors
+     * `SynchronizationService::callSourceObject()`, which never passes one).
+     *
+     * The source is unreachable-by-design (`.invalid` TLD, RFC 2606 — never
+     * resolves, no live external call) so dispatch synthesises a 503
+     * `ConnectException` response; only the PERSISTED request envelope
+     * (method + body) is asserted, not a real upstream reply.
+     *
+     * @return void
+     */
+    public function testSourceLevelListMethodPromotesDefaultGetCallToPostWithBody(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $bodyTemplate = '{"query":"classification-cpv = 48000000*","page":1,"limit":50}';
+        $source       = new ObjectEntity();
+        $source->setUuid('source-uuid-ted');
+        $source->setObject(
+            [
+                'name'          => 'ted',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'listMethod' => 'POST',
+                    'body'       => $bodyTemplate,
+                    'headers'    => ['Content-Type' => 'application/json'],
+                ],
+            ]
+        );
+
+        // No explicit method/config override — mirrors how
+        // SynchronizationService::callSourceObject() actually invokes call().
+        $service->call(source: $source, endpoint: '/v3/notices');
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame('POST', $logs[0]['object']['request']['method']);
+        $this->assertSame($bodyTemplate, $logs[0]['object']['request']['body']);
+        // The method-override key MUST NOT leak into the persisted request envelope.
+        $this->assertArrayNotHasKey('listMethod', $logs[0]['object']['request']);
+    }//end testSourceLevelListMethodPromotesDefaultGetCallToPostWithBody()
+
+
+    /**
+     * oc#94 regression — a source WITHOUT a `listMethod` override keeps
+     * dispatching GET, byte-for-byte as before the ordering fix (backward
+     * compatibility for every existing non-POST source).
+     *
+     * @return void
+     */
+    public function testSourceWithoutListMethodOverrideStillDispatchesGet(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-plain');
+        $source->setObject(
+            [
+                'name'          => 'plain-rest-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame('GET', $logs[0]['object']['request']['method']);
+    }//end testSourceWithoutListMethodOverrideStillDispatchesGet()
+
+
+    /**
+     * oc#94 — body-based pagination substitutes the page value into the
+     * source's static JSON body template at the configured dot-path, leaving
+     * every other field in the template untouched, across three consecutive
+     * pages (mirrors how `SynchronizationService::getNextPage()` re-issues one
+     * brokered/Guzzle call per page with an incrementing `pagination.page`).
+     *
+     * @return void
+     */
+    public function testBodyBasedPaginationSubstitutesPageAcrossThreePages(): void
+    {
+        $dispatched = [];
+        $brokered   = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->expects($this->exactly(3))
+            ->method('dispatch')
+            ->willReturnCallback(
+                function (string $credentialId, ?string $actingUserId, string $method, string $url, array $config) use (&$dispatched) {
+                    $dispatched[] = $config;
+
+                    return new Response(200, ['Content-Type' => ['application/json']], '{"notices":[]}');
+                }
+            );
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $bodyTemplate  = '{"query":"classification-cpv = 48000000*","page":1,"limit":50}';
+        $configuration = [
+            'listMethod'     => 'POST',
+            'body'           => $bodyTemplate,
+            'authentication' => [
+                'credentialRef' => ['credentialId' => '00000000-0000-0000-0000-000000000000'],
+            ],
+        ];
+        $source = $this->makeBrokeredSource(configuration: $configuration);
+
+        foreach ([1, 2, 3] as $page) {
+            $service->call(
+                source: $source,
+                endpoint: '/v3/notices',
+                config: [
+                    'pagination' => [
+                        'paginationQuery' => 'page',
+                        'paginationIn'    => 'body',
+                        'page'            => $page,
+                    ],
+                ],
+            );
+        }
+
+        $this->assertCount(3, $dispatched);
+        foreach ([1, 2, 3] as $index => $expectedPage) {
+            $decodedBody = json_decode($dispatched[$index]['body'], true);
+            $this->assertSame($expectedPage, $decodedBody['page'], "page {$expectedPage} substitution");
+            // Every other field in the static template is untouched.
+            $this->assertSame('classification-cpv = 48000000*', $decodedBody['query']);
+            $this->assertSame(50, $decodedBody['limit']);
+        }
+    }//end testBodyBasedPaginationSubstitutesPageAcrossThreePages()
+
+
+    /**
+     * oc#94 edge case — `paginationIn: "body"` with no static
+     * `configuration.body` template still produces a sane body (`{"page":
+     * N}`) instead of silently dropping the pagination directive.
+     *
+     * @return void
+     */
+    public function testBodyBasedPaginationWithoutStaticBodyTemplateStillSetsPageKey(): void
+    {
+        $dispatched = [];
+        $brokered   = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->method('dispatch')->willReturnCallback(
+            function (string $credentialId, ?string $actingUserId, string $method, string $url, array $config) use (&$dispatched) {
+                $dispatched[] = $config;
+
+                return new Response(200, [], '{"notices":[]}');
+            }
+        );
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $source  = $this->makeBrokeredSource();
+
+        $service->call(
+            source: $source,
+            endpoint: '/v3/notices',
+            config: [
+                'pagination' => [
+                    'paginationQuery' => 'page',
+                    'paginationIn'    => 'body',
+                    'page'            => 2,
+                ],
+            ],
+        );
+
+        $this->assertSame(['page' => 2], json_decode($dispatched[0]['body'], true));
+    }//end testBodyBasedPaginationWithoutStaticBodyTemplateStillSetsPageKey()
+
+
+    /**
+     * oc#94 regression — query-string pagination (the pre-existing default,
+     * `paginationIn` omitted) is unaffected by the body-pagination branch.
+     * Complements `testBrokeredPaginationOneRequestPerPageWithRateLimitTracking`
+     * (which already covers this path) with an explicit assertion that no
+     * `body` key is introduced.
+     *
+     * @return void
+     */
+    public function testQueryPaginationUnaffectedWhenPaginationInOmitted(): void
+    {
+        $dispatched = [];
+        $brokered   = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->method('dispatch')->willReturnCallback(
+            function (string $credentialId, ?string $actingUserId, string $method, string $url, array $config) use (&$dispatched) {
+                $dispatched[] = $config;
+
+                return new Response(200, [], '[]');
+            }
+        );
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $source  = $this->makeBrokeredSource();
+
+        $service->call(
+            source: $source,
+            endpoint: '/v1/items',
+            config: [
+                'pagination' => [
+                    'paginationQuery' => 'page',
+                    'page'            => 4,
+                ],
+            ],
+        );
+
+        $this->assertSame(4, $dispatched[0]['query']['page']);
+        $this->assertArrayNotHasKey('body', $dispatched[0]);
+    }//end testQueryPaginationUnaffectedWhenPaginationInOmitted()
+
+
 }//end class

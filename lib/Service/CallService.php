@@ -797,7 +797,18 @@ class CallService
         }
 
         if (isset($config['pagination']) === true) {
-            $config['query'][$config['pagination']['paginationQuery']] = $config['pagination']['page'];
+            // Body-based pagination (oc#94): POST-body sources like TED's v3
+            // search take page/query as a static JSON body rather than query
+            // parameters, so this substitutes the page value into the body at
+            // the configured dot-path instead. Defaults to the pre-existing
+            // query-string substitution when `paginationIn` is absent/`query`
+            // — byte-for-byte unchanged for every source that doesn't opt in.
+            if (($config['pagination']['paginationIn'] ?? 'query') === 'body') {
+                $config = $this->applyBodyPagination(config: $config);
+            } else {
+                $config['query'][$config['pagination']['paginationQuery']] = $config['pagination']['page'];
+            }
+
             unset($config['pagination']);
         }
 
@@ -824,6 +835,43 @@ class CallService
         return ['config' => $config, 'logBody' => $logBody];
 
     }//end normaliseRequestConfig()
+
+    /**
+     * Substitutes the current pagination page value into the JSON request
+     * body at the configured dot-path (oc#94), instead of the query string.
+     *
+     * `$config['body']` at this point is the fresh per-call render of the
+     * source's static `configuration.body` template (re-merged every call by
+     * `mergeSourceConfiguration()` — never accumulated across pages), so
+     * decoding, bumping one path, and re-encoding here cannot compound across
+     * pages. When the body is missing or not valid JSON, substitution starts
+     * from an empty object rather than silently dropping the page value.
+     *
+     * @param array $config The call configuration, carrying `pagination`
+     *                      (`paginationQuery` dot-path + `page` value) and,
+     *                      usually, a `body` JSON string template.
+     *
+     * @return array The config with `body` rewritten to carry the new page value.
+     *
+     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     */
+    private function applyBodyPagination(array $config): array
+    {
+        $bodyPath = ($config['pagination']['paginationQuery'] ?? 'page');
+        $page     = $config['pagination']['page'];
+
+        $decodedBody = json_decode((string) ($config['body'] ?? ''), true);
+        if (is_array($decodedBody) === false) {
+            $decodedBody = [];
+        }
+
+        $dot = new Dot($decodedBody);
+        $dot->set($bodyPath, $page);
+        $config['body'] = json_encode($dot->all());
+
+        return $config;
+
+    }//end applyBodyPagination()
 
     /**
      * Dispatches the HTTP request (SOAP or Guzzle) and returns the response.
@@ -1489,6 +1537,7 @@ class CallService
      *
      * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
      */
     public function call(
         ObjectEntity $source,
@@ -1508,10 +1557,6 @@ class CallService
         $errorExpires   = $expiries['errorExpires'];
         $successExpires = $expiries['successExpires'];
 
-        // Phase 2: Resolve HTTP method; strip method-override keys from config.
-        $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
-        unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
-
         // Phases 3-6: source-precondition guards (enabled, location, rate limit).
         $earlyError = $this->guardCallPreconditions(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
         if ($earlyError !== null) {
@@ -1520,6 +1565,24 @@ class CallService
 
         // Phase 7: Merge source-level configuration.
         $config = $this->mergeSourceConfiguration(config: $config, sourceData: $sourceData);
+
+        // Phase 7a: Resolve HTTP method; strip method-override keys from config.
+        //
+        // oc#94 fix: this used to run as "Phase 2", BEFORE Phase 7's source
+        // merge — so a Source's OWN `configuration.listMethod` (the documented
+        // way to make a normally-GET list/fetch call dispatch as POST, e.g. a
+        // POST-body search endpoint) was invisible to decideMethod() and never
+        // took effect; only an explicit call-time `config['listMethod']`
+        // override worked. Running this on the MERGED config makes a
+        // Source-level `createMethod`/`updateMethod`/`destroyMethod`/
+        // `listMethod`/`readMethod` override take effect exactly as documented,
+        // while a call-time override keeps working identically (it is merged
+        // in ahead of this point either way). The unset must also run on the
+        // merged config now, for the same reason — previously an override key
+        // declared only in source configuration was never stripped and could
+        // leak into the persisted `call_log.request` payload.
+        $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
+        unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
         // Phase 7b: Brokered-credential guards + resolution (REQ-SBC-001/002/003).
         // Selection happens HERE, on the merged configuration, because Phase 9
