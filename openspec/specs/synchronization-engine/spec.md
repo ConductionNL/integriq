@@ -1,6 +1,8 @@
 ---
-status: done
+status: in-progress
 retrofit: true
+openspec-changes:
+  - sync-object-error-isolation
 ---
 
 # Synchronization Engine
