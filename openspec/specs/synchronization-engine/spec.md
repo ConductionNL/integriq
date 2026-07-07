@@ -1,6 +1,8 @@
 ---
-status: done
+status: in-progress
 retrofit: true
+openspec-changes:
+  - contract-duplication-handling
 ---
 
 # Synchronization Engine
