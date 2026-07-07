@@ -41,6 +41,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
 use Twig\Error\LoaderError;
@@ -3324,6 +3325,13 @@ class SynchronizationService
      * otherwise unchanged — a source with neither signal takes the exact
      * pre-existing code path.
      *
+     * Keyless catalog/standards sources with no JSON/XML API at all (oc#107
+     * — awesome_selfhosted, openalternative, don_oss_register,
+     * wikipedia_comparisons) MAY instead declare `Source.configuration.
+     * format` as `"markdown"` or `"html"`. Detected and handled in the same
+     * place, also BEFORE the JSON/XML parse attempts — a source with none
+     * of these signals is unaffected.
+     *
      * @param array  $source          The data source configuration
      * @param string $endpoint        The page endpoint to fetch
      * @param array  $config          The request configuration
@@ -3333,6 +3341,7 @@ class SynchronizationService
      * @throws TooManyRequestsHttpException When rate limit is exceeded
      *
      * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array
     {
@@ -3400,6 +3409,34 @@ class SynchronizationService
         // tokenising line-by-line rather than exploding a second full copy.
         if (($sourceConfig['format'] ?? null) === 'jsonl') {
             $result = $this->parseJsonLines(body: $body);
+
+            return [
+                'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+                'result'  => $result,
+            ];
+        }
+
+        // #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
+        // standards connectors — awesome_selfhosted, openalternative,
+        // don_oss_register, wikipedia_comparisons — have no JSON/XML API at
+        // all). Both are a property of the SOURCE itself (the endpoint
+        // always returns this shape, regardless of which synchronization
+        // reads it), so — unlike `sourceConfig.format: "jsonl"` above, which
+        // is per-synchronization — they are keyed off
+        // `Source.configuration.format` instead. Bypasses the
+        // json_decode/XML attempts below entirely, same as the JSONL branch.
+        $sourceFormat = strtolower((string) ($source['configuration']['format'] ?? ''));
+        if ($sourceFormat === 'markdown') {
+            $result = $this->parseMarkdownResponse(body: $body);
+
+            return [
+                'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+                'result'  => $result,
+            ];
+        }
+
+        if ($sourceFormat === 'html') {
+            $result = $this->parseHtmlResponse(body: $body, configuration: ($source['configuration'] ?? []));
 
             return [
                 'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
@@ -3571,6 +3608,218 @@ class SynchronizationService
 
         return $records;
     }//end parseJsonLines()
+
+    /**
+     * Parses a markdown-list-shaped response body into an array of records.
+     *
+     * Targets the "awesome list" README shape (oc#107 — awesome_selfhosted):
+     * one record per top-level markdown list item of the form
+     * `- [Name](https://url) - Some description \`Tag1\` \`Tag2\``. Only the
+     * link name/url are mandatory; the description and the (variable-count,
+     * possibly absent) trailing backtick-wrapped tags are all optional. Any
+     * line that is not a `- [Name](url) ...`/`* [Name](url) ...` list item
+     * (headings, prose, blank lines, plain-text list items with no link) is
+     * silently skipped rather than aborting the page — a markdown README is
+     * mostly non-record prose around the list this method actually cares
+     * about.
+     *
+     * The trailing backtick tags are returned verbatim, in file order, under
+     * a generic `tags` key — this method assigns no semantic meaning to
+     * their position (e.g. "first tag is a license") beyond documenting that
+     * awesome-selfhosted-shaped sources conventionally put the license first
+     * and the language second. A source needing named fields instead of a
+     * positional `tags` array should map them downstream (SynchronizationService
+     * mapping/rules), not in this parser.
+     *
+     * @param string $body The markdown response body.
+     *
+     * @return array<int, array{name: string, url: string, description: string, tags: array<int, string>}>
+     *         The extracted records, in file order.
+     *
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     */
+    private function parseMarkdownResponse(string $body): array
+    {
+        $records = [];
+
+        foreach (preg_split('/\r\n|\r|\n/', $body) as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            // A top-level markdown list item carrying a `[Name](url)` link.
+            // Everything after the link (an optional ` - description` plus
+            // any number of `` `tag` `` fragments) is captured as `$rest` and
+            // decomposed separately below.
+            $matched = preg_match(
+                '/^[-*+]\s*\[(?P<name>[^\]]+)\]\((?P<url>[^)\s]+)[^)]*\)(?:\s*[-:—]?\s*(?P<rest>.*))?$/u',
+                $trimmed,
+                $matches
+            );
+
+            if ($matched !== 1 || trim($matches['name']) === '' || trim($matches['url']) === '') {
+                // Not a matching list item (heading, prose, non-link list
+                // item, malformed line) — skip gracefully, do not throw.
+                continue;
+            }
+
+            $rest        = ($matches['rest'] ?? '');
+            $firstTagPos = strpos($rest, '`');
+            if ($firstTagPos === false) {
+                $description = trim($rest);
+            } else {
+                $description = trim(substr($rest, 0, $firstTagPos));
+            }
+
+            $tags = [];
+            if (preg_match_all('/`([^`]*)`/', $rest, $tagMatches) > 0) {
+                foreach ($tagMatches[1] as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $tags[] = $tag;
+                    }
+                }
+            }
+
+            $records[] = [
+                'name'        => trim($matches['name']),
+                'url'         => trim($matches['url']),
+                'description' => $description,
+                'tags'        => $tags,
+            ];
+        }//end foreach
+
+        return $records;
+    }//end parseMarkdownResponse()
+
+    /**
+     * Parses an HTML response body into an array of records using CSS
+     * selectors (oc#107 — openalternative, don_oss_register,
+     * wikipedia_comparisons: plain web pages with no API, whose data sits in
+     * an HTML table or a repeating list of cards).
+     *
+     * `configuration.htmlSelector` (required) is a CSS selector matching the
+     * repeating record container — e.g. `table tbody tr` for an HTML table,
+     * or `.card`/`li.item` for a card/list layout. Each matched container
+     * becomes one record. `configuration.htmlFields` (a `fieldName =>
+     * selector` map) then extracts one value per field, relative to that
+     * container: `selector@attr` extracts the named attribute (e.g.
+     * `a@href`); a selector with no `@attr` extracts trimmed text content
+     * instead. An empty selector (just `@attr`) reads the attribute off the
+     * container element itself, for the common case where the container IS
+     * the link (e.g. `li.item` containing `<a href="...">Name</a>` where
+     * `htmlSelector: "li.item"` and a field selector of `@href` would need
+     * `a@href` instead — an empty selector targets the container, not the
+     * first descendant).
+     *
+     * Uses `Symfony\Component\DomCrawler\Crawler` (with `symfony/
+     * css-selector` translating the CSS selectors to XPath) — the standard,
+     * well-maintained PHP library for exactly this task, already MIT/EUPL
+     * compatible and added specifically for this change (see design.md). A
+     * missing `htmlSelector`, or a field selector that fails to match, MUST
+     * NOT abort the page: a container with an unmatched field simply omits
+     * (null) that field, and a wholly-missing `htmlSelector` returns zero
+     * records.
+     *
+     * @param string $body          The HTML response body.
+     * @param array  $configuration The source's `Source.configuration`
+     *                              (reads `htmlSelector` and `htmlFields`).
+     *
+     * @return array<int, array<string, string|null>> The extracted records,
+     *         in document order.
+     *
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     */
+    private function parseHtmlResponse(string $body, array $configuration): array
+    {
+        $selector = (string) ($configuration['htmlSelector'] ?? '');
+        if ($selector === '') {
+            return [];
+        }
+
+        $fields = ($configuration['htmlFields'] ?? []);
+        if (is_array($fields) === false) {
+            $fields = [];
+        }
+
+        $crawler = new Crawler($body);
+
+        try {
+            $containers = $crawler->filter($selector);
+        } catch (\Exception $exception) {
+            $this->logger->warning(
+                'SynchronizationService: invalid htmlSelector {selector} for HTML source: {message}',
+                ['selector' => $selector, 'message' => $exception->getMessage()]
+            );
+            return [];
+        }
+
+        $records = [];
+        foreach ($containers as $containerNode) {
+            $containerCrawler = new Crawler($containerNode);
+            $record           = [];
+            foreach ($fields as $fieldName => $fieldSelector) {
+                $record[(string) $fieldName] = $this->extractHtmlField(
+                    container: $containerCrawler,
+                    fieldSelector: (string) $fieldSelector
+                );
+            }
+
+            $records[] = $record;
+        }
+
+        return $records;
+    }//end parseHtmlResponse()
+
+    /**
+     * Extracts a single field's value from an HTML record container.
+     *
+     * Supports the `selector@attr` syntax: when `@attr` is present, the
+     * value is the named attribute of the (optionally sub-selected) node
+     * instead of its trimmed text content. An empty selector (`@attr` alone,
+     * or a wholly empty string) targets the container itself rather than a
+     * descendant — the container-IS-the-link case.
+     *
+     * @param Crawler $container     The record container to extract from.
+     * @param string  $fieldSelector A CSS selector, optionally suffixed with
+     *                               `@attributeName`.
+     *
+     * @return string|null The extracted (trimmed) text or attribute value,
+     *         or null when the selector matches nothing.
+     *
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     */
+    private function extractHtmlField(Crawler $container, string $fieldSelector): ?string
+    {
+        $attribute = null;
+        $selector  = $fieldSelector;
+
+        $atPosition = strrpos($fieldSelector, '@');
+        if ($atPosition !== false) {
+            $selector  = substr($fieldSelector, 0, $atPosition);
+            $attribute = substr($fieldSelector, ($atPosition + 1));
+        }
+
+        $target = $container;
+        if ($selector !== '') {
+            try {
+                $target = $container->filter($selector);
+            } catch (\Exception $exception) {
+                return null;
+            }
+        }
+
+        if ($target->count() === 0) {
+            return null;
+        }
+
+        if ($attribute !== null && $attribute !== '') {
+            return $target->attr($attribute);
+        }
+
+        return trim($target->text(''));
+    }//end extractHtmlField()
 
     /**
      * Checks if the source has exceeded its rate limit and throws an exception if true.
