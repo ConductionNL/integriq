@@ -363,6 +363,48 @@
             "type": "string",
             "description": "Nextcloud user id that created the consumer (null for system-created)",
             "title": "User ID"
+          },
+          "rateLimit": {
+            "type": "object",
+            "description": "Optional inbound short-window burst limiter. Absent = unlimited. When set, requests from this consumer are counted per window and receive HTTP 429 (with Retry-After) once requestsPerWindow is exceeded within windowSeconds.",
+            "title": "Rate Limit",
+            "properties": {
+              "requestsPerWindow": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of requests allowed within one window",
+                "title": "Requests per window"
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Length of the rate-limit window in seconds",
+                "title": "Window (seconds)"
+              }
+            }
+          },
+          "quota": {
+            "type": "object",
+            "description": "Optional inbound long-horizon fair-use cap. Absent = unlimited. When set, requests are counted per calendar period and receive HTTP 429 once limit is exceeded until the period rolls over.",
+            "title": "Quota",
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of requests allowed within one period",
+                "title": "Quota limit"
+              },
+              "period": {
+                "type": "string",
+                "enum": [
+                  "hour",
+                  "day",
+                  "month"
+                ],
+                "description": "Calendar period the quota resets on",
+                "title": "Quota period"
+              }
+            }
           }
         },
         "x-openregister-seed": [],
@@ -1631,6 +1673,15 @@
             "type": "string",
             "description": "Reason phrase or short error description",
             "title": "Status Message"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "inbound",
+              "outbound"
+            ],
+            "description": "Call direction: 'outbound' for OpenConnector calls to upstream sources (default), 'inbound' for calls served by OpenConnector endpoints (e.g. a consumer rate-limit 429).",
+            "title": "Direction"
           },
           "request": {
             "type": "object",

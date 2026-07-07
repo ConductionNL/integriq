@@ -40,18 +40,20 @@
       {
         "name": "calls_total",
         "type": "counter",
-        "help": "Total API calls by status",
+        "help": "Total API calls by status and direction (inbound consumer throttling vs outbound source backoff)",
         "source": {
           "kind": "tableCount",
           "table": "openconnector_call_logs",
           "groupBy": [
-            "status_code"
+            "status_code",
+            "direction"
           ],
           "labelMap": {
             "status_code": "status"
           },
           "labelDefaults": {
-            "status_code": "unknown"
+            "status_code": "unknown",
+            "direction": "outbound"
           }
         }
       },

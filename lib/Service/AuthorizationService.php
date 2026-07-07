@@ -88,6 +88,17 @@ class AuthorizationService
     private readonly ICache $jtiCache;
 
     /**
+     * The consumer resolved for the current request (JWT issuer), or null when
+     * the authentication method did not resolve a consumer identity.
+     *
+     * Exposed via {@see getResolvedConsumer()} so the endpoint runtime can key
+     * inbound rate limiting on the resolved consumer (consumer-rate-limiting).
+     *
+     * @var ObjectEntity|null
+     */
+    private ?ObjectEntity $resolvedConsumer = null;
+
+    /**
      * Constructor.
      *
      * @param IUserManager                            $userManager     The user manager.
@@ -118,7 +129,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException Thrown if no issuer was found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     private function findIssuer(string $issuer): ObjectEntity
     {
@@ -149,7 +160,7 @@ class AuthorizationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     private function checkHeaders(JWS $token): void
     {
@@ -174,7 +185,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException If the algorithm is not supported.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     private function getJWK(string $publicKey, string $algorithm): JWKSet
     {
@@ -252,7 +263,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException If the token is missing/expired/not-yet-valid/replayed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     public function validatePayload(array $payload): void
     {
@@ -358,7 +369,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException On any validation failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-1
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     public function authorizeJwt(string $authorization): void
     {
@@ -399,6 +410,10 @@ class AuthorizationService
 
         $issuer     = $this->findIssuer(issuer: $payload['iss']);
         $issuerData = $issuer->getObject();
+
+        // Record the resolved consumer so the endpoint runtime can enforce this
+        // consumer's inbound rate limit + quota after authentication passes.
+        $this->resolvedConsumer = $issuer;
 
         $authConfig = $issuerData['authorizationConfiguration'] ?? [];
         $publicKey  = $authConfig['publicKey'] ?? '';
@@ -441,7 +456,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException On invalid credentials.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-2
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     public function authorizeBasic(string $header, array $users, array $groups): void
     {
@@ -513,7 +528,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException On invalid or missing tokens.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-3
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     public function authorizeOAuth(string $header, array $users, array $groups): void
     {
@@ -595,7 +610,7 @@ class AuthorizationService
      *
      * @throws SecurityException If Allow-Credentials is true.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-5
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     public function corsAfterController(IRequest $request, Response $response)
     {
@@ -628,7 +643,7 @@ class AuthorizationService
      *
      * @throws AuthenticationException On invalid API keys.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authorization-jwt/tasks.md#task-4
+     * @spec openspec/specs/authorization-jwt/spec.md
      */
     public function authorizeApiKey(string $header, array $keys): void
     {
@@ -654,4 +669,22 @@ class AuthorizationService
 
         $this->userSession->setUser(user: $user);
     }//end authorizeApiKey()
+
+    /**
+     * Return the consumer resolved during authentication for this request.
+     *
+     * Currently only the JWT authentication path resolves a `consumer` object
+     * (the token issuer). Other methods (apikey/basic/oauth) authenticate a
+     * Nextcloud user rather than a consumer and therefore return null — the
+     * endpoint runtime then keys inbound rate limiting on the client IP.
+     *
+     * @return ObjectEntity|null The resolved consumer, or null when none was resolved.
+     *
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
+     */
+    public function getResolvedConsumer(): ?ObjectEntity
+    {
+        return $this->resolvedConsumer;
+
+    }//end getResolvedConsumer()
 }//end class
