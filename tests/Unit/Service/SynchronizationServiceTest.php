@@ -962,6 +962,67 @@ class SynchronizationServiceTest extends TestCase
     }//end testMarkdownSourceParsesAwesomeListItemsIntoRecords()
 
     /**
+     * oc#107 follow-up — live verification against the real awesome-selfhosted
+     * README revealed the parser also matched table-of-contents / "back to
+     * top" navigation links, whose targets are in-document anchors
+     * (`#software`) rather than absolute URLs. Those bogus records fail the
+     * target schema's `url` format:uri validation and abort the whole sync.
+     * Fixture mixes one real absolute-URL entry with a TOC anchor item and a
+     * "back to top" anchor item — only the absolute-URL entry must survive.
+     *
+     * @return void
+     */
+    public function testMarkdownSourceSkipsAnchorAndRelativeUrlListItems(): void
+    {
+        $this->stubSource(
+            [
+                'uuid'          => 'source-uuid-md-anchor',
+                'location'      => 'https://raw.githubusercontent.com/awesome-selfhosted/awesome-selfhosted-data/master/README.md',
+                'configuration' => ['format' => 'markdown'],
+            ]
+        );
+
+        $markdown = implode(
+            "\n",
+            [
+                '# Awesome-Selfhosted',
+                '',
+                '## Table of Contents',
+                '- [Software](#software)',
+                '',
+                '## Automation',
+                '- [Cool Tool](https://example.com/cool-tool) - A cool self-hosted tool.',
+                '- [↥ back to top](#awesome-selfhosted)',
+            ]
+        );
+        $this->stubSingleCallResponse(
+            [
+                'statusCode' => 200,
+                'body'       => $markdown,
+                'encoding'   => 'UTF-8',
+                'headers'    => ['Content-Type' => ['text/markdown']],
+            ]
+        );
+
+        $objects = $this->service->getAllObjectsFromApi(
+            synchronization: [
+                'sourceId'     => 'source-uuid-md-anchor',
+                'sourceType'   => 'api',
+                'sourceConfig' => [
+                    'endpoint'        => '/README.md',
+                    'resultsPosition' => '_root',
+                    'usesPagination'  => false,
+                ],
+            ]
+        );
+
+        $this->assertCount(1, $objects);
+        $this->assertSame('Cool Tool', $objects[0]['name']);
+        $this->assertSame('https://example.com/cool-tool', $objects[0]['url']);
+        $this->assertSame('A cool self-hosted tool.', $objects[0]['description']);
+    }//end testMarkdownSourceSkipsAnchorAndRelativeUrlListItems()
+
+    /**
      * oc#107 — a `Source.configuration.format: "html"` source (openalternative/
      * don_oss_register-shaped: a plain HTML table with no API) extracts one
      * record per `htmlSelector`-matched row, with `htmlFields` sub-selectors

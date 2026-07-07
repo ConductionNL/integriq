@@ -71,6 +71,19 @@ unchanged.
   trimmed text content, or — for a `selector@attr` field — the named
   attribute's value
 
+#### Scenario: a markdown list item pointing at an in-document anchor or relative URL is skipped
+
+- **GIVEN** a source with `configuration.format: "markdown"`
+- **AND** a response body containing a `- [Name](url)` list item whose `url`
+  is an in-document anchor (e.g. `#software`) or otherwise carries no URI
+  scheme (a relative link) — the shape of a table-of-contents entry or a
+  "back to top" navigation link, as opposed to a data record
+- **WHEN** `fetchSinglePageData()` runs
+- **THEN** that list item produces no record
+- **AND** a sibling list item whose `url` is an absolute URI (carries a
+  scheme, e.g. `https://...`) still produces its record unaffected
+- **AND** no error is raised
+
 #### Scenario: a source with neither new `format` value is unaffected
 
 - **GIVEN** a source with `configuration.format` absent, or set to
