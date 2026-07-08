@@ -40,18 +40,20 @@
       {
         "name": "calls_total",
         "type": "counter",
-        "help": "Total API calls by status",
+        "help": "Total API calls by status and direction (inbound consumer throttling vs outbound source backoff)",
         "source": {
           "kind": "tableCount",
           "table": "openconnector_call_logs",
           "groupBy": [
-            "status_code"
+            "status_code",
+            "direction"
           ],
           "labelMap": {
             "status_code": "status"
           },
           "labelDefaults": {
-            "status_code": "unknown"
+            "status_code": "unknown",
+            "direction": "outbound"
           }
         }
       },
@@ -252,7 +254,7 @@
         "register": "openconnector",
         "schema": "source",
         "columns": ["name", "type", "status", "isEnabled", "lastSync", "dateModified"],
-        "includeFields": ["name", "description", "type", "isEnabled"],
+        "includeFields": ["name", "description", "type", "isEnabled", "auth", "authorizationHeader", "authenticationConfig", "apikey", "secret", "username", "password", "jwt", "jwtId", "configuration"],
         "sidebar": { "enabled": true, "showMetadata": true },
         "headerActions": [
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SourceLogs" }
@@ -264,6 +266,9 @@
           { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
+      },
+      "slots": {
+        "form-fields": "SourceFormFields"
       }
     },
     {

@@ -77,11 +77,13 @@ class EndpointServiceTest extends TestCase
         $syncService     = $this->createMock(SynchronizationService::class);
         $ruleService     = $this->createMock(RuleService::class);
         $signatureService = new \OCA\OpenConnector\Service\WebhookSignatureService($logger);
+        $rateLimitService = $this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class);
 
-        // EndpointService constructor signature (13 args, no $appConfig):
+        // EndpointService constructor signature (14 args, no $appConfig):
         //   objectService, callService, logger, urlGenerator, mappingService,
         //   orObjectService, config, storageService, authorizationService,
-        //   container, synchronizationService, ruleService, webhookSignatureService.
+        //   container, synchronizationService, ruleService, webhookSignatureService,
+        //   rateLimitService.
         // The previous version slipped $appConfig into position 8 which made
         // $storageService land on $authService — a pre-existing test bug
         // surfaced once #1015 unblocked the suite from crashing in setUp.
@@ -100,6 +102,7 @@ class EndpointServiceTest extends TestCase
             $syncService,
             $ruleService,
             $signatureService,
+            $rateLimitService,
         );
     }//end setUp()
 

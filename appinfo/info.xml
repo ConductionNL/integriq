@@ -24,13 +24,16 @@
 
     ]]></description>
 	<version>0.2.17</version>
-	<licence>agpl</licence>
+	<licence>EUPL-1.2</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
 	<namespace>OpenConnector</namespace>
-    <website>https://github.com/ConductionNL/OpenConnector</website>
-	<bugs>https://github.com/ConductionNL/OpenConnector/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenConnector</repository>
+    <website>https://codeberg.org/Conduction/openconnector</website>
+	<bugs>https://codeberg.org/Conduction/openconnector/issues</bugs>
+    <repository>https://codeberg.org/Conduction/openconnector</repository>
+    <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-sources.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
         <app>openregister</app>
         <nextcloud min-version="28" max-version="34"/>
