@@ -2253,6 +2253,7 @@
           "sourceId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/source",
             "description": "UUID of the Source entity used for this sync",
             "title": "Source ID"
           },
