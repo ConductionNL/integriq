@@ -2101,6 +2101,7 @@
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_contract",
             "x-openregister-onDelete": "CASCADE",
+            "x-relation-filter": { "synchronization": "@object.synchronization" },
             "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)",
             "title": "Synchronization Contract"
           },
@@ -2113,6 +2114,7 @@
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_log",
+            "x-relation-filter": { "synchronization": "@object.synchronization" },
             "description": "FK to parent synchronization_log entry (UUID; many-to-one)",
             "title": "Synchronization Log"
           },
@@ -2302,6 +2304,7 @@
           "sourceId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/source",
             "description": "UUID of the Source entity used for this sync",
             "title": "Source ID"
           },
