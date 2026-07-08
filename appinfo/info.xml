@@ -3,17 +3,27 @@
 	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>openconnector</id>
 	<name>Open Connector</name>
-	<summary>Gateway and Service bus functionality</summary>
-	<description><![CDATA[📰 Bringing Gateway and Service bus functionality to nextcloud
+	<summary lang="en">API gateway and data-synchronization layer for Nextcloud</summary>
+	<summary lang="nl">API-gateway en data-synchronisatielaag voor Nextcloud</summary>
+	<description lang="en"><![CDATA[OpenConnector is the integration layer for Nextcloud. It connects REST and SOAP sources — including Dutch government standards such as PDOK, StUF-ZKN/BG, DSO/Omgevingsloket, and Berichtenbox — to typed OpenRegister stores.
 
-The OpenConnector Nextcloud app provides a ESB-framework to work together in an (open) data ecosystem
-
-- 📲 Synchronize your data sources
-- 📰 Send cloud events
-- 🆓 Map and translate API calls
+- 🔌 Configure sources, endpoints and consumers with shared authentication (API key, OAuth, JWT)
+- 🗺️ Map and transform payloads with the built-in mapping engine
+- ⏱️ Schedule synchronization jobs with webhook, cron, or manual triggers
+- ☁️ Dispatch and receive CloudEvents with dead-letter capture and one-click replay
+- 📋 Apply business rules to endpoint traffic and keep a per-object audit trail
 
     ]]></description>
-	<version>0.2.16</version>
+	<description lang="nl"><![CDATA[OpenConnector is de integratielaag voor Nextcloud. De app koppelt REST- en SOAP-bronnen — waaronder Nederlandse overheidsstandaarden zoals PDOK, StUF-ZKN/BG, DSO/Omgevingsloket en Berichtenbox — aan getypeerde OpenRegister-registers.
+
+- 🔌 Configureer bronnen, endpoints en consumenten met gedeelde authenticatie (API-key, OAuth, JWT)
+- 🗺️ Transformeer gegevens met de ingebouwde mapping-engine
+- ⏱️ Plan synchronisatietaken met webhook-, cron- of handmatige triggers
+- ☁️ Verstuur en ontvang CloudEvents met dead-letter-opvang en replay met één klik
+- 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
+
+    ]]></description>
+	<version>0.2.17</version>
 	<licence>agpl</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -22,8 +32,9 @@ The OpenConnector Nextcloud app provides a ESB-framework to work together in an 
 	<bugs>https://github.com/ConductionNL/OpenConnector/issues</bugs>
     <repository>https://github.com/ConductionNL/OpenConnector</repository>
 	<dependencies>
+        <app>openregister</app>
         <nextcloud min-version="28" max-version="34"/>
-        <php min-version="8.0" min-int-size="64"/>
+        <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
         <database min-version="8.0">mysql</database>
