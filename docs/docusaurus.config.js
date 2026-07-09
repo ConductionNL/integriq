@@ -53,7 +53,7 @@ const config = createConfig({
           path: '../docs',
           /* Exclude node_modules just in case the docs folder ever has
              one (it does today, from a separate dependency install
-             during MD tooling). The src/ exclude that mydash and
+             during MD tooling). The src/ exclude that launchpad and
              openregister use does not apply here because docs/ has no
              src/ folder; pages live in `../docusaurus/src/pages/`.
 
