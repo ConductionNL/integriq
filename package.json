@@ -35,7 +35,7 @@
   ],
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "^1.0.0-beta.160",
+    "@conduction/nextcloud-vue": "1.0.0-beta.162",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@mdi/js": "^7.4.47",
