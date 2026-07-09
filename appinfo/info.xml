@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.2.18</version>
+	<version>0.2.19</version>
 	<licence>EUPL-1.2</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
