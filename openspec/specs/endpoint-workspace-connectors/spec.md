@@ -15,7 +15,7 @@ Recast, Microsoft Intune, Jamf Pro, VMware Workspace ONE UEM —
 MUST be implemented as an `IntegrationProvider` registered
 through OR's integration registry per ADR-019. Adapter classes
 MUST live under `lib/Service/Adapter/EndpointWorkspace/` and
-MUST NOT be embedded in any sibling app (mydash, etc.).
+MUST NOT be embedded in any sibling app (launchpad, etc.).
 
 #### Scenario: Reviewer confirms no per-app workspace SDK in sibling apps
 
@@ -123,7 +123,7 @@ CloudEvents (per ADR-022 §"Events + webhooks") with type
 (e.g. `com.conduction.endpoint-workspace.virtual-desktop.session-started`)
 and dispatched through NC's existing event dispatcher.
 
-Sibling apps that need to react (e.g. mydash audit widget,
+Sibling apps that need to react (e.g. launchpad audit widget,
 decidesk security board) MUST subscribe through the standard
 CloudEvent contract. Openconnector MUST NOT author a new
 event table specific to EWC events — every event lands in
@@ -133,14 +133,14 @@ of the normalised event for long-term retention is the sibling
 app's choice and MUST go through OR's audit-trail-immutable
 or docudesk per ADR-022.
 
-#### Scenario: A Citrix session-started event reaches mydash via CloudEvent
+#### Scenario: A Citrix session-started event reaches launchpad via CloudEvent
 
 - **GIVEN** a Citrix source declaring `audit-event-stream`
 - **WHEN** Citrix POSTs a session-started webhook
 - **THEN** openconnector MUST normalise it to a CloudEvent of
   type `com.conduction.endpoint-workspace.virtual-desktop.session-started`,
   enrich with the resolved NC user via REQ-EWC-003, and dispatch;
-  mydash (subscribed by event type) MUST receive it and render
+  launchpad (subscribed by event type) MUST receive it and render
   on its security widget — no openconnector-local event table
   created.
 
