@@ -359,9 +359,11 @@ class StUFBGService
      *
      * @param SimpleXMLElement $body   The SOAP body element.
      * @param string           $bgNs   The BG namespace URI.
-     * @param string           $stufNs The StUF namespace URI.
+     * @param string           $stufNs The StUF namespace URI (reserved for future multi-namespace scope handling).
      *
      * @return array|null Array of requested StUF field names, or null if no scope specified.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
      */
@@ -386,8 +388,9 @@ class StUFBGService
         $fields    = [];
         $scopeKids = $scope->children($bgNs);
         if (isset($scopeKids->object) === true) {
-            foreach ($scopeKids->object->children($bgNs) as $name => $el) {
-                $fields[] = $name;
+            $objectChildren = $scopeKids->object->children($bgNs);
+            for ($objectChildren->rewind(); $objectChildren->valid() === true; $objectChildren->next()) {
+                $fields[] = $objectChildren->key();
             }
         }
 

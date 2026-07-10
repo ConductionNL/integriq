@@ -849,7 +849,11 @@
         "Visual builder": "Kreator wizualny",
         "We encountered an unexpected problem": "Napotkaliśmy nieoczekiwany problem",
         "When (conditions)": "Kiedy (warunki)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Gdy włączone, synchronizacja nadal działa, ale reguła zachowuje oryginalną treść odpowiedzi zamiast ją zastępować."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Gdy włączone, synchronizacja nadal działa, ale reguła zachowuje oryginalną treść odpowiedzi zamiast ją zastępować.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

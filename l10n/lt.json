@@ -849,7 +849,11 @@
         "Visual builder": "Vizualusis kūrimo įrankis",
         "We encountered an unexpected problem": "Susidūrėme su netikėta problema",
         "When (conditions)": "When (sąlygos)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Kai įjungta, sinchronizavimas vis tiek vykdomas, bet taisyklė išsaugo pradinį atsako turinį, užuot jį pakeitusi."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Kai įjungta, sinchronizavimas vis tiek vykdomas, bet taisyklė išsaugo pradinį atsako turinį, užuot jį pakeitusi.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

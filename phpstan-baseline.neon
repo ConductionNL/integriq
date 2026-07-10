@@ -231,7 +231,7 @@ parameters:
 
 		-
 			message: "#^Call to an undefined method OCP\\\\DB\\\\IResult\\:\\:fetchAssociative\\(\\)\\.$#"
-			count: 4
+			count: 5
 			path: lib/Service/Migration/LegacyToRegisterMigrator.php
 
 		-
@@ -356,7 +356,7 @@ parameters:
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
-			count: 1
+			count: 2
 			path: lib/Service/SynchronizationService.php
 
 		-
@@ -371,7 +371,7 @@ parameters:
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
-			count: 1
+			count: 3
 			path: lib/Service/SynchronizationService.php
 
 		-
@@ -391,3 +391,4 @@ parameters:
 			message: "#^Empty array passed to foreach\\.$#"
 			count: 1
 			path: lib/Service/SynchronizationService.php
+

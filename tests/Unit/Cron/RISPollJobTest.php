@@ -18,7 +18,6 @@ namespace OCA\OpenConnector\Tests\Unit\Cron;
 
 use OCA\OpenConnector\Cron\RISPollJob;
 use OCA\OpenConnector\Service\IBabsConnectorService;
-use OCA\OpenConnector\Service\NotuBizConnectorService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -43,11 +42,6 @@ class RISPollJobTest extends TestCase
     private $ibabsService;
 
     /**
-     * @var NotuBizConnectorService|\PHPUnit\Framework\MockObject\MockObject
-     */
-    private $notuBizService;
-
-    /**
      * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
      */
     private $orObjectService;
@@ -62,16 +56,14 @@ class RISPollJobTest extends TestCase
     {
         parent::setUp();
 
-        $timeFactory          = $this->createMock(ITimeFactory::class);
-        $this->ibabsService   = $this->createMock(IBabsConnectorService::class);
-        $this->notuBizService = $this->createMock(NotuBizConnectorService::class);
+        $timeFactory           = $this->createMock(ITimeFactory::class);
+        $this->ibabsService    = $this->createMock(IBabsConnectorService::class);
         $this->orObjectService = $this->createMock(OrObjectService::class);
-        $logger               = $this->createMock(LoggerInterface::class);
+        $logger                = $this->createMock(LoggerInterface::class);
 
         $this->job = new RISPollJob(
             $timeFactory,
             $this->ibabsService,
-            $this->notuBizService,
             $this->orObjectService,
             $logger
         );

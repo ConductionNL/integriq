@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
+use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
 use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -65,7 +67,7 @@ use function React\Promise\all;
  *
  * @SuppressWarnings(PHPMD)
  *
- * @spec openspec/changes/openconnector-legacy-quality-cleanup/tasks.md#task-2
+ * @spec openspec/specs/endpoint-runtime/spec.md
  */
 class EndpointService
 {
@@ -100,6 +102,7 @@ class EndpointService
      * @param SynchronizationService  $synchronizationService  Service used to dispatch endpoint synchronizations.
      * @param RuleService             $ruleService             Service used to load and resolve endpoint rules.
      * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
+     * @param InboundRateLimitService $rateLimitService        Service enforcing inbound per-consumer rate limits + quotas.
      *
      * @return void
      */
@@ -117,8 +120,17 @@ class EndpointService
         private readonly SynchronizationService $synchronizationService,
         private readonly RuleService $ruleService,
         private readonly WebhookSignatureService $webhookSignatureService,
+        private readonly InboundRateLimitService $rateLimitService,
     ) {
     }//end __construct()
+
+    /**
+     * IETF RateLimit-* response headers to attach to the current request's
+     * response, populated during inbound rate-limit enforcement.
+     *
+     * @var array<string, string>
+     */
+    private array $rateLimitHeaders = [];
 
     /**
      * Parse the error message from the validation service for ZGW format.
@@ -128,7 +140,7 @@ class EndpointService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function parseMessage(array $response, array $responseData): array
     {
@@ -190,7 +202,7 @@ class EndpointService
      *
      * @return Response
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function transformError(Response $result, IRequest $request): Response
     {
@@ -217,6 +229,36 @@ class EndpointService
     }//end transformError()
 
     /**
+     * Handles incoming requests to endpoints, applying inbound rate-limit headers.
+     *
+     * Thin wrapper over {@see doHandleRequest()} that attaches the IETF
+     * `RateLimit-*` / `Retry-After` headers computed during inbound rate-limit
+     * enforcement to whatever response the request produced, at a single choke
+     * point so every return path carries them (REQ-CON-RL-003).
+     *
+     * @param ObjectEntity $endpoint The endpoint configuration to handle
+     * @param IRequest     $request  The incoming request object
+     * @param string       $path     The specific path or sub-route being requested
+     *
+     * @return Response Response containing the result
+     * @throws Exception When endpoint configuration is invalid
+     *
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: IETF RateLimit response headers (REQ-CON-RL-003)
+     */
+    public function handleRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response
+    {
+        $this->rateLimitHeaders = [];
+        $response = $this->doHandleRequest(endpoint: $endpoint, request: $request, path: $path);
+
+        foreach ($this->rateLimitHeaders as $headerName => $headerValue) {
+            $response->addHeader($headerName, $headerValue);
+        }
+
+        return $response;
+
+    }//end handleRequest()
+
+    /**
      * Handles incoming requests to endpoints
      *
      * This method determines how to handle the request based on the endpoint configuration.
@@ -226,12 +268,12 @@ class EndpointService
      * @param IRequest     $request  The incoming request object
      * @param string       $path     The specific path or sub-route being requested
      *
-     * @return JSONResponse Response containing the result
+     * @return Response Response containing the result
      * @throws Exception When endpoint configuration is invalid
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
-    public function handleRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response
+    private function doHandleRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response
     {
         $endpointData = $endpoint->getObject();
         $errors       = $this->checkConditions(endpoint: $endpoint, request: $request);
@@ -302,6 +344,17 @@ class EndpointService
 
             if ($ruleResult instanceof JSONResponse === true) {
                 return $this->transformError(result: $ruleResult, request: $request);
+            }
+
+            // Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
+            // Runs AFTER authentication has passed (the 'before' rule pipeline,
+            // which includes the authentication rule, completed without a 401/403)
+            // and BEFORE the endpoint target/schema dispatch (REQ-CON-RL-002). An
+            // over-limit request short-circuits with 429 here; an under-limit
+            // request records its RateLimit-* headers for the response wrapper.
+            $rateLimitResponse = $this->enforceInboundRateLimit(request: $request);
+            if ($rateLimitResponse !== null) {
+                return $rateLimitResponse;
             }
 
             // Update request data with rule processing results.
@@ -392,7 +445,119 @@ class EndpointService
                 400
             );
         }//end try
-    }//end handleRequest()
+    }//end doHandleRequest()
+
+    /**
+     * Enforce the resolved consumer's inbound rate limit and quota.
+     *
+     * Keys the limiter on the resolved consumer's uuid, or — when the consumer
+     * authenticates anonymously (`authorizationType: none`) — on the client IP
+     * so distinct anonymous callers get separate buckets. When no consumer was
+     * resolved (apikey/basic/oauth authenticate a Nextcloud user, or the
+     * endpoint has no authentication rule), there is no per-consumer limit and
+     * this returns null (unlimited). On an over-limit decision it records the
+     * inbound 429 for observability and returns the 429 response; otherwise it
+     * stashes the RateLimit-* headers for the response wrapper and returns null.
+     *
+     * @param IRequest $request The incoming request.
+     *
+     * @return JSONResponse|null A 429 response when throttled, or null when the request may proceed.
+     *
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
+     */
+    private function enforceInboundRateLimit(IRequest $request): ?JSONResponse
+    {
+        $consumer = $this->authorizationService->getResolvedConsumer();
+        if ($consumer === null) {
+            // No per-consumer identity resolved — nothing to throttle.
+            return null;
+        }
+
+        $consumerData = $consumer->getObject();
+        $rateLimit    = ($consumerData['rateLimit'] ?? null);
+        $quota        = ($consumerData['quota'] ?? null);
+
+        if (is_array($rateLimit) === false && is_array($quota) === false) {
+            // Unlimited consumer — backward compatible with every existing consumer.
+            return null;
+        }
+
+        // Anonymous consumers key on client IP; identified consumers on uuid.
+        $authType = ($consumerData['authorizationType'] ?? '');
+        if ($authType === 'none' || $authType === '') {
+            $key = 'ip:'.$request->getRemoteAddress();
+        } else {
+            $key = 'consumer:'.((string) ($consumer->getUuid() ?? ($consumerData['uuid'] ?? 'unknown')));
+        }
+
+        if (is_array($rateLimit) === false) {
+            $rateLimit = null;
+        }
+
+        if (is_array($quota) === false) {
+            $quota = null;
+        }
+
+        $decision = $this->rateLimitService->enforce(
+            consumerKey: $key,
+            rateLimit: $rateLimit,
+            quota: $quota
+        );
+
+        $this->rateLimitHeaders = $decision->toHeaders();
+
+        if ($decision->allowed === false) {
+            $this->recordInboundThrottle(consumer: $consumer, decision: $decision);
+            return new JSONResponse(
+                [
+                    'error'   => 'rate_limited',
+                    'message' => 'Too Many Requests',
+                    'reason'  => $decision->reason,
+                ],
+                Http::STATUS_TOO_MANY_REQUESTS,
+                $decision->toHeaders()
+            );
+        }
+
+        return null;
+
+    }//end enforceInboundRateLimit()
+
+    /**
+     * Record an inbound rate-limit/quota 429 on the CallLog observability surface.
+     *
+     * Persists an `inbound`-direction call_log with statusCode 429 so the
+     * `openconnector_calls_total{status="429",direction="inbound"}` metric
+     * distinguishes consumer throttling from outbound source backoff
+     * (REQ-CON-RL-004). Best-effort: a logging failure never blocks the 429.
+     *
+     * @param ObjectEntity      $consumer The throttled consumer.
+     * @param RateLimitDecision $decision The rejection decision.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: Rate-limit rejections are observable (REQ-CON-RL-004)
+     */
+    private function recordInboundThrottle(ObjectEntity $consumer, RateLimitDecision $decision): void
+    {
+        try {
+            $this->orObjectService->saveObject(
+                object: [
+                    'statusCode'    => Http::STATUS_TOO_MANY_REQUESTS,
+                    'statusMessage' => 'Inbound rate limit exceeded ('.((string) $decision->reason).')',
+                    'direction'     => 'inbound',
+                    'created'       => (new DateTime())->format('c'),
+                ],
+                register: 'openconnector',
+                schema: 'call_log'
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'openconnector: failed to record inbound rate-limit call_log: '.$e->getMessage()
+            );
+        }
+
+    }//end recordInboundThrottle()
 
     /**
      * Parses a path to get the parameters in a path.
@@ -402,7 +567,7 @@ class EndpointService
      *
      * @return array The parsed path with the fields having the correct name.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getPathParameters(array $endpointArray, string $path): array
     {
@@ -455,7 +620,7 @@ class EndpointService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function replaceInternalReferences(
         QBMapper|ORObjectService|ObjectServiceMapperAdapter $mapper,
@@ -551,7 +716,7 @@ class EndpointService
      *
      * @return array The reduced extend array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function reduceExtendKeys(array $extend): array
     {
@@ -607,7 +772,7 @@ class EndpointService
      *
      * @return array The modified array with UUIDs replaced by URLs.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function replaceUuidsInArray(array $data, array $uuidToUrlMap, ?bool $isRelatedObject=false, array $extend=[]): array
     {
@@ -677,7 +842,7 @@ class EndpointService
      *
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function rewriteExternalReferences(array $parameters, ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper): array
     {
@@ -737,7 +902,7 @@ class EndpointService
      *
      * @throws Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getObjects(
         ORObjectService|ObjectServiceMapperAdapter|QBMapper $mapper,
@@ -882,7 +1047,7 @@ class EndpointService
      * @throws DoesNotExistException|LoaderError|MultipleObjectsReturnedException|SyntaxError
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function handleSchemaRequest(ObjectEntity $endpoint, FlowToken &$flowToken, string $path): JSONResponse
     {
@@ -1021,7 +1186,7 @@ class EndpointService
      *
      * @return string The raw content body for a http request
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getRawContent(): string
     {
@@ -1036,7 +1201,7 @@ class EndpointService
      *
      * @return array The resulting headers.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
@@ -1079,7 +1244,7 @@ class EndpointService
      * @return array
      * @throws Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function checkConditions(ObjectEntity $endpoint, IRequest $request): array
     {
@@ -1106,7 +1271,7 @@ class EndpointService
      * @return JSONResponse
      * @throws GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request): JSONResponse
     {
@@ -1148,7 +1313,7 @@ class EndpointService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     public function generateEndpointUrl(
         string $id,
@@ -1241,7 +1406,7 @@ class EndpointService
      *
      * @return array The updated $data with the saved object merged into the body.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processSaveObjectRule(ObjectEntity $rule, array $data): array
     {
@@ -1272,7 +1437,7 @@ class EndpointService
      *
      * @return array|JSONResponse Returns modified data or error response if rule fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-1
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processRules(
         ObjectEntity $endpoint,
@@ -1410,7 +1575,7 @@ class EndpointService
      * @throws NotFoundExceptionInterface
      * @throws \OCP\DB\Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processOverrideRule(ObjectEntity $rule, array $data, string $objectId): array
     {
@@ -1438,7 +1603,7 @@ class EndpointService
      *
      * @return ObjectEntity|null The rule entity if found, or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-3
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getRuleById(string $id): ?ObjectEntity
     {
@@ -1469,7 +1634,7 @@ class EndpointService
      *
      * @return array|JSONResponse The unchanged $data on pass, or a 401 JSONResponse.
      *
-     * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-4
+     * @spec openspec/specs/webhook-signing/spec.md
      */
     private function processWebhookSignatureRule(ObjectEntity $rule, array $data, IRequest $request): array|JSONResponse
     {
@@ -1516,7 +1681,7 @@ class EndpointService
      *
      * @return array|JSONResponse the unchanged $data array if authentication succeeds, or a JSONResponse containing an error on authentication.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-3
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processAuthenticationRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -1615,7 +1780,7 @@ class EndpointService
      *
      * @return JSONResponse Response containing error details and HTTP status code.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-3
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processErrorRule(ObjectEntity $rule, array $data=[]): JSONResponse
     {
@@ -1646,7 +1811,7 @@ class EndpointService
      *
      * @return array The updated $data with mapped body merged in.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processMapping(ObjectEntity $rule, Mapping $mapping, array $data): array
     {
@@ -1681,7 +1846,7 @@ class EndpointService
      * @throws LoaderError When there is an error loading the mapping
      * @throws SyntaxError When there is a syntax error in the mapping configuration
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processMappingRule(ObjectEntity $rule, array $data): array
     {
@@ -1703,7 +1868,7 @@ class EndpointService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processExtendInputRule(ObjectEntity $rule, array $data): array
     {
@@ -1764,7 +1929,7 @@ class EndpointService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processAuditTrailRule(ObjectEntity $rule, ObjectEntity $endpoint, array $data, string $objectId): array|Response
     {
@@ -1805,7 +1970,7 @@ class EndpointService
      * @throws NotFoundExceptionInterface
      * @throws \OCP\Files\NotFoundException
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-2
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processLockingRule(ObjectEntity $rule, array $data, string $objectId): array
     {
@@ -1825,7 +1990,11 @@ class EndpointService
             return $data;
         }
 
-        $data['body'] = is_bool($object) === true ? ['unlocked' => $object] : $object;
+        if (is_bool($object) === true) {
+            $data['body'] = ['unlocked' => $object];
+        } else {
+            $data['body'] = $object;
+        }
 
         return $data;
     }//end processLockingRule()
@@ -1838,7 +2007,7 @@ class EndpointService
      *
      * @return array The updated data array.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -1848,7 +2017,7 @@ class EndpointService
     /**
      * Process a rule to write files.
      *
-     * @param ObjectEntity $rule      The rule to process.
+     * @param ObjectEntity $rule      The rule ObjectEntity containing configuration.
      * @param array        $data      The data to write.
      * @param string       $objectId  The object to write the data to.
      * @param FlowToken    $flowToken The flow token carrying the request/response state.
@@ -1859,9 +2028,9 @@ class EndpointService
      * @throws NotFoundExceptionInterface
      * @throws Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
-    private function processWriteFileRule(Rule $rule, array $data, string $objectId, FlowToken $flowToken): array
+    private function processWriteFileRule(ObjectEntity $rule, array $data, string $objectId, FlowToken $flowToken): array
     {
         $ruleConfig = $rule->getObject()['configuration'] ?? [];
         if (isset($ruleConfig['write_file']) === false) {
@@ -1960,7 +2129,7 @@ class EndpointService
      *
      * @return array The data after synchronization processing.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processSyncRule(ObjectEntity $rule, array $data, FlowToken $flowToken): array
     {
@@ -2128,7 +2297,7 @@ class EndpointService
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processFilePartRule(ObjectEntity $rule, array $data, ObjectEntity $endpoint, ?string $objectId=null): array|JSONResponse
     {
@@ -2245,7 +2414,7 @@ class EndpointService
      * @throws \OCP\Files\InvalidPathException
      * @throws \OCP\Files\NotFoundException
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processFilePartUploadRule(ObjectEntity $rule, array $data, IRequest $request, ?string $objectId=null): array
     {
@@ -2295,7 +2464,7 @@ class EndpointService
      *
      * @return array The processed data after executing the JavaScript rule
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processJavaScriptRule(ObjectEntity $rule, array $data): array
     {
@@ -2319,7 +2488,7 @@ class EndpointService
      * @throws NotFoundExceptionInterface
      * @throws \OCP\Files\NotFoundException
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-4
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processDownloadRule(ObjectEntity $rule, array $data, string $objectId): Response
     {
@@ -2363,7 +2532,6 @@ class EndpointService
              */
 
             // OpenRegister beta FileService::getFile() has no version argument yet.
-            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['version']);
             $file = $fileService->getFile(object: $object, file: $filename);
         } else if (isset($data['parameters']['versie']) === true) {
             /*
@@ -2372,8 +2540,7 @@ class EndpointService
              * @TODO: This can be nicer by mapping, but let's first get something sure.
              */
 
-            // OpenRegister beta FileService::getFile() has no version argument yet.
-            // $file = $fileService->getFile(object: $object, file: $filename, version: $data['parameters']['versie']);
+            // OpenRegister beta FileService::getFile() has no versie argument yet.
             $file = $fileService->getFile(object: $object, file: $filename);
         } else {
             /*
@@ -2399,7 +2566,7 @@ class EndpointService
      *
      * @throws Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-1
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function checkRuleConditions(ObjectEntity $rule, array $data, mixed &$logicResult): bool
     {
@@ -2419,7 +2586,7 @@ class EndpointService
      *
      * @return FlowToken The updated flow token with the amended request.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-1
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function updateRequestWithRuleData(FlowToken $flowToken, array $ruleData): FlowToken
     {
@@ -2446,7 +2613,7 @@ class EndpointService
      *
      * @return mixed Parsed data (array for JSON/XML) or original string.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function parseContent(IRequest $request): mixed
     {
@@ -2498,7 +2665,7 @@ class EndpointService
      *
      * @return bool True if content is valid XML.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-5
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function looksLikeXml(string $content): bool
     {

@@ -1,6 +1,16 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Brokered credential" : "Brokered credential",
+    "Brokered credential (OpenRegister)" : "Brokered credential (OpenRegister)",
+    "Credential" : "Credential",
+    "Pick a source type" : "Pick a source type",
+    "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector." : "Reference a credential held by the OpenRegister credential broker instead of storing a secret on this source. The secret never enters OpenConnector.",
+    "Select a brokered credential" : "Select a brokered credential",
+    "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one." : "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one.",
+    "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here." : "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.",
+    "The transport used to reach this source." : "The transport used to reach this source.",
+    "You have no brokered credentials yet. Create one in OpenRegister first." : "You have no brokered credentials yet. Create one in OpenRegister first.",
     "Address lookup temporarily unavailable" : "Address lookup temporarily unavailable",
     "Query parameter q is required" : "Query parameter q is required",
     "Address not found" : "Address not found",

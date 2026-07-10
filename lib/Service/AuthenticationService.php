@@ -580,7 +580,7 @@ class AuthenticationService
         $username     = (string) $configuration['username'];
         $password     = (string) $configuration['password'];
         $passwordType = (string) ($configuration['passwordType'] ?? 'PasswordText');
-        $created      = (new \DateTime())->format('Y-m-d\TH:i:s\Z');
+        $created      = (new DateTime())->format('Y-m-d\TH:i:s\Z');
 
         $wsseNs = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd';
         $wsuNs  = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd';

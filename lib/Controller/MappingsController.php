@@ -54,13 +54,13 @@ class MappingsController extends Controller
     /**
      * Constructor for the MappingsController.
      *
-     * @param string            $appName        The name of the app.
-     * @param IRequest          $request        The request object.
-     * @param MappingService    $mappingService The mapping service.
-     * @param ObjectService     $objectService  The object service (OC).
-     * @param IL10N             $l              The localization service.
-     * @param IUserSession      $userSession    The user session.
-     * @param ActionAuthService $actionAuth     The action authorization service.
+     * @param string               $appName        The name of the app.
+     * @param IRequest             $request        The request object.
+     * @param MappingService       $mappingService The mapping service.
+     * @param SourceMappingService $objectService  The object service (OC).
+     * @param IL10N                $l              The localization service.
+     * @param IUserSession         $userSession    The user session.
+     * @param ActionAuthService    $actionAuth     The action authorization service.
      */
     public function __construct(
         $appName,

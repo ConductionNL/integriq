@@ -62,10 +62,8 @@ class StUFFieldMapper
 
     /**
      * StUFFieldMapper constructor.
-     *
-     * @param \Psr\Log\LoggerInterface $logger PSR-3 logger.
      */
-    public function __construct(private readonly \Psr\Log\LoggerInterface $logger)
+    public function __construct()
     {
 
     }//end __construct()

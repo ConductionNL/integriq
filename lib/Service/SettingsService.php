@@ -39,14 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsService
 {
-
-    /**
-     * This property holds the name of the application, which is used for identification and configuration purposes.
-     *
-     * @var string $appName The name of the app.
-     */
-    private string $appName;
-
     /**
      * SettingsService constructor.
      *
@@ -59,8 +51,6 @@ class SettingsService
         private readonly IAppConfig $config,
         private readonly LoggerInterface $logger
     ) {
-        // Set the application name for identification and configuration purposes.
-        $this->appName = 'openconnector';
 
     }//end __construct()
 
@@ -133,13 +123,47 @@ class SettingsService
         }//end try
     }//end columnExists()
 
-    // NOTE (adopt-apphost): the dead getStats() / getSettings() / updateSettings()
-    // methods were removed here. Their routes (GET /api/settings/stats,
-    // GET/PUT /api/settings) were deleted in the chain-C OR-cutover and no
-    // caller remained; statistics now come from declarative manifest dashboard
-    // widgets resolving against OpenRegister's aggregate endpoint, and metric
-    // counts from the AppHost observability engine (src/manifest.json). Only
-    // the connector-specific rebase() log-retention recompute is kept below.
+    /**
+     * Retrieve the current retention settings from app configuration.
+     *
+     * @return array The current retention settings configuration.
+     *
+     * @throws \RuntimeException If settings retrieval fails.
+     */
+    public function getSettings(): array
+    {
+        try {
+            $retentionConfig = $this->config->getValueString('openconnector', 'retention', '');
+            if (empty($retentionConfig) === true) {
+                return [
+                    'retention' => [
+                        'successLogRetention'      => 3600000,
+                        'callLogRetention'         => 2592000000,
+                        'eventMessageRetention'    => 604800000,
+                        'jobLogRetention'          => 2592000000,
+                        'syncContractLogRetention' => 7776000000,
+                        'syncLogRetention'         => 2592000000,
+                    ],
+                ];
+            }
+
+            $retentionData = json_decode($retentionConfig, true) ?? [];
+            return [
+                'retention' => [
+                    'successLogRetention'      => $retentionData['successLogRetention'] ?? 3600000,
+                    'callLogRetention'         => $retentionData['callLogRetention'] ?? 2592000000,
+                    'eventMessageRetention'    => $retentionData['eventMessageRetention'] ?? 604800000,
+                    'jobLogRetention'          => $retentionData['jobLogRetention'] ?? 2592000000,
+                    'syncContractLogRetention' => $retentionData['syncContractLogRetention'] ?? 7776000000,
+                    'syncLogRetention'         => $retentionData['syncLogRetention'] ?? 2592000000,
+                ],
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve settings', ['exception' => $e->getMessage()]);
+            throw new \RuntimeException('Failed to retrieve settings: '.$e->getMessage());
+        }//end try
+
+    }//end getSettings()
 
     /**
      * Rebase all logs with current retention settings.

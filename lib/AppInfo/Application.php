@@ -41,10 +41,14 @@ use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
 use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
 use OCA\OpenConnector\Sources\Pdok\PdokWmsSourceAdapter;
 use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
+use GuzzleHttp\Client as GuzzleHttpClient;
+use OCA\OpenConnector\Controller\HealthController;
+use OCA\OpenConnector\Controller\MetricsController;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -201,7 +205,7 @@ class Application extends App implements IBootstrap
             PdokGeocodingClientHttp::class,
             static function ($c) {
                 return new PdokGeocodingClientHttp(
-                    httpClient: new \GuzzleHttp\Client(),
+                    httpClient: new GuzzleHttpClient(),
                     logger: $c->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -210,7 +214,7 @@ class Application extends App implements IBootstrap
             PdokWmsClientHttp::class,
             static function ($c) {
                 return new PdokWmsClientHttp(
-                    httpClient: new \GuzzleHttp\Client(),
+                    httpClient: new GuzzleHttpClient(),
                     logger: $c->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -219,7 +223,7 @@ class Application extends App implements IBootstrap
             PdokWfsClientHttp::class,
             static function ($c) {
                 return new PdokWfsClientHttp(
-                    httpClient: new \GuzzleHttp\Client(),
+                    httpClient: new GuzzleHttpClient(),
                     logger: $c->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -281,6 +285,11 @@ class Application extends App implements IBootstrap
 
         $this->registerAppHostObservability(context: $context);
         $this->registerAppHostBoilerplate(context: $context);
+
+        // Fail-loud admin signal when the required OpenRegister app is absent.
+        // The check uses IAppManager only (no OCA\OpenRegister\* reference) so it
+        // is safe to run while OpenRegister is disabled (REQ-ADM-003).
+        $context->registerSetupCheck(OpenRegisterDependencyCheck::class);
     }//end register()
 
     /**
@@ -324,15 +333,32 @@ class Application extends App implements IBootstrap
         // engine collaborators resolved from OpenRegister's app container,
         // scoped to this app's manifest via appName.
         $context->registerService(
-            \OCA\OpenConnector\Controller\HealthController::class,
+            HealthController::class,
             static function (ContainerInterface $c) {
-                // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
-                $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-                return new \OCA\OpenConnector\Controller\HealthController(
+                $appManager = $c->get(\OCP\App\IAppManager::class);
+
+                // When OpenRegister is absent the engine delegate cannot be
+                // built; pass null so HealthController returns a clean 503
+                // naming the missing dependency (REQ-ADM-003) instead of a bare
+                // DI 500. Building the delegate references OpenRegister classes,
+                // so it is only done when OpenRegister is enabled.
+                $delegate = null;
+                if ($appManager->isInstalled('openregister') === true) {
+                    // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
+                    $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                    $delegate    = new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
+                        appName: self::APP_ID,
+                        request: $c->get(IRequest::class),
+                        manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                        executor: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
+                    );
+                }
+
+                return new HealthController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
-                    manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
-                    executor: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
+                    appManager: $appManager,
+                    delegate: $delegate
                 );
             }
         );
@@ -341,11 +367,11 @@ class Application extends App implements IBootstrap
         // /api/metrics, route name metrics#index — both unchanged). Admin-only
         // posture is engine-owned and re-declared on the subclass method.
         $context->registerService(
-            \OCA\OpenConnector\Controller\MetricsController::class,
+            MetricsController::class,
             static function (ContainerInterface $c) {
                 // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
                 $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
-                return new \OCA\OpenConnector\Controller\MetricsController(
+                return new MetricsController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
                     manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
@@ -449,7 +475,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-applicationphp-di-bindings-must-be-updated
+     * @spec openspec/specs/openconnector-direct-or-usage/spec.md#requirement-application-php-di-bindings-must-be-updated
      */
     private function assertStorageMigrated(): void
     {
@@ -629,7 +655,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-repair-and-app-boot/tasks.md#task-2
+     * @spec openspec/specs/repair-and-app-boot/spec.md#requirement-integrationprovider-boot-time-registration-with-or-integrationregistry-req-002
      */
     private function registerIntegrationProviders(IBootContext $context): void
     {

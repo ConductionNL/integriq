@@ -20,7 +20,7 @@ const BRAND_THEME = require.resolve('@conduction/docusaurus-preset/theme');
 
 const config = createConfig({
   title: 'OpenConnector',
-  tagline: 'The integration layer for Nextcloud. REST, SOAP, GraphQL, file drops, message queues. Pulls data from your existing systems into typed registers without writing glue code.',
+  tagline: 'The integration layer for Nextcloud. REST and SOAP sources, plus Dutch government-standard connectors (PDOK, StUF, DSO, Berichtenbox). Pulls data from your existing systems into typed registers without writing glue code.',
   url: 'https://openconnector.conduction.nl',
   baseUrl: '/',
 
@@ -53,7 +53,7 @@ const config = createConfig({
           path: '../docs',
           /* Exclude node_modules just in case the docs folder ever has
              one (it does today, from a separate dependency install
-             during MD tooling). The src/ exclude that mydash and
+             during MD tooling). The src/ exclude that launchpad and
              openregister use does not apply here because docs/ has no
              src/ folder; pages live in `../docusaurus/src/pages/`.
 

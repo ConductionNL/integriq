@@ -334,7 +334,8 @@ class EventService
                     );
 
             if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-                $now = (new DateTime())->format('c');
+                $now           = (new DateTime())->format('c');
+                $priorAttempts = (array) ($messageData['attempts'] ?? []);
                 $messageData['status']           = 'delivered';
                 $messageData['deliveredAt']      = $now;
                 $messageData['lastAttempt']      = $now;
@@ -344,7 +345,7 @@ class EventService
                     'body'       => $response->getBody(),
                 ];
                 $messageData['attempts']         = $this->appendAttempt(
-                    attempts: ($messageData['attempts'] ?? []),
+                    attempts: $priorAttempts,
                     at: $now,
                     statusCode: $response->getStatusCode(),
                     error: null
@@ -412,10 +413,11 @@ class EventService
         ?int $retryAfter,
         int $maxRetries=5
     ): void {
-        $messageData = $message->getObject();
-        $retryCount  = ((int) ($messageData['retryCount'] ?? 0) + 1);
-        $now         = new DateTime();
-        $nowIso      = $now->format('c');
+        $messageData   = $message->getObject();
+        $retryCount    = ((int) ($messageData['retryCount'] ?? 0) + 1);
+        $priorAttempts = (array) ($messageData['attempts'] ?? []);
+        $now           = new DateTime();
+        $nowIso        = $now->format('c');
 
         // Transport exceptions (no statusCode) record the error on the attempt;
         // HTTP-level failures record only the statusCode.
@@ -429,7 +431,7 @@ class EventService
         $messageData['lastAttempt'] = $nowIso;
         $messageData['error']       = $error;
         $messageData['attempts']    = $this->appendAttempt(
-            attempts: ($messageData['attempts'] ?? []),
+            attempts: $priorAttempts,
             at: $nowIso,
             statusCode: $statusCode,
             error: $attemptError
@@ -555,8 +557,9 @@ class EventService
      *
      * @return ObjectEntity The updated message.
      *
-     * @throws InvalidMessageStateException When the message is not in a replayable state.
-     * @throws \OCP\DB\Exception            On persistence failure.
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the message does not exist.
+     * @throws InvalidMessageStateException               When the message is not in a replayable state.
+     * @throws \OCP\DB\Exception                          On persistence failure.
      *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
      */
@@ -614,8 +617,9 @@ class EventService
      *
      * @return ObjectEntity The updated message.
      *
-     * @throws InvalidMessageStateException When the message is not in a discardable state.
-     * @throws \OCP\DB\Exception            On persistence failure.
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the message does not exist.
+     * @throws InvalidMessageStateException               When the message is not in a discardable state.
+     * @throws \OCP\DB\Exception                          On persistence failure.
      *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-2
      */
