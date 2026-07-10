@@ -692,6 +692,7 @@
         "Remote IP": "Remote IP",
         "Remove condition": "Remove condition",
         "Remove group": "Remove group",
+        "Remove property": "Remove property",
         "Remove row": "Remove row",
         "Reset preview": "Reset preview",
         "Response Time": "Response Time",
@@ -863,7 +864,23 @@
         "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one.": "The credential must allow the calling app \"openconnector\" in its allowedApps. Note: the app that declared the credential may be a different one.",
         "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.": "The OpenRegister credential broker is not available (the openregister app is disabled or too old). Brokered credentials cannot be listed here.",
         "The transport used to reach this source.": "The transport used to reach this source.",
-        "You have no brokered credentials yet. Create one in OpenRegister first.": "You have no brokered credentials yet. Create one in OpenRegister first."
+        "You have no brokered credentials yet. Create one in OpenRegister first.": "You have no brokered credentials yet. Create one in OpenRegister first.",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).",
+        "Configured (leave blank to keep unchanged)": "Configured (leave blank to keep unchanged)",
+        "DSO signature configuration saved.": "DSO signature configuration saved.",
+        "DSO STAM webhook signature verification": "DSO STAM webhook signature verification",
+        "Failed to load the DSO signature configuration.": "Failed to load the DSO signature configuration.",
+        "Failed to save the DSO signature configuration.": "Failed to save the DSO signature configuration.",
+        "HMAC shared secret": "HMAC shared secret",
+        "HMAC shared secret (pre-production)": "HMAC shared secret (pre-production)",
+        "Intermediate certificate chain (PEM, optional)": "Intermediate certificate chain (PEM, optional)",
+        "Loading DSO signature configuration…": "Loading DSO signature configuration…",
+        "Not configured": "Not configured",
+        "PKIoverheid certificate chain (production)": "PKIoverheid certificate chain (production)",
+        "Save DSO signature configuration": "Save DSO signature configuration",
+        "Signing certificate (PEM)": "Signing certificate (PEM)",
+        "Signing mode": "Signing mode",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Trusted root CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

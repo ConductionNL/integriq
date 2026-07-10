@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Ta bort egenskap",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Konfigurera hur inkommande DSO-LV STAM-webhookförfrågningar verifieras kryptografiskt. HMAC använder en delad hemlighet (förproduktion); PKIoverheid använder en certifikatkedja (produktion).",
+        "Configured (leave blank to keep unchanged)": "Konfigurerad (lämna tomt för att inte ändra)",
+        "DSO signature configuration saved.": "DSO-signaturkonfigurationen sparades.",
+        "DSO STAM webhook signature verification": "Verifiering av DSO STAM-webhooksignatur",
+        "Failed to load the DSO signature configuration.": "Det gick inte att läsa in DSO-signaturkonfigurationen.",
+        "Failed to save the DSO signature configuration.": "Det gick inte att spara DSO-signaturkonfigurationen.",
+        "HMAC shared secret": "Delad HMAC-hemlighet",
+        "HMAC shared secret (pre-production)": "Delad HMAC-hemlighet (förproduktion)",
+        "Intermediate certificate chain (PEM, optional)": "Kedja av mellanliggande certifikat (PEM, valfritt)",
+        "Loading DSO signature configuration…": "Läser in DSO-signaturkonfiguration…",
+        "Not configured": "Ej konfigurerad",
+        "PKIoverheid certificate chain (production)": "PKIoverheid-certifikatkedja (produktion)",
+        "Save DSO signature configuration": "Spara DSO-signaturkonfiguration",
+        "Signing certificate (PEM)": "Signeringscertifikat (PEM)",
+        "Signing mode": "Signeringsläge",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Betrodd rot-CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

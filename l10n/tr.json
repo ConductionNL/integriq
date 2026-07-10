@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Özelliği kaldır",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Gelen DSO-LV STAM webhook isteklerinin kriptografik olarak nasıl doğrulanacağını yapılandırın. HMAC paylaşılan bir sır kullanır (ön üretim); PKIoverheid bir sertifika zinciri kullanır (üretim).",
+        "Configured (leave blank to keep unchanged)": "Yapılandırıldı (değiştirmemek için boş bırakın)",
+        "DSO signature configuration saved.": "DSO imza yapılandırması kaydedildi.",
+        "DSO STAM webhook signature verification": "DSO STAM webhook imza doğrulaması",
+        "Failed to load the DSO signature configuration.": "DSO imza yapılandırması yüklenemedi.",
+        "Failed to save the DSO signature configuration.": "DSO imza yapılandırması kaydedilemedi.",
+        "HMAC shared secret": "Paylaşılan HMAC sırrı",
+        "HMAC shared secret (pre-production)": "Paylaşılan HMAC sırrı (ön üretim)",
+        "Intermediate certificate chain (PEM, optional)": "Ara sertifika zinciri (PEM, isteğe bağlı)",
+        "Loading DSO signature configuration…": "DSO imza yapılandırması yükleniyor…",
+        "Not configured": "Yapılandırılmadı",
+        "PKIoverheid certificate chain (production)": "PKIoverheid sertifika zinciri (üretim)",
+        "Save DSO signature configuration": "DSO imza yapılandırmasını kaydet",
+        "Signing certificate (PEM)": "İmzalama sertifikası (PEM)",
+        "Signing mode": "İmzalama modu",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Güvenilir kök CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

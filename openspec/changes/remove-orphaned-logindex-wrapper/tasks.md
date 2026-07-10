@@ -2,28 +2,37 @@
 
 ## 1. Confirm dead-code scope
 
-- [ ] Re-confirm zero manifest references: `grep -rn '"component": "LogIndex"' src/manifest.json src/manifest.d/*.json` returns nothing.
-- [ ] Re-confirm zero JS/Vue importers outside the file itself:
-      `grep -rn "LogIndex" src/ --include=*.js --include=*.vue` returns only
-      the wrapper's own definition.
-- [ ] Check whether `sourceStore.refreshSourceLogs` / `sourceStore.sourceLogs`
-      (`src/views/wrappers/LogIndex.vue:51-53`) are used by any other view
-      (e.g. a source-detail logs tab). If yes, keep the store members; if no,
-      remove them too.
+- [x] Re-confirmed zero manifest references: `grep -rn '"component": "LogIndex"' src/manifest.json src/manifest.d/*.json` returns nothing.
+- [x] Re-confirmed zero JS/Vue importers outside the file itself:
+      `grep -rn "LogIndex" src/ --include=*.js --include=*.vue` returned only
+      the wrapper's own definition (its `name: 'LogIndex'` and its own docblock).
+- [x] Checked `sourceStore.refreshSourceLogs` / `sourceStore.sourceLogs`
+      (`src/views/wrappers/LogIndex.vue:51-53`): `grep -rln "refreshSourceLogs\|sourceLogs" src/store/`
+      returned NOTHING — these members were never actually defined on
+      `sourceStore` in `src/store/store.js`. The wrapper referenced undefined
+      store members; had it ever been reachable it would have thrown at
+      runtime. No store cleanup needed since there was nothing to remove.
 
 ## 2. Delete the dead code
 
-- [ ] Delete `src/views/wrappers/LogIndex.vue`.
-- [ ] Remove `sourceStore.refreshSourceLogs` / `sourceLogs` from
-      `src/store/store.js` if step 1 confirms no other consumer.
-- [ ] Run the frontend build / lint to confirm no dangling import.
+- [x] Deleted `src/views/wrappers/LogIndex.vue`.
+- [x] N/A — `sourceStore.refreshSourceLogs` / `sourceLogs` never existed in
+      `src/store/store.js` (see task 1).
+- [x] Ran `npx eslint src/views/` (0 errors, only pre-existing unrelated JSDoc
+      warnings) and `npm run build` (succeeds, only pre-existing bundle-size
+      warnings) — no dangling import.
 
 ## 3. Spec + issue cleanup
 
-- [ ] Update `openspec/specs/app-shell-and-logs-ui/spec.md` REQ-SHELLUI-003 to
+- [x] Updated `openspec/specs/app-shell-and-logs-ui/spec.md` REQ-SHELLUI-003 to
       match observed reality (the manifest's `"type": "logs"` pages resolved by
-      nc-vue's `CnLogsPage`, not an openconnector-owned wrapper).
-- [ ] Close GitHub issue #814 with a comment explaining resolution-by-supersession.
+      nc-vue's `CnLogsPage`, not an openconnector-owned wrapper) — applied the
+      change's own MODIFIED-requirement delta verbatim, plus a Notes line
+      recording why the file was safe to delete.
+- [ ] NOT DONE — closing GitHub issue #814 is a live external repo action
+      (gh CLI / GitHub API), out of scope for an isolated-worktree code task
+      that must not touch anything outside the worktree's file tree. Left for
+      a human/PR step.
 
 ## Acceptance criteria
 

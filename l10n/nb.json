@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Fjern egenskap",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Konfigurer hvordan innkommende DSO-LV STAM-webhook-forespørsler verifiseres kryptografisk. HMAC bruker en delt hemmelighet (før-produksjon); PKIoverheid bruker en sertifikatkjede (produksjon).",
+        "Configured (leave blank to keep unchanged)": "Konfigurert (la stå tomt for å ikke endre)",
+        "DSO signature configuration saved.": "DSO-signaturkonfigurasjonen ble lagret.",
+        "DSO STAM webhook signature verification": "Verifisering av DSO STAM-webhooksignatur",
+        "Failed to load the DSO signature configuration.": "Innlasting av DSO-signaturkonfigurasjonen mislyktes.",
+        "Failed to save the DSO signature configuration.": "Lagring av DSO-signaturkonfigurasjonen mislyktes.",
+        "HMAC shared secret": "Delt HMAC-hemmelighet",
+        "HMAC shared secret (pre-production)": "Delt HMAC-hemmelighet (før-produksjon)",
+        "Intermediate certificate chain (PEM, optional)": "Kjede av mellomliggende sertifikater (PEM, valgfritt)",
+        "Loading DSO signature configuration…": "Laster inn DSO-signaturkonfigurasjon…",
+        "Not configured": "Ikke konfigurert",
+        "PKIoverheid certificate chain (production)": "PKIoverheid-sertifikatkjede (produksjon)",
+        "Save DSO signature configuration": "Lagre DSO-signaturkonfigurasjon",
+        "Signing certificate (PEM)": "Signeringssertifikat (PEM)",
+        "Signing mode": "Signeringsmodus",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Betrodd rot-CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

@@ -278,6 +278,7 @@ import { translate as t } from '@nextcloud/l10n'
 								size="small"
 								type="tertiary"
 								:disabled="idx === 0"
+								:aria-label="t('openconnector', 'Remove property')"
 								@click="removeExtendInputItem(idx)">
 								<template #icon>
 									<TrashCanOutline :size="18" />
@@ -314,6 +315,7 @@ import { translate as t } from '@nextcloud/l10n'
 								size="small"
 								type="tertiary"
 								:disabled="idx === 0"
+								:aria-label="t('openconnector', 'Remove property')"
 								@click="removeExtendExternalItem(idx)">
 								<template #icon>
 									<TrashCanOutline :size="18" />
@@ -596,7 +598,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<template #icon>
 						<CancelIcon size="20" />
 					</template>
-					Cancel
+					{{ t('openconnector', 'Cancel') }}
 				</NcButton>
 				<NcButton v-if="!success"
 					:disabled="(loading
@@ -616,7 +618,7 @@ import { translate as t } from '@nextcloud/l10n'
 						<NcLoadingIcon v-if="loading" :size="20" />
 						<ContentSaveOutline v-if="!loading" :size="20" />
 					</template>
-					Save
+					{{ t('openconnector', 'Save') }}
 				</NcButton>
 			</div>
 		</div>

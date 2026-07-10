@@ -764,4 +764,157 @@ class CallServiceTest extends TestCase
     }//end testQueryPaginationUnaffectedWhenPaginationInOmitted()
 
 
+    /**
+     * REQ-STUF-011 scenario "Client certificate used for mTLS request": a
+     * string PEM certificate configured on a StUF (or any mTLS) Source is
+     * written to a temp file by `getCertificate()`, the config is rewritten
+     * to point at that file (so Guzzle's `cert` option receives a path, not
+     * PEM content), and the file is real / readable on disk.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateWritesCertToTempFile(): void
+    {
+        // Arrange
+        $pem    = "-----BEGIN CERTIFICATE-----\nMIIBAjCB...fixture...\n-----END CERTIFICATE-----";
+        $config = ['cert' => $pem];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert: config now holds a filesystem path, not the raw PEM.
+        $this->assertIsString($config['cert']);
+        $this->assertNotSame($pem, $config['cert']);
+        $this->assertFileExists($config['cert']);
+        $this->assertSame($pem, file_get_contents($config['cert']));
+
+        // Cleanup via the service's own removal path (also exercises it).
+        $this->service->removeFiles($config);
+        $this->assertFileDoesNotExist($config['cert']);
+    }//end testGetCertificateWritesCertToTempFile()
+
+
+    /**
+     * REQ-STUF-011 scenario "Client certificate used for mTLS request",
+     * SSL-key variant: `ssl_key` is written to disk exactly like `cert`.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateWritesSslKeyToTempFile(): void
+    {
+        // Arrange
+        $key    = "-----BEGIN PRIVATE KEY-----\nMIIEvQ...fixture...\n-----END PRIVATE KEY-----";
+        $config = ['ssl_key' => $key];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert
+        $this->assertFileExists($config['ssl_key']);
+        $this->assertSame($key, file_get_contents($config['ssl_key']));
+
+        $this->service->removeFiles($config);
+        $this->assertFileDoesNotExist($config['ssl_key']);
+    }//end testGetCertificateWritesSslKeyToTempFile()
+
+
+    /**
+     * REQ-STUF-011 scenario "Escaped newlines in PEM converted correctly":
+     * a PEM stored with literal `\n` escape sequences (as it would arrive
+     * from a JSON-encoded Source configuration) is converted to real
+     * newline bytes on write, asserted byte-for-byte.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateConvertsEscapedNewlines(): void
+    {
+        // Arrange: literal backslash-n sequences, as stored in a JSON field.
+        $escaped  = '-----BEGIN CERTIFICATE-----\nMIIBAjCB...fixture...\n-----END CERTIFICATE-----';
+        $expected = "-----BEGIN CERTIFICATE-----\nMIIBAjCB...fixture...\n-----END CERTIFICATE-----";
+        $config   = ['cert' => $escaped];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert byte-for-byte: no stray literal backslash-n left in the file.
+        $written = file_get_contents($config['cert']);
+        $this->assertSame($expected, $written);
+        $this->assertStringNotContainsString('\\n', $written);
+
+        $this->service->removeFiles($config);
+    }//end testGetCertificateConvertsEscapedNewlines()
+
+
+    /**
+     * REQ-STUF-011: `cert` supplied as a `[pem, password]` array (Guzzle's
+     * client-cert-with-passphrase shape) writes only the PEM element
+     * (index 0) to disk and preserves the password element untouched.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateWritesArrayFormCertPreservingPassword(): void
+    {
+        // Arrange
+        $pem    = "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----";
+        $config = ['cert' => [$pem, 'super-secret-passphrase']];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert
+        $this->assertFileExists($config['cert'][0]);
+        $this->assertSame($pem, file_get_contents($config['cert'][0]));
+        $this->assertSame('super-secret-passphrase', $config['cert'][1]);
+
+        $this->service->removeFiles($config);
+        $this->assertFileDoesNotExist($config['cert'][0]);
+    }//end testGetCertificateWritesArrayFormCertPreservingPassword()
+
+
+    /**
+     * REQ-STUF-011: `removeFiles()` cleans up cert + ssl_key + verify
+     * together in a single call, mirroring the real teardown path in
+     * `CallService::call()` after both the success and exception branches.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testRemoveFilesCleansUpCertSslKeyAndVerifyTogether(): void
+    {
+        // Arrange
+        $config = [
+            'cert'    => "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----",
+            'ssl_key' => "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            'verify'  => "-----BEGIN CERTIFICATE-----\nca-fixture\n-----END CERTIFICATE-----",
+        ];
+        $this->service->getCertificate($config);
+        $certPath   = $config['cert'];
+        $keyPath    = $config['ssl_key'];
+        $verifyPath = $config['verify'];
+
+        $this->assertFileExists($certPath);
+        $this->assertFileExists($keyPath);
+        $this->assertFileExists($verifyPath);
+
+        // Act
+        $this->service->removeFiles($config);
+
+        // Assert: every temp file is gone (exception-path cleanup is
+        // identical — `removeFiles()` is called the same way from both the
+        // success and `finally`/catch branches in `call()`).
+        $this->assertFileDoesNotExist($certPath);
+        $this->assertFileDoesNotExist($keyPath);
+        $this->assertFileDoesNotExist($verifyPath);
+    }//end testRemoveFilesCleansUpCertSslKeyAndVerifyTogether()
+
+
 }//end class

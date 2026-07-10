@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Elimină proprietatea",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configurați modul în care sunt verificate criptografic cererile webhook DSO-LV STAM primite. HMAC utilizează un secret partajat (pre-producție); PKIoverheid utilizează un lanț de certificate (producție).",
+        "Configured (leave blank to keep unchanged)": "Configurat (lăsați gol pentru a nu modifica)",
+        "DSO signature configuration saved.": "Configurația semnăturii DSO a fost salvată.",
+        "DSO STAM webhook signature verification": "Verificarea semnăturii webhook-ului DSO STAM",
+        "Failed to load the DSO signature configuration.": "Încărcarea configurației semnăturii DSO a eșuat.",
+        "Failed to save the DSO signature configuration.": "Salvarea configurației semnăturii DSO a eșuat.",
+        "HMAC shared secret": "Secret partajat HMAC",
+        "HMAC shared secret (pre-production)": "Secret partajat HMAC (pre-producție)",
+        "Intermediate certificate chain (PEM, optional)": "Lanț de certificate intermediare (PEM, opțional)",
+        "Loading DSO signature configuration…": "Se încarcă configurația semnăturii DSO…",
+        "Not configured": "Neconfigurat",
+        "PKIoverheid certificate chain (production)": "Lanț de certificate PKIoverheid (producție)",
+        "Save DSO signature configuration": "Salvează configurația semnăturii DSO",
+        "Signing certificate (PEM)": "Certificat de semnare (PEM)",
+        "Signing mode": "Mod de semnare",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "CA rădăcină de încredere (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

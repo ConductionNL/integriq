@@ -119,7 +119,6 @@ import {
 	NcTextArea,
 } from '@nextcloud/vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import _ from 'lodash'
 import CancelIcon from 'vue-material-design-icons/Cancel.vue'
 
 export default {
@@ -308,7 +307,7 @@ export default {
 
 			const registerId = endpointStore.endpointItem?.targetId?.split('/')[0]
 
-			const selectedRegister = responseData.find(register => _.toString(register.id) === registerId)
+			const selectedRegister = responseData.find(register => String(register.id) === registerId)
 
 			this.registerOptions = {
 				options: responseData.map((register) => ({
@@ -411,7 +410,7 @@ export default {
 		setSchemaOptions(register) {
 			const schemaId = endpointStore.endpointItem?.targetId.split('/')[1]
 
-			const selectedSchema = this.schemas.find(schema => _.toString(schema.id) === schemaId)
+			const selectedSchema = this.schemas.find(schema => String(schema.id) === schemaId)
 
 			const selectableSchemas = this.schemas.filter(schema => register?.schemas?.includes(schema.id))
 
