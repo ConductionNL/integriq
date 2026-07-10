@@ -17,21 +17,16 @@ return [
 		['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
 		['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
 
-		// DSO / Omgevingsloket STAM koppelvlak — route REMOVED (wave-3 security fix).
+		// DSO / Omgevingsloket STAM koppelvlak.
 		//
-		// The `validateSignature` method that backs this endpoint accepts any
-		// non-empty X-DSO-Signature header without cryptographic verification
-		// (the PKIoverheid HMAC/RSA verifier, REQ-DSO-050, was never implemented).
-		// Leaving a #[PublicPage]+#[NoCSRFRequired] webhook with only a
-		// string-presence check in production is a CRITICAL vulnerability.
-		//
-		// The route is held here as a commented-out placeholder so that the
-		// controller, openspec spec, and TODO are not lost.  Re-enable only after
-		// the real verifier has been implemented and reviewed.
-		//
-		// Tracking issue: https://github.com/ConductionNL/openconnector/issues/1041
-		//
-		// ['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
+		// Re-enabled once `DSOSignatureVerifierService` implemented real
+		// PKIoverheid certificate-chain (RSA) / HMAC shared-secret signature
+		// verification — see
+		// openspec/changes/dso-stam-pkioverheid-signature-verification. Every
+		// request now MUST carry an `X-DSO-Signature` header that
+		// cryptographically verifies before the payload is parsed; the
+		// previous string-presence-only placeholder has been removed.
+		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
@@ -156,6 +151,10 @@ return [
 		// ADR-023 action-authorization matrix (admin-only via #[AuthorizedAdminSetting])
 		['name' => 'actionMatrix#getMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'GET'],
 		['name' => 'actionMatrix#setMatrix', 'url' => '/api/admin/action-matrix', 'verb' => 'PUT'],
+
+		// DSO STAM PKIoverheid signing configuration (admin-only via #[AuthorizedAdminSetting])
+		['name' => 'dsoPkiSettings#getConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'GET'],
+		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
 		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The leaf-namespaced

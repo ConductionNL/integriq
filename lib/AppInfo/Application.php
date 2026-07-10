@@ -38,6 +38,10 @@ use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
 use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
 use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
+use OCA\OpenConnector\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
+use OCA\OpenConnector\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
+use OCA\OpenConnector\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\SettingsService;
@@ -623,6 +627,11 @@ class Application extends App implements IBootstrap
      * Currently registered:
      *   - SynchronizationContractProvider — surfaces SyncContract leaves on the
      *     OR objects they synchronise (GH #824).
+     *   - AzureVirtualDesktopAdapter, SharePointOnlineAdapter, Microsoft365Adapter,
+     *     S3Adapter — one reference adapter per connector-category spec
+     *     (endpoint-workspace, document-cms, saas-productivity, data-infra),
+     *     proving the `AbstractCategoryAdapterProvider` registration pattern
+     *     (openspec/changes/connector-category-adapter-scaffolding).
      *
      * Soft-fails if OR's IntegrationRegistry isn't available (e.g. when
      * openconnector is loaded but openregister isn't enabled yet) so boot
@@ -633,6 +642,7 @@ class Application extends App implements IBootstrap
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-24-repair-and-app-boot/tasks.md#task-2
+     * @spec openspec/changes/connector-category-adapter-scaffolding/tasks.md#task-2
      */
     private function registerIntegrationProviders(IBootContext $context): void
     {
@@ -644,6 +654,10 @@ class Application extends App implements IBootstrap
             $container = $context->getServerContainer();
             $registry  = $container->get(IntegrationRegistry::class);
             $registry->addProvider($container->get(SynchronizationContractProvider::class));
+            $registry->addProvider($container->get(AzureVirtualDesktopAdapter::class));
+            $registry->addProvider($container->get(SharePointOnlineAdapter::class));
+            $registry->addProvider($container->get(Microsoft365Adapter::class));
+            $registry->addProvider($container->get(S3Adapter::class));
         } catch (\Throwable $e) {
             // Don't crash boot — log and continue. The provider just won't appear
             // in object sidebars on this instance until the registry resolves.
@@ -657,7 +671,7 @@ class Application extends App implements IBootstrap
             } catch (\Throwable) {
                 // Logger unavailable, ignore.
             }
-        }
+        }//end try
 
     }//end registerIntegrationProviders()
 }//end class

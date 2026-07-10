@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Noņemt īpašību",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Konfigurējiet, kā ienākošie DSO-LV STAM tīmekļa āķa pieprasījumi tiek kriptogrāfiski pārbaudīti. HMAC izmanto koplietotu noslēpumu (pirmsražošana); PKIoverheid izmanto sertifikātu ķēdi (ražošana).",
+        "Configured (leave blank to keep unchanged)": "Konfigurēts (atstājiet tukšu, lai nemainītu)",
+        "DSO signature configuration saved.": "DSO paraksta konfigurācija saglabāta.",
+        "DSO STAM webhook signature verification": "DSO STAM tīmekļa āķa paraksta pārbaude",
+        "Failed to load the DSO signature configuration.": "Neizdevās ielādēt DSO paraksta konfigurāciju.",
+        "Failed to save the DSO signature configuration.": "Neizdevās saglabāt DSO paraksta konfigurāciju.",
+        "HMAC shared secret": "Koplietots HMAC noslēpums",
+        "HMAC shared secret (pre-production)": "Koplietots HMAC noslēpums (pirmsražošana)",
+        "Intermediate certificate chain (PEM, optional)": "Starpsertifikātu ķēde (PEM, pēc izvēles)",
+        "Loading DSO signature configuration…": "Ielādē DSO paraksta konfigurāciju…",
+        "Not configured": "Nav konfigurēts",
+        "PKIoverheid certificate chain (production)": "PKIoverheid sertifikātu ķēde (ražošana)",
+        "Save DSO signature configuration": "Saglabāt DSO paraksta konfigurāciju",
+        "Signing certificate (PEM)": "Parakstīšanas sertifikāts (PEM)",
+        "Signing mode": "Parakstīšanas režīms",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Uzticama saknes CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

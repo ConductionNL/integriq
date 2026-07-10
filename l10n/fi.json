@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Poista ominaisuus",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Määritä, miten saapuvat DSO-LV STAM -webhook-pyynnöt varmennetaan kryptografisesti. HMAC käyttää jaettua salaisuutta (esituotanto); PKIoverheid käyttää varmenneketjua (tuotanto).",
+        "Configured (leave blank to keep unchanged)": "Määritetty (jätä tyhjäksi, jos et halua muuttaa)",
+        "DSO signature configuration saved.": "DSO-allekirjoituksen määritys tallennettu.",
+        "DSO STAM webhook signature verification": "DSO STAM -webhookin allekirjoituksen varmennus",
+        "Failed to load the DSO signature configuration.": "DSO-allekirjoituksen määrityksen lataaminen epäonnistui.",
+        "Failed to save the DSO signature configuration.": "DSO-allekirjoituksen määrityksen tallentaminen epäonnistui.",
+        "HMAC shared secret": "Jaettu HMAC-salaisuus",
+        "HMAC shared secret (pre-production)": "Jaettu HMAC-salaisuus (esituotanto)",
+        "Intermediate certificate chain (PEM, optional)": "Väliaikaisten varmenteiden ketju (PEM, valinnainen)",
+        "Loading DSO signature configuration…": "Ladataan DSO-allekirjoituksen määritystä…",
+        "Not configured": "Ei määritetty",
+        "PKIoverheid certificate chain (production)": "PKIoverheid-varmenneketju (tuotanto)",
+        "Save DSO signature configuration": "Tallenna DSO-allekirjoituksen määritys",
+        "Signing certificate (PEM)": "Allekirjoitusvarmenne (PEM)",
+        "Signing mode": "Allekirjoitustila",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Luotettu juurivarmentaja (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

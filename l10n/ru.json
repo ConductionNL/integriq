@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Удалить свойство",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Настройте способ криптографической проверки входящих запросов вебхука DSO-LV STAM. HMAC использует общий секрет (предпродакшн); PKIoverheid использует цепочку сертификатов (продакшн).",
+        "Configured (leave blank to keep unchanged)": "Настроено (оставьте пустым, чтобы не изменять)",
+        "DSO signature configuration saved.": "Конфигурация подписи DSO сохранена.",
+        "DSO STAM webhook signature verification": "Проверка подписи вебхука DSO STAM",
+        "Failed to load the DSO signature configuration.": "Не удалось загрузить конфигурацию подписи DSO.",
+        "Failed to save the DSO signature configuration.": "Не удалось сохранить конфигурацию подписи DSO.",
+        "HMAC shared secret": "Общий секрет HMAC",
+        "HMAC shared secret (pre-production)": "Общий секрет HMAC (предпродакшн)",
+        "Intermediate certificate chain (PEM, optional)": "Цепочка промежуточных сертификатов (PEM, необязательно)",
+        "Loading DSO signature configuration…": "Загрузка конфигурации подписи DSO…",
+        "Not configured": "Не настроено",
+        "PKIoverheid certificate chain (production)": "Цепочка сертификатов PKIoverheid (продакшн)",
+        "Save DSO signature configuration": "Сохранить конфигурацию подписи DSO",
+        "Signing certificate (PEM)": "Сертификат подписи (PEM)",
+        "Signing mode": "Режим подписи",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Доверенный корневой ЦС (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

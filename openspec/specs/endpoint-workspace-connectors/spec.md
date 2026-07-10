@@ -1,7 +1,27 @@
 # endpoint-workspace-connectors Specification
 
 ## Purpose
-TBD - created by archiving change add-openconnector-connector-categories. Update Purpose after archive.
+
+Endpoint/workspace vendors (Citrix, VMware/Omnissa Horizon, AWS WorkSpaces, AVD,
+Windows 365, Intune, Jamf, etc.) register as `IntegrationProvider`s under
+`lib/Service/Adapter/EndpointWorkspace/`, each extending the shared
+`AbstractCategoryAdapterProvider` (`lib/Service/Adapter/AbstractCategoryAdapterProvider.php`)
+so capability-vocabulary declaration, health-check surfacing, and credential
+resolution (via OR's `CredentialBrokerService`, `project_credential-broker`)
+are consistent across every category adapter. `AzureVirtualDesktopAdapter`
+(`lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php`) is
+the reference implementation, proving the pattern against the ARM
+`userSessions` API for `session-enumeration`, `user-mapping`, and
+`audit-event-ingestion`. To add the next vendor: create a new class in this
+directory extending `AbstractCategoryAdapterProvider`, implement its
+`getId`/`getLabel`/`getIcon`/`getCapabilities` plus the vendor-specific read
+methods, call `brokeredRequest()` for every outbound call (never hold the
+vendor secret directly), and register it in
+`Application::registerIntegrationProviders()`. The remaining ~36 named
+vendors in this spec stay explicit backlog — this change proves the
+scaffolding, not a full vendor rollout (see
+`openspec/changes/connector-category-adapter-scaffolding`).
+
 ## Requirements
 ### Requirement: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)
 

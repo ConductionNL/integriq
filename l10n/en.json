@@ -692,6 +692,7 @@
         "Remote IP": "Remote IP",
         "Remove condition": "Remove condition",
         "Remove group": "Remove group",
+        "Remove property": "Remove property",
         "Remove row": "Remove row",
         "Reset preview": "Reset preview",
         "Response Time": "Response Time",
@@ -853,7 +854,23 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).",
+        "Configured (leave blank to keep unchanged)": "Configured (leave blank to keep unchanged)",
+        "DSO signature configuration saved.": "DSO signature configuration saved.",
+        "DSO STAM webhook signature verification": "DSO STAM webhook signature verification",
+        "Failed to load the DSO signature configuration.": "Failed to load the DSO signature configuration.",
+        "Failed to save the DSO signature configuration.": "Failed to save the DSO signature configuration.",
+        "HMAC shared secret": "HMAC shared secret",
+        "HMAC shared secret (pre-production)": "HMAC shared secret (pre-production)",
+        "Intermediate certificate chain (PEM, optional)": "Intermediate certificate chain (PEM, optional)",
+        "Loading DSO signature configuration…": "Loading DSO signature configuration…",
+        "Not configured": "Not configured",
+        "PKIoverheid certificate chain (production)": "PKIoverheid certificate chain (production)",
+        "Save DSO signature configuration": "Save DSO signature configuration",
+        "Signing certificate (PEM)": "Signing certificate (PEM)",
+        "Signing mode": "Signing mode",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Trusted root CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

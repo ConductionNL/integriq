@@ -23,12 +23,12 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Controller;
 
 use OCA\OpenConnector\Service\DSOParserService;
+use OCA\OpenConnector\Service\DSOSignatureVerifierService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -47,20 +47,20 @@ class DSOController extends Controller
     /**
      * DSOController constructor.
      *
-     * @param string           $appName   The name of the app.
-     * @param IRequest         $request   Request object.
-     * @param DSOParserService $parser    The DSO payload parser service.
-     * @param LoggerInterface  $logger    Logger for error handling.
-     * @param IAppConfig       $appConfig Application config for feature flags.
+     * @param string                      $appName           The name of the app.
+     * @param IRequest                    $request           Request object.
+     * @param DSOParserService            $parser            The DSO payload parser service.
+     * @param LoggerInterface             $logger            Logger for error handling.
+     * @param DSOSignatureVerifierService $signatureVerifier PKIoverheid / HMAC webhook signature verifier.
      *
-     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
+     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly DSOParserService $parser,
         private readonly LoggerInterface $logger,
-        private readonly IAppConfig $appConfig
+        private readonly DSOSignatureVerifierService $signatureVerifier
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -73,31 +73,30 @@ class DSOController extends Controller
      * validates the request signature and payload schema, and returns
      * HTTP 202 Accepted with the verzoekId for asynchronous processing.
      *
-     * Route registration is REMOVED from `appinfo/routes.php` until the
-     * PKIoverheid HMAC/RSA verifier (Task 12 in `openspec/changes/dso-omgevingsloket`)
-     * is wired. Because the route is unreachable, the `#[PublicPage]` /
-     * `#[NoCSRFRequired]` Nextcloud attributes are temporarily withheld too — the
-     * hydra semantic-auth gate (`public-page-annotation-with-auth-body`) flags any
-     * controller whose `#[PublicPage]` method body returns `Http::STATUS_FORBIDDEN`,
-     * since session-based auth would not produce a 403 directly. The DSO endpoint
-     * authenticates via HMAC signature (not NC session) so the 403 is semantically
-     * a webhook-signature failure, not session auth. When Task 12 lands the verifier
-     * and re-enables the route, the attributes will be re-added together with a
-     * gate-suppression note.
+     * The route is registered in `appinfo/routes.php` guarded by
+     * {@see DSOSignatureVerifierService}: every request MUST carry an
+     * `X-DSO-Signature` header that cryptographically verifies (HMAC
+     * shared-secret in pre-production, PKIoverheid certificate-chain RSA in
+     * production) before the payload is parsed. The `#[PublicPage]` /
+     * `#[NoCSRFRequired]` attributes are present because the endpoint
+     * authenticates via webhook signature, not NC session — the hydra
+     * semantic-auth gate (`public-page-annotation-with-auth-body`) is
+     * satisfied because the signature check IS the auth body for this route.
      *
-     * @return JSONResponse HTTP 202 on success, 400 on validation error, 403 on signature error.
+     * @return JSONResponse HTTP 202 on success, 400 on validation error, 401 on signature error.
      *
-     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
+     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-4
      */
     #[NoCSRFRequired]
     #[PublicPage]
     public function receiveVerzoek(): JSONResponse
     {
-        $body = $this->request->getParams();
+        $rawBody = $this->getRawContent();
+        $body    = $this->request->getParams();
 
-        // Validate webhook signature.
+        // Validate webhook signature over the exact raw body bytes.
         $signatureHeader = $this->request->getHeader('X-DSO-Signature');
-        if ($this->validateSignature(signature: $signatureHeader, body: $body) === false) {
+        if ($this->signatureVerifier->verify(signatureHeader: $signatureHeader, rawBody: $rawBody) === false) {
             $this->logger->warning(
                 'DSO STAM: Webhook signature validation failed',
                 ['hasSignatureHeader' => ($signatureHeader !== '' && $signatureHeader !== null)]
@@ -107,7 +106,7 @@ class DSOController extends Controller
                     'error'   => 'invalid_signature',
                     'message' => 'Webhook signature validation failed',
                 ],
-                statusCode: Http::STATUS_FORBIDDEN
+                statusCode: Http::STATUS_UNAUTHORIZED
             );
         }
 
@@ -155,60 +154,24 @@ class DSOController extends Controller
     }//end receiveVerzoek()
 
     /**
-     * Validate the DSO-LV webhook signature.
+     * Read the raw request body bytes for signature verification.
      *
-     * When the feature flag `dso_signature_enforcement` is OFF (default) the
-     * endpoint rejects requests that carry NO signature header — accepting an
-     * absent header would allow any anonymous caller to inject verzoeken.
-     * When the flag is ON the full PKIoverheid HMAC/RSA body-signature check
-     * must be implemented (REQ-DSO-050) before enabling production traffic.
+     * Signature verification MUST run over the exact bytes DSO-LV signed,
+     * not `$this->request->getParams()` (which is decoded/normalized and
+     * would desync from the signed payload for non-form content types).
      *
-     * Gate behaviour:
-     *   flag = false (default): reject missing header (403), accept present header
-     *                           without cryptographic verification (safe placeholder).
-     *   flag = true:            full PKIoverheid verification — NOT YET IMPLEMENTED;
-     *                           enabling returns false for all requests until the
-     *                           real verifier lands.
+     * @return string The raw request body.
      *
-     * @param string|null $signature The X-DSO-Signature header value.
-     * @param mixed       $body      The request body (reserved for PKIoverheid HMAC).
-     *
-     * @return bool True if the signature check passes.
-     *
-     * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-1
-     *
-     * @psalm-suppress UnusedParam $body is reserved for the full HMAC validation
-     *                              once REQ-DSO-050 lands.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
      */
-    private function validateSignature(?string $signature, mixed $body): bool
+    private function getRawContent(): string
     {
-        // Read feature flag: dso_signature_enforcement = '1' enables the full
-        // PKIoverheid check (not yet implemented). Default is off.
-        $signatureEnforcementEnabled = $this->appConfig->getValueBool(
-            app: 'openconnector',
-            key: 'dso_signature_enforcement',
-            default: false
-        );
-
-        if ($signatureEnforcementEnabled === true) {
-            // Full PKIoverheid certificate-chain verification (REQ-DSO-050) is
-            // not yet implemented. Reject ALL requests until the real verifier
-            // ships so the flag cannot be accidentally enabled in production.
-            $this->logger->warning('DSO STAM: dso_signature_enforcement enabled but verifier not implemented — rejecting request');
-            return false;
+        $content = file_get_contents(filename: 'php://input');
+        if ($content === false) {
+            return '';
         }
 
-        // Default (enforcement OFF): reject requests with a missing signature
-        // header so anonymous callers cannot inject verzoeken without at least
-        // providing a token. Present-but-unverified signatures are accepted as a
-        // safe placeholder until REQ-DSO-050 lands.
-        if ($signature === null || $signature === '') {
-            return false;
-        }
+        return $content;
 
-        return true;
-
-    }//end validateSignature()
+    }//end getRawContent()
 }//end class

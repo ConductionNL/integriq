@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Eigenschap verwijderen",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Bepaal hoe binnenkomende DSO-LV STAM-webhookverzoeken cryptografisch worden geverifieerd. HMAC gebruikt een gedeeld geheim (pre-productie); PKIoverheid gebruikt een certificaatketen (productie).",
+        "Configured (leave blank to keep unchanged)": "Geconfigureerd (leeg laten om ongewijzigd te laten)",
+        "DSO signature configuration saved.": "DSO-handtekeningconfiguratie opgeslagen.",
+        "DSO STAM webhook signature verification": "DSO STAM webhook-handtekeningverificatie",
+        "Failed to load the DSO signature configuration.": "Laden van de DSO-handtekeningconfiguratie mislukt.",
+        "Failed to save the DSO signature configuration.": "Opslaan van de DSO-handtekeningconfiguratie mislukt.",
+        "HMAC shared secret": "Gedeeld HMAC-geheim",
+        "HMAC shared secret (pre-production)": "Gedeeld HMAC-geheim (pre-productie)",
+        "Intermediate certificate chain (PEM, optional)": "Keten van tussenliggende certificaten (PEM, optioneel)",
+        "Loading DSO signature configuration…": "DSO-handtekeningconfiguratie laden…",
+        "Not configured": "Niet geconfigureerd",
+        "PKIoverheid certificate chain (production)": "PKIoverheid-certificaatketen (productie)",
+        "Save DSO signature configuration": "DSO-handtekeningconfiguratie opslaan",
+        "Signing certificate (PEM)": "Ondertekeningscertificaat (PEM)",
+        "Signing mode": "Ondertekeningsmodus",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Vertrouwde root-CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

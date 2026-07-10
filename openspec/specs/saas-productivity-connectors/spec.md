@@ -1,7 +1,22 @@
 # saas-productivity-connectors Specification
 
 ## Purpose
-TBD - created by archiving change add-openconnector-connector-categories. Update Purpose after archive.
+
+SaaS productivity vendors (Microsoft 365, Google Workspace, Slack, Jira,
+Salesforce, Exact Online, etc.) register as `IntegrationProvider`s under
+`lib/Service/Adapter/Saas/`, each extending the shared
+`AbstractCategoryAdapterProvider` (`lib/Service/Adapter/AbstractCategoryAdapterProvider.php`).
+`Microsoft365Adapter` (`lib/Service/Adapter/Saas/Microsoft365Adapter.php`) is
+the reference implementation, proving `calendar-read` and
+`mail-metadata-read` against Microsoft Graph's `me` surface (deliberately
+scoped to metadata reads only — no send/write capability, no message-body
+access). To add the next vendor: create a new class extending
+`AbstractCategoryAdapterProvider`, implement the `IntegrationProvider`
+metadata methods plus vendor-specific read methods via `brokeredRequest()`,
+and register it in `Application::registerIntegrationProviders()`. The
+remaining named vendors stay explicit backlog (see
+`openspec/changes/connector-category-adapter-scaffolding`).
+
 ## Requirements
 ### Requirement: SaaS productivity and work-management connector adapters SHALL register through the integration registry per ADR-019 (REQ-SPC-001)
 

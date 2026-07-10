@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Elimina la propietat",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configureu com es verifiquen criptogràficament les sol·licituds entrants del webhook DSO-LV STAM. HMAC utilitza un secret compartit (preproducció); PKIoverheid utilitza una cadena de certificats (producció).",
+        "Configured (leave blank to keep unchanged)": "Configurat (deixeu-ho en blanc per no modificar-ho)",
+        "DSO signature configuration saved.": "S'ha desat la configuració de la signatura DSO.",
+        "DSO STAM webhook signature verification": "Verificació de la signatura del webhook DSO STAM",
+        "Failed to load the DSO signature configuration.": "No s'ha pogut carregar la configuració de la signatura DSO.",
+        "Failed to save the DSO signature configuration.": "No s'ha pogut desar la configuració de la signatura DSO.",
+        "HMAC shared secret": "Secret compartit HMAC",
+        "HMAC shared secret (pre-production)": "Secret compartit HMAC (preproducció)",
+        "Intermediate certificate chain (PEM, optional)": "Cadena de certificats intermedis (PEM, opcional)",
+        "Loading DSO signature configuration…": "S'està carregant la configuració de la signatura DSO…",
+        "Not configured": "No configurat",
+        "PKIoverheid certificate chain (production)": "Cadena de certificats PKIoverheid (producció)",
+        "Save DSO signature configuration": "Desa la configuració de la signatura DSO",
+        "Signing certificate (PEM)": "Certificat de signatura (PEM)",
+        "Signing mode": "Mode de signatura",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "CA arrel de confiança (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

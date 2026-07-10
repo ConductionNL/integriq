@@ -103,6 +103,18 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
         }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialBrokerService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialAccessDeniedException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialAccessDeniedException.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialUpstreamException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialUpstreamException.php';
+        }
     }
 }
 

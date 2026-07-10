@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-14
+ * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -22,9 +22,9 @@ namespace OCA\OpenConnector\Tests\Unit\Controller;
 
 use OCA\OpenConnector\Controller\DSOController;
 use OCA\OpenConnector\Service\DSOParserService;
+use OCA\OpenConnector\Service\DSOSignatureVerifierService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the DSO STAM koppelvlak controller.
  *
- * @spec openspec/changes/dso-omgevingsloket/tasks.md#task-14
+ * @spec openspec/changes/dso-stam-pkioverheid-signature-verification/tasks.md#task-3
  */
 class DSOControllerTest extends TestCase
 {
@@ -53,9 +53,9 @@ class DSOControllerTest extends TestCase
     private $logger;
 
     /**
-     * @var \PHPUnit\Framework\MockObject\MockObject|IAppConfig
+     * @var \PHPUnit\Framework\MockObject\MockObject|DSOSignatureVerifierService
      */
-    private $appConfig;
+    private $signatureVerifier;
 
     /**
      * @var DSOController
@@ -71,34 +71,42 @@ class DSOControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->request   = $this->createMock(IRequest::class);
-        $this->parser    = $this->createMock(DSOParserService::class);
-        $this->logger    = $this->createMock(LoggerInterface::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->request           = $this->createMock(IRequest::class);
+        $this->parser            = $this->createMock(DSOParserService::class);
+        $this->logger            = $this->createMock(LoggerInterface::class);
+        $this->signatureVerifier = $this->createMock(DSOSignatureVerifierService::class);
 
-        // Default: enforcement flag is OFF (do not enable full PKIoverheid verifier).
-        $this->appConfig->method('getValueBool')->willReturn(false);
+        // Default: signature verification passes, so tests only exercising
+        // payload handling do not need to restate this every time.
+        $this->signatureVerifier->method('verify')->willReturn(true);
 
         $this->controller = new DSOController(
             appName: 'openconnector',
             request: $this->request,
             parser: $this->parser,
             logger: $this->logger,
-            appConfig: $this->appConfig
+            signatureVerifier: $this->signatureVerifier
         );
 
     }//end setUp()
 
     /**
-     * Test that a request without X-DSO-Signature header returns 403.
-     *
-     * Missing signature must be rejected — anonymous callers cannot inject
-     * verzoeken without at least providing a signature token (C1 fix).
+     * Test that a request whose signature fails verification returns 401.
      *
      * @return void
      */
-    public function testMissingSignatureHeaderReturns403(): void
+    public function testInvalidSignatureReturns401(): void
     {
+        $this->signatureVerifier = $this->createMock(DSOSignatureVerifierService::class);
+        $this->signatureVerifier->method('verify')->willReturn(false);
+        $this->controller = new DSOController(
+            appName: 'openconnector',
+            request: $this->request,
+            parser: $this->parser,
+            logger: $this->logger,
+            signatureVerifier: $this->signatureVerifier
+        );
+
         $body = [
             'verzoekId'       => 'dso-12345',
             'type'            => 'aanvraag',
@@ -114,15 +122,43 @@ class DSOControllerTest extends TestCase
         $response = $this->controller->receiveVerzoek();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
         $data = $response->getData();
         $this->assertSame('invalid_signature', $data['error']);
 
-    }//end testMissingSignatureHeaderReturns403()
+    }//end testInvalidSignatureReturns401()
 
     /**
-     * Test that a valid verzoek with a signature header returns 202.
+     * Test that a request with no `X-DSO-Signature` header (which the real
+     * verifier will always reject) returns 401.
+     *
+     * @return void
+     */
+    public function testMissingSignatureHeaderReturns401(): void
+    {
+        $this->signatureVerifier = $this->createMock(DSOSignatureVerifierService::class);
+        $this->signatureVerifier->method('verify')
+            ->willReturnCallback(static fn (?string $sig, string $body): bool => ($sig !== null && $sig !== ''));
+        $this->controller = new DSOController(
+            appName: 'openconnector',
+            request: $this->request,
+            parser: $this->parser,
+            logger: $this->logger,
+            signatureVerifier: $this->signatureVerifier
+        );
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getHeader')->willReturn('');
+
+        $response = $this->controller->receiveVerzoek();
+
+        $this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+    }//end testMissingSignatureHeaderReturns401()
+
+    /**
+     * Test that a valid verzoek with a verified signature returns 202.
      *
      * @return void
      */
@@ -173,7 +209,6 @@ class DSOControllerTest extends TestCase
     public function testValidationFailureReturns400(): void
     {
         $this->request->method('getParams')->willReturn([]);
-        // Provide a signature header so signature validation passes.
         $this->request->method('getHeader')
             ->willReturnCallback(
                 static function (string $header): string {

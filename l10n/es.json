@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Eliminar propiedad",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configure cómo se verifican criptográficamente las solicitudes entrantes del webhook DSO-LV STAM. HMAC utiliza un secreto compartido (preproducción); PKIoverheid utiliza una cadena de certificados (producción).",
+        "Configured (leave blank to keep unchanged)": "Configurado (dejar en blanco para no modificar)",
+        "DSO signature configuration saved.": "Configuración de firma DSO guardada.",
+        "DSO STAM webhook signature verification": "Verificación de firma del webhook DSO STAM",
+        "Failed to load the DSO signature configuration.": "Error al cargar la configuración de firma DSO.",
+        "Failed to save the DSO signature configuration.": "Error al guardar la configuración de firma DSO.",
+        "HMAC shared secret": "Secreto compartido HMAC",
+        "HMAC shared secret (pre-production)": "Secreto compartido HMAC (preproducción)",
+        "Intermediate certificate chain (PEM, optional)": "Cadena de certificados intermedios (PEM, opcional)",
+        "Loading DSO signature configuration…": "Cargando configuración de firma DSO…",
+        "Not configured": "No configurado",
+        "PKIoverheid certificate chain (production)": "Cadena de certificados PKIoverheid (producción)",
+        "Save DSO signature configuration": "Guardar configuración de firma DSO",
+        "Signing certificate (PEM)": "Certificado de firma (PEM)",
+        "Signing mode": "Modo de firma",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "CA raíz de confianza (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }
