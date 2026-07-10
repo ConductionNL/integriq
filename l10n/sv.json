@@ -849,7 +849,11 @@
         "Visual builder": "Visuell byggare",
         "We encountered an unexpected problem": "Vi stötte på ett oväntat problem",
         "When (conditions)": "När (villkor)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "När aktiverad körs synkroniseringen fortfarande men regeln bevarar den ursprungliga svarsbrödtexten istället för att ersätta den."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "När aktiverad körs synkroniseringen fortfarande men regeln bevarar den ursprungliga svarsbrödtexten istället för att ersätta den.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

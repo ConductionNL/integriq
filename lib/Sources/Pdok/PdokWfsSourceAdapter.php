@@ -129,15 +129,26 @@ final class PdokWfsSourceAdapter
             ]
         );
 
-        return $this->wfsClient->getFeatures($typeName, $bbox, $count, $extras);
+        // PdokWfsClient::getFeature() takes (dataset, featureType, bbox, count, srsName, filterFields).
+        // The source adapter wraps the dataset+featureType as a single $typeName string ("dataset:featureType").
+        [$dataset, $featureType] = array_pad(explode(':', $typeName, 2), 2, '');
+        return $this->wfsClient->getFeature(
+            dataset: $dataset,
+            featureType: $featureType,
+            bbox: $bbox,
+            count: $count,
+            filterFields: $extras
+        );
     }//end getFeatures()
 
     /**
-     * Return the parsed WFS GetCapabilities document.
+     * Return the raw XML GetCapabilities document for a dataset.
      *
-     * @return array<string,mixed>
+     * @param string $dataset PDOK WFS dataset key (e.g. `bag`, `kadastralekaart`).
+     *
+     * @return string Raw capabilities XML.
      */
-    public function describeService(): array
+    public function describeService(string $dataset=''): string
     {
         $this->logger->debug(
             'pdok-wfs.describeService',
@@ -149,7 +160,7 @@ final class PdokWfsSourceAdapter
             ]
         );
 
-        return $this->wfsClient->describeService();
+        return $this->wfsClient->getCapabilities(dataset: $dataset);
     }//end describeService()
 
     /**

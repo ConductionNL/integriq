@@ -18,6 +18,7 @@
 
 namespace OCA\OpenConnector\Controller;
 
+use DateTime;
 use Exception;
 use OCA\OpenConnector\Exception\InvalidMessageStateException;
 use OCA\OpenConnector\Service\ActionAuthService;
@@ -207,8 +208,6 @@ class EventsController extends Controller
             );
 
             return new JSONResponse($this->redactSubscription(subscription: $subscription->getObject()));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(['error' => $this->l->t('Subscription not found')], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
@@ -500,7 +499,7 @@ class EventsController extends Controller
         $newSecret = $this->signatureService->generateSecret();
         $protocolSettings['previousSigningSecret'] = $current;
         $protocolSettings['signingSecret']         = $newSecret;
-        $protocolSettings['secretRotatedAt']       = (new \DateTime())->format('c');
+        $protocolSettings['secretRotatedAt']       = (new DateTime())->format('c');
         $data['protocolSettings'] = $protocolSettings;
 
         $saved = $this->orObjectService->saveObject(

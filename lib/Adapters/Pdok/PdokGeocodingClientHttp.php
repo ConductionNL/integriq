@@ -75,12 +75,12 @@ final class PdokGeocodingClientHttp extends PdokGeocodingClient
         ?string $baseUri=null
     ) {
         if ($baseUri !== null && $baseUri !== '') {
-            $base = $baseUri;
+            $resolvedUri = $baseUri;
         } else {
-            $base = self::DEFAULT_BASE_URI;
+            $resolvedUri = self::DEFAULT_BASE_URI;
         }
 
-        $this->baseUri = rtrim($base, '/').'/';
+        $this->baseUri = rtrim($resolvedUri, '/').'/';
 
     }//end __construct()
 

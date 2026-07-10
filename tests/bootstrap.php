@@ -62,6 +62,13 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
         }
 
+        // OCA\OpenRegister AppHost stubs — peer app not in vendor. Used by the
+        // openconnector HealthController delegation path (licence-and-or-
+        // requirement-honesty change).
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Controller/GenericHealthController.php';
+        }
+
         // OCA\OpenRegister stubs — peer app not in vendor.
         if (class_exists('OCA\\OpenRegister\\Db\\ObjectEntity') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
@@ -102,6 +109,22 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
         if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
+        }
+
+        // Credential-broker stubs (source-broker-credentials change). The
+        // broker stub mirrors the OR origin/development request() signature
+        // WITHOUT the acting-user parameter, so the reflection-based
+        // feature-detection path is exercised realistically in tests.
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialBrokerService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialAccessDeniedException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialAccessDeniedException.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialUpstreamException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialUpstreamException.php';
         }
     }
 }

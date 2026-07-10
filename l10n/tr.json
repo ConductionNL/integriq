@@ -849,7 +849,11 @@
         "Visual builder": "Görsel oluşturucu",
         "We encountered an unexpected problem": "Beklenmeyen bir sorunla karşılaştık",
         "When (conditions)": "Ne zaman (koşullar)",
-        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Etkinleştirildiğinde, eşitleme yine de çalışır ancak kural, özgün yanıt gövdesini değiştirmek yerine korur."
+        "When enabled, the sync still runs but the rule preserves the original response body instead of replacing it.": "Etkinleştirildiğinde, eşitleme yine de çalışır ancak kural, özgün yanıt gövdesini değiştirmek yerine korur.",
+        "Could not create mapping": "Could not create mapping",
+        "Could not open the new mapping": "Could not open the new mapping",
+        "Mapping created but could not be opened": "Mapping created but could not be opened",
+        "New mapping": "New mapping"
     },
     "plurals": {}
 }

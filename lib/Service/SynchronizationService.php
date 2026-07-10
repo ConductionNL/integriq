@@ -26,7 +26,6 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
-use OC\User\NoUserException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -36,14 +35,13 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\GenericFileException;
-use OCP\Files\NotFoundException;
-use OCP\Files\NotPermittedException;
 use OCP\IAppConfig;
 use OCP\Lock\LockedException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\Uid\Uuid;
 use Twig\Error\LoaderError;
@@ -161,7 +159,6 @@ class SynchronizationService
      * @param ContainerInterface        $containerInterface        The PSR-11 container.
      * @param OrObjectService           $orObjectService           The OpenRegister object service.
      * @param ObjectService             $objectService             The OpenConnector object service.
-     * @param StorageService            $storageService            The storage service.
      * @param LoggerInterface           $logger                    The logger.
      * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
      * @param IAppConfig                $appConfig                 The app configuration.
@@ -172,7 +169,6 @@ class SynchronizationService
         private readonly ContainerInterface $containerInterface,
         private readonly OrObjectService $orObjectService,
         private readonly ObjectService $objectService,
-        private readonly StorageService $storageService,
         private readonly LoggerInterface $logger,
         SynchronizationLogService $synchronizationLogService,
         IAppConfig $appConfig,
@@ -839,7 +835,7 @@ class SynchronizationService
             return null;
         }
 
-        return new \DateTime('now +'.max($retentions).'milliseconds');
+        return new DateTime('now +'.max($retentions).'milliseconds');
     }//end calculateExpires()
 
     /**
@@ -1039,9 +1035,11 @@ class SynchronizationService
      * @param array       $triggerObject   The related object payload from the event.
      * @param string|int  $triggerRegister The register of the related object source.
      * @param string|int  $triggerSchema   The schema of the related object source.
-     * @param string|null $mutationType    The triggering mutation type.
+     * @param string|null $mutationType    The triggering mutation type (reserved for future filtering).
      *
      * @return array|null The fetched parent object as array, or null when it cannot be resolved.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function resolveParentObjectForRelatedObjectTrigger(
         array $synchronization,
@@ -1434,7 +1432,7 @@ class SynchronizationService
             $synchronizedTargetIds = [];
             $objectProcessingTimes = [];
 
-            foreach ($objectList as $index => $object) {
+            foreach ($objectList as $object) {
                 $objectStartTime = microtime(true);
 
                 $processResult = $this->processSynchronizationObject(
@@ -1457,15 +1455,9 @@ class SynchronizationService
                             // directly via the OR ObjectService (a missing contract is
                             // tolerated as null). findContract may return an entity, a
                             // plain array (OR ObjectService), or null — handle all three
-                            // instead of blindly calling jsonSerialize() (which fatals on
-                            // an array and crashes the whole run).
+                            // findContract() always returns an array (or throws DoesNotExistException).
                             try {
-                                $contract = $this->findContract(id: $contractId);
-                                if (is_object($contract) === true && method_exists($contract, 'jsonSerialize') === true) {
-                                    return $contract->jsonSerialize();
-                                }
-
-                                return $contract;
+                                return $this->findContract(id: $contractId);
                             } catch (DoesNotExistException $exception) {
                                 return null;
                             }
@@ -1697,7 +1689,7 @@ class SynchronizationService
         );
 
         // Finalize log.
-        $executionTime = round((microtime(true) - $startTime) * 1000);
+        $executionTime = (int) round((microtime(true) - $startTime) * 1000);
         $log->setExecutionTime($executionTime);
         $log->setMessage('Success');
         $log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
@@ -1712,11 +1704,11 @@ class SynchronizationService
      * @param array $synchronization The synchronization containing the source config.
      * @param array $object          The object to extract the origin id from.
      *
-     * @return string|int The origin id.
+     * @return string The origin id.
      *
      * @throws Exception
      */
-    private function getOriginId(array $synchronization, array $object): int|string
+    private function getOriginId(array $synchronization, array $object): string
     {
         // Default ID position is 'id' if not specified in source config.
         $originIdPosition = 'id';
@@ -1984,10 +1976,10 @@ class SynchronizationService
      */
     private function mapHashObject(array $synchronization, array $object): array|Exception
     {
-        if (empty(($synchronization['sourceHashMapping'] ?? null)) === false) {
+        if (empty($synchronization['sourceHashMapping']) === false) {
             try {
                 $sourceHashMapping = $this->orObjectService->find(
-                    id: (string) ($synchronization['sourceHashMapping'] ?? null),
+                    id: (string) $synchronization['sourceHashMapping'],
                     register: 'openconnector',
                     schema: 'mapping'
                 );
@@ -2159,7 +2151,7 @@ class SynchronizationService
         }
 
         ksort($array);
-        foreach ($array as $k => $v) {
+        foreach (array_keys($array) as $k) {
             $this->sortNestedArray(array: $array[$k]);
         }
 
@@ -2194,6 +2186,8 @@ class SynchronizationService
      *                                                            'create', 'update' or 'delete'. Used for
      *                                                            syncs to external sources.
      *
+     * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     *
      * @return array|Exception
      *
      * @throws ContainerExceptionInterface
@@ -2215,11 +2209,13 @@ class SynchronizationService
         $contractLog = null;
 
         // We are doing something so lets log it.
-        if (($synchronizationContract['id'] ?? null) !== null && $this->synchronizationContractLogService !== null) {
+        $hasContractId = isset($synchronizationContract['id']) === true && $synchronizationContract['id'] !== null;
+        $hasLogService = $this->synchronizationContractLogService !== null;
+        if ($hasContractId === true && $hasLogService === true) {
             $contractLog = $this->synchronizationContractLogService->createFromArray(
                 object: [
                     'synchronizationId'         => ($synchronization['id'] ?? null),
-                    'synchronizationContractId' => ($synchronizationContract['id'] ?? null),
+                    'synchronizationContractId' => $synchronizationContract['id'],
                     'source'                    => $object,
                     'test'                      => $isTest,
                     'force'                     => $force,
@@ -2253,12 +2249,12 @@ class SynchronizationService
         $originHash = $this->hashObject(object: $hashObject);
 
         // If no source target mapping is defined, use original object.
-        if (empty(($synchronization['sourceTargetMapping'] ?? null)) === true) {
+        if (empty($synchronization['sourceTargetMapping']) === true) {
             $sourceTargetMapping = null;
         } else {
             try {
                 $sourceTargetMapping = $this->orObjectService->find(
-                    id: (string) ($synchronization['sourceTargetMapping'] ?? null),
+                    id: (string) $synchronization['sourceTargetMapping'],
                     register: 'openconnector',
                     schema: 'mapping'
                 );
@@ -2393,8 +2389,8 @@ class SynchronizationService
                 data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]),
                 timing: 'after',
                 objectId: ($synchronizationContract['targetId'] ?? null),
-                registerId: $registerId,
-                schemaId: $schemaId,
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId,
                 flowToken: $flowToken
             );
         } else if (($synchronization['targetType'] ?? null) === 'api' && ($synchronization['sourceType'] ?? null) === 'register/schema') {
@@ -2404,8 +2400,8 @@ class SynchronizationService
                 data: array_merge($object, ['_objectBeforeMapping' => $objectBeforeMapping]),
                 timing: 'after',
                 objectId: ($synchronizationContract['sourceId'] ?? null),
-                registerId: $registerId,
-                schemaId: $schemaId,
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId,
                 flowToken: $flowToken
             );
         }//end if
@@ -2479,8 +2475,8 @@ class SynchronizationService
         $sourceConfig  = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
 
         // If we already have an id, we need to get the object and update it.
-        if (($synchronizationContract['targetId'] ?? null) !== null) {
-            $targetObject['id'] = ($synchronizationContract['targetId'] ?? null);
+        if (isset($synchronizationContract['targetId']) === true && $synchronizationContract['targetId'] !== null) {
+            $targetObject['id'] = $synchronizationContract['targetId'];
         }
 
         if (isset($sourceConfig['subObjects']) === true) {
@@ -2883,16 +2879,8 @@ class SynchronizationService
      */
     public function updateTarget(array $synchronizationContract, ?array &$targetObject=[], ?string $action='save', ?string $mutationType=null): array
     {
-        // The function can be called solo set let's make sure we have the full synchronization object.
-        if (isset($synchronization) === false) {
-            $synchronization = $this->findSynchronization(id: ((string) ($synchronizationContract['synchronizationId'] ?? '')));
-        }
-
-        // Let's check if we need to create or update.
-        $update = false;
-        if (empty($synchronizationContract['targetId'] ?? null) === false) {
-            $update = true;
-        }
+        // The function can be called standalone so resolve the synchronization from the contract.
+        $synchronization = $this->findSynchronization(id: ((string) ($synchronizationContract['synchronizationId'] ?? '')));
 
         $type = ($synchronization['targetType'] ?? null);
 
@@ -3329,6 +3317,21 @@ class SynchronizationService
     /**
      * Fetches and parses a single page.
      *
+     * Bulk-file sources (oc#97) MAY serve a gzip-compressed body (a genuine
+     * `.gz` file, not transport `Content-Encoding: gzip` — Guzzle already
+     * transparently unwraps the latter) and/or line-delimited JSON (JSONL,
+     * one record per line, no wrapping array/object). Both are detected and
+     * handled BEFORE the existing JSON/XML parse attempts, which are
+     * otherwise unchanged — a source with neither signal takes the exact
+     * pre-existing code path.
+     *
+     * Keyless catalog/standards sources with no JSON/XML API at all (oc#107
+     * — awesome_selfhosted, openalternative, don_oss_register,
+     * wikipedia_comparisons) MAY instead declare `Source.configuration.
+     * format` as `"markdown"` or `"html"`. Detected and handled in the same
+     * place, also BEFORE the JSON/XML parse attempts — a source with none
+     * of these signals is unaffected.
+     *
      * @param array  $source          The data source configuration
      * @param string $endpoint        The page endpoint to fetch
      * @param array  $config          The request configuration
@@ -3336,6 +3339,9 @@ class SynchronizationService
      *
      * @return array{objects: array, result: array}
      * @throws TooManyRequestsHttpException When rate limit is exceeded
+     *
+     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array
     {
@@ -3358,6 +3364,85 @@ class SynchronizationService
         }
 
         $body = $response['body'];
+
+        // #97: .tar.gz bulk archives are NOT supported — gzip decompression
+        // alone unpacks to a tar byte stream, not parseable JSON/JSONL. Short
+        // circuit with a clear log entry instead of silently returning zero
+        // objects like the pre-existing (undetected) failure mode did.
+        if ($this->isTarGzEndpoint(endpoint: $endpoint) === true) {
+            $this->logger->warning(
+                'SynchronizationService: .tar.gz bulk sources are not supported (gzip '.
+                'decompression alone cannot unpack a tar archive) — skipping fetch for '.
+                '{endpoint}. Deferred per oc#97; use an ETL-style loader instead.',
+                ['endpoint' => $endpoint]
+            );
+            return ['objects' => [], 'result' => []];
+        }
+
+        // CallService base64-encodes any response body that fails UTF-8
+        // validation (gzip-compressed bytes always will) and records that in
+        // `encoding`; decode back to raw bytes before attempting gunzip.
+        if (($response['encoding'] ?? 'UTF-8') === 'base64') {
+            $decodedBody = base64_decode($body, true);
+            if ($decodedBody !== false) {
+                $body = $decodedBody;
+            }
+        }
+
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+
+        // #97: gzip-compressed bulk files (OpenTender/OCP `.jsonl.gz` registry
+        // exports). Detected via an explicit `Source.configuration.decompress:
+        // "gzip"` hint, a `.gz`-suffixed endpoint, or an `application/gzip`
+        // response Content-Type — first match wins, no further guessing.
+        if ($this->isGzipPayload(source: $source, endpoint: $endpoint, response: $response) === true) {
+            $decompressed = @gzdecode($body);
+            if ($decompressed !== false) {
+                $body = $decompressed;
+            }
+        }
+
+        // #97: line-delimited JSON (JSONL) — each non-empty line is one
+        // record, no wrapping array/object. Bypasses the json_decode/XML
+        // attempts below entirely (a JSONL body is not valid whole-document
+        // JSON). Guarded against the whole-file-in-memory ceiling by
+        // tokenising line-by-line rather than exploding a second full copy.
+        if (($sourceConfig['format'] ?? null) === 'jsonl') {
+            $result = $this->parseJsonLines(body: $body);
+
+            return [
+                'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+                'result'  => $result,
+            ];
+        }
+
+        // #107: markdown- and HTML-shaped sources (spectr's keyless catalog/
+        // standards connectors — awesome_selfhosted, openalternative,
+        // don_oss_register, wikipedia_comparisons — have no JSON/XML API at
+        // all). Both are a property of the SOURCE itself (the endpoint
+        // always returns this shape, regardless of which synchronization
+        // reads it), so — unlike `sourceConfig.format: "jsonl"` above, which
+        // is per-synchronization — they are keyed off
+        // `Source.configuration.format` instead. Bypasses the
+        // json_decode/XML attempts below entirely, same as the JSONL branch.
+        $sourceFormat = strtolower((string) ($source['configuration']['format'] ?? ''));
+        if ($sourceFormat === 'markdown') {
+            $result = $this->parseMarkdownResponse(body: $body);
+
+            return [
+                'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+                'result'  => $result,
+            ];
+        }
+
+        if ($sourceFormat === 'html') {
+            $result = $this->parseHtmlResponse(body: $body, configuration: ($source['configuration'] ?? []));
+
+            return [
+                'objects' => $this->getAllObjectsFromArray(array: $result, synchronization: $synchronization),
+                'result'  => $result,
+            ];
+        }
 
         // Try parsing the response body in different formats, starting with JSON.
         $result = json_decode($body, true);
@@ -3384,79 +3469,367 @@ class SynchronizationService
     }//end fetchSinglePageData()
 
     /**
-     * Fallback method for sequential page fetching.
+     * Determines whether a fetched page body is gzip-compressed.
      *
-     * This method provides the original sequential fetching behavior as a fallback
-     * when parallel fetching fails or is not suitable.
+     * Checked in order: an explicit `Source.configuration.decompress: "gzip"`
+     * hint, a `.gz`-suffixed endpoint (path or a `name=`-style query value
+     * carrying the filename), or an `application/gzip` response Content-Type
+     * header. Any one signal is sufficient.
      *
-     * @param array     $source           The data source configuration
-     * @param string    $endpoint         The API endpoint to fetch from
-     * @param array     $config           The request configuration
-     * @param array     $synchronization  The synchronization context
-     * @param int       $currentPage      The starting page number
-     * @param bool      $isTest           Whether this is a test run
-     * @param bool|null $usesNextEndpoint Whether the API uses next endpoint URLs
+     * @param array  $source   The data source configuration.
+     * @param string $endpoint The page endpoint that was fetched.
+     * @param array  $response The decoded call-log response array.
      *
-     * @return array Combined objects from all pages
+     * @return bool True when the body is expected to be gzip-compressed.
+     *
+     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      */
-    private function fetchAllPagesSequential(
-        array $source,
-        string $endpoint,
-        array $config,
-        array $synchronization,
-        int $currentPage,
-        bool $isTest=false,
-        ?bool $usesNextEndpoint=null
-    ): array {
-        $allObjects      = [];
-        $currentEndpoint = $endpoint;
-        $maxPages        = 50;
-        // Safety limit.
-        for ($i = 0; $i < $maxPages; $i++) {
-            $pageData    = $this->fetchSinglePageData(
-                source: $source,
-                endpoint: $currentEndpoint,
-                config: $config,
-                synchronization: $synchronization
-            );
-            $pageObjects = $pageData['objects'];
+    private function isGzipPayload(array $source, string $endpoint, array $response): bool
+    {
+        $decompressHint = strtolower((string) ($source['configuration']['decompress'] ?? ''));
+        if ($decompressHint === 'gzip') {
+            return true;
+        }
 
-            // If test mode is enabled, return only the first object.
-            if ($isTest === true && empty($pageObjects) === false) {
-                return [$pageObjects[0]];
+        if ($this->endpointSuggestsSuffix(endpoint: $endpoint, suffix: '.gz') === true) {
+            return true;
+        }
+
+        foreach (($response['headers'] ?? []) as $name => $value) {
+            if (strtolower((string) $name) !== 'content-type') {
+                continue;
             }
 
-            if (empty($pageObjects) === true) {
-                break;
+            $values = $value;
+            if (is_array($values) === false) {
+                $values = [$values];
             }
 
-            $allObjects = array_merge($allObjects, $pageObjects);
-
-            $result = $pageData['result'];
-            if (empty($result) === true) {
-                break;
-            }
-
-            // Determine pagination method.
-            if ($usesNextEndpoint === null && array_key_exists('next', $result) === true) {
-                $usesNextEndpoint = true;
-            }
-
-            if ($usesNextEndpoint === true) {
-                $nextEndpoint = $this->getNextEndpoint(body: $result, url: (string) ($source['location'] ?? ''), currentEndpoint: $currentEndpoint);
-                if ($nextEndpoint === null || $nextEndpoint === $currentEndpoint) {
-                    break;
+            foreach ($values as $singleValue) {
+                if (str_contains(strtolower((string) $singleValue), 'gzip') === true) {
+                    return true;
                 }
-
-                $currentEndpoint = $nextEndpoint;
-            } else {
-                $currentPage++;
-                $config = $this->getNextPage(config: $config, sourceConfig: ($synchronization['sourceConfig'] ?? []), currentPage: $currentPage);
             }
-        }//end for
+        }
 
-        return $allObjects;
-    }//end fetchAllPagesSequential()
+        return false;
+    }//end isGzipPayload()
+
+    /**
+     * Determines whether the endpoint identifies a `.tar.gz` bulk archive.
+     *
+     * @param string $endpoint The page endpoint that was fetched.
+     *
+     * @return bool True when the endpoint (path or `name=`-style query value)
+     *              ends in `.tar.gz` or `.tar`.
+     */
+    private function isTarGzEndpoint(string $endpoint): bool
+    {
+        return $this->endpointSuggestsSuffix(endpoint: $endpoint, suffix: '.tar.gz')
+            || $this->endpointSuggestsSuffix(endpoint: $endpoint, suffix: '.tar');
+    }//end isTarGzEndpoint()
+
+    /**
+     * Checks whether an endpoint's path, or any of its query-string values,
+     * ends with the given suffix (case-insensitive). Handles the common bulk
+     * registry shape `/download?name=full.jsonl.gz`, where the meaningful
+     * filename lives in a query value rather than the path itself.
+     *
+     * @param string $endpoint The endpoint to inspect.
+     * @param string $suffix   The suffix to check for (e.g. `.gz`).
+     *
+     * @return bool True when the path or a query value ends with the suffix.
+     */
+    private function endpointSuggestsSuffix(string $endpoint, string $suffix): bool
+    {
+        $suffix       = strtolower($suffix);
+        $questionMark = strpos($endpoint, '?');
+        $path         = $endpoint;
+        if ($questionMark !== false) {
+            $path = substr($endpoint, 0, $questionMark);
+        }
+
+        if (str_ends_with(strtolower($path), $suffix) === true) {
+            return true;
+        }
+
+        if ($questionMark === false) {
+            return false;
+        }
+
+        parse_str(substr($endpoint, ($questionMark + 1)), $queryParams);
+        foreach ($queryParams as $value) {
+            if (is_string($value) === true && str_ends_with(strtolower($value), $suffix) === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end endpointSuggestsSuffix()
+
+    /**
+     * Parses a line-delimited JSON (JSONL) body into an array of records.
+     *
+     * Each non-empty, non-whitespace line is decoded independently; lines
+     * that fail to decode as a JSON array/object are skipped rather than
+     * aborting the whole page (one malformed record should not lose the
+     * rest of a bulk file). Tokenises the body line-by-line (`strtok`)
+     * instead of `explode()`-ing a second full in-memory copy — bulk files
+     * can run into the tens of megabytes once decompressed, so this keeps
+     * the peak overhead to roughly one extra line's worth rather than one
+     * extra whole-body copy. The body itself is still held fully in memory
+     * by this point (CallService/Guzzle already buffer the whole response),
+     * so this is a partial mitigation, not true streaming — a genuine
+     * streaming re-read (fetch → decompress → parse without ever holding the
+     * full decompressed string) would need a lower-level change to how
+     * CallService reads the HTTP response body, which is out of scope here.
+     *
+     * @param string $body The decompressed (or already-plain) JSONL body.
+     *
+     * @return array<int, array> The decoded records, in file order.
+     *
+     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     */
+    private function parseJsonLines(string $body): array
+    {
+        $records = [];
+        $line    = strtok($body, "\n");
+        while ($line !== false) {
+            $trimmed = trim($line);
+            if ($trimmed !== '') {
+                $decoded = json_decode($trimmed, true);
+                if (is_array($decoded) === true) {
+                    $records[] = $decoded;
+                }
+            }
+
+            $line = strtok("\n");
+        }
+
+        return $records;
+    }//end parseJsonLines()
+
+    /**
+     * Parses a markdown-list-shaped response body into an array of records.
+     *
+     * Targets the "awesome list" README shape (oc#107 — awesome_selfhosted):
+     * one record per top-level markdown list item of the form
+     * `- [Name](https://url) - Some description \`Tag1\` \`Tag2\``. Only the
+     * link name/url are mandatory; the description and the (variable-count,
+     * possibly absent) trailing backtick-wrapped tags are all optional. Any
+     * line that is not a `- [Name](url) ...`/`* [Name](url) ...` list item
+     * (headings, prose, blank lines, plain-text list items with no link) is
+     * silently skipped rather than aborting the page — a markdown README is
+     * mostly non-record prose around the list this method actually cares
+     * about.
+     *
+     * The trailing backtick tags are returned verbatim, in file order, under
+     * a generic `tags` key — this method assigns no semantic meaning to
+     * their position (e.g. "first tag is a license") beyond documenting that
+     * awesome-selfhosted-shaped sources conventionally put the license first
+     * and the language second. A source needing named fields instead of a
+     * positional `tags` array should map them downstream (SynchronizationService
+     * mapping/rules), not in this parser.
+     *
+     * @param string $body The markdown response body.
+     *
+     * @return array<int, array{name: string, url: string, description: string, tags: array<int, string>}>
+     *         The extracted records, in file order.
+     *
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     */
+    private function parseMarkdownResponse(string $body): array
+    {
+        $records = [];
+
+        foreach (preg_split('/\r\n|\r|\n/', $body) as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            // A top-level markdown list item carrying a `[Name](url)` link.
+            // Everything after the link (an optional ` - description` plus
+            // any number of `` `tag` `` fragments) is captured as `$rest` and
+            // decomposed separately below.
+            $matched = preg_match(
+                '/^[-*+]\s*\[(?P<name>[^\]]+)\]\((?P<url>[^)\s]+)[^)]*\)(?:\s*[-:—]?\s*(?P<rest>.*))?$/u',
+                $trimmed,
+                $matches
+            );
+
+            if ($matched !== 1 || trim($matches['name']) === '' || trim($matches['url']) === '') {
+                // Not a matching list item (heading, prose, non-link list
+                // item, malformed line) — skip gracefully, do not throw.
+                continue;
+            }
+
+            // Skip in-document anchors ("#section") and scheme-less/relative
+            // targets. Awesome-list style entries always carry an absolute URL
+            // ("https://..."); a table-of-contents or "back to top" link points
+            // at a fragment. Only absolute-URI links (carrying a scheme)
+            // describe an external-resource record — the rest is navigation
+            // noise, not data. Skip gracefully, do not throw.
+            if (preg_match('~^[a-z][a-z0-9+.\-]*:~i', trim($matches['url'])) !== 1) {
+                continue;
+            }
+
+            $rest        = ($matches['rest'] ?? '');
+            $firstTagPos = strpos($rest, '`');
+            if ($firstTagPos === false) {
+                $description = trim($rest);
+            } else {
+                $description = trim(substr($rest, 0, $firstTagPos));
+            }
+
+            $tags = [];
+            if (preg_match_all('/`([^`]*)`/', $rest, $tagMatches) > 0) {
+                foreach ($tagMatches[1] as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $tags[] = $tag;
+                    }
+                }
+            }
+
+            $records[] = [
+                'name'        => trim($matches['name']),
+                'url'         => trim($matches['url']),
+                'description' => $description,
+                'tags'        => $tags,
+            ];
+        }//end foreach
+
+        return $records;
+    }//end parseMarkdownResponse()
+
+    /**
+     * Parses an HTML response body into an array of records using CSS
+     * selectors (oc#107 — openalternative, don_oss_register,
+     * wikipedia_comparisons: plain web pages with no API, whose data sits in
+     * an HTML table or a repeating list of cards).
+     *
+     * `configuration.htmlSelector` (required) is a CSS selector matching the
+     * repeating record container — e.g. `table tbody tr` for an HTML table,
+     * or `.card`/`li.item` for a card/list layout. Each matched container
+     * becomes one record. `configuration.htmlFields` (a `fieldName =>
+     * selector` map) then extracts one value per field, relative to that
+     * container: `selector@attr` extracts the named attribute (e.g.
+     * `a@href`); a selector with no `@attr` extracts trimmed text content
+     * instead. An empty selector (just `@attr`) reads the attribute off the
+     * container element itself, for the common case where the container IS
+     * the link (e.g. `li.item` containing `<a href="...">Name</a>` where
+     * `htmlSelector: "li.item"` and a field selector of `@href` would need
+     * `a@href` instead — an empty selector targets the container, not the
+     * first descendant).
+     *
+     * Uses `Symfony\Component\DomCrawler\Crawler` (with `symfony/
+     * css-selector` translating the CSS selectors to XPath) — the standard,
+     * well-maintained PHP library for exactly this task, already MIT/EUPL
+     * compatible and added specifically for this change (see design.md). A
+     * missing `htmlSelector`, or a field selector that fails to match, MUST
+     * NOT abort the page: a container with an unmatched field simply omits
+     * (null) that field, and a wholly-missing `htmlSelector` returns zero
+     * records.
+     *
+     * @param string $body          The HTML response body.
+     * @param array  $configuration The source's `Source.configuration`
+     *                              (reads `htmlSelector` and `htmlFields`).
+     *
+     * @return array<int, array<string, string|null>> The extracted records,
+     *         in document order.
+     *
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     */
+    private function parseHtmlResponse(string $body, array $configuration): array
+    {
+        $selector = (string) ($configuration['htmlSelector'] ?? '');
+        if ($selector === '') {
+            return [];
+        }
+
+        $fields = ($configuration['htmlFields'] ?? []);
+        if (is_array($fields) === false) {
+            $fields = [];
+        }
+
+        $crawler = new Crawler($body);
+
+        try {
+            $containers = $crawler->filter($selector);
+        } catch (\Exception $exception) {
+            $this->logger->warning(
+                'SynchronizationService: invalid htmlSelector {selector} for HTML source: {message}',
+                ['selector' => $selector, 'message' => $exception->getMessage()]
+            );
+            return [];
+        }
+
+        $records = [];
+        foreach ($containers as $containerNode) {
+            $containerCrawler = new Crawler($containerNode);
+            $record           = [];
+            foreach ($fields as $fieldName => $fieldSelector) {
+                $record[(string) $fieldName] = $this->extractHtmlField(
+                    container: $containerCrawler,
+                    fieldSelector: (string) $fieldSelector
+                );
+            }
+
+            $records[] = $record;
+        }
+
+        return $records;
+    }//end parseHtmlResponse()
+
+    /**
+     * Extracts a single field's value from an HTML record container.
+     *
+     * Supports the `selector@attr` syntax: when `@attr` is present, the
+     * value is the named attribute of the (optionally sub-selected) node
+     * instead of its trimmed text content. An empty selector (`@attr` alone,
+     * or a wholly empty string) targets the container itself rather than a
+     * descendant — the container-IS-the-link case.
+     *
+     * @param Crawler $container     The record container to extract from.
+     * @param string  $fieldSelector A CSS selector, optionally suffixed with
+     *                               `@attributeName`.
+     *
+     * @return string|null The extracted (trimmed) text or attribute value,
+     *         or null when the selector matches nothing.
+     *
+     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     */
+    private function extractHtmlField(Crawler $container, string $fieldSelector): ?string
+    {
+        $attribute = null;
+        $selector  = $fieldSelector;
+
+        $atPosition = strrpos($fieldSelector, '@');
+        if ($atPosition !== false) {
+            $selector  = substr($fieldSelector, 0, $atPosition);
+            $attribute = substr($fieldSelector, ($atPosition + 1));
+        }
+
+        $target = $container;
+        if ($selector !== '') {
+            try {
+                $target = $container->filter($selector);
+            } catch (\Exception $exception) {
+                return null;
+            }
+        }
+
+        if ($target->count() === 0) {
+            return null;
+        }
+
+        if ($attribute !== null && $attribute !== '') {
+            return $target->attr($attribute);
+        }
+
+        return trim($target->text(''));
+    }//end extractHtmlField()
 
     /**
      * Checks if the source has exceeded its rate limit and throws an exception if true.
@@ -3469,10 +3842,9 @@ class SynchronizationService
      */
     private function checkRateLimit(array $source): void
     {
-        if (($source['rateLimitRemaining'] ?? null) !== null
-            && ($source['rateLimitReset'] ?? null) !== null
-            && (int) ($source['rateLimitRemaining'] ?? 0) <= 0
-            && (int) ($source['rateLimitReset'] ?? 0) > time()
+        if (isset($source['rateLimitRemaining'], $source['rateLimitReset']) === true
+            && (int) $source['rateLimitRemaining'] <= 0
+            && (int) $source['rateLimitReset'] > time()
         ) {
             throw new TooManyRequestsHttpException(
                 message: "Rate Limit on Source has been exceeded. Canceling synchronization...",
@@ -3591,16 +3963,28 @@ class SynchronizationService
     /**
      * Updates the API request configuration with pagination details for the next page.
      *
+     * Defaults to query-string pagination (unchanged, pre-existing behaviour).
+     * When the synchronization's `sourceConfig.paginationIn` is `"body"` (oc#94
+     * — sources like TED's v3 search that require a static POST body and can
+     * only advance by rewriting a field inside that body, not a query
+     * parameter), `CallService::normaliseRequestConfig()` substitutes the page
+     * value into the JSON body at the `paginationQuery` dot-path instead of
+     * the query string. A source that omits `paginationIn` keeps today's
+     * query-string substitution byte-for-byte.
+     *
      * @param array $config       The current request configuration.
      * @param array $sourceConfig The source configuration containing pagination settings.
      * @param int   $currentPage  The current page number for pagination.
      *
      * @return array Updated configuration with pagination settings.
+     *
+     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
      */
     private function getNextPage(array $config, array $sourceConfig, int $currentPage): array
     {
         $config['pagination'] = [
             'paginationQuery' => $sourceConfig['paginationQuery'] ?? 'page',
+            'paginationIn'    => $sourceConfig['paginationIn'] ?? 'query',
             'page'            => $currentPage,
         ];
 
@@ -3747,6 +4131,7 @@ class SynchronizationService
     ): array {
         $targetId = ($contract['targetId'] ?? null);
         $target   = $this->findSource(id: ($synchronization['targetId'] ?? null));
+        $object   = [];
 
         if ($targetObject !== null) {
             $object = $targetObject;
@@ -3761,7 +4146,7 @@ class SynchronizationService
 
             if ($targetObject === null) {
                 $object = $this->objectService->getOpenRegisters()->find(
-                    id: ($contract['originId'] ?? null),
+                    id: $contract['originId'],
                 )->jsonSerialize();
             }
         }
@@ -3928,9 +4313,12 @@ class SynchronizationService
 
         $serializedObject = $object->jsonSerialize();
 
+        $flowToken = new FlowToken(syncInputOriginal: $serializedObject);
+
         $synchronizationContract = $this->synchronizeContract(
             synchronizationContract: $synchronizationContract,
             synchronization: $synchronization,
+            flowToken: $flowToken,
             object: $serializedObject,
             isTest: $test,
             force: $force,
@@ -3970,6 +4358,7 @@ class SynchronizationService
         $schema        = $configuration['save_object']['schema'];
         $mapping       = $configuration['save_object']['mapping'] ?? null;
         $patch         = $configuration['save_object']['patch'] ?? false;
+        $id            = null;
 
         if (empty($mapping) === false) {
             if (isset($data['_objectBeforeMapping']['id']) === true) {
@@ -4192,36 +4581,6 @@ class SynchronizationService
 
         return $object->jsonSerialize();
     }//end getRuleById()
-
-    /**
-     * Write a file to the filesystem.
-     *
-     * @param string $fileName The filename.
-     * @param string $content  The content of the file.
-     * @param string $objectId The id of the object the file belongs to.
-     *
-     * @return File|bool File or false.
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws GenericFileException
-     * @throws LockedException
-     */
-    private function writeFile(string $fileName, string $content, string $objectId): mixed
-    {
-        $object = $this->objectService->getOpenRegisters()->getMapper('objectEntity')->find(identifier: $objectId);
-
-        try {
-            $file = $this->storageService->writeFile(
-                path: $object->getFolder(),
-                fileName: $fileName,
-                content: $content
-            );
-        } catch (NotFoundException | NotPermittedException | NoUserException $e) {
-            return false;
-        }
-
-        return $file;
-    }//end writeFile()
 
     /**
      * Fetch a file from a source.
@@ -4595,7 +4954,7 @@ class SynchronizationService
      * @param string|null     $published  A reference to the published status (if available) that will be updated.
      * @param int|string|null $registerId A reference to the registerId (if available) that will be updated.
      *
-     * @return string The extracted endpoint from the data.
+     * @return mixed The extracted endpoint from the data, or null if not found.
      */
     private function getFileContext(
         array $config,
@@ -4605,7 +4964,7 @@ class SynchronizationService
         ?string &$objectId=null,
         ?string &$published=null,
         int|string|null &$registerId=null
-    ) {
+    ): mixed {
         $dataDot = new Dot($endpoint);
         if (isset($config['objectIdPath']) === true && empty($config['objectIdPath']) === false) {
             $objectId = $dataDot->get($config['objectIdPath']);
@@ -4800,7 +5159,7 @@ class SynchronizationService
         $this->startAsyncFileFetching(source: $source, config: $config, endpoint: $endpoint, ruleId: (int) ($rule['id'] ?? 0), objectId: $objectId);
 
         // Return data immediately with placeholder values.
-        if (isset($config['setPlaceholder']) === false || (isset($config['setPlaceholder']) === true && $config['setPlaceholder'] !== false)) {
+        if (isset($config['setPlaceholder']) === false || $config['setPlaceholder'] !== false) {
             $dataDot[$config['filePath']] = $this->generatePlaceholderValues(endpoint: $endpoint);
         }
 
@@ -4947,7 +5306,7 @@ class SynchronizationService
     ): void {
         try {
             // Execute the file fetching operation.
-            $result = $this->fetchFile(
+            $this->fetchFile(
                 source: $source,
                 endpoint: $endpoint,
                 config: $config,
@@ -5007,6 +5366,8 @@ class SynchronizationService
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      * @throws Exception
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processWriteFileRule(array $rule, array $data, string $objectId, int $registerId, int $schemaId): array
     {
@@ -5168,18 +5529,18 @@ class SynchronizationService
     /**
      * Processes a synchronization rule.
      *
-     * @param array $rule The OpenRegister rule payload array containing synchronization details.
+     * @param array $rule The OpenRegister rule payload array (reserved for future synchronization logic).
      * @param array $data The data to be synchronized.
      *
      * @return array The synchronized data.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      */
     private function processSyncRule(array $rule, array $data): array
     {
-        $config = ($rule['configuration'] ?? []);
-        // Here you would implement the synchronization logic.
-        // For now, just return the data unchanged.
+        // $rule is reserved for future synchronization logic; return data unchanged.
         return $data;
     }//end processSyncRule()
 

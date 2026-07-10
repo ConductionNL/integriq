@@ -21,7 +21,7 @@ rules:
     - Include API specs for source/endpoint configuration
     - Document mapping transformation rules where applicable
   design:
-    - OpenConnector operates independently of OpenRegister (no hard dependency)
+    - OpenRegister is a required runtime dependency; every entity is persisted as an OpenRegister object and app-local reimplementation of OpenRegister capabilities is forbidden (aligns with openconnector-direct-or-usage)
     - If duplicating OpenRegister utilities, add @see reference to canonical source
     - "ADR-008: Follow Controller -> Service -> Mapper layering pattern"
   tasks:

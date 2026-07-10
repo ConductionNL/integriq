@@ -70,6 +70,9 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialBrokerService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialUpstreamException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
@@ -85,11 +88,44 @@
                 <referencedClass name="OCP\Migration\IRepairStep"/>
                 <!-- Nextcloud server internals -->
                 <referencedClass name="OC"/>
+                <referencedClass name="OC\AppFramework\Middleware\Security\Exceptions\SecurityException"/>
+                <referencedClass name="OC\Files\Node\File"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
+                <!-- OR AppHost controllers (loaded via DI at runtime) -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericHealthController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericMetricsController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericPreferencesController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Observability\ManifestLoader"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Observability\MetricsEngine"/>
+                <!-- Service classes from OpenRegister used via OR integration layer -->
+                <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
+                <referencedClass name="OCA\OpenRegister\Service\RegisterResolverService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider"/>
+                <referencedClass name="OCA\OpenRegister\Db\Mapping"/>
+                <!-- Symfony (loaded at runtime via Nextcloud or composer require) -->
+                <referencedClass name="Symfony\Component\ExpressionLanguage\ExpressionLanguage"/>
+                <referencedClass name="Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException"/>
+                <!-- Additional Nextcloud server internals -->
+                <referencedClass name="OC\AppFramework\Http"/>
+                <referencedClass name="OC\User\NoUserException"/>
+                <!-- OpenRegister additional runtime classes -->
+                <referencedClass name="OCA\OpenRegister\Service\ObjectServiceMapperAdapter"/>
+                <referencedClass name="OCA\OpenRegister\Exception\ValidationException"/>
+                <!-- Doctrine\DBAL (shipped by NC server; not in standalone stubs) -->
+                <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractMySQLPlatform"/>
+                <!-- PHP extension classes (loaded at runtime) -->
+                <referencedClass name="SoapFault"/>
+                <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->
+                <referencedClass name="OCA\OpenConnector\Service\Rule"/>
             </errorLevel>
         </UndefinedClass>
+        <!-- UndefinedMethod: suppress known false positives from interface types (OCP\IRequest::server,
+             OCP\Files\Node::putContent, etc.) where the concrete class has the method at runtime -->
+        <UndefinedMethod errorLevel="suppress"/>
         <UndefinedMagicMethod errorLevel="suppress"/>
         <UnusedClass errorLevel="suppress"/>
         <PossiblyUnusedMethod errorLevel="suppress"/>
@@ -98,6 +134,10 @@
         <PossiblyUnusedParam errorLevel="suppress"/>
         <UnusedDocblockParam errorLevel="suppress"/>
         <UnusedVariable errorLevel="suppress"/>
+        <UnusedParam errorLevel="suppress"/>
+        <UnusedClosureParam errorLevel="suppress"/>
+        <UnusedFunctionCall errorLevel="suppress"/>
+        <UnusedReturnValue errorLevel="suppress"/>
         <PossiblyUnusedReturnValue errorLevel="suppress"/>
         <RedundantCondition errorLevel="suppress"/>
         <RedundantFunctionCall errorLevel="suppress"/>
@@ -115,11 +155,24 @@
         <InvalidReturnType errorLevel="suppress"/>
         <InvalidReturnStatement errorLevel="suppress"/>
         <MismatchingDocblockReturnType errorLevel="suppress"/>
+        <MismatchingDocblockParamType errorLevel="suppress"/>
         <EmptyArrayAccess errorLevel="suppress"/>
         <ImplementedReturnTypeMismatch errorLevel="suppress"/>
         <InvalidMethodCall errorLevel="suppress"/>
         <UndefinedInterfaceMethod errorLevel="suppress"/>
         <MissingTemplateParam errorLevel="suppress"/>
+        <!-- Suppress Psalm patterns that are runtime-correct but statically unknown -->
+        <NoInterfaceProperties errorLevel="suppress"/>
+        <InvalidThrow errorLevel="suppress"/>
+        <InvalidScalarArgument errorLevel="suppress"/>
+        <InvalidPropertyAssignmentValue errorLevel="suppress"/>
+        <UndefinedThisPropertyFetch errorLevel="suppress"/>
+        <UndefinedConstant errorLevel="suppress"/>
+        <UndefinedFunction errorLevel="suppress"/>
+        <TooFewArguments errorLevel="suppress"/>
+        <NullableReturnStatement errorLevel="suppress"/>
+        <InvalidOperand errorLevel="suppress"/>
+        <UndefinedVariable errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

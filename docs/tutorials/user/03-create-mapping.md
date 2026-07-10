@@ -48,7 +48,7 @@ You are done when: the test pane produces an output that matches the target sche
 
 | Symptom | Fix |
 |---|---|
-| Test output has empty strings for fields that should have values | The dot-notation path doesn't match the source structure — print the raw `input` object first (`{{ input | json_encode }}`) to inspect the real path. |
+| Test output has empty strings for fields that should have values | The dot-notation path doesn't match the source structure — print the raw `input` object first (`&#123;&#123; input | json_encode &#125;&#125;`) to inspect the real path. |
 | Twig expression throws "filter does not exist" | The filter name is misspelled or the filter requires arguments — see the Mappings reference for the supported filter set. |
 | Cast doesn't apply | The cast field path is computed from a Twig expression instead of a static path — casts only run on statically-resolvable paths. |
 

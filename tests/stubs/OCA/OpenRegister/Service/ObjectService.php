@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
  * Minimal stub for OCA\OpenRegister\Service\ObjectService.
@@ -30,9 +31,11 @@ class ObjectService
     /**
      * Find a single object by id/uuid.
      *
-     * Returns null when no matching object exists (triggers DoesNotExistException
-     * in calling code). Nullable return is required so PHPUnit can stub this with
-     * ->willReturn(null) in "not found" test scenarios.
+     * The real OpenRegister ObjectService throws DoesNotExistException when the
+     * object is not found. PHPUnit mocks may stub ->willReturn(null) for tests
+     * that verify the "not found" path; the nullable return type preserves that
+     * compatibility. PHPStan sees the @throws annotation and treats any catch
+     * of DoesNotExistException as live.
      *
      * @param  string|int  $id
      * @param  string|null $register
@@ -40,6 +43,8 @@ class ObjectService
      * @param  bool        $_rbac         Apply RBAC filters when true.
      * @param  bool        $_multitenancy Apply multitenancy filters when true.
      * @return ObjectEntity|null
+     *
+     * @throws DoesNotExistException When the object is not found.
      */
     public function find($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true): ?ObjectEntity
     {
