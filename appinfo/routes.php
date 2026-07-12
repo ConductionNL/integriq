@@ -28,6 +28,15 @@ return [
 		// previous string-presence-only placeholder has been removed.
 		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
+		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).
+		// Participant/SMP lookup is an authenticated NC-session call (production
+		// binding for shillinq's PeppolTransmissionAdapterInterface::lookupParticipant).
+		// Outbound transmission is event-driven (PeppolOutboundConsumer), not a route.
+		['name' => 'peppol#participants', 'url' => '/api/peppol/participants/{peppolId}', 'verb' => 'GET', 'requirements' => ['peppolId' => '.+']],
+		// Inbound AP delivery callbacks / document notifications — gated by webhook
+		// signature (HMAC), not an NC session; see PeppolController::inbound().
+		['name' => 'peppol#inbound', 'url' => '/api/peppol/inbound', 'verb' => 'POST'],
+
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],

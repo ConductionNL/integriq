@@ -44,6 +44,7 @@ use OCA\OpenConnector\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapt
 use OCA\OpenConnector\Service\Adapter\Saas\Microsoft365Adapter;
 use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
+use OCA\OpenConnector\Service\PeppolOutboundConsumer;
 use OCA\OpenConnector\Service\SettingsService;
 use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
@@ -131,6 +132,9 @@ class Application extends App implements IBootstrap
         $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: ObjectUpdatedEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ViewDeletedEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: ObjectDeletedEventListener::class);
+        // Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
+        // CloudEvents (register openconnector, schema event) created by any app.
+        $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
         // @todo Remove this temporary listener to the software catalog application.
         // $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
         // Path-2 integration leaf: load the tiny `openconnector-integration`

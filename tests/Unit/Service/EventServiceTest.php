@@ -658,4 +658,40 @@ class EventServiceTest extends TestCase
     }//end testDiscardMessageRejectsPendingState()
 
 
+    /**
+     * emitCloudEvent persists an `event` object carrying the given type/source/subject/data
+     * and fans it out via processEvent — @spec peppol-access-point-connector REQ-004.
+     *
+     * @return void
+     */
+    public function testEmitCloudEventPersistsAndProcesses(): void
+    {
+        $captured = null;
+        $eventEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['type' => 'nl.conduction.peppol.delivery.status', 'source' => '/peppol/transmissions/tx-1'],
+            'event-uuid-1'
+        );
+
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object, ...$rest) use (&$captured, $eventEntity) {
+                $captured = $object;
+                return $eventEntity;
+            }
+        );
+        $this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $messages = $this->service->emitCloudEvent(
+            'nl.conduction.peppol.delivery.status',
+            '/peppol/transmissions/tx-1',
+            'tx-1',
+            ['transmissionId' => 'AP-TX-123', 'status' => 'sent']
+        );
+
+        $this->assertIsArray($messages);
+        $this->assertSame('nl.conduction.peppol.delivery.status', $captured['type']);
+        $this->assertSame('/peppol/transmissions/tx-1', $captured['source']);
+        $this->assertSame('tx-1', $captured['subject']);
+        $this->assertSame('AP-TX-123', $captured['data']['transmissionId']);
+    }//end testEmitCloudEventPersistsAndProcesses()
 }//end class

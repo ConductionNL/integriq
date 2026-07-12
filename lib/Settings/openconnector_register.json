@@ -95,11 +95,12 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
+              "peppol",
               "soap",
               "dso"
             ],
@@ -2396,6 +2397,122 @@
             "besluitStatus": "aangehouden"
           }
         ],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "peppol_transmission": {
+        "slug": "peppol_transmission",
+        "title": "Peppol Transmission",
+        "icon": "SendOutline",
+        "version": "1.0.0",
+        "summary": "Audit + lifecycle record for one UBL document transmitted over the Peppol network",
+        "description": "A Peppol Transmission tracks one outbound UBL document (e.g. a Peppol BIS Billing 3.0 invoice) submitted through a configured Peppol Access Point (AP), from `queued` through the AP hand-off and any inbound delivery callback. See openspec/specs/peppol-access-point-connector/spec.md#req-003-event-driven-outbound-transmission-with-status-lifecycle.",
+        "required": [
+          "objectUri",
+          "recipientPeppolId",
+          "documentType",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "objectUri": {
+            "type": "string",
+            "description": "Source object being transmitted, as referenced in the nl.conduction.peppol.outbound.requested event",
+            "title": "Object URI"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the producing app (e.g. shillinq)",
+            "title": "Source App"
+          },
+          "recipientPeppolId": {
+            "type": "string",
+            "description": "Recipient Peppol participant identifier, `scheme:identifier` (e.g. 0192:1234567890)",
+            "title": "Recipient Peppol ID"
+          },
+          "documentType": {
+            "type": "string",
+            "description": "UBL document type slug (e.g. ubl-invoice-2.1, ubl-order-3.0)",
+            "title": "Document Type"
+          },
+          "payloadFileUri": {
+            "type": "string",
+            "description": "Reference to the UBL payload supplied by the producing app",
+            "title": "Payload File URI"
+          },
+          "transmissionId": {
+            "type": "string",
+            "description": "AP-assigned transmission id, null until the AP accepts the hand-off (MOCK-PEPPOL-<n> for the log/sandbox provider)",
+            "title": "Transmission ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "rejected",
+              "failed"
+            ],
+            "description": "Lifecycle state: queued (created) -> sent (AP accepted the hand-off) -> delivered|rejected (AP delivery callback) | failed (submission exception or exhausted retry budget)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Last status detail (AP reason text, exception message, or callback detail)",
+            "title": "Detail"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-submission-attempt audit trail (the dead-letter surface for this transmission once status=failed and the retry budget is exhausted)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Transport/provider error message, or null on a successful attempt",
+                  "title": "Error Message"
+                }
+              }
+            },
+            "title": "Attempts"
+          }
+        },
+        "x-openregister-notifications": {
+          "transmission-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "status",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Peppol-verzending mislukt: {{recipientPeppolId}} ({{documentType}})",
+              "en": "Peppol transmission failed: {{recipientPeppolId}} ({{documentType}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
       }

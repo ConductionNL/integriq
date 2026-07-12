@@ -50,6 +50,21 @@
       "isEnabled": false,
       "test": true,
       "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "peppol-sandbox" },
+      "name": "Peppol Sandbox Access Point",
+      "description": "Sandbox Peppol Access Point (log/mock provider). Demonstrates participant lookup and document transmission with no real AP or credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` for production.",
+      "type": "peppol",
+      "location": "https://ap.example/peppol",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "baseUrl": "https://ap.example/peppol",
+        "mockParticipants": ["0106:00000000", "0106:11111111"]
+      }
     }
   ],
   "consumer": [
@@ -262,6 +277,38 @@
       "originId": "<placeholder>",
       "targetId": "<placeholder>",
       "version": "1.0.0"
+    }
+  ],
+  "peppol_transmission": [
+    {
+      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-invoice-gemeente-nijmegen" },
+      "objectUri": "/objects/ar-invoice/00000000-0000-0000-0000-000000000000",
+      "sourceApp": "shillinq",
+      "recipientPeppolId": "0106:00000000",
+      "documentType": "ubl-invoice-2.1",
+      "transmissionId": "MOCK-PEPPOL-1",
+      "status": "delivered",
+      "detail": "Accepted by receiver AP"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-invoice-consultancy" },
+      "objectUri": "/objects/ar-invoice/00000000-0000-0000-0000-000000000000",
+      "sourceApp": "shillinq",
+      "recipientPeppolId": "0106:11111111",
+      "documentType": "ubl-invoice-2.1",
+      "transmissionId": "MOCK-PEPPOL-2",
+      "status": "sent",
+      "detail": "Awaiting delivery receipt"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-order-travel" },
+      "objectUri": "/objects/order/00000000-0000-0000-0000-000000000000",
+      "sourceApp": "shillinq",
+      "recipientPeppolId": "0106:22222222",
+      "documentType": "ubl-order-3.0",
+      "transmissionId": null,
+      "status": "queued",
+      "detail": "Queued"
     }
   ]
 }
