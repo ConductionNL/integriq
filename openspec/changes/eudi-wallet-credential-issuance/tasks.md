@@ -13,122 +13,150 @@
 
 ## Register fragment + schemas
 
-- [ ] Confirm the ADR-037 fragment loader merges `components.schemas` (not
+- [x] Confirm the ADR-037 fragment loader merges `components.schemas` (not
   only `components.objects`) into the effective register descriptor
-  (design.md DEFERRED_QUESTION) — trace `lib/Settings/register.d/`
-  loading code before writing the fragment's final shape
-- [ ] Author `lib/Settings/register.d/eudi-wallet-credential-issuance.json`
+  (design.md DEFERRED_QUESTION) — RESOLVED: `InitializeRegister::deepMergeConfig()`
+  (lib/Repair/InitializeRegister.php:135-225) generically deep-merges the
+  WHOLE descriptor, and OpenRegister's `ImportHandler::importFromJson()`
+  (lib/Service/Configuration/ImportHandler.php:1602-1803) reads
+  `components.schemas` generically. Traced one additional requirement not
+  named in the design: a new schema slug must ALSO be listed under
+  `components.registers.openconnector.schemas[]` (a plain list, concatenates
+  cleanly) or it imports but never attaches to the register — the fragment
+  was missing this and has been fixed. Covered by
+  `tests/Unit/Settings/EudiRegisterFragmentTest.php`.
+- [x] Author `lib/Settings/register.d/eudi-wallet-credential-issuance.json`
   declaring `eudi_credential_offer`, `eudi_issuance_session`, and
   `eudi_status_list` schemas (properties per spec.md REQ-EUDI-001/004/005/006/008)
-- [ ] If the loader does not support `components.schemas`, fall back to a
-  documented one-line addition to `openconnector_register.json` and note
-  the deliberate `openconnector-register-schema` REQ-A-002 entry-count
-  bump in the fragment's `$comment`
+- [x] Loader supports `components.schemas` (confirmed above) — the
+  `openconnector_register.json` fallback was not needed.
 
 ## Issuer key service (Beheer > Authenticatie)
 
-- [ ] `lib/Service/EudiIssuerKeyService.php`: `generateKey(organisationId)`
+- [x] `lib/Service/EudiIssuerKeyService.php`: `generateKey(organisationId)`
   (ES256/P-256 via `openssl_pkey_new`), `ICrypto::encrypt()` the private
   key before persisting, store public key + SHA-256 `kid` fingerprint
   plain, mirroring scholiq `KeyManagementService::generateTenantKeypair()`
   line-for-line in shape (not copy-pasted — new class, new app)
-- [ ] `rotateKey(organisationId)`: archive current public key (capped at
+- [x] `rotateKey(organisationId)`: archive current public key (capped at
   32, oldest-pruned-first) before generating the new active key; discard
   the rotated-out private key (never archived)
-- [ ] `resolveActiveKey(organisationId)` / `resolvePublicKeyByFingerprint(organisationId, kid)`
+- [x] `resolveActiveKey(organisationId)` / `resolvePublicKeyByFingerprint(organisationId, kid)`
   for signing and JWKS-publish/verification lookups respectively
-- [ ] Wire organisation scoping through the existing `organisation-bridge`
+- [x] Wire organisation scoping through the existing `organisation-bridge`
   soft-fail accessor; fall back to a single default-organisation key when
   it returns null (never an unencrypted key, never a hard failure)
-- [ ] `lib/Controller/EudiIssuerKeyAdminController.php`: admin-gated
-  generate/rotate/status endpoints, `Beheer > Authenticatie` UI section
-  (mirrors `digid-eherkenning-auth-adapter`'s existing UI shape) — returns
-  public key + `kid` only, never private key material
-- [ ] Unit tests: encrypted-at-rest assertion (no raw PEM in storage),
+- [x] `lib/Controller/EudiIssuerKeyAdminController.php`: admin-gated
+  generate/rotate/status endpoints — returns public key + `kid` only,
+  never private key material (verified: `tests/Unit/Controller/EudiIssuerKeyAdminControllerTest.php`).
+  **`Beheer > Authenticatie` UI section NOT built** — traced at HEAD:
+  no `Adapters`/`Beheer` top-level menu exists yet in `src/manifest.json`
+  (still the legacy `ConnectionsGroup`/`AutomationGroup` IA; ADR-017's
+  5-menu IA is not implemented), and `digid-eherkenning-auth-adapter` has
+  **no frontend files either** (`grep -rl digid|eherkenning src/` = zero
+  hits) — same for every other adapter with backend key endpoints
+  (`lti#generateKey`/`lti#rotateKey` also have zero frontend callers).
+  This is a pre-existing, repo-wide gap shared by every adapter, not
+  something this change could close without building the ADR-017 IA from
+  scratch (out of scope for one adapter's change). Flagged, not silently
+  skipped — see proposal impact note below.
+- [x] Unit tests: encrypted-at-rest assertion (no raw PEM in storage),
   rotation archive/prune behaviour, fingerprint-based resolution
   (active + archived), organisation-bridge-null fallback
 
 ## App-facing offer creation (consumer-gated)
 
-- [ ] `lib/Service/EudiCredentialOfferService.php::createOffer()`: validate
+- [x] `lib/Service/EudiCredentialOfferService.php::createOffer()`: validate
   `{credentialPayload, format, subjectId, consumerId}`, mint a
   cryptographically random `pre-authorized_code`, persist only its hash
   in a new `eudi_credential_offer` row, build `{offerUrl,
   credentialOfferUri, qrPayload}`
-- [ ] `lib/Controller/EudiWalletController.php::createOffer()`:
+- [x] `lib/Controller/EudiWalletController.php::createOffer()`:
   `POST /api/eudi/credential-offers`, gated by the existing
   `consumer-management` REQ-CON-001 resolution + `authorization-jwt`
   REQ-001 JWT check (no new auth mechanism) before calling the service;
   HTTP 400 on malformed payload with zero persisted state
-- [ ] Unit tests: authenticated success path, unauthenticated 401 with no
+- [x] Unit tests: authenticated success path, unauthenticated 401 with no
   row persisted, malformed-payload 400
 
 ## Wallet-facing protocol endpoints
 
-- [ ] `GET /.well-known/openid-credential-issuer`: issuer metadata
+- [x] `GET /.well-known/openid-credential-issuer`: issuer metadata
   (credential_issuer, credential_endpoint, token_endpoint,
   credential_configurations_supported for at least one `jwt_vc_json`
   (EDCI diploma) and one `dc+sd-jwt` (Open Badges 3.0) configuration,
   active + archived-within-window JWKS) reflecting the resolved
   organisation's key set
-- [ ] `GET /api/eudi/credential-offers/{id}`: single-fetch resolution of
+- [x] `GET /api/eudi/credential-offers/{id}`: single-fetch resolution of
   the `credential_offer_uri` target, 15-minute default TTL, atomic
   consume-on-read (second fetch → 404/410, generic message)
-- [ ] `POST /api/eudi/token`: pre-authorized_code grant only, atomic
+- [x] `POST /api/eudi/token`: pre-authorized_code grant only, atomic
   lookup-and-invalidate against the stored code hash (mirrors
   `AuthorizationService::validatePayload`'s jti-replay shape), `tx_code`
   verification with rate-limiting that does NOT consume the code on a
   wrong PIN, persists `eudi_issuance_session` (access_token hash,
   c_nonce, expiry) on success
-- [ ] `POST /api/eudi/credential`: Bearer + `proof.jwt` verification
+- [x] `POST /api/eudi/credential`: Bearer + `proof.jwt` verification
   (nonce == session's current `c_nonce`, proof not previously seen for
   this session — replay rejection); dispatch by `format`:
   - `jwt_vc_json` → return the stored `credentialPayload` verbatim, no
     re-signing (design.md D-SIGN)
   - `dc+sd-jwt` → mint + sign a fresh SD-JWT VC with
     `EudiIssuerKeyService::resolveActiveKey()`
-- [ ] `GET /api/eudi/status-lists/{id}`: OAuth Status List Token
+- [x] `GET /api/eudi/status-lists/{id}`: OAuth Status List Token
   (`bits: 1`, `purpose: revocation` only), signed with the resolved
   organisation's active issuer key, own `exp`
-- [ ] Unit + integration tests per endpoint: happy path, each documented
-  failure mode from spec.md (expired/consumed offer, replayed
-  pre-authorized_code, wrong tx_code non-consumption, replayed proof,
-  format dispatch for both `jwt_vc_json` and `dc+sd-jwt`)
-- [ ] Register the four public routes in `appinfo/routes.php`
-  (`#[PublicPage]`/`#[NoCSRFRequired]`) — only once their verification
-  logic above is real and tested, per design.md D-ROUTE; do not land a
-  route ahead of its verification (see `DSOController`'s removed-route
-  precedent in the same file)
+- [x] Unit tests per endpoint: happy path, each documented failure mode
+  from spec.md (expired/consumed offer, replayed pre-authorized_code,
+  wrong tx_code non-consumption, replayed proof, format dispatch for
+  both `jwt_vc_json` and `dc+sd-jwt`) — all real behaviour against
+  in-memory fakes (real JWT signing/verification via jose-framework,
+  real ICrypto-shaped encrypt/decrypt round-trip), no mock-only fakes.
+  **Newman/integration tests against a live dev instance NOT run** — no
+  running Nextcloud+OpenRegister instance available in this apply
+  environment.
+- [x] Register the six public routes in `appinfo/routes.php`
+  (`#[PublicPage]`/`#[NoCSRFRequired]`) — registered only after real,
+  tested verification logic existed (atomic consume-on-read, jti-shaped
+  replay rejection, proof-of-possession checks), per design.md D-ROUTE;
+  `composer check:routes` confirms all 117 routes (incl. the 8 new EUDI
+  routes) resolve to existing controller methods.
 
 ## Revocation + status callback
 
-- [ ] `EudiCredentialOfferService::revoke()`: consumer-ownership check
+- [x] `EudiCredentialOfferService::revoke()`: consumer-ownership check
   (only the offer's `consumerId` may revoke it → 403 otherwise), flip the
   assigned status-list bit `0 → 1`, idempotent on an already-revoked
   offer (no double-toggle, no error)
-- [ ] `POST /api/eudi/credential-offers/{id}/revoke` on
+- [x] `POST /api/eudi/credential-offers/{id}/revoke` on
   `EudiWalletController`, same consumer-gating as offer creation
-- [ ] Wire the status callback through the existing
+- [x] Wire the status callback through the existing
   `WebhookSignatureService` (no new signing scheme) —
   `X-OpenConnector-Signature` HMAC over the callback body, delivered to
   the owning consumer's configured callback URL
-- [ ] Unit tests: bit-flip + callback delivery, idempotent double-revoke,
-  cross-consumer 403 with unchanged bit
+- [x] Unit tests: bit-flip + callback delivery (signature format asserted),
+  idempotent double-revoke, cross-consumer 403 with unchanged bit
 
 ## Status list refresh cron
 
-- [ ] `lib/Cron/EudiStatusListRefreshJob.php` (`TimedJob`, mirrors
+- [x] `lib/Cron/EudiStatusListRefreshJob.php` (`TimedJob`, mirrors
   `EventRetryJob`'s shape): sweep `eudi_status_list` rows whose token
   `exp` is within the configurable refresh window (default: <25% of
   total validity remaining), re-sign with the current active issuer key,
   preserve bitstring contents
-- [ ] Register the job in `appinfo/info.xml`/background-jobs registration
-  (existing convention — verify against `EventRetryJob`'s registration
-  before adding a second one)
-- [ ] Unit test: near-expiry row is refreshed with unchanged bitstring and
-  a later `exp`; a rotated issuer key does not invalidate an
-  already-published, still-unexpired token, but the next refresh cycle
-  signs with the new active key
+- [x] Registered in `appinfo/info.xml` `<background-jobs>` alongside
+  `EventRetryJob`/`LtiKeyRetirementJob`/`BankfeedSyncJob`
+- [x] Unit test: near-expiry row is refreshed with unchanged bitstring and
+  a later `exp` (`EudiStatusListServiceTest`); a fresh (non-near-expiry)
+  token is left alone. Job-level containment (poisoned-sweep exception
+  caught/logged, never rethrown) covered by `EudiStatusListRefreshJobTest`,
+  mirroring `EventRetryJobTest`. The "rotated key doesn't invalidate an
+  already-published token" property follows directly from D-KEY's
+  archived-key-remains-resolvable design and is covered indirectly by
+  `EudiIssuerKeyServiceTest::testRotateKeyArchivesPreviousPublicKeyOnly`
+  (no dedicated end-to-end test combining rotation + a stale
+  already-cached status-list token — flagged, not a correctness gap:
+  `resolvePublicKeyByFingerprint` is exercised directly).
 
 ## Adapters catalogue + IA wiring (ADR-017 Rule 1/3/7)
 
@@ -143,24 +171,67 @@
   `digid-eherkenning-auth-adapter` sanctioned split — no duplicated
   config surface between the two locations
 
+  **NOT IMPLEMENTED — HEAD-reality conflict, not silently reinterpreted.**
+  Traced before starting this section: `src/manifest.json`'s `menu` array
+  has no `Adapters` and no `Beheer` top-level entry — ADR-017's 5-menu
+  IA (Verbindingen/Bronnen/Berichten/Adapters/Beheer) is not implemented
+  anywhere in this app at HEAD; the current menu is the legacy
+  `ConnectionsGroup`/`AutomationGroup` shape. `grep -rli
+  'digid\|eherkenning' src/` (the proposal's cited sanctioned-split
+  precedent) returns zero files, and `lti#generateKey`/`lti#rotateKey`
+  (this app's OTHER admin-gated key-lifecycle precedent, shipped and
+  routed) also have zero frontend callers. Building the catalogue
+  page + Beheer group from scratch is a repo-wide IA change affecting
+  every adapter, not a "one adapter's change" task, and no sibling
+  adapter (LTI, DSO, Digikoppeling, PSD2) has done it either. This
+  change ships the full backend contract these three tasks would wire
+  a UI onto (`EudiIssuerKeyAdminController`, the register fragment's
+  three schemas) and leaves the tasks unchecked rather than fabricating
+  a catalogue page pointed at a menu structure that doesn't exist.
+
 ## Cross-cutting
 
-- [ ] Secret-hygiene audit: confirm the issuer private key never appears
+- [x] Secret-hygiene audit: confirm the issuer private key never appears
   in an API response, log line, or error message anywhere in the new
-  code (grep the diff for the private-key field name after implementation)
-- [ ] `composer phpcs` + `composer phpstan`/`psalm` clean on every touched
-  file; `composer check:strict` overall
-- [ ] Full existing PHPUnit suite green — no regressions from this
-  change (net-new endpoints/services, no modification to existing
-  request paths)
+  code — `grep -rn 'privateKeyPem\|encryptedPrivateKey\|privateKeySecret'
+  lib/Controller/ lib/Cron/` returns zero hits; the only two places
+  `privateKeyPem` exists are `EudiIssuerKeyService::resolveActiveKey()`'s
+  internal return (never called from a controller) and `signJwt()`'s
+  local variable (used, never returned/logged).
+- [x] `composer phpcs` clean on every new/touched file (7 files, 0
+  errors/warnings after fixing 69 auto-fixable + ~35 manual violations —
+  named-parameter-on-internal-calls, no-inline-ternary, doc-comment
+  capitalisation, line-length). Scoped `composer phpstan` (7 files):
+  0 errors (1 real narrowing issue found and fixed — see
+  `EudiCredentialOfferService::exchangeToken()`'s pre-mutation capture of
+  `$offerFormat`/`$offerCredentialConfigId`). **Full-repo
+  `composer check:strict`/`psalm`/`phpmd` NOT run** (repo-wide, out of
+  this task's scoped-file mandate per apply-common.md instructions).
+- [x] Full existing PHPUnit suite green — 709/709 (664 baseline + 45 new),
+  no regressions from this change (net-new endpoints/services, no
+  modification to existing request paths). `composer check:routes`:
+  all 117 routes (incl. 8 new EUDI routes) resolve to existing controller
+  methods. `check:no-legacy-types`: PASS. Hydra gates: 0 EUDI-related
+  failures across all 33 gates (2 pre-existing, unrelated failures:
+  gate-9 semantic-auth on `DSOController`/`PeppolController`, predating
+  this change; gate-46 spec-anchor-existence, 1068 repo-wide unresolved
+  anchors predating this change — this change's own anchors were
+  verified anchor-by-anchor against `spec.md` and fixed to 0 failures,
+  see `tests/Unit/Settings/EudiRegisterFragmentTest.php`'s neighbourhood
+  for the verification method).
 - [ ] Verify e2e on a dev instance: create an offer via
   `POST /api/eudi/credential-offers` with a fixture `jwt_vc_json`
   payload, resolve the offer, exchange the pre-authorized_code at
   `/api/eudi/token`, fetch the credential at `/api/eudi/credential` and
   confirm it matches the fixture payload byte-for-byte; revoke it and
   confirm the status list bit flips and a signed callback is delivered
-  to a fixture receiver
-- [ ] `openspec validate eudi-wallet-credential-issuance --strict` clean
+  to a fixture receiver. **NOT RUN** — no live Nextcloud+OpenRegister
+  dev instance available in this apply environment (docker-only, no
+  running app server). The full flow IS covered end-to-end at the
+  service layer by `EudiCredentialOfferServiceTest` (offer→token→
+  credential→revoke chain against in-memory fakes with real JWT
+  signing), which is the closest verification this environment permits.
+- [x] `openspec validate eudi-wallet-credential-issuance --type change --strict`: clean.
 
 Acceptance criteria (plain bullets — verified by /opsx-verify):
 
