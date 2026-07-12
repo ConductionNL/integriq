@@ -366,4 +366,161 @@ class MappingServiceTest extends TestCase
         $this->assertSame([['1.0', '2.0'], ['3.0', '4.0']], $result);
     }//end testCoordinateStringToArrayCollectsMultiplePairs()
 
+
+    /**
+     * A double-underscore icontains operator translates to a nested OpenRegister filter fragment.
+     *
+     * @return void
+     */
+    public function testTranslateVngFilterOperatorsHandlesIcontains(): void
+    {
+        $result = $this->service->translateVngFilterOperators(['achternaam__icontains' => 'moulin']);
+
+        $this->assertSame(['achternaam' => ['icontains' => 'moulin']], $result);
+    }//end testTranslateVngFilterOperatorsHandlesIcontains()
+
+
+    /**
+     * A key without a `__` suffix passes through as a plain equality filter.
+     *
+     * @return void
+     */
+    public function testTranslateVngFilterOperatorsPassesThroughEquality(): void
+    {
+        $result = $this->service->translateVngFilterOperators(['status' => 'actief']);
+
+        $this->assertSame(['status' => 'actief'], $result);
+    }//end testTranslateVngFilterOperatorsPassesThroughEquality()
+
+
+    /**
+     * An unsupported lookup operator is rejected rather than silently dropped.
+     *
+     * @return void
+     */
+    public function testTranslateVngFilterOperatorsRejectsUnknownOperator(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/Unsupported VNG filter operator/');
+
+        $this->service->translateVngFilterOperators(['achternaam__bogus' => 'x']);
+    }//end testTranslateVngFilterOperatorsRejectsUnknownOperator()
+
+
+    /**
+     * A partijIdentificator codeSoortObjectId/objectId pair for BSN resolves against the stored hash.
+     *
+     * @return void
+     */
+    public function testTranslateVngFilterOperatorsHashesBsnIdentityFilter(): void
+    {
+        $result = $this->service->translateVngFilterOperators(
+            [
+                'partijIdentificator__codeSoortObjectId' => 'bsn',
+                'partijIdentificator__objectId'          => '999993653',
+            ]
+        );
+
+        $this->assertSame('bsn', $result['partijIdentificator']['codeSoortObjectId']);
+        $this->assertSame(hash('sha256', '999993653'), $result['partijIdentificator']['objectId']);
+        $this->assertNotSame('999993653', $result['partijIdentificator']['objectId']);
+    }//end testTranslateVngFilterOperatorsHashesBsnIdentityFilter()
+
+
+    /**
+     * A non-BSN identity filter pair folds without hashing.
+     *
+     * @return void
+     */
+    public function testTranslatePartijIdentificatorFilterPassesThroughNonBsn(): void
+    {
+        $result = $this->service->translatePartijIdentificatorFilter('rsin', '123456782');
+
+        $this->assertSame(['codeSoortObjectId' => 'rsin', 'objectId' => '123456782'], $result);
+    }//end testTranslatePartijIdentificatorFilterPassesThroughNonBsn()
+
+
+    /**
+     * expand= embeds a named relation inline by resolving it through OpenRegister.
+     *
+     * @return void
+     */
+    public function testExpandRelationsEmbedsNamedRelationInline(): void
+    {
+        $related = new ObjectEntity();
+        $related->setUuid('related-uuid');
+        $related->setObject(['adres' => '0612345678']);
+
+        $this->orObjectService->expects($this->once())
+            ->method('find')
+            ->willReturnCallback(fn ($id) => ($id === 'related-uuid') ? $related : null);
+
+        $result = $this->service->expandRelations(
+            data: ['id' => 'partij-1', 'digitaleAdressen' => 'related-uuid'],
+            expand: ['digitaleAdressen']
+        );
+
+        $this->assertSame(['adres' => '0612345678'], $result['digitaleAdressen']);
+    }//end testExpandRelationsEmbedsNamedRelationInline()
+
+
+    /**
+     * expand= resolves every item of a list-valued relation.
+     *
+     * @return void
+     */
+    public function testExpandRelationsResolvesListOfRelations(): void
+    {
+        $first  = new ObjectEntity();
+        $first->setUuid('a');
+        $first->setObject(['adres' => '1']);
+        $second = new ObjectEntity();
+        $second->setUuid('b');
+        $second->setObject(['adres' => '2']);
+
+        $this->orObjectService->method('find')->willReturnCallback(
+            fn ($id) => ($id === 'a') ? $first : $second
+        );
+
+        $result = $this->service->expandRelations(
+            data: ['digitaleAdressen' => ['a', 'b']],
+            expand: ['digitaleAdressen']
+        );
+
+        $this->assertCount(2, $result['digitaleAdressen']);
+        $this->assertSame('1', $result['digitaleAdressen'][0]['adres']);
+        $this->assertSame('2', $result['digitaleAdressen'][1]['adres']);
+    }//end testExpandRelationsResolvesListOfRelations()
+
+
+    /**
+     * Expansion beyond the depth cap stops and documents the truncation.
+     *
+     * @return void
+     */
+    public function testExpandRelationsStopsAtDepthCap(): void
+    {
+        $result = $this->service->expandRelations(
+            data: ['digitaleAdressen' => 'some-uuid'],
+            expand: ['digitaleAdressen'],
+            maxDepth: 0
+        );
+
+        $this->assertSame(['digitaleAdressen'], $result['_truncatedExpand']);
+    }//end testExpandRelationsStopsAtDepthCap()
+
+
+    /**
+     * A relation key absent from the data is left untouched (no-op).
+     *
+     * @return void
+     */
+    public function testExpandRelationsIgnoresAbsentKey(): void
+    {
+        $data   = ['id' => 'partij-1'];
+        $result = $this->service->expandRelations(data: $data, expand: ['digitaleAdressen']);
+
+        $this->assertSame($data, $result);
+    }//end testExpandRelationsIgnoresAbsentKey()
+
 }//end class

@@ -886,7 +886,13 @@
         "Invalid Peppol identifier": "Ongeldige Peppol-identificatie",
         "Transmission queued": "Verzending in wachtrij",
         "Transmission delivered": "Verzending afgeleverd",
-        "Transmission rejected": "Verzending geweigerd"
+        "Transmission rejected": "Verzending geweigerd",
+        "Connect a bank account": "Bankrekening koppelen",
+        "Consent expired": "Toestemming verlopen",
+        "Consent expiring soon": "Toestemming verloopt binnenkort",
+        "Transactions synced": "Transacties gesynchroniseerd",
+        "Aggregator credential missing": "Aggregator-inloggegeven ontbreekt",
+        "Account discovery failed": "Ontdekken van rekeningen mislukt"
     },
     "plurals": {}
 }

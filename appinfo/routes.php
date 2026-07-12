@@ -54,6 +54,15 @@ return [
 		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
 		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
 		['name' => 'lti#rotateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/rotate', 'verb' => 'POST'],
+		// PSD2 AIS bank-feed connector (openspec/changes/psd2-ais-bank-feed-connector).
+		// Redirect-based SCA consent flow: connect returns the bank SCA URL, the bank
+		// redirects the operator back to callback (GET — no NC request token possible
+		// on an external redirect; the in-body pending-requisition validation + action
+		// RBAC are the auth body; see Psd2Controller). The scheduled transaction sync
+		// is cron-driven (BankfeedSyncJob), not a route.
+		['name' => 'psd2#connect', 'url' => '/api/psd2/connect', 'verb' => 'POST'],
+		['name' => 'psd2#callback', 'url' => '/api/psd2/callback', 'verb' => 'GET'],
+		['name' => 'psd2#discoverAccounts', 'url' => '/api/psd2/connections/{connectionId}/accounts', 'verb' => 'POST'],
 
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],

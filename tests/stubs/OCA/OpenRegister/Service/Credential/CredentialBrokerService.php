@@ -4,11 +4,13 @@
  *
  * Signature verified against openregister origin/development
  * (lib/Service/Credential/CredentialBrokerService.php): request() takes
- * credentialId, appId, method, path, headers, body — and deliberately does
- * NOT take an acting-user parameter, mirroring the currently shipped broker.
+ * credentialId, appId, method, path, headers, body, actingUserId — the
+ * optional acting-user parameter shipped with OR change
+ * `credential-doriath-leaf` and is now on origin/development, so the stub
+ * mirrors it (the adapter tests assert the full 7-argument invocation).
  * BrokeredCallService's reflection-based acting-user feature detection is
- * exercised against this exact shape (the acting-user parameter ships with
- * OR change `credential-doriath-leaf`).
+ * exercised against dedicated Fake*Broker classes inside its own test, so
+ * both broker generations stay covered regardless of this stub's shape.
  *
  * @category Test
  * @package  OCA\OpenRegister\Service\Credential
@@ -57,6 +59,7 @@ class CredentialBrokerService
      * @param string                $path         The provider-relative path.
      * @param array<string, string> $headers      Optional extra request headers.
      * @param string|null           $body         Optional raw request body.
+     * @param string|null           $actingUserId Optional acting user for in-process trusted callers (credential-doriath-leaf).
      *
      * @return array{status: int, headers: array<string, mixed>, body: string} The upstream response.
      */
@@ -66,7 +69,8 @@ class CredentialBrokerService
         string $method,
         string $path,
         array $headers=[],
-        ?string $body=null
+        ?string $body=null,
+        ?string $actingUserId=null
     ): array {
         return [
             'status'  => 200,
