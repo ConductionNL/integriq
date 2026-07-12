@@ -1,6 +1,6 @@
 ---
 retrofit: true
-status: done
+status: in-progress
 ---
 
 # Mapping and Search Specification
@@ -15,6 +15,9 @@ when OpenRegister is unavailable. The search helper compiles request filters int
 MongoDB / MySQL query fragments and fans out to peer directory instances. This spec
 captures the observed behavior of the 24 mapping/search code units retroactively; the
 code already exists.
+
+**OpenSpec changes**
+- `vng-klantinteracties-adapter` (active) — adds VNG REST query-language translation to the search compiler: double-underscore lookup operators + `partijIdentificator` nested filters onto OpenRegister search (REQ-006) and `expand=` relation embedding with bounded depth (REQ-007). Dialect-agnostic; the VNG adapter is the first consumer. Normative requirements live in the change's delta spec and merge here on archive.
 
 ## Requirements
 

@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 retrofit: true
 ---
 
@@ -19,6 +19,10 @@ layer (`EndpointsController`, `EndpointService` dispatch methods, and
 already exists, and these REQs document it. Target resolution follows the
 polymorphic `targetType` / `targetId` contract in ADR-008. Rule processing
 itself is specified separately under the `rule-pipeline` capability.
+
+**OpenSpec changes**
+- `vng-klantinteracties-adapter` (active) — adds two dialect-agnostic dispatch behaviours: an absolute self-URL / HAL `_links` output helper (REQ-EP-006) and PUT-all-mandatory vs PATCH-partial enforcement (REQ-EP-007), consumed by the VNG Klantinteracties adapter and reusable by future VNG dialects. While active, the normative requirements live in the change's delta spec and merge here on archive.
+
 ## Requirements
 
 ### REQ-EP-UI-001: Endpoint Management UI

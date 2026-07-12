@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 retrofit: true
 ---
 
@@ -17,6 +17,10 @@ engine (`EndpointService` rule methods + `RuleService` custom rules) as it
 exists today. It is a retrofit spec: the code already exists, and these REQs
 document it rather than prescribe new work. Per ADR-002 the rule engine is an
 openconnector-local concept with no OpenRegister equivalent.
+
+**OpenSpec changes**
+- `vng-klantinteracties-adapter` (active) — adds a composite transactional fan-out Rule type (REQ-RULE-006, used for VNG's composite `maak-klantcontact`) and a `referentienummer` generation Rule (REQ-RULE-007). Both are dialect-agnostic gateway mechanics (ADR-031 external-integration exception). Normative requirements live in the change's delta spec and merge here on archive.
+
 ## Requirements
 
 ### REQ-RULE-UI-001: Rule Management UI
