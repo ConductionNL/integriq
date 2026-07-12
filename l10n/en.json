@@ -886,7 +886,13 @@
         "Invalid Peppol identifier": "Invalid Peppol identifier",
         "Transmission queued": "Transmission queued",
         "Transmission delivered": "Transmission delivered",
-        "Transmission rejected": "Transmission rejected"
+        "Transmission rejected": "Transmission rejected",
+        "Connect a bank account": "Connect a bank account",
+        "Consent expired": "Consent expired",
+        "Consent expiring soon": "Consent expiring soon",
+        "Transactions synced": "Transactions synced",
+        "Aggregator credential missing": "Aggregator credential missing",
+        "Account discovery failed": "Account discovery failed"
     },
     "plurals": {}
 }
