@@ -37,6 +37,23 @@ return [
 		// signature (HMAC), not an NC session; see PeppolController::inbound().
 		['name' => 'peppol#inbound', 'url' => '/api/peppol/inbound', 'verb' => 'POST'],
 
+		// LTI 1.3 / LTI Advantage adapter (openspec/changes/lti-13-platform).
+		// Dedicated controller (DSOController precedent), not the generic
+		// Endpoint pipeline — every route here is called by an external
+		// Platform/Tool, never by an NC session; authentication is the
+		// protocol itself (signed id_token / RFC 7523 client assertion /
+		// previously-issued access token), enforced inside LtiController.
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'GET'],
+		['name' => 'lti#login', 'url' => '/api/lti/{deployment}/login', 'verb' => 'POST'],
+		['name' => 'lti#launch', 'url' => '/api/lti/{deployment}/launch', 'verb' => 'POST'],
+		['name' => 'lti#token', 'url' => '/api/lti/token', 'verb' => 'POST'],
+		['name' => 'lti#agsScore', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}/scores', 'verb' => 'POST', 'requirements' => ['lineItemId' => '.+']],
+		['name' => 'lti#agsLineItem', 'url' => '/api/lti/{deployment}/ags/lineitems/{lineItemId}', 'verb' => 'GET', 'requirements' => ['lineItemId' => '.+']],
+		['name' => 'lti#nrpsMembership', 'url' => '/api/lti/{deployment}/nrps/membership', 'verb' => 'GET'],
+		['name' => 'lti#jwks', 'url' => '/.well-known/lti/{registrationType}/{registrationUuid}/jwks.json', 'verb' => 'GET'],
+		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
+		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
+		['name' => 'lti#rotateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/rotate', 'verb' => 'POST'],
 		// PSD2 AIS bank-feed connector (openspec/changes/psd2-ais-bank-feed-connector).
 		// Redirect-based SCA consent flow: connect returns the bank SCA URL, the bank
 		// redirects the operator back to callback (GET — no NC request token possible

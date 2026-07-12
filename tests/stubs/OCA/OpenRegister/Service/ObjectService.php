@@ -55,11 +55,32 @@ class ObjectService
      * Find all objects matching the given config/filters.
      *
      * @param  array $config
+     * @param  bool  $_rbac         Apply RBAC filters when true.
+     * @param  bool  $_multitenancy Apply multitenancy filters when true.
      * @return array{results: ObjectEntity[], total: int}
      */
-    public function findAll(array $config = []): array
+    public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array
     {
         return ['results' => [], 'total' => 0];
+    }
+
+    /**
+     * Get a mapper for the given register/schema (ADR-008 register/schema
+     * targetType dispatch, e.g. NRPS roster reads).
+     *
+     * Loosely typed (no strict return type) so unit tests can substitute any
+     * double exposing the subset of the real
+     * `OCA\OpenRegister\Service\ObjectServiceMapperAdapter` API a caller
+     * actually uses (typically `findAllPaginated()`), without needing to
+     * replicate that class's full surface here.
+     *
+     * @param  int|string|null $register
+     * @param  int|string|null $schema
+     * @return mixed
+     */
+    public function getMapper($register = null, $schema = null)
+    {
+        return null;
     }
 
     /**

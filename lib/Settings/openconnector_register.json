@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 15 schemas (11 mutable config + 4 append-only log). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 20 schemas (14 mutable config + 4 append-only log + 2 registered-but-previously-uncounted: peppol_transmission was declared in components.schemas but missing from the register's schemas list — fixed alongside the lti-13-platform addition). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -17,7 +17,7 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, LTI 1.3 (Platform/Tool/Deployment) + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
           "source",
@@ -35,7 +35,11 @@
           "job_log",
           "synchronization_log",
           "synchronization_contract_log",
-          "ris_sync_record"
+          "ris_sync_record",
+          "peppol_transmission",
+          "lti_platform",
+          "lti_tool",
+          "lti_deployment"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -2115,7 +2119,9 @@
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_contract",
             "x-openregister-onDelete": "CASCADE",
-            "x-relation-filter": { "synchronization": "@object.synchronization" },
+            "x-relation-filter": {
+              "synchronization": "@object.synchronization"
+            },
             "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)",
             "title": "Synchronization Contract"
           },
@@ -2128,7 +2134,9 @@
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_log",
-            "x-relation-filter": { "synchronization": "@object.synchronization" },
+            "x-relation-filter": {
+              "synchronization": "@object.synchronization"
+            },
             "description": "FK to parent synchronization_log entry (UUID; many-to-one)",
             "title": "Synchronization Log"
           },
@@ -2720,6 +2728,371 @@
               "nl": "Banktransacties gesynchroniseerd: {{accountIban}} ({{transactionCount}})",
               "en": "Bank transactions synced: {{accountIban}} ({{transactionCount}})"
             }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_platform": {
+        "slug": "lti_platform",
+        "title": "LTI Platform",
+        "icon": "SchoolOutline",
+        "version": "1.0.0",
+        "summary": "An external LTI 1.3 Platform (LMS) that may launch into this instance — this instance acts as Tool",
+        "description": "An lti_platform row describes an external Platform (e.g. a Moodle-based state platform) that launches a signed id_token INTO this instance via OIDC third-party-initiated login. This instance acts as Tool for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
+        "required": [
+          "issuer",
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable registration name shown in the Beheer > Authenticatie registration list",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "title": "Description"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "The platform's OIDC issuer (`iss` claim value); matched on login-initiation and launch",
+            "title": "Issuer"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "This instance's client_id as assigned BY the platform (matched against the launch `aud`/`azp` claims)",
+            "title": "Client ID"
+          },
+          "authLoginUrl": {
+            "type": "string",
+            "description": "The platform's OIDC authorization endpoint the login-initiation redirect targets",
+            "title": "Auth Login URL"
+          },
+          "authTokenUrl": {
+            "type": "string",
+            "description": "The platform's OAuth2 token endpoint used for outbound AGS/NRPS service-token requests (RFC 7523 JWT-bearer client-credentials)",
+            "title": "Auth Token URL"
+          },
+          "jwksUri": {
+            "type": "string",
+            "description": "The platform's published JWKS URI, resolved by LtiJwksResolverService to verify inbound launch id_token signatures",
+            "title": "JWKS URI"
+          },
+          "signingKeys": {
+            "type": "array",
+            "description": "This instance's own rotating signing keypair(s) for this registration (RFC 7523 client-assertion signing). Scoped per-registration, never instance-wide — see design.md D3/D8. Custody: plaintext-pending-encryption per ADR-007 (same as every other Source secret field).",
+            "title": "Signing Keys",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kid": {
+                  "type": "string",
+                  "description": "Key ID published in the JWKS document and the JWS header",
+                  "title": "Key ID"
+                },
+                "algorithm": {
+                  "type": "string",
+                  "enum": [
+                    "RS256",
+                    "PS256"
+                  ],
+                  "description": "Signing algorithm for this key",
+                  "title": "Algorithm"
+                },
+                "publicJwk": {
+                  "type": "object",
+                  "description": "Public JWK (RFC 7517), published verbatim on the /.well-known/lti/.../jwks.json endpoint for active/previous keys",
+                  "title": "Public JWK"
+                },
+                "privateKeySecret": {
+                  "type": "string",
+                  "description": "Private key material (plaintext-pending-encryption, ADR-007 status quo — never logged, never returned on a read surface)",
+                  "title": "Private Key Secret"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "previous",
+                    "retired"
+                  ],
+                  "description": "Key lifecycle state. Exactly one key SHOULD be active; previous keys remain published for the rotation grace window; retired keys are dropped from the published set",
+                  "title": "Status"
+                },
+                "rotatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp this key was superseded by rotation (unset while active)",
+                  "title": "Rotated At"
+                }
+              }
+            }
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_tool": {
+        "slug": "lti_tool",
+        "title": "LTI Tool",
+        "icon": "ApplicationOutline",
+        "version": "1.0.0",
+        "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
+        "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
+        "required": [
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable registration name shown in the Beheer > Authenticatie registration list",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "title": "Description"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "The client_id this instance assigns to the tool (matched against the tool's outbound service-token assertion `sub`)",
+            "title": "Client ID"
+          },
+          "oidcLoginUrl": {
+            "type": "string",
+            "description": "The tool's OIDC third-party-initiated login endpoint",
+            "title": "OIDC Login URL"
+          },
+          "launchUrl": {
+            "type": "string",
+            "description": "The tool's launch endpoint the signed id_token is POSTed to",
+            "title": "Launch URL"
+          },
+          "jwksUri": {
+            "type": "string",
+            "description": "The tool's published JWKS URI, resolved by LtiJwksResolverService to verify inbound service-token assertion signatures",
+            "title": "JWKS URI"
+          },
+          "signingKeys": {
+            "type": "array",
+            "description": "This instance's own rotating signing keypair(s) for this registration, used to sign id_token launches to this tool. Scoped per-registration, never instance-wide — see design.md D3/D8. Custody: plaintext-pending-encryption per ADR-007 (same as every other Source secret field).",
+            "title": "Signing Keys",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kid": {
+                  "type": "string",
+                  "description": "Key ID published in the JWKS document and the JWS header",
+                  "title": "Key ID"
+                },
+                "algorithm": {
+                  "type": "string",
+                  "enum": [
+                    "RS256",
+                    "PS256"
+                  ],
+                  "description": "Signing algorithm for this key",
+                  "title": "Algorithm"
+                },
+                "publicJwk": {
+                  "type": "object",
+                  "description": "Public JWK (RFC 7517), published verbatim on the /.well-known/lti/.../jwks.json endpoint for active/previous keys",
+                  "title": "Public JWK"
+                },
+                "privateKeySecret": {
+                  "type": "string",
+                  "description": "Private key material (plaintext-pending-encryption, ADR-007 status quo — never logged, never returned on a read surface)",
+                  "title": "Private Key Secret"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "previous",
+                    "retired"
+                  ],
+                  "description": "Key lifecycle state. Exactly one key SHOULD be active; previous keys remain published for the rotation grace window; retired keys are dropped from the published set",
+                  "title": "Status"
+                },
+                "rotatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp this key was superseded by rotation (unset while active)",
+                  "title": "Rotated At"
+                }
+              }
+            }
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_deployment": {
+        "slug": "lti_deployment",
+        "title": "LTI Deployment",
+        "icon": "LinkVariant",
+        "version": "1.0.0",
+        "summary": "Links exactly one lti_platform OR one lti_tool registration to a consuming-app placement",
+        "description": "An lti_deployment is the complete, self-describing placement contract a consuming app registers to place an external tool or expose its own content: the LTI deployment_id claim value, where a validated launch redirects, and where AGS/NRPS data is read from/published to. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-010.",
+        "required": [
+          "deploymentId"
+        ],
+        "oneOf": [
+          {
+            "required": [
+              "ltiPlatformId"
+            ],
+            "not": {
+              "required": [
+                "ltiToolId"
+              ]
+            }
+          },
+          {
+            "required": [
+              "ltiToolId"
+            ],
+            "not": {
+              "required": [
+                "ltiPlatformId"
+              ]
+            }
+          }
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable placement name",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "title": "Description"
+          },
+          "deploymentId": {
+            "type": "string",
+            "description": "The LTI `deployment_id` claim value this deployment matches at launch/service-token time",
+            "title": "Deployment ID"
+          },
+          "ltiPlatformId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_platform",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_platform this deployment belongs to (mutually exclusive with ltiToolId — REQ-LTI-001 scenario 2; onDelete=CASCADE)",
+            "title": "LTI Platform"
+          },
+          "ltiToolId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_tool",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_tool this deployment belongs to (mutually exclusive with ltiPlatformId — REQ-LTI-001 scenario 2; onDelete=CASCADE)",
+            "title": "LTI Tool"
+          },
+          "launchTargetUrl": {
+            "type": "string",
+            "description": "Where a validated launch redirects the browser (Tool role), carrying a single-use launch reference",
+            "title": "Launch Target URL"
+          },
+          "gradeSink": {
+            "type": "object",
+            "description": "ADR-008 targetType/targetId pair naming the register/schema the consuming app expects AGS-derived scores to eventually land in via its OWN event_subscription to nl.conduction.lti.ags.score.received. The adapter never writes here directly (REQ-LTI-007).",
+            "title": "Grade Sink",
+            "properties": {
+              "targetType": {
+                "type": "string",
+                "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                "title": "Target Type"
+              },
+              "targetId": {
+                "type": "string",
+                "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                "title": "Target ID"
+              }
+            }
+          },
+          "rosterSource": {
+            "type": "object",
+            "description": "ADR-008 targetType/targetId pair the adapter reads from directly to serve NRPS roster requests synchronously (REQ-LTI-009)",
+            "title": "Roster Source",
+            "properties": {
+              "targetType": {
+                "type": "string",
+                "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                "title": "Target Type"
+              },
+              "targetId": {
+                "type": "string",
+                "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                "title": "Target ID"
+              }
+            }
+          },
+          "mappingId": {
+            "type": "string",
+            "description": "Mapping slug applied to both the AGS event payload and the NRPS response shape",
+            "title": "Mapping"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           }
         },
         "x-openregister-seed": [],
