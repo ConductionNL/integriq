@@ -536,6 +536,18 @@
             "type": "string",
             "description": "Machine-readable identifier (local ADR-015)",
             "title": "Slug"
+          },
+          "putPatchSemantics": {
+            "type": "boolean",
+            "description": "When true, PUT requests to this endpoint MUST supply every mandatory field of the target schema (rejected with HTTP 400 otherwise) while PATCH remains a partial update. Opt-in per endpoint; existing endpoints default to false (pre-change behaviour unchanged). Added by the vng-klantinteracties-adapter change (REQ-EP-007).",
+            "default": false,
+            "title": "Enforce PUT/PATCH Semantics"
+          },
+          "vngFilterTranslation": {
+            "type": "boolean",
+            "description": "When true, GET requests to this endpoint translate VNG double-underscore lookup operators (field__icontains, field__gte, partijIdentificator__codeSoortObjectId/__objectId) onto OpenRegister search filters, and an `expand=` query parameter embeds named relations inline (bounded depth). Opt-in per endpoint; existing endpoints default to false. Added by the vng-klantinteracties-adapter change (REQ-006/REQ-007).",
+            "default": false,
+            "title": "Enable VNG Filter/Expand Translation"
           }
         },
         "x-openregister-seed": [],

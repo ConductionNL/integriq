@@ -30,6 +30,9 @@ use OC\Files\Node\File;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenConnector\Exception\AuthenticationException;
+use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
+use OCA\OpenConnector\Rule\CompositeFanoutRule;
+use OCA\OpenConnector\Rule\ReferentienummerRule;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
 use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
@@ -103,6 +106,9 @@ class EndpointService
      * @param RuleService             $ruleService             Service used to load and resolve endpoint rules.
      * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
      * @param InboundRateLimitService $rateLimitService        Service enforcing inbound per-consumer rate limits + quotas.
+     * @param CompositeFanoutRule     $compositeFanoutRule     Dialect-agnostic composite transactional fan-out rule.
+     * @param ReferentienummerRule    $referentienummerRule    Dialect-agnostic referentienummer generation rule.
+     * @param AvgBsnPolicyRule        $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
      *
      * @return void
      */
@@ -121,6 +127,9 @@ class EndpointService
         private readonly RuleService $ruleService,
         private readonly WebhookSignatureService $webhookSignatureService,
         private readonly InboundRateLimitService $rateLimitService,
+        private readonly CompositeFanoutRule $compositeFanoutRule,
+        private readonly ReferentienummerRule $referentienummerRule,
+        private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
     ) {
     }//end __construct()
 
@@ -1092,8 +1101,32 @@ class EndpointService
         try {
             switch ($method) {
                 case 'GET':
+                    $expand = [];
+                    if (($endpointData['vngFilterTranslation'] ?? false) === true) {
+                        $expandParam = $parameters['expand'] ?? '';
+                        if ($expandParam !== '') {
+                            $expand = explode(',', (string) $expandParam);
+                        }
+
+                        unset($parameters['expand']);
+
+                        $lookupFilters = array_filter($parameters, fn ($key) => str_starts_with($key, '_') === false, ARRAY_FILTER_USE_KEY);
+                        $systemFilters = array_diff_key($parameters, $lookupFilters);
+                        $parameters    = array_merge($systemFilters, $this->mappingService->translateVngFilterOperators(filters: $lookupFilters));
+                    }
+
+                    $objects = $this->getObjects(mapper: $mapper, parameters: $parameters, pathParams: $pathParams, status: $status);
+                    if ($expand !== [] && isset($objects['results']) === true && is_array($objects['results']) === true) {
+                        $objects['results'] = array_map(
+                            fn (array $result) => $this->mappingService->expandRelations(data: $result, expand: $expand),
+                            $objects['results']
+                        );
+                    } else if ($expand !== [] && is_array($objects) === true && isset($objects['error']) === false) {
+                        $objects = $this->mappingService->expandRelations(data: $objects, expand: $expand);
+                    }
+
                     $response = new JSONResponse(
-                        $this->getObjects(mapper: $mapper, parameters: $parameters, pathParams: $pathParams, status: $status),
+                        $objects,
                         statusCode: $status,
                         headers: $headers
                     );
@@ -1111,6 +1144,22 @@ class EndpointService
                     $flowToken->setResponseAmended($flowToken->getResponseOriginal());
                     return $response;
                 case 'PUT':
+                    if (($endpointData['putPatchSemantics'] ?? false) === true) {
+                        $missingFields = $this->checkPutMandatoryFields(parameters: $flowToken->getRequestAmended()['parameters'], mapper: $mapper);
+                        if ($missingFields !== []) {
+                            $response = new JSONResponse(
+                                data: [
+                                    'error'  => 'PUT requires all mandatory fields',
+                                    'fields' => $missingFields,
+                                ],
+                                statusCode: 400
+                            );
+                            $flowToken->setResponseOriginal($response);
+                            $flowToken->setResponseAmended($flowToken->getResponseOriginal());
+                            return $response;
+                        }
+                    }
+
                     $putUpdated = $mapper->updateFromArray(
                         $parameters['id'],
                         $flowToken->getRequestAmended()['parameters'],
@@ -1180,6 +1229,42 @@ class EndpointService
         }//end try
 
     }//end handleSchemaRequest()
+
+    /**
+     * Determine which of a schema's mandatory fields are missing from a PUT body.
+     *
+     * Generic dispatch-semantics helper (REQ-EP-007): PUT is defined to
+     * require every mandatory field of the target schema (unlike PATCH, which
+     * is a partial update and is left untouched by this check). Only called
+     * when the endpoint has opted in via `putPatchSemantics: true`, so
+     * existing endpoints keep their current (pre-change) PUT behaviour.
+     *
+     * @param array                                               $parameters The incoming PUT request body.
+     * @param QBMapper|ORObjectService|ObjectServiceMapperAdapter $mapper     The mapper bound to the target schema.
+     *
+     * @return array<int, string> The names of mandatory fields absent from $parameters (empty when none are missing).
+     *
+     * @spec openspec/specs/endpoint-runtime/spec.md
+     */
+    public function checkPutMandatoryFields(array $parameters, QBMapper|ORObjectService|ObjectServiceMapperAdapter $mapper): array
+    {
+        $schemaMapper = $this->containerInterface->get('OCA\OpenRegister\Db\SchemaMapper');
+        $schema       = $schemaMapper->find($mapper->getSchema());
+
+        $required = [];
+        if (method_exists($schema, 'getRequired') === true) {
+            $required = $schema->getRequired() ?? [];
+        }
+
+        $missing = [];
+        foreach ($required as $field) {
+            if (array_key_exists($field, $parameters) === false || $parameters[$field] === null) {
+                $missing[] = $field;
+            }
+        }
+
+        return $missing;
+    }//end checkPutMandatoryFields()
 
     /**
      * Gets the raw content for a http request from the input stream.
@@ -1525,8 +1610,12 @@ class EndpointService
                         'override' => $this->processOverrideRule(rule: $rule, data: $data, objectId: $objectId),
                         'webhook_signature' => $this->processWebhookSignatureRule(rule: $rule, data: $data, request: $request),
                         'custom' => $this->processCustomRule(rule: $rule, data: $data),
+                        'composite_fanout' => $this->processCompositeFanoutRule(rule: $rule, data: $data),
+                        'referentienummer' => $this->processReferentienummerRule(rule: $rule, data: $data),
+                        'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
+                        'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
                         default => throw new Exception('Unsupported rule type: '.($ruleData['type'] ?? '')),
-                    };
+                    };//end match
                 } catch (Exception $e) {
                     $message = 'Failed to apply rule for endpoint '.($endpointData['name'] ?? '')
                         .' with rule '.($ruleData['name'] ?? '')
@@ -2013,6 +2102,137 @@ class EndpointService
     {
         return $this->ruleService->processCustomRule(rule: $rule, data: $data);
     }//end processCustomRule()
+
+    /**
+     * Process a composite transactional fan-out rule.
+     *
+     * Dialect-agnostic gateway mechanic (first consumer: the VNG
+     * Klantinteracties `maak-klantcontact` composite endpoint). Delegates to
+     * {@see CompositeFanoutRule} which creates a configured parent object plus
+     * its configured children as one logical operation, rolling every write
+     * back on any child failure.
+     *
+     * @param ObjectEntity $rule The composite-fanout rule to apply.
+     * @param array        $data The data to process.
+     *
+     * @return array The updated data array with the created parent merged into the body.
+     *
+     * @spec openspec/specs/rule-pipeline/spec.md
+     */
+    private function processCompositeFanoutRule(ObjectEntity $rule, array $data): array
+    {
+        return $this->compositeFanoutRule->apply(rule: $rule, data: $data);
+    }//end processCompositeFanoutRule()
+
+    /**
+     * Process a referentienummer generation rule.
+     *
+     * Dialect-agnostic gateway mechanic. Delegates to
+     * {@see ReferentienummerRule} which stamps a UUIDv4 (or configured
+     * scheme) reference onto the response body.
+     *
+     * @param ObjectEntity $rule The referentienummer rule to apply.
+     * @param array        $data The data to process.
+     *
+     * @return array The updated data array carrying the generated reference.
+     *
+     * @spec openspec/specs/rule-pipeline/spec.md
+     */
+    private function processReferentienummerRule(ObjectEntity $rule, array $data): array
+    {
+        return $this->referentienummerRule->apply(rule: $rule, data: $data);
+    }//end processReferentienummerRule()
+
+    /**
+     * Process an AVG BSN policy rule.
+     *
+     * Dialect-agnostic gateway mechanic. Delegates to
+     * {@see AvgBsnPolicyRule}, which hashes an inbound BSN before storage
+     * ("before" timing) or strips any raw BSN that survived to the outbound
+     * representation ("after" timing).
+     *
+     * @param ObjectEntity $rule   The AVG BSN policy rule to apply.
+     * @param array        $data   The data to process.
+     * @param string       $timing The current pipeline timing ("before"/"after").
+     *
+     * @return array The updated data array.
+     *
+     * @spec openspec/specs/vng-klantinteracties-adapter/spec.md
+     */
+    private function processAvgBsnPolicyRule(ObjectEntity $rule, array $data, string $timing): array
+    {
+        return $this->avgBsnPolicyRule->apply(rule: $rule, data: $data, timing: $timing);
+    }//end processAvgBsnPolicyRule()
+
+    /**
+     * Process a self-URL / HAL `_links` output rule.
+     *
+     * Dialect-agnostic gateway mechanic: renders an absolute `url` self-link
+     * and HAL `_links` on the response body via {@see renderSelfUrlAndHal()}.
+     *
+     * @param ObjectEntity $rule     The selfurl_hal rule (carries no configuration; presence is the opt-in).
+     * @param ObjectEntity $endpoint The endpoint being processed, used to resolve the public path.
+     * @param array        $data     The data to process.
+     *
+     * @return array The updated data array with `url` and `_links` stamped on the body.
+     *
+     * @spec openspec/specs/endpoint-runtime/spec.md
+     */
+    private function processSelfUrlHalRule(ObjectEntity $rule, ObjectEntity $endpoint, array $data): array
+    {
+        unset($rule);
+        if (is_array($data['body'] ?? null) === true) {
+            $data['body'] = $this->renderSelfUrlAndHal(resource: $data['body'], endpoint: $endpoint);
+        }
+
+        return $data;
+    }//end processSelfUrlHalRule()
+
+    /**
+     * Render an absolute self-URL and HAL `_links` block onto a resource.
+     *
+     * Generic output helper (REQ-EP-006): usable by any dialect, not just VNG
+     * Klantinteracties. Builds the absolute URL from {@see IURLGenerator} and
+     * the endpoint's own path, so the value is correct regardless of host or
+     * environment (no hard-coded host). Relation keys already present on the
+     * resource as an embedded object carrying an `id`/`uuid` are also given a
+     * `_links` entry pointing at their own resolvable identifier.
+     *
+     * @param array        $resource The resource (object body) to decorate.
+     * @param ObjectEntity $endpoint The endpoint whose path resolves the resource's own URL.
+     *
+     * @return array The resource carrying `url` and `_links.self.href` (plus relation links).
+     *
+     * @spec openspec/specs/endpoint-runtime/spec.md
+     */
+    public function renderSelfUrlAndHal(array $resource, ObjectEntity $endpoint): array
+    {
+        $endpointData = $endpoint->getObject();
+        $id           = $resource['id'] ?? ($resource['uuid'] ?? null);
+
+        $endpointPath    = trim((string) ($endpointData['endpoint'] ?? ''), '/');
+        $baseEndpointUrl = rtrim($this->urlGenerator->getBaseUrl(), '/').'/apps/openconnector/api/endpoint/'.$endpointPath;
+        $selfUrl         = $baseEndpointUrl;
+        if ($id !== null) {
+            $selfUrl = $baseEndpointUrl.'/'.$id;
+        }
+
+        $resource['url']            = $selfUrl;
+        $resource['_links']['self'] = ['href' => $selfUrl];
+
+        foreach ($resource as $key => $value) {
+            if ($key === '_links' || $key === 'url') {
+                continue;
+            }
+
+            if (is_array($value) === true && (isset($value['id']) === true || isset($value['uuid']) === true)) {
+                $relatedId = $value['id'] ?? $value['uuid'];
+                $resource['_links'][$key] = ['href' => $baseEndpointUrl.'/'.$relatedId];
+            }
+        }
+
+        return $resource;
+    }//end renderSelfUrlAndHal()
 
     /**
      * Process a rule to write files.
