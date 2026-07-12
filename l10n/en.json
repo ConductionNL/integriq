@@ -1,6 +1,7 @@
 {
     "translations": {
         "API key": "API Key",
+        "Access point credential missing": "Access point credential missing",
         "About event logs": "About Event Logs",
         "Account is disabled": "Account is disabled",
         "Actions": "Actions",
@@ -880,7 +881,12 @@
         "Save DSO signature configuration": "Save DSO signature configuration",
         "Signing certificate (PEM)": "Signing certificate (PEM)",
         "Signing mode": "Signing mode",
-        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Trusted root CA (PKIoverheid Private Root CA, PEM)"
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Trusted root CA (PKIoverheid Private Root CA, PEM)",
+        "Peppol participant not found": "Peppol participant not found",
+        "Invalid Peppol identifier": "Invalid Peppol identifier",
+        "Transmission queued": "Transmission queued",
+        "Transmission delivered": "Transmission delivered",
+        "Transmission rejected": "Transmission rejected"
     },
     "plurals": {}
 }

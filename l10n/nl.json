@@ -1,5 +1,6 @@
 {
     "translations": {
+        "Access point credential missing": "Toegangspunt-inloggegeven ontbreekt",
         "Brokered credential": "Bemiddelde referentie",
         "Brokered credential (OpenRegister)": "Bemiddelde referentie (OpenRegister)",
         "Credential": "Referentie",
@@ -880,7 +881,12 @@
         "Save DSO signature configuration": "DSO-handtekeningconfiguratie opslaan",
         "Signing certificate (PEM)": "Ondertekeningscertificaat (PEM)",
         "Signing mode": "Ondertekeningsmodus",
-        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Vertrouwde root-CA (PKIoverheid Private Root CA, PEM)"
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Vertrouwde root-CA (PKIoverheid Private Root CA, PEM)",
+        "Peppol participant not found": "Peppol-deelnemer niet gevonden",
+        "Invalid Peppol identifier": "Ongeldige Peppol-identificatie",
+        "Transmission queued": "Verzending in wachtrij",
+        "Transmission delivered": "Verzending afgeleverd",
+        "Transmission rejected": "Verzending geweigerd"
     },
     "plurals": {}
 }

@@ -32,9 +32,14 @@ use OCA\OpenConnector\Service\WebhookSignatureService;
  * Service class for managing events and their delivery.
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) -- emitCloudEvent() (peppol-access-point-connector)
+ * generalises handleObjectCreated/Updated/Deleted for connectors that need a domain-specific
+ * CloudEvent `type`; splitting the class would fragment the single owner of `event` OR-object
+ * construction + fan-out without reducing real complexity.
  *
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
+ * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
 class EventService
 {
@@ -755,6 +760,47 @@ class EventService
         ];
 
     }//end pullEvents()
+
+    /**
+     * Construct and process an arbitrary CloudEvent.
+     *
+     * Generalises the `handleObjectCreated`/`Updated`/`Deleted` shape (build a
+     * CloudEvents-shaped `event` OR object, then fan it out via
+     * {@see processEvent}) for connectors that need to emit a domain-specific
+     * event `type` — e.g. `nl.conduction.peppol.delivery.status` — rather than
+     * one of the fixed `com.nextcloud.openregister.object.*` types.
+     *
+     * @param string      $type    The CloudEvents `type` attribute (e.g. `nl.conduction.peppol.delivery.status`).
+     * @param string      $source  The CloudEvents `source` attribute (the producing component identity).
+     * @param string|null $subject The CloudEvents `subject` attribute, or null when not applicable.
+     * @param array       $data    The CloudEvents `data` payload.
+     * @param string|null $userId  The Nextcloud user id that produced this event, or null for system-produced.
+     *
+     * @return ObjectEntity[] The created CloudEvent messages.
+     *
+     * @throws Exception         On event processing failure.
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
+     */
+    public function emitCloudEvent(string $type, string $source, ?string $subject, array $data, ?string $userId=null): array
+    {
+        $event = $this->objectService->saveObject(
+            object: [
+                'source'  => $source,
+                'type'    => $type,
+                'time'    => (new DateTime())->format('c'),
+                'subject' => $subject,
+                'data'    => $data,
+                'userId'  => $userId,
+            ],
+            register: 'openconnector',
+            schema: 'event'
+        );
+
+        return $this->processEvent(event: $event);
+
+    }//end emitCloudEvent()
 
     /**
      * Handle object creation by creating and processing a CloudEvent.
