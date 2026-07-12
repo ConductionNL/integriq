@@ -54,6 +54,29 @@ return [
 		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
 		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
 		['name' => 'lti#rotateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/rotate', 'verb' => 'POST'],
+
+		// EUDI wallet credential issuance — OpenID4VCI pre-authorized code flow
+		// (openspec/changes/eudi-wallet-credential-issuance). Dedicated controller
+		// (DSOController/LtiController precedent), not the generic Endpoint
+		// pipeline. Per design.md D-ROUTE these four wallet-facing routes are
+		// registered ONLY because their verification is real and tested
+		// (EudiCredentialOfferService::exchangeToken()/issueCredential()'s atomic
+		// consume-on-read + proof-of-possession checks) — never ahead of it, per
+		// the DSOController removed-route precedent this design cites.
+		['name' => 'eudiWallet#issuerMetadata', 'url' => '/.well-known/openid-credential-issuer', 'verb' => 'GET'],
+		['name' => 'eudiWallet#resolveOffer', 'url' => '/api/eudi/credential-offers/{id}', 'verb' => 'GET'],
+		['name' => 'eudiWallet#token', 'url' => '/api/eudi/token', 'verb' => 'POST'],
+		['name' => 'eudiWallet#credential', 'url' => '/api/eudi/credential', 'verb' => 'POST'],
+		['name' => 'eudiWallet#statusList', 'url' => '/api/eudi/status-lists/{id}', 'verb' => 'GET'],
+		// App-facing offer creation + revocation — consumer-gated (REQ-CON-001 +
+		// authorization-jwt REQ-001), not an NC session, hence #[PublicPage] too.
+		['name' => 'eudiWallet#createOffer', 'url' => '/api/eudi/credential-offers', 'verb' => 'POST'],
+		['name' => 'eudiWallet#revoke', 'url' => '/api/eudi/credential-offers/{id}/revoke', 'verb' => 'POST'],
+		// Tenant-wide issuer key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
+		['name' => 'eudiIssuerKeyAdmin#status', 'url' => '/api/admin/eudi/keys', 'verb' => 'GET'],
+		['name' => 'eudiIssuerKeyAdmin#generateKey', 'url' => '/api/admin/eudi/keys/generate', 'verb' => 'POST'],
+		['name' => 'eudiIssuerKeyAdmin#rotateKey', 'url' => '/api/admin/eudi/keys/rotate', 'verb' => 'POST'],
+
 		// PSD2 AIS bank-feed connector (openspec/changes/psd2-ais-bank-feed-connector).
 		// Redirect-based SCA consent flow: connect returns the bank SCA URL, the bank
 		// redirects the operator back to callback (GET — no NC request token possible
