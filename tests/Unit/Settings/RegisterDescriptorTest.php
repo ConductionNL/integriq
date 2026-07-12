@@ -45,8 +45,14 @@ class RegisterDescriptorTest extends TestCase
 {
 
     /**
-     * The 16 schema slugs that MUST be declared in the register.
+     * The 20 schema slugs that MUST be declared in the register.
      * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
+     *
+     * Was 16 (verified stale — `peppol_transmission` had been added to
+     * `components.schemas` since, but never to this list, a pre-existing
+     * drift bug fixed alongside lti-13-platform, see
+     * openspec/changes/lti-13-platform/proposal.md's "Impact" section and
+     * lib/Settings/openconnector_register.json's `x-openregister.description`).
      *
      * @var array<string, string>
      */
@@ -68,6 +74,12 @@ class RegisterDescriptorTest extends TestCase
         'SynchronizationContractLog' => 'synchronization_contract_log',
         // RIS connector sync record — added by ibabs-notubiz-connector spec.
         'RISSyncRecord'              => 'ris_sync_record',
+        // Peppol Access Point connector — added by peppol-access-point-connector spec.
+        'PeppolTransmission'         => 'peppol_transmission',
+        // LTI 1.3 / LTI Advantage adapter — added by lti-13-platform.
+        'LtiPlatform'                => 'lti_platform',
+        'LtiTool'                    => 'lti_tool',
+        'LtiDeployment'              => 'lti_deployment',
     ];
 
     /**

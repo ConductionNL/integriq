@@ -51,6 +51,7 @@
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
+		<job>OCA\OpenConnector\Cron\LtiKeyRetirementJob</job>
 	</background-jobs>
 
 	<commands>

@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 ### Added
+- LTI 1.3 / LTI Advantage adapter: OIDC third-party-initiated login + signed-JWT
+  launch validation (Tool role), Platform-role launch initiation, Deep Linking 2.0
+  (both directions), Assignment & Grade Services (RFC 7523 service-token issuance,
+  inbound score → `nl.conduction.lti.ags.score.received` CloudEvent, outbound score
+  publish/result read), Names & Role Provisioning Services (inbound roster read via
+  the ADR-008 `register/schema` dispatch, outbound roster pull), and per-registration
+  signing-key lifecycle (generate/rotate/retire with a 7-day grace window) + JWKS
+  publish. Three new OpenRegister schemas (`lti_platform`, `lti_tool`,
+  `lti_deployment`). New `lib/Service/Lti/*` namespace, `LtiController`, dedicated
+  `/api/lti/*` + `/.well-known/lti/*` routes, `LtiKeyRetirementJob` background job.
+  Tenant-wide key-management UI (Beheer > Authenticatie) and the Adapters catalogue
+  card are NOT yet built — backend contract only in this pass.
+  (lti-13-platform)
+
 - Pre-flight `storage_migrated` assertion in `Application::register()`: the app now
   fails fast with a `\LogicException` (naming the `occ openconnector:migrate-storage`
   runbook command) when the legacy→OpenRegister storage migration has not run.
