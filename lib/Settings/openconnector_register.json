@@ -95,12 +95,13 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
               "peppol",
+              "psd2",
               "soap",
               "dso"
             ],
@@ -2509,6 +2510,203 @@
             "subject": {
               "nl": "Peppol-verzending mislukt: {{recipientPeppolId}} ({{documentType}})",
               "en": "Peppol transmission failed: {{recipientPeppolId}} ({{documentType}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "bankfeed_connection": {
+        "slug": "bankfeed_connection",
+        "title": "Bankfeed Connection",
+        "icon": "Bank",
+        "version": "1.0.0",
+        "summary": "One PSD2 AIS consent linking an aggregator source to a set of authorised bank accounts",
+        "description": "A Bankfeed Connection tracks one PSD2 Account Information Service (AIS) consent from the redirect-based SCA flow (`pending`) through `active` sync to `expired`/`revoked`. It carries the non-credential `consentReference` only — consent tokens and aggregator API keys live behind the OpenRegister credential broker (`authentication.credentialRef`), never here (ADR-007). The `expiring` enum value exists for consumer-side (shillinq BankConnection) parity; the connector keeps syncing an expiring-but-valid consent and stamps `expiryWarnedAt` when the single `nl.conduction.bankfeed.consent.expiring` event has been emitted. See openspec/specs/psd2-ais-bank-feed-connector/spec.md.",
+        "required": [
+          "connectionId",
+          "aggregatorSourceSlug",
+          "consentReference",
+          "lifecycleState"
+        ],
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string",
+            "description": "Stable connection identifier referenced by the synced/consent events and by the consuming app's BankConnection record",
+            "title": "Connection ID"
+          },
+          "aggregatorSourceSlug": {
+            "type": "string",
+            "description": "Slug of the openconnector Source (type 'psd2') this consent was created through",
+            "title": "Aggregator Source Slug"
+          },
+          "aggregator": {
+            "type": "string",
+            "enum": [
+              "gocardless",
+              "tink",
+              "klarna-kosma",
+              "yapily",
+              "sandbox"
+            ],
+            "description": "Aggregator vendor label ('sandbox' for the log provider)",
+            "title": "Aggregator"
+          },
+          "consentReference": {
+            "type": "string",
+            "description": "Aggregator consent/requisition id — a non-credential reference; the consent token itself is broker-held (never stored here)",
+            "title": "Consent Reference"
+          },
+          "consentGrantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the consent was granted (successful SCA callback)",
+            "title": "Consent Granted At"
+          },
+          "consentExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "PSD2 90-day SCA renewal deadline; the sync job skips the connection once passed",
+            "title": "Consent Expires At"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "description": "Return URL registered at connect time; the SCA callback only ever redirects here (open-redirect defence)",
+            "title": "Redirect URL"
+          },
+          "accounts": {
+            "type": "array",
+            "description": "Authorised accounts discovered for this consent (re-discovery replaces in place, keyed by aggregator account id)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "iban": {
+                  "type": "string",
+                  "description": "Account IBAN",
+                  "title": "IBAN"
+                },
+                "bic": {
+                  "type": "string",
+                  "description": "Account BIC",
+                  "title": "BIC"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Account currency (ISO 4217)",
+                  "title": "Currency"
+                },
+                "aggregatorAccountId": {
+                  "type": "string",
+                  "description": "Aggregator-side account identifier used for transaction pulls",
+                  "title": "Aggregator Account ID"
+                }
+              }
+            },
+            "title": "Accounts"
+          },
+          "lastSyncAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Watermark of the last successful transaction pull; advanced only on success so a failed pull re-attempts the same window",
+            "title": "Last Sync At"
+          },
+          "expiryWarnedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Set when the single consent.expiring event was emitted (prevents re-emitting every sweep)",
+            "title": "Expiry Warned At"
+          },
+          "lifecycleState": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "expiring",
+              "expired",
+              "revoked"
+            ],
+            "description": "Consent lifecycle: pending (requisition created) -> active (callback finalised) -> expired (deadline passed) | revoked (aggregator/operator revoked). 'expiring' is reserved for consumer-side parity.",
+            "title": "Lifecycle State"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "bankfeed_batch": {
+        "slug": "bankfeed_batch",
+        "title": "Bankfeed Batch",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "One pulled window of bank transactions for one account of a bankfeed connection",
+        "description": "A Bankfeed Batch is the persisted result of one scheduled PSD2 AIS transaction pull for one account: the `[since, until]` window, the aggregator-normalised transaction rows, and their count. Its URI is carried as `batchUri` on the `nl.conduction.bankfeed.transactions.synced` CloudEvent so a consuming app (shillinq) can materialise CAMT.053/BankStatement records from it. See openspec/specs/psd2-ais-bank-feed-connector/spec.md#req-004-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri.",
+        "required": [
+          "connectionId",
+          "accountIban",
+          "since",
+          "until",
+          "transactionCount"
+        ],
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string",
+            "description": "The owning bankfeed_connection's connectionId",
+            "title": "Connection ID"
+          },
+          "accountIban": {
+            "type": "string",
+            "description": "IBAN of the account this batch covers",
+            "title": "Account IBAN"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start of the pulled window (inclusive; the previous watermark)",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End of the pulled window (becomes the new watermark on success)",
+            "title": "Until"
+          },
+          "transactionCount": {
+            "type": "integer",
+            "description": "Number of transaction rows in this batch",
+            "title": "Transaction Count"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Aggregator-normalised transaction rows (GoCardless Bank-Account-Data booked-transaction shape)",
+            "items": {
+              "type": "object"
+            },
+            "title": "Transactions"
+          }
+        },
+        "x-openregister-notifications": {
+          "batch-synced": {
+            "trigger": {
+              "type": "created"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Banktransacties gesynchroniseerd: {{accountIban}} ({{transactionCount}})",
+              "en": "Bank transactions synced: {{accountIban}} ({{transactionCount}})"
             }
           }
         },

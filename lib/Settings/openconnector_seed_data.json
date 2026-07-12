@@ -65,6 +65,22 @@
         "baseUrl": "https://ap.example/peppol",
         "mockParticipants": ["0106:00000000", "0106:11111111"]
       }
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "bank-aggregator-sandbox" },
+      "name": "Bank Aggregator Sandbox (PSD2 AIS)",
+      "description": "Sandbox PSD2 AIS aggregator (log/mock provider). Demonstrates the full connect -> callback -> discovery -> sync -> synced-event path with no real aggregator and no credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` (GoCardless Bank-Account-Data-style API) for production.",
+      "type": "psd2",
+      "location": "https://aggregator.example/psd2",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "baseUrl": "https://aggregator.example/psd2",
+        "aggregator": "sandbox",
+        "expiryWarningDays": 14
+      }
     }
   ],
   "consumer": [
@@ -309,6 +325,92 @@
       "transmissionId": null,
       "status": "queued",
       "detail": "Queued"
+    }
+  ],
+  "bankfeed_connection": [
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-gemeente-nijmegen" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "aggregatorSourceSlug": "bank-aggregator-sandbox",
+      "aggregator": "sandbox",
+      "consentReference": "REQ-SANDBOX-1",
+      "consentGrantedAt": "2026-07-12T00:00:00+00:00",
+      "consentExpiresAt": "2026-10-10T00:00:00+00:00",
+      "redirectUrl": "https://nc.example/apps/shillinq/psd2/return",
+      "accounts": [
+        { "iban": "NL00BANK0000000001", "bic": "BANKNL2A", "currency": "EUR", "aggregatorAccountId": "SANDBOX-ACC-1" }
+      ],
+      "lastSyncAt": "2026-07-01T06:00:00+00:00",
+      "lifecycleState": "active"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-consultancy-bv" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "aggregatorSourceSlug": "bank-aggregator-sandbox",
+      "aggregator": "sandbox",
+      "consentReference": "REQ-SANDBOX-2",
+      "consentGrantedAt": "2026-04-21T00:00:00+00:00",
+      "consentExpiresAt": "2026-07-20T00:00:00+00:00",
+      "redirectUrl": "https://nc.example/apps/shillinq/psd2/return",
+      "accounts": [
+        { "iban": "NL00BANK0000000002", "bic": "BANKNL2A", "currency": "EUR", "aggregatorAccountId": "SANDBOX-ACC-2" }
+      ],
+      "lastSyncAt": "2026-07-01T06:00:00+00:00",
+      "expiryWarnedAt": "2026-07-06T06:00:00+00:00",
+      "lifecycleState": "expiring"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-travel-agency" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "aggregatorSourceSlug": "bank-aggregator-sandbox",
+      "aggregator": "sandbox",
+      "consentReference": "REQ-SANDBOX-3",
+      "consentGrantedAt": "2026-08-02T00:00:00+00:00",
+      "consentExpiresAt": "2026-10-31T00:00:00+00:00",
+      "redirectUrl": "https://nc.example/apps/shillinq/psd2/return",
+      "accounts": [
+        { "iban": "NL00BANK0000000003", "bic": "BANKNL2A", "currency": "EUR", "aggregatorAccountId": "SANDBOX-ACC-3" }
+      ],
+      "lastSyncAt": null,
+      "lifecycleState": "active"
+    }
+  ],
+  "bankfeed_batch": [
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_batch", "slug": "batch-nijmegen-2026-07-01" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "accountIban": "NL00BANK0000000001",
+      "since": "2026-06-30T06:00:00+00:00",
+      "until": "2026-07-01T06:00:00+00:00",
+      "transactionCount": 12,
+      "transactions": [
+        {
+          "transactionId": "SANDBOX-TX-SEED-1",
+          "bookingDate": "2026-06-30",
+          "valueDate": "2026-06-30",
+          "transactionAmount": { "amount": "1250.00", "currency": "EUR" },
+          "debtorName": "Gemeente Nijmegen",
+          "remittanceInformation": "Invoice 2026-0042"
+        }
+      ]
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_batch", "slug": "batch-consultancy-2026-07-01" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "accountIban": "NL00BANK0000000002",
+      "since": "2026-06-30T06:00:00+00:00",
+      "until": "2026-07-01T06:00:00+00:00",
+      "transactionCount": 3,
+      "transactions": [
+        {
+          "transactionId": "SANDBOX-TX-SEED-2",
+          "bookingDate": "2026-06-30",
+          "valueDate": "2026-06-30",
+          "transactionAmount": { "amount": "-89.99", "currency": "EUR" },
+          "creditorName": "Example SaaS B.V.",
+          "remittanceInformation": "Subscription July"
+        }
+      ]
     }
   ]
 }
