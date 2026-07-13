@@ -3,13 +3,13 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "x-openregister": {
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 20 schemas (14 mutable config + 4 append-only log + 2 registered-but-previously-uncounted: peppol_transmission was declared in components.schemas but missing from the register's schemas list — fixed alongside the lti-13-platform addition). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 21 schemas (14 mutable config + 4 append-only log + 3 registered-but-previously-uncounted: peppol_transmission was declared in components.schemas but missing from the register's schemas list — fixed alongside the lti-13-platform addition; lti_identity_link added alongside the lti-tool-provider-role governance layer). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -17,7 +17,7 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, LTI 1.3 (Platform/Tool/Deployment) + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, LTI 1.3 (Platform/Tool/Deployment/IdentityLink) + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
           "source",
@@ -39,7 +39,8 @@
           "peppol_transmission",
           "lti_platform",
           "lti_tool",
-          "lti_deployment"
+          "lti_deployment",
+          "lti_identity_link"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -2738,13 +2739,28 @@
         "slug": "lti_platform",
         "title": "LTI Platform",
         "icon": "SchoolOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An external LTI 1.3 Platform (LMS) that may launch into this instance — this instance acts as Tool",
         "description": "An lti_platform row describes an external Platform (e.g. a Moodle-based state platform) that launches a signed id_token INTO this instance via OIDC third-party-initiated login. This instance acts as Tool for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
           "issuer",
           "clientId"
         ],
+        "if": {
+          "properties": {
+            "identityPolicy": {
+              "const": "autoProvisionAsRole"
+            }
+          },
+          "required": [
+            "identityPolicy"
+          ]
+        },
+        "then": {
+          "required": [
+            "defaultProvisionGroup"
+          ]
+        },
         "type": "object",
         "properties": {
           "uuid": {
@@ -2786,6 +2802,32 @@
             "type": "string",
             "description": "The platform's published JWKS URI, resolved by LtiJwksResolverService to verify inbound launch id_token signatures",
             "title": "JWKS URI"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "suspended"
+            ],
+            "default": "pending",
+            "description": "Registration trust gate (REQ-LTI-011). A pending or suspended platform is rejected identically to an unregistered issuer at login-initiation/launch/service-token-issuance — only an admin-gated approve() transitions it to approved.",
+            "title": "Status"
+          },
+          "identityPolicy": {
+            "type": "string",
+            "enum": [
+              "manualLinkOnly",
+              "autoProvisionAsRole"
+            ],
+            "default": "manualLinkOnly",
+            "description": "Identity-linking policy for launches under this platform (REQ-LTI-012). manualLinkOnly (default, conservative) never auto-creates a Nextcloud user or matches by email/name — an unlinked sub is reported as such. autoProvisionAsRole is an explicit per-platform opt-in that additionally requires defaultProvisionGroup.",
+            "title": "Identity Policy"
+          },
+          "defaultProvisionGroup": {
+            "type": "string",
+            "description": "Nextcloud group id newly auto-provisioned users are added to. Required when identityPolicy is autoProvisionAsRole; ignored under manualLinkOnly.",
+            "title": "Default Provision Group"
           },
           "signingKeys": {
             "type": "array",
@@ -2858,7 +2900,7 @@
         "slug": "lti_tool",
         "title": "LTI Tool",
         "icon": "ApplicationOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
         "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -2900,6 +2942,17 @@
             "type": "string",
             "description": "The tool's published JWKS URI, resolved by LtiJwksResolverService to verify inbound service-token assertion signatures",
             "title": "JWKS URI"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "suspended"
+            ],
+            "default": "pending",
+            "description": "Registration trust gate (REQ-LTI-011). A pending or suspended tool is rejected identically to an unregistered registration for any lookup that resolves it (Deep Linking response verification, Platform-role launch initiation) — only an admin-gated approve() transitions it to approved.",
+            "title": "Status"
           },
           "signingKeys": {
             "type": "array",
@@ -2972,7 +3025,7 @@
         "slug": "lti_deployment",
         "title": "LTI Deployment",
         "icon": "LinkVariant",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "Links exactly one lti_platform OR one lti_tool registration to a consuming-app placement",
         "description": "An lti_deployment is the complete, self-describing placement contract a consuming app registers to place an external tool or expose its own content: the LTI deployment_id claim value, where a validated launch redirects, and where AGS/NRPS data is read from/published to. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-010.",
         "required": [
@@ -3081,6 +3134,112 @@
             "type": "string",
             "description": "Mapping slug applied to both the AGS event payload and the NRPS response shape",
             "title": "Mapping"
+          },
+          "resourceLinkMappings": {
+            "type": "array",
+            "description": "Per-resource-link routing seam (REQ-LTI-013), only meaningful when ltiPlatformId is set (inbound launches carry a resource_link claim). Each entry is an ADR-008 {resourceLinkId, targetType, targetId} tuple mirroring gradeSink/rosterSource's shape. An empty resourceLinkId denotes a deployment-default entry used when no exact resourceLinkId match is found. LtiLaunchService::resolveResourceMapping() only resolves the target — it never performs the register/schema read/write itself.",
+            "title": "Resource Link Mappings",
+            "items": {
+              "type": "object",
+              "properties": {
+                "resourceLinkId": {
+                  "type": "string",
+                  "description": "The LTI resource_link.id claim value this entry matches; empty denotes the deployment-default fallback entry",
+                  "title": "Resource Link ID"
+                },
+                "targetType": {
+                  "type": "string",
+                  "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                  "title": "Target Type"
+                },
+                "targetId": {
+                  "type": "string",
+                  "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                  "title": "Target ID"
+                }
+              }
+            }
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_identity_link": {
+        "slug": "lti_identity_link",
+        "title": "LTI Identity Link",
+        "icon": "AccountLinkOutline",
+        "version": "1.0.0",
+        "summary": "A (ltiPlatformId, subject) to Nextcloud userId mapping resolved after a launch is already cryptographically validated",
+        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId (REQ-LTI-012). Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
+        "required": [
+          "ltiPlatformId",
+          "subject",
+          "userId",
+          "provisioningMethod"
+        ],
+        "configuration": {
+          "unique": [
+            "ltiPlatformId",
+            "subject"
+          ]
+        },
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "ltiPlatformId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_platform",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_platform whose verified id_token issued this subject (scopes the subject value — the same sub from two different platforms MUST NOT collide; onDelete=CASCADE)",
+            "title": "LTI Platform"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The verified id_token's sub claim value, scoped to ltiPlatformId",
+            "title": "Subject"
+          },
+          "userId": {
+            "type": "string",
+            "description": "The Nextcloud userId this (ltiPlatformId, subject) pair resolves to",
+            "title": "Nextcloud User ID"
+          },
+          "provisioningMethod": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "auto"
+            ],
+            "description": "How this link was created: manual (an admin linked an existing account, e.g. via OR's generic object API) or auto (provisioned under identityPolicy: autoProvisionAsRole)",
+            "title": "Provisioning Method"
+          },
+          "linkedByUserId": {
+            "type": "string",
+            "description": "The admin's Nextcloud userId that created this link; set only for provisioningMethod: manual",
+            "title": "Linked By User ID"
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp this link was created (manual linking) or the subject was first provisioned (auto)",
+            "title": "Linked At"
           },
           "created": {
             "type": "string",

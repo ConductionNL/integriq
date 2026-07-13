@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service\Lti;
 
 use DateTime;
+use OCA\OpenConnector\Exception\LtiValidationException;
 use OCA\OpenConnector\Service\Lti\LtiKeyService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -283,4 +284,99 @@ class LtiKeyServiceTest extends TestCase
         $service->generateKey('lti_platform', 'plat-1', 'HS256');
 
     }//end testGenerateKeyRejectsUnsupportedAlgorithm()
+
+
+    // =========================================================================
+    // REQ-LTI-011 — registration trust gate: approve()/suspend()
+    // =========================================================================
+
+    /**
+     * A newly-seeded registration with no `status` field defaults to
+     * `pending` and `approve()` transitions it to `approved`.
+     *
+     * @return void
+     */
+    public function testApproveTransitionsPendingRegistrationToApproved(): void
+    {
+        $service = $this->makeService();
+        $this->seedRegistration('plat-approve-1', 'lti_platform');
+
+        $result = $service->approve('lti_platform', 'plat-approve-1');
+
+        $this->assertSame('approved', $result['status']);
+        $this->assertSame('plat-approve-1', $result['registrationUuid']);
+        $this->assertSame('approved', $this->registrations['plat-approve-1']['status']);
+
+    }//end testApproveTransitionsPendingRegistrationToApproved()
+
+
+    /**
+     * `suspend()` transitions an approved registration to `suspended`.
+     *
+     * @return void
+     */
+    public function testSuspendTransitionsApprovedRegistrationToSuspended(): void
+    {
+        $service = $this->makeService();
+        $this->seedRegistration('plat-suspend-1', 'lti_platform', ['status' => 'approved']);
+
+        $result = $service->suspend('lti_platform', 'plat-suspend-1');
+
+        $this->assertSame('suspended', $result['status']);
+        $this->assertSame('suspended', $this->registrations['plat-suspend-1']['status']);
+
+    }//end testSuspendTransitionsApprovedRegistrationToSuspended()
+
+
+    /**
+     * A suspended registration can be re-approved (reversible — design.md).
+     *
+     * @return void
+     */
+    public function testSuspendedRegistrationCanBeReApproved(): void
+    {
+        $service = $this->makeService();
+        $this->seedRegistration('plat-reapprove-1', 'lti_platform', ['status' => 'suspended']);
+
+        $result = $service->approve('lti_platform', 'plat-reapprove-1');
+
+        $this->assertSame('approved', $result['status']);
+
+    }//end testSuspendedRegistrationCanBeReApproved()
+
+
+    /**
+     * `approve()` on an unknown registration uuid throws rather than
+     * silently no-op-ing.
+     *
+     * @return void
+     */
+    public function testApproveUnknownRegistrationThrows(): void
+    {
+        $service = $this->makeService();
+
+        $this->expectException(LtiValidationException::class);
+        $service->approve('lti_platform', 'does-not-exist');
+
+    }//end testApproveUnknownRegistrationThrows()
+
+
+    /**
+     * `approve()`/`suspend()` work identically for `lti_tool` registrations
+     * — the trust gate is role-agnostic (design.md D1).
+     *
+     * @return void
+     */
+    public function testApproveAndSuspendWorkForLtiToolToo(): void
+    {
+        $service = $this->makeService();
+        $this->seedRegistration('tool-approve-1', 'lti_tool');
+
+        $approved = $service->approve('lti_tool', 'tool-approve-1');
+        $this->assertSame('approved', $approved['status']);
+
+        $suspended = $service->suspend('lti_tool', 'tool-approve-1');
+        $this->assertSame('suspended', $suspended['status']);
+
+    }//end testApproveAndSuspendWorkForLtiToolToo()
 }//end class

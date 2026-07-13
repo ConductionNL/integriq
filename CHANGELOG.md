@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 ### Added
+- LTI Tool-role governance layer: a `status` (`pending | approved | suspended`)
+  trust gate on `lti_platform`/`lti_tool` — a registration cannot complete a
+  login/launch/token-issuance flow until an admin-gated `approve()` action
+  transitions it, and a `pending`/`suspended` registration is rejected with
+  the exact same HTTP shape as an unregistered issuer (no status-enumeration
+  side channel). New `lti_identity_link` schema + `LtiIdentityLinkService`
+  resolving a validated launch's `sub` claim to a Nextcloud `userId` under a
+  conservative `manualLinkOnly` default (no email/name matching, ever) or an
+  explicit per-platform `autoProvisionAsRole` opt-in bounded to a named
+  group. `lti_deployment.resourceLinkMappings[]` +
+  `LtiLaunchService::resolveResourceMapping()` — a per-resource-link routing
+  seam mirroring `gradeSink`/`rosterSource`'s shape. All three sit strictly
+  after the existing cryptographic launch-validation chain; no existing
+  REQ-LTI-001..010 protocol behaviour is modified.
+  (lti-tool-provider-role)
 - LTI 1.3 / LTI Advantage adapter: OIDC third-party-initiated login + signed-JWT
   launch validation (Tool role), Platform-role launch initiation, Deep Linking 2.0
   (both directions), Assignment & Grade Services (RFC 7523 service-token issuance,
