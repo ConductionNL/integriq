@@ -45,7 +45,7 @@ class RegisterDescriptorTest extends TestCase
 {
 
     /**
-     * The 21 schema slugs that MUST be declared in the register.
+     * The 25 schema slugs that MUST be declared in the register.
      * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
      *
      * Was 16 (verified stale — `peppol_transmission` had been added to
@@ -57,6 +57,8 @@ class RegisterDescriptorTest extends TestCase
      * Was 20 — `lti_identity_link` added by
      * openspec/changes/lti-tool-provider-role (REQ-LTI-012); count
      * re-verified at HEAD per that change's tasks.md §1.6.
+     *
+     * Was 24 — `payment_intent` added by openspec/changes/live-payment-providers.
      *
      * @var array<string, string>
      */
@@ -94,6 +96,8 @@ class RegisterDescriptorTest extends TestCase
         'LtiIdentityLink'            => 'lti_identity_link',
         // NotifyNL SMS channel connector — added by notifynl-sms-channel spec.
         'SmsMessage'                 => 'sms_message',
+        // Live payment providers connector — added by live-payment-providers spec.
+        'PaymentIntent'              => 'payment_intent',
     ];
 
     /**

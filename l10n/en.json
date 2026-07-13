@@ -892,7 +892,11 @@
         "Consent expiring soon": "Consent expiring soon",
         "Transactions synced": "Transactions synced",
         "Aggregator credential missing": "Aggregator credential missing",
-        "Account discovery failed": "Account discovery failed"
+        "Account discovery failed": "Account discovery failed",
+        "Not authenticated": "Not authenticated",
+        "Invalid payment amount": "Invalid payment amount",
+        "Payment provider credential missing": "Payment provider credential missing",
+        "No active payment source is configured": "No active payment source is configured"
     },
     "plurals": {}
 }

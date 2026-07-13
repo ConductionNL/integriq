@@ -37,6 +37,16 @@ return [
 		// signature (HMAC), not an NC session; see PeppolController::inbound().
 		['name' => 'peppol#inbound', 'url' => '/api/peppol/inbound', 'verb' => 'POST'],
 
+		// Live payment providers connector (openspec/changes/live-payment-providers).
+		// Payment creation is an authenticated NC-session call (production binding
+		// for shillinq's MolliePaymentAdapterInterface::createPayment, a follow-up
+		// change — not built here). The webhook is gated by webhook signature
+		// (HMAC), not an NC session; see PaymentsController::webhook() — it never
+		// trusts a status claimed in the body and always re-fetches the
+		// authoritative status from the provider.
+		['name' => 'payments#create', 'url' => '/api/payments', 'verb' => 'POST'],
+		['name' => 'payments#webhook', 'url' => '/api/payments/webhook', 'verb' => 'POST'],
+
 		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
 		// send/status are authenticated NC-session calls (production binding for
 		// sibling apps' own local send adapters, e.g. procest) — mirrors
