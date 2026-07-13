@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 20 schemas (14 mutable config + 4 append-only log + 2 registered-but-previously-uncounted: peppol_transmission was declared in components.schemas but missing from the register's schemas list — fixed alongside the lti-13-platform addition). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -37,6 +37,9 @@
           "synchronization_contract_log",
           "ris_sync_record",
           "peppol_transmission",
+          "bankfeed_connection",
+          "bankfeed_batch",
+          "sms_message",
           "lti_platform",
           "lti_tool",
           "lti_deployment"
@@ -99,13 +102,14 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
               "peppol",
               "psd2",
+              "sms",
               "soap",
               "dso"
             ],
@@ -2727,6 +2731,119 @@
             "subject": {
               "nl": "Banktransacties gesynchroniseerd: {{accountIban}} ({{transactionCount}})",
               "en": "Bank transactions synced: {{accountIban}} ({{transactionCount}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "sms_message": {
+        "slug": "sms_message",
+        "title": "SMS Message",
+        "icon": "MessageTextOutline",
+        "version": "1.0.0",
+        "summary": "Audit + lifecycle record for one outbound SMS sent through a configured SMS channel source",
+        "description": "An SMS Message tracks one outbound message submitted through a configured SMS channel source (NotifyNL, or the log/sandbox provider), from queued through provider acceptance and any delivery-status poll or inbound callback. See openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback.",
+        "required": [
+          "recipientMsisdn",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "objectUri": {
+            "type": "string",
+            "description": "Source object being notified, as referenced by the sending app (optional)",
+            "title": "Object URI"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the producing app (e.g. procest)",
+            "title": "Source App"
+          },
+          "recipientMsisdn": {
+            "type": "string",
+            "description": "Recipient phone number, normalised to E.164 (e.g. +31612345678) before dispatch",
+            "title": "Recipient MSISDN"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "The provider templateId (or logical template name resolved via templateMapping) used for this message",
+            "title": "Template ID"
+          },
+          "provider": {
+            "type": "string",
+            "description": "The provider binding that handled this message (log|notifynl)",
+            "title": "Provider"
+          },
+          "providerMessageId": {
+            "type": "string",
+            "description": "Provider-assigned message id, null until the provider accepts the send (MOCK-SMS-<n> for the log/sandbox provider)",
+            "title": "Provider Message ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "failed"
+            ],
+            "description": "Lifecycle state: queued (created) -> sent (provider accepted the send) -> delivered (status poll or inbound callback) | failed (send exception or provider-reported failure)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Last status detail (provider status text, exception message, or callback detail)",
+            "title": "Detail"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-send-attempt audit trail",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Transport/provider error message, or null on a successful attempt",
+                  "title": "Error Message"
+                }
+              }
+            },
+            "title": "Attempts"
+          }
+        },
+        "x-openregister-notifications": {
+          "message-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "status",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "SMS-verzending mislukt: {{recipientMsisdn}}",
+              "en": "SMS delivery failed: {{recipientMsisdn}}"
             }
           }
         },
