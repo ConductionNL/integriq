@@ -892,7 +892,11 @@
         "Consent expiring soon": "Toestemming verloopt binnenkort",
         "Transactions synced": "Transacties gesynchroniseerd",
         "Aggregator credential missing": "Aggregator-inloggegeven ontbreekt",
-        "Account discovery failed": "Ontdekken van rekeningen mislukt"
+        "Account discovery failed": "Ontdekken van rekeningen mislukt",
+        "Not authenticated": "Niet geauthenticeerd",
+        "Invalid payment amount": "Ongeldig betalingsbedrag",
+        "Payment provider credential missing": "Betalingsprovider-inloggegeven ontbreekt",
+        "No active payment source is configured": "Geen actieve betalingsbron geconfigureerd"
     },
     "plurals": {}
 }

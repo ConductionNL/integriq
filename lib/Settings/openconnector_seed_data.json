@@ -81,6 +81,24 @@
         "aggregator": "sandbox",
         "expiryWarningDays": 14
       }
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "payment-sandbox" },
+      "name": "Payment Sandbox (Live Payment Providers)",
+      "description": "Sandbox payment source (log/mock provider). Demonstrates the full create -> checkout -> webhook -> status-mapping -> event path with no real Mollie account and no credential. Switch `configuration.provider` to `mollie`, set `configuration.baseUrl` (defaults to https://api.mollie.com/v2), and add `configuration.authentication.credentialRef` for production.",
+      "type": "payment",
+      "location": "https://sandbox.payment.example",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "mockStatuses": {
+          "MOCK-PAY-1": "paid",
+          "MOCK-PAY-2": "open",
+          "MOCK-PAY-3": "authorized"
+        }
+      }
     }
   ],
   "consumer": [
@@ -411,6 +429,59 @@
           "remittanceInformation": "Subscription July"
         }
       ]
+    }
+  ],
+  "payment_intent": [
+    {
+      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-invoice-gemeente-nijmegen" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-1",
+      "amountValue": "245.00",
+      "amountCurrency": "EUR",
+      "description": "Invoice INV-2026-0042",
+      "method": "ideal",
+      "redirectUrl": "https://shillinq.example/payments/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-1",
+      "metadata": { "invoiceId": "00000000-0000-0000-0000-000000000000" },
+      "paymentStatus": "paid",
+      "lastOutcome": "captured",
+      "createdAt": "2026-07-10T09:00:00+00:00",
+      "updatedAt": "2026-07-10T09:05:00+00:00"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-invoice-consultancy" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-2",
+      "amountValue": "89.50",
+      "amountCurrency": "EUR",
+      "description": "Invoice INV-2026-0058",
+      "method": "ideal",
+      "redirectUrl": "https://shillinq.example/payments/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-2",
+      "metadata": { "invoiceId": "00000000-0000-0000-0000-000000000000" },
+      "paymentStatus": "open",
+      "lastOutcome": null,
+      "createdAt": "2026-07-12T14:00:00+00:00",
+      "updatedAt": "2026-07-12T14:00:00+00:00"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-deposit-travel-booking" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-3",
+      "amountValue": "150.00",
+      "amountCurrency": "EUR",
+      "description": "Booking deposit BK-2026-0011",
+      "method": "ideal",
+      "redirectUrl": "https://shillinq.example/payments/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-3",
+      "metadata": { "depositPaymentId": "00000000-0000-0000-0000-000000000000" },
+      "paymentStatus": "authorized",
+      "lastOutcome": "authorized",
+      "createdAt": "2026-07-13T08:00:00+00:00",
+      "updatedAt": "2026-07-13T08:02:00+00:00"
     }
   ]
 }

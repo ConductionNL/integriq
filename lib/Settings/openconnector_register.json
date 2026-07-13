@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -17,7 +17,7 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, LTI 1.3 (Platform/Tool/Deployment) + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, LTI 1.3 (Platform/Tool/Deployment) + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
           "bankfeed_batch",
@@ -35,6 +35,7 @@
           "lti_platform",
           "lti_tool",
           "mapping",
+          "payment_intent",
           "peppol_transmission",
           "ris_sync_record",
           "rule",
@@ -103,11 +104,12 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
+              "payment",
               "peppol",
               "psd2",
               "sms",
@@ -2535,6 +2537,149 @@
             "subject": {
               "nl": "Peppol-verzending mislukt: {{recipientPeppolId}} ({{documentType}})",
               "en": "Peppol transmission failed: {{recipientPeppolId}} ({{documentType}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "payment_intent": {
+        "slug": "payment_intent",
+        "title": "Payment Intent",
+        "icon": "CreditCardOutline",
+        "version": "1.0.0",
+        "summary": "Audit + status-lifecycle record for one payment created through a live payment provider (e.g. Mollie)",
+        "description": "A Payment Intent tracks one payment created via POST /api/payments, from its provider-native status through webhook-verified outcome changes. See openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-creation-endpoint-accepting-shillinqs-payload-contract-req-lpp-001.",
+        "required": [
+          "sourceSlug",
+          "provider",
+          "providerPaymentId",
+          "amountValue",
+          "amountCurrency",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceSlug": {
+            "type": "string",
+            "description": "Slug of the openconnector Source used to create this payment",
+            "title": "Source Slug"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "log",
+              "mollie"
+            ],
+            "description": "Provider binding used to create this payment (log = sandbox, mollie = live Mollie Payments API v2)",
+            "title": "Provider"
+          },
+          "providerPaymentId": {
+            "type": "string",
+            "description": "Provider-assigned payment id (e.g. Mollie tr_xxx, or MOCK-PAY-<n> for the log/sandbox provider) — the idempotency + webhook lookup key",
+            "title": "Provider Payment ID"
+          },
+          "amountValue": {
+            "type": "string",
+            "description": "Decimal amount as a string, e.g. \"10.00\"",
+            "title": "Amount Value"
+          },
+          "amountCurrency": {
+            "type": "string",
+            "description": "ISO 4217 currency code, e.g. EUR",
+            "title": "Amount Currency"
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description shown to the payer",
+            "title": "Description"
+          },
+          "method": {
+            "type": "string",
+            "description": "Requested payment method (ideal is the default/primary NL method; creditcard, bancontact, sepadirectdebit are also accepted passthrough)",
+            "title": "Method"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "description": "Where the payer returns to after checkout",
+            "title": "Redirect URL"
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Hosted checkout URL returned to the caller by the provider",
+            "title": "Checkout URL"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Opaque passthrough metadata supplied by the caller (e.g. invoiceId/depositPaymentId, administrationId, correlationId)",
+            "title": "Metadata"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "open",
+              "pending",
+              "authorized",
+              "paid",
+              "failed",
+              "canceled",
+              "expired",
+              "refunded",
+              "chargeback"
+            ],
+            "description": "Last provider-native status returned by fetchPaymentStatus()",
+            "title": "Payment Status"
+          },
+          "lastOutcome": {
+            "type": "string",
+            "enum": [
+              "authorized",
+              "captured",
+              "failed",
+              "voided"
+            ],
+            "description": "Last outcome actually emitted as a nl.conduction.payment.status CloudEvent (shillinq's PaymentReconciliationService vocabulary) — the webhook idempotency guard (REQ-LPP-005)",
+            "title": "Last Outcome"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this payment intent was created",
+            "title": "Created At"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this payment intent was last updated (creation or webhook processing)",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-notifications": {
+          "payment-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "lastOutcome",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Betaling mislukt: {{providerPaymentId}} ({{description}})",
+              "en": "Payment failed: {{providerPaymentId}} ({{description}})"
             }
           }
         },
