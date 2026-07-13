@@ -1364,7 +1364,18 @@ class EndpointService
         $headers      = $this->getHeaders(server: $_SERVER);
 
         // Fetch the source entity by targetId.
-        $source = $this->orObjectService->find(id: ($endpointData['targetId'] ?? ''), register: 'openconnector', schema: 'source');
+        //
+        // System context (ocon#147): the `source` schema is admin-only now. An Endpoint is
+        // the app's own proxy surface — the whole point is that a caller reaches the target
+        // WITHOUT being able to see (or authenticate to) it directly. It is the engine that
+        // needs the source; the caller must not be able to read it.
+        $source = $this->orObjectService->find(
+            id: ($endpointData['targetId'] ?? ''),
+            register: 'openconnector',
+            schema: 'source',
+            _rbac: false,
+            _multitenancy: false
+        );
 
         // Proxy the request to the source via CallService.
         $callLog     = $this->callService->call(

@@ -132,8 +132,18 @@ class MappingRuntime implements RuntimeExtensionInterface
      */
     public function callSource(string $sourceId, string $endpoint, string $method='GET', array $configuration=[], bool $decode=true): array|string
     {
+        // System context (ocon#147): the `source` schema is admin-only now. A Twig mapping
+        // runs inside the engine on behalf of a configured source, so the ENGINE needs the
+        // source — the template never exposes it, and the triggering user must not be able
+        // to read it.
         $orObjectService = $this->objectService->getOpenRegisters();
-        $source          = $orObjectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+        $source          = $orObjectService->find(
+            id: $sourceId,
+            register: 'openconnector',
+            schema: 'source',
+            _rbac: false,
+            _multitenancy: false
+        );
         $sourceData      = $source->getObject();
 
         if (str_contains(haystack: $endpoint, needle: ($sourceData['location'] ?? '')) === true) {

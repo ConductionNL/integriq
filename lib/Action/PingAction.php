@@ -85,7 +85,15 @@ class PingAction
         $sourceId = (string) $arguments['sourceId'];
         $response['stackTrace'][] = "Found sourceId {$sourceId} in arguments";
 
-        $source = $this->orObjectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+        // System context (ocon#147): this runs as a scheduled action, where there is no
+        // session at all — and the `source` schema is admin-only now.
+        $source = $this->orObjectService->find(
+            id: $sourceId,
+            register: 'openconnector',
+            schema: 'source',
+            _rbac: false,
+            _multitenancy: false
+        );
         if ($source === null) {
             $response['stackTrace'][] = "Source not found for id: {$sourceId}";
             return $response;

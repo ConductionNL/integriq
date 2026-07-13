@@ -635,10 +635,19 @@ class SynchronizationService
      */
     private function findSourceObject(string|int $id): ObjectEntity
     {
+        // System context (ocon#147). The `source` schema is now admin-only, because it
+        // is admin-owned configuration and — until the plaintext credential fields are
+        // removed — it carries secrets. But a synchronisation is legitimately triggered
+        // by non-admins and by cron, and it is the ENGINE that needs the source, not the
+        // user: the source never leaves this method, and the user never sees it. Reading
+        // it as the acting user would either break every non-admin sync or force the
+        // schema back open. Neither is acceptable, so the engine reads as the system.
         $object = $this->orObjectService->find(
             id: (string) $id,
             register: 'openconnector',
-            schema: 'source'
+            schema: 'source',
+            _rbac: false,
+            _multitenancy: false
         );
 
         if ($object === null) {
@@ -705,10 +714,15 @@ class SynchronizationService
         // upsert probe (trim($object['id'])).
         unset($sourceData['id']);
 
+        // System context (ocon#147) — see findSourceObject(). The auto-created source
+        // carries no credentials, which is the point: an engine-created source can only
+        // ever call an unauthenticated URL.
         $saved = $this->orObjectService->saveObject(
             object: $sourceData,
             register: 'openconnector',
-            schema: 'source'
+            schema: 'source',
+            _rbac: false,
+            _multitenancy: false
         );
 
         return $saved->jsonSerialize();
