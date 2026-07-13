@@ -460,4 +460,58 @@ class LtiController extends Controller
         return new JSONResponse(data: $entry);
 
     }//end rotateKey()
+
+    // =========================================================================
+    // REQ-LTI-011 — registration trust gate (Beheer > Authenticatie)
+    // =========================================================================
+
+    /**
+     * Approve a registration. Admin-gated, CSRF-protected.
+     *
+     * @param string $registrationType `lti_platform` or `lti_tool`.
+     * @param string $registrationUuid The registration's UUID.
+     *
+     * @return JSONResponse `{registrationType, registrationUuid, status}`.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function approve(string $registrationType, string $registrationUuid): JSONResponse
+    {
+        try {
+            $result = $this->keyService->approve(registrationType: $registrationType, registrationUuid: $registrationUuid);
+        } catch (LtiValidationException $exception) {
+            return $this->renderRejection(exception: $exception);
+        } catch (Throwable $exception) {
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+        }
+
+        return new JSONResponse(data: $result);
+
+    }//end approve()
+
+    /**
+     * Suspend a registration. Admin-gated, CSRF-protected.
+     *
+     * @param string $registrationType `lti_platform` or `lti_tool`.
+     * @param string $registrationUuid The registration's UUID.
+     *
+     * @return JSONResponse `{registrationType, registrationUuid, status}`.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function suspend(string $registrationType, string $registrationUuid): JSONResponse
+    {
+        try {
+            $result = $this->keyService->suspend(registrationType: $registrationType, registrationUuid: $registrationUuid);
+        } catch (LtiValidationException $exception) {
+            return $this->renderRejection(exception: $exception);
+        } catch (Throwable $exception) {
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+        }
+
+        return new JSONResponse(data: $result);
+
+    }//end suspend()
 }//end class

@@ -65,6 +65,7 @@ class LtiLaunchService
     public const CLAIM_VERSION       = 'https://purl.imsglobal.org/spec/lti/claim/version';
     public const CLAIM_DL_SETTINGS   = 'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings';
     public const CLAIM_DL_ITEMS      = 'https://purl.imsglobal.org/spec/lti-dl/claim/content_items';
+    public const CLAIM_RESOURCE_LINK = 'https://purl.imsglobal.org/spec/lti/claim/resource_link';
 
     /**
      * The only LTI version this adapter recognises (1.3-only, per design.md non-goals).
@@ -347,6 +348,59 @@ class LtiLaunchService
         return json_decode($cached, true);
 
     }//end consumeLaunchReference()
+
+    // =========================================================================
+    // REQ-LTI-013 — resource-link-to-consuming-app-object mapping seam
+    // =========================================================================
+
+    /**
+     * Resolve which consuming-app object a validated launch's
+     * `resource_link.id` claim maps to, per a deployment's configured
+     * `resourceLinkMappings[]` (REQ-LTI-013).
+     *
+     * Resolution order: exact `resourceLinkId` match, then the
+     * empty-`resourceLinkId` deployment-default entry, then `null`. This
+     * method only resolves *which* target a consuming app should read/write
+     * — it never performs the register/schema read/write itself (design.md
+     * D4 — mirrors `gradeSink`/`rosterSource`'s "route, don't own" shape).
+     *
+     * @param string $deploymentUuid The `lti_deployment` this launch resolved to.
+     * @param string $resourceLinkId The launch's `resource_link.id` claim value (may be empty).
+     *
+     * @return array{targetType: string, targetId: string}|null The resolved target, or null when unconfigured/no match.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-013
+     */
+    public function resolveResourceMapping(string $deploymentUuid, string $resourceLinkId): ?array
+    {
+        $deployment = $this->resolver->findDeploymentByUuid(deploymentUuid: $deploymentUuid);
+        if ($deployment === null) {
+            return null;
+        }
+
+        $mappings = ($deployment->getObject()['resourceLinkMappings'] ?? []);
+
+        foreach ($mappings as $mapping) {
+            if (($mapping['resourceLinkId'] ?? null) === $resourceLinkId) {
+                return [
+                    'targetType' => ($mapping['targetType'] ?? null),
+                    'targetId'   => ($mapping['targetId'] ?? null),
+                ];
+            }
+        }
+
+        foreach ($mappings as $mapping) {
+            if (($mapping['resourceLinkId'] ?? null) === '') {
+                return [
+                    'targetType' => ($mapping['targetType'] ?? null),
+                    'targetId'   => ($mapping['targetId'] ?? null),
+                ];
+            }
+        }
+
+        return null;
+
+    }//end resolveResourceMapping()
 
     // =========================================================================
     // REQ-LTI-006 — Platform-role launch initiation + Deep Linking (both directions)

@@ -762,7 +762,14 @@ class LtiLaunchServiceTest extends TestCase
         $cacheFactory = $this->createMock(ICacheFactory::class);
         $cacheFactory->method('createDistributed')->willReturn(new ArrayCache());
 
-        $service = new LtiLaunchService($resolver, $this->makeAuthorizationService(), $this->makeJwksResolver(), $keyService, $cacheFactory, new NullLogger());
+        $service = new LtiLaunchService(
+            $resolver,
+            $this->makeAuthorizationService(),
+            $this->makeJwksResolver(),
+            $keyService,
+            $cacheFactory,
+            new NullLogger()
+        );
 
         $contentItems = [['type' => 'ltiResourceLink', 'title' => 'Chapter 1', 'url' => 'https://tool.example/content/1']];
         $result       = $service->buildDeepLinkingResponse(
@@ -858,4 +865,266 @@ class LtiLaunchServiceTest extends TestCase
         $service->verifyDeepLinkingResponse($idToken);
 
     }//end testVerifyDeepLinkingResponseRejectsWrongMessageType()
+
+
+    // =========================================================================
+    // REQ-LTI-011 — registration trust gate, integration
+    //
+    // LtiRegistrationResolverService's own status-gating logic is unit-tested
+    // independently (LtiRegistrationResolverServiceTest — pending/suspended
+    // registrations resolve as null). These tests prove LtiLaunchService's
+    // calling code has no bypass around that gate: when the resolver returns
+    // null (exactly what it does for a pending/suspended registration), the
+    // login-initiation and launch paths reject with the SAME shape as a
+    // genuinely unregistered issuer — no separate "found but not approved"
+    // branch exists in LtiLaunchService that could leak a distinguishing
+    // response.
+    // =========================================================================
+
+    /**
+     * A login-initiation request for a registration the resolver reports as
+     * not-found (the exact return value a `pending` platform produces) is
+     * rejected identically to an unregistered issuer — HTTP 400, no redirect,
+     * no nonce persisted.
+     *
+     * @return void
+     */
+    public function testPendingPlatformLoginInitiationRejectedLikeUnregistered(): void
+    {
+        // A resolver that (like the real gated resolver would for a pending
+        // registration) reports the issuer as not-found even though a row
+        // exists for it.
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findPlatformByIssuer')->willReturn(null);
+
+        $service = $this->makeService($resolver, $this->makeJwksResolver());
+
+        $this->expectException(LtiValidationException::class);
+        try {
+            $service->initiateLogin(
+                self::DEPLOYMENT_UUID,
+                ['iss' => self::PLATFORM_ISS, 'client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'],
+                'https://tool.example/launch'
+            );
+        } catch (LtiValidationException $exception) {
+            $this->assertSame(400, $exception->getHttpStatus());
+            // Same message shape testUnregisteredIssuerRejectedBeforeRedirect() asserts.
+            $this->assertStringContainsString('Unregistered', $exception->getMessage());
+            throw $exception;
+        }
+
+    }//end testPendingPlatformLoginInitiationRejectedLikeUnregistered()
+
+
+    /**
+     * A launch `id_token` whose issuer resolves to null (the exact return
+     * value a `pending`/`suspended` platform produces) is rejected
+     * identically to an unregistered issuer — HTTP 400.
+     *
+     * @return void
+     */
+    public function testPendingPlatformLaunchRejectedLikeUnregistered(): void
+    {
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findPlatformByIssuer')->willReturn(null);
+
+        $service = $this->makeService($resolver, $this->makeJwksResolver());
+        $idToken = $this->signAsPlatform($this->baseLaunchClaims('some-nonce'));
+
+        $this->expectException(LtiValidationException::class);
+        try {
+            $service->validateLaunch($idToken, self::DEPLOYMENT_UUID, null, null);
+        } catch (LtiValidationException $exception) {
+            $this->assertSame(400, $exception->getHttpStatus());
+            throw $exception;
+        }
+
+    }//end testPendingPlatformLaunchRejectedLikeUnregistered()
+
+
+    // =========================================================================
+    // REQ-LTI-012 — identity-linking policy never relaxes launch validation
+    // =========================================================================
+
+    /**
+     * Adding `identityPolicy`/`defaultProvisionGroup` to a platform's data
+     * has no effect on `validateLaunch()`'s own cryptographic rejection path
+     * — a forged signature is rejected exactly as it is without those fields
+     * present, proving `validateLaunch()` never branches on identity-linking
+     * policy (design.md "Inbound-JWT security posture", REQ-LTI-012 scenario
+     * 4). Identity resolution itself (unlinked/auto-provision branching) is
+     * unit-tested independently in LtiIdentityLinkServiceTest — this test
+     * only proves the trust decision is unaffected by the new field's mere
+     * presence.
+     *
+     * @return void
+     */
+    public function testForgedSignatureRejectedRegardlessOfIdentityPolicy(): void
+    {
+        $wrongKey = JWKFactory::createRSAKey(2048, ['kid' => 'platform-kid-1', 'alg' => 'RS256', 'use' => 'sig']);
+
+        $platform = new ObjectEntity();
+        $platform->setUuid(self::PLATFORM_UUID);
+        $platform->setObject(
+            [
+                'issuer'                 => self::PLATFORM_ISS,
+                'clientId'               => self::CLIENT_ID,
+                'authLoginUrl'           => 'https://platform.example/auth',
+                'jwksUri'                => 'https://platform.example/jwks.json',
+                // Present to prove validateLaunch() ignores these entirely.
+                'identityPolicy'         => 'autoProvisionAsRole',
+                'defaultProvisionGroup'  => 'scholiq-lti-learners',
+            ]
+        );
+
+        $deployment = new ObjectEntity();
+        $deployment->setUuid(self::DEPLOYMENT_UUID);
+        $deployment->setObject(
+            [
+                'deploymentId'    => self::DEPLOYMENT_ID_CLAIM,
+                'ltiPlatformId'   => self::PLATFORM_UUID,
+                'launchTargetUrl' => 'https://tool.example/app',
+            ]
+        );
+
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findPlatformByIssuer')->willReturn($platform);
+        $resolver->method('findDeploymentByUuid')->willReturnCallback(
+            fn ($uuid) => ($uuid === self::DEPLOYMENT_UUID) ? $deployment : null
+        );
+        $resolver->method('findDeployment')->willReturn($deployment);
+
+        $jwksResolver = $this->makeJwksResolver($this->platformKey->toPublic());
+        $service      = $this->makeService($resolver, $jwksResolver);
+
+        $login = $service->initiateLogin(
+            self::DEPLOYMENT_UUID,
+            ['iss' => self::PLATFORM_ISS, 'client_id' => self::CLIENT_ID, 'login_hint' => 'user-1', 'target_link_uri' => 'https://tool.example/'],
+            'https://tool.example/launch'
+        );
+
+        $algorithmManager = new AlgorithmManager([new RS256()]);
+        $jwsBuilder       = new JWSBuilder($algorithmManager);
+        $serializer       = new CompactSerializer();
+        $jws              = $jwsBuilder->create()
+            ->withPayload(json_encode($this->baseLaunchClaims($login['nonce'])))
+            ->addSignature($wrongKey, ['alg' => 'RS256', 'typ' => 'JWT', 'kid' => 'platform-kid-1'])
+            ->build();
+        $forgedToken      = $serializer->serialize($jws, 0);
+
+        $this->expectException(LtiValidationException::class);
+        try {
+            $service->validateLaunch($forgedToken, self::DEPLOYMENT_UUID, $login['state'], $login['state']);
+        } catch (LtiValidationException $exception) {
+            $this->assertSame(401, $exception->getHttpStatus());
+            throw $exception;
+        }
+
+    }//end testForgedSignatureRejectedRegardlessOfIdentityPolicy()
+
+
+    // =========================================================================
+    // REQ-LTI-013 — resource-link-to-consuming-app-object mapping seam
+    // =========================================================================
+
+    /**
+     * An exact `resourceLinkId` match resolves to its configured target.
+     *
+     * @return void
+     */
+    public function testResolveResourceMappingExactMatch(): void
+    {
+        $deployment = new ObjectEntity();
+        $deployment->setUuid('dep-rlm-1');
+        $deployment->setObject(
+            [
+                'resourceLinkMappings' => [
+                    ['resourceLinkId' => 'course-101', 'targetType' => 'register/schema', 'targetId' => '20/145'],
+                ],
+            ]
+        );
+
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findDeploymentByUuid')->willReturnCallback(
+            fn ($uuid) => ($uuid === 'dep-rlm-1') ? $deployment : null
+        );
+
+        $service = $this->makeService($resolver, $this->makeJwksResolver());
+        $result  = $service->resolveResourceMapping('dep-rlm-1', 'course-101');
+
+        $this->assertSame(['targetType' => 'register/schema', 'targetId' => '20/145'], $result);
+
+    }//end testResolveResourceMappingExactMatch()
+
+
+    /**
+     * An unmapped `resourceLinkId` falls back to the deployment-default
+     * (empty-`resourceLinkId`) entry when one is configured.
+     *
+     * @return void
+     */
+    public function testResolveResourceMappingFallsBackToDeploymentDefault(): void
+    {
+        $deployment = new ObjectEntity();
+        $deployment->setUuid('dep-rlm-2');
+        $deployment->setObject(
+            [
+                'resourceLinkMappings' => [
+                    ['resourceLinkId' => '', 'targetType' => 'register/schema', 'targetId' => '20/999'],
+                ],
+            ]
+        );
+
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findDeploymentByUuid')->willReturnCallback(
+            fn ($uuid) => ($uuid === 'dep-rlm-2') ? $deployment : null
+        );
+
+        $service = $this->makeService($resolver, $this->makeJwksResolver());
+        $result  = $service->resolveResourceMapping('dep-rlm-2', 'course-777');
+
+        $this->assertSame(['targetType' => 'register/schema', 'targetId' => '20/999'], $result);
+
+    }//end testResolveResourceMappingFallsBackToDeploymentDefault()
+
+
+    /**
+     * A deployment with no `resourceLinkMappings[]` configured at all
+     * resolves to `null` for any `resourceLinkId`.
+     *
+     * @return void
+     */
+    public function testResolveResourceMappingReturnsNullWhenUnconfigured(): void
+    {
+        $deployment = new ObjectEntity();
+        $deployment->setUuid('dep-rlm-3');
+        $deployment->setObject([]);
+
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findDeploymentByUuid')->willReturnCallback(
+            fn ($uuid) => ($uuid === 'dep-rlm-3') ? $deployment : null
+        );
+
+        $service = $this->makeService($resolver, $this->makeJwksResolver());
+
+        $this->assertNull($service->resolveResourceMapping('dep-rlm-3', 'course-anything'));
+
+    }//end testResolveResourceMappingReturnsNullWhenUnconfigured()
+
+
+    /**
+     * An unknown deployment uuid resolves to `null` rather than throwing.
+     *
+     * @return void
+     */
+    public function testResolveResourceMappingReturnsNullForUnknownDeployment(): void
+    {
+        $resolver = $this->createMock(LtiRegistrationResolverService::class);
+        $resolver->method('findDeploymentByUuid')->willReturn(null);
+
+        $service = $this->makeService($resolver, $this->makeJwksResolver());
+
+        $this->assertNull($service->resolveResourceMapping('not-a-real-deployment', 'course-101'));
+
+    }//end testResolveResourceMappingReturnsNullForUnknownDeployment()
 }//end class

@@ -20,29 +20,30 @@
         "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, LTI 1.3 (Platform/Tool/Deployment) + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
-          "source",
+          "bankfeed_batch",
+          "bankfeed_connection",
+          "call_log",
           "consumer",
           "endpoint",
           "event",
           "event_message",
           "event_subscription",
           "job",
-          "mapping",
-          "rule",
-          "synchronization",
-          "synchronization_contract",
-          "call_log",
           "job_log",
-          "synchronization_log",
-          "synchronization_contract_log",
-          "ris_sync_record",
-          "peppol_transmission",
-          "bankfeed_connection",
-          "bankfeed_batch",
-          "sms_message",
+          "lti_deployment",
+          "lti_identity_link",
           "lti_platform",
           "lti_tool",
-          "lti_deployment"
+          "mapping",
+          "peppol_transmission",
+          "ris_sync_record",
+          "rule",
+          "sms_message",
+          "source",
+          "synchronization",
+          "synchronization_contract",
+          "synchronization_contract_log",
+          "synchronization_log"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -3198,6 +3199,87 @@
             "type": "string",
             "description": "Mapping slug applied to both the AGS event payload and the NRPS response shape",
             "title": "Mapping"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_identity_link": {
+        "slug": "lti_identity_link",
+        "title": "LTI Identity Link",
+        "icon": "AccountLinkOutline",
+        "version": "1.0.0",
+        "summary": "A (ltiPlatformId, subject) to Nextcloud userId mapping resolved after a launch is already cryptographically validated",
+        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId (REQ-LTI-012). Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
+        "required": [
+          "ltiPlatformId",
+          "subject",
+          "userId",
+          "provisioningMethod"
+        ],
+        "configuration": {
+          "unique": [
+            "ltiPlatformId",
+            "subject"
+          ]
+        },
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "ltiPlatformId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_platform",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_platform whose verified id_token issued this subject (scopes the subject value — the same sub from two different platforms MUST NOT collide; onDelete=CASCADE)",
+            "title": "LTI Platform"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The verified id_token's sub claim value, scoped to ltiPlatformId",
+            "title": "Subject"
+          },
+          "userId": {
+            "type": "string",
+            "description": "The Nextcloud userId this (ltiPlatformId, subject) pair resolves to",
+            "title": "Nextcloud User ID"
+          },
+          "provisioningMethod": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "auto"
+            ],
+            "description": "How this link was created: manual (an admin linked an existing account, e.g. via OR's generic object API) or auto (provisioned under identityPolicy: autoProvisionAsRole)",
+            "title": "Provisioning Method"
+          },
+          "linkedByUserId": {
+            "type": "string",
+            "description": "The admin's Nextcloud userId that created this link; set only for provisioningMethod: manual",
+            "title": "Linked By User ID"
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp this link was created (manual linking) or the subject was first provisioned (auto)",
+            "title": "Linked At"
           },
           "created": {
             "type": "string",

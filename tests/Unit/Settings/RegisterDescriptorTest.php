@@ -45,7 +45,7 @@ class RegisterDescriptorTest extends TestCase
 {
 
     /**
-     * The 20 schema slugs that MUST be declared in the register.
+     * The 21 schema slugs that MUST be declared in the register.
      * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
      *
      * Was 16 (verified stale — `peppol_transmission` had been added to
@@ -53,6 +53,10 @@ class RegisterDescriptorTest extends TestCase
      * drift bug fixed alongside lti-13-platform, see
      * openspec/changes/lti-13-platform/proposal.md's "Impact" section and
      * lib/Settings/openconnector_register.json's `x-openregister.description`).
+     *
+     * Was 20 — `lti_identity_link` added by
+     * openspec/changes/lti-tool-provider-role (REQ-LTI-012); count
+     * re-verified at HEAD per that change's tasks.md §1.6.
      *
      * @var array<string, string>
      */
@@ -86,6 +90,8 @@ class RegisterDescriptorTest extends TestCase
         'LtiPlatform'                => 'lti_platform',
         'LtiTool'                    => 'lti_tool',
         'LtiDeployment'              => 'lti_deployment',
+        // Identity-linking primitive — added by lti-tool-provider-role.
+        'LtiIdentityLink'            => 'lti_identity_link',
         // NotifyNL SMS channel connector — added by notifynl-sms-channel spec.
         'SmsMessage'                 => 'sms_message',
     ];

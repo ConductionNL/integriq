@@ -240,7 +240,6 @@ class SynchronizationServiceTest extends TestCase
         $orObjectService->method('saveObject')->willReturnCallback(
             static function (
                 $object,
-                $extend=null,
                 $register=null,
                 $schema=null,
                 ?string $uuid=null

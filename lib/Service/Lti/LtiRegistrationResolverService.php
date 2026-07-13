@@ -29,6 +29,7 @@ use OCA\OpenConnector\Exception\LtiValidationException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Registration + deployment lookups for the LTI adapter.
@@ -38,15 +39,63 @@ use OCP\AppFramework\Db\DoesNotExistException;
 class LtiRegistrationResolverService
 {
     /**
+     * The only status every lookup in this service resolves against
+     * (REQ-LTI-011). A `pending`/`suspended`/missing `status` is treated
+     * identically to "not found" by every caller — the trust gate.
+     *
+     * @var string
+     */
+    private const APPROVED_STATUS = 'approved';
+
+    /**
      * Constructor.
      *
      * @param OrObjectService $orObjectService OR ObjectService used for all register reads.
+     * @param LoggerInterface $logger          Logs the actual resolved `status` (debug level only) when a
+     *                                         registration is found but not approved — operator
+     *                                         visibility without changing the HTTP-facing "not found"
+     *                                         behaviour.
      */
     public function __construct(
         private readonly OrObjectService $orObjectService,
+        private readonly LoggerInterface $logger,
     ) {
 
     }//end __construct()
+
+    /**
+     * Reject a resolved registration that is not `approved`, logging the
+     * actual status at debug level, and return `null` instead (the same
+     * shape callers already handle as "not found") — REQ-LTI-011's
+     * no-status-enumeration-side-channel gate, enforced once here for every
+     * lookup method in this service.
+     *
+     * @param ObjectEntity|null $registration     The resolved registration, or null when the underlying lookup found nothing.
+     * @param string            $registrationType `lti_platform` or `lti_tool` (for the debug log only).
+     *
+     * @return ObjectEntity|null The registration when (and only when) its `status` is `approved`; `null` otherwise.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     */
+    private function requireApproved(?ObjectEntity $registration, string $registrationType): ?ObjectEntity
+    {
+        if ($registration === null) {
+            return null;
+        }
+
+        $status = ($registration->getObject()['status'] ?? null);
+        if ($status === self::APPROVED_STATUS) {
+            return $registration;
+        }
+
+        $this->logger->debug(
+            'LtiRegistrationResolverService: registration resolved but not approved — treated as not found',
+            ['registrationType' => $registrationType, 'registrationUuid' => $registration->getUuid(), 'status' => $status]
+        );
+
+        return null;
+
+    }//end requireApproved()
 
     /**
      * Find an `lti_platform` registration by issuer (and optionally clientId).
@@ -76,7 +125,7 @@ class LtiRegistrationResolverService
         );
         $results = ($matches['results'] ?? $matches);
 
-        return ($results[0] ?? null);
+        return $this->requireApproved(registration: ($results[0] ?? null), registrationType: 'lti_platform');
 
     }//end findPlatformByIssuer()
 
@@ -107,7 +156,7 @@ class LtiRegistrationResolverService
         );
         $results = ($matches['results'] ?? $matches);
 
-        return ($results[0] ?? null);
+        return $this->requireApproved(registration: ($results[0] ?? null), registrationType: 'lti_tool');
 
     }//end findToolByClientId()
 
@@ -189,7 +238,7 @@ class LtiRegistrationResolverService
     public function findRegistrationByUuid(string $registrationType, string $registrationUuid): ?ObjectEntity
     {
         try {
-            return $this->orObjectService->find(
+            $registration = $this->orObjectService->find(
                 id: $registrationUuid,
                 register: 'openconnector',
                 schema: $registrationType,
@@ -199,6 +248,13 @@ class LtiRegistrationResolverService
         } catch (DoesNotExistException $exception) {
             return null;
         }
+
+        // Same trust gate as findPlatformByIssuer()/findToolByClientId()
+        // (REQ-LTI-011) — REQ-LTI-006's Platform-role launch initiation and
+        // Deep Linking response signing both resolve their own registration
+        // via this method, so a pending/suspended registration must not be
+        // usable to launch/sign through either.
+        return $this->requireApproved(registration: $registration, registrationType: $registrationType);
 
     }//end findRegistrationByUuid()
 

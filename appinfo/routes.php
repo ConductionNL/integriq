@@ -63,6 +63,12 @@ return [
 		// Tenant-wide key management (Beheer > Authenticatie) — admin-gated, CSRF-protected.
 		['name' => 'lti#generateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/generate', 'verb' => 'POST'],
 		['name' => 'lti#rotateKey', 'url' => '/api/lti/{registrationType}/{registrationUuid}/keys/rotate', 'verb' => 'POST'],
+		// Registration trust gate (openspec/changes/lti-tool-provider-role, REQ-LTI-011) —
+		// admin-gated, CSRF-protected. No route for LtiIdentityLinkService/
+		// resolveResourceMapping() — both are consumed cross-app via PHP service
+		// injection (see LtiController::approve()/suspend() precedent + design.md).
+		['name' => 'lti#approve', 'url' => '/api/lti/{registrationType}/{registrationUuid}/approve', 'verb' => 'POST'],
+		['name' => 'lti#suspend', 'url' => '/api/lti/{registrationType}/{registrationUuid}/suspend', 'verb' => 'POST'],
 
 		// EUDI wallet credential issuance — OpenID4VCI pre-authorized code flow
 		// (openspec/changes/eudi-wallet-credential-issuance). Dedicated controller

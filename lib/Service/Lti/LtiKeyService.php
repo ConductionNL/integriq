@@ -57,6 +57,13 @@ class LtiKeyService
     public const REGISTRATION_TYPES = ['lti_platform', 'lti_tool'];
 
     /**
+     * Valid registration trust-gate statuses (REQ-LTI-011).
+     *
+     * @var string[]
+     */
+    public const REGISTRATION_STATUSES = ['pending', 'approved', 'suspended'];
+
+    /**
      * Supported signing algorithms (REQ-LTI-002).
      *
      * @var string[]
@@ -368,6 +375,106 @@ class LtiKeyService
         return $this->redactEntry(entry: $newEntry);
 
     }//end rotateKey()
+
+    /**
+     * Transition a registration's trust-gate `status` (REQ-LTI-011).
+     *
+     * Uses {@see findRegistration()} — the direct, ungated lookup this
+     * service already owns for key mutation — rather than
+     * {@see LtiRegistrationResolverService}'s gated lookups, so an admin can
+     * still find (and approve) a `pending` registration; the resolver's
+     * lookups are gated for *protocol* callers (login/launch/service-token),
+     * never for this admin-only mutation path.
+     *
+     * @param string $registrationType `lti_platform` or `lti_tool`.
+     * @param string $registrationUuid The registration's UUID.
+     * @param string $newStatus        One of {@see REGISTRATION_STATUSES}.
+     *
+     * @return array `{registrationType, registrationUuid, status}` — this method never touches `signingKeys`,
+     *               so no key redaction applies; callers only ever receive the status-transition result.
+     *
+     * @throws LtiValidationException When the registration does not exist.
+     * @throws BadRequestException    When `$newStatus` is not a recognised status.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     */
+    private function transitionStatus(string $registrationType, string $registrationUuid, string $newStatus): array
+    {
+        if (in_array(needle: $newStatus, haystack: self::REGISTRATION_STATUSES, strict: true) === false) {
+            throw new BadRequestException(message: 'Unknown LTI registration status: '.$newStatus);
+        }
+
+        $registration   = $this->findRegistration(registrationType: $registrationType, registrationUuid: $registrationUuid);
+        $data           = $registration->getObject();
+        $previousStatus = ($data['status'] ?? 'pending');
+        $data['status'] = $newStatus;
+
+        $this->orObjectService->saveObject(
+            object: $data,
+            register: 'openconnector',
+            schema: $registrationType,
+            uuid: $registration->getUuid()
+        );
+
+        $this->logger->info(
+            'LtiKeyService: registration status transitioned',
+            [
+                'registrationType' => $registrationType,
+                'registrationUuid' => $registrationUuid,
+                'previousStatus'   => $previousStatus,
+                'newStatus'        => $newStatus,
+            ]
+        );
+
+        return [
+            'registrationType' => $registrationType,
+            'registrationUuid' => $registration->getUuid(),
+            'status'           => $newStatus,
+        ];
+
+    }//end transitionStatus()
+
+    /**
+     * Approve a registration — an admin-gated action that transitions
+     * `status` to `approved`, making the registration usable for
+     * login-initiation, launch validation, Platform-role launch initiation,
+     * and service-token issuance (REQ-LTI-011).
+     *
+     * @param string $registrationType `lti_platform` or `lti_tool`.
+     * @param string $registrationUuid The registration's UUID.
+     *
+     * @return array `{registrationType, registrationUuid, status}`.
+     *
+     * @throws LtiValidationException When the registration does not exist.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     */
+    public function approve(string $registrationType, string $registrationUuid): array
+    {
+        return $this->transitionStatus(registrationType: $registrationType, registrationUuid: $registrationUuid, newStatus: 'approved');
+
+    }//end approve()
+
+    /**
+     * Suspend a registration — an admin-gated action that transitions
+     * `status` to `suspended`, rejecting every subsequent lookup identically
+     * to an unregistered issuer/client_id (REQ-LTI-011). Reversible by
+     * calling {@see approve()} again.
+     *
+     * @param string $registrationType `lti_platform` or `lti_tool`.
+     * @param string $registrationUuid The registration's UUID.
+     *
+     * @return array `{registrationType, registrationUuid, status}`.
+     *
+     * @throws LtiValidationException When the registration does not exist.
+     *
+     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     */
+    public function suspend(string $registrationType, string $registrationUuid): array
+    {
+        return $this->transitionStatus(registrationType: $registrationType, registrationUuid: $registrationUuid, newStatus: 'suspended');
+
+    }//end suspend()
 
     /**
      * Return the current `active` signing-key entry (private material included).
