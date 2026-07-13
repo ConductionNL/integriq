@@ -31,6 +31,19 @@ it via its REST surface and its `nl.conduction.payment.status` CloudEvent,
 whose payload is shaped identically to `PaymentReconciliationService::
 reconcile()`'s `$event` parameter.
 
+@e2e exclude backend payment provider connector (creation, signed webhook, status mapping, idempotency) — covered by PHPUnit, no browser UI
+
+**OpenSpec changes**
+- `live-payment-providers` (done) — introduces the `payment_intent` schema,
+  the `PaymentProviderInterface` abstraction (`log`/sandbox + Mollie REST
+  bindings), the `POST /api/payments` creation endpoint, the signature-gated
+  `POST /api/payments/webhook` that always re-derives status via
+  `fetchPaymentStatus()` rather than trusting the body, status mapping to
+  `authorized|captured|failed|voided` with `nl.conduction.payment.status`
+  CloudEvent emission, and the `lastOutcome` idempotency guard against
+  replayed webhooks. Archived at
+  `openspec/changes/archive/2026-07-13-live-payment-providers/`.
+
 ## Requirements
 ### Requirement: Payment creation endpoint accepting shillinq's payload contract (REQ-LPP-001)
 
