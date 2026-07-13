@@ -1,4 +1,9 @@
-# openconnector-register-schema — Delta: three new LTI schemas (16 → 19)
+# openconnector-register-schema — Delta: three new LTI schemas (17 → 20)
+
+## RENAMED Requirements
+
+- FROM: `### Requirement: All 15 schemas MUST be declared (REQ-A-002)`
+- TO: `### Requirement: All 20 schemas MUST be declared (REQ-A-002)`
 
 ## MODIFIED Requirements
 
@@ -24,17 +29,19 @@ schema defined in `components.schemas`.
 - **GIVEN** the descriptor file is loaded
 - **WHEN** inspecting `components.registers`
 - **THEN** exactly one register entry MUST exist with slug `openconnector`
-- **AND** its `schemas` array MUST list all 19 schema slugs
+- **AND** its `schemas` array MUST list all 20 schema slugs
 
-### Requirement: All 19 schemas MUST be declared (REQ-A-002)
+### Requirement: All 20 schemas MUST be declared (REQ-A-002)
 
-The system MUST declare 19 schemas in `components.schemas`. The mutable config
+The system MUST declare 20 schemas in `components.schemas`. The mutable config
 schemas are: `source`, `consumer`, `endpoint`, `event`, `event_message`,
 `event_subscription`, `job`, `mapping`, `rule`, `synchronization`,
-`synchronization_contract`, `ris_sync_record`, `lti_platform`, `lti_tool`,
-`lti_deployment` (15 total). The append-only log schemas are: `call_log`,
-`job_log`, `synchronization_log`, `synchronization_contract_log` (4 total,
-unchanged by this change).
+`synchronization_contract`, `ris_sync_record`, `peppol_transmission`,
+`lti_platform`, `lti_tool`, `lti_deployment` (16 total; `ris_sync_record` and
+`peppol_transmission` predate this change and were previously uncounted here —
+reconciled while adding the three LTI schemas). The append-only log schemas are:
+`call_log`, `job_log`, `synchronization_log`, `synchronization_contract_log`
+(4 total, unchanged by this change).
 
 `lti_platform` and `lti_tool` are mutable registration schemas (an external
 Platform or Tool this instance has a trust relationship with — see the
@@ -50,12 +57,12 @@ minimum. Each schema's `properties` MUST cover every protected field declared on
 the matching `lib/Db/<EntityName>.php` entity (excluding internally-derived
 fields like `id` which OR manages automatically).
 
-#### Scenario: All 19 schemas present
+#### Scenario: All 20 schemas present
 
 - **GIVEN** the descriptor file is parsed
 - **WHEN** inspecting `components.schemas`
-- **THEN** exactly 19 schema entries MUST exist
-- **AND** their slugs MUST be the union of the 15 mutable config and 4 log
+- **THEN** exactly 20 schema entries MUST exist
+- **AND** their slugs MUST be the union of the 16 mutable config and 4 log
   slugs
 
 #### Scenario: Schema field coverage matches entity definition
