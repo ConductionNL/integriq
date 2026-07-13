@@ -37,6 +37,15 @@ return [
 		// signature (HMAC), not an NC session; see PeppolController::inbound().
 		['name' => 'peppol#inbound', 'url' => '/api/peppol/inbound', 'verb' => 'POST'],
 
+		// NotifyNL SMS channel connector (openspec/changes/notifynl-sms-channel).
+		// send/status are authenticated NC-session calls (production binding for
+		// sibling apps' own local send adapters, e.g. procest) — mirrors
+		// peppol#participants. Inbound delivery-status callbacks are gated by
+		// webhook signature (HMAC), not an NC session; see NotifyNlController::inbound().
+		['name' => 'notifyNl#send', 'url' => '/api/notifynl/messages', 'verb' => 'POST'],
+		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
+		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
+
 		// LTI 1.3 / LTI Advantage adapter (openspec/changes/lti-13-platform).
 		// Dedicated controller (DSOController precedent), not the generic
 		// Endpoint pipeline — every route here is called by an external

@@ -80,12 +80,20 @@ class RegisterDescriptorTest extends TestCase
         'RISSyncRecord'              => 'ris_sync_record',
         // Peppol Access Point connector — added by peppol-access-point-connector spec.
         'PeppolTransmission'         => 'peppol_transmission',
+        // PSD2 AIS bank-feed connector — added by psd2-ais-bank-feed-connector spec.
+        // Was declared in components.schemas but missing from the register's
+        // schemas list until fixed alongside notifynl-sms-channel (see that
+        // change's proposal.md "Impact").
+        'BankfeedConnection'         => 'bankfeed_connection',
+        'BankfeedBatch'              => 'bankfeed_batch',
         // LTI 1.3 / LTI Advantage adapter — added by lti-13-platform.
         'LtiPlatform'                => 'lti_platform',
         'LtiTool'                    => 'lti_tool',
         'LtiDeployment'              => 'lti_deployment',
         // Identity-linking primitive — added by lti-tool-provider-role.
         'LtiIdentityLink'            => 'lti_identity_link',
+        // NotifyNL SMS channel connector — added by notifynl-sms-channel spec.
+        'SmsMessage'                 => 'sms_message',
     ];
 
     /**
