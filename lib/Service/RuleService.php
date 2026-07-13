@@ -1009,7 +1009,20 @@ class RuleService
     private function getExternalObject(string $url, array $configuration, string|int $schemaId): array
     {
         // Find an existing source by location, or create one if not found.
-        $matches = $this->orObjectService->findAll(config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $url]]);
+        //
+        // System context (ocon#147): the `source` schema is admin-only now, but this
+        // find-or-create runs inside the rule engine on a URL the rule already names. It
+        // is the ENGINE that needs the source — the rule's caller never sees it. Reading
+        // (and auto-creating) as the acting user would break every non-admin rule run.
+        //
+        // The auto-created source carries NO credentials, which is the point: an
+        // engine-created source can only ever call an unauthenticated URL. Anything that
+        // needs a secret must be configured by an admin and reference a broker credential.
+        $matches = $this->orObjectService->findAll(
+            config: ['filters' => ['register' => 'openconnector', 'schema' => 'source', 'location' => $url]],
+            _rbac: false,
+            _multitenancy: false
+        );
         $sources = $matches['results'] ?? $matches;
 
         if (count($sources) > 0) {
@@ -1024,6 +1037,8 @@ class RuleService
                 ],
                 register: 'openconnector',
                 schema: 'source',
+                _rbac: false,
+                _multitenancy: false,
             );
         }
 

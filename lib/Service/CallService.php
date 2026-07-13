@@ -538,11 +538,17 @@ class CallService
             $sourceData['rateLimitReset']     = null;
             $sourceData['rateLimitRemaining'] = null;
 
+            // System context (ocon#147): rate-limit bookkeeping is the engine writing back
+            // to its own admin-owned config. The `source` schema is admin-only now, so a
+            // non-admin-triggered call would otherwise fail to record its own rate-limit
+            // state.
             $this->objectService->saveObject(
                 object: $sourceData,
                 register: 'openconnector',
                 schema: 'source',
-                uuid: $source->getUuid()
+                uuid: $source->getUuid(),
+                _rbac: false,
+                _multitenancy: false
             );
         }
 
@@ -1750,11 +1756,15 @@ class CallService
         }
 
         if ($changed === true) {
+            // System context (ocon#147) — see checkAndResetRateLimit(): the engine writes
+            // back to its own admin-owned source config on behalf of any caller.
             $this->objectService->saveObject(
                 object: $sourceData,
                 register: 'openconnector',
                 schema: 'source',
-                uuid: $source->getUuid()
+                uuid: $source->getUuid(),
+                _rbac: false,
+                _multitenancy: false
             );
         }
 
