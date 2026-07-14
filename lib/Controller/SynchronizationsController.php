@@ -342,6 +342,7 @@ class SynchronizationsController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -359,6 +360,12 @@ class SynchronizationsController extends Controller
         $force      = filter_var(($parameters['force'] ?? false), FILTER_VALIDATE_BOOLEAN);
         $source     = ($parameters['source'] ?? null);
         $data       = ($parameters['data'] ?? []);
+
+        // Explicit, human-in-the-loop override for the deletion-ratio guard
+        // (REQ-010). Deliberately distinct from `force`, which event-driven
+        // re-syncs already set automatically and which must never be able to
+        // bypass the guard.
+        $forceDeletion = filter_var(($parameters['forceDeletion'] ?? false), FILTER_VALIDATE_BOOLEAN);
 
         try {
             $synchronization = $this->orObjectService->find(
@@ -379,7 +386,8 @@ class SynchronizationsController extends Controller
                 isTest: $test,
                 force: $force,
                 source: $source,
-                data: $data
+                data: $data,
+                forceDeletion: $forceDeletion
             );
 
             // Return the result as a JSON response.

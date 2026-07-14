@@ -20,6 +20,7 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -27,6 +28,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Handler for exporting and importing synchronization configurations.
+ *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -36,16 +39,19 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SynchronizationHandler implements ConfigurationHandlerInterface
 {
     /**
      * Constructor.
      *
-     * @param OrObjectService $orObjectService The OR object service.
+     * @param OrObjectService        $orObjectService        The OR object service.
+     * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
      */
     public function __construct(
-        private readonly OrObjectService $orObjectService
+        private readonly OrObjectService $orObjectService,
+        private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
     ) {
 
     }//end __construct()
@@ -64,7 +70,7 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
      *
      * @return array The serialised synchronization configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -79,6 +85,11 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
         // Ensure slug is set.
         if (empty($syncArray['slug']) === true && $entity instanceof ObjectEntity) {
             $syncArray['slug'] = $entity->getUuid();
+        }
+
+        // Redact secret-shaped values from the nested configuration array (secret-hygiene).
+        if (isset($syncArray['configuration']) === true && is_array($syncArray['configuration']) === true) {
+            $syncArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $syncArray['configuration']);
         }
 
         // Handle sourceId based on sourceType.
@@ -331,6 +342,8 @@ class SynchronizationHandler implements ConfigurationHandlerInterface
      * Get the entity type this handler is responsible for.
      *
      * @return string The entity type identifier.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
      */
     public function getEntityType(): string
     {

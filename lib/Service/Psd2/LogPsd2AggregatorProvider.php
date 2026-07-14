@@ -124,7 +124,8 @@ class LogPsd2AggregatorProvider implements Psd2AggregatorProviderInterface
      * @param array  $sourceConfiguration The PSD2 source's `configuration` object (unused — no secret).
      * @param string $consentReference    The consent reference of an active consent (unused by the sandbox).
      *
-     * @return array<int, array<string, string>> The canned authorised accounts.
+     * @return array<int, array{aggregatorAccountId: string, bic: string, currency: string, iban: string}> The
+     *         canned authorised accounts.
      *
      * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-account-discovery-after-consent-req-003
      */

@@ -19,6 +19,7 @@ use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\BrokeredCallService;
 use OCA\OpenConnector\Service\CallService;
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -80,6 +81,7 @@ class CallServiceTest extends TestCase
             $appConfig,
             $logger,
             $brokered,
+            new SensitiveFieldRegistry(),
         );
     }//end setUp()
 
@@ -130,6 +132,7 @@ class CallServiceTest extends TestCase
             $appConfig,
             $this->createMock(LoggerInterface::class),
             $brokered,
+            new SensitiveFieldRegistry(),
         );
     }//end buildBrokeredCallService()
 
@@ -348,6 +351,154 @@ class CallServiceTest extends TestCase
         $this->assertStringContainsString('***REDACTED***', $log['response']['body']);
         $this->assertStringNotContainsString('sekret-value-123', json_encode($log));
     }//end testBrokeredCallLogRedactsSecretsLikeGuzzlePath()
+
+
+    /**
+     * TC-9 / secret-hygiene Task 2 — the non-brokered Guzzle-dispatch path
+     * redacts an authenticated call's CallLog identically to the brokered
+     * path, AND the real outbound Guzzle request still carried the genuine,
+     * unredacted Authorization header (redaction applies only to the
+     * persisted copy, never to the live request).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    public function testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        // Swap in a mock Guzzle client so the "outbound call" is captured
+        // in-process instead of hitting the network — the mock is invoked
+        // with the SAME (unredacted) $config the engine would otherwise send
+        // to a real upstream.
+        $capturedConfig = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->once())
+            ->method('request')
+            ->willReturnCallback(
+                function (string $method, string $url, array $config) use (&$capturedConfig) {
+                    $capturedConfig = $config;
+
+                    return new Response(200, [], '{"ok":true}');
+                }
+            );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $configuration = [
+            'headers' => ['Authorization' => 'Bearer live-secret-token-123'],
+        ];
+
+        $service->call(source: $this->makeBrokeredSource(configuration: $configuration), endpoint: '/v1/items');
+
+        // The real outbound request carried the genuine, unredacted header.
+        $this->assertSame('Bearer live-secret-token-123', $capturedConfig['headers']['Authorization']);
+
+        // The persisted CallLog is redacted and carries no plaintext secret anywhere.
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertSame('***REDACTED***', $log['request']['headers']['Authorization']);
+        $this->assertStringNotContainsString('live-secret-token-123', json_encode($log));
+    }//end testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest()
+
+
+    /**
+     * TC-10 — a secret submitted as a form parameter and echoed back verbatim
+     * in an upstream error response body is scrubbed before the CallLog is
+     * persisted, on the non-brokered Guzzle path.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    public function testGuzzlePathScrubsSecretEchoedInResponseBody(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturn(
+            new Response(500, [], 'upstream error echoing super-secret-value back')
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $configuration = [
+            'form_params' => ['client_secret' => 'super-secret-value'],
+        ];
+
+        $service->call(
+            source: $this->makeBrokeredSource(configuration: $configuration),
+            endpoint: '/v1/items',
+            config: ['logBody' => true],
+        );
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertSame('***REDACTED***', $log['request']['form_params']['client_secret']);
+        $this->assertStringNotContainsString('super-secret-value', $log['response']['body']);
+        $this->assertStringContainsString('***REDACTED***', $log['response']['body']);
+    }//end testGuzzlePathScrubsSecretEchoedInResponseBody()
+
+
+    /**
+     * REQ-006 scenario "a secret-bearing query-string parameter is redacted
+     * from the persisted URL": `api_key` in the request URL is masked in
+     * `call_log.request.url` while the non-secret `page` parameter is
+     * retained unmodified.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    public function testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturn(new Response(200, [], '[]'));
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-url');
+        $source->setObject(
+            [
+                'name'          => 'url-secret-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/things?api_key=live_abc123&page=2');
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertStringNotContainsString('live_abc123', $log['request']['url']);
+        // http_build_query() percent-encodes the asterisks of the placeholder.
+        $this->assertStringContainsString('api_key=***REDACTED***', urldecode($log['request']['url']));
+        $this->assertStringContainsString('page=2', $log['request']['url']);
+        $this->assertStringNotContainsString('live_abc123', json_encode($log));
+    }//end testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl()
 
 
     /**
@@ -916,5 +1067,83 @@ class CallServiceTest extends TestCase
         $this->assertFileDoesNotExist($verifyPath);
     }//end testRemoveFilesCleansUpCertSslKeyAndVerifyTogether()
 
+
+    /**
+     * TC-12 / secret-hygiene Task 8 — cert/ssl_key/verify temp files are
+     * created with 0600 permissions (regression pin for commit `b0a5ef8a` /
+     * #1012).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-certificate-materialisation-and-cleanup-req-002
+     */
+    public function testGetCertificateWritesFilesWithMode0600(): void
+    {
+        // Arrange
+        $config = [
+            'cert'    => "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----",
+            'ssl_key' => "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            'verify'  => "-----BEGIN CERTIFICATE-----\nca-fixture\n-----END CERTIFICATE-----",
+        ];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert: owner read/write only — no group or world access.
+        $this->assertSame(0600, (fileperms($config['cert']) & 0777));
+        $this->assertSame(0600, (fileperms($config['ssl_key']) & 0777));
+        $this->assertSame(0600, (fileperms($config['verify']) & 0777));
+
+        $this->service->removeFiles($config);
+    }//end testGetCertificateWritesFilesWithMode0600()
+
+
+    /**
+     * TC-13 / secret-hygiene Task 8 — `removeFiles()` cleans up the remaining
+     * files without emitting a PHP warning or throwing when one of the three
+     * paths was already deleted by an earlier cleanup pass (regression pin
+     * for commit `b0a5ef8a` / #1012's existence-check fix).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-certificate-materialisation-and-cleanup-req-002
+     */
+    public function testRemoveFilesNoWarningOnPartialCleanup(): void
+    {
+        // Arrange
+        $config = [
+            'cert'    => "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----",
+            'ssl_key' => "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            'verify'  => "-----BEGIN CERTIFICATE-----\nca-fixture\n-----END CERTIFICATE-----",
+        ];
+        $this->service->getCertificate($config);
+
+        // Simulate a prior cleanup pass already having removed the cert file.
+        unlink($config['cert']);
+        $this->assertFileDoesNotExist($config['cert']);
+        $this->assertFileExists($config['ssl_key']);
+        $this->assertFileExists($config['verify']);
+
+        // Act: capture any PHP warning/notice raised during removeFiles().
+        $capturedErrors = [];
+        set_error_handler(
+            function (int $errno, string $errstr) use (&$capturedErrors) {
+                $capturedErrors[] = $errstr;
+
+                return true;
+            }
+        );
+
+        try {
+            $this->service->removeFiles($config);
+        } finally {
+            restore_error_handler();
+        }
+
+        // Assert: no warning captured, and the two remaining files are gone.
+        $this->assertSame([], $capturedErrors);
+        $this->assertFileDoesNotExist($config['ssl_key']);
+        $this->assertFileDoesNotExist($config['verify']);
+    }//end testRemoveFilesNoWarningOnPartialCleanup()
 
 }//end class
