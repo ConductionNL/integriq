@@ -126,6 +126,22 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialUpstreamException') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialUpstreamException.php';
         }
+
+        // Handoff engine stubs (open-formulieren-intake change). HandoffService
+        // is the real cross-app DI target OpenFormulierenIntakeService injects
+        // (same pattern as ObjectService); HandoffException/NotAuthorizedException
+        // are the typed failures it propagates.
+        if (class_exists('OCA\\OpenRegister\\Service\\Handoff\\HandoffService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Handoff/HandoffService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Exception\\HandoffException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Exception/HandoffException.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Exception\\NotAuthorizedException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Exception/NotAuthorizedException.php';
+        }
     }
 }
 
