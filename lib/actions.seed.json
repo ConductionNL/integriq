@@ -39,6 +39,9 @@
     "pdok.suggest": ["admin"],
     "pdok.lookup": ["admin"],
     "pdok.free": ["admin"],
-    "pdok.reverse": ["admin"]
+    "pdok.reverse": ["admin"],
+    "catalog.instantiate": ["admin"],
+    "configuration.export": ["admin"],
+    "configuration.import": ["admin"]
   }
 }

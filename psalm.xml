@@ -104,6 +104,8 @@
                 <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterResolverService"/>
                 <referencedClass name="OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationRegistry"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationProvider"/>
                 <referencedClass name="OCA\OpenRegister\Db\Mapping"/>
                 <!-- Symfony (loaded at runtime via Nextcloud or composer require) -->
                 <referencedClass name="Symfony\Component\ExpressionLanguage\ExpressionLanguage"/>

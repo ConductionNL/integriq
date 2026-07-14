@@ -18,10 +18,11 @@ Notes: This requirement adds reachability only; it does not change REQ-001–REQ
 - GIVEN a non-admin user whose groups are not mapped to `configuration.export` in the admin-configured action matrix (admins always pass `requireAction()` — documented break-glass behaviour)
 - WHEN that user calls the export endpoint
 - THEN the request is rejected with `OCSForbiddenException` and no file is produced
+- @e2e exclude API-level action-matrix denial (no UI surface for an unmapped user) — covered by PHPUnit `ConfigurationControllerTest::testExportDeniedForUnmappedNonAdmin`
 
 ### Requirement: REQ-007 — Preview an import before writing anything
 
-The system SHALL expose a non-mutating `POST /api/configurations/import/preview` endpoint that, given an OAS document, computes and returns the same creates/updates/collisions classification that `importConfiguration()` (REQ-003) would perform, plus the set of unresolved slug references (REQ-004's "left verbatim" case) that would result, WITHOUT calling `saveObject()` on any entity. The preview SHALL reuse the existing handlers' slug-resolution logic (`resetMappings()`, per-type `import()` dry-run mode) rather than reimplementing it.
+The system SHALL expose a non-mutating `POST /api/configurations/import/preview` endpoint that, given an OAS document, computes and returns the same creates/updates/collisions classification that `importConfiguration()` (REQ-003) would perform, plus the set of unresolved slug references (REQ-004's "left verbatim" case) that would result, WITHOUT calling `saveObject()` on any entity. The preview SHALL mirror the existing import pipeline's slug-resolution semantics — the same per-schema slug maps `ConfigurationService::buildSchemaSlugMaps()` builds over the target environment, and the handlers' reference-field vocabulary (top-level `source_id`/`target_id`, endpoint `targetId`/`inputMapping`/`outputMapping`/`rules[]`, and the nested-configuration `<type>`/`<type>Id` key convention) — rather than inventing new resolution rules. (Adjusted at apply time: the handlers expose no dry-run mode and `resetMappings()` is private, so the preview lives in a dedicated read-only `ConfigurationImportPreviewService` that replicates the maps via the same OR `findAll` reads instead of calling the mutating `import()` path.)
 
 #### Scenario: Preview classifies creates, updates and collisions
 - GIVEN an OAS document containing one Source whose slug exists in the target environment and one Source whose slug does not
@@ -44,6 +45,7 @@ The system SHALL require a `confirmed: true` flag on `POST /api/configurations/i
 - WHEN `POST /api/configurations/import` is called with `confirmed` omitted or `false`
 - THEN the response is HTTP 400
 - AND no entity is created or updated
+- @e2e exclude raw-HTTP 400 guard (the UI always previews first, so this path has no browser surface) — covered by PHPUnit `ConfigurationControllerTest::testImportWithoutConfirmationReturns400` / `testImportWithConfirmedFalseReturns400`
 
 #### Scenario: Confirmed import proceeds and reuses the existing import pipeline unchanged
 - GIVEN a valid OAS document and `confirmed: true`

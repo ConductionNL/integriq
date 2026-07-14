@@ -67,6 +67,7 @@
 		<post-migration>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
 		</post-migration>
 	</repair-steps>
 

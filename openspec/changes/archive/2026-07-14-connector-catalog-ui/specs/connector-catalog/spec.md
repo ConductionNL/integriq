@@ -60,11 +60,13 @@ The system MUST provide a detail modal for each catalog item, opened from its ca
 - GIVEN a non-admin user whose groups are not mapped to the `catalog.instantiate` action in the admin-configured matrix (admins always pass `ActionAuthService::requireAction()` — documented break-glass behaviour)
 - WHEN that user calls the instantiate endpoint for any catalog item
 - THEN the request is rejected with `OCSForbiddenException` before any Source or app-config write occurs
+- @e2e exclude API-level action-matrix denial (no UI surface for an unmapped user) — covered by PHPUnit `CatalogControllerTest::testInstantiateDeniedForUnmappedNonAdmin`
 
 #### Scenario: Instantiate action still respects the Source schema's data-layer admin-only lock
 - GIVEN an operator's groups ARE mapped to `catalog.instantiate` in the action matrix, but that operator is not a Nextcloud admin
 - WHEN the operator calls the instantiate endpoint for a source-template catalog item
 - THEN the underlying Source create call is rejected by OpenRegister's admin-only authorization on the `source` schema, independent of the action-matrix result
+- @e2e exclude OpenRegister data-layer authorization (`99-source-lockdown.json`) is enforced inside OR's saveObject, not reachable as an openconnector UI flow — verified by the ocon#147 lockdown fragment; the action-layer gate is covered by PHPUnit
 
 ### Requirement: A single PHP-side adapter metadata registry is the source of truth for catalog entries (REQ-003)
 
@@ -75,11 +77,13 @@ The system MUST assemble catalog entries from exactly one service, `CatalogRegis
 - WHEN the next `CatalogRegistryService` materialization repair-step run occurs
 - THEN a corresponding `catalog_item` object is created or updated
 - AND it appears on the Catalog page without any change to `CatalogItemCard.vue` or the manifest
+- @e2e exclude backend registry/materialisation behaviour (registering a 5th provider is not a browser flow) — covered by PHPUnit `CatalogRegistryServiceTest::testNewProviderAppearsWithoutCodeChange`
 
 #### Scenario: Materialization is idempotent
 - GIVEN a `catalog_item` object already exists for the PDOK WMS adapter with a given slug
 - WHEN the materialization repair step runs again with no underlying change
 - THEN the existing object is updated in place (not duplicated)
+- @e2e exclude backend repair-step idempotency (occ maintenance:repair, no browser UI) — slug-keyed upsert in `MaterializeCatalogItems`; slug uniqueness covered by PHPUnit `CatalogRegistryServiceTest::testCollectAssemblesFromAllThreeSources`
 
 ## Non-Functional Requirements
 

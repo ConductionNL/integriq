@@ -50,6 +50,13 @@ const useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(local
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
+	// nc-vue's chunked ESM bundles @nextcloud/dialogs chunks that import
+	// Node's `path`; webpack 5 ships no core-module polyfills, so a CLEAN
+	// npm ci + build fails with "Can't resolve 'path'" without this
+	// fallback. Same fix openbuild carries (openbuild#147) — pre-existing
+	// breakage surfaced (not introduced) by connector-catalog-ui's clean
+	// install; path-browserify is already a transitive dependency.
+	fallback: { path: require.resolve('path-browserify') },
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
