@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.2.20</version>
+	<version>0.2.21</version>
 	<licence>EUPL-1.2</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -66,6 +66,7 @@
 		<post-migration>
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
+			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
 		</post-migration>
 	</repair-steps>
 
