@@ -142,6 +142,25 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         if (class_exists('OCA\\OpenRegister\\Exception\\NotAuthorizedException') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Exception/NotAuthorizedException.php';
         }
+
+        // OCA\OpenRegister\Event\Object{Created,Updated,Deleted}Event stubs —
+        // peer app not in vendor. Used by outbound-webhooks-activation's
+        // CloudEventListenerTest to construct real event instances (PHPUnit
+        // cannot mock these: they are constructor-only DTOs in the real app,
+        // and mocking them would not exercise the
+        // getObject()/getNewObject()/getOldObject() shape this listener
+        // depends on).
+        if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatedEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatedEvent.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Event\\ObjectUpdatedEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectUpdatedEvent.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletedEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletedEvent.php';
+        }
     }
 }
 

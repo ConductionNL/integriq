@@ -33,6 +33,7 @@ use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\OpenConnector\EventListener\CloudEventListener;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
@@ -135,6 +136,16 @@ class Application extends App implements IBootstrap
         // Peppol-access-point-connector: reacts to nl.conduction.peppol.outbound.requested
         // CloudEvents (register openconnector, schema event) created by any app.
         $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: PeppolOutboundConsumer::class);
+        // Outbound webhooks / CloudEvent subscriptions: turns any OR object
+        // create/update/delete (any app) into a CloudEvent fanned out to
+        // matching `event_subscription`s (events-cloudevents spec REQ-004).
+        // Internally gated (EventService::hasActiveSubscriptions) so an
+        // install with no configured subscriptions pays no persistence cost,
+        // and guards against re-forwarding its own `event`/`event_message`
+        // writes (would otherwise recurse — see CloudEventListener docblock).
+        $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: CloudEventListener::class);
+        $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: CloudEventListener::class);
+        $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: CloudEventListener::class);
         // @todo Remove this temporary listener to the software catalog application.
         // $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
         // Path-2 integration leaf: load the tiny `openconnector-integration`
