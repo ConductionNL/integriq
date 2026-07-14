@@ -467,21 +467,19 @@ class OpenFormulierenIntakeService
             register: self::REGISTER,
             schema: self::SCHEMA_SUBMISSION
         );
-        $data = $submission->getObject();
+        $data    = $submission->getObject();
         if ($current instanceof ObjectEntity === true) {
             $data = $current->getObject();
         }
 
         // ObjectEntity is a cross-app (OCA\OpenRegister) class PHPStan cannot resolve
         // (see phpstan.neon's `unknown class OCA\\OpenRegister\\` ignores), so it
-        // infers getObject()'s return as `mixed` and then narrows $data's array shape
-        // purely from the two keys written below — losing the (real, runtime-present)
-        // 'attachments' key read further down. This annotation restores the true,
-        // unshaped `array<string, mixed>` type.
-        /** @var array<string, mixed> $data */
-
-        $data['targetCase']    = $target;
-        $data['correlationId'] = $correlationId;
+        // infers getObject()'s return as `mixed` and, if updated via direct index
+        // assignment, narrows $data's array shape purely from the keys written here —
+        // losing the (real, runtime-present) 'attachments' key read further down.
+        // array_merge() (a properly-typed stdlib call) keeps $data's inferred type
+        // as a generic array instead.
+        $data = array_merge($data, ['targetCase' => $target, 'correlationId' => $correlationId]);
 
         $targetObject = null;
         if (isset($target['register'], $target['schema'], $target['uuid']) === true) {
