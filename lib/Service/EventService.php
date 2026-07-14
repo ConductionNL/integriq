@@ -82,6 +82,41 @@ class EventService
     }//end __construct()
 
     /**
+     * Cheap existence check: is there at least one active `event_subscription`
+     * anywhere on this instance?
+     *
+     * Used as a firehose gate by {@see \OCA\OpenConnector\EventListener\CloudEventListener}
+     * so that an install with zero configured subscriptions (the common case —
+     * outbound webhooks are opt-in) pays no persistence cost at all for OR
+     * object mutations fleet-wide: no `event` record is written, no matching
+     * logic runs. An install that HAS at least one active subscription falls
+     * through to the full, already-specified {@see processEvent} contract
+     * (REQ-001) unchanged.
+     *
+     * @return boolean True when at least one `event_subscription` with
+     *                  `status = 'active'` exists.
+     *
+     * @spec openspec/changes/outbound-webhooks-activation/tasks.md#task-3
+     */
+    public function hasActiveSubscriptions(): bool
+    {
+        $matches = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => 'openconnector',
+                        'schema'   => 'event_subscription',
+                        'status'   => 'active',
+                    ],
+                    'limit'   => 1,
+                ]
+                );
+        $results = ($matches['results'] ?? $matches);
+
+        return (count($results) > 0);
+
+    }//end hasActiveSubscriptions()
+
+    /**
      * Process a new event and create messages for all matching subscriptions.
      *
      * @param ObjectEntity $event The event ObjectEntity to process.

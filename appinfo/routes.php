@@ -62,6 +62,16 @@ return [
 		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
 		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
 
+		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
+		// Inbound submissions are gated by webhook signature (HMAC), not an NC
+		// session; see OpenFormulierenController::inbound(). status/handoff are
+		// authenticated NC-session calls — the handoff trigger deliberately
+		// requires a real authenticated actor (OpenRegister HandoffService v1 has
+		// no system-user privilege lane; see design.md §1.1).
+		['name' => 'openFormulieren#inbound', 'url' => '/api/open-formulieren/submissions', 'verb' => 'POST'],
+		['name' => 'openFormulieren#status', 'url' => '/api/open-formulieren/submissions/{id}', 'verb' => 'GET'],
+		['name' => 'openFormulieren#handoff', 'url' => '/api/open-formulieren/submissions/{id}/handoff', 'verb' => 'POST'],
+
 		// LTI 1.3 / LTI Advantage adapter (openspec/changes/lti-13-platform).
 		// Dedicated controller (DSOController precedent), not the generic
 		// Endpoint pipeline — every route here is called by an external
