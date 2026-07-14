@@ -82,6 +82,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
         }
 
+        // connector-catalog-ui: CatalogRegistryService reads OR's
+        // IntegrationRegistry — stub both the interface and the registry
+        // class so unit tests can mock them without a live OR install.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationRegistry.php';
+        }
+
         if (class_exists('OCA\\OpenRegister\\Db\\RegisterMapper') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/RegisterMapper.php';
         }

@@ -37,13 +37,18 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
+import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
@@ -64,13 +69,18 @@ registerIcons({
 	CloudUploadOutline,
 	Cog,
 	DatabaseArrowLeftOutline,
+	Download,
 	EyeOutline,
+	FileCogOutline,
 	Pencil,
+	PowerPlugOutline,
 	ScaleBalance,
 	SitemapOutline,
 	TextBoxOutline,
 	Update,
+	Upload,
 	VectorPolylinePlus,
+	ViewGridOutline,
 	Webhook,
 })
 try {
