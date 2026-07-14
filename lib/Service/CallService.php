@@ -1532,6 +1532,49 @@ class CallService
     }//end resolveBrokeredDispatch()
 
     /**
+     * Resolves app-injected credential placeholders in the source authentication config.
+     *
+     * When the source carries no injectable placeholder the source data is returned
+     * unchanged (a no-op that never touches the broker). Otherwise every
+     * `{credentialRef: {...}}` placeholder under `configuration.authentication` is resolved
+     * from Doriath through the broker and substituted in place, so Phase 9's Twig auth
+     * render injects a vault-resolved secret. A resolution failure is turned into a
+     * synthetic 409 config-error CallLog (returned as an ObjectEntity for the caller to
+     * short-circuit on), exactly like the proxy path — there is NO embedded-secret fallback.
+     *
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $sourceData   The raw source data array.
+     * @param \DateTime|null $errorExpires Expiry for error log entries.
+     *
+     * @return ObjectEntity|array The hydrated source data, or an ObjectEntity CallLog on a hard config error.
+     *
+     * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function hydrateInjectedCredentials(
+        ObjectEntity $source,
+        array $sourceData,
+        ?\DateTime $errorExpires,
+    ): ObjectEntity|array {
+        if ($this->brokeredCallService->hasInjectableCredentials(sourceData: $sourceData) === false) {
+            return $sourceData;
+        }
+
+        try {
+            return $this->brokeredCallService->hydrateInjectableCredentials(sourceData: $sourceData);
+        } catch (BrokeredCallConfigurationException $exception) {
+            return $this->saveEarlyErrorLog(
+                source: $source,
+                statusCode: 409,
+                statusMessage: $exception->getMessage(),
+                expires: $errorExpires,
+            );
+        }
+
+    }//end hydrateInjectedCredentials()
+
+    /**
      * Calls a source according to given configuration.
      *
      * @param ObjectEntity $source                The source ObjectEntity to call.
@@ -1616,6 +1659,26 @@ class CallService
         if ($brokeredCredential instanceof ObjectEntity) {
             // A synthetic 409 config-error CallLog was persisted — hard stop.
             return $brokeredCredential;
+        }
+
+        // Phase 7c: App-side credential injection (generic / self-hosted sources).
+        // When the call is NOT a host-locked proxy call, any credentialRef placeholder
+        // under configuration.authentication is resolved from Doriath through the broker
+        // and substituted in place, so the normal Twig auth render (Phase 9) injects a
+        // vault-resolved secret exactly as if it had been embedded — but the schema holds
+        // only the reference. A resolution failure is a hard synthetic 409 CallLog, with
+        // no fallback to an embedded secret (mirrors the proxy path).
+        if ($brokeredCredential === null) {
+            $injected = $this->hydrateInjectedCredentials(
+                source: $source,
+                sourceData: $sourceData,
+                errorExpires: $errorExpires,
+            );
+            if ($injected instanceof ObjectEntity) {
+                return $injected;
+            }
+
+            $sourceData = $injected;
         }
 
         // Phase 8: Handle preRequest hook; capture postRequest descriptor.
