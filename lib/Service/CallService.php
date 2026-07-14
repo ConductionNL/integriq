@@ -51,6 +51,7 @@ use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\MappingService;
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
 use OCA\OpenConnector\Twig\AuthenticationRuntimeLoader;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -117,12 +118,13 @@ class CallService
     /**
      * The constructor sets all needed variables.
      *
-     * @param ORObjectService       $objectService         Object service used to persist CallLog rows.
-     * @param ArrayLoader           $loader                Twig loader used to render templated config strings.
-     * @param AuthenticationService $authenticationService Authentication service exposed to Twig templates.
-     * @param IAppConfig            $appConfig             App config used to read global retention overrides.
-     * @param LoggerInterface       $logger                Nextcloud logger used for security-policy warnings (#1011).
-     * @param BrokeredCallService   $brokeredCallService   Brokered (credentialRef) dispatch through the OpenRegister credential broker.
+     * @param ORObjectService        $objectService          Object service used to persist CallLog rows.
+     * @param ArrayLoader            $loader                 Twig loader used to render templated config strings.
+     * @param AuthenticationService  $authenticationService  Authentication service exposed to Twig templates.
+     * @param IAppConfig             $appConfig              App config used to read global retention overrides.
+     * @param LoggerInterface        $logger                 Nextcloud logger used for security-policy warnings (#1011).
+     * @param BrokeredCallService    $brokeredCallService    Brokered (credentialRef) dispatch through the OpenRegister credential broker.
+     * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
      *
      * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
@@ -133,6 +135,7 @@ class CallService
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly BrokeredCallService $brokeredCallService,
+        private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
     ) {
         $this->client = new Client([]);
         $this->twig   = new Environment($loader);
@@ -1025,6 +1028,8 @@ class CallService
      * @param float                               $timeEnd   Microtime after response received.
      *
      * @return array Structured array with 'request' and 'response' sub-arrays.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
      */
     private function buildResponseData(
         \Psr\Http\Message\ResponseInterface $response,
@@ -1099,6 +1104,8 @@ class CallService
      * @param array $config The Guzzle request config (passed by value).
      *
      * @return array The redacted config copy.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
      */
     private function redactSecretsFromConfig(array $config): array
     {
@@ -1157,15 +1164,18 @@ class CallService
     /**
      * Returns true when a header/query/form key name looks like it carries a secret.
      *
+     * Delegates to the shared {@see SensitiveFieldRegistry} (secret-hygiene) — a pure
+     * extraction, behaviour-preserving: same regex, same header list, same result.
+     *
      * @param string $name The key name to test.
      *
      * @return boolean Whether the name matches the secret pattern.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
      */
     private function isSecretKeyName(string $name): bool
     {
-        $pattern = '/(token|key|secret|password|passwd|apikey|api[-_]?key|access[-_]?token'
-            .'|bearer|auth|signature|assertion|private[-_]?key|x[-_]?api[-_]?token|client[-_]?secret)/i';
-        return (preg_match($pattern, $name) === 1);
+        return $this->sensitiveFieldRegistry->isSensitiveName(name: $name);
 
     }//end isSecretKeyName()
 
