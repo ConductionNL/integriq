@@ -60,6 +60,8 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 24 — `payment_intent` added by openspec/changes/live-payment-providers.
      *
+     * Was 25 — `kiss_klantcontact` added by openspec/changes/kiss-kcc-bridge.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -98,6 +100,8 @@ class RegisterDescriptorTest extends TestCase
         'SmsMessage'                 => 'sms_message',
         // Live payment providers connector — added by live-payment-providers spec.
         'PaymentIntent'              => 'payment_intent',
+        // KISS (Klantinteractie Servicesysteem) KCC bridge — added by kiss-kcc-bridge spec.
+        'KissKlantcontact'           => 'kiss_klantcontact',
     ];
 
     /**

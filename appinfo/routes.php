@@ -56,6 +56,12 @@ return [
 		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
 		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
 
+		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
+		// Push is an authenticated NC-session call (production binding for sibling
+		// apps' own local adapters, e.g. procest's ContactMomentService) — mirrors
+		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
+		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
+
 		// LTI 1.3 / LTI Advantage adapter (openspec/changes/lti-13-platform).
 		// Dedicated controller (DSOController precedent), not the generic
 		// Endpoint pipeline — every route here is called by an external
