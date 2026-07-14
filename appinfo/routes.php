@@ -56,6 +56,12 @@ return [
 		['name' => 'notifyNl#status', 'url' => '/api/notifynl/messages/{id}', 'verb' => 'GET'],
 		['name' => 'notifyNl#inbound', 'url' => '/api/notifynl/inbound', 'verb' => 'POST'],
 
+		// KISS (Klantinteractie Servicesysteem) KCC bridge (openspec/changes/kiss-kcc-bridge).
+		// Push is an authenticated NC-session call (production binding for sibling
+		// apps' own local adapters, e.g. procest's ContactMomentService) — mirrors
+		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
+		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
+
 		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
 		// Inbound submissions are gated by webhook signature (HMAC), not an NC
 		// session; see OpenFormulierenController::inbound(). status/handoff are

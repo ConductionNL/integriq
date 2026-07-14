@@ -60,7 +60,9 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 24 — `payment_intent` added by openspec/changes/live-payment-providers.
      *
-     * Was 25 — `openformulieren_form_mapping` and `openformulieren_submission`
+     * Was 25 — `kiss_klantcontact` added by openspec/changes/kiss-kcc-bridge.
+     *
+     * Was 26 — `openformulieren_form_mapping` and `openformulieren_submission`
      * added by openspec/changes/open-formulieren-intake.
      *
      * @var array<string, string>
@@ -101,6 +103,8 @@ class RegisterDescriptorTest extends TestCase
         'SmsMessage'                 => 'sms_message',
         // Live payment providers connector — added by live-payment-providers spec.
         'PaymentIntent'              => 'payment_intent',
+        // KISS (Klantinteractie Servicesysteem) KCC bridge — added by kiss-kcc-bridge spec.
+        'KissKlantcontact'           => 'kiss_klantcontact',
         // Open Formulieren intake bridge — added by open-formulieren-intake spec.
         'OpenFormulierenFormMapping' => 'openformulieren_form_mapping',
         'OpenFormulierenSubmission'  => 'openformulieren_submission',

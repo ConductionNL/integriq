@@ -54,6 +54,7 @@
 		<job>OCA\OpenConnector\Cron\LtiKeyRetirementJob</job>
 		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
 		<job>OCA\OpenConnector\Cron\EudiStatusListRefreshJob</job>
+		<job>OCA\OpenConnector\Cron\KissPullJob</job>
 	</background-jobs>
 
 	<commands>
