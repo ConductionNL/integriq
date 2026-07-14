@@ -62,6 +62,9 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 25 — `kiss_klantcontact` added by openspec/changes/kiss-kcc-bridge.
      *
+     * Was 26 — `openformulieren_form_mapping` and `openformulieren_submission`
+     * added by openspec/changes/open-formulieren-intake.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -102,6 +105,9 @@ class RegisterDescriptorTest extends TestCase
         'PaymentIntent'              => 'payment_intent',
         // KISS (Klantinteractie Servicesysteem) KCC bridge — added by kiss-kcc-bridge spec.
         'KissKlantcontact'           => 'kiss_klantcontact',
+        // Open Formulieren intake bridge — added by open-formulieren-intake spec.
+        'OpenFormulierenFormMapping' => 'openformulieren_form_mapping',
+        'OpenFormulierenSubmission'  => 'openformulieren_submission',
     ];
 
     /**
