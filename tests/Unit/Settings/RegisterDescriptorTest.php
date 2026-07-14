@@ -60,6 +60,9 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 24 — `payment_intent` added by openspec/changes/live-payment-providers.
      *
+     * Was 25 — `openformulieren_form_mapping` and `openformulieren_submission`
+     * added by openspec/changes/open-formulieren-intake.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -98,6 +101,9 @@ class RegisterDescriptorTest extends TestCase
         'SmsMessage'                 => 'sms_message',
         // Live payment providers connector — added by live-payment-providers spec.
         'PaymentIntent'              => 'payment_intent',
+        // Open Formulieren intake bridge — added by open-formulieren-intake spec.
+        'OpenFormulierenFormMapping' => 'openformulieren_form_mapping',
+        'OpenFormulierenSubmission'  => 'openformulieren_submission',
     ];
 
     /**
