@@ -989,7 +989,20 @@
     "Unresolved references": "Onopgeloste verwijzingen",
     "Untitled catalog item": "Naamloos catalogusitem",
     "Will be created": "Wordt aangemaakt",
-    "Will be updated": "Wordt bijgewerkt"
+    "Will be updated": "Wordt bijgewerkt",
+    "Promote configuration": "Configuratie promoveren",
+    "Target environment": "Doelomgeving",
+    "Select a target environment": "Selecteer een doelomgeving",
+    "Collisions": "Conflicten",
+    "Back": "Terug",
+    "Confirm promotion": "Promotie bevestigen",
+    "Could not load environments": "Kon omgevingen niet laden",
+    "Promotion failed": "Promotie mislukt",
+    "Credentials needing a target-environment rebind": "Credentials die een koppeling met de doelomgeving nodig hebben",
+    "Promoting {config} to {environment}.": "Bezig met promoveren van {config} naar {environment}.",
+    "These Sources authenticate via a credential reference from THIS environment. Supply the equivalent credential name valid on the target — the reference is rewritten, never a secret.": "Deze bronnen authenticeren via een credential-referentie van DEZE omgeving. Geef de bijbehorende credential-naam op die geldig is op de doelomgeving — de referentie wordt herschreven, nooit een geheim.",
+    "Target credential name (optional — leave blank to send as-is)": "Doelcredential-naam (optioneel — leeg laten om ongewijzigd te versturen)",
+    "Configuration promoted to {environment}.": "Configuratie gepromoveerd naar {environment}."
   },
   "plurals": {}
 }

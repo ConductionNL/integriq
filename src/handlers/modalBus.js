@@ -40,3 +40,5 @@ export const EVENT_OPEN_SUBSCRIPTION_SIGNING = 'open-subscription-signing'
 export const EVENT_OPEN_CATALOG_ITEM_DETAIL = 'open-catalog-item-detail'
 export const EVENT_OPEN_CONFIGURATION_IMPORT = 'open-configuration-import'
 export const EVENT_OPEN_CONFIGURATION_EXPORT = 'open-configuration-export'
+// environments-and-promotion: promote-configuration flow modal.
+export const EVENT_OPEN_PROMOTION = 'open-promotion'
