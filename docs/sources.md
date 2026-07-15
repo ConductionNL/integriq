@@ -9,6 +9,15 @@ Sources can be of different types:
 In order to authenticate on other sources there are possibilities based upon the way the source expects autentication parameters.
 These parameters can be set in the source configuration. For example, if the source expects an API key in the headers, we can set the parameter `headers.Authorization` with the API key as value.
 
+> [!TIP]
+> **Prefer brokered credentials.** Instead of embedding a key or secret in the source, set
+> `configuration.authentication` to `{"credentialRef": {"credentialId": "<uuid>"}}` (or
+> `{"credentialName": "<name>"}`) and let the OpenRegister credential broker hold the secret and
+> perform the call — OpenConnector never sees the secret. When `credentialRef` is present, any
+> sibling authentication field is a hard 409 config error, and there is no fallback to embedded
+> secrets. See [Sources — Brokered Credentials](features/sources.md#brokered-credentials-credentialref--recommended)
+> for the full contract and operator recipe.
+
 Usually, sources tend to use dynamic authorization parameters in order to prevent the same authentication parameter from being used by adversaries that catch a call and deduce the parameter.
 
 At the moment, OpenConnector supports two dynamic authentication methods, OAuth and JWT Bearers.

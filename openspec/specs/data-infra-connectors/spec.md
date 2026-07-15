@@ -1,7 +1,27 @@
 # data-infra-connectors Specification
 
 ## Purpose
-TBD - created by archiving change add-openconnector-connector-categories. Update Purpose after archive.
+
+Data-infrastructure vendors (Postgres, MongoDB, S3, Kafka, etc.) register as
+`IntegrationProvider`s under `lib/Service/Adapter/DataInfra/`, each extending
+the shared `AbstractCategoryAdapterProvider`
+(`lib/Service/Adapter/AbstractCategoryAdapterProvider.php`). `S3Adapter`
+(`lib/Service/Adapter/DataInfra/S3Adapter.php`) is the reference
+implementation, proving `object-read`/`object-write`/`object-list` against
+an S3-compatible bucket via path-style HTTP requests. To add the next
+vendor: create a new class extending `AbstractCategoryAdapterProvider`,
+implement the `IntegrationProvider` metadata methods plus vendor-specific
+read/write/list methods via `brokeredRequest()`, and register it in
+`Application::registerIntegrationProviders()`.
+
+KNOWN GAP: `S3Adapter` targets S3-COMPATIBLE endpoints using simple
+bearer/API-key auth, NOT unmodified AWS S3 — OR's `CredentialBrokerService`
+only supports templated-header secret injection, not AWS Signature Version 4
+request signing, which native AWS S3 requires. True SigV4 support needs a
+broker-side change (a new `authScheme: 'aws-sigv4'`) and is tracked as a
+follow-up, not implemented here. The remaining named vendors stay explicit
+backlog (see `openspec/changes/connector-category-adapter-scaffolding`).
+
 ## Requirements
 ### Requirement: Data-infrastructure connector adapters SHALL register through the integration registry per ADR-019, not as bespoke per-app HTTP clients (REQ-DIC-001)
 
@@ -17,7 +37,7 @@ as an `IntegrationProvider` registered through OR's integration
 registry per ADR-019 and surfaced to consuming apps by a stable
 slot slug. Adapter classes MUST live under
 `lib/Service/Adapter/DataInfra/` and MUST NOT be embedded in any
-sibling app (decidesk, opencatalogi, mydash, etc.). Per ADR-022,
+sibling app (decidesk, opencatalogi, launchpad, etc.). Per ADR-022,
 sibling apps consume these adapters by slot slug, not by
 importing openconnector PHP.
 

@@ -55,24 +55,71 @@ class ObjectService
      * Find all objects matching the given config/filters.
      *
      * @param  array $config
+     * @param  bool  $_rbac         Apply RBAC filters when true.
+     * @param  bool  $_multitenancy Apply multitenancy filters when true.
      * @return array{results: ObjectEntity[], total: int}
      */
-    public function findAll(array $config = []): array
+    public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array
     {
         return ['results' => [], 'total' => 0];
     }
 
     /**
+     * Get a mapper for the given register/schema (ADR-008 register/schema
+     * targetType dispatch, e.g. NRPS roster reads).
+     *
+     * Loosely typed (no strict return type) so unit tests can substitute any
+     * double exposing the subset of the real
+     * `OCA\OpenRegister\Service\ObjectServiceMapperAdapter` API a caller
+     * actually uses (typically `findAllPaginated()`), without needing to
+     * replicate that class's full surface here.
+     *
+     * @param  int|string|null $register
+     * @param  int|string|null $schema
+     * @return mixed
+     */
+    public function getMapper($register = null, $schema = null)
+    {
+        return null;
+    }
+
+    /**
      * Save (create or update) an object.
+     *
+     * `$_rbac`/`$_multitenancy` appended after `$uuid` — mirrors the real
+     * OpenRegister `ObjectService::saveObject()`'s trust-bypass params
+     * (needed by `LtiIdentityLinkService::createLink()`, which — like this
+     * same service's `findLink()`/`findPlatformData()` reads — writes with
+     * no interactive NC session in play, since the caller is a consuming
+     * app resolving an already-validated external LTI launch).
+     *
+     * IMPORTANT for anyone adding a `willReturnCallback()` closure against
+     * this mocked method: PHPUnit forwards the FULL positionally-resolved
+     * parameter list of THIS signature (explicit values + defaults for
+     * anything not touched at the real call site) to the closure — it does
+     * NOT preserve the real call's named-argument shape. A closure with
+     * fewer or differently-ordered parameters than declared here will
+     * silently receive shifted values. Every closure mocking this method
+     * MUST either declare parameters in this exact order
+     * (`$object, $register, $schema, $uuid, $_rbac, $_multitenancy`) or
+     * capture the tail with `...$rest`.
      *
      * @param  array|ObjectEntity $object
      * @param  string|null        $register
      * @param  string|null        $schema
      * @param  string|null        $uuid
+     * @param  bool               $_rbac         Apply RBAC checks when true.
+     * @param  bool               $_multitenancy Apply multitenancy scoping when true.
      * @return ObjectEntity
      */
-    public function saveObject($object, ?string $register = null, ?string $schema = null, ?string $uuid = null): ObjectEntity
-    {
+    public function saveObject(
+        $object,
+        ?string $register = null,
+        ?string $schema = null,
+        ?string $uuid = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
+    ): ObjectEntity {
         return new ObjectEntity();
     }
 

@@ -104,7 +104,16 @@ Sources returning XML are automatically parsed into JSON before mapping. Attribu
 | Mode | Behavior |
 |------|----------|
 | `force: true` | Skip change detection; update all objects regardless of hash |
-| `test: true` | Run through the full flow but do not write to target; log results only |
+| `test: true` | Run through the full flow but write nothing: no target objects, no contracts, no Source, and no change to the synchronization itself (including `targetLastSynced`); deletion cleanup is skipped entirely |
+
+## Deletion Safety Guards
+
+The cleanup pass that garbage-collects target objects no longer present in the source is gated by two safety guards (spec REQ-009/REQ-010/REQ-011, change `sync-safety-guardrails`):
+
+- **Fetch completeness**: when a run's fetch did not complete (a page returned a non-2xx response, the source rate-limited with HTTP 429, or the pagination safety cap was reached while more pages remained), the deletion pass is skipped for that run. A warning is logged and a `SynchronizationDeletionGuardedEvent` is dispatched.
+- **Deletion ratio**: when a complete fetch would still delete more than `sourceConfig.deletionRatioThreshold` (float 0.0–1.0, default `0.10` = 10%) of the synchronization's existing contracts, the deletion pass aborts, logs a warning, and dispatches the same event. For sources that legitimately shrink a lot, either raise the per-synchronization threshold or re-run with the explicit `forceDeletion: true` request parameter on `POST .../synchronizations/{id}/run` — a deliberate, auditable one-off override. `forceDeletion` is distinct from `force` (which only bypasses unchanged-hash skipping and is set automatically by event-driven re-syncs); it never bypasses the fetch-completeness guard.
+
+Additionally, an ad-hoc `source` location passed to the run endpoint that matches no configured Source now resolves to a transient, in-memory source for that call only — it is no longer silently persisted as a new, enabled Source object.
 
 ## Logging
 

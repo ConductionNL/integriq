@@ -35,6 +35,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -45,12 +46,28 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) -- nextcloud-event-hub added the
+ * per-family `requireAction` gate, action-kind badge/provenance surfacing, and
+ * action-aware replay dispatch to this single owner of the event-subscription
+ * HTTP surface; keeping them here is the deliberate reuse constraint
+ * (design.md), not sprawl.
  *
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-3
  * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+ * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
  */
 class EventsController extends Controller
 {
+    /**
+     * NC-native domains gated by a per-family `event.subscribe-nextcloud-<domain>`
+     * action (REQ-005), each mapping to a `com.nextcloud.<domain>.*` type prefix.
+     *
+     * @var array<int, string>
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+     */
+    private const NC_NATIVE_DOMAINS = ['files', 'calendar', 'tables', 'forms'];
+
     /**
      * Constructor for the EventsController.
      *
@@ -134,6 +151,7 @@ class EventsController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -146,16 +164,25 @@ class EventsController extends Controller
 
         $this->actionAuth->requireAction(user: $user, action: 'event.subscribe');
 
-        try {
-            $data = $this->request->getParams();
+        $data = $this->request->getParams();
 
-            // Remove internal fields.
-            foreach ($data as $key => $value) {
-                if (str_starts_with($key, '_') === true) {
-                    unset($data[$key]);
-                }
+        // Remove internal fields.
+        foreach ($data as $key => $value) {
+            if (str_starts_with($key, '_') === true) {
+                unset($data[$key]);
             }
+        }
 
+        // Layered per-family gate (REQ-005): the coarse `event.subscribe`
+        // check above stays untouched; this ADDS one
+        // `event.subscribe-nextcloud-<domain>` check per distinct NC-native
+        // domain present in `types[]`. Deliberately OUTSIDE the try/catch
+        // below (matching the coarse check's placement) so the thrown
+        // OCSForbiddenException propagates as HTTP 403 rather than being
+        // caught and downgraded to a 400 by the generic Exception handler.
+        $this->requireNextcloudEventFamilyActions(user: $user, data: $data);
+
+        try {
             // Create subscription.
             $subscription = $this->orObjectService->saveObject(object: $data, register: 'openconnector', schema: 'event_subscription');
 
@@ -177,6 +204,7 @@ class EventsController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -189,16 +217,20 @@ class EventsController extends Controller
 
         $this->actionAuth->requireAction(user: $user, action: 'event.update-subscription');
 
-        try {
-            $data = $this->request->getParams();
+        $data = $this->request->getParams();
 
-            // Remove internal fields.
-            foreach ($data as $key => $value) {
-                if (str_starts_with($key, '_') === true) {
-                    unset($data[$key]);
-                }
+        // Remove internal fields.
+        foreach ($data as $key => $value) {
+            if (str_starts_with($key, '_') === true) {
+                unset($data[$key]);
             }
+        }
 
+        // Layered per-family gate (REQ-005) — see subscribe() for the full
+        // rationale; deliberately outside the try/catch below.
+        $this->requireNextcloudEventFamilyActions(user: $user, data: $data);
+
+        try {
             // Update subscription.
             $subscription = $this->orObjectService->saveObject(
                 object: $data,
@@ -519,6 +551,57 @@ class EventsController extends Controller
     }//end rotateSigningSecret()
 
     /**
+     * Layer per-family `event.subscribe-nextcloud-<domain>` action checks on
+     * top of the coarse `event.subscribe`/`event.update-subscription`
+     * actions `subscribe()`/`updateSubscription()` already enforce.
+     *
+     * A `types[]` entry maps to a domain when it matches
+     * `com.nextcloud.<domain>.*` for `<domain>` in {files, calendar, tables,
+     * forms} — explicitly EXCLUDING entries beginning with
+     * `com.nextcloud.openregister.` (the pre-existing OR-object producer
+     * namespace, which shares the same `com.nextcloud.` top-level
+     * reverse-DNS root; a bare prefix check would incorrectly also gate
+     * OR-object subscription requests). Requests whose `types[]` are
+     * exclusively non-NC-native trigger no per-family check — unchanged from
+     * today. `ActionAuthService::requireAction`'s admin bypass means admins
+     * are never gated here.
+     *
+     * @param IUser $user The authenticated caller.
+     * @param array $data The (already-cleaned) request body, read for `types[]`.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\OCS\OCSForbiddenException When the caller's groups lack a required family grant.
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+     */
+    private function requireNextcloudEventFamilyActions(IUser $user, array $data): void
+    {
+        $types = ($data['types'] ?? []);
+        if (is_array($types) === false) {
+            return;
+        }
+
+        $domains = [];
+        foreach ($types as $type) {
+            if (is_string($type) === false || str_starts_with($type, 'com.nextcloud.openregister.') === true) {
+                continue;
+            }
+
+            if (preg_match('/^com\.nextcloud\.([a-z]+)\./', $type, $matches) === 1
+                && in_array($matches[1], self::NC_NATIVE_DOMAINS, true) === true
+            ) {
+                $domains[$matches[1]] = true;
+            }
+        }
+
+        foreach (array_keys($domains) as $domain) {
+            $this->actionAuth->requireAction(user: $user, action: 'event.subscribe-nextcloud-'.$domain);
+        }
+
+    }//end requireNextcloudEventFamilyActions()
+
+    /**
      * Redact signing secret material from a subscription object for any read.
      *
      * @param array $subscription The subscription object array.
@@ -561,6 +644,7 @@ class EventsController extends Controller
      * pull() method's @NoAdminRequired across the method boundary.
      *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function deadLetterIndex(): JSONResponse
@@ -597,6 +681,7 @@ class EventsController extends Controller
         $from = $this->request->getParam('from');
         $to   = $this->request->getParam('to');
         $rows = [];
+        $actionKindCache = [];
         foreach ($messages as $message) {
             $data = $message->getObject();
             if (in_array(($data['status'] ?? ''), $statuses, true) === false) {
@@ -607,12 +692,88 @@ class EventsController extends Controller
                 continue;
             }
 
-            $rows[] = $data;
+            $rows[] = $this->withDeadLetterProvenance(messageData: $data, actionKindCache: $actionKindCache);
         }
 
         return new JSONResponse(['results' => $rows, 'total' => count($rows)]);
 
     }//end deadLetterIndex()
+
+    /**
+     * Add the resolved `action.kind` (default `webhook`) and a Nextcloud-event
+     * provenance marker to a dead-letter message row for the listing/detail
+     * responses.
+     *
+     * `event.source` (not `event.type`) is the correct provenance
+     * discriminator: the pre-existing OR-object producer already uses a
+     * `com.nextcloud.openregister.object.*` TYPE prefix, so a type-prefix
+     * check would incorrectly also match OR-object events — `source` values
+     * never collide (`/objects/<type>` for OR events vs `/nextcloud/<domain>`
+     * for the `nextcloud-event-triggers` producers).
+     *
+     * @param array $messageData     The `event_message` object array.
+     * @param array $actionKindCache Per-request `subscriptionId => action.kind` memoization cache, by reference.
+     *
+     * @return array The message data with `actionKind` and `nextcloudEvent` added.
+     *
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+     */
+    private function withDeadLetterProvenance(array $messageData, array &$actionKindCache): array
+    {
+        $subscriptionId = ($messageData['subscriptionId'] ?? null);
+
+        // Default: a message with no resolvable subscription is a webhook
+        // (REQ-008's default kind).
+        $messageData['actionKind'] = 'webhook';
+        if ($subscriptionId !== null && $subscriptionId !== '') {
+            if (array_key_exists($subscriptionId, $actionKindCache) === false) {
+                $actionKindCache[$subscriptionId] = $this->resolveSubscriptionActionKind(subscriptionId: (string) $subscriptionId);
+            }
+
+            $messageData['actionKind'] = $actionKindCache[$subscriptionId];
+        }
+
+        $source = (string) ($messageData['payload']['source'] ?? '');
+        $messageData['nextcloudEvent'] = str_starts_with($source, EventService::NEXTCLOUD_SOURCE_PREFIX);
+
+        return $messageData;
+
+    }//end withDeadLetterProvenance()
+
+    /**
+     * Resolve a subscription's effective `action.kind` (default `webhook`
+     * when `action` is absent — events-cloudevents REQ-008), tolerating a
+     * since-deleted subscription.
+     *
+     * @param string $subscriptionId The subscription UUID.
+     *
+     * @return string The resolved action kind.
+     *
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+     */
+    private function resolveSubscriptionActionKind(string $subscriptionId): string
+    {
+        try {
+            $subscription = $this->orObjectService->find(
+                id: $subscriptionId,
+                register: 'openconnector',
+                schema: 'event_subscription',
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (DoesNotExistException $e) {
+            return 'webhook';
+        }
+
+        $subscriptionData = $subscription->getObject();
+        $action           = ($subscriptionData['action'] ?? null);
+        if (is_array($action) === true && empty($action['kind'] ?? '') === false) {
+            return (string) $action['kind'];
+        }
+
+        return 'webhook';
+
+    }//end resolveSubscriptionActionKind()
 
     /**
      * Whether a lastAttempt timestamp falls within an optional [from, to] window.
@@ -660,6 +821,7 @@ class EventsController extends Controller
      * @return JSONResponse The message detail with resolved subscription context.
      *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function deadLetterShow(string $id): JSONResponse
@@ -691,7 +853,10 @@ class EventsController extends Controller
             } catch (DoesNotExistException $e) {
                 $subscriptionCtx = null;
             }
-        }
+        }//end if
+
+        $actionKindCache = [];
+        $data            = $this->withDeadLetterProvenance(messageData: $data, actionKindCache: $actionKindCache);
 
         return new JSONResponse(
                 [

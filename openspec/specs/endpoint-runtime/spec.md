@@ -19,6 +19,10 @@ layer (`EndpointsController`, `EndpointService` dispatch methods, and
 already exists, and these REQs document it. Target resolution follows the
 polymorphic `targetType` / `targetId` contract in ADR-008. Rule processing
 itself is specified separately under the `rule-pipeline` capability.
+
+**OpenSpec changes**
+- [`vng-klantinteracties-adapter`](../../changes/archive/2026-07-12-vng-klantinteracties-adapter/) _(archived 2026-07-12)_ — added two dialect-agnostic dispatch behaviours: an absolute self-URL / HAL `_links` output helper (REQ-EP-006) and PUT-all-mandatory vs PATCH-partial enforcement (REQ-EP-007), consumed by the VNG Klantinteracties adapter and reusable by future VNG dialects.
+
 ## Requirements
 
 ### REQ-EP-UI-001: Endpoint Management UI
@@ -324,4 +328,67 @@ OpenRegister `extend` syntax (`reduceExtendKeys`).
 - `getHeaders` filters `HTTP_`-prefixed server keys and conditionally excludes
   `X-Forwarded*` / `X-Real-IP` / `X-Original-Uri` proxy headers unless
   proxy-header mode is requested.
+
+### Requirement: Absolute self-URL and HAL `_links` rendering helper (REQ-EP-006)
+
+The endpoint runtime MUST provide a generic output helper that renders an
+absolute `url` self-link and HAL `_links` on emitted resources, derived from
+`IURLGenerator` and the resolved endpoint path so the value is correct across
+hosts and environments. The helper MUST be selectable per Endpoint (via an
+after-Rule / output flag) and MUST NOT require the value to be hard-coded in a
+Mapping.
+
+@e2e exclude backend output rendering — covered by PHPUnit/Newman, no browser UI
+
+#### Scenario: Emitted resource carries an absolute self-URL
+- GIVEN an Endpoint with the self-URL/HAL output helper enabled
+- WHEN a resource is emitted from the dispatch pipeline
+- THEN the resource carries an absolute `url` self-link built from the request host and the resolved endpoint path
+
+#### Scenario: HAL `_links` reflect the resource and its relations
+- GIVEN a resource with related sub-resources
+- WHEN the self-URL/HAL helper renders it
+- THEN a `_links.self.href` and relation links are present as absolute URLs
+
+#### Scenario: Self-URL is stable across environments
+- GIVEN the same object served from two environments with different hosts
+- WHEN each renders the resource
+- THEN each `url` reflects its own host (no hard-coded host leaks from a Mapping)
+
+**Implementation:** `EndpointService::renderSelfUrlAndHal()` (generic public
+helper) + a `selfurl_hal` rule type dispatched from `EndpointService::processRules()`.
+
+### Requirement: PUT-all-mandatory vs PATCH-partial enforcement (REQ-EP-007)
+
+The endpoint runtime MUST enforce, per the VNG/REST contract, that a PUT request
+supplies all mandatory fields of the target schema (rejecting the request when a
+mandatory field is absent) while a PATCH request applies a partial update
+(leaving unspecified fields unchanged). The behaviour MUST be selectable per
+Endpoint so non-VNG endpoints are unaffected.
+
+@e2e exclude backend dispatch semantics — covered by PHPUnit/Newman, no browser UI
+
+#### Scenario: PUT without a mandatory field is rejected
+- GIVEN an Endpoint with PUT/PATCH semantics enabled and a PUT body missing a mandatory field
+- WHEN the request is dispatched
+- THEN the request is rejected with a validation error and the object is not modified
+
+#### Scenario: PATCH updates only the supplied fields
+- GIVEN an existing object and a PATCH body supplying a subset of fields
+- WHEN the request is dispatched
+- THEN only the supplied fields are updated and all other fields retain their prior values
+
+#### Scenario: Semantics are opt-in per endpoint
+- GIVEN an endpoint without PUT/PATCH semantics enabled
+- WHEN a PUT request omits a mandatory field
+- THEN the existing (pre-change) dispatch behaviour applies unchanged
+
+**Implementation:** `EndpointService::checkPutMandatoryFields()`, gated by the
+Endpoint's `putPatchSemantics` boolean (default `false`), enforced in the PUT
+branch of `handleSchemaRequest()`.
+
+## Non-Functional Requirements
+
+- **Performance:** the self-URL/HAL output helper adds negligible per-response overhead (URL construction only, no extra storage round-trip).
+- **Internationalization:** PUT/PATCH validation errors are localisable (Dutch + English, hydra ADR-007) — not yet localised; see the archived change's tasks.md Deviations.
 

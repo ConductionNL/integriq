@@ -16,6 +16,13 @@
         <testsuite name="Unit Tests">
             <directory>tests/Unit</directory>
         </testsuite>
+        <!-- Integration Tests self-skip (not fail) when their real external
+             dependency is absent from this environment — e.g.
+             TablesBridgeIntegrationTest skips when the Tables app is not
+             installed (tables-bridge proposal.md Risk 3). -->
+        <testsuite name="Integration Tests">
+            <directory>tests/Integration</directory>
+        </testsuite>
     </testsuites>
 
     <source>

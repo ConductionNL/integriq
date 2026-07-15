@@ -44,6 +44,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CamelCaseVariableName)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ *
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
  */
 class SourcesController extends Controller
 {
@@ -307,4 +309,79 @@ class SourcesController extends Controller
 
         return new JSONResponse($callLog->getObject());
     }//end test()
+
+    /**
+     * Manually trips the circuit breaker for a Source (REQ-009).
+     *
+     * Admin-only, CSRF-protected — deliberately NOT `@NoAdminRequired`
+     * (Decision 6, retry-and-circuit-breaker-policies design.md): tripping a
+     * breaker is an operationally sensitive action that can black-hole
+     * traffic to an upstream, so it follows the `dead-letter-replay`
+     * admin-only posture rather than this app's older IDOR-prone convention.
+     *
+     * @param CallService $callService The CallService used to trip the breaker.
+     * @param string      $id          The UUID of the source to trip.
+     *
+     * @return JSONResponse The updated breaker state, or 404 when the source is unknown.
+     *
+     * @no-admin-idor-exempt Admin-only via #[AuthorizedAdminSetting]; not a
+     * #[NoAdminRequired] endpoint. The IDOR gate misattributes the preceding
+     * test() method's @NoAdminRequired across the method boundary.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function tripCircuitBreaker(CallService $callService, string $id): JSONResponse
+    {
+        try {
+            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
+        }
+
+        $saved = $callService->tripCircuitBreaker(source: $source);
+        $data  = $saved->getObject();
+
+        return new JSONResponse(
+            [
+                'uuid'                   => $saved->getUuid(),
+                'circuitBreakerState'    => $data['circuitBreakerState'],
+                'circuitBreakerOpenedAt' => $data['circuitBreakerOpenedAt'],
+            ]
+        );
+    }//end tripCircuitBreaker()
+
+    /**
+     * Manually resets the circuit breaker for a Source (REQ-009).
+     *
+     * Admin-only, CSRF-protected — see {@see tripCircuitBreaker()} for the
+     * rationale.
+     *
+     * @param CallService $callService The CallService used to reset the breaker.
+     * @param string      $id          The UUID of the source to reset.
+     *
+     * @return JSONResponse The updated breaker state, or 404 when the source is unknown.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function resetCircuitBreaker(CallService $callService, string $id): JSONResponse
+    {
+        try {
+            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
+        }
+
+        $saved = $callService->resetCircuitBreaker(source: $source);
+        $data  = $saved->getObject();
+
+        return new JSONResponse(
+            [
+                'uuid'                       => $saved->getUuid(),
+                'circuitBreakerState'        => $data['circuitBreakerState'],
+                'circuitBreakerFailureCount' => $data['circuitBreakerFailureCount'],
+            ]
+        );
+    }//end resetCircuitBreaker()
 }//end class

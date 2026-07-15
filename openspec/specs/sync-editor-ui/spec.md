@@ -8,7 +8,6 @@ status: done
 Provides the synchronization editor frontend for OpenConnector, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists, an edit modal that loads option collections and can install OpenRegister on demand, and modals to run or dry-run test a synchronization against the backend.
 
 @e2e exclude Vue component-internal method/computed behaviour (updateDraft, normalizeForDiff dirty flag, normaliseConditions/serializeConditions round-trip, save guards) reverse-engineered from the synchronization detail-page .vue components — unit-level (vitest), not browser-observable; the synchronization detail-page render surface is covered by manifest-pages e2e under synchronization-engine
-
 ## Requirements
 ### Requirement: Synchronization detail page load, edit, conditions, and save (REQ-SYNCUI-001)
 
@@ -99,4 +98,56 @@ the backend, surface the result/log, and close.
 - THEN `testSynchronization` invokes the backend dry-run and the result is surfaced
 
 Notes: `RunSynchronization.vue` (2), `TestSynchronization.vue` (2).
+
+### Requirement: Table picker for the `nextcloud-table` source/target kind (REQ-SYNCUI-006)
+
+`SyncConfigWidget.vue` SHALL present a `nextcloud-table` option in the
+source/target kind selector only when the backend's available-types list
+includes it (`tables-bridge` REQ-004/REQ-007). When selected, the widget
+SHALL require picking a `Source` (reusing the existing Source selector used
+for `api` sources) and then fetching and presenting that Source's accessible
+tables via `GET .../synchronizations/tables-bridge/tables`, storing the
+chosen table's id into `sourceConfig.tableId`/`targetConfig.tableId`.
+
+#### Scenario: nextcloud-table kind is hidden when Tables is unavailable
+
+- **GIVEN** the backend's available source/target types response does not
+  include `nextcloud-table`
+- **WHEN** the source/target kind selector renders
+- **THEN** `nextcloud-table` is not offered as an option
+
+#### Scenario: picking a Source populates the table list
+
+- **GIVEN** the `nextcloud-table` kind is selected and a `Source` is picked
+- **WHEN** the widget fetches tables for that Source
+- **THEN** the returned tables are presented in a picker, and choosing one
+  sets `tableId` in the relevant config object
+
+### Requirement: Column-mapping helper prefilled from table schema (REQ-SYNCUI-007)
+
+When a table is selected for a `nextcloud-table` target, the widget SHALL
+fetch that table's columns
+(`GET .../synchronizations/tables-bridge/tables/{tableId}/columns`) and
+present a column-mapping helper listing each column's title and type,
+letting the user pick a mapping output field (or literal/Twig expression,
+consistent with the existing mapping picker's input model) per column. The
+helper SHALL surface the column's `type`/`subtype`/constraints (e.g.
+`selectionOptions`) so the user can see what values are valid before saving,
+matching the coercion rules in `tables-bridge` REQ-003.
+
+#### Scenario: column-mapping helper lists columns with type hints
+
+- **GIVEN** a selected table with a `number` column titled "Amount" and a
+  `selection` column titled "Status" with options `open`/`paid`/`overdue`
+- **WHEN** the column-mapping helper renders
+- **THEN** it lists both columns with their titles and types, and shows the
+  `selectionOptions` for the "Status" column
+
+#### Scenario: saved mapping is stored by column title
+
+- **GIVEN** the user maps the "Amount" column to a mapping output field
+- **WHEN** the synchronization is saved
+- **THEN** `targetConfig.columnMapping` contains an entry keyed by the
+  column's title (not its numeric id), consistent with
+  `tables-bridge` REQ-001's title-keyed mapping storage
 

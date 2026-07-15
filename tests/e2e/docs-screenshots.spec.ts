@@ -11,7 +11,7 @@
  * markdown references.
  *
  * Path quirk: openconnector's Docusaurus site lives in `docusaurus/`
- * (sibling of `docs/`), not in `docs/` like decidesk / mydash. The
+ * (sibling of `docs/`), not in `docs/` like decidesk / launchpad. The
  * Docusaurus config reads markdown from `../docs` but its static dir
  * is `docusaurus/static/`. Markdown image refs are root-absolute
  * (`/screenshots/tutorials/...`) so the build copies them verbatim.

@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\JobService;
+use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
@@ -50,6 +52,16 @@ class EventServiceTest extends TestCase
      */
     private $clientService;
 
+    /**
+     * @var SynchronizationService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $synchronizationService;
+
+    /**
+     * @var JobService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $jobService;
+
 
     /**
      * Set up test fixtures.
@@ -60,15 +72,19 @@ class EventServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectService = ObjectServiceMockBuilder::make($this);
-        $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->clientService = $this->createMock(IClientService::class);
+        $this->objectService          = ObjectServiceMockBuilder::make($this);
+        $this->logger                 = $this->createMock(LoggerInterface::class);
+        $this->clientService          = $this->createMock(IClientService::class);
+        $this->synchronizationService = $this->createMock(SynchronizationService::class);
+        $this->jobService             = $this->createMock(JobService::class);
 
         $this->service = new EventService(
             $this->objectService,
             $this->clientService,
             $this->logger,
             new WebhookSignatureService($this->logger),
+            $this->synchronizationService,
+            $this->jobService,
         );
     }//end setUp()
 
@@ -82,6 +98,36 @@ class EventServiceTest extends TestCase
     {
         $this->assertInstanceOf(EventService::class, $this->service);
     }//end testConstructorWiresDependencies()
+
+
+    /**
+     * hasActiveSubscriptions() returns false when the register has zero
+     * active event_subscription objects — the CloudEventListener firehose
+     * gate's negative case.
+     *
+     * @return void
+     */
+    public function testHasActiveSubscriptionsReturnsFalseWhenNone(): void
+    {
+        $this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $this->assertFalse($this->service->hasActiveSubscriptions());
+    }//end testHasActiveSubscriptionsReturnsFalseWhenNone()
+
+
+    /**
+     * hasActiveSubscriptions() returns true when at least one active
+     * event_subscription exists.
+     *
+     * @return void
+     */
+    public function testHasActiveSubscriptionsReturnsTrueWhenAtLeastOneActive(): void
+    {
+        $subscription = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'active'], 'sub-uuid');
+        $this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
+
+        $this->assertTrue($this->service->hasActiveSubscriptions());
+    }//end testHasActiveSubscriptionsReturnsTrueWhenAtLeastOneActive()
 
 
     /**
@@ -235,6 +281,66 @@ class EventServiceTest extends TestCase
         $expected = hash_hmac('sha256', $m[1].'.'.$capturedBody, $secret);
         $this->assertSame($expected, $m[2]);
     }//end testDeliverMessageSignsWhenSecretConfigured()
+
+
+    /**
+     * REQ-WHS-001 fail-open guard: a signing failure MUST NOT result in an
+     * unsigned delivery. `sign()` throwing (e.g. a future crypto failure)
+     * must abort before the HTTP POST — the client is never invoked — and
+     * the message is recorded as a failed delivery attempt, not silently
+     * sent unsigned.
+     *
+     * @return void
+     */
+    public function testDeliverMessageNeverSendsUnsignedWhenSigningFails(): void
+    {
+        $message = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            'msg-uuid'
+        );
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'style'            => 'push',
+                'sink'             => 'https://sink.example/hook',
+                'protocolSettings' => ['signingSecret' => 'whsec_broken'],
+            ],
+            'sub-uuid'
+        );
+        $this->objectService->method('find')->willReturn($subscription);
+
+        $captured = null;
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object) use (&$captured, $message) {
+                $captured = $object;
+                return $message;
+            }
+        );
+
+        $signatureService = $this->createMock(WebhookSignatureService::class);
+        $signatureService->method('isRotationGraceActive')->willReturn(false);
+        $signatureService->method('sign')->willThrowException(new \RuntimeException('signing failed'));
+
+        $service = new EventService(
+            $this->objectService,
+            $this->clientService,
+            $this->logger,
+            $signatureService,
+            $this->synchronizationService,
+            $this->jobService,
+        );
+
+        // The HTTP client must never be asked for — no unsigned bytes leave
+        // the process.
+        $this->clientService->expects($this->never())->method('newClient');
+
+        $result = $service->deliverMessage($message);
+
+        $this->assertFalse($result);
+        $this->assertSame('failed', $captured['status']);
+        $this->assertSame(1, $captured['retryCount']);
+    }//end testDeliverMessageNeverSendsUnsignedWhenSigningFails()
 
 
     /**
@@ -658,4 +764,40 @@ class EventServiceTest extends TestCase
     }//end testDiscardMessageRejectsPendingState()
 
 
+    /**
+     * emitCloudEvent persists an `event` object carrying the given type/source/subject/data
+     * and fans it out via processEvent — @spec peppol-access-point-connector REQ-004.
+     *
+     * @return void
+     */
+    public function testEmitCloudEventPersistsAndProcesses(): void
+    {
+        $captured = null;
+        $eventEntity = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['type' => 'nl.conduction.peppol.delivery.status', 'source' => '/peppol/transmissions/tx-1'],
+            'event-uuid-1'
+        );
+
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object, ...$rest) use (&$captured, $eventEntity) {
+                $captured = $object;
+                return $eventEntity;
+            }
+        );
+        $this->objectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $messages = $this->service->emitCloudEvent(
+            'nl.conduction.peppol.delivery.status',
+            '/peppol/transmissions/tx-1',
+            'tx-1',
+            ['transmissionId' => 'AP-TX-123', 'status' => 'sent']
+        );
+
+        $this->assertIsArray($messages);
+        $this->assertSame('nl.conduction.peppol.delivery.status', $captured['type']);
+        $this->assertSame('/peppol/transmissions/tx-1', $captured['source']);
+        $this->assertSame('tx-1', $captured['subject']);
+        $this->assertSame('AP-TX-123', $captured['data']['transmissionId']);
+    }//end testEmitCloudEventPersistsAndProcesses()
 }//end class

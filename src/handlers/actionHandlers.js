@@ -32,6 +32,8 @@ import {
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
+	EVENT_OPEN_CONFIGURATION_IMPORT,
+	EVENT_OPEN_CONFIGURATION_EXPORT,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 
@@ -165,6 +167,29 @@ export function addEndpointRuleHandler({ item }) {
  */
 export function manageSigningHandler({ item }) {
 	modalBus.$emit(EVENT_OPEN_SUBSCRIPTION_SIGNING, { subscription: item })
+}
+
+/**
+ * Open the configuration import dialog (connector-catalog-ui REQ-007/008):
+ * upload an exported OAS document, preview the creates/updates/collisions
+ * classification, acknowledge any unresolved references, then confirm.
+ * Wired to the Catalog page's "Import configuration" header action.
+ *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
+ */
+export function openConfigurationImportHandler() {
+	modalBus.$emit(EVENT_OPEN_CONFIGURATION_IMPORT, {})
+}
+
+/**
+ * Open the configuration export dialog (connector-catalog-ui REQ-006):
+ * pick a configuration group, download its redacted OAS document. Wired
+ * to the Catalog page's "Export configuration" header action.
+ *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
+ */
+export function openConfigurationExportHandler() {
+	modalBus.$emit(EVENT_OPEN_CONFIGURATION_EXPORT, {})
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

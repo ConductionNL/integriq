@@ -35,6 +35,8 @@ use OCA\OpenConnector\Service\ConfigurationHandlers\RuleHandler;
 /**
  * Service class for managing configurations and their associated entities.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)

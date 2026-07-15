@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Bain airí",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Cumraigh conas a fhíoraítear iarratais webhook DSO-LV STAM atá ag teacht isteach go cripteagrafach. Úsáideann HMAC rún roinnte (réamhtháirgeadh); úsáideann PKIoverheid slabhra deimhnithe (táirgeadh).",
+        "Configured (leave blank to keep unchanged)": "Cumraithe (fág folamh chun gan athrú)",
+        "DSO signature configuration saved.": "Sábháladh cumraíocht sínithe DSO.",
+        "DSO STAM webhook signature verification": "Fíorú sínithe webhook DSO STAM",
+        "Failed to load the DSO signature configuration.": "Theip ar luchtú chumraíocht sínithe DSO.",
+        "Failed to save the DSO signature configuration.": "Theip ar shábháil chumraíocht sínithe DSO.",
+        "HMAC shared secret": "Rún roinnte HMAC",
+        "HMAC shared secret (pre-production)": "Rún roinnte HMAC (réamhtháirgeadh)",
+        "Intermediate certificate chain (PEM, optional)": "Slabhra deimhnithe idirmheánacha (PEM, roghnach)",
+        "Loading DSO signature configuration…": "Ag luchtú cumraíocht sínithe DSO…",
+        "Not configured": "Gan chumrú",
+        "PKIoverheid certificate chain (production)": "Slabhra deimhnithe PKIoverheid (táirgeadh)",
+        "Save DSO signature configuration": "Sábháil cumraíocht sínithe DSO",
+        "Signing certificate (PEM)": "Deimhniú sínithe (PEM)",
+        "Signing mode": "Modh sínithe",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "CA fréimhe iontaofa (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

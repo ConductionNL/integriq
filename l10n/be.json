@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Выдаліць уласцівасць",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Наладзьце, як уваходныя запыты вэбхука DSO-LV STAM крыптаграфічна правяраюцца. HMAC выкарыстоўвае агульны сакрэт (перадпрадакшн); PKIoverheid выкарыстоўвае ланцужок сертыфікатаў (прадакшн).",
+        "Configured (leave blank to keep unchanged)": "Наладжана (пакіньце пустым, каб не змяняць)",
+        "DSO signature configuration saved.": "Канфігурацыя подпісу DSO захавана.",
+        "DSO STAM webhook signature verification": "Праверка подпісу вэбхука DSO STAM",
+        "Failed to load the DSO signature configuration.": "Не ўдалося загрузіць канфігурацыю подпісу DSO.",
+        "Failed to save the DSO signature configuration.": "Не ўдалося захаваць канфігурацыю подпісу DSO.",
+        "HMAC shared secret": "Агульны сакрэт HMAC",
+        "HMAC shared secret (pre-production)": "Агульны сакрэт HMAC (перадпрадакшн)",
+        "Intermediate certificate chain (PEM, optional)": "Ланцужок прамежкавых сертыфікатаў (PEM, неабавязкова)",
+        "Loading DSO signature configuration…": "Загрузка канфігурацыі подпісу DSO…",
+        "Not configured": "Не наладжана",
+        "PKIoverheid certificate chain (production)": "Ланцужок сертыфікатаў PKIoverheid (прадакшн)",
+        "Save DSO signature configuration": "Захаваць канфігурацыю подпісу DSO",
+        "Signing certificate (PEM)": "Сертыфікат подпісу (PEM)",
+        "Signing mode": "Рэжым подпісу",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Давераны каранёвы CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

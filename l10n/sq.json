@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Hiq vetinë",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Konfiguro se si kërkesat hyrëse të webhook-ut DSO-LV STAM verifikohen kriptografikisht. HMAC përdor një sekret të përbashkët (para-prodhimi); PKIoverheid përdor një zinxhir certifikatash (prodhimi).",
+        "Configured (leave blank to keep unchanged)": "Konfiguruar (lëreni bosh për të mos ndryshuar)",
+        "DSO signature configuration saved.": "Konfigurimi i nënshkrimit DSO u ruajt.",
+        "DSO STAM webhook signature verification": "Verifikimi i nënshkrimit të webhook-ut DSO STAM",
+        "Failed to load the DSO signature configuration.": "Ngarkimi i konfigurimit të nënshkrimit DSO dështoi.",
+        "Failed to save the DSO signature configuration.": "Ruajtja e konfigurimit të nënshkrimit DSO dështoi.",
+        "HMAC shared secret": "Sekret i përbashkët HMAC",
+        "HMAC shared secret (pre-production)": "Sekret i përbashkët HMAC (para-prodhimi)",
+        "Intermediate certificate chain (PEM, optional)": "Zinxhir certifikatash të ndërmjetme (PEM, opsionale)",
+        "Loading DSO signature configuration…": "Duke ngarkuar konfigurimin e nënshkrimit DSO…",
+        "Not configured": "I pakonfiguruar",
+        "PKIoverheid certificate chain (production)": "Zinxhir certifikatash PKIoverheid (prodhimi)",
+        "Save DSO signature configuration": "Ruaj konfigurimin e nënshkrimit DSO",
+        "Signing certificate (PEM)": "Certifikata e nënshkrimit (PEM)",
+        "Signing mode": "Mënyra e nënshkrimit",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "CA rrënjë e besuar (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

@@ -19,6 +19,7 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -26,19 +27,25 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Handler for exporting and importing source configurations.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SourceHandler implements ConfigurationHandlerInterface
 {
     /**
      * Constructor.
      *
-     * @param OrObjectService $orObjectService The OR object service.
+     * @param OrObjectService        $orObjectService        The OR object service.
+     * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
      */
     public function __construct(
-        private readonly OrObjectService $orObjectService
+        private readonly OrObjectService $orObjectService,
+        private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
     ) {
 
     }//end __construct()
@@ -52,7 +59,7 @@ class SourceHandler implements ConfigurationHandlerInterface
      *
      * @return array The serialised source configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-5
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -83,18 +90,14 @@ class SourceHandler implements ConfigurationHandlerInterface
             $sourceArray['apikey']
         );
 
-        // Sanitize configuration to remove sensitive headers.
+        // Redact sensitive values from the nested configuration array via the
+        // shared registry (secret-hygiene) — replaces the prior ad hoc
+        // str_contains substring check on `headers.*` keys. Unlike the
+        // top-level unset() list above, matched values are MASKED
+        // (`***REDACTED***`), not omitted, so an operator re-importing this
+        // export sees the signal that a credential lived here and must be re-entered.
         if (isset($sourceArray['configuration']) === true && is_array($sourceArray['configuration']) === true) {
-            foreach ($sourceArray['configuration'] as $key => $value) {
-                if (str_starts_with($key, 'headers.') === true
-                    && (str_contains(strtolower($key), 'authorization') === true
-                    || str_contains(strtolower($key), 'token') === true
-                    || str_contains(strtolower($key), 'key') === true
-                    || str_contains(strtolower($key), 'secret') === true)
-                ) {
-                    unset($sourceArray['configuration'][$key]);
-                }
-            }
+            $sourceArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $sourceArray['configuration']);
         }
 
         return $sourceArray;
@@ -134,6 +137,8 @@ class SourceHandler implements ConfigurationHandlerInterface
      * Get the entity type this handler is responsible for.
      *
      * @return string The entity type identifier.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
      */
     public function getEntityType(): string
     {

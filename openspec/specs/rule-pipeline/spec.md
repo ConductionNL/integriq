@@ -17,6 +17,9 @@ engine (`EndpointService` rule methods + `RuleService` custom rules) as it
 exists today. It is a retrofit spec: the code already exists, and these REQs
 document it rather than prescribe new work. Per ADR-002 the rule engine is an
 openconnector-local concept with no OpenRegister equivalent.
+
+**OpenSpec changes**
+- [`vng-klantinteracties-adapter`](../../changes/archive/2026-07-12-vng-klantinteracties-adapter/) _(archived 2026-07-12)_ — added a composite transactional fan-out Rule type (REQ-RULE-006, used for VNG's composite `maak-klantcontact`) and a `referentienummer` generation Rule (REQ-RULE-007). Both are dialect-agnostic gateway mechanics (ADR-031 external-integration exception).
 ## Requirements
 
 ### REQ-RULE-UI-001: Rule Management UI
@@ -305,4 +308,108 @@ type MUST throw.
 - `extendExternalUrl` auto-creates a `Source` register object for any unseen
   external URL with `isEnabled: true`, then calls it via `CallService`. This is
   an implicit write side-effect of a read-extension rule; flagged for review.
+
+### Requirement: Composite transactional fan-out Rule type (REQ-RULE-006)
+
+The rule pipeline MUST support a composite fan-out Rule type that, from a single
+request body, performs multiple related object writes as one logical
+transaction, rolling back all writes if any child write fails and returning a
+single error. The Rule MUST run in the before-timing slot and MUST compose with
+the ordered pipeline (REQ-RULE-001) without breaking the existing before/after
+ordering.
+
+@e2e exclude backend rule engine — covered by PHPUnit/Newman, no browser UI
+
+#### Scenario: Composite fan-out creates all children atomically
+- GIVEN a composite fan-out Rule configured for `maak-klantcontact` and a request body with a parent and two child objects
+- WHEN the Rule runs
+- THEN the parent and both children are created and the response is the created parent resource
+
+#### Scenario: Any child failure rolls the whole composite back
+- GIVEN a composite fan-out Rule and a request where the second child write fails
+- WHEN the Rule runs
+- THEN neither the parent nor the first child remains persisted and a single error is returned
+
+#### Scenario: Composite Rule respects pipeline ordering
+- GIVEN a composite fan-out Rule ordered alongside an AVG BSN policy Rule
+- WHEN both are configured on the endpoint
+- THEN the AVG policy Rule runs before the fan-out writes, per the ordered pipeline
+
+**Implementation:** `lib/Rule/CompositeFanoutRule.php`, dispatched from
+`EndpointService::processRules()`'s `composite_fanout` case. Rollback deletes
+every object created so far (most-recently-created first) via
+`ObjectService::deleteObject()`. See the archived change's tasks.md
+Deviations for the before-rule/dispatch-ordering caveat on the packaged
+`vng-maak-klantcontact` endpoint.
+
+### Requirement: `referentienummer` generation Rule (REQ-RULE-007)
+
+The rule pipeline MUST support a Rule that generates and stamps a unique
+`referentienummer` (message reference) on emitted resources/responses. The
+default MUST be a UUIDv4; a configured numbering scheme MAY override it. The
+generated reference MUST be stable for the response in which it is issued.
+
+@e2e exclude backend rule engine — covered by PHPUnit, no browser UI
+
+#### Scenario: Response carries a unique referentienummer
+- GIVEN an endpoint with the `referentienummer` Rule enabled
+- WHEN a resource is emitted
+- THEN the response carries a unique `referentienummer` (UUIDv4 by default)
+
+#### Scenario: Configured numbering scheme overrides the default
+- GIVEN the `referentienummer` Rule configured with a municipality numbering scheme
+- WHEN a resource is emitted
+- THEN the reference follows the configured scheme instead of a UUIDv4
+
+**Implementation:** `lib/Rule/ReferentienummerRule.php`, dispatched from
+`EndpointService::processRules()`'s `referentienummer` case. Scheme tokens:
+`{uuid}`, `{year}`.
+
+### Requirement: `approval` rule action type suspends the pipeline (REQ-RULE-008)
+
+The system MUST provide an `approval` rule type in
+`EndpointService::processRules()`'s type dispatch, valid only for
+`timing: before`. When a `before`-phase `approval` rule's conditions pass,
+processing MUST NOT continue to later rules in the same run; instead the
+system MUST delegate to `ApprovalService::suspend()` (see
+`approval-workflow` REQ-001) and return the resulting `JSONResponse(202)`
+through the pipeline's existing short-circuit contract (the same contract
+`error` and other terminal rule types already use — no new Response type).
+An `approval` rule configured with `timing: after` MUST be treated as
+invalid configuration and MUST NOT be dispatched.
+
+@e2e exclude backend rule pipeline execution — covered by PHPUnit, not browser UI
+
+#### Scenario: approval rule short-circuits the before-phase pipeline
+
+- **GIVEN** an endpoint with rules at order 10 (`authentication`), 20
+  (`approval`), and 30 (`save_object`)
+- **WHEN** the `before`-phase pipeline runs and the order-20 rule's
+  conditions pass
+- **THEN** the order-10 rule runs normally, the order-20 rule suspends the
+  pipeline via `ApprovalService::suspend()`, the pipeline returns HTTP 202,
+  and the order-30 rule does NOT run in this request
+
+#### Scenario: an approval rule configured for the after phase never dispatches
+
+- **GIVEN** an `approval` rule configured with `timing: after`
+- **WHEN** the pipeline evaluates rules for either phase
+- **THEN** the rule is never matched to the `approval` dispatch case (timing
+  mismatch is invalid configuration, not a runtime skip)
+
+#### Notes
+
+- This requirement only adds a new entry to the existing `match` dispatch
+  in `processRules()` (alongside `save_object`, `authentication`, `error`,
+  etc.) and does not change REQ-RULE-001's ordering/condition/short-circuit
+  contract, which the `approval` type reuses as-is.
+- Resume (the counterpart to this suspension) is specified in
+  `approval-workflow` REQ-003, not here — resuming calls back into
+  `processRules()` for the remaining rules in the same phase, so no
+  separate "resume" rule type exists.
+
+## Non-Functional Requirements
+
+- **Performance:** the composite Rule MUST bound its writes to the resources named in the request (no unbounded cascade).
+- **Internationalization:** rule error messages MUST be localisable (Dutch + English, hydra ADR-007) — REQ-RULE-006/007 error messages are not yet localised; flagged as a follow-up in the archived change's tasks.md.
 

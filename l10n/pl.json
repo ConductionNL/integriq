@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Usuń właściwość",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Skonfiguruj sposób kryptograficznej weryfikacji przychodzących żądań webhook DSO-LV STAM. HMAC używa wspólnego sekretu (przedprodukcyjnie); PKIoverheid używa łańcucha certyfikatów (produkcyjnie).",
+        "Configured (leave blank to keep unchanged)": "Skonfigurowano (pozostaw puste, aby nie zmieniać)",
+        "DSO signature configuration saved.": "Zapisano konfigurację podpisu DSO.",
+        "DSO STAM webhook signature verification": "Weryfikacja podpisu webhooka DSO STAM",
+        "Failed to load the DSO signature configuration.": "Nie udało się wczytać konfiguracji podpisu DSO.",
+        "Failed to save the DSO signature configuration.": "Nie udało się zapisać konfiguracji podpisu DSO.",
+        "HMAC shared secret": "Wspólny sekret HMAC",
+        "HMAC shared secret (pre-production)": "Wspólny sekret HMAC (przedprodukcyjny)",
+        "Intermediate certificate chain (PEM, optional)": "Łańcuch certyfikatów pośrednich (PEM, opcjonalnie)",
+        "Loading DSO signature configuration…": "Wczytywanie konfiguracji podpisu DSO…",
+        "Not configured": "Nieskonfigurowano",
+        "PKIoverheid certificate chain (production)": "Łańcuch certyfikatów PKIoverheid (produkcyjny)",
+        "Save DSO signature configuration": "Zapisz konfigurację podpisu DSO",
+        "Signing certificate (PEM)": "Certyfikat podpisujący (PEM)",
+        "Signing mode": "Tryb podpisywania",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Zaufany główny urząd certyfikacji (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

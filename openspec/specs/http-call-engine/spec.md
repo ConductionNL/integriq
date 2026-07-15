@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # http-call-engine Specification
@@ -9,6 +9,8 @@ Dispatches outbound HTTP and SOAP calls to configured sources and records each o
 
 @e2e exclude backend outbound HTTP call engine + CallLog persistence (no browser UI) — covered by PHPUnit/Newman
 
+**OpenSpec changes**
+- `source-broker-credentials` (active) — Sources gain a `credentialRef` authentication option; brokered sources dispatch in-process through OpenRegister's `CredentialBrokerService` (constrained proxy, secret injected server-side, never held by OpenConnector). While active, the normative brokered-dispatch requirements (REQ-SBC-001..004) live in the change's delta spec and merge here on archive.
 ## Requirements
 ### Requirement: Outbound HTTP call orchestration with CallLog persistence (REQ-001)
 
@@ -105,42 +107,75 @@ the Guzzle client can pass file paths to `curl`. The method MUST recognise three
 config keys — `cert`, `ssl_key`, and `verify` — each of which may be either a string
 (single PEM blob) or a `[blob, passphrase]` tuple. For each materialised file the
 method MUST mutate `$config` in place, replacing the inline blob with the file path
-produced by `writeFile`. `removeFiles(array $config)` MUST be invoked after every
-dispatch (success path, `BadResponseException`, and `ConnectException`) and MUST
-`unlink` every file path it finds at the same three config keys. `writeFile`
-MUST generate a unique filename of shape `<baseFileName>-<microtime><pid>` and MUST
-substitute escaped newlines (`\\n`) with literal newlines before writing the blob,
-so PEM content shipped as a single-line string still parses.
+produced by `writeFile`.
 
-#### Scenario: an inline cert blob is materialised to a uniquely-named file
+`writeFile(string $baseFileName, string $contents)` MUST generate the temp file via
+`tempnam(sys_get_temp_dir(), 'oc_'.$baseFileName.'_')`, so the filename is
+unpredictable (not derived from `microtime()`/`getmypid()` alone) and collision-safe
+under concurrent FPM workers. The method MUST `chmod` the file to `0600` both
+immediately after creation and again after `file_put_contents` (closing the race
+window between file creation and the permission being asserted), so the key/cert
+bytes are never readable to other local users on a shared host. If `tempnam()`
+returns `false` (allocation failure), the method MUST fall back to the legacy
+`<baseFileName>-<microtime><pid>` naming scheme but MUST still apply the same
+`chmod(0600)` guarantee — the fallback narrows only the unpredictability property,
+never the permission property. The method MUST substitute escaped newlines (`\\n`)
+with literal newlines before writing the blob, so PEM content shipped as a
+single-line string still parses.
+
+`removeFile(string $filename)` (private, one file at a time) MUST silently no-op
+when the path is empty, non-string, or the file no longer exists — it MUST NOT throw
+or emit a warning in that case. `removeFiles(array $config)` (public, all three keys
+at once) MUST be invoked after every dispatch outcome: the synchronous success path,
+the `BadResponseException` catch, the `ConnectException` catch, AND — for the
+asynchronous dispatch path — attached to the returned Guzzle Promise's `then`/
+`otherwise` callbacks via a config-path snapshot taken before the caller can mutate
+`$config`, so temp files are cleaned up exactly once regardless of dispatch mode or
+outcome.
+
+<!-- Previous behavior: writeFile() generated filenames of shape
+     `<baseFileName>-<microtime><pid>` written directly to
+     `BASE_FILENAME_LOCATION` with default-umask permissions (world-readable
+     on many shared-hosting configurations) and no chmod call. removeFiles()
+     unlinked files without existence-checking, causing a PHP warning on
+     partial-cleanup paths. The asynchronous dispatch branch returned the
+     Guzzle Promise immediately and never called removeFiles() at all — temp
+     cert/key files leaked on disk for every async call. See #1012. -->
+
+#### Scenario: an inline cert blob is materialised to an unpredictable, 0600-permissioned file
 
 - **GIVEN** `$config = ['cert' => '-----BEGIN CERTIFICATE-----\n…']`
 - **WHEN** `getCertificate($config)` runs
-- **THEN** `$config['cert']` SHALL be mutated to a string of shape
-  `certificate-<microtime><pid>`
+- **THEN** `$config['cert']` SHALL be mutated to a `tempnam()`-generated path under
+  the system temp directory
 - **AND** the named file SHALL exist on disk with the PEM content
+- **AND** the file's permission mode SHALL be `0600` (owner read/write only, no group
+  or world access)
 
-#### Scenario: removeFiles deletes every materialised path
+#### Scenario: removeFiles deletes every materialised path without warnings on partial cleanup
 
 - **GIVEN** a `$config` with `cert`, `ssl_key`, and `verify` all pointing at
-  previously-materialised file paths
+  previously-materialised file paths, and one of the three already deleted by an
+  earlier cleanup pass
 - **WHEN** `removeFiles($config)` runs
-- **THEN** all three files SHALL be `unlink`-ed
-- **AND** the method SHALL return without exception even if a file is already missing
-  (NOTE: `unlink` warning suppression is at the PHP level, not in this method — see
-  Notes)
+- **THEN** the two remaining files SHALL be `unlink`-ed
+- **AND** no PHP warning SHALL be emitted for the already-missing file
+- **AND** the method SHALL return without exception
+
+#### Scenario: asynchronous dispatch still cleans up temp cert files on both success and rejection
+
+- **GIVEN** an asynchronous call configured with an inline `cert` blob
+- **WHEN** the returned Promise settles, whether fulfilled or rejected
+- **THEN** the materialised temp cert file SHALL be removed from disk in both cases
 
 #### Notes
 
-- `writeFile` uses `microtime().getmypid()` for the suffix. Under high concurrency
-  two requests on the same FPM worker that hit `writeFile` in the same microsecond
-  would collide. Observed; no locking; flagged for follow-up.
-- `unlink` on a missing file emits a PHP warning. The current code does not suppress
-  it; operator-visible warnings may appear in php-fpm error logs on partial-cleanup
-  paths. Observed; flagged.
-- `getCertificate` writes private SSL keys to `/var/tmp` (the current working
-  directory of the writeFile resolution; see `BASE_FILENAME_LOCATION = "%s-%s"`).
-  The location should be hardened to a chmod-0700 per-worker dir. Observed; flagged.
+- `writeFile` uses `tempnam()` sourced from `sys_get_temp_dir()` — the shared system
+  temp directory, not a dedicated OpenConnector-owned subdirectory. The
+  unpredictable-name + `0600`-permission combination closes the specific
+  world-readability risk that made #1012 CRITICAL; a dedicated
+  `chmod(0700)` subdirectory remains a deferred hardening option (see
+  `secret-hygiene` proposal Open Questions), not implemented by this delta.
 
 ### Requirement: Source rate-limit tracking across dispatches (REQ-003)
 
@@ -287,4 +322,242 @@ and otherwise return the `QueryExecResult` child of the `DocumentElement`.
 - `libxml_use_internal_errors(true)` is set inside this method but never restored to
   its previous state on exit. Side-effect leaks to the rest of the request. Observed;
   flagged.
+
+### Requirement: REQ-006 — CallLog request/response redaction before persistence
+
+The outbound HTTP call engine SHALL redact secret-shaped values from a
+`call_log` object BEFORE it is persisted via `saveObject()`, so that no
+plaintext credential is ever written to storage, regardless of who later
+reads the CallLog (including a direct OpenRegister object read that bypasses
+any endpoint-level filtering — see this capability's Notes on the
+`authentication`-substring-strip in REQ-001, which only protects the
+outbound Guzzle `$config`, not the persisted log). Redaction SHALL use the
+same `SensitiveFieldRegistry` shared with `configuration-export-import`'s
+export-time redaction (see `configuration-export-import#REQ-005`), so header
+names, query/form parameter names, and secret-value detection are governed by
+one pattern across the whole application.
+
+Specifically, `CallService::buildResponseData()` SHALL, before returning the
+structured `request`/`response` array that `buildAndPersistCallLog()` persists:
+- Redact the following request headers by exact name (case-insensitive):
+  `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`, replacing
+  the header value with the placeholder `***REDACTED***`.
+- Redact any request header, query parameter, or `form_params` entry whose
+  name matches the shared sensitive-name pattern (covers `X-Api-Key`,
+  `X-Auth-Token`, `client_secret`, etc.).
+- Redact the Guzzle `auth` (basic-auth `[user, pass]`) array entirely.
+- Redact secret-shaped query-string parameters from the persisted request
+  URL.
+- Redact `cert` / `ssl_key` config values (which by this point are filesystem
+  paths to already-cleaned-up temp files, not raw key material — but SHALL
+  still be replaced with the placeholder rather than the path, which is
+  otherwise meaningless once the file is removed).
+- Scrub every literal secret value collected from the above locations out of
+  the response body before it is persisted (covers upstream APIs that echo
+  the request, e.g. an error response embedding the submitted Authorization
+  header or token).
+
+Redaction SHALL be irreversible masking (the literal string `***REDACTED***`),
+never encryption or another reversible transform. The actual outbound HTTP
+call SHALL be dispatched with the real, unredacted secret values — redaction
+applies ONLY to the copy of the config that is written into the persisted
+CallLog, never to the live request.
+
+This requirement applies identically on the brokered-dispatch path
+(`source-broker-credentials`'s `BrokeredCallService`) and the legacy
+Guzzle/SOAP path, since both converge on `buildResponseData()` /
+`buildAndPersistCallLog()`.
+
+#### Scenario: a CallLog written after an authenticated call contains no plaintext Authorization header
+
+- GIVEN a Source configured with `configuration.headers.Authorization = "Bearer live-secret-token-123"`
+- WHEN `CallService::call()` dispatches a request to that source and persists the resulting `call_log`
+- THEN the persisted `call_log.request.headers.Authorization` value SHALL be `***REDACTED***`
+- AND the string `live-secret-token-123` SHALL NOT appear anywhere in the persisted `call_log` object
+- AND the actual outbound HTTP request SHALL have carried the real `Bearer live-secret-token-123` header
+
+#### Scenario: a secret echoed in the response body is scrubbed before persistence
+
+- GIVEN a Source call configured with a `client_secret` form parameter whose value is `super-secret-value`
+- AND the upstream error response body echoes the submitted parameters, including `super-secret-value`
+- WHEN the call fails and `logBody = true` causes the response body to be persisted
+- THEN the persisted `call_log.response.body` SHALL NOT contain the substring `super-secret-value`
+- AND occurrences of that value SHALL be replaced with `***REDACTED***`
+
+#### Scenario: a secret-bearing query-string parameter is redacted from the persisted URL
+
+- GIVEN a call dispatched to `https://api.example.test/things?api_key=live_abc123&page=2`
+- WHEN the resulting CallLog is persisted
+- THEN `call_log.request.url` SHALL be `https://api.example.test/things?api_key=***REDACTED***&page=2`
+- AND non-secret query parameters (e.g. `page`) SHALL be retained unmodified
+
+#### Scenario: the brokered-dispatch path redacts identically to the legacy Guzzle path
+
+- GIVEN a `credentialRef` Source dispatched through `BrokeredCallService`
+- WHEN the resulting CallLog is persisted
+- THEN the same header/query/body redaction rules SHALL apply as for a
+  non-brokered Source, with the same `***REDACTED***` placeholder
+
+### Requirement: Configurable retry policy for outbound dispatch (REQ-007)
+
+`CallService::call(...)` MUST resolve an effective `RetryPolicy` for every
+dispatch by merging, in order (later layers override earlier ones on a
+per-key basis): a built-in default of `{maxAttempts: 1, backoffStrategy:
+"fixed", baseDelayMs: 500, maxDelayMs: 30000, jitter: false,
+retryableStatusCodes: [429, 502, 503, 504], retryOnTimeout: false}`; the
+dispatching Source's `retryPolicy` object field; and, when present, the
+caller-supplied `$config['retryPolicy']` override (populated by
+`SynchronizationService` from `Synchronization.retryPolicyOverride` when a
+call is made in a synchronization context). When the effective
+`maxAttempts` is `1` (the default, and the value for every Source that has
+not configured a `retryPolicy`), dispatch behavior MUST be identical to the
+pre-existing single-attempt behavior — no new delay, no new CallLog shape
+change.
+
+When `maxAttempts > 1`, `CallService` MUST retry a dispatch whose outcome is
+either an HTTP response whose status code is in `retryableStatusCodes`, or a
+transport-level exception when `retryOnTimeout === true`, up to
+`maxAttempts` total attempts, sleeping between attempts for a delay computed
+from `backoffStrategy`:
+- `fixed`: `delayMs = baseDelayMs`
+- `exponential`: `delayMs = min(baseDelayMs * 2^(attempt-1), maxDelayMs)`
+When `jitter === true`, the computed delay MUST be adjusted by ±10% using a
+uniform random offset (mirroring `PdokConnector::sleepBackoff()`). Only the
+CallLog for the **final** attempt MUST be persisted; intermediate retried
+attempts MUST NOT each produce a separate CallLog row.
+
+#### Scenario: default policy preserves single-attempt behavior
+
+- **GIVEN** a Source with no `retryPolicy` configured AND an upstream that
+  returns `503` on every call
+- **WHEN** `call(...)` runs
+- **THEN** exactly one HTTP request SHALL be dispatched
+- **AND** the persisted `call_log.statusCode` SHALL be `503`
+
+#### Scenario: exponential backoff retries a 503 up to maxAttempts
+
+- **GIVEN** a Source with `retryPolicy = {maxAttempts: 3, backoffStrategy:
+  "exponential", baseDelayMs: 100, maxDelayMs: 1000, jitter: false,
+  retryableStatusCodes: [503]}` AND an upstream returning `503` on the first
+  two calls and `200` on the third
+- **WHEN** `call(...)` runs
+- **THEN** three HTTP requests SHALL be dispatched, with delays of ~100ms
+  then ~200ms between them
+- **AND** the persisted `call_log.statusCode` SHALL be `200`
+
+#### Scenario: a non-retryable status code returns immediately
+
+- **GIVEN** a Source with `retryPolicy = {maxAttempts: 3, retryableStatusCodes:
+  [429, 503]}` AND an upstream returning `404`
+- **WHEN** `call(...)` runs
+- **THEN** exactly one HTTP request SHALL be dispatched (404 is not in
+  `retryableStatusCodes`)
+- **AND** the persisted `call_log.statusCode` SHALL be `404`
+
+#### Scenario: synchronization-level override widens the retryable set
+
+- **GIVEN** a Source with `retryPolicy = {maxAttempts: 1}` AND a
+  Synchronization with `retryPolicyOverride = {maxAttempts: 2,
+  retryableStatusCodes: [500]}`
+- **WHEN** the synchronization dispatches a call that returns `500` then `200`
+- **THEN** two HTTP requests SHALL be dispatched for that call
+- **AND** a direct (non-synchronization) call against the same Source SHALL
+  still use `maxAttempts: 1`
+
+### Requirement: Per-source circuit breaker generalized into CallService (REQ-008)
+
+`CallService` MUST maintain a per-Source circuit breaker persisted on the
+`source` OR object via `circuitBreakerState` (`closed|open`),
+`circuitBreakerFailureCount`, `circuitBreakerOpenedAt`, and
+`circuitBreakerLastProbeAt`, using the configurable
+`circuitBreakerThreshold` (default 5) and `circuitBreakerCooldownSeconds`
+(default 30) fields on the same Source. Before every dispatch, the engine
+MUST evaluate the breaker: when `circuitBreakerState === 'open'` and fewer
+than `circuitBreakerCooldownSeconds` have elapsed since
+`circuitBreakerOpenedAt`, the call MUST be short-circuited with a synthetic
+`call_log` (`statusCode: 503`, `statusMessage: "Circuit breaker is open for
+this source"`) and no HTTP request MUST be dispatched. When
+`circuitBreakerCooldownSeconds` have elapsed, the breaker is treated as
+half-open and exactly the next dispatch is allowed through as a probe (not
+persisted as a distinct `half-open` state value). A retryable failure (per
+REQ-007) MUST increment `circuitBreakerFailureCount`; when the count reaches
+`circuitBreakerThreshold`, the engine MUST set `circuitBreakerState = 'open'`
+and `circuitBreakerOpenedAt = now()`. Any successful (non-retryable, non-4xx
+excluding configured retryable codes) response MUST reset
+`circuitBreakerState = 'closed'` and `circuitBreakerFailureCount = 0`.
+
+#### Scenario: five consecutive failures open the breaker
+
+- **GIVEN** a Source with default breaker thresholds and
+  `retryPolicy.retryableStatusCodes` including `503`
+- **WHEN** five consecutive calls each return `503`
+- **THEN** after the fifth failure `circuitBreakerState` SHALL be `open` AND
+  `circuitBreakerOpenedAt` SHALL be set
+
+#### Scenario: an open breaker short-circuits without dispatching
+
+- **GIVEN** a Source with `circuitBreakerState = 'open'` and
+  `circuitBreakerOpenedAt` 10 seconds ago (cooldown 30s)
+- **WHEN** `call(...)` runs
+- **THEN** no HTTP request SHALL be dispatched
+- **AND** a `call_log` SHALL be persisted with `statusCode = 503` and message
+  `"Circuit breaker is open for this source"`
+
+#### Scenario: a successful half-open probe closes the breaker
+
+- **GIVEN** a Source with `circuitBreakerState = 'open'` and
+  `circuitBreakerOpenedAt` 35 seconds ago (cooldown 30s)
+- **WHEN** `call(...)` runs AND the upstream returns `200`
+- **THEN** exactly one HTTP request SHALL be dispatched (the probe)
+- **AND** `circuitBreakerState` SHALL be reset to `closed` with
+  `circuitBreakerFailureCount = 0`
+
+#### Scenario: a failed half-open probe reopens the breaker immediately
+
+- **GIVEN** a Source with `circuitBreakerState = 'open'` and
+  `circuitBreakerOpenedAt` 35 seconds ago (cooldown 30s)
+- **WHEN** `call(...)` runs AND the upstream again returns `503`
+- **THEN** `circuitBreakerState` SHALL remain/return to `open` AND
+  `circuitBreakerOpenedAt` SHALL be reset to the probe's timestamp
+
+#### Notes
+
+- The half-open probe guard (`circuitBreakerLastProbeAt`) is best-effort:
+  under concurrent requests during the cooldown window, more than one
+  request may treat itself as "the" probe. This is an accepted limitation
+  (see design.md Decision 2/Trade-offs), not a distributed-lock guarantee.
+
+### Requirement: Manual circuit breaker trip and reset (REQ-009)
+
+The engine MUST expose admin-only, CSRF-protected endpoints
+`POST /api/sources/{id}/circuit-breaker/trip` and
+`POST /api/sources/{id}/circuit-breaker/reset` on `SourcesController`. Trip
+MUST set `circuitBreakerState = 'open'`, `circuitBreakerOpenedAt = now()`,
+and `circuitBreakerFailureCount = circuitBreakerThreshold` regardless of
+prior state. Reset MUST set `circuitBreakerState = 'closed'`,
+`circuitBreakerFailureCount = 0`, `circuitBreakerOpenedAt = null`. Both
+endpoints MUST return `404` for an unknown source id and MUST NOT carry
+`@NoAdminRequired` or `@NoCSRFRequired`.
+
+#### Scenario: an admin manually trips the breaker for a misbehaving upstream
+
+- **GIVEN** a healthy Source (`circuitBreakerState = 'closed'`)
+- **WHEN** an admin calls `POST .../sources/{id}/circuit-breaker/trip`
+- **THEN** the Source's `circuitBreakerState` SHALL become `open`
+- **AND** subsequent calls to that Source SHALL short-circuit per REQ-008
+  until the cooldown elapses or an admin resets it
+
+#### Scenario: an admin manually resets an open breaker
+
+- **GIVEN** a Source with `circuitBreakerState = 'open'`
+- **WHEN** an admin calls `POST .../sources/{id}/circuit-breaker/reset`
+- **THEN** the Source's `circuitBreakerState` SHALL become `closed` with
+  `circuitBreakerFailureCount = 0`
+- **AND** the next call SHALL dispatch normally (no short-circuit)
+
+#### Scenario: a non-admin is rejected
+
+- **GIVEN** an authenticated non-admin user
+- **WHEN** they call either circuit-breaker endpoint
+- **THEN** the request SHALL be rejected by NC's admin requirement
 
