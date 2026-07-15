@@ -1516,6 +1516,8 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-test-runs-make-no-writes-req-011
      * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
@@ -1781,16 +1783,50 @@ class SynchronizationService
             if ($isTest === false) {
                 $fetchComplete = ($rateLimitException === null && ($fetchInfo['complete'] ?? true));
 
-                $deletedCount = $this->deleteInvalidObjects(
-                    synchronization: $synchronization,
-                    synchronizedTargetIds: $synchronizedTargetIds,
-                    deleteRestriction: $deleteRestriction,
-                    data: $deleteData,
-                    fetchComplete: $fetchComplete,
-                    forceDeletion: ($forceDeletion ?? false),
-                    guardInfo: $guardInfo
-                );
-            }
+                // [NEW] REQ-018 (change cdc-incremental-sync): incremental
+                // mode never runs the bulk source-diff cleanup — checked
+                // BEFORE the existing fetchComplete-gated call, so it
+                // short-circuits deletion for its own explicit reason
+                // ('incremental_mode') rather than reusing fetchComplete's
+                // 'fetch_incomplete' reason, which would be misleading (the
+                // fetch can be perfectly complete for what it asked for — it
+                // just didn't ask for everything). Unconditional: never
+                // bypassed by forceDeletion (design.md Decision 3).
+                $syncMode = (string) ($synchronization['syncMode'] ?? 'full');
+                if ($syncMode !== 'incremental') {
+                    $deletedCount = $this->deleteInvalidObjects(
+                        synchronization: $synchronization,
+                        synchronizedTargetIds: $synchronizedTargetIds,
+                        deleteRestriction: $deleteRestriction,
+                        data: $deleteData,
+                        fetchComplete: $fetchComplete,
+                        forceDeletion: ($forceDeletion ?? false),
+                        guardInfo: $guardInfo
+                    );
+                } else {
+                    $guardInfo = [
+                        'guarded'   => true,
+                        'reason'    => 'incremental_mode',
+                        'ratio'     => null,
+                        'threshold' => null,
+                    ];
+                }//end if
+
+                // [NEW] REQ-017: watermark advance — the same $fetchComplete
+                // boolean REQ-010 already computed above; a rate-limited or
+                // otherwise incomplete fetch (REQ-009) blocks the watermark
+                // exactly as it blocks deletion. A missing/empty
+                // sourceConfig.cursorField or an empty fetch yields a null
+                // computed watermark, which is deliberately left unpersisted
+                // (the prior watermark, if any, is retained rather than
+                // cleared).
+                if ($syncMode === 'incremental' && $fetchComplete === true) {
+                    $newWatermark = $this->computeCursorWatermark(synchronization: $synchronization, objectList: $objectList);
+                    if ($newWatermark !== null) {
+                        $synchronization['cursorWatermark'] = $newWatermark;
+                    }
+                }//end if
+            }//end if
 
             $result['objects']['deleted']       = $deletedCount;
             $result['objects']['deletionGuard'] = $guardInfo;
@@ -2210,6 +2246,95 @@ class SynchronizationService
     }//end getOriginId()
 
     /**
+     * Compute the new cursor high-watermark from a run's fetched records
+     * (REQ-017, change cdc-incremental-sync) — the maximum value of the
+     * configured `sourceConfig.cursorField` across all fetched records,
+     * mirroring {@see getOriginId()}'s dotted-path-lookup-with-throw
+     * convention (REQ-003) so a record missing the configured field fails
+     * loudly instead of silently producing a too-low watermark that would
+     * permanently skip its siblings on every subsequent run.
+     *
+     * Taking the maximum across ALL fetched records (not the last one
+     * processed) means out-of-order pagination or concurrent per-page
+     * fetching (REQ-002's optimized parallel mode) cannot regress the
+     * watermark.
+     *
+     * @param array $synchronization The synchronization containing sourceConfig.cursorField.
+     * @param array $objectList      The records fetched during this run.
+     *
+     * @return string|null The new high-watermark, or null when there is nothing to
+     *                      compute from (no `cursorField` configured, or an empty
+     *                      fetch) — the caller leaves `cursorWatermark` unchanged
+     *                      in that case rather than persisting a null/empty value.
+     *
+     * @throws Exception When a fetched record has no value at the configured
+     *                    `cursorField` path.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
+     */
+    private function computeCursorWatermark(array $synchronization, array $objectList): ?string
+    {
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+        $cursorField  = ($sourceConfig['cursorField'] ?? null);
+
+        if (empty($cursorField) === true || empty($objectList) === true) {
+            return null;
+        }
+
+        $maxCursor = null;
+        foreach ($objectList as $object) {
+            if (is_array($object) === false) {
+                continue;
+            }
+
+            $objectDot   = new Dot($object);
+            $cursorValue = $objectDot->get($cursorField);
+
+            if ($cursorValue === null) {
+                throw new Exception('Could not find cursor field in object for key: '.$cursorField);
+            }
+
+            if (is_scalar($cursorValue) === true) {
+                $cursorValue = (string) $cursorValue;
+            }
+
+            if ($maxCursor === null || $cursorValue > $maxCursor) {
+                $maxCursor = $cursorValue;
+            }
+        }
+
+        return $maxCursor;
+    }//end computeCursorWatermark()
+
+    /**
+     * Clear a Synchronization's stored cursor watermark (REQ-019, change
+     * cdc-incremental-sync).
+     *
+     * Persists `cursorWatermark` as cleared (null/absent). Leaves `syncMode`
+     * and every other field untouched, and performs no target write/delete
+     * of its own — REQ-018's deletion block is keyed on `syncMode`, not on
+     * cursor state, so clearing the watermark alone never re-enables
+     * `deleteInvalidObjects()` for an incremental Synchronization (design.md
+     * Decision 3 / Risks). Following a reset, the Synchronization's next run
+     * resolves `{{ cursor }}` to an empty string (REQ-016's "no prior
+     * watermark" case).
+     *
+     * @param array|ObjectEntity $synchronization The synchronization whose watermark to clear.
+     *
+     * @return array The updated synchronization payload (for response/confirmation).
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+     */
+    public function resetCursor(array|ObjectEntity $synchronization): array
+    {
+        $synchronization = $this->toSynchronization(synchronization: $synchronization);
+        $synchronization['cursorWatermark'] = null;
+        $this->persistSynchronization(synchronization: $synchronization);
+
+        return $synchronization;
+    }//end resetCursor()
+
+    /**
      * Fetch an object from a specific endpoint.
      *
      * @param array           $synchronization The synchronization containing the source.
@@ -2509,6 +2634,7 @@ class SynchronizationService
      * @spec openspec/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
      * (deleteRestriction pre-exists; fetchComplete/forceDeletion are mandated by
@@ -2529,6 +2655,34 @@ class SynchronizationService
 
         $synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
         $sourceConfig      = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+        // [NEW] REQ-018 (change cdc-incremental-sync): defense-in-depth —
+        // independently refuse to run against an incremental Synchronization
+        // regardless of caller, so a future caller that reaches this method
+        // directly (bypassing synchronizeExternToIntern()'s own gate) cannot
+        // accidentally delete against a partial incremental fetch. Checked
+        // ahead of the fetchComplete guard below (an incremental fetch can
+        // be perfectly "complete" for what it asked for — it just never
+        // asked for everything).
+        if ((string) ($synchronization['syncMode'] ?? 'full') === 'incremental') {
+            $guardInfo = [
+                'guarded'        => true,
+                'reason'         => 'incremental_mode',
+                'ratio'          => null,
+                'threshold'      => null,
+                'candidateCount' => null,
+                'totalContracts' => null,
+            ];
+            $this->logger->warning(
+                'deleteInvalidObjects: skipped — synchronization is in incremental sync mode',
+                ['synchronizationId' => $synchronizationId]
+            );
+            $this->dispatchDeletionGuardedEvent(
+                synchronizationId: (string) $synchronizationId,
+                reason: 'incremental_mode'
+            );
+            return 0;
+        }
 
         if ($fetchComplete === false) {
             $guardInfo = [
@@ -3857,6 +4011,7 @@ class SynchronizationService
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
      */
     public function getAllObjectsFromApi(
         array $synchronization,
@@ -3885,6 +4040,18 @@ class SynchronizationService
         // Check rate limit before proceeding.
         $this->checkRateLimit(source: $source);
 
+        // [NEW] REQ-016 (change cdc-incremental-sync): an incremental run
+        // makes its stored high-watermark cursor available as a `cursor` key
+        // in the same Twig context {{ data.* }} endpoint templating already
+        // uses, extended below to sourceConfig.query values too. A full-mode
+        // (or syncMode-absent) run gets no `cursor` key at all — the Twig
+        // context stays byte-identical to pre-existing behavior.
+        $syncMode    = (string) ($synchronization['syncMode'] ?? 'full');
+        $twigContext = [];
+        if ($syncMode === 'incremental') {
+            $twigContext['cursor'] = (string) ($synchronization['cursorWatermark'] ?? '');
+        }
+
         $endpoint = $sourceConfig['endpoint'] ?? '';
         if (is_string($endpoint) === true
             && str_contains($endpoint, '{{') === true
@@ -3897,14 +4064,37 @@ class SynchronizationService
 
             $endpoint = $this->mappingService->renderTemplateString(
                 template: $endpoint,
-                context: [
-                    'data' => $contextData,
-                ]
+                context: array_merge(['data' => $contextData], $twigContext)
             );
         }
 
-        $headers        = $sourceConfig['headers'] ?? [];
-        $query          = $sourceConfig['query'] ?? [];
+        $headers = $sourceConfig['headers'] ?? [];
+        $query   = $sourceConfig['query'] ?? [];
+
+        // [NEW] REQ-016: extend the identical {{/}}-detection-then-render
+        // treatment used for sourceConfig.endpoint to each scalar value in
+        // sourceConfig.query, incremental mode only — a full-mode run keeps
+        // sourceConfig.query passed through unrendered, unchanged from
+        // current behavior (regression scenario in REQ-016).
+        if ($syncMode === 'incremental' && is_array($query) === true && empty($query) === false) {
+            $queryContextData = $data ?? [];
+            if (isset($queryContextData['@self']['relations']) === true && is_array($queryContextData['@self']['relations']) === true) {
+                $queryContextData = array_merge($queryContextData['@self']['relations'], $queryContextData);
+            }
+
+            foreach ($query as $queryKey => $queryValue) {
+                if (is_string($queryValue) === true
+                    && str_contains($queryValue, '{{') === true
+                    && str_contains($queryValue, '}}') === true
+                ) {
+                    $query[$queryKey] = $this->mappingService->renderTemplateString(
+                        template: $queryValue,
+                        context: array_merge(['data' => $queryContextData], $twigContext)
+                    );
+                }
+            }
+        }
+
         $usesPagination = true;
         if (isset($sourceConfig['usesPagination']) === true) {
             $usesPagination = filter_var($sourceConfig['usesPagination'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
