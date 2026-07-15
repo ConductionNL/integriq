@@ -896,7 +896,27 @@
         "Not authenticated": "Not authenticated",
         "Invalid payment amount": "Invalid payment amount",
         "Payment provider credential missing": "Payment provider credential missing",
-        "No active payment source is configured": "No active payment source is configured"
+        "No active payment source is configured": "No active payment source is configured",
+        "{ok} items processed": "{ok} items processed",
+        "Circuit breaker reset": "Circuit breaker reset",
+        "Circuit closed": "Circuit closed",
+        "Circuit open": "Circuit open",
+        "Cooldown: {seconds}s": "Cooldown: {seconds}s",
+        "Discard {count} items?": "Discard {count} items?",
+        "Discard this item? It will not be deleted.": "Discard this item? It will not be deleted.",
+        "Failed to load sync dead letters": "Failed to load sync dead letters",
+        "Failed to reset circuit breaker": "Failed to reset circuit breaker",
+        "Failures: {count}": "Failures: {count}",
+        "Item discarded": "Item discarded",
+        "Item replayed": "Item replayed",
+        "No dead-lettered sync items": "No dead-lettered sync items",
+        "OK": "OK",
+        "Origin ID": "Origin ID",
+        "Replay {count} items now?": "Replay {count} items now?",
+        "Replay this item now?": "Replay this item now?",
+        "Reset breaker": "Reset breaker",
+        "Sync dead letter": "Sync dead letter",
+        "Sync dead letters": "Sync dead letters"
     },
     "plurals": {}
 }

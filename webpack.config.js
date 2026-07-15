@@ -50,6 +50,15 @@ const useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(local
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
+	// webpack 5 dropped the automatic node core-module polyfills. The
+	// @conduction/nextcloud-vue-bundled @nextcloud/dialogs FilePicker chunk
+	// imports `{ join } from 'path'` (reachable via CnAppRoot); without a
+	// fallback a CLEAN install fails the production build with
+	// "Can't resolve 'path'". Mirror the fleet-canonical openbuild fix
+	// (path-browserify is a declared devDependency).
+	fallback: {
+		path: require.resolve('path-browserify'),
+	},
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),

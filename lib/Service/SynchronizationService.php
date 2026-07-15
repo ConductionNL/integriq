@@ -145,6 +145,19 @@ class SynchronizationService
     private ?SynchronizationContractService $synchronizationContractService = null;
 
     /**
+     * The dead-letter capture service for per-item sync failures.
+     *
+     * Resolved lazily from the container — mirrors
+     * {@see $synchronizationContractLogService}/{@see $synchronizationContractService}
+     * — to avoid a constructor cycle: {@see SyncItemDeadLetterService} itself
+     * resolves THIS class lazily (for replay) so the two services cannot be
+     * constructor-injected into each other.
+     *
+     * @var SyncItemDeadLetterService|null
+     */
+    private ?SyncItemDeadLetterService $syncItemDeadLetterService = null;
+
+    /**
      * Constructor.
      *
      * Post OpenRegister-cutover, synchronizations are resolved through the
@@ -187,6 +200,11 @@ class SynchronizationService
         $synchronizationContractService = $this->containerInterface->get(SynchronizationContractService::class);
         if ($synchronizationContractService instanceof SynchronizationContractService) {
             $this->synchronizationContractService = $synchronizationContractService;
+        }
+
+        $syncItemDeadLetterService = $this->containerInterface->get(SyncItemDeadLetterService::class);
+        if ($syncItemDeadLetterService instanceof SyncItemDeadLetterService) {
+            $this->syncItemDeadLetterService = $syncItemDeadLetterService;
         }
 
         if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
@@ -1427,7 +1445,7 @@ class SynchronizationService
             $stageStartTime = microtime(true);
             $result['objects']['found'] = count($objectList);
 
-            if ($sourceConfig['resultsPosition'] === '_object') {
+            if (($sourceConfig['resultsPosition'] ?? null) === '_object') {
                 if (array_is_list($objectList) === false) {
                     $objectList = [$objectList];
                 }
@@ -1449,15 +1467,30 @@ class SynchronizationService
             foreach ($objectList as $object) {
                 $objectStartTime = microtime(true);
 
-                $processResult = $this->processSynchronizationObject(
-                    synchronization: $synchronization,
-                    flowToken: $flowToken,
-                    object: $object,
-                    result: $result,
-                    isTest: $isTest,
-                    force: $force,
-                    log: $log
-                );
+                // Per-item isolation (synchronization-engine spec REQ-008,
+                // change retry-and-circuit-breaker-policies): a single
+                // object's mapping/write failure must not abort the rest of
+                // the pass — previously an uncaught exception here propagated
+                // through this un-guarded loop. On catch: capture a
+                // sync_item_dead_letter entry, count the item as invalid, and
+                // continue with the next object.
+                try {
+                    $processResult = $this->processSynchronizationObject(
+                        synchronization: $synchronization,
+                        flowToken: $flowToken,
+                        object: $object,
+                        result: $result,
+                        isTest: $isTest,
+                        force: $force,
+                        log: $log
+                    );
+                } catch (\Throwable $itemException) {
+                    $result['objects']['invalid']++;
+                    $this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
+
+                    $objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
+                    continue;
+                }//end try
 
                 $objectProcessingTime    = round((microtime(true) - $objectStartTime) * 1000, 2);
                 $objectProcessingTimes[] = $objectProcessingTime;
@@ -1583,6 +1616,108 @@ class SynchronizationService
 
         return $log;
     }//end synchronizeExternToIntern()
+
+    /**
+     * Best-effort capture of a per-item sync failure to `sync_item_dead_letter`
+     * (synchronization-engine spec REQ-008). Never throws — a failure to
+     * capture the dead-letter entry itself must not compound the original
+     * item failure by also aborting the sync pass; it is logged instead.
+     *
+     * @param array      $synchronization The synchronization payload.
+     * @param mixed      $object          The raw source object that failed processing.
+     * @param \Throwable $exception       The caught exception.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     */
+    private function captureSyncItemFailure(array $synchronization, mixed $object, \Throwable $exception): void
+    {
+        if ($this->syncItemDeadLetterService === null) {
+            $this->logger->warning(
+                'SynchronizationService: sync-item failure could not be dead-lettered — SyncItemDeadLetterService unavailable.',
+                ['synchronizationId' => ($synchronization['uuid'] ?? $synchronization['id'] ?? null), 'exception' => $exception->getMessage()]
+            );
+            return;
+        }
+
+        $originId = null;
+        $payload  = ['value' => $object];
+        if (is_array($object) === true) {
+            $payload = $object;
+
+            try {
+                $originId = $this->getOriginId(synchronization: $synchronization, object: $object);
+            } catch (\Throwable $originException) {
+                // Origin id could not be resolved before the failure — leave null.
+                unset($originException);
+            }
+        }
+
+        try {
+            $this->syncItemDeadLetterService->recordFailure(
+                synchronization: $synchronization,
+                payload: $payload,
+                error: $exception->getMessage(),
+                originId: $originId,
+            );
+        } catch (\Throwable $captureException) {
+            $this->logger->warning(
+                'SynchronizationService: failed to persist sync_item_dead_letter entry.',
+                [
+                    'synchronizationId' => ($synchronization['uuid'] ?? $synchronization['id'] ?? null),
+                    'exception'         => $captureException->getMessage(),
+                ]
+            );
+        }
+
+    }//end captureSyncItemFailure()
+
+    /**
+     * Re-invokes processSynchronizationObject() for a single payload against
+     * its synchronization — used by SyncItemDeadLetterService::replayMessage()
+     * to manually re-attempt a dead-lettered sync item (dead-letter-replay
+     * spec REQ-DLR-009). Unlike a full synchronize() pass, this does not
+     * fetch from the source, does not run follow-ups, and does not persist a
+     * new synchronization_log entry — a single, synchronous, immediate
+     * re-attempt only.
+     *
+     * @param array $synchronization The synchronization payload (as returned by getSynchronization()->jsonSerialize()).
+     * @param array $payload         The raw source object to re-process (the dead-lettered payload).
+     *
+     * @return array{result: array, targetId: string|null} The processSynchronizationObject() outcome.
+     *
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
+     */
+    public function replaySynchronizationItem(array $synchronization, array $payload): array
+    {
+        $log       = new SynchronizationRunLog();
+        $flowToken = new FlowToken();
+
+        $result = [
+            'objects'   => [
+                'found'   => 1,
+                'skipped' => 0,
+                'created' => 0,
+                'updated' => 0,
+                'deleted' => 0,
+                'invalid' => 0,
+            ],
+            'contracts' => [],
+            'logs'      => [],
+        ];
+
+        return $this->processSynchronizationObject(
+            synchronization: $synchronization,
+            object: $payload,
+            result: $result,
+            isTest: false,
+            force: true,
+            log: $log,
+            flowToken: $flowToken,
+        );
+
+    }//end replaySynchronizationItem()
 
     /**
      * Synchronizes a given synchronization (or a complete source).

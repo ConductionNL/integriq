@@ -134,6 +134,14 @@
           "kind": "tableCount",
           "table": "openconnector_rules"
         }
+      },
+      {
+        "name": "circuit_breaker_state",
+        "type": "gauge",
+        "help": "Per-source circuit breaker state (1=open, 0=closed) — provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
+        "source": {
+          "kind": "provider"
+        }
       }
     ]
   },
@@ -168,7 +176,8 @@
         { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
         { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
-        { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 }
+        { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
+        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 120 }
       ]
     },
     {
@@ -305,6 +314,9 @@
           { "id": "2d", "widgetId": "src-kpis-payload", "gridX": 8, "gridY": 6, "gridWidth": 4, "gridHeight": 2 },
           { "id": "3", "widgetId": "src-calls",   "gridX": 0, "gridY": 8, "gridWidth": 8, "gridHeight": 6 },
           { "id": "4", "widgetId": "src-related", "gridX": 8, "gridY": 8, "gridWidth": 4, "gridHeight": 6 }
+        ],
+        "bodyWidgets": [
+          { "id": "src-circuit-breaker", "component": "CircuitBreakerBadge", "title": "Circuit breaker", "placement": "before-body", "colSpan": 12 }
         ],
         "sidebar": {
           "enabled": true,
@@ -699,6 +711,19 @@
       "config": {
         "register": "openconnector",
         "schema": "event_message",
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "SyncDeadLetters",
+      "route": "/synchronizations/dead-letters",
+      "type": "custom",
+      "component": "SyncDeadLetterPage",
+      "_note": "Custom page: sync-item dead-letter operations view over sync_item_dead_letter (failed by default) backed by the admin-only /api/sync-dead-letter endpoints with per-row + bulk Replay/Discard and a detail modal. Mirrors EventDeliveries; not expressible as a generic CnIndexPage. See retry-and-circuit-breaker-policies (REQ-DLR-007..012).",
+      "title": "Sync dead letters",
+      "config": {
+        "register": "openconnector",
+        "schema": "sync_item_dead_letter",
         "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
