@@ -105,6 +105,7 @@ class SynchronizationServiceCleanupTest extends TestCase
                     $this->logger,
                     $synchronizationLogService,
                     $appConfig,
+                    $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
                     $tablesSyncAdapter,
                 ]
             )

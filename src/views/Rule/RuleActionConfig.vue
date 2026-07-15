@@ -98,6 +98,7 @@ import SaveObjectForm from './actionForms/SaveObjectForm.vue'
 import ExtendInputForm from './actionForms/ExtendInputForm.vue'
 import ExtendExternalInputForm from './actionForms/ExtendExternalInputForm.vue'
 import WebhookSignatureForm from './actionForms/WebhookSignatureForm.vue'
+import ApprovalForm from './actionForms/ApprovalForm.vue'
 
 /**
  * Canonical list of rule action types. Lifted from the legacy modal's
@@ -123,6 +124,7 @@ const ACTION_TYPES = [
 	{ id: 'extend_input', label: 'Extend input' },
 	{ id: 'extend_external_input', label: 'Extend external input' },
 	{ id: 'webhook_signature', label: 'Webhook signature' },
+	{ id: 'approval', label: 'Approval' },
 ]
 
 /**
@@ -148,6 +150,7 @@ const ACTION_FORM_MAP = {
 	extend_input: 'ExtendInputForm',
 	extend_external_input: 'ExtendExternalInputForm',
 	webhook_signature: 'WebhookSignatureForm',
+	approval: 'ApprovalForm',
 }
 
 let actionUidCounter = 0
@@ -173,6 +176,7 @@ export default {
 		ExtendInputForm,
 		ExtendExternalInputForm,
 		WebhookSignatureForm,
+		ApprovalForm,
 	},
 
 	props: {

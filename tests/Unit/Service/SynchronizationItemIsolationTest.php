@@ -135,6 +135,7 @@ class SynchronizationItemIsolationTest extends TestCase
                     $this->createMock(LoggerInterface::class),
                     $this->synchronizationLogService,
                     $appConfig,
+                    $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
                 ]
             )
             ->onlyMethods(['getAllObjectsFromSource'])

@@ -44,6 +44,8 @@
     "pdok.lookup": ["admin"],
     "pdok.free": ["admin"],
     "pdok.reverse": ["admin"],
+    "approval.approve": ["admin"],
+    "approval.reject": ["admin"],
     "catalog.instantiate": ["admin"],
     "configuration.export": ["admin"],
     "configuration.import": ["admin"]

@@ -184,7 +184,8 @@
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
         { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
         { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
-        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 120 }
+        { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 },
+        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 }
       ]
     },
     {
@@ -725,6 +726,19 @@
       }
     },
     {
+      "id": "Approvals",
+      "route": "/approvals",
+      "type": "custom",
+      "component": "ApprovalsIndex",
+      "_note": "Custom page: HITL Pending Approvals operations view over approval_request, backed by the two-layer-authorized /api/approvals endpoint (returns only caller-actionable rows) with a status filter and per-row navigation into a detail page whose Approve/Reject verbs hit /api/approvals/{id}/approve|reject. Not the generic OR CRUD a CnIndexPage drives. Mirrors EventDeliveries.",
+      "title": "Approvals",
+      "config": {
+        "register": "openconnector",
+        "schema": "approval_request",
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
       "id": "SyncDeadLetters",
       "route": "/synchronizations/dead-letters",
       "type": "custom",
@@ -735,6 +749,18 @@
         "register": "openconnector",
         "schema": "sync_item_dead_letter",
         "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "ApprovalDetail",
+      "route": "/approvals/:id",
+      "type": "custom",
+      "component": "ApprovalDetail",
+      "_note": "Custom detail page for one approval_request with Approve/Reject actions (reject requires a comment). See hitl-approval-rule-action.",
+      "title": "Approval request",
+      "config": {
+        "register": "openconnector",
+        "schema": "approval_request"
       }
     },
     {

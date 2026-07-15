@@ -32,6 +32,10 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods)        Every method is a one-line SPA-shell
+ * route handler (delegates to makeSpaResponse()) — the class grows by design
+ * as new SPA routes are added (most recently approvals()/approvalsId() for
+ * hitl-approval-rule-action); splitting it would not reduce complexity.
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  *
  * @spec exclude SPA-shell controller — every method returns the same index template so the Vue
@@ -482,6 +486,44 @@ class UiController extends Controller
     {
         return $this->makeSpaResponse();
     }//end cloudEventsLogs()
+
+    /**
+     * Serves the SPA shell for the Pending Approvals list route.
+     *
+     * @return TemplateResponse The SPA index template.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
+     */
+    public function approvals(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end approvals()
+
+    /**
+     * Serves the SPA shell for the single approval_request detail route.
+     *
+     * @param string $id The approval_request identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
+     */
+    public function approvalsId(string $id): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end approvalsId()
 
     /**
      * Serves the SPA shell for the Catalog route (connector-catalog-ui).

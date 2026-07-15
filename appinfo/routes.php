@@ -288,6 +288,16 @@ return [
 		['name' => 'pdok#freeAction', 'url' => '/api/pdok/free', 'verb' => 'GET'],
 		['name' => 'pdok#reverseAction', 'url' => '/api/pdok/reverse', 'verb' => 'GET'],
 
+		// HITL approval workflow (openspec/changes/hitl-approval-rule-action).
+		// Auth: #[NoAdminRequired] with in-body two-layer authorization
+		// (ADR-023 action matrix + per-request approverGroup membership,
+		// see ApprovalsController). Standard NC CSRF protection applies to
+		// approve/reject — no #[NoCSRFRequired] (design.md API Design).
+		['name' => 'approvals#index', 'url' => '/api/approvals', 'verb' => 'GET'],
+		['name' => 'approvals#show', 'url' => '/api/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
+		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
+
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
 		// these two are the bespoke, non-CRUD actions.
@@ -361,6 +371,8 @@ return [
 		['name' => 'ui#cloudEventsEvents', 'url' => '/cloud-events/events', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsEventsId', 'url' => '/cloud-events/events/{id}', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
+		['name' => 'ui#approvals', 'url' => '/approvals', 'verb' => 'GET'],
+		['name' => 'ui#approvalsId', 'url' => '/approvals/{id}', 'verb' => 'GET'],
 		['name' => 'ui#catalog', 'url' => '/catalog', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.

@@ -218,6 +218,7 @@ class SynchronizationService
      * @param LoggerInterface           $logger                    The logger.
      * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
      * @param IAppConfig                $appConfig                 The app configuration.
+     * @param ApprovalService           $approvalService           HITL batch-approval gate (hitl-approval-rule-action).
      * @param TablesSyncAdapter         $tablesSyncAdapter         The `nextcloud-table` source/target adapter (tables-bridge).
      */
     public function __construct(
@@ -229,6 +230,7 @@ class SynchronizationService
         private readonly LoggerInterface $logger,
         SynchronizationLogService $synchronizationLogService,
         IAppConfig $appConfig,
+        private readonly ApprovalService $approvalService,
         private readonly ?TablesSyncAdapter $tablesSyncAdapter=null,
     ) {
         $this->synchronizationLogService = $synchronizationLogService;
@@ -1488,16 +1490,22 @@ class SynchronizationService
      *
      * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
      *
-     * @param array                 $synchronization The synchronization configuration and state.
-     * @param SynchronizationRunLog $log             The log object to record details and results.
-     * @param FlowToken             $flowToken       The flow token shared across the run.
-     * @param bool|null             $isTest          Optional flag to run in test mode (no deletions/persist).
-     * @param bool|null             $force           Optional flag to bypass change checks and force all.
-     * @param string|null           $source          The source to synchronize; defaults to the sync source.
-     * @param array|null            $data            The data to synchronize; defaults to the sync data.
-     * @param string|null           $mutationType    The current mutation type from this::VALID_MUTATION_TYPES.
-     * @param bool|null             $forceDeletion   Explicit override for the deletion-ratio guard
-     *                                               (REQ-010); ignored when `$isTest === true`.
+     * @param array                 $synchronization   The synchronization configuration and state.
+     * @param SynchronizationRunLog $log               The log object to record details and results.
+     * @param FlowToken             $flowToken         The flow token shared across the run.
+     * @param bool|null             $isTest            Optional flag to run in test mode (no deletions/persist).
+     * @param bool|null             $force             Optional flag to bypass change checks and force all.
+     * @param string|null           $source            The source to synchronize; defaults to the sync source.
+     * @param array|null            $data              The data to synchronize; defaults to the sync data.
+     * @param string|null           $mutationType      The current mutation type from this::VALID_MUTATION_TYPES.
+     * @param bool|null             $forceDeletion     Explicit override for the deletion-ratio guard
+     *                                                 (REQ-010); ignored when `$isTest === true`.
+     * @param string|null           $approvalRequestId Bypass token: the id of a specific approved
+     *                                                 `approval_request` to consume when
+     *                                                 `sourceConfig.requiresApproval` gates this run
+     *                                                 (synchronization-engine REQ-015). Optional — when
+     *                                                 omitted, any approved+unconsumed request for this
+     *                                                 synchronization satisfies the gate.
      *
      * @return SynchronizationRunLog Returns the updated synchronization log with processing results.
      *
@@ -1507,9 +1515,13 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-test-runs-make-no-writes-req-011
+     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) $approvalRequestId is an additive,
+     * backward-compatible optional bypass token (hitl-approval-rule-action design.md
+     * Decision 6); all 9 preceding parameters pre-exist this change.
      */
     private function synchronizeExternToIntern(
         array $synchronization,
@@ -1520,7 +1532,8 @@ class SynchronizationService
         ?string $source=null,
         ?array $data=null,
         ?string $mutationType=null,
-        ?bool $forceDeletion=false
+        ?bool $forceDeletion=false,
+        ?string $approvalRequestId=null
     ): SynchronizationRunLog {
         // Start overall timing measurement.
         $overallStartTime   = microtime(true);
@@ -1553,6 +1566,13 @@ class SynchronizationService
             'duration_ms' => round((microtime(true) - $stageStartTime) * 1000, 2),
             'description' => 'Configuration loading and source validation',
         ];
+
+        // Set (only) inside the batch branch below when a Synchronization
+        // batch-gate approval_request covered this run — referenced again
+        // after the branch to mark it consumed (REQ-015). Initialized here
+        // so it is always defined, including on the single-object/delete
+        // path, which is never gated (design.md Decision 6: batch-level only).
+        $gatedApprovalRequest = null;
 
         if ($data !== null && $mutationType === 'delete') {
             $processResult = $this->processSynchronizationObject(
@@ -1617,6 +1637,47 @@ class SynchronizationService
                 'description'        => 'Object list preparation and counting',
                 'final_object_count' => count($objectList),
             ];
+
+            // Batch-level HITL approval gate (synchronization-engine REQ-015):
+            // once fetch + mapping/preparation are done and BEFORE any write or
+            // garbage-collection begins, check `sourceConfig.requiresApproval`.
+            // A test (dry) run is never gated — REQ-011 already guarantees it
+            // makes no writes, so there is nothing to gate. Gates the whole
+            // batch via a single approval_request, not per object
+            // (design.md Decision 6).
+            if ($isTest === false && (bool) ($sourceConfig['requiresApproval'] ?? false) === true) {
+                $synchronizationId = (string) ($synchronization['uuid'] ?? '');
+
+                $gatedApprovalRequest = $this->resolveApprovalForSynchronization(
+                    synchronizationId: $synchronizationId,
+                    bypassApprovalId: $approvalRequestId
+                );
+
+                if ($gatedApprovalRequest === null) {
+                    $approvalConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig']['approval'] ?? []));
+                    $this->approvalService->suspendForSynchronization(
+                        synchronizationId: $synchronizationId,
+                        approverGroup: (string) ($approvalConfig['approverGroup'] ?? ''),
+                        onReject: (string) ($approvalConfig['onReject'] ?? 'error'),
+                        onTimeout: (string) ($approvalConfig['onTimeout'] ?? 'error'),
+                        ttlSeconds: (int) ($approvalConfig['ttlSeconds'] ?? ApprovalService::DEFAULT_TTL_SECONDS)
+                    );
+
+                    $result['objects']['found']   = count($objectList);
+                    $result['objects']['created'] = 0;
+                    $result['objects']['updated'] = 0;
+                    $result['objects']['skipped'] = count($objectList);
+                    $result['objects']['deleted'] = 0;
+
+                    $log->setResult($result);
+                    $log->setMessage('pending_approval');
+                    $log = $this->synchronizationLogService->update(log: $log);
+
+                    // No writes, no garbage collection, no follow-ups — the run
+                    // is paused, not completed (REQ-015).
+                    return $log;
+                }//end if
+            }//end if
 
             // Stage 4: Processing individual objects.
             $stageStartTime        = microtime(true);
@@ -1741,6 +1802,13 @@ class SynchronizationService
             ];
         }//end if
 
+        // The gate passed (an approved, unconsumed approval_request covered
+        // this run) and the write phase above has now completed — mark it
+        // consumed so it cannot re-authorize a later run (REQ-015).
+        if ($gatedApprovalRequest !== null) {
+            $this->approvalService->markConsumed(approvalRequest: $gatedApprovalRequest);
+        }
+
         // Stage 6: Follow-up synchronizations.
         $stageStartTime = microtime(true);
         $followUpCount  = 0;
@@ -1797,6 +1865,46 @@ class SynchronizationService
 
         return $log;
     }//end synchronizeExternToIntern()
+
+    /**
+     * Resolve whether an approved, unconsumed `approval_request` covers this
+     * synchronization run — the batch-gate's "has this already been
+     * approved" check (synchronization-engine REQ-015).
+     *
+     * @param string      $synchronizationId The synchronization being gated.
+     * @param string|null $bypassApprovalId  Optional specific approval_request id (the
+     *                                       "bypass token" `ApprovalsController` passes on
+     *                                       resume); when given it MUST resolve to an
+     *                                       approved, unconsumed request for THIS
+     *                                       synchronization or the gate still fails closed.
+     *
+     * @return ObjectEntity|null The approved, unconsumed request, or null when the run is still gated.
+     *
+     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     */
+    private function resolveApprovalForSynchronization(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity
+    {
+        if ($bypassApprovalId !== null) {
+            try {
+                $candidate = $this->approvalService->find(id: $bypassApprovalId);
+            } catch (Exception $e) {
+                return null;
+            }
+
+            $candidateData = $candidate->getObject();
+            if (($candidateData['status'] ?? null) === 'approved'
+                && ($candidateData['synchronizationId'] ?? null) === $synchronizationId
+                && empty($candidateData['consumedAt']) === true
+            ) {
+                return $candidate;
+            }
+
+            return null;
+        }
+
+        return $this->approvalService->findApprovedUnconsumedForSynchronization(synchronizationId: $synchronizationId);
+
+    }//end resolveApprovalForSynchronization()
 
     /**
      * Best-effort capture of a per-item sync failure to `sync_item_dead_letter`
@@ -1899,23 +2007,28 @@ class SynchronizationService
         );
 
     }//end replaySynchronizationItem()
-
     /**
      * Synchronizes a given synchronization (or a complete source).
      *
-     * @param array                                        $synchronization The synchronization configuration.
-     * @param bool|null                                    $isTest          False by default; for the test endpoint.
-     * @param bool|null                                    $force           False by default; if true always update.
-     * @param array|\OCA\OpenRegister\Db\ObjectEntity|null $object          Object to synchronize, by reference.
-     * @param string|null                                  $mutationType    For single object sync: the mutation
-     *                                                                      type, 'create', 'update' or 'delete'.
-     *                                                                      Used for syncs to external sources.
-     * @param string|null                                  $source          The source; defaults to the sync source.
-     * @param array|null                                   $data            The data; defaults to the sync data.
-     * @param FlowToken|null                               $flowToken       The flow token shared across the run.
-     * @param bool|null                                    $forceDeletion   False by default; explicit override for
-     *                                                                      the deletion-ratio guard (REQ-010). Not
-     *                                                                      applicable to test runs.
+     * @param array                                        $synchronization   The synchronization configuration.
+     * @param bool|null                                    $isTest            False by default; for the test endpoint.
+     * @param bool|null                                    $force             False by default; if true always update.
+     * @param array|\OCA\OpenRegister\Db\ObjectEntity|null $object            Object to synchronize, by reference.
+     * @param string|null                                  $mutationType      For single object sync: the mutation
+     *                                                                        type, 'create', 'update' or
+     *                                                                        'delete'. Used for syncs to external
+     *                                                                        sources.
+     * @param string|null                                  $source            The source; defaults to the sync source.
+     * @param array|null                                   $data              The data; defaults to the sync data.
+     * @param FlowToken|null                               $flowToken         The flow token shared across the run.
+     * @param bool|null                                    $forceDeletion     False by default; explicit override for
+     *                                                                        the deletion-ratio guard (REQ-010). Not
+     *                                                                        applicable to test runs.
+     * @param string|null                                  $approvalRequestId Bypass token: the id of a specific
+     *                                                                        approved `approval_request` to consume
+     *                                                                        when `sourceConfig.requiresApproval`
+     *                                                                        gates this run (synchronization-engine
+     *                                                                        REQ-015).
      *
      * @return array|array|null
      *
@@ -1930,9 +2043,13 @@ class SynchronizationService
      * @throws TooManyRequestsHttpException
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) $approvalRequestId is an additive,
+     * backward-compatible optional bypass token (hitl-approval-rule-action design.md
+     * Decision 6); all 9 preceding parameters pre-exist this change.
      */
     public function synchronize(
         array|ObjectEntity $synchronization,
@@ -1944,6 +2061,7 @@ class SynchronizationService
         ?array $data=null,
         ?FlowToken &$flowToken=null,
         ?bool $forceDeletion=false,
+        ?string $approvalRequestId=null,
     ): array|null {
         // Controllers and cron jobs fetch the synchronization as an OpenRegister
         // object (register `openconnector`, schema `synchronization`); hydrate it
@@ -2025,8 +2143,16 @@ class SynchronizationService
             source: $source,
             data: $data,
             mutationType: $mutationType,
-            forceDeletion: $forceDeletion
+            forceDeletion: $forceDeletion,
+            approvalRequestId: $approvalRequestId
         );
+
+        // A gated, not-yet-approved run already finalized its own log with a
+        // `pending_approval` message and made no writes — do not overwrite it
+        // with 'Success' (synchronization-engine REQ-015).
+        if ($log->getMessage() === 'pending_approval') {
+            return $log->jsonSerialize();
+        }
 
         // Finalize log.
         $executionTime = (int) round((microtime(true) - $startTime) * 1000);
