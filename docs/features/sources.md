@@ -72,6 +72,64 @@ The **un-migrated-secret** case is subtle: OpenRegister's lazy vault→Doriath s
 
 **Secret hygiene & trust boundary:** the secret value never appears in source configuration, sync logs, CallLogs, or error messages — with brokering it never enters the OpenConnector process at all. The OpenRegister broker is the trust boundary: it resolves and injects the secret server-side and returns only `{status, headers, body}`. Its **refusal reason is logged inside OpenRegister and never crosses the boundary** — the exception OpenConnector catches is a single opaque "Request not permitted", which is why the 403 guidance covers the likely fixes for its context rather than naming the exact guard. OpenConnector's own owner-pin refusals are logged with the **guard name + owner uid + credential id only** — never any secret material.
 
+### App-side injection (`credentialRef` placeholder) — for arbitrary / self-hosted hosts {#app-side-injection}
+
+The brokered proxy above is **host-locked**: it only works for a provider in OpenRegister's immutable catalogue (Mollie, KVK, GitHub, …), whose `baseUrl` pins where every call may go. That is deliberately the strongest option — the secret is *zero-knowledge* (it never enters the OpenConnector process). But it cannot cover a Source that points at an **arbitrary or self-hosted host** — a municipality's own API, an on-prem ZGW registry, a customer's staging server — because those hosts can't be host-locked from a file shipped with OpenRegister.
+
+App-side injection closes that gap **without storing the secret in the Source schema**. Instead of the whole call being proxied, **any leaf value under `configuration.authentication` may be a placeholder** of the shape `{ "credentialRef": { … } }`. At call time OpenConnector resolves each placeholder from the vault (through the broker) and substitutes the plaintext **in place**, so every normal auth mechanism — API-key header, HTTP Basic, OAuth token exchange, JWT signing — runs unchanged against a hydrated config.
+
+The vault credential must use one of OpenRegister's **generic, inject-only providers** (they carry no `baseUrl` and no allow-rules, so they can *only* be injected app-side — never proxied):
+
+| Provider | Secret it holds | Non-secret scaffolding you keep in the Source |
+|---|---|---|
+| `generic-apikey` | the bare API key | the header name / template |
+| `generic-bearer` | the bearer token | — |
+| `generic-basic` | the **password** | the `username` (not sensitive) |
+| `generic-oauth2` | the OAuth2 `client_secret` | `client_id`, token URL, scope |
+| `generic-jwt` | the JWT signing secret | claims, algorithm |
+
+Example — an API key injected into a header, with the key held in the vault:
+
+```json
+{
+  "authentication": {
+    "type": "apikey",
+    "apikey": { "credentialRef": { "credentialId": "00000000-0000-0000-0000-000000000000" } }
+  },
+  "headers": {
+    "Authorization": "Bearer {{ source.configuration.authentication.apikey }}"
+  }
+}
+```
+
+At call time `authentication.apikey` becomes the vault secret, so the `Authorization` header renders with the real key. Only the **secret leaf** is a placeholder; the non-secret scaffolding (`type`, `client_id`, `username`, `tokenUrl`, header name, …) stays in the config as plain values.
+
+**How it differs from the proxy (top-level `credentialRef`):**
+
+| | Brokered proxy | App-side injection |
+|---|---|---|
+| Config shape | `authentication.credentialRef` (the **whole** auth block) | a `credentialRef` **nested** at a secret's own position |
+| Provider | host-locked catalogue entry (Mollie, KVK, …) | a `generic-*` inject-only provider |
+| Where the call goes | provider `baseUrl` (host-locked) | the Source's own `location` |
+| Secret exposure | zero-knowledge — never enters OpenConnector | resolved into the OpenConnector process, then injected |
+| Broker guards | owner → allowedApps → allow-rules → host-lock | owner → allowedApps (no host-lock — there is no fixed host) |
+| Use it for | catalogued SaaS | arbitrary / self-hosted hosts |
+
+**Hard rules (each a synthetic 409 config-error CallLog; the request is never sent):**
+
+- The referenced credential **must** use a `generic-*` inject-only provider. Referencing a host-locked *proxy* credential in a placeholder is refused — its secret is zero-knowledge and never leaves OpenRegister (use a top-level `credentialRef` proxy for those instead).
+- Requires an OpenRegister version that ships `CredentialBrokerService::resolveInjectable()`; an older broker fails closed with an upgrade hint.
+- The broker still enforces credential **owner** and **allowedApps** (add `openconnector` to `allowedApps`). Background jobs use the same owner-pinning policy as the proxy path.
+
+**Operator recipe:**
+
+1. Create a credential in OpenRegister's credential broker with a **`generic-*`** provider matching your auth scheme (e.g. `generic-apikey`), the secret, and `owner`. Note its UUID.
+2. Add `openconnector` to the credential's `allowedApps`.
+3. In the Source's `configuration.authentication`, replace the secret value with a `{ "credentialRef": { "credentialId": "<uuid>" } }` placeholder, keeping the non-secret scaffolding around it.
+4. Test the source: a 2xx/upstream status means injection worked; a 409 CallLog names the config problem (wrong provider kind, missing credential, broker too old).
+
+Because the injected secret ends up exactly where an embedded one would, the same CallLog redaction covers it — the win is that the **Source schema stores only a reference**, never the secret.
+
 ### API Key
 
 Set a static value directly in the `headers` or `query` fields of the source:
