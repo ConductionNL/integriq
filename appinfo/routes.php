@@ -288,6 +288,8 @@ return [
 		// ConfigurationService::exportConfiguration()/importConfiguration().
 		// See openspec/changes/connector-catalog-ui/contract.md
 		['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST'],
+		// Register connector export — routed trigger for ConfigurationService::exportRegister().
+		['name' => 'configuration#exportRegister', 'url' => '/api/registers/{id}/export', 'verb' => 'GET'],
 		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
 		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
 
