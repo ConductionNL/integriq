@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\ApprovalService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EndpointService;
@@ -115,6 +116,7 @@ class EndpointServiceTierPolicyTest extends TestCase
         $avgBsnPolicyRule     = new AvgBsnPolicyRule();
         $approvalService      = $this->createMock(ApprovalService::class);
         $requestId            = $this->createMock(IRequestId::class);
+        $flowRunnerService    = $this->createMock(FlowRunnerService::class);
 
         $this->service = new EndpointService(
             $objectService,
@@ -136,6 +138,7 @@ class EndpointServiceTierPolicyTest extends TestCase
             $avgBsnPolicyRule,
             $approvalService,
             $requestId,
+            $flowRunnerService,
         );
     }//end setUp()
 

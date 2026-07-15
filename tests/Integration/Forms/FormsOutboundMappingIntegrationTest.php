@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Integration\Forms;
 
 use OCA\OpenConnector\Service\CallService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\EventService;
 use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
 use OCA\OpenConnector\Service\Forms\FormsClientInterface;
@@ -110,6 +111,7 @@ class FormsOutboundMappingIntegrationTest extends TestCase
             $this->createMock(SynchronizationService::class),
             $this->createMock(JobService::class),
             $this->callService,
+            $this->createMock(FlowRunnerService::class),
             $this->mappingService,
             new FormsAnswerResolver(),
             $formsSyncAdapter,
@@ -345,6 +347,7 @@ class FormsOutboundMappingIntegrationTest extends TestCase
             $this->createMock(SynchronizationService::class),
             $this->createMock(JobService::class),
             $this->callService,
+            $this->createMock(FlowRunnerService::class),
             $this->mappingService,
             new FormsAnswerResolver(),
             $formsSyncAdapter,
