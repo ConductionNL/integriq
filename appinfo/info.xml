@@ -55,6 +55,7 @@
 		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
 		<job>OCA\OpenConnector\Cron\EudiStatusListRefreshJob</job>
 		<job>OCA\OpenConnector\Cron\KissPullJob</job>
+		<job>OCA\OpenConnector\Cron\IwmoIjwRetryJob</job>
 	</background-jobs>
 
 	<commands>

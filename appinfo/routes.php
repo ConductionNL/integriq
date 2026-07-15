@@ -62,6 +62,15 @@ return [
 		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
 		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
 
+		// iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0) bridge
+		// (openspec/changes/iwmo-ijw-adapter). Push is an authenticated NC-session
+		// call (production binding for sibling apps' own social-domain case
+		// modules) — mirrors kiss#createKlantcontact. The inbound retour receiver
+		// is gated by webhook signature (HMAC), not an NC session; see
+		// IwmoIjwController::inbound().
+		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
+		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
+
 		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
 		// Inbound submissions are gated by webhook signature (HMAC), not an NC
 		// session; see OpenFormulierenController::inbound(). status/handoff are
