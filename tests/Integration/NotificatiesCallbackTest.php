@@ -32,6 +32,7 @@ use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\NotificatiesSubscriberService;
 use OCA\OpenConnector\Service\SynchronizationService;
@@ -152,7 +153,8 @@ class NotificatiesCallbackTest extends TestCase
             new WebhookSignatureService($logger),
             $synchronizationService,
             $this->createMock(JobService::class),
-            $this->createMock(CallService::class)
+            $this->createMock(CallService::class),
+            $this->createMock(FlowRunnerService::class)
         );
 
         // Real NotificatiesSubscriberService — the capability under test.
@@ -269,7 +271,8 @@ class NotificatiesCallbackTest extends TestCase
             new WebhookSignatureService($logger),
             $synchronizationService,
             $this->createMock(JobService::class),
-            $this->createMock(CallService::class)
+            $this->createMock(CallService::class),
+            $this->createMock(FlowRunnerService::class)
         );
 
         $urlGenerator = $this->createMock(IURLGenerator::class);

@@ -38,6 +38,7 @@ import {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	runFlowHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	manageSigningHandler,
@@ -55,6 +56,7 @@ import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
+import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
@@ -67,6 +69,8 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// Flows index row action (visual-flow-orchestration): manual run trigger.
+	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testMappingModalHandler,
@@ -121,6 +125,11 @@ export default {
 	MappingDetailPage,
 	RuleDetailPage,
 	SynchronizationDetailPage,
+
+	// Flow detail (custom page): the ordered step-list editor + manual Run +
+	// run-log tab that a generic detail page cannot express. See
+	// visual-flow-orchestration REQ-009.
+	FlowDetailPage,
 
 	// Dead-letter operations view (custom page): a filtered event_message
 	// surface backed by the admin-only /api/events/dead-letter endpoints with

@@ -34,6 +34,7 @@ use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
 use OCA\OpenConnector\Rule\ReferentienummerRule;
 use OCA\OpenConnector\Service\ApprovalService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
 use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
@@ -114,6 +115,7 @@ class EndpointService
      * @param ApprovalService         $approvalService         Suspends the pipeline on a HITL `approval` rule.
      * @param IRequestId              $requestId               Nextcloud request-id service, used to synthesize
      *                                                         an `IRequest` for `triggerFromFlow()`.
+     * @param FlowRunnerService       $flowRunnerService       Executes the `flow` rule action type (REQ-RULE-009).
      *
      * @return void
      */
@@ -137,6 +139,7 @@ class EndpointService
         private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
         private readonly ApprovalService $approvalService,
         private readonly IRequestId $requestId,
+        private readonly FlowRunnerService $flowRunnerService,
     ) {
     }//end __construct()
 
@@ -1829,6 +1832,7 @@ class EndpointService
                         'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
                         'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
                         'approval' => $this->processApprovalRule(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: $timing),
+                        'flow' => $this->processFlowRule(rule: $rule, data: $data),
                         default => throw new Exception('Unsupported rule type: '.($ruleData['type'] ?? '')),
                     };//end match
                 } catch (Exception $e) {
@@ -1944,6 +1948,57 @@ class EndpointService
         );
 
     }//end processApprovalRule()
+
+    /**
+     * `flow` rule action type: run a `flow` synchronously mid-pipeline
+     * (rule-pipeline REQ-RULE-009). Valid for either `timing` — a flow can
+     * be a pre-write side-effect (`before`) or a post-write follow-up
+     * (`after`), matching `synchronization`/`mapping`'s own either-timing
+     * validity. Adds one new dispatch entry only — REQ-RULE-001's
+     * ordering/condition/short-circuit contract is unchanged, and the
+     * pipeline's `$data` passes through unmodified (a flow's effects
+     * happen via its OWN steps calling their OWN target services, not by
+     * mutating this rule's `$data`).
+     *
+     * @param ObjectEntity $rule The `flow` rule whose conditions passed.
+     * @param array        $data The current pipeline data, passed as the flow's initial input.
+     *
+     * @return array The unmodified `$data` (a flow rule never rewrites pipeline data).
+     *
+     * @throws Exception When `configuration.flow` is missing/unresolvable, or the flow
+     *                   run ends `failed`/`stopped`/`dead_letter` — surfaced through
+     *                   `processRules()`'s existing rule-failure contract (matching the
+     *                   `approval`/`error` rule types' precedent; no new pipeline-level
+     *                   failure mode is introduced).
+     *
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-flow-rule-action-type-triggers-a-flow-run-req-rule-009
+     */
+    private function processFlowRule(ObjectEntity $rule, array $data): array
+    {
+        $config = $rule->getObject()['configuration'] ?? [];
+        $flowId = (string) ($config['flow'] ?? '');
+
+        if ($flowId === '') {
+            throw new Exception('flow rule type requires configuration.flow (the id of the flow to run)');
+        }
+
+        try {
+            $flow = $this->flowRunnerService->findFlow(id: $flowId);
+        } catch (Exception $e) {
+            throw new Exception('flow rule: referenced flow not found: '.$flowId);
+        }
+
+        $flowRun     = $this->flowRunnerService->run(flow: $flow, input: $data, triggerSource: 'endpoint');
+        $flowRunData = $flowRun->getObject();
+        $status      = (string) ($flowRunData['status'] ?? '');
+
+        if (in_array($status, ['failed', 'stopped', 'dead_letter'], true) === true) {
+            throw new Exception('flow rule: flow run ended with status "'.$status.'"');
+        }
+
+        return $data;
+
+    }//end processFlowRule()
 
     /**
      * Get a rule by its ID using OR ObjectService

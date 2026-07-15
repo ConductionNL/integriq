@@ -318,6 +318,11 @@ return [
 		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
 		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
 
+		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
+		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
+		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
+
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
 		// these two are the bespoke, non-CRUD actions.

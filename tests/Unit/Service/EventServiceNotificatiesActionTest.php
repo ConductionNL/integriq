@@ -22,6 +22,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
@@ -89,6 +90,7 @@ class EventServiceNotificatiesActionTest extends TestCase
             $this->createMock(SynchronizationService::class),
             $this->createMock(JobService::class),
             $this->callService,
+            $this->createMock(FlowRunnerService::class),
         );
 
     }//end setUp()

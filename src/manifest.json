@@ -186,7 +186,8 @@
         { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
         { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
         { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 },
-        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 }
+        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 },
+        { "id": "Flows", "label": "Flows", "icon": "TransitConnectionVariant", "route": "Flows", "order": 122 }
       ]
     },
     {
@@ -763,6 +764,37 @@
         "register": "openconnector",
         "schema": "sync_item_dead_letter",
         "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "Flows",
+      "route": "/flows",
+      "type": "index",
+      "title": "Flows",
+      "config": {
+        "register": "openconnector",
+        "schema": "flow",
+        "columns": ["name", "isEnabled", "description"],
+        "includeFields": ["name", "description"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "rowAction": { "id": "edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
+        "actions": [
+          { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
+          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runFlowHandler" }
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "FlowDetail",
+      "route": "/flows/:id",
+      "type": "custom",
+      "title": "Flow",
+      "component": "FlowDetailPage",
+      "_note": "Custom page: the ordered, reorderable step-list editor (typed rows: type/configRef/condition/onError, plus branch sub-targets) and the manual Run action + run-log tab cannot be expressed by the generic detail page. See visual-flow-orchestration REQ-009. No separate Edit modal — flow metadata (name/description/isEnabled) is edited inline on this page, matching the current RuleDetailPage/SynchronizationDetailPage/MappingDetailPage convention (the legacy src/modals/<Entity>/Edit*.vue modal pattern design.md referenced is unwired dead code post chain-C, per src/handlers/actionHandlers.js's own docblock).",
+      "config": {
+        "register": "openconnector",
+        "schema": "flow"
       }
     },
     {

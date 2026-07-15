@@ -123,9 +123,13 @@ class EventService
      * @param SynchronizationService  $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
      * @param JobService              $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
      * @param CallService             $callService            Runs `action.kind = 'notificaties'` dispatches against a `Source` (REQ-010).
+     * @param FlowRunnerService       $flowRunnerService      Runs `action.kind = 'flow'`
+     *                                                        dispatches (visual-flow-orchestration,
+     *                                                        event-triggered flows).
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -134,7 +138,8 @@ class EventService
         private readonly WebhookSignatureService $signatureService,
         private readonly SynchronizationService $synchronizationService,
         private readonly JobService $jobService,
-        private readonly CallService $callService
+        private readonly CallService $callService,
+        private readonly FlowRunnerService $flowRunnerService,
     ) {
 
     }//end __construct()
@@ -796,6 +801,13 @@ class EventService
                     action: $actionArray
                 );
 
+            case 'flow':
+                return $this->dispatchFlowAction(
+                    message: $message,
+                    subscriptionData: $subscriptionData,
+                    action: $actionArray
+                );
+
             default:
                 // Unrecognised action.kind: a configuration error, not a
                 // transient failure — fails once without entering the retry loop.
@@ -973,6 +985,105 @@ class EventService
         return true;
 
     }//end dispatchJobAction()
+
+    /**
+     * Dispatch an `action.kind = 'flow'` message: resolve the target flow
+     * and run it via `FlowRunnerService::run(..., triggerSource: 'event')`
+     * in place of an HTTP POST — this is the event-triggered surface of
+     * the four flow-orchestration triggers (REQ-007c). Success/failure
+     * bookkeeping mirrors {@see dispatchSynchronizationAction}/
+     * {@see dispatchJobAction} exactly, so an event-triggered flow is
+     * subject to the same retry/backoff/dead-letter/replay machinery as a
+     * webhook delivery. Extending an `event_subscription`'s existing
+     * `action` dispatch block (the same additive extension point
+     * `notificaties-api-subscriber` REQ-010 already used for `kind:
+     * 'notificaties'`) is how a flow's "trigger on a CloudEvent matching a
+     * configured type/source/subject" (design.md) is expressed — the
+     * subscription's own `types`/`source`/`filters` fields already do that
+     * matching in {@see doesEventMatchSubscription}; `action.flowId`
+     * selects which flow runs once matched.
+     *
+     * @param ObjectEntity $message          The message being dispatched.
+     * @param array        $subscriptionData The owning subscription's OR object array.
+     * @param array        $action           The resolved `action` block (`{kind, flowId}`).
+     *
+     * @return boolean True when the flow run ended in a non-error terminal status.
+     *
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
+     */
+    private function dispatchFlowAction(ObjectEntity $message, array $subscriptionData, array $action): bool
+    {
+        $retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+        $flowId      = (string) ($action['flowId'] ?? '');
+
+        if ($flowId === '') {
+            $this->recordFailure(
+                message: $message,
+                error: 'flow not found',
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        try {
+            $flow = $this->flowRunnerService->findFlow(id: $flowId);
+        } catch (\Throwable $e) {
+            $flow = null;
+        }
+
+        if ($flow === null) {
+            $this->recordFailure(
+                message: $message,
+                error: 'flow not found',
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        try {
+            $flowRun = $this->flowRunnerService->run(
+                flow: $flow,
+                input: ($message->getObject()['payload'] ?? []),
+                triggerSource: 'event'
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                    'Failed to run flow action for event message: '.$e->getMessage(),
+                    [
+                        'exception' => $e,
+                        'message'   => $message->jsonSerialize(),
+                    ]
+                    );
+            $this->recordFailure(
+                message: $message,
+                error: $e->getMessage(),
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }//end try
+
+        $status = (string) ($flowRun->getObject()['status'] ?? '');
+        if ($status === 'failed' || $status === 'stopped') {
+            $this->recordFailure(
+                message: $message,
+                error: 'flow run ended with status '.$status,
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        $this->recordDeliverySuccess(message: $message);
+        return true;
+
+    }//end dispatchFlowAction()
 
     /**
      * Dispatch an `action.kind = 'notificaties'` message: resolve the target

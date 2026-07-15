@@ -16,6 +16,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
@@ -68,6 +69,11 @@ class EventServiceTest extends TestCase
      */
     private $callService;
 
+    /**
+     * @var FlowRunnerService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $flowRunnerService;
+
 
     /**
      * Set up test fixtures.
@@ -84,6 +90,7 @@ class EventServiceTest extends TestCase
         $this->synchronizationService = $this->createMock(SynchronizationService::class);
         $this->jobService             = $this->createMock(JobService::class);
         $this->callService            = $this->createMock(CallService::class);
+        $this->flowRunnerService      = $this->createMock(FlowRunnerService::class);
 
         $this->service = new EventService(
             $this->objectService,
@@ -93,6 +100,7 @@ class EventServiceTest extends TestCase
             $this->synchronizationService,
             $this->jobService,
             $this->callService,
+            $this->flowRunnerService,
         );
     }//end setUp()
 
@@ -106,6 +114,72 @@ class EventServiceTest extends TestCase
     {
         $this->assertInstanceOf(EventService::class, $this->service);
     }//end testConstructorWiresDependencies()
+
+
+    /**
+     * `attemptDelivery()` dispatches `action.kind = 'flow'` to
+     * `FlowRunnerService::run(..., triggerSource: 'event')` and returns
+     * true when the resulting flow_run's status is not `failed`/`stopped`
+     * — flow-orchestration REQ-007c (event-triggered flow) / TC-16-adjacent
+     * coverage for the `event_subscription` `action.kind` extension point.
+     *
+     * @return void
+     */
+    public function testAttemptDeliveryDispatchesFlowActionOnSuccess(): void
+    {
+        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Event flow'], 'flow-1');
+        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'completed'], 'flow-run-1');
+
+        $this->flowRunnerService->method('findFlow')->with('flow-1')->willReturn($flow);
+        $this->flowRunnerService->expects($this->once())
+            ->method('run')
+            ->with($this->identicalTo($flow), [], 'event')
+            ->willReturn($flowRun);
+
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['payload' => []], 'message-1');
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['action' => ['kind' => 'flow', 'flowId' => 'flow-1']],
+            'sub-1'
+        );
+
+        $method = new \ReflectionMethod(EventService::class, 'attemptDelivery');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $message, $subscription);
+
+        $this->assertTrue($result);
+    }//end testAttemptDeliveryDispatchesFlowActionOnSuccess()
+
+
+    /**
+     * A `stopped` flow run is recorded as a delivery failure — subject to
+     * the same retry/dead-letter machinery as any other action kind.
+     *
+     * @return void
+     */
+    public function testAttemptDeliveryDispatchesFlowActionOnFailure(): void
+    {
+        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Event flow'], 'flow-1');
+        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'stopped'], 'flow-run-1');
+
+        $this->flowRunnerService->method('findFlow')->willReturn($flow);
+        $this->flowRunnerService->method('run')->willReturn($flowRun);
+
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['payload' => []], 'message-1');
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['action' => ['kind' => 'flow', 'flowId' => 'flow-1']],
+            'sub-1'
+        );
+
+        $method = new \ReflectionMethod(EventService::class, 'attemptDelivery');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $message, $subscription);
+
+        $this->assertFalse($result);
+    }//end testAttemptDeliveryDispatchesFlowActionOnFailure()
 
 
     /**
@@ -338,6 +412,7 @@ class EventServiceTest extends TestCase
             $this->synchronizationService,
             $this->jobService,
             $this->callService,
+            $this->flowRunnerService,
         );
 
         // The HTTP client must never be asked for — no unsigned bytes leave

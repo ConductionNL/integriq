@@ -216,6 +216,61 @@ class ApprovalService
     }//end suspendForSynchronization()
 
     /**
+     * Suspend a `FlowRunnerService::run()` invocation on an `approval` flow
+     * step: persist a `pending` `approval_request` carrying `flowRunId`/
+     * `resumeStepOrder` and a sensitive-header-stripped `FlowToken`
+     * snapshot, and notify the configured approver group. Mirrors
+     * {@see suspend()}'s own persistence shape exactly (design.md Decision
+     * 4) — the only difference is which FK is set (`flowRunId` here vs.
+     * `endpointId`/`ruleId` there), since a flow step has no `rule` object
+     * of its own.
+     *
+     * @param ObjectEntity $flowRun         The in-flight flow_run being suspended.
+     * @param integer      $resumeStepOrder The step `order` to resume at once approved.
+     * @param array        $config          The approval step's `config` block (`approverGroup`/`onReject`/`onTimeout`/`ttlSeconds`).
+     * @param FlowToken    $flowToken       The in-flight FlowToken at suspension time.
+     *
+     * @return ObjectEntity The created, `pending` approval_request.
+     *
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
+     */
+    public function suspendForFlow(ObjectEntity $flowRun, int $resumeStepOrder, array $config, FlowToken $flowToken): ObjectEntity
+    {
+        $approverGroup = (string) ($config['approverGroup'] ?? '');
+        $ttlSeconds    = (int) ($config['ttlSeconds'] ?? self::DEFAULT_TTL_SECONDS);
+        $onReject      = (string) ($config['onReject'] ?? 'error');
+        $onTimeout     = (string) ($config['onTimeout'] ?? 'error');
+
+        $now       = new DateTime();
+        $expiresAt = (clone $now)->add(new DateInterval('PT'.max($ttlSeconds, 1).'S'));
+
+        $requesterUserId = $this->userSession->getUser()?->getUID();
+
+        $record = $this->objectService->saveObject(
+            object: [
+                'status'          => 'pending',
+                'flowRunId'       => $flowRun->getUuid(),
+                'resumeStepOrder' => $resumeStepOrder,
+                'timing'          => 'before',
+                'snapshot'        => $this->stripSensitiveHeaders(snapshot: $flowToken->__serialize()),
+                'requesterUserId' => $requesterUserId,
+                'approverGroup'   => $approverGroup,
+                'onReject'        => $onReject,
+                'onTimeout'       => $onTimeout,
+                'createdAt'       => $now->format('c'),
+                'expiresAt'       => $expiresAt->format('c'),
+            ],
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        $this->notifyApprovers(approvalRequest: $record);
+
+        return $record;
+
+    }//end suspendForFlow()
+
+    /**
      * Find an approved, not-yet-consumed approval_request for a
      * synchronization (the batch-gate's "has this run already been
      * approved" check).
