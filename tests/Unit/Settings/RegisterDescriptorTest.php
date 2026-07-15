@@ -67,6 +67,9 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 28 — `iwmo_ijw_message` added by openspec/changes/iwmo-ijw-adapter.
      *
+     * Was 29 — `fsc_service` and `fsc_call` added by
+     * openspec/changes/fsc-connectivity.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -112,6 +115,9 @@ class RegisterDescriptorTest extends TestCase
         'OpenFormulierenSubmission'  => 'openformulieren_submission',
         // iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
         'IwmoIjwMessage'             => 'iwmo_ijw_message',
+        // FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
+        'FscService'                 => 'fsc_service',
+        'FscCall'                    => 'fsc_call',
     ];
 
     /**
