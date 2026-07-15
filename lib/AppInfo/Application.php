@@ -48,6 +48,7 @@ use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
 use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
 use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\OpenConnector\WorkflowEngine\RegisterOperationsListener;
 use OCA\Tables\Event\RowAddedEvent;
 use OCA\Tables\Event\RowDeletedEvent;
 use OCA\Tables\Event\RowUpdatedEvent;
@@ -59,6 +60,7 @@ use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeDeletedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\SystemTag\MapperEvent;
+use OCP\WorkflowEngine\Events\RegisterOperationsEvent;
 use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
 use OCA\OpenConnector\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\OpenConnector\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
@@ -185,6 +187,14 @@ class Application extends App implements IBootstrap
         // the same processEvent/deliverMessage/retry/dead-letter machinery
         // (EventService::handleNextcloudEvent) — see design.md Decision 2.
         $this->registerNextcloudEventTriggers(context: $context, dispatcher: $dispatcher);
+
+        // WorkflowEngine (NC's Settings > Flow UI) integration: registers
+        // "Run synchronization"/"Call endpoint"/"Fire CloudEvent" as
+        // `OCP\WorkflowEngine\ISpecificOperation`s an admin can wire to
+        // file/tag Flow rules, feature-detected on the bundled
+        // `workflowengine` app being enabled (flow-workflowengine-integration
+        // design.md Decision 2).
+        $this->registerWorkflowEngineOperations(context: $context, dispatcher: $dispatcher);
 
         // Endpoint routing cache: clear it whenever an openconnector/endpoint
         // object is created, updated, or deleted so the runtime path matcher
@@ -456,6 +466,62 @@ class Application extends App implements IBootstrap
         }//end try
 
     }//end registerNextcloudEventTriggers()
+
+    /**
+     * Register OpenConnector's three thin `ISpecificOperation` adapters
+     * ("Run synchronization", "Call endpoint", "Fire CloudEvent") with NC
+     * core's bundled `workflowengine` app (Settings > Flow), so an admin can
+     * wire a file/tag Flow rule directly to an existing OpenConnector
+     * synchronization/endpoint/CloudEvent — see
+     * flow-workflowengine-integration design.md.
+     *
+     * `RegisterOperationsEvent` is the only documented registration path
+     * (discovery.md finding 2) — `Manager::getOperatorList()` re-dispatches it
+     * on every operator-list read rather than caching a boot-time
+     * registration, so calling `IManager::registerOperation()` directly here
+     * would not survive across requests.
+     *
+     * Feature-detected via `IAppManager::isEnabledForAnyUser('workflowengine')`,
+     * mirroring the Tables/Forms gate in {@see registerNextcloudEventTriggers()}:
+     * when disabled, no registration occurs and nothing is logged (a disabled
+     * `workflowengine` app is a normal state, not a fault). The `IAppManager`
+     * resolution and feature-detection check are wrapped in
+     * `try/catch (\Throwable)`; on failure this degrades to "WorkflowEngine
+     * operations unavailable this boot" (a warning-level log, register
+     * nothing) rather than throwing into `Application::register()`.
+     *
+     * @param IRegistrationContext $context    Registration context (unused — kept for
+     *                                         signature symmetry with {@see registerNextcloudEventTriggers()}).
+     * @param IEventDispatcher     $dispatcher The NC event dispatcher.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
+     */
+    private function registerWorkflowEngineOperations(IRegistrationContext $context, IEventDispatcher $dispatcher): void
+    {
+        try {
+            $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
+            if ($appManager->isEnabledForAnyUser('workflowengine') === true) {
+                $dispatcher->addServiceListener(
+                    eventName: RegisterOperationsEvent::class,
+                    className: RegisterOperationsListener::class
+                );
+            }
+        } catch (\Throwable $e) {
+            // IAppManager not resolvable this early on some SAPIs — degrade to
+            // "WorkflowEngine operations unavailable this boot" rather than
+            // crashing app registration; every other capability is unaffected.
+            try {
+                $this->getContainer()->get(\Psr\Log\LoggerInterface::class)->warning(
+                    'openconnector: could not feature-detect workflowengine for flow-workflowengine-integration — '.$e->getMessage()
+                );
+            } catch (\Throwable) {
+                // Logger unavailable, ignore.
+            }
+        }//end try
+
+    }//end registerWorkflowEngineOperations()
 
     /**
      * Wire the OpenRegister AppHost declarative observability engine.

@@ -127,6 +127,16 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OC/Hooks/Emitter.php';
         }
 
+        // flow-workflowengine-integration: OC\AppFramework\Http\Request stub.
+        // EndpointService::buildSyntheticRequest() constructs NC's REAL
+        // concrete IRequest implementation at runtime (design.md Decision 5);
+        // it is a private `\OC\` class, absent from the standalone
+        // `nextcloud/ocp` dev-dependency, so EndpointServiceTest needs this
+        // stand-in to exercise triggerFromFlow() without a live NC install.
+        if (class_exists('OC\\AppFramework\\Http\\Request') === false) {
+            require_once $stubsDir . '/OC/AppFramework/Http/Request.php';
+        }
+
         if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/OrganisationService.php';
         }

@@ -45,6 +45,16 @@ parameters:
         - '#Caught class OC\\#'
         - '#unknown class OC_App#'
         - '#Class OC_App not found#'
+        # flow-workflowengine-integration: NC's concrete IRequest implementation
+        # (\OC\AppFramework\Http\Request), synthesized by
+        # EndpointService::buildSyntheticRequest() (design.md Decision 5) — a
+        # real, present-at-runtime NC core class not stubbed in nextcloud/ocp.
+        - '#Instantiated class OC\\AppFramework\\Http\\Request not found#'
+        - '#should return OCP\\IRequest but returns OC\\AppFramework\\Http\\Request#'
+        # flow-workflowengine-integration: NC core's only bundled WorkflowEngine
+        # IEntity, referenced only as a compile-time ::class string by the three
+        # operation classes' getEntityId() (no autoload triggered).
+        - '#Class OCA\\WorkflowEngine\\Entity\\File not found#'
         # OCA\DAV is server-internal and not in nextcloud/ocp stubs
         - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
