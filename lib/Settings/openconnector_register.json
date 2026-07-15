@@ -17,12 +17,14 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message, FSC Service/Call + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, Bankfeed Connection/Batch (PSD2 AIS), Cardfeed Account/Batch (corporate card feed), LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message, FSC Service/Call + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
           "bankfeed_batch",
           "bankfeed_connection",
           "call_log",
+          "cardfeed_account",
+          "cardfeed_batch",
           "consumer",
           "dso_message",
           "dso_verzoek",
@@ -3124,6 +3126,180 @@
             "subject": {
               "nl": "Banktransacties gesynchroniseerd: {{accountIban}} ({{transactionCount}})",
               "en": "Bank transactions synced: {{accountIban}} ({{transactionCount}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "cardfeed_account": {
+        "slug": "cardfeed_account",
+        "title": "Cardfeed Account",
+        "icon": "CreditCardOutline",
+        "version": "1.0.0",
+        "summary": "One corporate-card program enrollment linking a cardfeed source to a set of cards",
+        "description": "A Cardfeed Account records the enrollment of one corporate/credit-card program (an openconnector Source of type 'cardfeed') and the set of cards discovered for it. It carries no secret — the program API key lives behind the OpenRegister credential broker (`authentication.credentialRef`), never here (ADR-007). `seenTransactionIds` is the idempotency set: the scheduled sync records every transaction id it has emitted so a replayed sync (the provider returning the same transactions) persists no batch and emits no event; the set is trimmed to a fixed maximum. Structurally mirrors bankfeed_connection. See openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md.",
+        "required": [
+          "accountId",
+          "cardfeedSourceSlug",
+          "lifecycleState"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Stable account identifier referenced by the synced event and by the consuming app's reconciliation record",
+            "title": "Account ID"
+          },
+          "cardfeedSourceSlug": {
+            "type": "string",
+            "description": "Slug of the openconnector Source (type 'cardfeed') this account was enrolled through",
+            "title": "Cardfeed Source Slug"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe-issuing",
+              "adyen",
+              "ramp",
+              "moss",
+              "sandbox"
+            ],
+            "description": "Card-provider vendor label ('sandbox' for the log provider)",
+            "title": "Provider"
+          },
+          "cards": {
+            "type": "array",
+            "description": "Cards discovered for this program (re-enrollment replaces in place, keyed by cardId)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cardId": {
+                  "type": "string",
+                  "description": "Provider-side card identifier used for transaction pulls",
+                  "title": "Card ID"
+                },
+                "last4": {
+                  "type": "string",
+                  "description": "Last four digits of the card (non-sensitive)",
+                  "title": "Last 4"
+                },
+                "cardholderName": {
+                  "type": "string",
+                  "description": "Cardholder name",
+                  "title": "Cardholder Name"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Card currency (ISO 4217)",
+                  "title": "Currency"
+                }
+              }
+            },
+            "title": "Cards"
+          },
+          "lastSyncAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Watermark of the last successful transaction pull; advanced only on success so a failed pull re-attempts the same window",
+            "title": "Last Sync At"
+          },
+          "seenTransactionIds": {
+            "type": "array",
+            "description": "Transaction ids already emitted — the idempotency set a replayed sync dedupes against (trimmed to a fixed maximum)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Seen Transaction IDs"
+          },
+          "lifecycleState": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "disabled"
+            ],
+            "description": "Account lifecycle: pending (source added, not yet card-discovered) -> active (enrolled and syncing) -> disabled (operator paused). The sync job skips any non-active account.",
+            "title": "Lifecycle State"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "cardfeed_batch": {
+        "slug": "cardfeed_batch",
+        "title": "Cardfeed Batch",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "One pulled window of new card transactions for one card of a cardfeed account",
+        "description": "A Cardfeed Batch is the persisted result of one scheduled card transaction pull for one card: the `[since, until]` window, the provider-normalised NEW transaction rows (already deduped against the account's seenTransactionIds), and their count. Its URI is carried as `batchUri` on the `nl.conduction.cardfeed.transactions.synced` CloudEvent so a consuming app (shillinq bookkeeping-card-reconciliation, a separate follow-up) can match card transactions to expenses/GL entries. See openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003.",
+        "required": [
+          "accountId",
+          "cardId",
+          "since",
+          "until",
+          "transactionCount"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "The owning cardfeed_account's accountId",
+            "title": "Account ID"
+          },
+          "cardId": {
+            "type": "string",
+            "description": "Provider-side id of the card this batch covers",
+            "title": "Card ID"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start of the pulled window (inclusive; the previous watermark)",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End of the pulled window (becomes the new watermark on success)",
+            "title": "Until"
+          },
+          "transactionCount": {
+            "type": "integer",
+            "description": "Number of new transaction rows in this batch",
+            "title": "Transaction Count"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Provider-normalised new transaction rows (each carrying a transactionId)",
+            "items": {
+              "type": "object"
+            },
+            "title": "Transactions"
+          }
+        },
+        "x-openregister-notifications": {
+          "batch-synced": {
+            "trigger": {
+              "type": "created"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Kaarttransacties gesynchroniseerd: {{cardId}} ({{transactionCount}})",
+              "en": "Card transactions synced: {{cardId}} ({{transactionCount}})"
             }
           }
         },

@@ -83,6 +83,21 @@
       }
     },
     {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "card-provider-sandbox" },
+      "name": "Card Provider Sandbox (Corporate Card Feed)",
+      "description": "Sandbox corporate-card program source (log/mock provider). Demonstrates the full enroll -> discovery -> sync -> synced-event path (idempotent on transaction id) with no real card provider and no credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` (e.g. a Stripe Issuing-style API) for production.",
+      "type": "cardfeed",
+      "location": "https://api.card-program.example/v1",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "baseUrl": "https://api.card-program.example/v1",
+        "cardProvider": "sandbox"
+      }
+    },
+    {
       "@self": { "register": "openconnector", "schema": "source", "slug": "payment-sandbox" },
       "name": "Payment Sandbox (Live Payment Providers)",
       "description": "Sandbox payment source (log/mock provider). Demonstrates the full create -> checkout -> webhook -> status-mapping -> event path with no real Mollie account and no credential. Switch `configuration.provider` to `mollie`, set `configuration.baseUrl` (defaults to https://api.mollie.com/v2), and add `configuration.authentication.credentialRef` for production.",
@@ -448,6 +463,48 @@
           "transactionAmount": { "amount": "-89.99", "currency": "EUR" },
           "creditorName": "Example SaaS B.V.",
           "remittanceInformation": "Subscription July"
+        }
+      ]
+    }
+  ],
+  "cardfeed_account": [
+    {
+      "@self": { "register": "openconnector", "schema": "cardfeed_account", "slug": "acct-conduction-cards" },
+      "accountId": "00000000-0000-0000-0000-000000000000",
+      "cardfeedSourceSlug": "card-provider-sandbox",
+      "provider": "sandbox",
+      "cards": [
+        { "cardId": "SANDBOX-CARD-1", "last4": "4242", "cardholderName": "A. Example", "currency": "EUR" }
+      ],
+      "seenTransactionIds": [ "SANDBOX-CTX-SANDBOX-CARD-1-SEED" ],
+      "lastSyncAt": "2026-07-01T06:00:00+00:00",
+      "lifecycleState": "active"
+    }
+  ],
+  "cardfeed_batch": [
+    {
+      "@self": { "register": "openconnector", "schema": "cardfeed_batch", "slug": "batch-conduction-cards-2026-07-01" },
+      "accountId": "00000000-0000-0000-0000-000000000000",
+      "cardId": "SANDBOX-CARD-1",
+      "since": "2026-06-30T06:00:00+00:00",
+      "until": "2026-07-01T06:00:00+00:00",
+      "transactionCount": 2,
+      "transactions": [
+        {
+          "transactionId": "SANDBOX-CTX-SANDBOX-CARD-1-SEED",
+          "bookingDate": "2026-06-30",
+          "transactionAmount": { "amount": "-89.99", "currency": "EUR" },
+          "merchantName": "Example SaaS B.V.",
+          "merchantCategoryCode": "5734",
+          "remittanceInformation": "Subscription July"
+        },
+        {
+          "transactionId": "SANDBOX-CTX-SANDBOX-CARD-1-SEED-2",
+          "bookingDate": "2026-06-30",
+          "transactionAmount": { "amount": "-12.50", "currency": "EUR" },
+          "merchantName": "Example Coffee",
+          "merchantCategoryCode": "5814",
+          "remittanceInformation": "Team offsite"
         }
       ]
     }

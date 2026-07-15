@@ -167,6 +167,12 @@ return [
 		['name' => 'psd2#callback', 'url' => '/api/psd2/callback', 'verb' => 'GET'],
 		['name' => 'psd2#discoverAccounts', 'url' => '/api/psd2/connections/{connectionId}/accounts', 'verb' => 'POST'],
 
+		// Corporate card-feed connector (openspec/changes/corporate-card-feed).
+		// enroll discovers a card program's cards and records a cardfeed_account
+		// (admin action RBAC — grants access to real card data). The scheduled
+		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
+		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
+
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
