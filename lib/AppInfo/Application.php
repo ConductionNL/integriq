@@ -33,12 +33,32 @@ use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
+use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
+use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
 use OCA\OpenConnector\EventListener\CloudEventListener;
+use OCA\OpenConnector\EventListener\NextcloudCalendarEventListener;
+use OCA\OpenConnector\EventListener\NextcloudFileEventListener;
+use OCA\OpenConnector\EventListener\NextcloudFileTagEventListener;
+use OCA\OpenConnector\EventListener\NextcloudFormsEventListener;
+use OCA\OpenConnector\EventListener\NextcloudTablesEventListener;
+use OCA\OpenConnector\EventListener\EndpointCacheInvalidationListener;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
 use OCA\OpenConnector\EventListener\ViewDeletedEventListener;
 use OCA\OpenConnector\EventListener\ViewUpdatedOrCreatedEventListener;
+use OCA\Tables\Event\RowAddedEvent;
+use OCA\Tables\Event\RowDeletedEvent;
+use OCA\Tables\Event\RowUpdatedEvent;
+use OCA\Forms\Events\FormSubmittedEvent;
+use OCP\Calendar\Events\CalendarObjectCreatedEvent;
+use OCP\Calendar\Events\CalendarObjectDeletedEvent;
+use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
+use OCP\Files\Events\Node\NodeCreatedEvent;
+use OCP\Files\Events\Node\NodeDeletedEvent;
+use OCP\Files\Events\Node\NodeWrittenEvent;
+use OCP\SystemTag\MapperEvent;
 use OCA\OpenConnector\Service\Adapter\DataInfra\S3Adapter;
 use OCA\OpenConnector\Service\Adapter\DocumentCms\SharePointOnlineAdapter;
 use OCA\OpenConnector\Service\Adapter\EndpointWorkspace\AzureVirtualDesktopAdapter;
@@ -47,6 +67,8 @@ use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\PeppolOutboundConsumer;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\Service\Tables\TablesClientInterface;
+use OCA\OpenConnector\Service\Tables\TablesOcsClient;
 use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
@@ -55,7 +77,9 @@ use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
 use GuzzleHttp\Client as GuzzleHttpClient;
 use OCA\OpenConnector\Controller\HealthController;
 use OCA\OpenConnector\Controller\MetricsController;
+use OCA\OpenConnector\Observability\OpenConnectorMetricsProvider;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
+use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -75,6 +99,8 @@ use Psr\Container\ContainerInterface;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
  */
 class Application extends App implements IBootstrap
 {
@@ -103,6 +129,8 @@ class Application extends App implements IBootstrap
      * @param IRegistrationContext $context Registration context.
      *
      * @return void
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
      */
     public function register(IRegistrationContext $context): void
     {
@@ -146,6 +174,20 @@ class Application extends App implements IBootstrap
         $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: CloudEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: CloudEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: CloudEventListener::class);
+        // Nextcloud-core-event triggers (nextcloud-event-hub). Each family
+        // normalizes its NC event into the SAME `event` CloudEvents envelope
+        // shape the OR-object pipeline above already uses, then hands off to
+        // the same processEvent/deliverMessage/retry/dead-letter machinery
+        // (EventService::handleNextcloudEvent) — see design.md Decision 2.
+        $this->registerNextcloudEventTriggers(context: $context, dispatcher: $dispatcher);
+
+        // Endpoint routing cache: clear it whenever an openconnector/endpoint
+        // object is created, updated, or deleted so the runtime path matcher
+        // (EndpointCacheService) never serves stale routing (self-gated on
+        // register+schema slug, so unrelated object writes are a cheap no-op).
+        $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: EndpointCacheInvalidationListener::class);
+        $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: EndpointCacheInvalidationListener::class);
+        $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: EndpointCacheInvalidationListener::class);
         // @todo Remove this temporary listener to the software catalog application.
         // $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
         // Path-2 integration leaf: load the tiny `openconnector-integration`
@@ -302,6 +344,18 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Tables-bridge: bind the polymorphic Tables API seam to its concrete
+        // v1-REST implementation (design.md Decision 2). `TablesOcsClient`'s
+        // own dependencies (CallService, LoggerInterface) are plain
+        // autowirable types, so only the interface binding needs an explicit
+        // factory here.
+        $context->registerService(
+            TablesClientInterface::class,
+            static function ($c) {
+                return $c->get(TablesOcsClient::class);
+            }
+        );
+
         $this->registerAppHostObservability(context: $context);
         $this->registerAppHostBoilerplate(context: $context);
 
@@ -317,6 +371,86 @@ class Application extends App implements IBootstrap
         // manager silently drops it when preparing it for display.
         $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
     }//end register()
+
+    /**
+     * Register the `nextcloud-event-triggers` capability's `IEventListener`s.
+     *
+     * Files and calendar registrations are unconditional (Decision 1):
+     * `OCP\Files\Events\Node\*` and `OCP\SystemTag\MapperEvent` are stable
+     * public `OCP` API present on every NC version this app targets (NC
+     * 28-34); `dav` (source of the OCA-internal `Cached*` calendar events)
+     * ships bundled with every instance, and `OCP\Calendar\Events\*`
+     * (`@since 32.0.0`) is referenced only via `::class` (a compile-time
+     * string — safe even where the class does not exist on NC < 32; see
+     * class docblocks on the listener classes and design.md Decision 1).
+     *
+     * Tables and Forms registrations are feature-detected via
+     * `IAppManager::isEnabledForAnyUser()` — both are optional Nextcloud App
+     * Store apps. `IAppManager::isEnabledForAnyUser('tables'|'forms')`
+     * returning false means the listener is never registered and no event
+     * of that family can ever be observed (REQ-003/REQ-004); this is not
+     * required for SAFETY (the `::class` reference is inert either way) but
+     * signals "is this event family available" for the subscription-modal
+     * event-type picker.
+     *
+     * @param IRegistrationContext $context    Registration context.
+     * @param IEventDispatcher     $dispatcher The NC event dispatcher.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-file-events-must-be-normalized-to-cloudevents-req-001
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-calendar-events-must-be-normalized-to-cloudevents-with-an-oca-stability-caveat-req-002
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-forms-submission-events-must-be-normalized-to-cloudevents-when-the-forms-app-is-installed-req-004
+     */
+    private function registerNextcloudEventTriggers(IRegistrationContext $context, IEventDispatcher $dispatcher): void
+    {
+        // Files (REQ-001) — unconditional, stable OCP.
+        $dispatcher->addServiceListener(eventName: NodeCreatedEvent::class, className: NextcloudFileEventListener::class);
+        $dispatcher->addServiceListener(eventName: NodeWrittenEvent::class, className: NextcloudFileEventListener::class);
+        $dispatcher->addServiceListener(eventName: NodeDeletedEvent::class, className: NextcloudFileEventListener::class);
+        $dispatcher->addServiceListener(eventName: MapperEvent::class, className: NextcloudFileTagEventListener::class);
+
+        // Calendar (REQ-002) — unconditional; `dav` ships with every
+        // instance. Both the NC32+ OCP "own calendar" family and the
+        // always-available OCA "cached subscription" family are wired so
+        // one listener normalizes whichever fires (see
+        // NextcloudCalendarEventListener's class docblock).
+        $dispatcher->addServiceListener(eventName: CalendarObjectCreatedEvent::class, className: NextcloudCalendarEventListener::class);
+        $dispatcher->addServiceListener(eventName: CalendarObjectUpdatedEvent::class, className: NextcloudCalendarEventListener::class);
+        $dispatcher->addServiceListener(eventName: CalendarObjectDeletedEvent::class, className: NextcloudCalendarEventListener::class);
+        $dispatcher->addServiceListener(eventName: CachedCalendarObjectCreatedEvent::class, className: NextcloudCalendarEventListener::class);
+        $dispatcher->addServiceListener(eventName: CachedCalendarObjectUpdatedEvent::class, className: NextcloudCalendarEventListener::class);
+        $dispatcher->addServiceListener(eventName: CachedCalendarObjectDeletedEvent::class, className: NextcloudCalendarEventListener::class);
+
+        // Tables (REQ-003) — feature-detected.
+        try {
+            $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
+            if ($appManager->isEnabledForAnyUser('tables') === true) {
+                $dispatcher->addServiceListener(eventName: RowAddedEvent::class, className: NextcloudTablesEventListener::class);
+                $dispatcher->addServiceListener(eventName: RowUpdatedEvent::class, className: NextcloudTablesEventListener::class);
+                $dispatcher->addServiceListener(eventName: RowDeletedEvent::class, className: NextcloudTablesEventListener::class);
+            }
+
+            // Forms (REQ-004) — feature-detected.
+            if ($appManager->isEnabledForAnyUser('forms') === true) {
+                $dispatcher->addServiceListener(eventName: FormSubmittedEvent::class, className: NextcloudFormsEventListener::class);
+            }
+        } catch (\Throwable $e) {
+            // IAppManager not resolvable this early on some SAPIs — degrade to
+            // "Tables/Forms triggers unavailable this boot" rather than
+            // crashing app registration; the OR-object and files/calendar
+            // pipelines above are unaffected.
+            try {
+                $this->getContainer()->get(\Psr\Log\LoggerInterface::class)->warning(
+                    'openconnector: could not feature-detect tables/forms for nextcloud-event-triggers — '.$e->getMessage()
+                );
+            } catch (\Throwable) {
+                // Logger unavailable, ignore.
+            }
+        }//end try
+
+    }//end registerNextcloudEventTriggers()
 
     /**
      * Wire the OpenRegister AppHost declarative observability engine.
@@ -404,6 +538,17 @@ class Application extends App implements IBootstrap
                     engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
                 );
             }
+        );
+
+        // Provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies):
+        // the per-Source circuit_breaker_state gauge needs each Source's OWN
+        // field value (1/0), not a row count — declarative tableCount/objectCount
+        // descriptors only aggregate counts. The `{"kind":"provider"}` metric
+        // descriptor in src/manifest.json merges this provider's samples into
+        // the /api/metrics response; the engine resolves it via this alias.
+        $context->registerServiceAlias(
+            IMetricsProvider::class.'::openconnector',
+            OpenConnectorMetricsProvider::class
         );
     }//end registerAppHostObservability()
 

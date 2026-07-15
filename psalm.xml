@@ -107,6 +107,8 @@
                 <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterResolverService"/>
                 <referencedClass name="OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationRegistry"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationProvider"/>
                 <referencedClass name="OCA\OpenRegister\Db\Mapping"/>
                 <!-- Symfony (loaded at runtime via Nextcloud or composer require) -->
                 <referencedClass name="Symfony\Component\ExpressionLanguage\ExpressionLanguage"/>
@@ -124,6 +126,27 @@
                 <referencedClass name="SoapFault"/>
                 <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->
                 <referencedClass name="OCA\OpenConnector\Service\Rule"/>
+                <!-- nextcloud-event-hub: NC-core / bundled-app / optional-app event
+                     classes referenced only via `::class` (compile-time string) and
+                     instanceof (safe when the class is absent). OCP\Calendar\Events\*
+                     is real OCP but `@since 32.0.0`, newer than the pinned
+                     nextcloud/ocp: dev-stable29 dev dependency; OCA\DAV\* is an NC
+                     core app; OCA\Tables\* / OCA\Forms\* are optional App Store apps —
+                     none is present in the standalone vendor tree. See design.md
+                     Decision 1 and each listener's class docblock. -->
+                <referencedClass name="OCP\Calendar\Events\CalendarObjectCreatedEvent"/>
+                <referencedClass name="OCP\Calendar\Events\CalendarObjectUpdatedEvent"/>
+                <referencedClass name="OCP\Calendar\Events\CalendarObjectDeletedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectCreatedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectUpdatedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectDeletedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowAddedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowUpdatedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowDeletedEvent"/>
+                <referencedClass name="OCA\Forms\Events\FormSubmittedEvent"/>
+                <!-- OCP\SystemTag\MapperEvent is present in stable29 stubs; listed for
+                     documentation completeness of the file-tag producer. -->
+                <referencedClass name="OCP\SystemTag\MapperEvent"/>
             </errorLevel>
         </UndefinedClass>
         <!-- UndefinedMethod: suppress known false positives from interface types (OCP\IRequest::server,

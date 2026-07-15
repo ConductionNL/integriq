@@ -386,6 +386,106 @@ strategy/health/enablement.
   `list()`, `getId()`, `getLabel()`, `getIcon()`, `getGroup()`,
   `getRequiredApp()`, `getStorageStrategy()`, `health()`, `isEnabled()`.
 
+### Requirement: `nextcloud-table` source/target dispatch (REQ-014)
+
+`SynchronizationService::getAllObjectsFromSource()` MUST dispatch
+`sourceType: nextcloud-table` to the Tables source adapter (see
+`tables-bridge` REQ-002) instead of falling through with no matching `case`.
+`SynchronizationService::updateTarget()` MUST dispatch `targetType:
+nextcloud-table` to the Tables target adapter (see `tables-bridge` REQ-001)
+instead of throwing `Unsupported target type`. `SynchronizationService::
+deleteInvalidObjects()` MUST dispatch `targetType: nextcloud-table` through
+the same guarded deletion path described in `tables-bridge` REQ-005 — this
+requirement does not itself define the deletion-safety guard (that is
+`sync-safety-guardrails`'s concern); it only establishes that
+`nextcloud-table` is a recognised branch of that shared dispatch, not a
+type that silently no-ops or bypasses the guard.
+
+#### Scenario: source fetch dispatches to the Tables adapter
+
+- **GIVEN** a synchronization with `sourceType: nextcloud-table`
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** the Tables source adapter is invoked and its returned rows are
+  used as the fetched objects, exactly as the `api` branch returns
+  `getAllObjectsFromApi()`'s result
+
+#### Scenario: target write dispatches to the Tables adapter instead of throwing
+
+- **GIVEN** a synchronization with `targetType: nextcloud-table`
+- **WHEN** `updateTarget()` runs
+- **THEN** the Tables target adapter is invoked
+- **AND** no `Unsupported target type` exception is thrown (unlike an
+  unrecognised type, which still throws per the base spec's REQ-001
+  `default` branch)
+
+#### Scenario: an unrecognised type (not nextcloud-table) still throws
+
+- **GIVEN** a synchronization with `targetType: some-future-type` that is
+  neither `register/schema`, `api`, `database`, nor `nextcloud-table`
+- **WHEN** `updateTarget()` runs
+- **THEN** it still throws `Unsupported target type: some-future-type`,
+  unchanged from the base spec's existing `default` branch behavior
+### Requirement: Per-item isolation and dead-letter capture during extern-to-intern sync (REQ-008)
+
+The system MUST wrap each per-object call to `processSynchronizationObject()`
+inside `SynchronizationService::synchronizeExternToIntern()`'s object loop
+(the `foreach ($objectList as $object)`) in a `try/catch (\Throwable)`. On a
+caught exception, the system MUST persist a `sync_item_dead_letter` object
+capturing: the synchronization's uuid, the best-effort `originId` (when
+resolvable before the failure), the raw source `$object` as `payload`, the
+exception message as `error`, `phase: 'item-processing'`, and
+`status: 'failed'`; increment `result['objects']['invalid']`; and continue
+processing the remaining objects in `$objectList`. A single item's failure
+MUST NOT abort processing of the remaining objects in the same sync pass,
+and MUST NOT prevent `synchronize()` from completing and persisting its
+`synchronization_log` with a summary reflecting the partial success
+(previously: an uncaught exception from `processSynchronizationObject()`
+propagated through the un-guarded loop and aborted the entire pass for
+every remaining object — verified absent in HEAD prior to this change).
+
+Dead-lettered items are captured for **manual** replay only — the system
+MUST NOT schedule an automatic retry sweep for `sync_item_dead_letter`
+entries (unlike event delivery's `EventRetryJob`), since item transformation
+and write failures are typically deterministic (mapping/config/data errors)
+rather than transient.
+
+#### Scenario: one bad item does not abort the sync pass
+
+- **GIVEN** a synchronization fetching 10 objects from its source, where
+  object #4's mapping throws an exception
+- **WHEN** `synchronize()` runs
+- **THEN** objects #1-3 and #5-10 SHALL be processed normally (contracts
+  created/updated as applicable)
+- **AND** object #4 SHALL be captured as a `sync_item_dead_letter` entry with
+  `status = 'failed'`
+- **AND** `result['objects']['invalid']` SHALL be incremented by 1
+- **AND** the `synchronization_log` SHALL be persisted reflecting 9
+  successfully-processed objects and 1 invalid
+
+#### Scenario: dead-lettered items are not automatically retried
+
+- **GIVEN** a `sync_item_dead_letter` entry with `status = 'failed'`
+- **WHEN** the next scheduled run of the same synchronization occurs
+- **THEN** no automatic re-attempt of the dead-lettered item SHALL occur
+  outside of an explicit operator replay action (REQ-DLR-007/008 in
+  `dead-letter-replay`)
+
+#### Notes
+
+- `phase` is fixed to the literal `'item-processing'` in this change —
+  `processSynchronizationObject()` has no internal phase boundaries exposed
+  to a caller today, and distinguishing `fetch`/`mapping`/`write` precisely
+  would require refactoring internals of `SynchronizationService`
+  (~6,700 lines). The field is a free-form string (not a locked enum) so a
+  follow-up change can populate it more precisely without a schema
+  migration. Observed limitation; flagged in design.md Open Questions.
+- Fetch-stage failures (`TooManyRequestsHttpException` from
+  `getAllObjectsFromSource()`) are already isolated one level higher (caught
+  in `synchronizeExternToIntern()` before the object loop, per the existing
+  REQ-002 rate-limit scenario) and are NOT captured as
+  `sync_item_dead_letter` entries — they short-circuit the whole pass with
+  `rateLimitException`, which is a distinct pre-existing behavior this
+  change does not alter.
 ### Requirement: Fetch-completeness tracking during source pagination (REQ-009)
 
 The system SHALL track, for every extern→intern fetch of an `api` source,

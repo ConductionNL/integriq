@@ -69,6 +69,19 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/OpenRegister/AppHost/Controller/GenericHealthController.php';
         }
 
+        // OCA\OpenRegister AppHost observability stubs — peer app not in
+        // vendor. OpenConnectorMetricsProvider implements IMetricsProvider
+        // and returns MetricSample instances (retry-and-circuit-breaker-policies,
+        // REQ-PROM-011); MetricSample must load before IMetricsProvider's
+        // docblock @return type is referenced.
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Observability\\MetricSample') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Observability/MetricSample.php';
+        }
+
+        if (interface_exists('OCA\\OpenRegister\\AppHost\\IMetricsProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/IMetricsProvider.php';
+        }
+
         // OCA\OpenRegister stubs — peer app not in vendor.
         if (class_exists('OCA\\OpenRegister\\Db\\ObjectEntity') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
@@ -80,6 +93,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
         if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
+        }
+
+        // connector-catalog-ui: CatalogRegistryService reads OR's
+        // IntegrationRegistry — stub both the interface and the registry
+        // class so unit tests can mock them without a live OR install.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationRegistry.php';
         }
 
         if (class_exists('OCA\\OpenRegister\\Db\\RegisterMapper') === false) {
@@ -160,6 +184,47 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
         if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletedEvent') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCP\Calendar\Events\* stubs. Real OCP API but
+        // `@since 32.0.0` — newer than the pinned `nextcloud/ocp: dev-stable29`
+        // dev dependency, so absent from vendor/nextcloud/ocp. Order matters:
+        // the Abstract* parent must load before its children.
+        if (class_exists('OCP\\Calendar\\Events\\AbstractCalendarObjectEvent') === false) {
+            require_once $stubsDir . '/OCP/Calendar/Events/AbstractCalendarObjectEvent.php';
+            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectCreatedEvent.php';
+            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectUpdatedEvent.php';
+            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCA\DAV\Events\Cached* stubs — `dav` is an NC
+        // core app not present in the standalone composer dev-environment.
+        if (class_exists('OCA\\DAV\\Events\\CachedCalendarObjectCreatedEvent') === false) {
+            require_once $stubsDir . '/OCA/DAV/Events/CachedCalendarObjectCreatedEvent.php';
+            require_once $stubsDir . '/OCA/DAV/Events/CachedCalendarObjectUpdatedEvent.php';
+            require_once $stubsDir . '/OCA/DAV/Events/CachedCalendarObjectDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCA\Tables\* stubs — optional App Store app,
+        // not present in this environment (verified against public source —
+        // see discovery.md). Model must load before the events that type-hint it.
+        if (class_exists('OCA\\Tables\\Model\\Public\\Row') === false) {
+            require_once $stubsDir . '/OCA/Tables/Model/Public/Row.php';
+            require_once $stubsDir . '/OCA/Tables/Event/AbstractRowEvent.php';
+            require_once $stubsDir . '/OCA/Tables/Event/RowAddedEvent.php';
+            require_once $stubsDir . '/OCA/Tables/Event/RowUpdatedEvent.php';
+            require_once $stubsDir . '/OCA/Tables/Event/RowDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCA\Forms\* stubs — optional App Store app,
+        // not present in this environment (verified against public source —
+        // see discovery.md). Db entities must load before the events that
+        // type-hint them.
+        if (class_exists('OCA\\Forms\\Db\\Form') === false) {
+            require_once $stubsDir . '/OCA/Forms/Db/Form.php';
+            require_once $stubsDir . '/OCA/Forms/Db/Submission.php';
+            require_once $stubsDir . '/OCA/Forms/Events/AbstractFormEvent.php';
+            require_once $stubsDir . '/OCA/Forms/Events/FormSubmittedEvent.php';
         }
     }
 }

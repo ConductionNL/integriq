@@ -134,6 +134,14 @@
           "kind": "tableCount",
           "table": "openconnector_rules"
         }
+      },
+      {
+        "name": "circuit_breaker_state",
+        "type": "gauge",
+        "help": "Per-source circuit breaker state (1=open, 0=closed) — provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
+        "source": {
+          "kind": "provider"
+        }
       }
     ]
   },
@@ -144,6 +152,13 @@
       "icon": "icon-category-dashboard",
       "route": "Dashboard",
       "order": 10
+    },
+    {
+      "id": "Catalog",
+      "label": "Catalog",
+      "icon": "ViewGridOutline",
+      "route": "Catalog",
+      "order": 15
     },
     {
       "id": "ConnectionsGroup",
@@ -169,7 +184,8 @@
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
         { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
         { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
-        { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 }
+        { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 },
+        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 }
       ]
     },
     {
@@ -306,6 +322,9 @@
           { "id": "2d", "widgetId": "src-kpis-payload", "gridX": 8, "gridY": 6, "gridWidth": 4, "gridHeight": 2 },
           { "id": "3", "widgetId": "src-calls",   "gridX": 0, "gridY": 8, "gridWidth": 8, "gridHeight": 6 },
           { "id": "4", "widgetId": "src-related", "gridX": 8, "gridY": 8, "gridWidth": 4, "gridHeight": 6 }
+        ],
+        "bodyWidgets": [
+          { "id": "src-circuit-breaker", "component": "CircuitBreakerBadge", "title": "Circuit breaker", "placement": "before-body", "colSpan": 12 }
         ],
         "sidebar": {
           "enabled": true,
@@ -459,6 +478,9 @@
           { "id": "manage-signing", "label": "Webhook signing", "icon": "ShieldKeyOutline", "handler": "manageSigningHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
+      },
+      "slots": {
+        "form-fields": "SubscriptionActionFields"
       }
     },
     {
@@ -717,6 +739,19 @@
       }
     },
     {
+      "id": "SyncDeadLetters",
+      "route": "/synchronizations/dead-letters",
+      "type": "custom",
+      "component": "SyncDeadLetterPage",
+      "_note": "Custom page: sync-item dead-letter operations view over sync_item_dead_letter (failed by default) backed by the admin-only /api/sync-dead-letter endpoints with per-row + bulk Replay/Discard and a detail modal. Mirrors EventDeliveries; not expressible as a generic CnIndexPage. See retry-and-circuit-breaker-policies (REQ-DLR-007..012).",
+      "title": "Sync dead letters",
+      "config": {
+        "register": "openconnector",
+        "schema": "sync_item_dead_letter",
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
       "id": "ApprovalDetail",
       "route": "/approvals/:id",
       "type": "custom",
@@ -726,6 +761,76 @@
       "config": {
         "register": "openconnector",
         "schema": "approval_request"
+      }
+    },
+    {
+      "id": "Catalog",
+      "route": "/catalog",
+      "type": "index",
+      "title": "Catalog",
+      "_note": "connector-catalog-ui: browsable card grid of every real, already-shipped connector adapter, seeded source template and importable configuration template, backed by the catalog_item schema materialised by lib/Repair/MaterializeCatalogItems.php. Standard type:index in viewMode:cards (the openbuild VirtualApps / softwarecatalog Organisaties precedent) — NO custom page, NO nextcloud-vue change. Cards are read-only metadata (no credentials); the Enable/Instantiate action lives in the CatalogItemDetailDialog opened via the card, gated by ADR-023 catalog.instantiate + the source schema's data-layer admin lock.",
+      "config": {
+        "register": "openconnector",
+        "schema": "catalog_item",
+        "viewMode": "cards",
+        "cardComponent": "CatalogItemCard",
+        "columns": [
+          "name",
+          "category",
+          "kind",
+          "status"
+        ],
+        "showAdd": false,
+        "showViewAction": false,
+        "selectable": false,
+        "quickFilters": [
+          {
+            "label": "All",
+            "filter": {},
+            "default": true
+          },
+          {
+            "label": "Adapters",
+            "filter": {
+              "kind": "adapter"
+            },
+            "icon": "PowerPlugOutline"
+          },
+          {
+            "label": "Source templates",
+            "filter": {
+              "kind": "source-template"
+            },
+            "icon": "DatabaseArrowLeftOutline"
+          },
+          {
+            "label": "Configuration templates",
+            "filter": {
+              "kind": "configuration-template"
+            },
+            "icon": "FileCogOutline"
+          }
+        ],
+        "headerActions": [
+          {
+            "id": "export-configuration",
+            "label": "Export configuration",
+            "icon": "Download",
+            "handler": "openConfigurationExportHandler"
+          },
+          {
+            "id": "import-configuration",
+            "label": "Import configuration",
+            "icon": "Upload",
+            "handler": "openConfigurationImportHandler"
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": false
+        },
+        "documentationUrl": "https://openconnector.conduction.nl",
+        "_configurationUiNote": "REQ-006/007/008 Configuration import/export UI actions live here as header actions (ExportConfigurationDialog / ImportPreviewDialog) rather than on a bespoke Configurations index page: OR Configuration groups are a NATIVE OR table (lib/Db/Configuration.php) served by /apps/openregister/api/configurations, not an object register/schema, so a type:index page cannot back them — and a type:custom page is exactly what this change avoids (custom-widget-ratchet)."
       }
     },
     {

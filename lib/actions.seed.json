@@ -31,6 +31,10 @@
     "event.subscriptions": ["admin"],
     "event.subscription-messages": ["admin"],
     "event.pull": ["admin"],
+    "event.subscribe-nextcloud-files": ["admin"],
+    "event.subscribe-nextcloud-calendar": ["admin"],
+    "event.subscribe-nextcloud-tables": ["admin"],
+    "event.subscribe-nextcloud-forms": ["admin"],
     "log.index": ["admin"],
     "log.show": ["admin"],
     "log.destroy": ["admin"],
@@ -41,6 +45,9 @@
     "pdok.free": ["admin"],
     "pdok.reverse": ["admin"],
     "approval.approve": ["admin"],
-    "approval.reject": ["admin"]
+    "approval.reject": ["admin"],
+    "catalog.instantiate": ["admin"],
+    "configuration.export": ["admin"],
+    "configuration.import": ["admin"]
   }
 }

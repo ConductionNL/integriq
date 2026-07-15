@@ -230,6 +230,99 @@ class FakeActingUserBroker
 }//end class
 
 /**
+ * Fake broker exposing resolveInjectable() for the app-side injection path.
+ */
+class FakeInjectingBroker
+{
+
+    /**
+     * Recorded resolveInjectable() invocations.
+     *
+     * @var array
+     */
+    public array $resolveCalls = [];
+
+    /**
+     * The secret to return from resolveInjectable() (null simulates a proxy credential).
+     *
+     * @var string|null
+     */
+    public ?string $secret = 'VAULT-SECRET';
+
+    /**
+     * When true, resolveInjectable() returns null (the credential is a proxy credential).
+     *
+     * @var boolean
+     */
+    public bool $returnsNull = false;
+
+    /**
+     * Optional exception thrown by resolveInjectable() instead of returning.
+     *
+     * @var \Throwable|null
+     */
+    public ?\Throwable $throwable = null;
+
+
+    /**
+     * request() with the optional in-process acting-user parameter (feature-detection).
+     *
+     * @param string      $credentialId The credential UUID.
+     * @param string      $appId        The calling app id.
+     * @param string      $method       The HTTP method.
+     * @param string      $path         The provider-relative path.
+     * @param array       $headers      Extra request headers.
+     * @param string|null $body         Raw request body.
+     * @param string|null $actingUserId Acting user for in-process trusted callers.
+     *
+     * @return array The upstream status/headers/body.
+     */
+    public function request(
+        string $credentialId,
+        string $appId,
+        string $method,
+        string $path,
+        array $headers=[],
+        ?string $body=null,
+        ?string $actingUserId=null
+    ): array {
+        return ['status' => 200, 'headers' => [], 'body' => ''];
+    }//end request()
+
+
+    /**
+     * Resolve an inject-only credential's raw secret (guards 1+2 in production).
+     *
+     * @param string      $credentialId The credential UUID.
+     * @param string      $appId        The calling app id.
+     * @param string|null $actingUserId Acting user for sessionless in-process callers.
+     *
+     * @return string|null The raw secret, or null when the credential is a proxy credential.
+     */
+    public function resolveInjectable(
+        string $credentialId,
+        string $appId,
+        ?string $actingUserId=null
+    ): ?string {
+        $this->resolveCalls[] = [
+            'credentialId' => $credentialId,
+            'appId'        => $appId,
+            'actingUserId' => $actingUserId,
+        ];
+
+        if ($this->throwable !== null) {
+            throw $this->throwable;
+        }
+
+        if ($this->returnsNull === true) {
+            return null;
+        }
+
+        return $this->secret;
+    }//end resolveInjectable()
+}//end class
+
+/**
  * Tests for the brokered (credentialRef) dispatch service.
  */
 class BrokeredCallServiceTest extends TestCase
@@ -1217,6 +1310,200 @@ class BrokeredCallServiceTest extends TestCase
 
         $this->assertSame('/', $broker->calls[0]['path']);
     }//end testDispatchDerivesRootPathForBareHostUrl()
+
+
+    // -------------------------------------------------------------------
+    // App-side injection: hasInjectableCredentials() + hydrateInjectableCredentials().
+    // -------------------------------------------------------------------
+
+
+    /**
+     * Build source data whose authentication carries a nested credential placeholder.
+     *
+     * @param array $authentication The authentication block.
+     *
+     * @return array
+     */
+    private function injectableSource(array $authentication): array
+    {
+        return ['configuration' => ['authentication' => $authentication]];
+    }//end injectableSource()
+
+
+    /**
+     * hasInjectableCredentials() detects a NESTED placeholder but not the top-level proxy form.
+     *
+     * @return void
+     */
+    public function testHasInjectableCredentialsDetectsNestedPlaceholderOnly(): void
+    {
+        // Nested placeholder (apikey position) → injectable.
+        $this->assertTrue(
+            $this->service->hasInjectableCredentials(
+                $this->injectableSource(['apikey' => ['credentialRef' => ['credentialId' => self::NIL_UUID]]])
+            )
+        );
+
+        // Top-level proxy credentialRef → NOT an injectable (handled by the proxy path).
+        $this->assertFalse(
+            $this->service->hasInjectableCredentials(
+                $this->injectableSource(['credentialRef' => ['credentialId' => self::NIL_UUID]])
+            )
+        );
+
+        // Plain embedded secret → nothing to inject.
+        $this->assertFalse(
+            $this->service->hasInjectableCredentials($this->injectableSource(['apikey' => 'literal']))
+        );
+
+        // No authentication block at all.
+        $this->assertFalse($this->service->hasInjectableCredentials(['configuration' => []]));
+    }//end testHasInjectableCredentialsDetectsNestedPlaceholderOnly()
+
+
+    /**
+     * hydrateInjectableCredentials() replaces a placeholder with the vault secret in place.
+     *
+     * @return void
+     */
+    public function testHydrateReplacesPlaceholderWithSecret(): void
+    {
+        $broker = new FakeInjectingBroker();
+        $broker->secret = 'sk-live-XYZ';
+        $this->service->brokerInstance = $broker;
+
+        $source = $this->injectableSource(
+            [
+                'type'   => 'apikey',
+                'apikey' => ['credentialRef' => ['credentialId' => self::NIL_UUID]],
+            ]
+        );
+
+        $hydrated = $this->service->hydrateInjectableCredentials($source);
+
+        $this->assertSame('sk-live-XYZ', $hydrated['configuration']['authentication']['apikey']);
+        // Non-secret scaffolding is preserved verbatim.
+        $this->assertSame('apikey', $hydrated['configuration']['authentication']['type']);
+        // The broker was asked for exactly this credential, as openconnector.
+        $this->assertSame(self::NIL_UUID, $broker->resolveCalls[0]['credentialId']);
+        $this->assertSame('openconnector', $broker->resolveCalls[0]['appId']);
+    }//end testHydrateReplacesPlaceholderWithSecret()
+
+
+    /**
+     * A DEEPLY nested placeholder (e.g. OAuth client_secret) is resolved too.
+     *
+     * @return void
+     */
+    public function testHydrateReplacesDeeplyNestedPlaceholder(): void
+    {
+        $broker = new FakeInjectingBroker();
+        $broker->secret = 'client-secret-value';
+        $this->service->brokerInstance = $broker;
+
+        $source = $this->injectableSource(
+            [
+                'type'      => 'oauth',
+                'client_id' => 'public-client-id',
+                'oauth'     => [
+                    'tokenUrl'      => 'https://idp.example.org/token',
+                    'client_secret' => ['credentialRef' => ['credentialName' => 'my-oauth']],
+                ],
+            ]
+        );
+
+        // credentialName resolution finds exactly one owned credential.
+        $this->objectService->method('findAll')->willReturn(
+            ['results' => [$this->makeCredential(uuid: self::NIL_UUID, owner: 'alice')]]
+        );
+
+        $hydrated = $this->service->hydrateInjectableCredentials($source);
+
+        $this->assertSame(
+            'client-secret-value',
+            $hydrated['configuration']['authentication']['oauth']['client_secret']
+        );
+        $this->assertSame('public-client-id', $hydrated['configuration']['authentication']['client_id']);
+    }//end testHydrateReplacesDeeplyNestedPlaceholder()
+
+
+    /**
+     * A proxy credential (resolveInjectable returns null) is a hard config error, not injected.
+     *
+     * @return void
+     */
+    public function testHydrateRefusesProxyCredential(): void
+    {
+        $broker = new FakeInjectingBroker();
+        $broker->returnsNull = true;
+        $this->service->brokerInstance = $broker;
+
+        $source = $this->injectableSource(
+            ['apikey' => ['credentialRef' => ['credentialId' => self::NIL_UUID]]]
+        );
+
+        $this->expectException(BrokeredCallConfigurationException::class);
+        $this->expectExceptionMessageMatches('/proxy credential|inject-only|generic/i');
+        $this->service->hydrateInjectableCredentials($source);
+    }//end testHydrateRefusesProxyCredential()
+
+
+    /**
+     * A broker refusal (guards 1/2) surfaces as a secret-free config error.
+     *
+     * @return void
+     */
+    public function testHydrateMapsBrokerRefusalToConfigError(): void
+    {
+        $broker = new FakeInjectingBroker();
+        $broker->throwable = new CredentialAccessDeniedException(message: 'Request not permitted');
+        $this->service->brokerInstance = $broker;
+
+        $source = $this->injectableSource(
+            ['apikey' => ['credentialRef' => ['credentialId' => self::NIL_UUID]]]
+        );
+
+        $this->expectException(BrokeredCallConfigurationException::class);
+        $this->service->hydrateInjectableCredentials($source);
+    }//end testHydrateMapsBrokerRefusalToConfigError()
+
+
+    /**
+     * An older broker WITHOUT resolveInjectable() fails closed with an upgrade hint.
+     *
+     * @return void
+     */
+    public function testHydrateFailsClosedOnBrokerWithoutResolveInjectable(): void
+    {
+        // FakeActingUserBroker has request() but NO resolveInjectable().
+        $this->service->brokerInstance = new FakeActingUserBroker();
+
+        $source = $this->injectableSource(
+            ['apikey' => ['credentialRef' => ['credentialId' => self::NIL_UUID]]]
+        );
+
+        $this->expectException(BrokeredCallConfigurationException::class);
+        $this->expectExceptionMessageMatches('/resolveInjectable|does not support app-side injection/i');
+        $this->service->hydrateInjectableCredentials($source);
+    }//end testHydrateFailsClosedOnBrokerWithoutResolveInjectable()
+
+
+    /**
+     * A source with no placeholders is returned untouched and never calls the broker.
+     *
+     * @return void
+     */
+    public function testHydrateIsANoOpWithoutPlaceholders(): void
+    {
+        $broker = new FakeInjectingBroker();
+        $this->service->brokerInstance = $broker;
+
+        $source   = $this->injectableSource(['type' => 'apikey', 'apikey' => 'literal-key']);
+        $hydrated = $this->service->hydrateInjectableCredentials($source);
+
+        $this->assertSame($source, $hydrated);
+        $this->assertCount(0, $broker->resolveCalls);
+    }//end testHydrateIsANoOpWithoutPlaceholders()
 
 
 }//end class

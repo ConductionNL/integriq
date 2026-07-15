@@ -81,6 +81,44 @@ class CallService
     // Retention defaults moved to job_log / call_log x-openregister-archival annotations (adr-004).
 
     /**
+     * Built-in default RetryPolicy applied when neither the Source nor the
+     * caller configure one. `maxAttempts: 1` reproduces today's single-attempt
+     * dispatch exactly — retries are strictly opt-in per Source/Synchronization.
+     *
+     * @var array<string, mixed>
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    private const RETRY_DEFAULT_POLICY = [
+        'maxAttempts'          => 1,
+        'backoffStrategy'      => 'fixed',
+        'baseDelayMs'          => 500,
+        'maxDelayMs'           => 30000,
+        'jitter'               => false,
+        'retryableStatusCodes' => [429, 502, 503, 504],
+        'retryOnTimeout'       => false,
+    ];
+
+    /**
+     * Default consecutive-failure threshold before the per-Source circuit
+     * breaker opens, when the Source has not configured its own
+     * `circuitBreakerThreshold`. Mirrors {@see \OCA\OpenConnector\Connectors\PdokConnector::BREAKER_THRESHOLD}.
+     *
+     * @var integer
+     */
+    private const BREAKER_DEFAULT_THRESHOLD = 5;
+
+    /**
+     * Default cooldown (seconds) an open breaker stays open before the next
+     * dispatch is treated as a half-open probe, when the Source has not
+     * configured its own `circuitBreakerCooldownSeconds`. Mirrors
+     * {@see \OCA\OpenConnector\Connectors\PdokConnector::BREAKER_OPEN_SECONDS}.
+     *
+     * @var integer
+     */
+    private const BREAKER_DEFAULT_COOLDOWN_SECONDS = 30;
+
+    /**
      * Guzzle HTTP client used to dispatch outbound requests.
      *
      * @var Client
@@ -1482,6 +1520,385 @@ class CallService
     }//end guardCallPreconditions()
 
     /**
+     * Circuit breaker precondition guard (REQ-008): evaluated after the
+     * enabled/location/rate-limit guards, before any dispatch attempt (sync
+     * or async). When the breaker is fully open (within its cooldown
+     * window), short-circuits with a synthetic 503 CallLog and consumes no
+     * retry attempt. When the cooldown has elapsed, the breaker is treated
+     * as half-open for exactly the next dispatch — `circuitBreakerLastProbeAt`
+     * is stamped (best-effort probe guard, not a distributed lock) and the
+     * call proceeds.
+     *
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $sourceData   The mutable source data array (probe timestamp mutates it).
+     * @param \DateTime|null $errorExpires Expiry for the synthetic error log entry.
+     *
+     * @return ObjectEntity|null The synthetic 503 CallLog, or null to proceed.
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    private function guardCircuitBreaker(
+        ObjectEntity $source,
+        array &$sourceData,
+        ?\DateTime $errorExpires,
+    ): ?ObjectEntity {
+        $state = (string) ($sourceData['circuitBreakerState'] ?? 'closed');
+        if ($state !== 'open') {
+            return null;
+        }
+
+        $cooldown = (int) ($sourceData['circuitBreakerCooldownSeconds'] ?? self::BREAKER_DEFAULT_COOLDOWN_SECONDS);
+        $openedAt = (int) ($sourceData['circuitBreakerOpenedAt'] ?? 0);
+
+        if ((time() - $openedAt) < $cooldown) {
+            // Fully open — no HTTP request is dispatched, no attempt is consumed.
+            return $this->saveEarlyErrorLog(
+                source: $source,
+                statusCode: 503,
+                statusMessage: 'Circuit breaker is open for this source',
+                expires: $errorExpires,
+            );
+        }
+
+        // Cooldown elapsed — half-open. Stamp the probe timestamp (best-effort
+        // guard against concurrent probes, not a distributed lock — see
+        // design.md Trade-offs) and let exactly this dispatch through.
+        $sourceData['circuitBreakerLastProbeAt'] = time();
+        $this->persistSourceState(source: $source, sourceData: $sourceData);
+
+        return null;
+
+    }//end guardCircuitBreaker()
+
+    /**
+     * Resolves the effective RetryPolicy for a dispatch by merging, in order
+     * (later layers override earlier ones on a per-key basis): the built-in
+     * default, the dispatching Source's `retryPolicy` field, and the
+     * caller-supplied override (populated by SynchronizationService from
+     * `Synchronization.retryPolicyOverride`).
+     *
+     * @param array      $sourceData The raw source data array.
+     * @param array|null $override   The caller-supplied `$config['retryPolicy']` override, or null.
+     *
+     * @return array<string, mixed> The resolved effective RetryPolicy.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    private function resolveEffectiveRetryPolicy(array $sourceData, ?array $override): array
+    {
+        $policy = self::RETRY_DEFAULT_POLICY;
+
+        $sourcePolicy = ($sourceData['retryPolicy'] ?? []);
+        if (is_array($sourcePolicy) === true) {
+            foreach ($sourcePolicy as $key => $value) {
+                if (array_key_exists($key, $policy) === true) {
+                    $policy[$key] = $value;
+                }
+            }
+        }
+
+        if (is_array($override) === true) {
+            foreach ($override as $key => $value) {
+                if (array_key_exists($key, $policy) === true) {
+                    $policy[$key] = $value;
+                }
+            }
+        }
+
+        $policy['maxAttempts'] = max(1, (int) $policy['maxAttempts']);
+        if (is_array($policy['retryableStatusCodes']) === false) {
+            $policy['retryableStatusCodes'] = self::RETRY_DEFAULT_POLICY['retryableStatusCodes'];
+        }
+
+        return $policy;
+
+    }//end resolveEffectiveRetryPolicy()
+
+    /**
+     * Sleeps for the backoff delay computed from the resolved RetryPolicy for
+     * the given (1-based) attempt number that just failed.
+     *
+     * `fixed`: delayMs = baseDelayMs. `exponential`: delayMs = min(baseDelayMs
+     * * 2^(attempt-1), maxDelayMs). `jitter: true` adjusts the result by
+     * +/-10% using a uniform random offset (mirrors
+     * {@see \OCA\OpenConnector\Connectors\PdokConnector::sleepBackoff()}).
+     *
+     * @param array   $policy  The resolved effective RetryPolicy.
+     * @param integer $attempt The 1-based attempt number that just failed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    private function sleepRetryBackoff(array $policy, int $attempt): void
+    {
+        $base = (int) $policy['baseDelayMs'];
+
+        if (($policy['backoffStrategy'] ?? 'fixed') === 'exponential') {
+            $delay = (int) min(($base * (2 ** ($attempt - 1))), (int) $policy['maxDelayMs']);
+        } else {
+            $delay = $base;
+        }
+
+        if (($policy['jitter'] ?? false) === true) {
+            $jitterRange = (int) round($delay * 0.1);
+            if ($jitterRange > 0) {
+                $delay += random_int(-$jitterRange, $jitterRange);
+            }
+        }
+
+        if ($delay > 0) {
+            usleep((max(0, $delay) * 1000));
+        }
+
+    }//end sleepRetryBackoff()
+
+    /**
+     * Phase 10 helper: dispatches the synchronous HTTP request, honouring
+     * the resolved RetryPolicy (REQ-007) and recording circuit breaker
+     * outcomes (REQ-008) around each attempt. Extracted out of {@see call()}
+     * to keep that method's own cyclomatic complexity in check — this is
+     * the entire bounded retry loop, unchanged in behaviour from its
+     * previous inline form.
+     *
+     * @param ObjectEntity $source              The source ObjectEntity.
+     * @param string       $method              The HTTP method to use.
+     * @param string       $url                 The full URL to request.
+     * @param string       $endpoint            The raw endpoint path (SOAPAction for SOAP sources).
+     * @param array        $config              The Guzzle request configuration (passed by reference).
+     * @param array|null   $brokeredCredential  Resolved brokered identity, or null for the legacy path.
+     * @param array        $sourceData          The mutable source data array (breaker bookkeeping mutates it).
+     * @param array|null   $retryPolicyOverride The caller-supplied `$config['retryPolicy']` override, or null.
+     *
+     * @return array{response: mixed, timeStart: float, timeEnd: float} The final response plus dispatch timing.
+     *
+     * @throws GuzzleException   On HTTP transport failure (final attempt only; see loop body).
+     * @throws \OCP\DB\Exception On persistence failure of breaker bookkeeping.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    private function dispatchWithRetry(
+        ObjectEntity $source,
+        string $method,
+        string $url,
+        string $endpoint,
+        array &$config,
+        ?array $brokeredCredential,
+        array $sourceData,
+        ?array $retryPolicyOverride,
+    ): array {
+        $retryPolicy = $this->resolveEffectiveRetryPolicy(sourceData: $sourceData, override: $retryPolicyOverride);
+
+        $timeStart = microtime(true);
+        $attempt   = 0;
+        do {
+            $attempt++;
+
+            try {
+                $response = $this->dispatchRequest(
+                    source: $source,
+                    method: $method,
+                    url: $url,
+                    endpoint: $endpoint,
+                    config: $config,
+                    asynchronous: false,
+                    brokeredCredential: $brokeredCredential,
+                );
+            } catch (\Throwable $exception) {
+                // Note: dispatchRequest() already converts a Guzzle
+                // BadResponseException/ConnectException into a Response
+                // internally for the plain HTTP path; a \Throwable escaping
+                // here is a transport-level failure from the SOAP/brokered
+                // branches (or an otherwise-uncaught Guzzle exception type).
+                // Zero behaviour change when retryOnTimeout is unset/false or
+                // this was the last attempt — rethrow exactly as before.
+                if ($retryPolicy['retryOnTimeout'] !== true || $attempt >= $retryPolicy['maxAttempts']) {
+                    throw $exception;
+                }
+
+                $this->recordBreakerFailure(source: $source, sourceData: $sourceData);
+                $this->sleepRetryBackoff(policy: $retryPolicy, attempt: $attempt);
+                continue;
+            }//end try
+
+            $statusCode = $response->getStatusCode();
+            if (in_array($statusCode, $retryPolicy['retryableStatusCodes'], true) === true) {
+                $this->recordBreakerFailure(source: $source, sourceData: $sourceData);
+
+                if ($attempt >= $retryPolicy['maxAttempts']) {
+                    // Attempts exhausted — keep the last response, exactly as
+                    // the pre-existing single-attempt behaviour would have.
+                    break;
+                }
+
+                $this->sleepRetryBackoff(policy: $retryPolicy, attempt: $attempt);
+                continue;
+            }
+
+            if ($statusCode < 400) {
+                $this->recordBreakerSuccess(source: $source, sourceData: $sourceData);
+            }
+
+            break;
+        } while (true);
+
+        $timeEnd = microtime(true);
+
+        return ['response' => $response, 'timeStart' => $timeStart, 'timeEnd' => $timeEnd];
+
+    }//end dispatchWithRetry()
+
+    /**
+     * Records a retryable dispatch failure against the per-Source circuit
+     * breaker: increments `circuitBreakerFailureCount` and, once it reaches
+     * `circuitBreakerThreshold` (default {@see self::BREAKER_DEFAULT_THRESHOLD}),
+     * opens the breaker with a fresh `circuitBreakerOpenedAt`. Persisted via
+     * the same `saveObject` pattern {@see sourceRateLimit()} already uses for
+     * rate-limit bookkeeping.
+     *
+     * @param ObjectEntity $source     The source ObjectEntity.
+     * @param array        $sourceData The mutable source data array.
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    private function recordBreakerFailure(ObjectEntity $source, array &$sourceData): void
+    {
+        $failureCount = ((int) ($sourceData['circuitBreakerFailureCount'] ?? 0) + 1);
+        $threshold    = (int) ($sourceData['circuitBreakerThreshold'] ?? self::BREAKER_DEFAULT_THRESHOLD);
+
+        $sourceData['circuitBreakerFailureCount'] = $failureCount;
+
+        if ($failureCount >= $threshold) {
+            $sourceData['circuitBreakerState']    = 'open';
+            $sourceData['circuitBreakerOpenedAt'] = time();
+        }
+
+        $this->persistSourceState(source: $source, sourceData: $sourceData);
+
+    }//end recordBreakerFailure()
+
+    /**
+     * Records a successful dispatch against the per-Source circuit breaker:
+     * resets `circuitBreakerState` to `closed` and `circuitBreakerFailureCount`
+     * to `0`. A no-op (no persistence) when the breaker was already closed
+     * with a zero failure count, to avoid a redundant write on every healthy
+     * call.
+     *
+     * @param ObjectEntity $source     The source ObjectEntity.
+     * @param array        $sourceData The mutable source data array.
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    private function recordBreakerSuccess(ObjectEntity $source, array &$sourceData): void
+    {
+        $wasOpenOrHadFailures = (($sourceData['circuitBreakerState'] ?? 'closed') !== 'closed')
+            || ((int) ($sourceData['circuitBreakerFailureCount'] ?? 0) !== 0);
+
+        if ($wasOpenOrHadFailures === false) {
+            return;
+        }
+
+        $sourceData['circuitBreakerState']        = 'closed';
+        $sourceData['circuitBreakerFailureCount'] = 0;
+        $sourceData['circuitBreakerOpenedAt']     = null;
+
+        $this->persistSourceState(source: $source, sourceData: $sourceData);
+
+    }//end recordBreakerSuccess()
+
+    /**
+     * Persists the source data array back to OpenRegister. Shared by the
+     * circuit breaker bookkeeping helpers; mirrors the system-context
+     * `saveObject` call already used by {@see checkAndResetRateLimit()} and
+     * {@see sourceRateLimit()} (ocon#147 — the engine writing back to its own
+     * admin-owned config on behalf of any caller).
+     *
+     * @param ObjectEntity $source     The source ObjectEntity.
+     * @param array        $sourceData The source data array to persist.
+     *
+     * @return ObjectEntity The saved source ObjectEntity.
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     */
+    private function persistSourceState(ObjectEntity $source, array $sourceData): ObjectEntity
+    {
+        return $this->objectService->saveObject(
+            object: $sourceData,
+            register: 'openconnector',
+            schema: 'source',
+            uuid: $source->getUuid(),
+            _rbac: false,
+            _multitenancy: false
+        );
+
+    }//end persistSourceState()
+
+    /**
+     * Manually trips the circuit breaker for a Source, regardless of its
+     * prior state or failure count (REQ-009). Sets `circuitBreakerState =
+     * 'open'`, `circuitBreakerOpenedAt = now()`, and
+     * `circuitBreakerFailureCount = circuitBreakerThreshold`, so the breaker
+     * reads as open through the normal {@see guardCircuitBreaker()} path on
+     * the very next dispatch.
+     *
+     * @param ObjectEntity $source The source ObjectEntity to trip.
+     *
+     * @return ObjectEntity The saved source ObjectEntity.
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    public function tripCircuitBreaker(ObjectEntity $source): ObjectEntity
+    {
+        $sourceData = $source->getObject();
+        $threshold  = (int) ($sourceData['circuitBreakerThreshold'] ?? self::BREAKER_DEFAULT_THRESHOLD);
+
+        $sourceData['circuitBreakerState']        = 'open';
+        $sourceData['circuitBreakerOpenedAt']     = time();
+        $sourceData['circuitBreakerFailureCount'] = $threshold;
+
+        return $this->persistSourceState(source: $source, sourceData: $sourceData);
+
+    }//end tripCircuitBreaker()
+
+    /**
+     * Manually resets the circuit breaker for a Source (REQ-009). Sets
+     * `circuitBreakerState = 'closed'`, `circuitBreakerFailureCount = 0`,
+     * `circuitBreakerOpenedAt = null` — the next dispatch proceeds normally.
+     *
+     * @param ObjectEntity $source The source ObjectEntity to reset.
+     *
+     * @return ObjectEntity The saved source ObjectEntity.
+     *
+     * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    public function resetCircuitBreaker(ObjectEntity $source): ObjectEntity
+    {
+        $sourceData = $source->getObject();
+
+        $sourceData['circuitBreakerState']        = 'closed';
+        $sourceData['circuitBreakerFailureCount'] = 0;
+        $sourceData['circuitBreakerOpenedAt']     = null;
+
+        return $this->persistSourceState(source: $source, sourceData: $sourceData);
+
+    }//end resetCircuitBreaker()
+
+    /**
      * Phase 7b helper: detect + validate a brokered (credentialRef) source call.
      *
      * Returns null when the merged configuration carries no credentialRef
@@ -1532,6 +1949,49 @@ class CallService
     }//end resolveBrokeredDispatch()
 
     /**
+     * Resolves app-injected credential placeholders in the source authentication config.
+     *
+     * When the source carries no injectable placeholder the source data is returned
+     * unchanged (a no-op that never touches the broker). Otherwise every
+     * `{credentialRef: {...}}` placeholder under `configuration.authentication` is resolved
+     * from Doriath through the broker and substituted in place, so Phase 9's Twig auth
+     * render injects a vault-resolved secret. A resolution failure is turned into a
+     * synthetic 409 config-error CallLog (returned as an ObjectEntity for the caller to
+     * short-circuit on), exactly like the proxy path — there is NO embedded-secret fallback.
+     *
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $sourceData   The raw source data array.
+     * @param \DateTime|null $errorExpires Expiry for error log entries.
+     *
+     * @return ObjectEntity|array The hydrated source data, or an ObjectEntity CallLog on a hard config error.
+     *
+     * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function hydrateInjectedCredentials(
+        ObjectEntity $source,
+        array $sourceData,
+        ?\DateTime $errorExpires,
+    ): ObjectEntity|array {
+        if ($this->brokeredCallService->hasInjectableCredentials(sourceData: $sourceData) === false) {
+            return $sourceData;
+        }
+
+        try {
+            return $this->brokeredCallService->hydrateInjectableCredentials(sourceData: $sourceData);
+        } catch (BrokeredCallConfigurationException $exception) {
+            return $this->saveEarlyErrorLog(
+                source: $source,
+                statusCode: 409,
+                statusMessage: $exception->getMessage(),
+                expires: $errorExpires,
+            );
+        }
+
+    }//end hydrateInjectedCredentials()
+
+    /**
      * Calls a source according to given configuration.
      *
      * @param ObjectEntity $source                The source ObjectEntity to call.
@@ -1554,6 +2014,8 @@ class CallService
      * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
      */
     public function call(
         ObjectEntity $source,
@@ -1573,10 +2035,29 @@ class CallService
         $errorExpires   = $expiries['errorExpires'];
         $successExpires = $expiries['successExpires'];
 
+        // Phase 1b: extract the caller-supplied RetryPolicy override (REQ-007)
+        // before it can leak into the persisted request config — mirrors the
+        // same pull-out-then-unset treatment preRequest/postRequest/pagination
+        // already get further down.
+        $retryPolicyOverride = ($config['retryPolicy'] ?? null);
+        if (is_array($retryPolicyOverride) === false) {
+            $retryPolicyOverride = null;
+        }
+
+        unset($config['retryPolicy']);
+
         // Phases 3-6: source-precondition guards (enabled, location, rate limit).
         $earlyError = $this->guardCallPreconditions(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
         if ($earlyError !== null) {
             return $earlyError;
+        }
+
+        // Phase 6b: circuit breaker precondition guard (REQ-008) — evaluated
+        // after the enabled/location/rate-limit guards, before any dispatch
+        // attempt (sync or async).
+        $breakerShortCircuit = $this->guardCircuitBreaker(source: $source, sourceData: $sourceData, errorExpires: $errorExpires);
+        if ($breakerShortCircuit !== null) {
+            return $breakerShortCircuit;
         }
 
         // Phase 7: Merge source-level configuration.
@@ -1618,6 +2099,26 @@ class CallService
             return $brokeredCredential;
         }
 
+        // Phase 7c: App-side credential injection (generic / self-hosted sources).
+        // When the call is NOT a host-locked proxy call, any credentialRef placeholder
+        // under configuration.authentication is resolved from Doriath through the broker
+        // and substituted in place, so the normal Twig auth render (Phase 9) injects a
+        // vault-resolved secret exactly as if it had been embedded — but the schema holds
+        // only the reference. A resolution failure is a hard synthetic 409 CallLog, with
+        // no fallback to an embedded secret (mirrors the proxy path).
+        if ($brokeredCredential === null) {
+            $injected = $this->hydrateInjectedCredentials(
+                source: $source,
+                sourceData: $sourceData,
+                errorExpires: $errorExpires,
+            );
+            if ($injected instanceof ObjectEntity) {
+                return $injected;
+            }
+
+            $sourceData = $injected;
+        }
+
         // Phase 8: Handle preRequest hook; capture postRequest descriptor.
         $postRequest = $this->extractAndFirePreRequest(
             source: $source,
@@ -1636,24 +2137,39 @@ class CallService
         // Let's log the call.
         $sourceData['lastCall'] = (new \DateTime())->format('c');
         // @todo: save the source.
-        // Phase 10: Dispatch the HTTP request.
-        $timeStart = microtime(true);
-        $response  = $this->dispatchRequest(
+        // Phase 10: Dispatch the HTTP request. Async dispatch is a single
+        // attempt (unchanged) — the retry loop below (REQ-007) only applies
+        // to the synchronous path, which is the only one that yields a
+        // status code to classify.
+        if ($asynchronous === true) {
+            $timeStart = microtime(true);
+            $response  = $this->dispatchRequest(
+                source: $source,
+                method: $method,
+                url: $url,
+                endpoint: $endpoint,
+                config: $config,
+                asynchronous: true,
+                brokeredCredential: $brokeredCredential,
+            );
+
+            // Async path returns the Promise directly (same as original behaviour).
+            return $response;
+        }
+
+        $dispatched = $this->dispatchWithRetry(
             source: $source,
             method: $method,
             url: $url,
             endpoint: $endpoint,
             config: $config,
-            asynchronous: $asynchronous,
             brokeredCredential: $brokeredCredential,
+            sourceData: $sourceData,
+            retryPolicyOverride: $retryPolicyOverride,
         );
-
-        // Async path returns the Promise directly (same as original behaviour).
-        if ($asynchronous === true) {
-            return $response;
-        }
-
-        $timeEnd = microtime(true);
+        $response  = $dispatched['response'];
+        $timeStart = $dispatched['timeStart'];
+        $timeEnd   = $dispatched['timeEnd'];
 
         // Phase 11: Decode response body and build the structured data array.
         $data = $this->buildResponseData(

@@ -37,6 +37,9 @@ use OCP\IRequest;
  * as new SPA routes are added (most recently approvals()/approvalsId() for
  * hitl-approval-rule-action); splitting it would not reduce complexity.
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ *
+ * @spec exclude SPA-shell controller — every method returns the same index template so the Vue
+ *              router can take over; no domain behavior (framework lifecycle).
  */
 class UiController extends Controller
 {
@@ -521,4 +524,22 @@ class UiController extends Controller
     {
         return $this->makeSpaResponse();
     }//end approvalsId()
+
+    /**
+     * Serves the SPA shell for the Catalog route (connector-catalog-ui).
+     *
+     * @return TemplateResponse The SPA index template.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
+     */
+    public function catalog(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end catalog()
 }//end class

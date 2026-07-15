@@ -155,7 +155,9 @@
 </template>
 
 <script>
-import { CnDetailPage, useObjectStore } from '@conduction/nextcloud-vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -234,6 +236,8 @@ export default {
 		PlayOutlineIcon,
 		RestoreIcon,
 	},
+
+	mixins: [liveObjectSubscription],
 
 	props: {
 		/**
@@ -392,6 +396,12 @@ export default {
 		const fetch = this.reload()
 		// Trigger the first preview render once data lands.
 		Promise.resolve(fetch).finally(() => this.schedulePreview())
+		// Live updates: or-object-{uuid} events refetch this mapping into the
+		// store cache; the `mapping` computed reads the cache directly, so no
+		// bridge callback is needed — reactivity re-renders the page.
+		if (this.resolvedId) {
+			this.syncLiveSubscription(this.objectType, this.resolvedId)
+		}
 	},
 
 	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */

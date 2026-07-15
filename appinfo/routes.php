@@ -28,6 +28,18 @@ return [
 		// previous string-presence-only placeholder has been removed.
 		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
+		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
+		// surface completing the STAM koppelvlak above (which previously
+		// logged and dropped every verzoek — no persistence, no handoff, no
+		// outbound leg existed before this change). The handoff trigger
+		// deliberately requires a real authenticated actor (OpenRegister
+		// HandoffService v1 has no system-user privilege lane; see
+		// design.md §1, same constraint documented for open-formulieren-intake).
+		['name' => 'dSO#listVerzoeken', 'url' => '/api/dso/verzoeken', 'verb' => 'GET'],
+		['name' => 'dSO#status', 'url' => '/api/dso/verzoeken/{id}', 'verb' => 'GET'],
+		['name' => 'dSO#handoff', 'url' => '/api/dso/verzoeken/{id}/handoff', 'verb' => 'POST'],
+		['name' => 'dSO#postOutbound', 'url' => '/api/dso/verzoeken/{id}/status', 'verb' => 'POST'],
+
 		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).
 		// Participant/SMP lookup is an authenticated NC-session call (production
 		// binding for shillinq's PeppolTransmissionAdapterInterface::lookupParticipant).
@@ -61,6 +73,33 @@ return [
 		// apps' own local adapters, e.g. procest's ContactMomentService) — mirrors
 		// notifyNl#send. The PULL side (KissPullJob) is cron-driven, not a route.
 		['name' => 'kiss#createKlantcontact', 'url' => '/api/kiss/klantcontacten', 'verb' => 'POST'],
+
+		// iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0) bridge
+		// (openspec/changes/iwmo-ijw-adapter). Push is an authenticated NC-session
+		// call (production binding for sibling apps' own social-domain case
+		// modules) — mirrors kiss#createKlantcontact. The inbound retour receiver
+		// is gated by webhook signature (HMAC), not an NC session; see
+		// IwmoIjwController::inbound().
+		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
+		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
+
+		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
+		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both
+		// routes are authenticated NC-session calls (production binding for
+		// sibling apps reaching another organisation's published service via
+		// the directory + provider seam) — there is no inbound leg (see
+		// design.md "Architecture Overview"), so unlike the connectors above
+		// there is no signed webhook receiver here.
+		['name' => 'fsc#listServices', 'url' => '/api/fsc/services', 'verb' => 'GET'],
+		['name' => 'fsc#call', 'url' => '/api/fsc/call', 'verb' => 'POST'],
+
+		// ZGW version-translation shim (openspec/changes/zgw-version-translation)
+		// — translates the fleet's current ZGW shape ("1.0", the shape
+		// procest/OpenRegister emit today) to/from VNG's incremental ZGW
+		// v1.6 stability line for sibling apps / municipalities on a
+		// different ZGW version. Authenticated NC-session call, mirrors
+		// fsc#call. See ZgwVersionTranslateController::translate().
+		['name' => 'zgwVersionTranslate#translate', 'url' => '/api/zgw-translate', 'verb' => 'POST'],
 
 		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
 		// Inbound submissions are gated by webhook signature (HMAC), not an NC
@@ -135,6 +174,10 @@ return [
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
 
+		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
+		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
+		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
+
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
@@ -153,6 +196,11 @@ return [
 		['name' => 'synchronizations#logs', 'url' => '/api/synchronizations/logs', 'verb' => 'GET'],
 		['name' => 'synchronizations#statistics', 'url' => '/api/synchronizations/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#contracts', 'url' => '/api/synchronizations/contracts/{id}', 'verb' => 'GET'],
+
+		// Tables bridge discovery endpoints (nextcloud-table source/target editor support)
+		['name' => 'tablesBridge#status', 'url' => '/api/synchronizations/tables-bridge/status', 'verb' => 'GET'],
+		['name' => 'tablesBridge#tables', 'url' => '/api/synchronizations/tables-bridge/tables', 'verb' => 'GET'],
+		['name' => 'tablesBridge#columns', 'url' => '/api/synchronizations/tables-bridge/tables/{tableId}/columns', 'verb' => 'GET'],
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
@@ -204,6 +252,16 @@ return [
 		['name' => 'events#replay', 'url' => '/api/events/dead-letter/{id}/replay', 'verb' => 'POST'],
 		['name' => 'events#discard', 'url' => '/api/events/dead-letter/{id}/discard', 'verb' => 'POST'],
 
+		// Sync-item dead-letter queue inspection and replay (admin-only, CSRF
+		// intact — REQ-DLR-007..011). Bulk (static) routes registered BEFORE
+		// the {id} wildcard, mirroring the events# ordering above.
+		['name' => 'syncDeadLetter#index', 'url' => '/api/sync-dead-letter', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#bulkReplay', 'url' => '/api/sync-dead-letter/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#bulkDiscard', 'url' => '/api/sync-dead-letter/discard', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#show', 'url' => '/api/sync-dead-letter/{id}', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#replay', 'url' => '/api/sync-dead-letter/{id}/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#discard', 'url' => '/api/sync-dead-letter/{id}/discard', 'verb' => 'POST'],
+
 		// Logs endpoints (LogsController — synchronization_log schema)
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
 		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
@@ -239,6 +297,23 @@ return [
 		['name' => 'approvals#show', 'url' => '/api/approvals/{id}', 'verb' => 'GET'],
 		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
 		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
+
+		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
+		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
+		// these two are the bespoke, non-CRUD actions.
+		// See openspec/changes/connector-catalog-ui/contract.md
+		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
+		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// Configuration import/export UI endpoints (connector-catalog-ui) — a
+		// thin, routed wrapper over the existing, already-tested
+		// ConfigurationService::exportConfiguration()/importConfiguration().
+		// See openspec/changes/connector-catalog-ui/contract.md
+		['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST'],
+		// Register connector export — routed trigger for ConfigurationService::exportRegister().
+		['name' => 'configuration#exportRegister', 'url' => '/api/registers/{id}/export', 'verb' => 'GET'],
+		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
+		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
 
 		// User CORS preflight endpoints
 		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],
@@ -298,6 +373,7 @@ return [
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
 		['name' => 'ui#approvals', 'url' => '/approvals', 'verb' => 'GET'],
 		['name' => 'ui#approvalsId', 'url' => '/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'ui#catalog', 'url' => '/catalog', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.

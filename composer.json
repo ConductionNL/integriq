@@ -88,6 +88,7 @@
 		"symfony/console": "^5.4",
 		"symfony/css-selector": "^7.2",
 		"symfony/dom-crawler": "^7.2",
+		"symfony/expression-language": "^6.4",
 		"symfony/http-foundation": "^7.4.13",
 		"symfony/options-resolver": "^7.0",
 		"symfony/uid": "^6.4",

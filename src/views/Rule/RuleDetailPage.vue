@@ -149,9 +149,11 @@ import {
 	NcLoadingIcon,
 	NcTextField,
 } from '@nextcloud/vue'
-import { CnDetailCard, CnDetailPage, useObjectStore } from '@conduction/nextcloud-vue'
+import { CnDetailCard, CnDetailPage } from '@conduction/nextcloud-vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
+import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleActionConfig from './RuleActionConfig.vue'
 
@@ -180,6 +182,8 @@ export default {
 		RuleConditionGroup,
 		RuleActionConfig,
 	},
+
+	mixins: [liveObjectSubscription],
 
 	props: {
 		/** Route param `:id` — the rule's UUID (forwarded by CnPageRenderer). */
@@ -323,11 +327,31 @@ export default {
 				}
 				this.draft = JSON.parse(JSON.stringify(fetched))
 				this.pristine = JSON.parse(JSON.stringify(fetched))
+				// Live updates: or-object-{uuid} events refetch this rule and
+				// applyLiveObject (dirty-guarded) refreshes the working copy.
+				this.syncLiveSubscription(OBJECT_TYPE, String(this.id))
 			} catch (err) {
 				this.error = err
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Live-update bridge (liveObjectSubscription mixin): apply a fresh
+		 * server-side version of the rule to the local working copy — but
+		 * NEVER over unsaved edits. When the draft is dirty the refetched
+		 * object stays in the store cache and the user's edits win; the
+		 * next save persists them (server-side versioning arbitrates).
+		 *
+		 * @param {object} fresh The refetched rule from the object store
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		applyLiveObject(fresh) {
+			if (this.dirty || this.saving) return
+			this.draft = JSON.parse(JSON.stringify(fresh))
+			this.pristine = JSON.parse(JSON.stringify(fresh))
 		},
 
 		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-1 */
