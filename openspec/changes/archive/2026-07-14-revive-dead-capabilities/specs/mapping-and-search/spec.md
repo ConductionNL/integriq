@@ -1,7 +1,7 @@
 # mapping-and-search Specification (delta)
 
 ---
-status: proposed
+status: done
 ---
 
 ## Purpose

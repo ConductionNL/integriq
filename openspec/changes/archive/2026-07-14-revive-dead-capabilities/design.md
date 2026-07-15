@@ -58,8 +58,9 @@ canonical dialect is untouched.
 
 ## Tests (real numbers, php:8.3-cli, fresh composer install)
 
-- Baseline (clean `origin/development`): **1115 tests OK**.
-- After change: **1123 tests OK** (+8: 6 `EndpointCacheInvalidationListenerTest`
+- Baseline (clean `origin/development` @ 0944bf69): **1203 tests OK** (ship-time
+  re-measure; the 1115 draft baseline predated the FSC-connectivity merge).
+- After change: **1211 tests OK** (+8: 6 `EndpointCacheInvalidationListenerTest`
   + 2 `ConfigurationControllerTest`). Zero failures.
 - WIRED `clearCache`: `EndpointCacheInvalidationListenerTest` proves an endpoint
   create/update/delete event fires `clearCache()`, and non-endpoint / unrelated

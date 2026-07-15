@@ -1,7 +1,7 @@
 # configuration-export-import Specification (delta)
 
 ---
-status: proposed
+status: done
 ---
 
 ## Purpose
