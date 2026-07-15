@@ -28,6 +28,12 @@
 			<div v-if="message" class="deliveryDetail__body">
 				<div class="deliveryDetail__meta">
 					<span class="deliveryDetail__badge" :class="badgeClass">{{ message.status }}</span>
+					<span class="deliveryDetail__actionBadge" data-testid="detail-action-kind-badge">
+						{{ t('openconnector', 'Action: {kind}', { kind: actionKind }) }}
+					</span>
+					<span v-if="message.nextcloudEvent" class="deliveryDetail__provenanceBadge" data-testid="detail-provenance-badge">
+						{{ t('openconnector', 'Nextcloud event') }}
+					</span>
 					<span class="deliveryDetail__retry">
 						{{ t('openconnector', 'Attempts: {count}', { count: attempts.length }) }}
 					</span>
@@ -132,6 +138,18 @@ export default {
 		canAct() {
 			return ['failed', 'abandoned'].includes(this.message?.status)
 		},
+
+		/**
+		 * The message's resolved delivery action kind, as surfaced by the
+		 * backend (`EventsController::deadLetterShow`); defaults to
+		 * 'webhook' when the backend field is absent (e.g. an older cached
+		 * row) mirroring the server's own REQ-008 default.
+		 * @return {string}
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
+		 */
+		actionKind() {
+			return this.message?.actionKind || 'webhook'
+		},
 		/**
 		 * Status-badge CSS modifier class.
 		 * @return {string}
@@ -221,6 +239,15 @@ export default {
 .deliveryDetail__badge--discarded {
 	background: var(--color-text-maxcontrast);
 	color: var(--color-main-background);
+}
+
+.deliveryDetail__actionBadge,
+.deliveryDetail__provenanceBadge {
+	padding: 2px 10px;
+	border-radius: var(--border-radius-pill);
+	background: var(--color-background-darker, var(--color-background-dark));
+	color: var(--color-text-maxcontrast);
+	text-transform: capitalize;
 }
 
 .deliveryDetail__timeline {

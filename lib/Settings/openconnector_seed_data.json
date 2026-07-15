@@ -193,6 +193,27 @@
     {
       "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "mobile-app-subscription" },
       "description": "Example subscription wiring the Mobile App consumer to object-deleted events."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "seed-nc-file-tagged-sync" },
+      "description": "nextcloud-event-hub example: a file tagged 'invoice' drives a synchronization instead of a webhook (action.kind=synchronization). Replace the synchronizationId placeholder with a real synchronization UUID before enabling (see synchronization[example-rest-to-or] for the placeholder-reference convention this seed follows).",
+      "types": ["com.nextcloud.files.node.tagged"],
+      "filters": [{ "jsonlogic": { "in": ["invoice", { "var": "data.attributes.tags" }] } }],
+      "action": { "kind": "synchronization", "synchronizationId": "<placeholder>" },
+      "style": "push",
+      "status": "paused"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "seed-nc-calendar-webhook" },
+      "description": "nextcloud-event-hub example: a created calendar object drives a signed outbound webhook with a custom (faster, fewer-retries) backoff schedule via retryPolicy. Replace the placeholder sink before enabling.",
+      "types": ["com.nextcloud.calendar.object.created"],
+      "filters": [],
+      "action": { "kind": "webhook" },
+      "sink": "https://example.org/hooks/calendar",
+      "protocol": "HTTP",
+      "style": "push",
+      "status": "paused",
+      "retryPolicy": { "baseSeconds": 30, "factor": 2, "capSeconds": 1800, "maxRetries": 3 }
     }
   ],
   "job": [
