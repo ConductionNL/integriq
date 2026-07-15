@@ -896,7 +896,22 @@
         "Not authenticated": "Niet geauthenticeerd",
         "Invalid payment amount": "Ongeldig betalingsbedrag",
         "Payment provider credential missing": "Betalingsprovider-inloggegeven ontbreekt",
-        "No active payment source is configured": "Geen actieve betalingsbron geconfigureerd"
+        "No active payment source is configured": "Geen actieve betalingsbron geconfigureerd",
+        "Event types": "Gebeurtenistypen",
+        "One CloudEvents type per line, e.g. com.nextcloud.files.node.created": "Eén CloudEvents-type per regel, bijv. com.nextcloud.files.node.created",
+        "CloudEvents type filters this subscription matches (any-of). Leave empty to match every type.": "CloudEvents-typefilters waarop dit abonnement matcht (één van). Laat leeg om elk type te matchen.",
+        "Delivery action": "Afleveractie",
+        "A matched event either POSTs to the sink above (Webhook), runs a synchronization, or runs a job. All three are tracked, retried, and dead-letterable the same way.": "Een gematchte gebeurtenis doet een POST naar de bovenstaande bestemming (Webhook), voert een synchronisatie uit, of voert een taak uit. Alle drie worden op dezelfde manier gevolgd, opnieuw geprobeerd en in de dead-letter-wachtrij geplaatst.",
+        "Select a synchronization": "Selecteer een synchronisatie",
+        "Select a job": "Selecteer een taak",
+        "Custom retry policy": "Aangepast herhaalbeleid",
+        "Overrides the default backoff (60s, x4, 6h cap, 5 retries). Any field left blank falls back to the default.": "Overschrijft de standaard wachttijdopbouw (60s, x4, max. 6u, 5 pogingen). Een leeg gelaten veld valt terug op de standaardwaarde.",
+        "Base seconds": "Basis in seconden",
+        "Factor": "Factor",
+        "Cap seconds": "Maximum in seconden",
+        "Max retries": "Max. aantal pogingen",
+        "Nextcloud event": "Nextcloud-gebeurtenis",
+        "Action: {kind}": "Actie: {kind}"
     },
     "plurals": {}
 }

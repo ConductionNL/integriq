@@ -853,7 +853,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -922,6 +922,63 @@
             "type": "string",
             "description": "Subscription status (active, paused, expired)",
             "title": "Status"
+          },
+          "action": {
+            "type": "object",
+            "description": "Delivery action dispatch (nextcloud-event-hub REQ-008). {kind: 'webhook'|'synchronization'|'job', sink?, synchronizationId?, jobId?}. Absent defaults to kind='webhook' using the top-level `sink` field — 100% backward compatible with subscriptions created before this field existed.",
+            "title": "Delivery Action",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["webhook", "synchronization", "job"],
+                "description": "Which delivery mechanism a matched event drives",
+                "title": "Action Kind"
+              },
+              "sink": {
+                "type": "string",
+                "description": "Override sink URL for kind=webhook (falls back to the top-level `sink` when absent)",
+                "title": "Action Sink"
+              },
+              "synchronizationId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target synchronization UUID for kind=synchronization",
+                "title": "Synchronization ID"
+              },
+              "jobId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target job UUID for kind=job",
+                "title": "Job ID"
+              }
+            }
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "Per-subscription retry/backoff override (nextcloud-event-hub REQ-009). {baseSeconds?, factor?, capSeconds?, maxRetries?} — each key independently overrides the corresponding class default (60s / x4 / 6h cap / 5 retries) used by EventService::deliverMessage/recordFailure when absent.",
+            "title": "Retry Policy",
+            "properties": {
+              "baseSeconds": {
+                "type": "integer",
+                "description": "Base backoff interval in seconds for the first retry (default 60)",
+                "title": "Base Seconds"
+              },
+              "factor": {
+                "type": "integer",
+                "description": "Exponential growth factor between retries (default 4)",
+                "title": "Factor"
+              },
+              "capSeconds": {
+                "type": "integer",
+                "description": "Maximum backoff interval in seconds (default 21600 — 6 hours)",
+                "title": "Cap Seconds"
+              },
+              "maxRetries": {
+                "type": "integer",
+                "description": "Maximum delivery attempts before the message reaches terminal `abandoned` (default 5)",
+                "title": "Max Retries"
+              }
+            }
           },
           "userId": {
             "type": "string",

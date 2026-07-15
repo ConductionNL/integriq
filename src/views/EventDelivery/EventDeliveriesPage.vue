@@ -32,6 +32,12 @@
 				<NcTextField :label="t('openconnector', 'Subscription')"
 					:value.sync="subscriptionFilter"
 					@update:value="reloadDebounced" />
+				<NcCheckboxRadioSwitch :checked="nextcloudOnly"
+					type="switch"
+					data-testid="nextcloud-event-filter"
+					@update:checked="(value) => (nextcloudOnly = value)">
+					{{ t('openconnector', 'Nextcloud event') }}
+				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
@@ -60,7 +66,7 @@
 
 		<NcLoadingIcon v-if="loading" :size="32" class="eventDeliveries__loading" />
 
-		<p v-else-if="!rows.length" class="eventDeliveries__empty" data-testid="empty-state">
+		<p v-else-if="!filteredRows.length" class="eventDeliveries__empty" data-testid="empty-state">
 			{{ t('openconnector', 'No dead-lettered event deliveries') }}
 		</p>
 
@@ -70,6 +76,7 @@
 					<th />
 					<th>{{ t('openconnector', 'Event') }}</th>
 					<th>{{ t('openconnector', 'Subscription') }}</th>
+					<th>{{ t('openconnector', 'Action') }}</th>
 					<th>{{ t('openconnector', 'Status') }}</th>
 					<th>{{ t('openconnector', 'Retries') }}</th>
 					<th>{{ t('openconnector', 'Last attempt') }}</th>
@@ -77,13 +84,18 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="row in rows" :key="row.uuid || row.id">
+				<tr v-for="row in filteredRows" :key="row.uuid || row.id">
 					<td>
 						<NcCheckboxRadioSwitch :checked="isSelected(row)"
 							@update:checked="toggleSelect(row)" />
 					</td>
 					<td>{{ rowEventType(row) }}</td>
 					<td>{{ row.subscriptionId }}</td>
+					<td>
+						<span class="eventDeliveries__actionBadge" data-testid="action-kind-badge">
+							{{ row.actionKind || 'webhook' }}
+						</span>
+					</td>
 					<td>
 						<span class="eventDeliveries__badge" :class="`eventDeliveries__badge--${row.status}`">
 							{{ row.status }}
@@ -140,12 +152,32 @@ export default {
 			statusFilter: 'failed,abandoned',
 			subscriptionFilter: '',
 			statusOptions: ['failed,abandoned', 'failed', 'abandoned', 'discarded'],
+			// Nextcloud-event provenance filter (dead-letter-replay REQ-DLR-007):
+			// client-side toggle over the already-fetched page — the backend
+			// enriches every row with `nextcloudEvent` (derived from
+			// `event.source` starting with `/nextcloud/`, NOT `event.type`,
+			// because the pre-existing OR-object producer shares the
+			// `com.nextcloud.` type prefix with these new producers).
+			nextcloudOnly: false,
 			selected: [],
 			detail: { open: false, message: null },
 			bulkConfirm: null,
 			busy: false,
 			reloadTimer: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * The visible rows after applying the Nextcloud-event provenance
+		 * filter on top of the server-side status/subscription filters.
+		 * @return {object[]}
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+		 */
+		filteredRows() {
+			if (!this.nextcloudOnly) return this.rows
+			return this.rows.filter((row) => row.nextcloudEvent === true)
+		},
 	},
 
 	mounted() {
@@ -305,6 +337,14 @@ export default {
 	padding: 2px 10px;
 	border-radius: var(--border-radius-pill);
 	background: var(--color-background-dark);
+}
+
+.eventDeliveries__actionBadge {
+	padding: 2px 10px;
+	border-radius: var(--border-radius-pill);
+	background: var(--color-background-darker, var(--color-background-dark));
+	color: var(--color-text-maxcontrast);
+	text-transform: capitalize;
 }
 
 .eventDeliveries__badge--failed {

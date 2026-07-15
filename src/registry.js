@@ -45,6 +45,7 @@ import {
 } from './handlers/actionHandlers.js'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
+import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
@@ -83,6 +84,13 @@ export default {
 	// (credentialRef) picker backed by OpenRegister's credential broker, and
 	// hide the embedded-secret fields while brokered (openconnector#102).
 	SourceFormFields,
+
+	// The Webhooks (event_subscription) page wires `form-fields` to
+	// SubscriptionActionFields so the CnFormDialog offers a delivery-action
+	// kind picker (Webhook/Synchronization/Job) and an optional custom
+	// retry-policy block — neither is a declarative schema widget. See
+	// nextcloud-event-hub REQ-008/REQ-009.
+	SubscriptionActionFields,
 
 	// Custom-page components — referenced by manifest `pages[].component`
 	// when `pages[].type === 'custom'`. The 3 bespoke editors below
