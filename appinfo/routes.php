@@ -323,6 +323,10 @@ return [
 		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
 		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
 
+		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
+		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
+		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
 		// API Products gateway (openspec/changes/api-product-gateway). api_product/
 		// api_product_subscription CRUD goes through OR's generic object API
 		// (design.md API Design); these are the bespoke, non-CRUD actions.

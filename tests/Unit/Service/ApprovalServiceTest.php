@@ -199,6 +199,51 @@ class ApprovalServiceTest extends TestCase
     }//end testSuspendPersistsPendingAndStripsSensitiveHeaders()
 
     /**
+     * suspendForFlow() mirrors suspend()'s own persistence shape exactly —
+     * `flowRunId`/`resumeStepOrder` set instead of `endpointId`/`ruleId`,
+     * same header-stripped snapshot, same notify call — visual-flow-orchestration
+     * design.md Decision 4 / flow-orchestration REQ-005.
+     *
+     * @return void
+     */
+    public function testSuspendForFlowPersistsFlowRunIdAndResumeStepOrder(): void
+    {
+        $this->stubNotificationChain();
+        $group = $this->createMock(\OCP\IGroup::class);
+        $group->method('getUsers')->willReturn([]);
+        $this->groupManager->method('get')->willReturn($group);
+
+        $flowRun   = $this->entity(['status' => 'running'], 'flow-run-1');
+        $flowToken = new FlowToken();
+        $flowToken->setRequestOriginal(['method' => 'POST', 'headers' => ['authorization' => 'Bearer secret-token'], 'path' => '/flow']);
+        $flowToken->setRequestAmended($flowToken->getRequestOriginal());
+
+        $captured = null;
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object) use (&$captured) {
+                $captured = $object;
+                return $this->entity($object, 'approval-created');
+            }
+        );
+
+        $result = $this->service->suspendForFlow(
+            flowRun: $flowRun,
+            resumeStepOrder: 30,
+            config: ['approverGroup' => 'ops-approvers', 'onReject' => 'error', 'onTimeout' => 'dead_letter', 'ttlSeconds' => 3600],
+            flowToken: $flowToken
+        );
+
+        $this->assertSame('approval-created', $result->getUuid());
+        $this->assertSame('pending', $captured['status']);
+        $this->assertSame('flow-run-1', $captured['flowRunId']);
+        $this->assertSame(30, $captured['resumeStepOrder']);
+        $this->assertSame('ops-approvers', $captured['approverGroup']);
+        $this->assertArrayNotHasKey('endpointId', $captured);
+        $this->assertSame('***redacted***', $captured['snapshot']['requestOriginal']['headers']['authorization']);
+
+    }//end testSuspendForFlowPersistsFlowRunIdAndResumeStepOrder()
+
+    /**
      * notifyApprovers(): every member of the configured approver group
      * receives an actionable notification carrying approve/reject deep
      * links into the Pending Approvals UI — REQ-002 / TC-4. Unlike

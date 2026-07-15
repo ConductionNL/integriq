@@ -17,6 +17,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EndpointService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\StorageService;
@@ -72,6 +73,11 @@ class EndpointServiceTest extends TestCase
      */
     private $approvalService;
 
+    /**
+     * @var FlowRunnerService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $flowRunnerService;
+
 
     /**
      * Set up test fixtures.
@@ -106,14 +112,17 @@ class EndpointServiceTest extends TestCase
         $avgBsnPolicyRule      = new AvgBsnPolicyRule();
         $this->approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
         $approvalService       = $this->approvalService;
+        $this->flowRunnerService = $this->createMock(FlowRunnerService::class);
+        $flowRunnerService       = $this->flowRunnerService;
 
-        // EndpointService constructor signature (19 args, no $appConfig):
+        // EndpointService constructor signature (20 args, no $appConfig):
         //   objectService, callService, logger, urlGenerator, mappingService,
         //   orObjectService, config, storageService, authorizationService,
         //   container, synchronizationService, ruleService, webhookSignatureService,
         //   rateLimitService, compositeFanoutRule, referentienummerRule, avgBsnPolicyRule,
         //   approvalService (hitl-approval-rule-action), requestId
-        //   (flow-workflowengine-integration — triggerFromFlow()'s synthetic request).
+        //   (flow-workflowengine-integration — triggerFromFlow()'s synthetic request),
+        //   flowRunnerService (visual-flow-orchestration — the `flow` rule action type).
         // The previous version slipped $appConfig into position 8 which made
         // $storageService land on $authService — a pre-existing test bug
         // surfaced once #1015 unblocked the suite from crashing in setUp.
@@ -139,6 +148,7 @@ class EndpointServiceTest extends TestCase
             $avgBsnPolicyRule,
             $approvalService,
             $requestId,
+            $flowRunnerService,
         );
     }//end setUp()
 
@@ -362,6 +372,82 @@ class EndpointServiceTest extends TestCase
 
 
     /**
+     * A `flow` rule calls FlowRunnerService::run() with the pipeline's
+     * $data as input and returns $data unmodified when the run completes
+     * successfully — rule-pipeline REQ-RULE-009 / TC-16.
+     *
+     * @return void
+     */
+    public function testProcessFlowRuleRunsAndReturnsDataUnmodified(): void
+    {
+        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
+        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'completed'], 'flow-run-1');
+
+        $this->flowRunnerService->expects($this->once())->method('findFlow')->with('flow-1')->willReturn($flow);
+        $this->flowRunnerService->expects($this->once())
+            ->method('run')
+            ->with($this->identicalTo($flow), ['foo' => 'bar'], 'endpoint')
+            ->willReturn($flowRun);
+
+        $rule = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'configuration' => ['flow' => 'flow-1']], 'rule-1');
+        $data = ['foo' => 'bar'];
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processFlowRule');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $rule, $data);
+
+        $this->assertSame($data, $result);
+    }//end testProcessFlowRuleRunsAndReturnsDataUnmodified()
+
+
+    /**
+     * A `flow` rule whose referenced flow run ends `stopped`/`dead_letter`/
+     * `failed` surfaces as a rule-pipeline failure (an Exception), matching
+     * the same failure contract every other rule type already uses —
+     * rule-pipeline REQ-RULE-009.
+     *
+     * @return void
+     */
+    public function testProcessFlowRuleThrowsWhenFlowRunFails(): void
+    {
+        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Test flow'], 'flow-1');
+        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'stopped'], 'flow-run-1');
+
+        $this->flowRunnerService->method('findFlow')->willReturn($flow);
+        $this->flowRunnerService->method('run')->willReturn($flowRun);
+
+        $rule = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'configuration' => ['flow' => 'flow-1']], 'rule-1');
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processFlowRule');
+        $method->setAccessible(true);
+
+        $this->expectException(\Exception::class);
+        $method->invoke($this->service, $rule, ['foo' => 'bar']);
+    }//end testProcessFlowRuleThrowsWhenFlowRunFails()
+
+
+    /**
+     * A `flow` rule with no `configuration.flow` is a configuration error —
+     * throws before ever calling FlowRunnerService.
+     *
+     * @return void
+     */
+    public function testProcessFlowRuleThrowsWithoutConfiguredFlow(): void
+    {
+        $this->flowRunnerService->expects($this->never())->method('run');
+
+        $rule = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'configuration' => []], 'rule-1');
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processFlowRule');
+        $method->setAccessible(true);
+
+        $this->expectException(\Exception::class);
+        $method->invoke($this->service, $rule, ['foo' => 'bar']);
+    }//end testProcessFlowRuleThrowsWithoutConfiguredFlow()
+
+
+    /**
      * renderSelfUrlAndHal stamps an absolute `url` self-link built from the endpoint's own path.
      *
      * @return void
@@ -420,6 +506,7 @@ class EndpointServiceTest extends TestCase
             new AvgBsnPolicyRule(),
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
             $this->createMock(IRequestId::class),
+            $this->createMock(FlowRunnerService::class),
         );
 
         $resultB = $otherService->renderSelfUrlAndHal(['id' => '1'], $endpoint);
@@ -531,6 +618,7 @@ class EndpointServiceTest extends TestCase
                     new AvgBsnPolicyRule(),
                     $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
                     $requestId,
+                    $this->createMock(FlowRunnerService::class),
                 ]
             )
             ->onlyMethods(['handleRequest'])
