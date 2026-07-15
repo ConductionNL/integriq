@@ -226,6 +226,26 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/Forms/Events/AbstractFormEvent.php';
             require_once $stubsDir . '/OCA/Forms/Events/FormSubmittedEvent.php';
         }
+
+        // adopt-apphost: AppHost boilerplate stubs (peer app not in vendor).
+        // The leaf `OpenConnectorAdmin` (Settings + Sections) and
+        // `InitializeActions` classes extend these directly, so autoloading
+        // the subclass requires the parent to resolve.
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericAdminSettings.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericSettingsSection.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Service/GenericActionAuthService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Repair/GenericInitializeActions.php';
+        }
     }
 }
 
