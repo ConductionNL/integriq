@@ -50,6 +50,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\IRequestId;
 use OCP\IURLGenerator;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
@@ -111,6 +112,8 @@ class EndpointService
      * @param ReferentienummerRule    $referentienummerRule    Dialect-agnostic referentienummer generation rule.
      * @param AvgBsnPolicyRule        $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
      * @param ApprovalService         $approvalService         Suspends the pipeline on a HITL `approval` rule.
+     * @param IRequestId              $requestId               Nextcloud request-id service, used to synthesize
+     *                                                         an `IRequest` for `triggerFromFlow()`.
      *
      * @return void
      */
@@ -133,6 +136,7 @@ class EndpointService
         private readonly ReferentienummerRule $referentienummerRule,
         private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
         private readonly ApprovalService $approvalService,
+        private readonly IRequestId $requestId,
     ) {
     }//end __construct()
 
@@ -269,6 +273,71 @@ class EndpointService
         return $response;
 
     }//end handleRequest()
+
+    /**
+     * Trigger an endpoint from a WorkflowEngine "Call endpoint" operation
+     * (no live inbound HTTP request exists in that context).
+     *
+     * `handleRequest()` requires a live `OCP\IRequest`; there is no OCP-blessed
+     * way to construct one outside an HTTP request (design.md Decision 5 /
+     * discovery.md finding 4). This synthesizes one via NC's concrete
+     * `\OC\AppFramework\Http\Request` — the same class NC's own HTTP kernel
+     * constructs for every real request — and delegates to the existing
+     * `handleRequest()` unchanged; no routing/proxy/auth logic is duplicated
+     * here.
+     *
+     * @param ObjectEntity $endpoint   The endpoint configuration to trigger.
+     * @param array        $parameters Optional static key/value parameters configured on the Flow rule.
+     *
+     * @return Response The response `handleRequest()` produced, or a 500 `JSONResponse`
+     *                   when synthetic-request construction fails (see `buildSyntheticRequest()`).
+     *
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     */
+    public function triggerFromFlow(ObjectEntity $endpoint, array $parameters=[]): Response
+    {
+        try {
+            $request = $this->buildSyntheticRequest(parameters: $parameters);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'WorkflowEngine "Call endpoint" operation could not synthesize a request: '.$e->getMessage(),
+                ['exception' => $e]
+            );
+
+            return new JSONResponse(['error' => 'Unable to synthesize a request for this endpoint trigger'], 500);
+        }
+
+        return $this->handleRequest(endpoint: $endpoint, request: $request, path: '');
+
+    }//end triggerFromFlow()
+
+    /**
+     * Synthesize a minimal `OCP\IRequest` for `triggerFromFlow()`.
+     *
+     * Isolated in its own method so a future NC version that changes
+     * `\OC\AppFramework\Http\Request`'s constructor degrades one operation
+     * (caught by the caller, {@see triggerFromFlow()}) instead of crashing
+     * the triggering NC request (design.md Risk 2).
+     *
+     * @param array $parameters Optional static key/value parameters, merged into both `get` and `params`.
+     *
+     * @return IRequest A synthetic GET request carrying `$parameters`.
+     *
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     */
+    private function buildSyntheticRequest(array $parameters): IRequest
+    {
+        return new \OC\AppFramework\Http\Request(
+            vars: [
+                'method' => 'GET',
+                'get'    => $parameters,
+                'params' => $parameters,
+            ],
+            requestId: $this->requestId,
+            config: $this->config,
+        );
+
+    }//end buildSyntheticRequest()
 
     /**
      * Handles incoming requests to endpoints

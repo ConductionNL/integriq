@@ -93,6 +93,12 @@
                 <referencedClass name="OC"/>
                 <referencedClass name="OC\AppFramework\Middleware\Security\Exceptions\SecurityException"/>
                 <referencedClass name="OC\Files\Node\File"/>
+                <!-- flow-workflowengine-integration: NC's concrete IRequest implementation,
+                     synthesized by EndpointService::buildSyntheticRequest() (design.md Decision 5) -->
+                <referencedClass name="OC\AppFramework\Http\Request"/>
+                <!-- flow-workflowengine-integration: NC core's only bundled WorkflowEngine IEntity,
+                     referenced only as a compile-time ::class string by the three operation classes -->
+                <referencedClass name="OCA\WorkflowEngine\Entity\File"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
