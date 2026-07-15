@@ -2167,9 +2167,9 @@ class CallService
             sourceData: $sourceData,
             retryPolicyOverride: $retryPolicyOverride,
         );
-        $response  = $dispatched['response'];
-        $timeStart = $dispatched['timeStart'];
-        $timeEnd   = $dispatched['timeEnd'];
+        $response   = $dispatched['response'];
+        $timeStart  = $dispatched['timeStart'];
+        $timeEnd    = $dispatched['timeEnd'];
 
         // Phase 11: Decode response body and build the structured data array.
         $data = $this->buildResponseData(
