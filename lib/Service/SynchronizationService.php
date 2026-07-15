@@ -4298,7 +4298,7 @@ class SynchronizationService
      * @throws TooManyRequestsHttpException When rate limit is exceeded
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
     private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array
@@ -4605,7 +4605,7 @@ class SynchronizationService
      * @return array<int, array{name: string, url: string, description: string, tags: array<int, string>}>
      *         The extracted records, in file order.
      *
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function parseMarkdownResponse(string $body): array
     {
@@ -4708,7 +4708,7 @@ class SynchronizationService
      * @return array<int, array<string, string|null>> The extracted records,
      *         in document order.
      *
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function parseHtmlResponse(string $body, array $configuration): array
     {
@@ -4767,7 +4767,7 @@ class SynchronizationService
      * @return string|null The extracted (trimmed) text or attribute value,
      *         or null when the selector matches nothing.
      *
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function extractHtmlField(Crawler $container, string $fieldSelector): ?string
     {
