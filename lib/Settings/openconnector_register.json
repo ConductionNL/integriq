@@ -310,6 +310,49 @@
             "type": "string",
             "description": "Machine-readable identifier for cross-environment portability (local ADR-015)",
             "title": "Slug"
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "Retry policy applied by CallService around outbound dispatch. Fields: maxAttempts (integer, default 1 — 1 means today's single-attempt behavior, strictly opt-in per Source), backoffStrategy ('fixed'|'exponential', default 'fixed'), baseDelayMs (integer, default 500), maxDelayMs (integer, default 30000), jitter (boolean, default false — adds +/-10% uniform jitter), retryableStatusCodes (integer[], default [429, 502, 503, 504]), retryOnTimeout (boolean, default false — retry on a transport-level exception too). A Synchronization may widen/override this per-key via `synchronization.retryPolicyOverride`, merged in by the caller as `$config['retryPolicy']`. See http-call-engine spec REQ-007 (change retry-and-circuit-breaker-policies).",
+            "title": "Retry Policy"
+          },
+          "circuitBreakerState": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "open"
+            ],
+            "default": "closed",
+            "description": "Persisted circuit breaker state for this Source. 'half-open' is never persisted — it is a derived read when 'open' AND circuitBreakerCooldownSeconds have elapsed since circuitBreakerOpenedAt (see PdokConnector::circuitState() for the reference state machine). See http-call-engine spec REQ-008 (change retry-and-circuit-breaker-policies).",
+            "title": "Circuit Breaker State"
+          },
+          "circuitBreakerFailureCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "Consecutive retryable-failure count since the breaker last closed. Reaching circuitBreakerThreshold opens the breaker.",
+            "title": "Circuit Breaker Failure Count"
+          },
+          "circuitBreakerOpenedAt": {
+            "type": "integer",
+            "description": "Unix timestamp when the breaker last opened (null when closed).",
+            "title": "Circuit Breaker Opened At"
+          },
+          "circuitBreakerLastProbeAt": {
+            "type": "integer",
+            "description": "Unix timestamp of the most recent half-open probe attempt (null when never probed). Best-effort guard only — concurrent requests during the cooldown window may each treat themselves as the probe (accepted limitation, see design.md Trade-offs).",
+            "title": "Circuit Breaker Last Probe At"
+          },
+          "circuitBreakerThreshold": {
+            "type": "integer",
+            "default": 5,
+            "description": "Consecutive retryable failures required to open the breaker. Mirrors PdokConnector::BREAKER_THRESHOLD.",
+            "title": "Circuit Breaker Threshold"
+          },
+          "circuitBreakerCooldownSeconds": {
+            "type": "integer",
+            "default": 30,
+            "description": "Seconds an open breaker stays open before the next dispatch is treated as a half-open probe. Mirrors PdokConnector::BREAKER_OPEN_SECONDS.",
+            "title": "Circuit Breaker Cooldown Seconds"
           }
         },
         "x-openregister-seed": [],
@@ -1524,6 +1567,11 @@
             "type": "string",
             "description": "Machine-readable identifier (local ADR-015)",
             "title": "Slug"
+          },
+          "retryPolicyOverride": {
+            "type": "object",
+            "description": "Optional per-Synchronization override of the dispatching Source's `retryPolicy` (all keys optional; same shape — maxAttempts, backoffStrategy, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout). Copied by SynchronizationService into `$config['retryPolicy']` before calling CallService::call(), so it overrides the Source's own retryPolicy per-key ONLY for calls made in this synchronization's context; a direct (non-synchronization) call against the same Source is unaffected. See http-call-engine spec REQ-007 (change retry-and-circuit-breaker-policies).",
+            "title": "Retry Policy Override"
           }
         },
         "x-openregister-seed": [],
@@ -2232,6 +2280,135 @@
         },
         "appendOnly": true,
         "immutable": true
+      },
+      "sync_item_dead_letter": {
+        "slug": "sync_item_dead_letter",
+        "title": "SyncItemDeadLetter",
+        "icon": "EmailAlertOutline",
+        "version": "1.0.0",
+        "summary": "A captured per-object synchronization failure, isolated from the rest of the pass",
+        "description": "A SyncItemDeadLetter is created when a single object throws during SynchronizationService::synchronizeExternToIntern()'s per-object processing loop. It isolates that one item's failure (the rest of the pass continues) and captures enough context (payload, error, phase) for an operator to inspect and manually replay or discard it. Mirrors `event_message`'s dead-letter shape (see local ADR-013) adapted for manual-only replay (no automatic retry sweep — see synchronization-engine spec REQ-008, change retry-and-circuit-breaker-policies).",
+        "required": [],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "synchronization": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the Synchronization whose pass produced this failure (UUID; many-to-one; onDelete=CASCADE — when the Synchronization is destroyed, its dead-lettered items cascade-delete with it)",
+            "title": "Synchronization"
+          },
+          "synchronizationContract": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization_contract",
+            "x-openregister-onDelete": "SET NULL",
+            "description": "FK to the per-object contract, when one was resolved before the failure (UUID; many-to-one; onDelete=SET NULL — the dead-letter entry remains for audit even after the contract is gone)",
+            "title": "Synchronization Contract"
+          },
+          "originId": {
+            "type": "string",
+            "description": "Best-effort origin id of the failed source object, when resolvable before the failure occurred",
+            "title": "Origin ID"
+          },
+          "phase": {
+            "type": "string",
+            "default": "item-processing",
+            "description": "Free-form phase marker (not a locked enum) — fixed to 'item-processing' in v1 since processSynchronizationObject() has no internal phase boundaries exposed to a caller today; a follow-up change may populate fetch/mapping/write more precisely without a schema migration.",
+            "title": "Phase"
+          },
+          "payload": {
+            "type": "object",
+            "description": "The raw source object at the moment of failure",
+            "title": "Payload"
+          },
+          "error": {
+            "type": "string",
+            "description": "The exception message captured at failure time",
+            "title": "Error"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "replayed",
+              "discarded"
+            ],
+            "default": "failed",
+            "description": "Lifecycle state. An operator may replay a failed entry (re-invokes processSynchronizationObject(); success -> replayed, renewed failure stays failed with an appended attempt) or discard it (-> discarded, terminal, never swept, never hard-deleted).",
+            "title": "Status"
+          },
+          "retryCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "Number of manual replay attempts made (NOT automatic attempts — there is no automatic retry sweep for this schema)",
+            "title": "Retry Count"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-attempt audit trail — the initial capture plus every manual replay attempt",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Error message recorded for this attempt, or null on a successful replay",
+                  "title": "Error Message"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "replayedBy": {
+            "type": "string",
+            "description": "UID of the operator who last replayed this item out of failed",
+            "title": "Replayed By"
+          },
+          "replayedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last operator replay",
+            "title": "Replayed At"
+          },
+          "discardedBy": {
+            "type": "string",
+            "description": "UID of the operator who discarded this item",
+            "title": "Discarded By"
+          },
+          "discardedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the operator discard (terminal)",
+            "title": "Discarded At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
       },
       "ris_sync_record": {
         "slug": "ris_sync_record",

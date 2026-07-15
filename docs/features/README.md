@@ -10,6 +10,7 @@ OpenConnector is an API gateway and integration hub for Nextcloud. It brings ent
 | [Endpoints](endpoints.md) | Expose reverse-proxy API paths with rule-based logic | Implemented |
 | [Mappings](mappings.md) | Twig-powered data transformation between schemas | Implemented |
 | [Synchronizations](synchronizations.md) | Scheduled and event-driven source-to-target sync | Implemented |
+| [Reliability](reliability.md) | Retry policy, per-Source circuit breaker, sync dead letters | Implemented |
 | [Rules](rules.md) | Authentication, file handling, locking, and audit trail rules | Implemented |
 | [Jobs](jobs.md) | Cron-based scheduled task execution | Implemented |
 | [Events & Webhooks](events.md) | CloudEvents emission, subscription, and consumer processing | Implemented |

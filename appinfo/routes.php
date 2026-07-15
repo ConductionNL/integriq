@@ -154,6 +154,10 @@ return [
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
 
+		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
+		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
+		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
+
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
@@ -222,6 +226,16 @@ return [
 		['name' => 'events#deadLetterShow', 'url' => '/api/events/dead-letter/{id}', 'verb' => 'GET'],
 		['name' => 'events#replay', 'url' => '/api/events/dead-letter/{id}/replay', 'verb' => 'POST'],
 		['name' => 'events#discard', 'url' => '/api/events/dead-letter/{id}/discard', 'verb' => 'POST'],
+
+		// Sync-item dead-letter queue inspection and replay (admin-only, CSRF
+		// intact — REQ-DLR-007..011). Bulk (static) routes registered BEFORE
+		// the {id} wildcard, mirroring the events# ordering above.
+		['name' => 'syncDeadLetter#index', 'url' => '/api/sync-dead-letter', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#bulkReplay', 'url' => '/api/sync-dead-letter/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#bulkDiscard', 'url' => '/api/sync-dead-letter/discard', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#show', 'url' => '/api/sync-dead-letter/{id}', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#replay', 'url' => '/api/sync-dead-letter/{id}/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#discard', 'url' => '/api/sync-dead-letter/{id}/discard', 'verb' => 'POST'],
 
 		// Logs endpoints (LogsController — synchronization_log schema)
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],

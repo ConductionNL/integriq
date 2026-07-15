@@ -55,7 +55,9 @@ use OCA\OpenConnector\Sources\Berichtenbox\BerichtenboxSourceAdapter;
 use GuzzleHttp\Client as GuzzleHttpClient;
 use OCA\OpenConnector\Controller\HealthController;
 use OCA\OpenConnector\Controller\MetricsController;
+use OCA\OpenConnector\Observability\OpenConnectorMetricsProvider;
 use OCA\OpenRegister\AppHost\Controller\GenericPreferencesController;
+use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -397,6 +399,17 @@ class Application extends App implements IBootstrap
                     engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
                 );
             }
+        );
+
+        // Provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies):
+        // the per-Source circuit_breaker_state gauge needs each Source's OWN
+        // field value (1/0), not a row count — declarative tableCount/objectCount
+        // descriptors only aggregate counts. The `{"kind":"provider"}` metric
+        // descriptor in src/manifest.json merges this provider's samples into
+        // the /api/metrics response; the engine resolves it via this alias.
+        $context->registerServiceAlias(
+            IMetricsProvider::class.'::openconnector',
+            OpenConnectorMetricsProvider::class
         );
     }//end registerAppHostObservability()
 
