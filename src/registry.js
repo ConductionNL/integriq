@@ -49,6 +49,8 @@ import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
+import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
+import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -97,4 +99,11 @@ export default {
 	// surface backed by the admin-only /api/events/dead-letter endpoints with
 	// per-row + bulk Replay/Discard. See openconnector-dead-letter-replay.
 	EventDeliveriesPage,
+
+	// HITL Pending Approvals (custom pages): a filtered approval_request
+	// surface backed by the two-layer-authorized /api/approvals endpoints
+	// with per-row navigation and approve/reject verbs. Not expressible as a
+	// generic CnIndexPage. See hitl-approval-rule-action.
+	ApprovalsIndex,
+	ApprovalDetail,
 }

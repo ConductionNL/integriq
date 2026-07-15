@@ -39,6 +39,8 @@
     "pdok.suggest": ["admin"],
     "pdok.lookup": ["admin"],
     "pdok.free": ["admin"],
-    "pdok.reverse": ["admin"]
+    "pdok.reverse": ["admin"],
+    "approval.approve": ["admin"],
+    "approval.reject": ["admin"]
   }
 }

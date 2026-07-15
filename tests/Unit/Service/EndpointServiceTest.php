@@ -66,6 +66,11 @@ class EndpointServiceTest extends TestCase
      */
     private $container;
 
+    /**
+     * @var \OCA\OpenConnector\Service\ApprovalService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $approvalService;
+
 
     /**
      * Set up test fixtures.
@@ -98,12 +103,15 @@ class EndpointServiceTest extends TestCase
         $compositeFanoutRule  = new CompositeFanoutRule($this->orObjectService, $logger);
         $referentienummerRule = new ReferentienummerRule();
         $avgBsnPolicyRule      = new AvgBsnPolicyRule();
+        $this->approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
+        $approvalService       = $this->approvalService;
 
-        // EndpointService constructor signature (17 args, no $appConfig):
+        // EndpointService constructor signature (18 args, no $appConfig):
         //   objectService, callService, logger, urlGenerator, mappingService,
         //   orObjectService, config, storageService, authorizationService,
         //   container, synchronizationService, ruleService, webhookSignatureService,
-        //   rateLimitService, compositeFanoutRule, referentienummerRule, avgBsnPolicyRule.
+        //   rateLimitService, compositeFanoutRule, referentienummerRule, avgBsnPolicyRule,
+        //   approvalService (hitl-approval-rule-action).
         // The previous version slipped $appConfig into position 8 which made
         // $storageService land on $authService — a pre-existing test bug
         // surfaced once #1015 unblocked the suite from crashing in setUp.
@@ -126,6 +134,7 @@ class EndpointServiceTest extends TestCase
             $compositeFanoutRule,
             $referentienummerRule,
             $avgBsnPolicyRule,
+            $approvalService,
         );
     }//end setUp()
 
@@ -296,6 +305,59 @@ class EndpointServiceTest extends TestCase
 
 
     /**
+     * A `before`-timing approval rule suspends the pipeline via
+     * ApprovalService::suspend() and returns a 202 JSONResponse carrying the
+     * approval_request id + status URL — rule-pipeline REQ-RULE-008 / TC-1.
+     *
+     * @return void
+     */
+    public function testProcessApprovalRuleBeforeSuspendsWith202(): void
+    {
+        $created = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'pending'], 'approval-created');
+        $this->approvalService->expects($this->once())->method('suspend')->willReturn($created);
+        $this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.org/apps/openconnector/api/approvals/approval-created');
+
+        $endpoint  = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'WOO Publish'], 'endpoint-1');
+        $rule      = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'configuration' => ['approval' => ['approverGroup' => 'woo-approvers']]], 'rule-1');
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $rule, $endpoint, $flowToken, 'before');
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(202, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame('pending_approval', $data['status']);
+        $this->assertSame('approval-created', $data['approvalRequestId']);
+    }//end testProcessApprovalRuleBeforeSuspendsWith202()
+
+
+    /**
+     * An approval rule reaching the dispatch during an `after` phase is
+     * rejected as invalid configuration (no suspension attempted) —
+     * rule-pipeline REQ-RULE-008 / approval-workflow REQ-001 / TC-3.
+     *
+     * @return void
+     */
+    public function testProcessApprovalRuleAfterThrows(): void
+    {
+        $this->approvalService->expects($this->never())->method('suspend');
+
+        $endpoint  = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'WOO Publish'], 'endpoint-1');
+        $rule      = ObjectServiceMockBuilder::objectEntity($this, ['order' => 20, 'timing' => 'after', 'configuration' => ['approval' => []]], 'rule-1');
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processApprovalRule');
+        $method->setAccessible(true);
+
+        $this->expectException(\Exception::class);
+        $method->invoke($this->service, $rule, $endpoint, $flowToken, 'after');
+    }//end testProcessApprovalRuleAfterThrows()
+
+
+    /**
      * renderSelfUrlAndHal stamps an absolute `url` self-link built from the endpoint's own path.
      *
      * @return void
@@ -352,6 +414,7 @@ class EndpointServiceTest extends TestCase
             new CompositeFanoutRule($this->orObjectService, $logger),
             new ReferentienummerRule(),
             new AvgBsnPolicyRule(),
+            $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
         );
 
         $resultB = $otherService->renderSelfUrlAndHal(['id' => '1'], $endpoint);

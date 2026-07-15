@@ -33,6 +33,7 @@ use OCA\OpenConnector\Exception\AuthenticationException;
 use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
 use OCA\OpenConnector\Rule\ReferentienummerRule;
+use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
 use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
@@ -109,6 +110,7 @@ class EndpointService
      * @param CompositeFanoutRule     $compositeFanoutRule     Dialect-agnostic composite transactional fan-out rule.
      * @param ReferentienummerRule    $referentienummerRule    Dialect-agnostic referentienummer generation rule.
      * @param AvgBsnPolicyRule        $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
+     * @param ApprovalService         $approvalService         Suspends the pipeline on a HITL `approval` rule.
      *
      * @return void
      */
@@ -130,6 +132,7 @@ class EndpointService
         private readonly CompositeFanoutRule $compositeFanoutRule,
         private readonly ReferentienummerRule $referentienummerRule,
         private readonly AvgBsnPolicyRule $avgBsnPolicyRule,
+        private readonly ApprovalService $approvalService,
     ) {
     }//end __construct()
 
@@ -351,96 +354,14 @@ class EndpointService
                 flowToken: $flowToken,
             );
 
-            if ($ruleResult instanceof JSONResponse === true) {
-                return $this->transformError(result: $ruleResult, request: $request);
-            }
-
-            // Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
-            // Runs AFTER authentication has passed (the 'before' rule pipeline,
-            // which includes the authentication rule, completed without a 401/403)
-            // and BEFORE the endpoint target/schema dispatch (REQ-CON-RL-002). An
-            // over-limit request short-circuits with 429 here; an under-limit
-            // request records its RateLimit-* headers for the response wrapper.
-            $rateLimitResponse = $this->enforceInboundRateLimit(request: $request);
-            if ($rateLimitResponse !== null) {
-                return $rateLimitResponse;
-            }
-
-            // Update request data with rule processing results.
-            $flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
-
-            // Check if endpoint connects to a schema.
-            if (($endpointData['targetType'] ?? '') === 'register/schema') {
-                // Handle CRUD operations via ObjectService.
-                $result = $this->handleSchemaRequest(endpoint: $endpoint, flowToken: $flowToken, path: $path);
-
-                // Process initial data.
-                $data = [
-                    'utility'        => [
-                        'currentDate' => (new DateTime())->format('c'),
-                    ],
-                    'parameters'     => $flowToken->getRequestAmended()['parameters'],
-                    'requestHeaders' => $flowToken->getRequestAmended()['headers'],
-                    'headers'        => $flowToken->getResponseAmended()['headers'],
-                    'path'           => $flowToken->getRequestAmended()['path'],
-                    'method'         => $flowToken->getRequestAmended()['method'],
-                    'body'           => $flowToken->getResponseOriginal()['data'],
-                ];
-
-                $ruleResult = $this->processRules(
-                    endpoint: $endpoint,
-                    request: $request,
-                    data: $data,
-                    timing: 'after',
-                    objectId: $result->getData()['id'] ?? null,
-                    flowToken: $flowToken
-                );
-
-                if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
-                    return $ruleResult;
-                }
-
-                if ($ruleResult instanceof JSONResponse === true) {
-                    return $this->transformError(result: $ruleResult, request: $request);
-                }
-
-                if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
-                    return $this->transformError(result: $result, request: $request);
-                }
-
-                // Set the proper status code for the method.
-                // @TODO: we might want an override from rule processing.
-                switch ($flowToken->getRequestAmended()['method']) {
-                    case 'POST':
-                        $statusCode = Http::STATUS_CREATED;
-                        break;
-                    case 'DELETE':
-                        $statusCode = Http::STATUS_NO_CONTENT;
-                        break;
-                    case 'GET':
-                    case 'PUT':
-                    case 'PATCH':
-                    default:
-                        $statusCode = Http::STATUS_OK;
-                        break;
-                }
-
-                $configurations = $endpointData['configurations'] ?? [];
-                if (isset($configurations['defaultStatusCode']) === true) {
-                    $statusCode = $configurations['defaultStatusCode'];
-                }
-
-                return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
-            }//end if
-
-            // Check if endpoint connects to a source.
-            if (($endpointData['targetType'] ?? '') === 'api') {
-                // Proxy request to source via CallService.
-                return $this->handleSourceRequest(endpoint: $endpoint, request: $request);
-            }
-
-            // Invalid endpoint configuration.
-            throw new Exception('Endpoint must specify either a schema or source connection');
+            return $this->dispatchAfterBeforeRules(
+                endpoint: $endpoint,
+                request: $request,
+                path: $path,
+                flowToken: $flowToken,
+                ruleResult: $ruleResult,
+                enforceRateLimit: true
+            );
         } catch (Exception $e) {
             // C3 fix: never disclose the stack trace in the response body.
             // This endpoint is @PublicPage — unauthenticated callers must not see internal file
@@ -455,6 +376,206 @@ class EndpointService
             );
         }//end try
     }//end doHandleRequest()
+
+    /**
+     * Continue an endpoint request after the `before`-phase rule pipeline
+     * has run (or been resumed past a suspended `approval` rule):
+     * short-circuit on an `error`-style rule result, enforce the inbound
+     * rate limit, then dispatch to the schema/target write or source proxy
+     * exactly as the tail of `doHandleRequest()` always has. Shared by
+     * `doHandleRequest()` (the original request) and `resumeFromApproval()`
+     * (the approver's own request) so suspension/resume needs no separate
+     * dispatch implementation (rule-pipeline REQ-RULE-008 Notes).
+     *
+     * @param ObjectEntity   $endpoint         The endpoint configuration.
+     * @param IRequest       $request          The current request (approver's own request on resume).
+     * @param string         $path             The endpoint sub-path.
+     * @param FlowToken      $flowToken        The (possibly rehydrated) FlowToken.
+     * @param array|Response $ruleResult       The before-phase `processRules()` result.
+     * @param boolean        $enforceRateLimit Whether to (re-)apply the inbound rate limit — false
+     *                                         on resume, since the original request already passed it
+     *                                         before suspending (design.md `resumeFromApproval`
+     *                                         notes).
+     *
+     * @return Response
+     *
+     * @throws Exception When endpoint configuration is invalid.
+     *
+     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     */
+    private function dispatchAfterBeforeRules(
+        ObjectEntity $endpoint,
+        IRequest $request,
+        string $path,
+        FlowToken $flowToken,
+        array|Response $ruleResult,
+        bool $enforceRateLimit
+    ): Response {
+        $endpointData = $endpoint->getObject();
+
+        if ($ruleResult instanceof JSONResponse === true) {
+            return $this->transformError(result: $ruleResult, request: $request);
+        }
+
+        if ($enforceRateLimit === true) {
+            // Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
+            // Runs AFTER authentication has passed (the 'before' rule pipeline,
+            // which includes the authentication rule, completed without a 401/403)
+            // and BEFORE the endpoint target/schema dispatch (REQ-CON-RL-002). An
+            // over-limit request short-circuits with 429 here; an under-limit
+            // request records its RateLimit-* headers for the response wrapper.
+            $rateLimitResponse = $this->enforceInboundRateLimit(request: $request);
+            if ($rateLimitResponse !== null) {
+                return $rateLimitResponse;
+            }
+        }
+
+        // Update request data with rule processing results.
+        $flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
+
+        // Check if endpoint connects to a schema.
+        if (($endpointData['targetType'] ?? '') === 'register/schema') {
+            // Handle CRUD operations via ObjectService.
+            $result = $this->handleSchemaRequest(endpoint: $endpoint, flowToken: $flowToken, path: $path);
+
+            // Process initial data.
+            $data = [
+                'utility'        => [
+                    'currentDate' => (new DateTime())->format('c'),
+                ],
+                'parameters'     => $flowToken->getRequestAmended()['parameters'],
+                'requestHeaders' => $flowToken->getRequestAmended()['headers'],
+                'headers'        => $flowToken->getResponseAmended()['headers'],
+                'path'           => $flowToken->getRequestAmended()['path'],
+                'method'         => $flowToken->getRequestAmended()['method'],
+                'body'           => $flowToken->getResponseOriginal()['data'],
+            ];
+
+            $ruleResult = $this->processRules(
+                endpoint: $endpoint,
+                request: $request,
+                data: $data,
+                timing: 'after',
+                objectId: $result->getData()['id'] ?? null,
+                flowToken: $flowToken
+            );
+
+            if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
+                return $ruleResult;
+            }
+
+            if ($ruleResult instanceof JSONResponse === true) {
+                return $this->transformError(result: $ruleResult, request: $request);
+            }
+
+            if ($result->getStatus() !== 200 && $result->getStatus() !== 201) {
+                return $this->transformError(result: $result, request: $request);
+            }
+
+            // Set the proper status code for the method.
+            // @TODO: we might want an override from rule processing.
+            switch ($flowToken->getRequestAmended()['method']) {
+                case 'POST':
+                    $statusCode = Http::STATUS_CREATED;
+                    break;
+                case 'DELETE':
+                    $statusCode = Http::STATUS_NO_CONTENT;
+                    break;
+                case 'GET':
+                case 'PUT':
+                case 'PATCH':
+                default:
+                    $statusCode = Http::STATUS_OK;
+                    break;
+            }
+
+            $configurations = $endpointData['configurations'] ?? [];
+            if (isset($configurations['defaultStatusCode']) === true) {
+                $statusCode = $configurations['defaultStatusCode'];
+            }
+
+            return new JSONResponse(data: $ruleResult['body'], statusCode: $statusCode, headers: $ruleResult['headers'] ?? []);
+        }//end if
+
+        // Check if endpoint connects to a source.
+        if (($endpointData['targetType'] ?? '') === 'api') {
+            // Proxy request to source via CallService.
+            return $this->handleSourceRequest(endpoint: $endpoint, request: $request);
+        }
+
+        // Invalid endpoint configuration.
+        throw new Exception('Endpoint must specify either a schema or source connection');
+
+    }//end dispatchAfterBeforeRules()
+
+    /**
+     * Resume an endpoint rule-pipeline run suspended by an `approval` rule,
+     * inside the approving user's own HTTP request (design.md Decision 3):
+     * continue the `before`-phase pipeline starting with the first rule
+     * whose `order` is strictly greater than `resumeAfterOrder`, then — once
+     * the resumed before-phase rules complete without a further
+     * short-circuit — dispatch exactly as an unsuspended request would
+     * (schema/target write, then `after`-phase rules).
+     *
+     * The inbound rate limit is NOT re-applied here: the original caller
+     * already passed it before the run suspended, and this request belongs
+     * to the approver, not a new inbound API consumer.
+     *
+     * @param ObjectEntity $endpoint         The suspended endpoint.
+     * @param IRequest     $request          The approver's own request.
+     * @param FlowToken    $flowToken        The FlowToken rehydrated from the approval_request snapshot.
+     * @param integer      $resumeAfterOrder The approval rule's `order` — resume continues strictly after it.
+     * @param string       $path             The endpoint sub-path recorded at suspension time.
+     *
+     * @return Response The resumed pipeline's final result.
+     *
+     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     */
+    public function resumeFromApproval(
+        ObjectEntity $endpoint,
+        IRequest $request,
+        FlowToken $flowToken,
+        int $resumeAfterOrder,
+        string $path
+    ): Response {
+        try {
+            $data = [
+                'utility'    => [
+                    'currentDate' => (new DateTime())->format('c'),
+                ],
+                'parameters' => $flowToken->getRequestAmended()['parameters'] ?? [],
+                'headers'    => $flowToken->getRequestAmended()['headers'] ?? [],
+                'path'       => $flowToken->getRequestAmended()['path'] ?? $path,
+                'method'     => $flowToken->getRequestAmended()['method'] ?? $request->getMethod(),
+                'body'       => $flowToken->getRequestAmended()['parameters'] ?? [],
+            ];
+
+            $ruleResult = $this->processRules(
+                endpoint: $endpoint,
+                request: $request,
+                data: $data,
+                timing: 'before',
+                flowToken: $flowToken,
+                resumeAfterOrder: $resumeAfterOrder
+            );
+
+            return $this->dispatchAfterBeforeRules(
+                endpoint: $endpoint,
+                request: $request,
+                path: $path,
+                flowToken: $flowToken,
+                ruleResult: $ruleResult,
+                enforceRateLimit: false
+            );
+        } catch (Exception $e) {
+            $this->logger->error(
+                'Error resuming endpoint request after approval: '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return new JSONResponse(['error' => 'Internal server error'], 500);
+        }//end try
+
+    }//end resumeFromApproval()
 
     /**
      * Enforce the resolved consumer's inbound rate limit and quota.
@@ -1524,16 +1645,22 @@ class EndpointService
     /**
      * Processes rules for an endpoint request.
      *
-     * @param ObjectEntity   $endpoint  The endpoint being processed.
-     * @param IRequest       $request   The incoming request.
-     * @param array          $data      Current request data envelope.
-     * @param string         $timing    Rule timing to filter by ("before" or "after").
-     * @param string|null    $objectId  Optional object id (for rules scoped to a single object).
-     * @param FlowToken|null $flowToken Optional flow token threaded through the rule chain.
+     * @param ObjectEntity   $endpoint         The endpoint being processed.
+     * @param IRequest       $request          The incoming request.
+     * @param array          $data             Current request data envelope.
+     * @param string         $timing           Rule timing to filter by ("before" or "after").
+     * @param string|null    $objectId         Optional object id (for rules scoped to a single object).
+     * @param FlowToken|null $flowToken        Optional flow token threaded through the rule chain.
+     * @param integer|null   $resumeAfterOrder When resuming a suspended `approval` rule (design.md
+     *                                         Decision 3), skip every rule whose `order` is not
+     *                                         strictly greater than this value — they already ran
+     *                                         before the pipeline suspended. Null for a normal
+     *                                         (non-resumed) run.
      *
      * @return array|JSONResponse Returns modified data or error response if rule fails.
      *
      * @spec openspec/specs/rule-pipeline/spec.md
+     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
      */
     private function processRules(
         ObjectEntity $endpoint,
@@ -1541,7 +1668,8 @@ class EndpointService
         array $data,
         string $timing,
         ?string $objectId=null,
-        FlowToken $flowToken=null
+        FlowToken $flowToken=null,
+        ?int $resumeAfterOrder=null
     ): array|Response {
         $endpointData = $endpoint->getObject();
         $rules        = $endpointData['rules'] ?? [];
@@ -1569,6 +1697,12 @@ class EndpointService
                 // }.
                 $ruleData    = $rule->getObject();
                 $logicResult = null;
+
+                // Resume: rules at/before the suspended approval rule's order
+                // already ran before the pipeline suspended — skip them.
+                if ($resumeAfterOrder !== null && (($ruleData['order'] ?? 0) <= $resumeAfterOrder)) {
+                    continue;
+                }
 
                 $data['flowToken'] = $flowToken->__serialize();
 
@@ -1625,6 +1759,7 @@ class EndpointService
                         'referentienummer' => $this->processReferentienummerRule(rule: $rule, data: $data),
                         'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
                         'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
+                        'approval' => $this->processApprovalRule(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: $timing),
                         default => throw new Exception('Unsupported rule type: '.($ruleData['type'] ?? '')),
                     };//end match
                 } catch (Exception $e) {
@@ -1697,6 +1832,51 @@ class EndpointService
     }//end processOverrideRule()
 
     /**
+     * `approval` rule action type: suspend the pipeline for human sign-off
+     * (rule-pipeline REQ-RULE-008 / approval-workflow REQ-001). Valid only
+     * for `timing: before` — a `before`-phase rule dispatches here because
+     * `processRules()`'s own `$timingMatches` check already filters out
+     * `after`-configured rules during a `before` run; an `approval` rule
+     * mis-configured `timing: after` still reaches this method during an
+     * `after` run (its own timing matches the loop's phase there), so the
+     * explicit `$timing !== 'before'` guard below is what actually rejects
+     * that misconfiguration (design.md Decision 1).
+     *
+     * @param ObjectEntity $rule      The `approval` rule whose conditions passed.
+     * @param ObjectEntity $endpoint  The endpoint whose pipeline is suspending.
+     * @param FlowToken    $flowToken The in-flight FlowToken at suspension time.
+     * @param string       $timing    The phase `processRules()` is currently running.
+     *
+     * @return JSONResponse HTTP 202 with the approval_request id and a status-polling URL.
+     *
+     * @throws Exception When configured with `timing: after` (invalid configuration).
+     *
+     * @spec openspec/changes/hitl-approval-rule-action/specs/rule-pipeline/spec.md#req-rule-008-approval-rule-action-type-suspends-the-pipeline
+     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     */
+    private function processApprovalRule(ObjectEntity $rule, ObjectEntity $endpoint, FlowToken $flowToken, string $timing): JSONResponse
+    {
+        if ($timing !== 'before') {
+            throw new Exception('approval rule type only supports timing: before (pre-write gating)');
+        }
+
+        $approvalRequest = $this->approvalService->suspend(endpoint: $endpoint, rule: $rule, flowToken: $flowToken);
+
+        return new JSONResponse(
+            data: [
+                'status'            => 'pending_approval',
+                'approvalRequestId' => $approvalRequest->getUuid(),
+                'statusUrl'         => $this->urlGenerator->linkToRouteAbsolute(
+                    'openconnector.approvals.show',
+                    ['id' => $approvalRequest->getUuid()]
+                ),
+            ],
+            statusCode: 202
+        );
+
+    }//end processApprovalRule()
+
+    /**
      * Get a rule by its ID using OR ObjectService
      *
      * @param string $id The unique identifier of the rule
@@ -1714,6 +1894,27 @@ class EndpointService
             return null;
         }
     }//end getRuleById()
+
+    /**
+     * Get an endpoint by its ID using OR ObjectService. Public so
+     * `ApprovalsController` can resolve the suspended endpoint recorded on
+     * an `approval_request` before calling {@see resumeFromApproval()}.
+     *
+     * @param string $id The endpoint's OpenRegister id/uuid.
+     *
+     * @return ObjectEntity|null The endpoint entity, or null when not found.
+     *
+     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     */
+    public function getEndpointById(string $id): ?ObjectEntity
+    {
+        try {
+            return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'endpoint', _rbac: false, _multitenancy: false);
+        } catch (Exception $e) {
+            $this->logger->error('Error fetching endpoint: '.$e->getMessage());
+            return null;
+        }
+    }//end getEndpointById()
 
     /**
      * Verify an inbound webhook signature over the RAW request body.

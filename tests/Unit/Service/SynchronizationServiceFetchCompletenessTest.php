@@ -115,6 +115,7 @@ class SynchronizationServiceFetchCompletenessTest extends TestCase
                     $this->logger,
                     $logService,
                     $appConfig,
+                    $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
                 ]
             )
             ->onlyMethods(['updateTarget'])

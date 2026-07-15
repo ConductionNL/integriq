@@ -309,6 +309,13 @@ class Application extends App implements IBootstrap
         // The check uses IAppManager only (no OCA\OpenRegister\* reference) so it
         // is safe to run while OpenRegister is disabled (REQ-ADM-003).
         $context->registerSetupCheck(OpenRegisterDependencyCheck::class);
+
+        // HITL approval workflow: the actionable approver notification is
+        // dispatched imperatively (ApprovalService::notifyApprovers(), see
+        // openspec/changes/hitl-approval-rule-action/design.md Decision 4) —
+        // without a notifier registered under this app id, the notification
+        // manager silently drops it when preparing it for display.
+        $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
     }//end register()
 
     /**
