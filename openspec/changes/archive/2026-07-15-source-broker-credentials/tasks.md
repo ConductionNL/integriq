@@ -6,6 +6,27 @@
 > `credential-provider-doffin`) are tracked in openregister — the
 > background-job task below feature-detects rather than assumes them.
 
+> **Re-verified against `origin/development` HEAD (2026-07-15, worktree
+> `wip/build-source-broker-credentials`).** Tasks 1-15 and 17 were already
+> implemented and merged into `development` across three commits before this
+> build pass: `e4cde590` (feat(call-engine): brokered source credentials via
+> OpenRegister credentialRef), `1ecf84af` (feat(call-engine): owner-pinned
+> acting-user for sessionless brokered syncs), `3c7b8d7e` (feat(source):
+> app-side credential injection via authentication placeholders). This pass
+> re-verified each against the current `lib/Service/BrokeredCallService.php`
+> / `lib/Service/CallService.php` / `tests/Unit/Service/BrokeredCallServiceTest.php`
+> / `tests/Unit/Service/CallServiceTest.php`, found the wiring intact and
+> `composer check:strict` clean except for one newly-surfaced `CallService::call()`
+> PHPMD complexity violation (NPath 288 > 200, from the accumulated Phase 7b/7c
+> branching) — fixed in this pass by extracting `resolveCallCredentials()` (a
+> behaviour-neutral consolidation of the existing `resolveBrokeredDispatch()` +
+> `hydrateInjectedCredentials()` calls into one short-circuit check), plus an
+> unrelated pre-existing PHPStan "$response might not be defined" finding in
+> `dispatchWithRetry()` (retry-policy feature, not part of this change) fixed
+> with an explicit null-init + defensive post-loop guard. Both fixes are
+> non-behavioural — full baseline suite (1407 tests) is green before and after,
+> identical pass/skip count.
+
 - [x] Define the `credentialRef` contract on source authentication config: accept `{credentialId}` or `{credentialName}` under `configuration.authentication.credentialRef`; document it in the source schema description in `lib/Settings/` register JSON (no schema shape change — `authentication` is already free-form object config)
 - [x] Add a config validator used at call time: `credentialRef` present → reject sibling secret-bearing fields under `authentication` (anything beyond `credentialRef`) as a hard config error; reject `credentialId` + `credentialName` both set; reject nil/empty values
 - [x] Create `lib/Service/BrokeredCallService.php`: broker availability check (`class_exists` on `OCA\OpenRegister\Service\Credential\CredentialBrokerService` + `IAppManager::isEnabledForUser('openregister')`), `\OCP\Server::get` resolution, and a typed `isBrokered(array $sourceData): bool` helper
@@ -21,8 +42,8 @@
 - [x] Unit tests for `BrokeredCallService`: availability guard, name resolution (0/1/many), request derivation (path+query, headers, body), response adaptation (2xx, upstream non-2xx, header shapes)
 - [x] Unit tests for `CallService` brokered branch: branch selection, sibling-secret rejection, SOAP/async/cert scope guards, soft-fail without OR, 403/502 mapping, CallLog envelope parity with the Guzzle path
 - [x] Synchronization pagination test: a multi-page sync against a brokered source issues one brokered request per page and honours the engine's existing rate-limit tracking from returned headers
-- [ ] Verify e2e on a dev instance with OR present: a source with `credentialRef` (nil-UUID fixture credential, `YOUR_API_KEY_HERE` secret in the vault fixture) round-trips through the broker; a 403 refusal logs the guard name; docs page under `website/docs` updated for source authentication
-- [x] Run `composer check:strict` and fix anything it flags in touched files
+- [ ] Verify e2e on a dev instance with OR present: a source with `credentialRef` (nil-UUID fixture credential, `YOUR_API_KEY_HERE` secret in the vault fixture) round-trips through the broker; a 403 refusal logs the guard name — **docs half done** (`docs/sources.md` + `docs/features/sources.md` already document the `credentialRef` contract, the operator recipe, and the sessionless-migration failure mode — this repo has no `website/docs` path, `docs/` is canonical); **live e2e half blocked**: the shared dev Nextcloud instance (`nextcloud` container) already runs this exact code (`BrokeredCallService.php` md5-identical to the deployed `custom_apps/openconnector` checkout) and OpenRegister's `CredentialBrokerService` on that instance already exposes `resolveInjectable()` and the `actingUserId` parameter (confirmed via in-container reflection), but `occ status` reports `maintenance: true, needsDbUpgrade: true` — the instance needs an `occ upgrade` before any occ/API-driven fixture setup would work, and running that on a shared instance with unknown concurrent agent activity is out of scope for this task per the "no deploy to shared dev instance" safety rule. Left unticked — needs a human or a dedicated maintenance window to run the upgrade, then create the nil-UUID fixture credential and re-run this check.
+- [x] Run `composer check:strict` and fix anything it flags in touched files — re-verified this pass: `check:no-legacy-types` PASS, `check:routes` PASS (161 routes), `lint` PASS, `phpcs`/`phpmd`/`psalm`/`phpstan` clean on `lib/Service/BrokeredCallService.php`, `lib/Service/CallService.php`, `lib/Exception/BrokeredCallConfigurationException.php` (after the two fixes noted above), full `phpunit -c phpunit-unit.xml` suite green (1407 tests, 1 pre-existing skip, identical before/after)
 
 Acceptance criteria (plain bullets — verified by /opsx-verify):
 
