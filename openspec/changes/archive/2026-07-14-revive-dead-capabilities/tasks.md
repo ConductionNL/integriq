@@ -42,7 +42,7 @@
 ## 6. Verify + spec + ship
 
 - [x] 6.1 `php -l` + scoped phpcs clean on all edited lib files.
-- [x] 6.2 Full unit suite in php:8.3-cli shows no new failures vs baseline (1115 → 1123).
+- [x] 6.2 Full unit suite in php:8.3-cli shows no new failures vs baseline (1203 → 1211, +8; ship-time re-measure — dev advanced past the 1115→1123 draft baseline).
 - [x] 6.3 Spec deltas: `mapping-and-search` REQ-005, `configuration-export-import`
       REQ-002, `endpoint-runtime` REQ-EP-004.
 - [x] 6.4 Push, PR base development, merge, archive, update issue #165.

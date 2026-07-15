@@ -1,7 +1,7 @@
 # endpoint-runtime Specification (delta)
 
 ---
-status: proposed
+status: done
 ---
 
 ## Purpose
