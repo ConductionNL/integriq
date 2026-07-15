@@ -121,6 +121,52 @@ class ConfigurationController extends Controller
     }//end export()
 
     /**
+     * Export every connector entity linked to a register as an OAS JSON download.
+     *
+     * Routed trigger for the previously-unwired
+     * {@see ConfigurationService::exportRegister()} — exports the endpoints,
+     * synchronisations, and their related sources, mappings, rules and jobs
+     * that target the given register. `#[NoAdminRequired]` + the ADR-023
+     * `configuration.export` action gate in the body (hydra no-admin-idor gate),
+     * reusing the same authorisation as the configuration export path.
+     *
+     * @param string $id The register id (or slug) to export connectors for.
+     *
+     * @return JSONResponse The register connector bundle, served as an attachment.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/revive-dead-capabilities/tasks.md#task-3
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function exportRegister(string $id): JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $this->actionAuth->requireAction(user: $user, action: 'configuration.export');
+        } catch (OCSForbiddenException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        }
+
+        try {
+            $document = $this->configService->exportRegister(registerId: $id);
+        } catch (\Throwable $e) {
+            return new JSONResponse(['error' => $this->l->t('Export failed: %s', [$e->getMessage()])], Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        $response = new JSONResponse($document);
+        $response->addHeader('Content-Disposition', 'attachment; filename="register-'.rawurlencode($id).'.json"');
+        return $response;
+
+    }//end exportRegister()
+
+    /**
      * Non-mutating import preview (REQ-007): classify creates/updates/
      * collisions, surface unresolved slug references and credential
      * re-entry flags — nothing is written.

@@ -34,6 +34,7 @@ use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
 use OCA\OpenConnector\EventListener\CloudEventListener;
+use OCA\OpenConnector\EventListener\EndpointCacheInvalidationListener;
 use OCA\OpenConnector\EventListener\ObjectCreatedEventListener;
 use OCA\OpenConnector\EventListener\ObjectDeletedEventListener;
 use OCA\OpenConnector\EventListener\ObjectUpdatedEventListener;
@@ -150,6 +151,13 @@ class Application extends App implements IBootstrap
         $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: CloudEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: CloudEventListener::class);
         $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: CloudEventListener::class);
+        // Endpoint routing cache: clear it whenever an openconnector/endpoint
+        // object is created, updated, or deleted so the runtime path matcher
+        // (EndpointCacheService) never serves stale routing (self-gated on
+        // register+schema slug, so unrelated object writes are a cheap no-op).
+        $dispatcher->addServiceListener(eventName: ObjectCreatedEvent::class, className: EndpointCacheInvalidationListener::class);
+        $dispatcher->addServiceListener(eventName: ObjectUpdatedEvent::class, className: EndpointCacheInvalidationListener::class);
+        $dispatcher->addServiceListener(eventName: ObjectDeletedEvent::class, className: EndpointCacheInvalidationListener::class);
         // @todo Remove this temporary listener to the software catalog application.
         // $dispatcher->addServiceListener(eventName: ViewUpdatedOrCreatedEventListener::class, className: ViewUpdatedOrCreatedEventListener::class);
         // Path-2 integration leaf: load the tiny `openconnector-integration`

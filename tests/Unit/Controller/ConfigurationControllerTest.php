@@ -154,6 +154,48 @@ class ConfigurationControllerTest extends TestCase
     }//end testExportDeniedForUnmappedNonAdmin()
 
     /**
+     * exportRegister returns the service's register bundle with an attachment
+     * disposition — proving the routed trigger fires ConfigurationService::
+     * exportRegister() and produces the downloadable artefact.
+     *
+     * @return void
+     */
+    public function testExportRegisterReturnsAttachmentWithServiceBundle(): void
+    {
+        $bundle = ['components' => ['endpoints' => ['ep-1' => ['slug' => 'ep-1']]]];
+        $this->configService->expects($this->once())
+            ->method('exportRegister')
+            ->with(registerId: 'reg-1')
+            ->willReturn($bundle);
+
+        $response = $this->makeController()->exportRegister('reg-1');
+
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame($bundle, $response->getData());
+
+        $property = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
+        $headers  = $property->getValue($response);
+        $this->assertArrayHasKey('Content-Disposition', $headers);
+        $this->assertStringContainsString('attachment', $headers['Content-Disposition']);
+        $this->assertStringContainsString('register-reg-1.json', $headers['Content-Disposition']);
+    }//end testExportRegisterReturnsAttachmentWithServiceBundle()
+
+    /**
+     * A non-admin without the configuration.export action is rejected with 403
+     * and no register export runs.
+     *
+     * @return void
+     */
+    public function testExportRegisterDeniedForUnmappedNonAdmin(): void
+    {
+        $this->configService->expects($this->never())->method('exportRegister');
+
+        $response = $this->makeController(isAdmin: false)->exportRegister('reg-1');
+
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+    }//end testExportRegisterDeniedForUnmappedNonAdmin()
+
+    /**
      * REQ-007: preview returns the classification and never writes.
      *
      * @return void
@@ -323,6 +365,7 @@ class ConfigurationControllerTest extends TestCase
         $controller = $this->makeController(authenticated: false);
 
         $this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->export('x')->getStatus());
+        $this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->exportRegister('x')->getStatus());
         $this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->previewImport()->getStatus());
         $this->assertSame(Http::STATUS_UNAUTHORIZED, $controller->import()->getStatus());
     }//end testUnauthenticatedReturns401()
