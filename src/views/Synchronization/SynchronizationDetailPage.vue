@@ -319,10 +319,14 @@ import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
+
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
+import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'openconnector'
@@ -346,6 +350,12 @@ const TYPE_OPTIONS = [
 	{ id: 'register/schema', label: 'Register/Schema' },
 	{ id: 'file', label: 'File' },
 ]
+
+/**
+ * Option appended to TYPE_OPTIONS only when the backend reports the Tables
+ * app is enabled (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006).
+ */
+const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcloud Table' }
 
 /**
  * Build an empty draft for the create case. The legacy modal defaulted
@@ -436,6 +446,8 @@ export default {
 			rawConditions: false,
 			rawConditionsDraft: '',
 			rawConditionsError: '',
+			/** Whether the backend reports the Tables app is enabled (REQ-004). */
+			tablesEnabled: false,
 		}
 	},
 
@@ -468,17 +480,30 @@ export default {
 		errorMessage() {
 			return this.loadError || t('openconnector', 'Failed to load synchronization')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/**
+		 * Kind options offered in the source/target selectors. `nextcloud-table`
+		 * is only present when the backend reports the Tables app is enabled
+		 * (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006) — but an
+		 * already-configured `nextcloud-table` sync keeps the option so its
+		 * type still renders a label when Tables is later disabled.
+		 *
+		 * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
 		typeOptions() {
+			const usesTable = this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
+				|| this.draft?.targetType === NEXTCLOUD_TABLE_KIND
+			if (this.tablesEnabled || usesTable) {
+				return [...TYPE_OPTIONS, NEXTCLOUD_TABLE_OPTION]
+			}
 			return TYPE_OPTIONS
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedSourceType() {
-			return TYPE_OPTIONS.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
+			return this.typeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedTargetType() {
-			return TYPE_OPTIONS.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
+			return this.typeOptions.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		dirty() {
@@ -528,7 +553,29 @@ export default {
 		},
 	},
 
+	mounted() {
+		this.fetchTablesStatus()
+	},
+
 	methods: {
+		/**
+		 * Ask the backend whether the Tables app is enabled for the acting
+		 * user; only then is `nextcloud-table` offered in the kind selectors
+		 * (tables-bridge REQ-004). Soft-fails to "disabled" so a backend
+		 * without the endpoint simply never offers the type.
+		 *
+		 * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
+		async fetchTablesStatus() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openconnector/api/synchronizations/tables-bridge/status'),
+				)
+				this.tablesEnabled = Boolean(response.data?.enabled)
+			} catch (_err) {
+				this.tablesEnabled = false
+			}
+		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		async loadObject() {
 			if (!this.objectIdString) {

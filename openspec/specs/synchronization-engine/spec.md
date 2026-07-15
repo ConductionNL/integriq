@@ -19,7 +19,6 @@ This spec retroactively describes 97 existing methods across
 `SynchronizationService`, two controllers, and the integration provider. It is a
 behavioral retrofit — REQ language matches observed code, and the Notes sections
 flag observed-but-suspicious behavior rather than silently correcting it.
-
 ## Requirements
 
 ### REQ-UI-001: Synchronization Management UI
@@ -375,3 +374,44 @@ strategy/health/enablement.
   `calculateMedian()`, `getSlowestStage()`, `calculateEfficiencyRatio()`,
   `list()`, `getId()`, `getLabel()`, `getIcon()`, `getGroup()`,
   `getRequiredApp()`, `getStorageStrategy()`, `health()`, `isEnabled()`.
+
+### Requirement: `nextcloud-table` source/target dispatch (REQ-014)
+
+`SynchronizationService::getAllObjectsFromSource()` MUST dispatch
+`sourceType: nextcloud-table` to the Tables source adapter (see
+`tables-bridge` REQ-002) instead of falling through with no matching `case`.
+`SynchronizationService::updateTarget()` MUST dispatch `targetType:
+nextcloud-table` to the Tables target adapter (see `tables-bridge` REQ-001)
+instead of throwing `Unsupported target type`. `SynchronizationService::
+deleteInvalidObjects()` MUST dispatch `targetType: nextcloud-table` through
+the same guarded deletion path described in `tables-bridge` REQ-005 — this
+requirement does not itself define the deletion-safety guard (that is
+`sync-safety-guardrails`'s concern); it only establishes that
+`nextcloud-table` is a recognised branch of that shared dispatch, not a
+type that silently no-ops or bypasses the guard.
+
+#### Scenario: source fetch dispatches to the Tables adapter
+
+- **GIVEN** a synchronization with `sourceType: nextcloud-table`
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** the Tables source adapter is invoked and its returned rows are
+  used as the fetched objects, exactly as the `api` branch returns
+  `getAllObjectsFromApi()`'s result
+
+#### Scenario: target write dispatches to the Tables adapter instead of throwing
+
+- **GIVEN** a synchronization with `targetType: nextcloud-table`
+- **WHEN** `updateTarget()` runs
+- **THEN** the Tables target adapter is invoked
+- **AND** no `Unsupported target type` exception is thrown (unlike an
+  unrecognised type, which still throws per the base spec's REQ-001
+  `default` branch)
+
+#### Scenario: an unrecognised type (not nextcloud-table) still throws
+
+- **GIVEN** a synchronization with `targetType: some-future-type` that is
+  neither `register/schema`, `api`, `database`, nor `nextcloud-table`
+- **WHEN** `updateTarget()` runs
+- **THEN** it still throws `Unsupported target type: some-future-type`,
+  unchanged from the base spec's existing `default` branch behavior
+

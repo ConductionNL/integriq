@@ -896,7 +896,21 @@
         "Not authenticated": "Not authenticated",
         "Invalid payment amount": "Invalid payment amount",
         "Payment provider credential missing": "Payment provider credential missing",
-        "No active payment source is configured": "No active payment source is configured"
+        "No active payment source is configured": "No active payment source is configured",
+        "Column mapping": "Column mapping",
+        "Could not load columns for this table.": "Could not load columns for this table.",
+        "Could not load tables for this source.": "Could not load tables for this source.",
+        "Map each table column to a source field or Twig expression. Leave blank to skip a column.": "Map each table column to a source field or Twig expression. Leave blank to skip a column.",
+        "Pick a table the source can access": "Pick a table the source can access",
+        "Required column": "Required column",
+        "Rows are read from (source) or written to (target) this table.": "Rows are read from (source) or written to (target) this table.",
+        "source (Nextcloud instance)": "source (Nextcloud instance)",
+        "Source (Nextcloud instance)": "Source (Nextcloud instance)",
+        "Source field or expression": "Source field or expression",
+        "Table": "Table",
+        "The Source record whose base URL + credential reach the Tables API.": "The Source record whose base URL + credential reach the Tables API.",
+        "This table has no columns to map.": "This table has no columns to map.",
+        "Value for {column}": "Value for {column}"
     },
     "plurals": {}
 }

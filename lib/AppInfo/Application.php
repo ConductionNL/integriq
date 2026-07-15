@@ -47,6 +47,8 @@ use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\PeppolOutboundConsumer;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\Service\Tables\TablesClientInterface;
+use OCA\OpenConnector\Service\Tables\TablesOcsClient;
 use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
 use OCA\OpenConnector\Sources\Pdok\PdokGeocodingClient as SourcePdokGeocodingClient;
 use OCA\OpenConnector\Sources\Pdok\PdokWfsSourceAdapter;
@@ -299,6 +301,18 @@ class Application extends App implements IBootstrap
                     logger: $c->get('Psr\Log\LoggerInterface'),
                     berichtenboxClient: $c->get(BerichtenboxClient::class)
                 );
+            }
+        );
+
+        // Tables-bridge: bind the polymorphic Tables API seam to its concrete
+        // v1-REST implementation (design.md Decision 2). `TablesOcsClient`'s
+        // own dependencies (CallService, LoggerInterface) are plain
+        // autowirable types, so only the interface binding needs an explicit
+        // factory here.
+        $context->registerService(
+            TablesClientInterface::class,
+            static function ($c) {
+                return $c->get(TablesOcsClient::class);
             }
         );
 

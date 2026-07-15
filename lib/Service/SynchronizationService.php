@@ -26,7 +26,9 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -162,6 +164,7 @@ class SynchronizationService
      * @param LoggerInterface           $logger                    The logger.
      * @param SynchronizationLogService $synchronizationLogService The OpenRegister-backed run-log write service.
      * @param IAppConfig                $appConfig                 The app configuration.
+     * @param TablesSyncAdapter         $tablesSyncAdapter         The `nextcloud-table` source/target adapter (tables-bridge).
      */
     public function __construct(
         private readonly CallService $callService,
@@ -172,6 +175,7 @@ class SynchronizationService
         private readonly LoggerInterface $logger,
         SynchronizationLogService $synchronizationLogService,
         IAppConfig $appConfig,
+        private readonly TablesSyncAdapter $tablesSyncAdapter,
     ) {
         $this->synchronizationLogService = $synchronizationLogService;
 
@@ -2026,6 +2030,9 @@ class SynchronizationService
      *
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface|\OCP\DB\Exception If any database or
      *                                                                                 deletion error occurs.
+     *
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
+     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     public function deleteInvalidObjects(
         array|ObjectEntity $synchronization,
@@ -2146,10 +2153,104 @@ class SynchronizationService
                     $deletedObjectsCount++;
                 }//end foreach
                 break;
+
+            case 'nextcloud-table':
+                $deletedObjectsCount += $this->deleteInvalidTableRows(
+                    synchronization: $synchronization,
+                    synchronizedTargetIds: $synchronizedTargetIds,
+                    deleteRestriction: $deleteRestriction,
+                    data: $data
+                );
+                break;
         }//end switch
 
         return $deletedObjectsCount;
     }//end deleteInvalidObjects()
+
+    /**
+     * `nextcloud-table` branch of {@see deleteInvalidObjects()} — extracted to
+     * its own method (rather than inlined in the `switch`) purely to keep
+     * `deleteInvalidObjects()`'s own cyclomatic complexity/length from
+     * growing further; behaviourally this IS the register/schema branch's
+     * diff-and-delete loop without the OR-object scope-check step (a Tables
+     * row is not an OpenRegister object, so there is nothing to scope-check
+     * against). Per tables-bridge REQ-005, this diff — and the shared
+     * `updateTarget()` delete path it calls — IS the composition point
+     * `sync-safety-guardrails`'s run-completeness and deletion-ratio guard is
+     * expected to wrap; this method adds no `nextcloud-table`-specific
+     * threshold or bypass of its own.
+     *
+     * @param array      $synchronization       The synchronization entity to process.
+     * @param array|null $synchronizedTargetIds Target ids that are still valid in the source.
+     * @param bool       $deleteRestriction     Sets if deletion should be restricted to identifiers in $data.
+     * @param array      $data                  The data to be checked when $deleteRestriction is true.
+     *
+     * @return int The count of rows that were deleted.
+     *
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
+     */
+    private function deleteInvalidTableRows(
+        array $synchronization,
+        ?array $synchronizedTargetIds,
+        bool $deleteRestriction,
+        array $data
+    ): int {
+        $deletedCount = 0;
+
+        // The synchronization identifier is the OpenRegister id, falling
+        // back to the uuid when the id is not separately populated.
+        $synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
+
+        $contractObjects      = $this->findAllContractObjects(filters: ['synchronizationId' => $synchronizationId]);
+        $allContractTargetIds = [];
+        $allContractSourceIds = [];
+        $contractsByTargetId  = [];
+        foreach ($contractObjects as $contractObject) {
+            $contract         = $contractObject->jsonSerialize();
+            $contractTargetId = ($contract['targetId'] ?? null);
+            if ($contractTargetId !== null) {
+                $allContractTargetIds[] = $contractTargetId;
+                $allContractSourceIds[$contractTargetId] = ($contract['originId'] ?? null);
+                $contractsByTargetId[$contractTargetId]  = $contract;
+            }
+        }
+
+        // Initialize $synchronizedTargetIds as empty array if null.
+        if ($synchronizedTargetIds === null) {
+            $synchronizedTargetIds = [];
+        }
+
+        // Rows whose contracts no longer appear among this run's
+        // synchronized target ids are candidates for deletion.
+        $targetIdsToDelete = array_diff($allContractTargetIds, $synchronizedTargetIds);
+        if ($deleteRestriction === true) {
+            $encodedData       = json_encode($data);
+            $targetIdsToDelete = array_filter(
+                    $targetIdsToDelete,
+                    function (string|int $targetId) use ($encodedData, $allContractSourceIds) {
+                        $sourceId = $allContractSourceIds[$targetId];
+                        return str_contains($encodedData, $sourceId);
+                    }
+                                 );
+        }
+
+        foreach ($targetIdsToDelete as $targetIdToDelete) {
+            $synchronizationContract = ($contractsByTargetId[$targetIdToDelete] ?? null);
+            if ($synchronizationContract === null) {
+                continue;
+            }
+
+            $synchronizationContract = $this->updateTarget(synchronizationContract: $synchronizationContract, action: 'delete');
+            if (is_array($synchronizationContract) === true) {
+                $this->persistContract(contract: $synchronizationContract);
+            }
+
+            $deletedCount++;
+        }//end foreach
+
+        return $deletedCount;
+
+    }//end deleteInvalidTableRows()
 
     /**
      * Recursively sort an associative array by key.
@@ -2890,6 +2991,9 @@ class SynchronizationService
      * @throws SyntaxError
      * @throws \OCP\DB\Exception
      * @throws Exception
+     *
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     public function updateTarget(array $synchronizationContract, ?array &$targetObject=[], ?string $action='save', ?string $mutationType=null): array
     {
@@ -2924,12 +3028,111 @@ class SynchronizationService
             case 'database':
                 // @todo: implement.
                 break;
+            case 'nextcloud-table':
+                $synchronizationContract = $this->updateTargetTable(
+                    synchronizationContract: $synchronizationContract,
+                    synchronization: $synchronization,
+                    targetObject: $targetObject,
+                    action: $action
+                );
+                break;
             default:
                 throw new Exception("Unsupported target type: $type");
         }//end switch
 
         return $synchronizationContract;
     }//end updateTarget()
+
+    /**
+     * Create/update/delete a `nextcloud-table` target row for a synchronization contract.
+     *
+     * Mirrors {@see writeObjectToTarget()}'s create/update/delete branching for
+     * the `api` target type, but delegates the actual row I/O — including
+     * title-to-columnId resolution and value coercion — to
+     * {@see TablesSyncAdapter::writeRow()}/{@see TablesSyncAdapter::deleteRow()}.
+     * A per-row coercion/ambiguous-mapping failure is signalled by the adapter
+     * returning `null`; this method logs it and leaves the contract's
+     * `targetId` unchanged (so a later run retries) WITHOUT aborting — only a
+     * {@see \OCA\OpenConnector\Exception\TablesPermissionDeniedException}
+     * (401/403) is allowed to propagate uncaught and abort the run (REQ-006).
+     *
+     * @param array       $synchronizationContract The synchronization contract being updated.
+     * @param array       $synchronization         The synchronization entity (carries `targetId`/`targetConfig`).
+     * @param array|null  $targetObject            The already-mapped object to write.
+     * @param string|null $action                  'save' (default, create/update) or 'delete'.
+     *
+     * @return array The updated synchronization contract payload array.
+     *
+     * @throws TablesFeatureDisabledException When the Tables app is not enabled.
+     *
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-permission-denied-writes-fail-the-run-not-a-partial-subset-of-rows-req-006
+     * @spec openspec/changes/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     */
+    private function updateTargetTable(
+        array $synchronizationContract,
+        array $synchronization,
+        ?array $targetObject=[],
+        ?string $action='save'
+    ): array {
+        $this->tablesSyncAdapter->assertEnabled();
+
+        $targetConfig = ($synchronization['targetConfig'] ?? []);
+        $tableId      = (int) ($targetConfig['tableId'] ?? 0);
+        if ($tableId <= 0) {
+            throw new Exception('nextcloud-table target is missing a required targetConfig.tableId');
+        }
+
+        $target   = $this->findSourceObject(id: ($synchronization['targetId'] ?? null));
+        $targetId = ($synchronizationContract['targetId'] ?? null);
+
+        if ($action === 'delete') {
+            if ($targetId !== null) {
+                $this->tablesSyncAdapter->deleteRow(target: $target, rowId: (string) $targetId);
+            }
+
+            $synchronizationContract['targetId']   = null;
+            $synchronizationContract['targetHash'] = null;
+
+            return $synchronizationContract;
+        }
+
+        $columnMapping = ($targetConfig['columnMapping'] ?? []);
+        if (is_array($columnMapping) === false) {
+            $columnMapping = [];
+        }
+
+        $mappedObject = [];
+        if (is_array($targetObject) === true) {
+            $mappedObject = $targetObject;
+        }
+
+        $existingRowId = null;
+        if ($targetId !== null) {
+            $existingRowId = (string) $targetId;
+        }
+
+        $writtenRow = $this->tablesSyncAdapter->writeRow(
+            target: $target,
+            tableId: $tableId,
+            existingRowId: $existingRowId,
+            mappedObject: $mappedObject,
+            columnMapping: $columnMapping
+        );
+
+        if ($writtenRow === null) {
+            // A per-row skip (ambiguous/unresolved title, coercion failure) was
+            // already logged by the adapter — leave the contract untouched so
+            // the next run retries this row; the overall run continues.
+            return $synchronizationContract;
+        }
+
+        $synchronizationContract['targetId']   = $writtenRow['id'];
+        $synchronizationContract['targetHash'] = md5(serialize($mappedObject));
+
+        return $synchronizationContract;
+
+    }//end updateTargetTable()
 
     /**
      * Get all the object from a source.
@@ -2945,6 +3148,9 @@ class SynchronizationService
      * @throws GuzzleException
      * @throws NotFoundExceptionInterface
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     public function getAllObjectsFromSource(array $synchronization, ?bool $isTest=false, ?array $data=null): array
     {
@@ -2962,10 +3168,58 @@ class SynchronizationService
             case 'database':
                 // @todo: implement
                 break;
+            case 'nextcloud-table':
+                $objects = $this->getAllObjectsFromTable(synchronization: $synchronization, isTest: $isTest);
+                break;
         }
 
         return $objects;
     }//end getAllObjectsFromSource()
+
+    /**
+     * Fetches all rows from a `nextcloud-table` source for a given synchronization.
+     *
+     * Delegates to {@see TablesSyncAdapter::fetchAllRows()}; the Tables row id
+     * (`Row.id`) is exposed as the top-level `id` key of each returned array so
+     * the existing `getOriginId()` default `idPosition` ('id') resolves it with
+     * no adapter-specific override, exactly like every other source type.
+     *
+     * @param array     $synchronization The synchronization object containing source information.
+     * @param bool|null $isTest          If true, only a single row is returned for testing purposes.
+     *
+     * @return array An array of rows retrieved from the table.
+     *
+     * @throws TablesFeatureDisabledException When the Tables app is not enabled.
+     *
+     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     */
+    public function getAllObjectsFromTable(array $synchronization, ?bool $isTest=false): array
+    {
+        $this->tablesSyncAdapter->assertEnabled();
+
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+        $tableId      = (int) ($sourceConfig['tableId'] ?? 0);
+        if ($tableId <= 0) {
+            throw new Exception('nextcloud-table source is missing a required sourceConfig.tableId');
+        }
+
+        $viewId = null;
+        if (empty($sourceConfig['viewId']) === false) {
+            $viewId = (int) $sourceConfig['viewId'];
+        }
+
+        $source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+
+        $rows = $this->tablesSyncAdapter->fetchAllRows(source: $source, tableId: $tableId, viewId: $viewId);
+
+        if ($isTest === true && count($rows) > 1) {
+            $rows = [$rows[0]];
+        }
+
+        return $rows;
+
+    }//end getAllObjectsFromTable()
 
     /**
      * Fetches all objects from an API source for a given synchronization.
