@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk) + fsc_service/fsc_call (fsc-connectivity connector — FSC directory resolution cache and per-call audit log, correlated by organisation+service). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk) + fsc_service/fsc_call (fsc-connectivity connector — FSC directory resolution cache and per-call audit log, correlated by organisation+service) + dso_verzoek/dso_message (dso-connector-adapter — completes the pre-existing DSO STAM koppelvlak, which validated+parsed a Verzoek but never persisted it; dso_verzoek is the inbound Verzoek lifecycle record declaring x-openregister-handoff targeting ns#Case, dso_message is the outbound status/besluit audit log, correlated by verzoekUuid). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -24,6 +24,8 @@
           "bankfeed_connection",
           "call_log",
           "consumer",
+          "dso_message",
+          "dso_verzoek",
           "endpoint",
           "event",
           "event_message",
@@ -111,7 +113,7 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing — log/sandbox or generic REST, dispatched directly by FscCallService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit — log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam — not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveVerzoek(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing — log/sandbox or generic REST, dispatched directly by FscCallService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
@@ -3236,6 +3238,186 @@
               "nl": "SMS-verzending mislukt: {{recipientMsisdn}}",
               "en": "SMS delivery failed: {{recipientMsisdn}}"
             }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "dso_verzoek": {
+        "slug": "dso_verzoek",
+        "title": "DSO Verzoek",
+        "icon": "HomeCityOutline",
+        "version": "1.0.0",
+        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
+        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff -- OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "required": [
+          "verzoekId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "verzoekId": {
+            "type": "string",
+            "description": "The DSO Verzoek identifier (verzoeknummer/OLO-nummer) — the correlation reference for the outbound status/besluit leg",
+            "title": "Verzoek ID"
+          },
+          "bronorganisatie": {
+            "type": "string",
+            "description": "The submitting bevoegd gezag's OIN/bronorganisatie code, as received on the STAM payload",
+            "title": "Bronorganisatie"
+          },
+          "type": {
+            "type": "string",
+            "description": "The Verzoek type (aanvraag, melding, informatieverzoek, vooroverleg)",
+            "title": "Type"
+          },
+          "indieningsdatum": {
+            "type": "string",
+            "description": "ISO 8601 submission date as reported by DSO-LV",
+            "title": "Indieningsdatum"
+          },
+          "rawVerzoek": {
+            "type": "object",
+            "description": "The full parsed Verzoek (DSOParserService::parseVerzoek() output) as received -- audit only, never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields",
+            "title": "Raw Verzoek"
+          },
+          "requester": {
+            "type": "object",
+            "description": "The aanvrager's {bsn, kvkNummer} auth context. Never logged.",
+            "title": "Requester"
+          },
+          "mappedTitle": {
+            "type": "string",
+            "description": "Normalised ns#Case title, resolved by DsoVerzoekTranslator",
+            "title": "Mapped Title"
+          },
+          "mappedSummary": {
+            "type": "string",
+            "description": "Normalised ns#Case summary, resolved by DsoVerzoekTranslator",
+            "title": "Mapped Summary"
+          },
+          "mappedChannel": {
+            "type": "string",
+            "description": "Normalised ns#Case channel -- always \"omgevingsloket\" for this bridge",
+            "title": "Mapped Channel"
+          },
+          "mappedPriority": {
+            "type": "string",
+            "description": "Normalised ns#Case priority (hoog for aanvraag, normaal otherwise), resolved by DsoVerzoekTranslator",
+            "title": "Mapped Priority"
+          },
+          "status": {
+            "type": "string",
+            "description": "received -> mapped -> handed_off | failed",
+            "default": "received",
+            "title": "Status"
+          },
+          "errorDetail": {
+            "type": "string",
+            "description": "Translation or handoff failure detail, set only when status=failed",
+            "title": "Error Detail"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "The handoff engine's correlation id, set on successful handoff",
+            "title": "Correlation ID"
+          },
+          "targetCase": {
+            "type": "object",
+            "description": "The handoff engine's {register, schema, uuid} target pointer, set on successful handoff",
+            "title": "Target Case"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp this verzoek was received on the STAM koppelvlak",
+            "title": "Received At"
+          }
+        },
+        "x-openregister-handoff": [
+          {
+            "id": "verzoek-to-case",
+            "targetSemanticType": "https://openregister.app/ns#Case",
+            "trigger": "manual",
+            "mapping": {
+              "title": {
+                "from": "mappedTitle"
+              },
+              "summary": {
+                "from": "mappedSummary"
+              },
+              "channel": {
+                "from": "mappedChannel"
+              },
+              "source": {
+                "provenance": true
+              },
+              "priority": {
+                "from": "mappedPriority"
+              }
+            },
+            "whenUnavailable": "queue",
+            "onSuccess": {
+              "set": {
+                "status": "handed_off"
+              }
+            }
+          }
+        ],
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "dso_message": {
+        "slug": "dso_message",
+        "title": "DSO Message",
+        "icon": "SendOutline",
+        "version": "1.0.0",
+        "summary": "Per-attempt audit record for one outbound DSO status (voortgangsinformatie) or besluit post",
+        "description": "One record per outbound status/besluit dispatch attempt (dso-connector-adapter). Never merged/updated -- a retry (if implemented by a future revision) creates a new row, mirroring iwmo_ijw_message's append-style per-attempt convention. Correlated to its dso_verzoek by verzoekUuid. See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "required": [
+          "ref",
+          "type",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "The transport-assigned (or locally-derived) reference for this message",
+            "title": "Ref"
+          },
+          "type": {
+            "type": "string",
+            "description": "The message kind: status or besluit",
+            "title": "Type"
+          },
+          "status": {
+            "type": "string",
+            "description": "sent | failed",
+            "title": "Status"
+          },
+          "payload": {
+            "type": "object",
+            "description": "The exact payload dispatched (audit)",
+            "title": "Payload"
+          },
+          "verzoekUuid": {
+            "type": "string",
+            "description": "The correlated dso_verzoek's OpenRegister uuid",
+            "title": "Verzoek UUID"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail, null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp this dispatch attempt was made",
+            "title": "Synced At"
           }
         },
         "x-openregister-seed": [],
