@@ -211,7 +211,7 @@ source object finds more than one `SynchronizationContract` for the same
 
 ## MODIFIED Requirements
 
-### Requirement: Target write, deduplication and file handling (REQ-004)
+### REQ-004: Target write, deduplication and file handling
 
 The system SHALL write each transformed object to its target, branching to an
 OpenRegister-specific write when the target is an OR register/schema, and SHALL

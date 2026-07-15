@@ -244,6 +244,21 @@ return [
 		['name' => 'pdok#freeAction', 'url' => '/api/pdok/free', 'verb' => 'GET'],
 		['name' => 'pdok#reverseAction', 'url' => '/api/pdok/reverse', 'verb' => 'GET'],
 
+		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
+		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
+		// these two are the bespoke, non-CRUD actions.
+		// See openspec/changes/connector-catalog-ui/contract.md
+		['name' => 'catalog#status', 'url' => '/api/catalog/items/{id}/status', 'verb' => 'GET'],
+		['name' => 'catalog#instantiate', 'url' => '/api/catalog/items/{id}/instantiate', 'verb' => 'POST'],
+
+		// Configuration import/export UI endpoints (connector-catalog-ui) — a
+		// thin, routed wrapper over the existing, already-tested
+		// ConfigurationService::exportConfiguration()/importConfiguration().
+		// See openspec/changes/connector-catalog-ui/contract.md
+		['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST'],
+		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
+		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+
 		// User CORS preflight endpoints
 		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],
 		['name' => 'user#preflightedCorsLogin', 'url' => '/api/user/login', 'verb' => 'OPTIONS'],
@@ -300,6 +315,7 @@ return [
 		['name' => 'ui#cloudEventsEvents', 'url' => '/cloud-events/events', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsEventsId', 'url' => '/cloud-events/events/{id}', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
+		['name' => 'ui#catalog', 'url' => '/catalog', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.
 		// Replaces the deleted dashboard#page catch-all in the chain-C cutover.

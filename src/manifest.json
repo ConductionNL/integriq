@@ -154,6 +154,13 @@
       "order": 10
     },
     {
+      "id": "Catalog",
+      "label": "Catalog",
+      "icon": "ViewGridOutline",
+      "route": "Catalog",
+      "order": 15
+    },
+    {
       "id": "ConnectionsGroup",
       "label": "Connections",
       "icon": "Webhook",
@@ -725,6 +732,76 @@
         "register": "openconnector",
         "schema": "sync_item_dead_letter",
         "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "Catalog",
+      "route": "/catalog",
+      "type": "index",
+      "title": "Catalog",
+      "_note": "connector-catalog-ui: browsable card grid of every real, already-shipped connector adapter, seeded source template and importable configuration template, backed by the catalog_item schema materialised by lib/Repair/MaterializeCatalogItems.php. Standard type:index in viewMode:cards (the openbuild VirtualApps / softwarecatalog Organisaties precedent) — NO custom page, NO nextcloud-vue change. Cards are read-only metadata (no credentials); the Enable/Instantiate action lives in the CatalogItemDetailDialog opened via the card, gated by ADR-023 catalog.instantiate + the source schema's data-layer admin lock.",
+      "config": {
+        "register": "openconnector",
+        "schema": "catalog_item",
+        "viewMode": "cards",
+        "cardComponent": "CatalogItemCard",
+        "columns": [
+          "name",
+          "category",
+          "kind",
+          "status"
+        ],
+        "showAdd": false,
+        "showViewAction": false,
+        "selectable": false,
+        "quickFilters": [
+          {
+            "label": "All",
+            "filter": {},
+            "default": true
+          },
+          {
+            "label": "Adapters",
+            "filter": {
+              "kind": "adapter"
+            },
+            "icon": "PowerPlugOutline"
+          },
+          {
+            "label": "Source templates",
+            "filter": {
+              "kind": "source-template"
+            },
+            "icon": "DatabaseArrowLeftOutline"
+          },
+          {
+            "label": "Configuration templates",
+            "filter": {
+              "kind": "configuration-template"
+            },
+            "icon": "FileCogOutline"
+          }
+        ],
+        "headerActions": [
+          {
+            "id": "export-configuration",
+            "label": "Export configuration",
+            "icon": "Download",
+            "handler": "openConfigurationExportHandler"
+          },
+          {
+            "id": "import-configuration",
+            "label": "Import configuration",
+            "icon": "Upload",
+            "handler": "openConfigurationImportHandler"
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": false
+        },
+        "documentationUrl": "https://openconnector.conduction.nl",
+        "_configurationUiNote": "REQ-006/007/008 Configuration import/export UI actions live here as header actions (ExportConfigurationDialog / ImportPreviewDialog) rather than on a bespoke Configurations index page: OR Configuration groups are a NATIVE OR table (lib/Db/Configuration.php) served by /apps/openregister/api/configurations, not an object register/schema, so a type:index page cannot back them — and a type:custom page is exactly what this change avoids (custom-widget-ratchet)."
       }
     },
     {
