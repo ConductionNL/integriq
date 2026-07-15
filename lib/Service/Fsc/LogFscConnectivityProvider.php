@@ -92,13 +92,13 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
     /**
      * {@inheritDoc}
      *
-     * Resolves against `directoryConfiguration['knownServices']` — a
+     * Resolves against `directoryConfig['knownServices']` — a
      * `{organisation: {service: {endpoint?, grantRequired?}}}` stand-in for
      * a live directory. No network call is made.
      *
-     * @param array  $directoryConfiguration The FSC source's `configuration.directory` object.
-     * @param string $organisation           The target organisation identifier.
-     * @param string $service                The target service identifier.
+     * @param array  $directoryConfig The FSC source's `configuration.directory` object.
+     * @param string $organisation    The target organisation identifier.
+     * @param string $service         The target service identifier.
      *
      * @return array{organisation: string, service: string, endpoint: string, grantRequired: bool, authContext: array<string, mixed>}
      *
@@ -106,9 +106,9 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
      *
      * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-an-unknown-organisation-is-rejected-before-any-call-is-attempted
      */
-    public function resolveService(array $directoryConfiguration, string $organisation, string $service): array
+    public function resolveService(array $directoryConfig, string $organisation, string $service): array
     {
-        $knownServices = ($directoryConfiguration['knownServices'] ?? []);
+        $knownServices = ($directoryConfig['knownServices'] ?? []);
 
         if (isset($knownServices[$organisation]) === false || is_array($knownServices[$organisation]) === false) {
             throw new FscDirectoryException(
@@ -125,7 +125,10 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
             );
         }
 
-        $entry = (is_array($services[$service]) === true) ? $services[$service] : [];
+        $entry = [];
+        if (is_array($services[$service]) === true) {
+            $entry = $services[$service];
+        }
 
         return [
             'organisation'  => $organisation,
@@ -140,16 +143,16 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
     /**
      * {@inheritDoc}
      *
-     * @param array  $directoryConfiguration Unused — the log provider needs no configuration.
-     * @param array  $resolution             The resolution returned by {@see resolveService()}.
-     * @param string $method                 Unused.
-     * @param array  $payload                Echoed back verbatim as the synthetic response body.
+     * @param array  $directoryConfig Unused — the log provider needs no configuration.
+     * @param array  $resolution      The resolution returned by {@see resolveService()}.
+     * @param string $method          Unused.
+     * @param array  $payload         Echoed back verbatim as the synthetic response body.
      *
      * @return array{ref: string, statusCode: int, body: mixed} The synthetic `FSC-MOCK-<n>` outcome.
      *
      * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-the-log-provider-performs-no-network-call
      */
-    public function call(array $directoryConfiguration, array $resolution, string $method, array $payload): array
+    public function call(array $directoryConfig, array $resolution, string $method, array $payload): array
     {
         self::$counter++;
 

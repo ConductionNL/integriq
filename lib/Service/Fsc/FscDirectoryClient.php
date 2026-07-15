@@ -176,9 +176,9 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      * hint (`organisation`/`service`) and falls back to "organisation or
      * service" when absent.
      *
-     * @param array  $directoryConfiguration The FSC source's `configuration.directory` object.
-     * @param string $organisation           The target organisation identifier.
-     * @param string $service                The target service identifier.
+     * @param array  $directoryConfig The FSC source's `configuration.directory` object.
+     * @param string $organisation    The target organisation identifier.
+     * @param string $service         The target service identifier.
      *
      * @return array{organisation: string, service: string, endpoint: string, grantRequired: bool, authContext: array<string, mixed>}
      *
@@ -187,9 +187,9 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      *
      * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
      */
-    public function resolveService(array $directoryConfiguration, string $organisation, string $service): array
+    public function resolveService(array $directoryConfig, string $organisation, string $service): array
     {
-        $directoryUrl = rtrim((string) ($directoryConfiguration['directoryUrl'] ?? ''), '/');
+        $directoryUrl = rtrim((string) ($directoryConfig['directoryUrl'] ?? ''), '/');
         if ($directoryUrl === '') {
             throw new FscConnectivityException(
                 message: $this->l->t('FSC directory URL missing').': `configuration.directory.directoryUrl` is required.'
@@ -258,10 +258,10 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
     /**
      * {@inheritDoc}
      *
-     * @param array  $directoryConfiguration The FSC source's `configuration.directory` object.
-     * @param array  $resolution             The resolution returned by {@see resolveService()}.
-     * @param string $method                 The HTTP-style method to invoke.
-     * @param array  $payload                The call payload, JSON-encoded as the request body.
+     * @param array  $directoryConfig The FSC source's `configuration.directory` object.
+     * @param array  $resolution      The resolution returned by {@see resolveService()}.
+     * @param string $method          The HTTP-style method to invoke.
+     * @param array  $payload         The call payload, JSON-encoded as the request body.
      *
      * @return array{ref: string, statusCode: int, body: mixed}
      *
@@ -269,7 +269,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      *
      * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header-on-call
      */
-    public function call(array $directoryConfiguration, array $resolution, string $method, array $payload): array
+    public function call(array $directoryConfig, array $resolution, string $method, array $payload): array
     {
         $endpoint = (string) ($resolution['endpoint'] ?? '');
         if ($endpoint === '') {
@@ -280,7 +280,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
 
         $requestOptions = [
             'headers'     => [
-                'Authorization' => $this->buildAuthorizationHeader(directoryConfiguration: $directoryConfiguration),
+                'Authorization' => $this->buildAuthorizationHeader(directoryConfig: $directoryConfig),
                 'Content-Type'  => 'application/json',
                 'Accept'        => 'application/json',
             ],
@@ -323,7 +323,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      * to echo back any correlation id of its own).
      *
      * @param ResponseInterface $response The Guzzle response.
-     * @param string             $body     The raw response body.
+     * @param string            $body     The raw response body.
      *
      * @return string The extracted or generated reference.
      */
@@ -352,15 +352,15 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      * Decrypts `configuration.authentication.encryptedToken` (never logged,
      * never persisted decrypted).
      *
-     * @param array $directoryConfiguration The FSC source's `configuration.directory` object.
+     * @param array $directoryConfig The FSC source's `configuration.directory` object.
      *
      * @return string The Authorization header value.
      *
      * @throws FscConnectivityException When the credential is missing or undecryptable.
      */
-    private function buildAuthorizationHeader(array $directoryConfiguration): string
+    private function buildAuthorizationHeader(array $directoryConfig): string
     {
-        $encrypted = (string) ($directoryConfiguration['authentication']['encryptedToken'] ?? '');
+        $encrypted = (string) ($directoryConfig['authentication']['encryptedToken'] ?? '');
         if ($encrypted === '') {
             throw new FscConnectivityException(
                 message: $this->l->t('FSC credential missing').
@@ -377,7 +377,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
             );
         }
 
-        $scheme = (string) ($directoryConfiguration['authentication']['scheme'] ?? self::DEFAULT_AUTH_SCHEME);
+        $scheme = (string) ($directoryConfig['authentication']['scheme'] ?? self::DEFAULT_AUTH_SCHEME);
 
         return $scheme.' '.$token;
 

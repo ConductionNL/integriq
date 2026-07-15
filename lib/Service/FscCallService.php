@@ -127,12 +127,15 @@ class FscCallService
         $organisation = (string) ($input['organisation'] ?? '');
         $service      = (string) ($input['service'] ?? '');
         $method       = strtoupper((string) ($input['method'] ?? 'POST'));
-        $payload      = (is_array($input['payload'] ?? null) === true) ? $input['payload'] : [];
+        $payload      = [];
+        if (is_array($input['payload'] ?? null) === true) {
+            $payload = $input['payload'];
+        }
 
         // Resolution failures propagate WITHOUT persisting an fsc_call record —
         // nothing was actually attempted against a routable endpoint yet.
         $resolution = $provider->resolveService(
-            directoryConfiguration: $directoryConf,
+            directoryConfig: $directoryConf,
             organisation: $organisation,
             service: $service
         );
@@ -144,7 +147,7 @@ class FscCallService
         $result = ['ref' => '', 'statusCode' => 0, 'body' => null];
         try {
             $result = $provider->call(
-                directoryConfiguration: $directoryConf,
+                directoryConfig: $directoryConf,
                 resolution: $resolution,
                 method: $method,
                 payload: $payload
@@ -154,13 +157,18 @@ class FscCallService
             $error  = $exception->getMessage();
         }
 
+        $persistedRef = $result['ref'];
+        if ($persistedRef === '') {
+            $persistedRef = null;
+        }
+
         $this->objectService->saveObject(
             object: [
                 'organisation' => $organisation,
                 'service'      => $service,
                 'method'       => $method,
                 'status'       => $status,
-                'ref'          => ($result['ref'] ?? null),
+                'ref'          => $persistedRef,
                 'error'        => $error,
                 'syncedAt'     => (new DateTime())->format('c'),
             ],

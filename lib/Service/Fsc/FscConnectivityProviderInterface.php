@@ -68,9 +68,9 @@ interface FscConnectivityProviderInterface
      * Resolve an organisation+service pair to a routable endpoint and
      * required auth context via the configured directory.
      *
-     * @param array  $directoryConfiguration The FSC source's `configuration.directory` object.
-     * @param string $organisation           The target organisation identifier (e.g. an OIN).
-     * @param string $service                The target service identifier, scoped to that organisation.
+     * @param array  $directoryConfig The FSC source's `configuration.directory` object.
+     * @param string $organisation    The target organisation identifier (e.g. an OIN).
+     * @param string $service         The target service identifier, scoped to that organisation.
      *
      * @return array{organisation: string, service: string, endpoint: string, grantRequired: bool, authContext: array<string, mixed>}
      *         The resolution: a routable endpoint plus any auth context `call()` needs.
@@ -80,16 +80,17 @@ interface FscConnectivityProviderInterface
      *
      * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
      */
-    public function resolveService(array $directoryConfiguration, string $organisation, string $service): array;
+    public function resolveService(array $directoryConfig, string $organisation, string $service): array;
 
     /**
      * Dispatch one call against an already-resolved endpoint.
      *
-     * @param array  $directoryConfiguration The FSC source's `configuration.directory` object.
-     * @param array  $resolution             The resolution returned by {@see resolveService()}.
-     * @param string $method                 The HTTP-style method to invoke (`GET`, `POST`, ...).
-     * @param array  $payload                The call payload — passed through largely as-is (FSC's
-     *                                       resolve-then-call shape has no VNG-style translation step).
+     * @param array  $directoryConfig The FSC source's `configuration.directory` object.
+     * @param array  $resolution      The resolution returned by {@see resolveService()}.
+     * @param string $method          The HTTP-style method to invoke (`GET`, `POST`, ...).
+     * @param array  $payload         The call payload — passed through largely as-is
+     *                                (FSC's resolve-then-call shape has no VNG-style
+     *                                translation step).
      *
      * @return array{ref: string, statusCode: int, body: mixed} The transport outcome.
      *
@@ -97,5 +98,5 @@ interface FscConnectivityProviderInterface
      *
      * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
      */
-    public function call(array $directoryConfiguration, array $resolution, string $method, array $payload): array;
+    public function call(array $directoryConfig, array $resolution, string $method, array $payload): array;
 }//end interface
