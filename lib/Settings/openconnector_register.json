@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk) + fsc_service/fsc_call (fsc-connectivity connector — FSC directory resolution cache and per-call audit log, correlated by organisation+service). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -17,7 +17,7 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message, FSC Service/Call + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
           "bankfeed_batch",
@@ -28,6 +28,8 @@
           "event",
           "event_message",
           "event_subscription",
+          "fsc_call",
+          "fsc_service",
           "iwmo_ijw_message",
           "job",
           "job_log",
@@ -108,11 +110,12 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing — log/sandbox or generic REST, dispatched directly by FscCallService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
+              "fsc",
               "iwmo-ijw",
               "kiss",
               "open-formulieren",
@@ -3438,6 +3441,155 @@
             "format": "date-time",
             "description": "Timestamp of this record's last write",
             "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "fsc_service": {
+        "slug": "fsc_service",
+        "title": "FSC Service",
+        "icon": "LanConnect",
+        "version": "1.0.0",
+        "summary": "Cached FSC directory resolution for one organisation+service pair, produced by the fsc-connectivity connector",
+        "description": "An FSC Service row caches the most recent FSC (Federatieve Service Connectiviteit) directory resolution for one (organisation, service) pair — upserted, never duplicated, so repeated resolves update the same row. See openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md.",
+        "required": [
+          "organisation",
+          "service",
+          "endpoint"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "organisation": {
+            "type": "string",
+            "description": "The resolved organisation identifier (e.g. an OIN) — opaque, not format-validated",
+            "title": "Organisation"
+          },
+          "service": {
+            "type": "string",
+            "description": "The resolved service identifier, scoped to its owning organisation",
+            "title": "Service"
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "The routable endpoint the directory advertised for this organisation+service",
+            "title": "Endpoint"
+          },
+          "grantRequired": {
+            "type": "boolean",
+            "description": "Whether the directory reports that a grant is required to call this service — read-only, not verified or provisioned by this connector",
+            "default": false,
+            "title": "Grant Required"
+          },
+          "resolvedVia": {
+            "type": "string",
+            "enum": [
+              "log",
+              "rest"
+            ],
+            "description": "The provider binding that produced this resolution",
+            "title": "Resolved Via"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this cache row's last resolution",
+            "title": "Resolved At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "fsc_call": {
+        "slug": "fsc_call",
+        "title": "FSC Call",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for one FSC call attempt, produced by the fsc-connectivity connector",
+        "description": "An FSC Call row records one FscCallService::callService() attempt — never merged into a single mutable row across attempts. See openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md.",
+        "required": [
+          "organisation",
+          "service",
+          "method",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "organisation": {
+            "type": "string",
+            "description": "The target organisation identifier for this call attempt",
+            "title": "Organisation"
+          },
+          "service": {
+            "type": "string",
+            "description": "The target service identifier for this call attempt",
+            "title": "Service"
+          },
+          "method": {
+            "type": "string",
+            "description": "The HTTP-style method invoked (GET, POST, ...)",
+            "title": "Method"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed"
+            ],
+            "description": "The outcome of this call attempt",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The transport-returned or generated correlation reference; null on failure",
+            "title": "Reference"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail; null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's write",
+            "title": "Synced At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
           }
         },
         "x-openregister-seed": [],

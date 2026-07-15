@@ -71,6 +71,16 @@ return [
 		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
+		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
+		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both
+		// routes are authenticated NC-session calls (production binding for
+		// sibling apps reaching another organisation's published service via
+		// the directory + provider seam) — there is no inbound leg (see
+		// design.md "Architecture Overview"), so unlike the connectors above
+		// there is no signed webhook receiver here.
+		['name' => 'fsc#listServices', 'url' => '/api/fsc/services', 'verb' => 'GET'],
+		['name' => 'fsc#call', 'url' => '/api/fsc/call', 'verb' => 'POST'],
+
 		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
 		// Inbound submissions are gated by webhook signature (HMAC), not an NC
 		// session; see OpenFormulierenController::inbound(). status/handoff are
