@@ -26,6 +26,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
+use OCA\OpenConnector\Event\SynchronizationDeletionGuardedEvent;
 use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 use OCP\Files\GenericFileException;
 use OCP\IAppConfig;
@@ -104,6 +106,32 @@ class SynchronizationService
     private const DEFAULT_ERROR_LOG_RETENTION   = 259200000;
 
     /**
+     * Default share (0.0-1.0) of a synchronization's existing contracts that
+     * `deleteInvalidObjects()` may garbage-collect in a single run before the
+     * deletion-ratio guard aborts the pass. Overridable per-synchronization via
+     * `sourceConfig.deletionRatioThreshold`.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     */
+    const DEFAULT_DELETION_RATIO_THRESHOLD = 0.10;
+
+    /**
+     * Minimum number of existing contracts a synchronization must have before
+     * the deletion-ratio guard is evaluated at all.
+     *
+     * A percentage computed from a handful of contracts is not a meaningful
+     * signal of "mass deletion" (deleting the single existing contract is
+     * always a 100% ratio) and the production incidents motivating this guard
+     * (ConductionNL/openconnector#1000/#1001/#1002) involve synchronizations
+     * with dozens to thousands of contracts, not a handful. Below this floor
+     * the guard is skipped entirely and deletion proceeds exactly as it did
+     * before this change (still subject to the fetch-completeness gate).
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     */
+    const MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD = 3;
+
+    /**
      * The OpenRegister-backed synchronization run-log write service.
      *
      * Post OpenRegister-cutover the SynchronizationLog entity + its QBMapper were
@@ -145,6 +173,32 @@ class SynchronizationService
      * @var SynchronizationContractService|null
      */
     private ?SynchronizationContractService $synchronizationContractService = null;
+
+    /**
+     * The dead-letter capture service for per-item sync failures.
+     *
+     * Resolved lazily from the container — mirrors
+     * {@see $synchronizationContractLogService}/{@see $synchronizationContractService}
+     * — to avoid a constructor cycle: {@see SyncItemDeadLetterService} itself
+     * resolves THIS class lazily (for replay) so the two services cannot be
+     * constructor-injected into each other.
+     *
+     * @var SyncItemDeadLetterService|null
+     */
+    private ?SyncItemDeadLetterService $syncItemDeadLetterService = null;
+
+    /**
+     * The Nextcloud domain event dispatcher, used to dispatch
+     * SynchronizationDeletionGuardedEvent when a cleanup pass is guarded.
+     *
+     * Resolved lazily from the container so the public constructor signature
+     * stays unchanged (see the constructor docblock) — call sites are
+     * guarded against a null resolution exactly like the other lazily
+     * resolved dependencies above.
+     *
+     * @var IEventDispatcher|null
+     */
+    private ?IEventDispatcher $eventDispatcher = null;
 
     /**
      * Constructor.
@@ -191,6 +245,16 @@ class SynchronizationService
         $synchronizationContractService = $this->containerInterface->get(SynchronizationContractService::class);
         if ($synchronizationContractService instanceof SynchronizationContractService) {
             $this->synchronizationContractService = $synchronizationContractService;
+        }
+
+        $syncItemDeadLetterService = $this->containerInterface->get(SyncItemDeadLetterService::class);
+        if ($syncItemDeadLetterService instanceof SyncItemDeadLetterService) {
+            $this->syncItemDeadLetterService = $syncItemDeadLetterService;
+        }
+
+        $eventDispatcher = $this->containerInterface->get(IEventDispatcher::class);
+        if ($eventDispatcher instanceof IEventDispatcher) {
+            $this->eventDispatcher = $eventDispatcher;
         }
 
         if ($appConfig->hasKey(app: 'openconnector', key: 'retention') === true) {
@@ -421,27 +485,101 @@ class SynchronizationService
      * Replaces the legacy
      * `SynchronizationContractMapper::findSyncContractByOriginId()`.
      *
-     * @param string    $synchronizationId The synchronization id.
-     * @param string    $originId          The origin id.
-     * @param bool|null $justByOriginId    When true, match on origin id only.
+     * @param string     $synchronizationId The synchronization id.
+     * @param string     $originId          The origin id.
+     * @param bool|null  $justByOriginId    When true, match on origin id only.
+     * @param array|null $allMatches        By-reference output parameter: populated with ALL
+     *                                      matching contract payload arrays (not just the
+     *                                      first), so the caller can hand them to
+     *                                      detectDuplicateContracts() without issuing a
+     *                                      second query (REQ-013).
      *
      * @return array|null The found contract payload array or null when not found.
      */
-    private function findContractBySyncAndOrigin(string $synchronizationId, string $originId, ?bool $justByOriginId=false): ?array
-    {
+    private function findContractBySyncAndOrigin(
+        string $synchronizationId,
+        string $originId,
+        ?bool $justByOriginId=false,
+        ?array &$allMatches=null
+    ): ?array {
         if ($justByOriginId === true) {
             $filters = ['originId' => $originId];
         } else {
             $filters = ['synchronizationId' => $synchronizationId, 'originId' => $originId];
         }
 
-        $matches = $this->findAllContractObjects(filters: $filters);
+        $matches    = $this->findAllContractObjects(filters: $filters);
+        $allMatches = array_map(
+            static fn ($match): array => $match->jsonSerialize(),
+            array_values($matches)
+        );
         if (empty($matches) === true) {
             return null;
         }
 
         return $matches[0]->jsonSerialize();
     }//end findContractBySyncAndOrigin()
+
+    /**
+     * Read-only diagnostic: surface duplicate contracts for one (synchronizationId, originId) pair.
+     *
+     * When more than one `SynchronizationContract` exists for the same pair
+     * (e.g. data created before the originId-matching flow was pinned, or a
+     * race between two concurrent runs), a warning identifying ALL duplicate
+     * contract ids is logged and the duplicates are returned for the caller
+     * to surface. NOTHING is deleted, merged, or mutated — an automated
+     * cleanup could itself remove the wrong contract, which is exactly the
+     * class of bug the sync-safety guardrails exist to prevent (REQ-013).
+     *
+     * @param string     $synchronizationId The synchronization id.
+     * @param string     $originId          The origin id.
+     * @param array|null $contracts         The already-fetched contract payload arrays for the
+     *                                      pair (from findContractBySyncAndOrigin()'s
+     *                                      `$allMatches` out-parameter), so the common case
+     *                                      adds no query cost. When null, they are fetched.
+     *
+     * @return array The duplicate contract payload arrays (empty when 0 or 1 contract exists).
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-duplicate-synchronization-contracts-are-surfaced-never-silently-removed-req-013
+     */
+    private function detectDuplicateContracts(string $synchronizationId, string $originId, ?array $contracts=null): array
+    {
+        if ($contracts === null) {
+            $contracts = array_map(
+                static fn ($match): array => $match->jsonSerialize(),
+                array_values(
+                    $this->findAllContractObjects(
+                        filters: [
+                            'synchronizationId' => $synchronizationId,
+                            'originId'          => $originId,
+                        ]
+                    )
+                )
+            );
+        }
+
+        if (count($contracts) <= 1) {
+            return [];
+        }
+
+        $contractIds = array_map(
+            static fn (array $contract) => (($contract['id'] ?? null) ?? ($contract['uuid'] ?? null)),
+            $contracts
+        );
+
+        $this->logger->warning(
+            'detectDuplicateContracts: multiple synchronization contracts found for the same '
+            .'(synchronizationId, originId) pair — surfaced for admin review, NOT auto-deleted',
+            [
+                'synchronizationId' => $synchronizationId,
+                'originId'          => $originId,
+                'contractIds'       => $contractIds,
+                'count'             => count($contracts),
+            ]
+        );
+
+        return $contracts;
+    }//end detectDuplicateContracts()
 
     /**
      * Find a contract by origin id (single match).
@@ -676,15 +814,29 @@ class SynchronizationService
     }//end findSource()
 
     /**
-     * Find a source by its `location`, or create one if no match exists.
+     * Find a source by its `location`, or build a TRANSIENT one if no match exists.
      *
      * Reimplements the legacy `SourceMapper::findOrCreateByLocation()` over the
      * OpenRegister ObjectService so the engine no longer depends on the adapter.
      *
-     * @param string $location    The source location (URL/identifier).
-     * @param array  $defaultData Additional fields to seed the new source with.
+     * A genuinely unmatched location resolves to a transient, in-memory source
+     * configuration for the current call only — it is NEVER persisted as a new,
+     * enabled Source object (REQ-012 / ConductionNL/openconnector#1009: an
+     * ad-hoc, caller-supplied location string must not silently become
+     * reviewable-config-grade state; an admin who needs a reusable Source for
+     * that location should configure one, which is the intended path). The
+     * find-by-location half is unchanged: an admin-configured Source whose
+     * `location` matches is returned exactly as before, rate-limit watermark
+     * state included.
      *
-     * @return array The existing or newly-created source payload array.
+     * @param string $location    The source location (URL/identifier).
+     * @param array  $defaultData Additional fields to seed the transient source with.
+     *
+     * @return array The existing (persisted) or transient source payload array;
+     *               a transient one carries `_transient => true` so downstream
+     *               resolution (callSourceObject()) knows not to re-fetch it.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
      */
     private function findOrCreateSourceByLocation(string $location, array $defaultData=[]): array
     {
@@ -714,22 +866,18 @@ class SynchronizationService
             $sourceData['version'] = '0.0.1';
         }
 
-        // OpenRegister owns identity via the uuid; a stray int `id` breaks its
-        // upsert probe (trim($object['id'])).
+        // The transient source addresses itself by its generated uuid; a stray
+        // int `id` from $defaultData would shadow it downstream.
         unset($sourceData['id']);
 
-        // System context (ocon#147) — see findSourceObject(). The auto-created source
-        // carries no credentials, which is the point: an engine-created source can only
-        // ever call an unauthenticated URL.
-        $saved = $this->orObjectService->saveObject(
-            object: $sourceData,
-            register: 'openconnector',
-            schema: 'source',
-            _rbac: false,
-            _multitenancy: false
-        );
+        // Deliberately NOT persisted (no orObjectService->saveObject()) — see
+        // the method docblock. The transient source carries no credentials, so
+        // it can only ever call an unauthenticated URL, and it loses cross-call
+        // rate-limit watermark tracking (checkRateLimit() no-ops without
+        // rateLimitLimit) — both are the intended #1009 tradeoff.
+        $sourceData['_transient'] = true;
 
-        return $saved->jsonSerialize();
+        return $sourceData;
     }//end findOrCreateSourceByLocation()
 
     /**
@@ -1348,11 +1496,20 @@ class SynchronizationService
      * @param string|null           $source          The source to synchronize; defaults to the sync source.
      * @param array|null            $data            The data to synchronize; defaults to the sync data.
      * @param string|null           $mutationType    The current mutation type from this::VALID_MUTATION_TYPES.
+     * @param bool|null             $forceDeletion   Explicit override for the deletion-ratio guard
+     *                                               (REQ-010); ignored when `$isTest === true`.
      *
      * @return SynchronizationRunLog Returns the updated synchronization log with processing results.
      *
      * @throws TooManyRequestsHttpException If the external source responds with a rate limiting error.
      * @throws Exception If the source ID is empty or synchronization cannot proceed.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-test-runs-make-no-writes-req-011
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
+     * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
      */
     private function synchronizeExternToIntern(
         array $synchronization,
@@ -1362,7 +1519,8 @@ class SynchronizationService
         ?bool $force=false,
         ?string $source=null,
         ?array $data=null,
-        ?string $mutationType=null
+        ?string $mutationType=null,
+        ?bool $forceDeletion=false
     ): SynchronizationRunLog {
         // Start overall timing measurement.
         $overallStartTime   = microtime(true);
@@ -1410,13 +1568,28 @@ class SynchronizationService
         } else {
             // Stage 2: Fetching objects from source.
             $stageStartTime = microtime(true);
+            $fetchInfo      = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
             try {
-                $objectList = $this->getAllObjectsFromSource(synchronization: $synchronization, isTest: $isTest, data: $data);
+                // $source, when non-null here, is the transient/resolved source array
+                // built above (either an ad-hoc, never-persisted location or an
+                // existing configured Source) — threaded through so the fetch chain
+                // never re-resolves it by id (REQ-012).
+                $objectList = $this->getAllObjectsFromSource(
+                    synchronization: $synchronization,
+                    isTest: $isTest,
+                    data: $data,
+                    fetchInfo: $fetchInfo,
+                    resolvedSource: $source
+                );
             } catch (TooManyRequestsHttpException $e) {
                 $rateLimitException = $e;
                 // Ensure it's defined.
                 $objectList = [];
-            }
+                // A 429 aborts the fetch before it can report its own completeness;
+                // treat it as incomplete explicitly rather than trusting whatever
+                // $fetchInfo held at the moment checkRateLimit() threw (REQ-009).
+                $fetchInfo = ['complete' => false, 'pagesFetched' => 0, 'failureReason' => 'rate_limited'];
+            }//end try
 
             $fetchDuration = round((microtime(true) - $stageStartTime) * 1000, 2);
             $result['timing']['stages']['fetch_objects'] = [
@@ -1431,7 +1604,7 @@ class SynchronizationService
             $stageStartTime = microtime(true);
             $result['objects']['found'] = count($objectList);
 
-            if ($sourceConfig['resultsPosition'] === '_object') {
+            if (($sourceConfig['resultsPosition'] ?? null) === '_object') {
                 if (array_is_list($objectList) === false) {
                     $objectList = [$objectList];
                 }
@@ -1453,15 +1626,30 @@ class SynchronizationService
             foreach ($objectList as $object) {
                 $objectStartTime = microtime(true);
 
-                $processResult = $this->processSynchronizationObject(
-                    synchronization: $synchronization,
-                    flowToken: $flowToken,
-                    object: $object,
-                    result: $result,
-                    isTest: $isTest,
-                    force: $force,
-                    log: $log
-                );
+                // Per-item isolation (synchronization-engine spec REQ-008,
+                // change retry-and-circuit-breaker-policies): a single
+                // object's mapping/write failure must not abort the rest of
+                // the pass — previously an uncaught exception here propagated
+                // through this un-guarded loop. On catch: capture a
+                // sync_item_dead_letter entry, count the item as invalid, and
+                // continue with the next object.
+                try {
+                    $processResult = $this->processSynchronizationObject(
+                        synchronization: $synchronization,
+                        flowToken: $flowToken,
+                        object: $object,
+                        result: $result,
+                        isTest: $isTest,
+                        force: $force,
+                        log: $log
+                    );
+                } catch (\Throwable $itemException) {
+                    $result['objects']['invalid']++;
+                    $this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
+
+                    $objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
+                    continue;
+                }//end try
 
                 $objectProcessingTime    = round((microtime(true) - $objectStartTime) * 1000, 2);
                 $objectProcessingTimes[] = $objectProcessingTime;
@@ -1524,13 +1712,27 @@ class SynchronizationService
                 $deleteData = $data;
             }
 
-            $deletedCount = $this->deleteInvalidObjects(
-                synchronization: $synchronization,
-                synchronizedTargetIds: $synchronizedTargetIds,
-                deleteRestriction: $deleteRestriction,
-                data: $deleteData
-            );
-            $result['objects']['deleted'] = $deletedCount;
+            // A test (dry) run MUST NOT delete anything, regardless of what the
+            // fetch found (REQ-011) — the cleanup pass is skipped entirely rather
+            // than merely guarded, so a "Test" click can never remove real data.
+            $deletedCount = 0;
+            $guardInfo    = null;
+            if ($isTest === false) {
+                $fetchComplete = ($rateLimitException === null && ($fetchInfo['complete'] ?? true));
+
+                $deletedCount = $this->deleteInvalidObjects(
+                    synchronization: $synchronization,
+                    synchronizedTargetIds: $synchronizedTargetIds,
+                    deleteRestriction: $deleteRestriction,
+                    data: $deleteData,
+                    fetchComplete: $fetchComplete,
+                    forceDeletion: ($forceDeletion ?? false),
+                    guardInfo: $guardInfo
+                );
+            }
+
+            $result['objects']['deleted']       = $deletedCount;
+            $result['objects']['deletionGuard'] = $guardInfo;
 
             $result['timing']['stages']['cleanup_invalid'] = [
                 'duration_ms'     => round((microtime(true) - $stageStartTime) * 1000, 2),
@@ -1575,18 +1777,128 @@ class SynchronizationService
             $log->setMessage($rateLimitException->getMessage());
             $log = $this->synchronizationLogService->update(log: $log);
 
+            // Named arguments — Symfony's positional signature is
+            // ($retryAfter, $message, $previous, $code, $headers); the previous
+            // positional call here put the headers array into $previous and
+            // fatally TypeError'd every rate-limited run at re-throw time.
             throw new TooManyRequestsHttpException(
-                $rateLimitException->getMessage(),
-                429,
-                $rateLimitException->getHeaders()
+                message: $rateLimitException->getMessage(),
+                code: 429,
+                headers: $rateLimitException->getHeaders()
             );
         }
 
-        $synchronization['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
-        $this->persistSynchronization(synchronization: $synchronization);
+        // A test run must not persist any change to the Synchronization entity
+        // itself, including its targetLastSynced timestamp (REQ-011).
+        if ($isTest === false) {
+            $synchronization['targetLastSynced'] = (new DateTime())->format(DateTime::ATOM);
+            $this->persistSynchronization(synchronization: $synchronization);
+        }
 
         return $log;
     }//end synchronizeExternToIntern()
+
+    /**
+     * Best-effort capture of a per-item sync failure to `sync_item_dead_letter`
+     * (synchronization-engine spec REQ-008). Never throws — a failure to
+     * capture the dead-letter entry itself must not compound the original
+     * item failure by also aborting the sync pass; it is logged instead.
+     *
+     * @param array      $synchronization The synchronization payload.
+     * @param mixed      $object          The raw source object that failed processing.
+     * @param \Throwable $exception       The caught exception.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     */
+    private function captureSyncItemFailure(array $synchronization, mixed $object, \Throwable $exception): void
+    {
+        if ($this->syncItemDeadLetterService === null) {
+            $this->logger->warning(
+                'SynchronizationService: sync-item failure could not be dead-lettered — SyncItemDeadLetterService unavailable.',
+                ['synchronizationId' => ($synchronization['uuid'] ?? $synchronization['id'] ?? null), 'exception' => $exception->getMessage()]
+            );
+            return;
+        }
+
+        $originId = null;
+        $payload  = ['value' => $object];
+        if (is_array($object) === true) {
+            $payload = $object;
+
+            try {
+                $originId = $this->getOriginId(synchronization: $synchronization, object: $object);
+            } catch (\Throwable $originException) {
+                // Origin id could not be resolved before the failure — leave null.
+                unset($originException);
+            }
+        }
+
+        try {
+            $this->syncItemDeadLetterService->recordFailure(
+                synchronization: $synchronization,
+                payload: $payload,
+                error: $exception->getMessage(),
+                originId: $originId,
+            );
+        } catch (\Throwable $captureException) {
+            $this->logger->warning(
+                'SynchronizationService: failed to persist sync_item_dead_letter entry.',
+                [
+                    'synchronizationId' => ($synchronization['uuid'] ?? $synchronization['id'] ?? null),
+                    'exception'         => $captureException->getMessage(),
+                ]
+            );
+        }
+
+    }//end captureSyncItemFailure()
+
+    /**
+     * Re-invokes processSynchronizationObject() for a single payload against
+     * its synchronization — used by SyncItemDeadLetterService::replayMessage()
+     * to manually re-attempt a dead-lettered sync item (dead-letter-replay
+     * spec REQ-DLR-009). Unlike a full synchronize() pass, this does not
+     * fetch from the source, does not run follow-ups, and does not persist a
+     * new synchronization_log entry — a single, synchronous, immediate
+     * re-attempt only.
+     *
+     * @param array $synchronization The synchronization payload (as returned by getSynchronization()->jsonSerialize()).
+     * @param array $payload         The raw source object to re-process (the dead-lettered payload).
+     *
+     * @return array{result: array, targetId: string|null} The processSynchronizationObject() outcome.
+     *
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
+     */
+    public function replaySynchronizationItem(array $synchronization, array $payload): array
+    {
+        $log       = new SynchronizationRunLog();
+        $flowToken = new FlowToken();
+
+        $result = [
+            'objects'   => [
+                'found'   => 1,
+                'skipped' => 0,
+                'created' => 0,
+                'updated' => 0,
+                'deleted' => 0,
+                'invalid' => 0,
+            ],
+            'contracts' => [],
+            'logs'      => [],
+        ];
+
+        return $this->processSynchronizationObject(
+            synchronization: $synchronization,
+            object: $payload,
+            result: $result,
+            isTest: false,
+            force: true,
+            log: $log,
+            flowToken: $flowToken,
+        );
+
+    }//end replaySynchronizationItem()
 
     /**
      * Synchronizes a given synchronization (or a complete source).
@@ -1601,6 +1913,9 @@ class SynchronizationService
      * @param string|null                                  $source          The source; defaults to the sync source.
      * @param array|null                                   $data            The data; defaults to the sync data.
      * @param FlowToken|null                               $flowToken       The flow token shared across the run.
+     * @param bool|null                                    $forceDeletion   False by default; explicit override for
+     *                                                                      the deletion-ratio guard (REQ-010). Not
+     *                                                                      applicable to test runs.
      *
      * @return array|array|null
      *
@@ -1613,6 +1928,11 @@ class SynchronizationService
      * @throws \OCP\DB\Exception
      * @throws Exception
      * @throws TooManyRequestsHttpException
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
+     * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
      */
     public function synchronize(
         array|ObjectEntity $synchronization,
@@ -1623,6 +1943,7 @@ class SynchronizationService
         ?string $source=null,
         ?array $data=null,
         ?FlowToken &$flowToken=null,
+        ?bool $forceDeletion=false,
     ): array|null {
         // Controllers and cron jobs fetch the synchronization as an OpenRegister
         // object (register `openconnector`, schema `synchronization`); hydrate it
@@ -1703,7 +2024,8 @@ class SynchronizationService
             force: $force,
             source: $source,
             data: $data,
-            mutationType: $mutationType
+            mutationType: $mutationType,
+            forceDeletion: $forceDeletion
         );
 
         // Finalize log.
@@ -2021,28 +2343,85 @@ class SynchronizationService
      * in the source data for a given synchronization. It compares the target IDs from the
      * synchronization contract with the synchronized target IDs and deletes the unmatched ones.
      *
+     * Two safety guards gate the bulk source-diff cleanup path (the
+     * `$deleteRestriction === false` case; the single-object event-driven
+     * delete path is exempt from both — see the ratio-guard block below):
+     * - `$fetchComplete === false` unconditionally skips deletion — a known
+     *   incomplete fetch is never a safe basis for a diff-based cleanup.
+     *   `$forceDeletion` does NOT bypass this check.
+     * - A deletion-ratio guard aborts the pass when the number of candidate
+     *   deletions exceeds `sourceConfig.deletionRatioThreshold` (default
+     *   `self::DEFAULT_DELETION_RATIO_THRESHOLD`) of the synchronization's
+     *   total existing contracts, unless `$forceDeletion === true`. Below
+     *   `self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD` total contracts the
+     *   ratio guard is skipped (see that constant's docblock).
+     *
      * @param array      $synchronization       The synchronization entity to process.
      * @param array|null $synchronizedTargetIds An array of target IDs that are still valid in the source.
      * @param bool       $deleteRestriction     Sets if deletion should be restricted to identifiers in $data.
      * @param array      $data                  The data to be checked when $deleteRestriction is true.
+     * @param bool       $fetchComplete         Whether the fetch preceding this call completed
+     *                                          (REQ-009). Defaults `true` (today's implicit
+     *                                          assumption) so direct callers that are not the
+     *                                          extern→intern pipeline are unaffected.
+     * @param bool       $forceDeletion         Explicit override for the deletion-ratio guard.
+     *                                          Distinct from the pre-existing `$force`
+     *                                          parameter used elsewhere in this class (see
+     *                                          design.md Decision 2) — never bypasses the
+     *                                          fetch-completeness check above.
+     * @param array|null $guardInfo             By-reference output parameter: populated with
+     *                                          guard outcome details (`guarded`, `reason`,
+     *                                          `ratio`, `threshold`, `candidateCount`,
+     *                                          `totalContracts`) when applicable.
      *
      * @return int The count of objects that were deleted.
      *
      * @throws ContainerExceptionInterface|NotFoundExceptionInterface|\OCP\DB\Exception If any database or
      *                                                                                 deletion error occurs.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
-     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
+     * (deleteRestriction pre-exists; fetchComplete/forceDeletion are mandated by
+     * design.md Decision 2 as appended, defaulting-to-current-behaviour parameters).
      */
     public function deleteInvalidObjects(
         array|ObjectEntity $synchronization,
         ?array $synchronizedTargetIds=[],
         bool $deleteRestriction=false,
-        array $data=[]
+        array $data=[],
+        bool $fetchComplete=true,
+        bool $forceDeletion=false,
+        ?array &$guardInfo=null
     ): int {
         $synchronization     = $this->toSynchronization(synchronization: $synchronization);
         $deletedObjectsCount = 0;
         $type = ($synchronization['targetType'] ?? null);
+
+        $synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
+        $sourceConfig      = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+        if ($fetchComplete === false) {
+            $guardInfo = [
+                'guarded'        => true,
+                'reason'         => 'fetch_incomplete',
+                'ratio'          => null,
+                'threshold'      => null,
+                'candidateCount' => null,
+                'totalContracts' => null,
+            ];
+            $this->logger->warning(
+                'deleteInvalidObjects: skipped — preceding fetch did not complete',
+                ['synchronizationId' => $synchronizationId]
+            );
+            $this->dispatchDeletionGuardedEvent(
+                synchronizationId: (string) $synchronizationId,
+                reason: 'fetch_incomplete'
+            );
+            return 0;
+        }
 
         switch ($type) {
             case 'register/schema':
@@ -2063,10 +2442,6 @@ class SynchronizationService
                 }
 
                 [$registerId, $schemaId] = $targetIdParts;
-
-                // The synchronization identifier is the OpenRegister id, falling
-                // back to the uuid when the id is not separately populated.
-                $synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
 
                 // Enumerate this synchronization's contracts straight from
                 // OpenRegister (register `openconnector`, schema
@@ -2094,6 +2469,48 @@ class SynchronizationService
 
                 // Check if we have contracts that became invalid or do not exist in the source anymore.
                 $targetIdsToDelete = array_diff($allContractTargetIds, $synchronizedTargetIds);
+
+                // Deletion-ratio guard: only evaluated for the bulk source-diff
+                // cleanup path (never the single-object, event-driven
+                // `$deleteRestriction === true` delete, which is already scoped
+                // to an explicitly-identified object) and only once there are
+                // enough existing contracts for a percentage to be a meaningful
+                // signal (self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD).
+                $guardInfo = ['guarded' => false, 'reason' => null, 'ratio' => null, 'threshold' => null];
+                if ($deleteRestriction === false
+                    && count($allContractTargetIds) >= self::MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD
+                ) {
+                    $ratio     = (count($targetIdsToDelete) / count($allContractTargetIds));
+                    $threshold = ($sourceConfig['deletionRatioThreshold'] ?? self::DEFAULT_DELETION_RATIO_THRESHOLD);
+
+                    if ($ratio > $threshold && $forceDeletion === false) {
+                        $guardInfo = [
+                            'guarded'        => true,
+                            'reason'         => 'ratio_threshold_exceeded',
+                            'ratio'          => $ratio,
+                            'threshold'      => $threshold,
+                            'candidateCount' => count($targetIdsToDelete),
+                            'totalContracts' => count($allContractTargetIds),
+                        ];
+                        $this->logger->warning(
+                            'deleteInvalidObjects: deletion ratio guard tripped',
+                            $guardInfo + ['synchronizationId' => $synchronizationId]
+                        );
+                        $this->dispatchDeletionGuardedEvent(
+                            synchronizationId: (string) $synchronizationId,
+                            reason: 'ratio_threshold_exceeded',
+                            ratio: $ratio,
+                            threshold: $threshold,
+                            candidateCount: count($targetIdsToDelete),
+                            totalContracts: count($allContractTargetIds)
+                        );
+                        return 0;
+                    }//end if
+
+                    $guardInfo['ratio']     = $ratio;
+                    $guardInfo['threshold'] = $threshold;
+                }//end if
+
                 if ($deleteRestriction === true) {
                     $encodedData       = json_encode($data);
                     $targetIdsToDelete = array_filter(
@@ -2251,6 +2668,46 @@ class SynchronizationService
         return $deletedCount;
 
     }//end deleteInvalidTableRows()
+
+    /**
+     * Dispatch a SynchronizationDeletionGuardedEvent, when the event
+     * dispatcher was resolved (see the constructor's lazy resolution block).
+     *
+     * @param string       $synchronizationId The guarded synchronization's id.
+     * @param string       $reason            `fetch_incomplete` or `ratio_threshold_exceeded`.
+     * @param float|null   $ratio             The computed deletion ratio, when applicable.
+     * @param float|null   $threshold         The configured/default threshold, when applicable.
+     * @param integer|null $candidateCount    The number of contracts that would have been deleted.
+     * @param integer|null $totalContracts    The total number of existing contracts.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     */
+    private function dispatchDeletionGuardedEvent(
+        string $synchronizationId,
+        string $reason,
+        ?float $ratio=null,
+        ?float $threshold=null,
+        ?int $candidateCount=null,
+        ?int $totalContracts=null
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        $this->eventDispatcher->dispatchTyped(
+            new SynchronizationDeletionGuardedEvent(
+                synchronizationId: $synchronizationId,
+                reason: $reason,
+                ratio: $ratio,
+                threshold: $threshold,
+                candidateCount: $candidateCount,
+                totalContracts: $totalContracts
+            )
+        );
+
+    }//end dispatchDeletionGuardedEvent()
 
     /**
      * Recursively sort an associative array by key.
@@ -3141,6 +3598,13 @@ class SynchronizationService
      * @param bool|null  $isTest          False by default, added for the synchronization-test endpoint.
      * @param array|null $data            The data to synchronize; if not provided the synchronization's
      *                                    data will be used.
+     * @param array|null $fetchInfo       By-reference output parameter: populated with
+     *                                    `['complete' => bool, 'pagesFetched' => int, 'failureReason' => ?string]`
+     *                                    describing whether the fetch completed. Does not change
+     *                                    this method's own (flat object list) return value.
+     * @param array|null $resolvedSource  When provided, used directly as the resolved source
+     *                                    instead of re-looking it up by `sourceId` — required for
+     *                                    a transient, never-persisted ad-hoc source (REQ-012).
      *
      * @return array
      *
@@ -3149,12 +3613,20 @@ class SynchronizationService
      * @throws NotFoundExceptionInterface
      * @throws \OCP\DB\Exception
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
-     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
      */
-    public function getAllObjectsFromSource(array $synchronization, ?bool $isTest=false, ?array $data=null): array
-    {
-        $objects = [];
+    public function getAllObjectsFromSource(
+        array $synchronization,
+        ?bool $isTest=false,
+        ?array $data=null,
+        ?array &$fetchInfo=null,
+        ?array $resolvedSource=null
+    ): array {
+        $objects   = [];
+        $fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
 
         $type = ($synchronization['sourceType'] ?? null);
 
@@ -3163,7 +3635,13 @@ class SynchronizationService
                 // @todo: implement
                 break;
             case 'api':
-                $objects = $this->getAllObjectsFromApi(synchronization: $synchronization, isTest: $isTest, data: $data);
+                $objects = $this->getAllObjectsFromApi(
+                    synchronization: $synchronization,
+                    isTest: $isTest,
+                    data: $data,
+                    fetchInfo: $fetchInfo,
+                    resolvedSource: $resolvedSource
+                );
                 break;
             case 'database':
                 // @todo: implement
@@ -3228,21 +3706,46 @@ class SynchronizationService
      * @param bool|null  $isTest          If true, only a single object is returned for testing purposes.
      * @param array|null $data            The data to synchronize; if not provided the synchronization's
      *                                    data will be used.
+     * @param array|null $fetchInfo       By-reference output parameter: populated with
+     *                                    `['complete' => bool, 'pagesFetched' => int, 'failureReason' => ?string]`
+     *                                    describing whether the fetch completed. Does not change
+     *                                    this method's own (flat object list) return value.
+     * @param array|null $resolvedSource  When provided, used directly as the resolved source
+     *                                    instead of re-looking it up by `sourceId` — required for
+     *                                    a transient, never-persisted ad-hoc source (REQ-012).
      *
      * @return array An array of all objects retrieved from the API.
      * @throws GuzzleException
      * @throws LoaderError
      * @throws SyntaxError
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
      */
-    public function getAllObjectsFromApi(array $synchronization, ?bool $isTest=false, ?array $data=null): array
-    {
+    public function getAllObjectsFromApi(
+        array $synchronization,
+        ?bool $isTest=false,
+        ?array $data=null,
+        ?array &$fetchInfo=null,
+        ?array $resolvedSource=null
+    ): array {
+        $fetchInfo = ['complete' => true, 'pagesFetched' => 0, 'failureReason' => null];
+
         // Extract source configuration.
         $sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
-        // TODO; This is the second time this function is called in the synchonysation flow,
-        // needs further refactoring investigation.
-        // @todo this is an nuessesery db call, we should refactor this.
-        $source = $this->findSource(id: ($synchronization['sourceId'] ?? null));
+
+        // A non-null $resolvedSource (possibly a transient, ad-hoc source that
+        // findOrCreateSourceByLocation() never persisted) is used directly —
+        // avoiding a findSource(id: ...) lookup that would throw
+        // DoesNotExistException for a source that was never saved (REQ-012).
+        $source = $resolvedSource;
+        if ($source === null) {
+            // TODO; This is the second time this function is called in the synchonysation flow,
+            // needs further refactoring investigation.
+            // @todo this is an nuessesery db call, we should refactor this.
+            $source = $this->findSource(id: ($synchronization['sourceId'] ?? null));
+        }
 
         // Check rate limit before proceeding.
         $this->checkRateLimit(source: $source);
@@ -3305,7 +3808,7 @@ class SynchronizationService
         }
 
         // Fetch all pages recursively.
-        $objects = $this->fetchAllPages(
+        $pageResult = $this->fetchAllPages(
             source: $source,
             endpoint: $endpoint,
             config: $config,
@@ -3314,6 +3817,13 @@ class SynchronizationService
             isTest: $isTest,
             usesPagination: $usesPagination
         );
+
+        $objects   = $pageResult['objects'];
+        $fetchInfo = [
+            'complete'      => $pageResult['complete'],
+            'pagesFetched'  => $pageResult['pagesFetched'],
+            'failureReason' => $pageResult['failureReason'],
+        ];
 
         if ($sourceConfig['resultsPosition'] !== '_object' && array_is_list($objects) === false) {
             $objects = [$objects];
@@ -3372,8 +3882,12 @@ class SynchronizationService
      * @param bool|null $usesNextEndpoint Whether the API uses next endpoint URLs
      * @param bool      $usesPagination   Whether pagination is enabled
      *
-     * @return array Combined objects from all pages
+     * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int} Combined objects
+     *         from all pages plus fetch-completeness metadata (private helper — only this
+     *         class calls it, so its return shape is free to change).
      * @throws TooManyRequestsHttpException When rate limit is exceeded
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
     private function fetchAllPages(
         array $source,
@@ -3421,8 +3935,11 @@ class SynchronizationService
      * @param bool      $isTest           Whether this is a test run
      * @param bool|null $usesNextEndpoint Whether the API uses next endpoint URLs
      *
-     * @return array Combined objects from all pages
+     * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int} Combined objects
+     *         from all pages plus fetch-completeness metadata.
      * @throws TooManyRequestsHttpException When rate limit is exceeded
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
     private function fetchAllPagesOptimized(
         array $source,
@@ -3438,6 +3955,8 @@ class SynchronizationService
         $sourceConfig    = ($synchronization['sourceConfig'] ?? []);
         $maxPages        = $sourceConfig['maxPages'] ?? $this::DEFAULT_MAX_PAGES;
         $pageCount       = 0;
+        $complete        = true;
+        $failureReason   = null;
 
         for ($i = 0; $i < $maxPages; $i++) {
             // Fetch the current page.
@@ -3450,9 +3969,20 @@ class SynchronizationService
             $pageObjects = $pageData['objects'];
             $pageCount++;
 
+            // A failed page (non-2xx/unclassifiable response, or a connect
+            // failure) must never be conflated with a natural end of
+            // pagination — checked BEFORE the empty($pageObjects) check
+            // below, which would otherwise treat a failed-and-therefore-empty
+            // page exactly like a genuinely empty final page (REQ-009).
+            if (($pageData['failed'] ?? false) === true) {
+                $complete      = false;
+                $failureReason = 'page_fetch_failed';
+                break;
+            }
+
             // If test mode is enabled, return only the first object from the first page.
             if ($isTest === true && empty($pageObjects) === false) {
-                return [$pageObjects[0]];
+                return ['objects' => [$pageObjects[0]], 'complete' => true, 'failureReason' => null, 'pagesFetched' => $pageCount];
             }
 
             // If no objects found, we've reached the end.
@@ -3488,9 +4018,18 @@ class SynchronizationService
             // Update synchronization current page.
             $synchronization['currentPage'] = $currentPage;
             $this->persistSynchronization(synchronization: $synchronization);
+
+            // A next page is known to exist, but this was the last iteration
+            // the DEFAULT_MAX_PAGES safety cap allows — an unknown amount of
+            // the source was never seen, which is exactly as dangerous as a
+            // mid-pagination failure (REQ-009).
+            if (($i + 1) >= $maxPages) {
+                $complete      = false;
+                $failureReason = 'max_pages_reached';
+            }
         }//end for
 
-        return $allObjects;
+        return ['objects' => $allObjects, 'complete' => $complete, 'failureReason' => $failureReason, 'pagesFetched' => $pageCount];
     }//end fetchAllPagesOptimized()
 
     /**
@@ -3567,8 +4106,11 @@ class SynchronizationService
      * @param array  $config          The request configuration
      * @param array  $synchronization The synchronization context
      *
-     * @return array Objects from the page
+     * @return array{objects: array, complete: bool, failureReason: ?string, pagesFetched: int} Objects from the
+     *         page plus fetch-completeness metadata.
      * @throws TooManyRequestsHttpException When rate limit is exceeded
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
     private function fetchSinglePage(array $source, string $endpoint, array $config, array $synchronization): array
     {
@@ -3579,7 +4121,19 @@ class SynchronizationService
             synchronization: $synchronization
         );
 
-        return $pageData['objects'];
+        $failed = ($pageData['failed'] ?? false);
+
+        $failureReason = null;
+        if ($failed === true) {
+            $failureReason = 'page_fetch_failed';
+        }
+
+        return [
+            'objects'       => $pageData['objects'],
+            'complete'      => ($failed === false),
+            'failureReason' => $failureReason,
+            'pagesFetched'  => 1,
+        ];
     }//end fetchSinglePage()
 
     /**
@@ -3605,11 +4159,12 @@ class SynchronizationService
      * @param array  $config          The request configuration
      * @param array  $synchronization The synchronization context
      *
-     * @return array{objects: array, result: array}
+     * @return array{objects: array, result: array, failed?: bool, statusCode?: int|null}
      * @throws TooManyRequestsHttpException When rate limit is exceeded
      *
      * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
     private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array
     {
@@ -3619,7 +4174,8 @@ class SynchronizationService
         $response = $this->callLogResponse(callLog: $callLog);
 
         // Check for rate limiting.
-        if ($response === null && $this->callLogStatusCode(callLog: $callLog) === 429) {
+        $statusCode = $this->callLogStatusCode(callLog: $callLog);
+        if ($response === null && $statusCode === 429) {
             throw new TooManyRequestsHttpException(
                 message: "Rate Limit on Source exceeded.",
                 code: 429,
@@ -3627,8 +4183,18 @@ class SynchronizationService
             );
         }
 
+        // A non-2xx/unclassifiable page response MUST NOT be conflated with a
+        // genuinely empty (but successful) page — the former means the fetch
+        // is incomplete and downstream cleanup must not treat it as "nothing
+        // left in the source" (REQ-009). Covers both a response body carrying
+        // an error status code and a null response with no recoverable status
+        // (network/connect failure).
+        if ($statusCode !== null && $statusCode >= 400) {
+            return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $statusCode];
+        }
+
         if ($response === null) {
-            return ['objects' => [], 'result' => []];
+            return ['objects' => [], 'result' => [], 'failed' => true, 'statusCode' => $statusCode];
         }
 
         $body = $response['body'];
@@ -4155,9 +4721,23 @@ class SynchronizationService
      * @param bool   $read     Whether this is a single-object read call.
      *
      * @return ObjectEntity The resulting call log (an OpenRegister object).
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
      */
     private function callSourceObject(array $source, string $endpoint='', string $method='GET', array $config=[], bool $read=false): ObjectEntity
     {
+        // A transient, never-persisted ad-hoc source (REQ-012 — see
+        // findOrCreateSourceByLocation()) has no OpenRegister object to
+        // resolve; bridge it into the in-memory ObjectEntity shape CallService
+        // consumes (it only reads the source body via ->getObject()).
+        if (($source['_transient'] ?? false) === true) {
+            $sourceObject = new ObjectEntity();
+            $sourceObject->setUuid((string) ($source['uuid'] ?? ''));
+            $sourceObject->setObject($source);
+
+            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read);
+        }
+
         // Address the source by its OpenRegister uuid (the canonical identifier);
         // the legacy int `id` is not the OpenRegister object key.
         $sourceIdentifier = ($source['uuid'] ?? null);
@@ -6005,11 +6585,26 @@ class SynchronizationService
             $findContractByOriginId = true;
         }
 
+        $contractMatches         = null;
         $synchronizationContract = $this->findContractBySyncAndOrigin(
             synchronizationId: (string) ($synchronization['id'] ?? ''),
             originId: $originId,
-            justByOriginId: $findContractByOriginId
+            justByOriginId: $findContractByOriginId,
+            allMatches: $contractMatches
         );
+
+        // Opportunistic duplicate-contract diagnostic (REQ-013): only when the
+        // lookup actually matched (the create path cannot have duplicates yet)
+        // and reusing the match list the lookup already fetched — the common,
+        // single-contract case adds no query cost and logs nothing. Processing
+        // continues with the same first-match contract selected above.
+        if (is_array($synchronizationContract) === true) {
+            $this->detectDuplicateContracts(
+                synchronizationId: (string) ($synchronization['id'] ?? ''),
+                originId: $originId,
+                contracts: $contractMatches
+            );
+        }
 
         if (is_array($synchronizationContract) === false) {
             // Only persist if not test.

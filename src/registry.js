@@ -42,13 +42,18 @@ import {
 	addEndpointRuleHandler,
 	manageSigningHandler,
 	viewLogsHandler,
+	openConfigurationImportHandler,
+	openConfigurationExportHandler,
 } from './handlers/actionHandlers.js'
+import CatalogItemCard from './components/CatalogItemCard.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
+import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
+import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -69,6 +74,15 @@ export default {
 	// destination *Logs route. Will be retired once nc-vue#330 lands a
 	// declarative `queryParam` field on the built-in `navigate` handler.
 	viewLogsHandler,
+	// Catalog page header actions (connector-catalog-ui): open the
+	// configuration import-preview / export dialogs via the modal bus.
+	openConfigurationImportHandler,
+	openConfigurationExportHandler,
+
+	// Card component for the Catalog index page (connector-catalog-ui):
+	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.
+	// Clicking a card opens CatalogItemDetailDialog through the modal bus.
+	CatalogItemCard,
 
 	// Slot-override components — referenced by manifest `pages[].slots`
 	// keys. The Jobs page wires `form-fields` to JobFormFields so the
@@ -97,4 +111,16 @@ export default {
 	// surface backed by the admin-only /api/events/dead-letter endpoints with
 	// per-row + bulk Replay/Discard. See openconnector-dead-letter-replay.
 	EventDeliveriesPage,
+
+	// Sync-item dead-letter operations view (custom page): a filtered
+	// sync_item_dead_letter surface backed by the admin-only
+	// /api/sync-dead-letter endpoints with per-row + bulk Replay/Discard.
+	// See retry-and-circuit-breaker-policies (REQ-DLR-007..012).
+	SyncDeadLetterPage,
+
+	// Source detail circuit-breaker badge (declarative body section on
+	// SourceDetail via config.bodyWidgets): shows breaker state + failure
+	// count + cooldown countdown with a Reset action. See
+	// retry-and-circuit-breaker-policies (REQ-009).
+	CircuitBreakerBadge,
 }

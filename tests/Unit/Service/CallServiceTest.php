@@ -1146,4 +1146,434 @@ class CallServiceTest extends TestCase
         $this->assertFileDoesNotExist($config['verify']);
     }//end testRemoveFilesNoWarningOnPartialCleanup()
 
+
+    /**
+     * Build a plain (non-brokered) source ObjectEntity, optionally seeded
+     * with retryPolicy / circuit-breaker fields.
+     *
+     * @param array $extra Extra fields merged onto the base source object.
+     *
+     * @return ObjectEntity
+     */
+    private function makePlainSource(array $extra=[]): ObjectEntity
+    {
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-retry');
+        $source->setObject(
+            array_merge(
+                [
+                    'name'          => 'retry-source',
+                    'isEnabled'     => true,
+                    'location'      => 'https://api.example.invalid',
+                    'configuration' => [],
+                ],
+                $extra
+            )
+        );
+
+        return $source;
+    }//end makePlainSource()
+
+
+    /**
+     * Swap in a mock Guzzle client returning the given responses in
+     * sequence (one per consecutive `request()` call) and return the array
+     * of captured configs used for each dispatched request.
+     *
+     * @param CallService                               $service   The service under test.
+     * @param \GuzzleHttp\Psr7\Response[]|\Throwable[] $responses Responses/exceptions to return in order.
+     *
+     * @return \stdClass Object handle whose `->calls` property is updated (by reference
+     *                    semantics, since PHP objects are handles) as requests land — an
+     *                    array copy taken at setup time would freeze at 0 before any call runs.
+     */
+    private function mockGuzzleSequence(CallService $service, array $responses): \stdClass
+    {
+        $callCounter        = new \stdClass();
+        $callCounter->calls = 0;
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->exactly(count($responses)))
+            ->method('request')
+            ->willReturnCallback(
+                function (string $method, string $url, array $config) use ($callCounter, $responses) {
+                    $index = $callCounter->calls;
+                    $callCounter->calls++;
+                    $outcome = $responses[$index];
+                    if ($outcome instanceof \Throwable) {
+                        throw $outcome;
+                    }
+
+                    return $outcome;
+                }
+            );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        return $callCounter;
+    }//end mockGuzzleSequence()
+
+
+    /**
+     * TC-1 / REQ-007 — a Source with no `retryPolicy` dispatches exactly one
+     * request even against a persistently-failing (503) upstream, and the
+     * persisted CallLog reflects that single attempt.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testDefaultRetryPolicyDispatchesExactlyOnceAgainstFailingUpstream(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence($service, [new Response(503, [], 'unavailable')]);
+
+        $source = $this->makePlainSource();
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(1, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(503, $logs[0]['object']['statusCode']);
+    }//end testDefaultRetryPolicyDispatchesExactlyOnceAgainstFailingUpstream()
+
+
+    /**
+     * TC-2 / REQ-007 — a Source with `retryPolicy.maxAttempts = 3` and a
+     * retryable status code retries up to maxAttempts; only the FINAL
+     * attempt's CallLog is persisted.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testRetryPolicyRetriesUpToMaxAttemptsAndPersistsOnlyFinalCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence(
+            $service,
+            [
+                new Response(503, [], 'unavailable'),
+                new Response(503, [], 'unavailable'),
+                new Response(200, [], '{"ok":true}'),
+            ]
+        );
+
+        $source = $this->makePlainSource(
+            [
+                'retryPolicy' => [
+                    'maxAttempts'          => 3,
+                    'backoffStrategy'      => 'fixed',
+                    'baseDelayMs'          => 1,
+                    'retryableStatusCodes' => [503],
+                ],
+            ]
+        );
+
+        $callLog = $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(3, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(200, $logs[0]['object']['statusCode']);
+        $this->assertSame(200, $callLog->getObject()['statusCode']);
+    }//end testRetryPolicyRetriesUpToMaxAttemptsAndPersistsOnlyFinalCallLog()
+
+
+    /**
+     * TC-3 / REQ-007 — a non-retryable status code (404, not in the
+     * configured `retryableStatusCodes`) short-circuits after exactly one
+     * attempt even though `maxAttempts` allows more.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testNonRetryableStatusCodeDispatchesOnlyOnce(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence($service, [new Response(404, [], 'not found')]);
+
+        $source = $this->makePlainSource(
+            [
+                'retryPolicy' => [
+                    'maxAttempts'          => 3,
+                    'retryableStatusCodes' => [429, 503],
+                ],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(1, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertSame(404, $logs[0]['object']['statusCode']);
+    }//end testNonRetryableStatusCodeDispatchesOnlyOnce()
+
+
+    /**
+     * TC-4 / REQ-007 — `$config['retryPolicy']` (the per-call override
+     * SynchronizationService populates from `Synchronization.retryPolicyOverride`)
+     * overrides the Source's own policy per-key for that call only.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testCallerSuppliedRetryPolicyOverridesSourcePolicy(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence(
+            $service,
+            [
+                new Response(500, [], 'error'),
+                new Response(200, [], '{"ok":true}'),
+            ]
+        );
+
+        // Source itself only allows a single attempt.
+        $source = $this->makePlainSource(['retryPolicy' => ['maxAttempts' => 1]]);
+
+        $service->call(
+            source: $source,
+            endpoint: '/v1/items',
+            config: [
+                'retryPolicy' => [
+                    'maxAttempts'          => 2,
+                    'retryableStatusCodes' => [500],
+                    'baseDelayMs'          => 1,
+                ],
+            ],
+        );
+
+        $this->assertSame(2, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(200, $logs[0]['object']['statusCode']);
+
+        // The retryPolicy directive never leaks into the persisted request envelope.
+        $this->assertArrayNotHasKey('retryPolicy', $logs[0]['object']['request']);
+    }//end testCallerSuppliedRetryPolicyOverridesSourcePolicy()
+
+
+    /**
+     * TC-5 / REQ-008 — five consecutive retryable failures open the circuit
+     * breaker, using the DEFAULT threshold (no explicit breaker config on
+     * the Source).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testFiveConsecutiveFailuresOpenTheBreakerWithDefaultThreshold(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $this->mockGuzzleSequence(
+            $service,
+            [
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+            ]
+        );
+
+        $source = $this->makePlainSource();
+
+        // Each iteration mirrors a real caller re-fetching the Source (whose
+        // circuitBreakerFailureCount was just persisted) before the next call
+        // — a single CallService::call() only mutates its own local copy of
+        // sourceData; the SOURCE ENTITY handed in across five SEPARATE calls
+        // must be re-hydrated from the last save to see the running count.
+        for ($i = 0; $i < 5; $i++) {
+            $service->call(source: $source, endpoint: '/v1/items');
+
+            $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+            if (empty($sourceSaves) === false) {
+                $source->setObject(end($sourceSaves)['object']);
+            }
+        }
+
+        $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+        $this->assertNotEmpty($sourceSaves);
+        $last = end($sourceSaves)['object'];
+        $this->assertSame('open', $last['circuitBreakerState']);
+        $this->assertNotNull($last['circuitBreakerOpenedAt']);
+        $this->assertSame(5, $last['circuitBreakerFailureCount']);
+    }//end testFiveConsecutiveFailuresOpenTheBreakerWithDefaultThreshold()
+
+
+    /**
+     * TC-6 / REQ-008 — an open breaker within its cooldown window
+     * short-circuits with a synthetic 503 CallLog; no HTTP request is
+     * dispatched.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testOpenBreakerWithinCooldownShortCircuitsWithoutDispatching(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('request');
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = $this->makePlainSource(
+            [
+                'circuitBreakerState'    => 'open',
+                'circuitBreakerOpenedAt' => (time() - 10),
+            ]
+        );
+
+        $callLog = $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(503, $callLog->getObject()['statusCode']);
+        $this->assertSame('Circuit breaker is open for this source', $callLog->getObject()['statusMessage']);
+    }//end testOpenBreakerWithinCooldownShortCircuitsWithoutDispatching()
+
+
+    /**
+     * TC-7a / REQ-008 — a successful half-open probe (breaker open, cooldown
+     * elapsed) closes the breaker and resets the failure count.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testSuccessfulHalfOpenProbeClosesTheBreaker(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $this->mockGuzzleSequence($service, [new Response(200, [], '{"ok":true}')]);
+
+        $source = $this->makePlainSource(
+            [
+                'circuitBreakerState'        => 'open',
+                'circuitBreakerOpenedAt'     => (time() - 35),
+                'circuitBreakerFailureCount' => 5,
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+        $last        = end($sourceSaves)['object'];
+        $this->assertSame('closed', $last['circuitBreakerState']);
+        $this->assertSame(0, $last['circuitBreakerFailureCount']);
+    }//end testSuccessfulHalfOpenProbeClosesTheBreaker()
+
+
+    /**
+     * TC-7b / REQ-008 — a failed half-open probe reopens the breaker
+     * immediately with a fresh `circuitBreakerOpenedAt`.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testFailedHalfOpenProbeReopensTheBreakerImmediately(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $this->mockGuzzleSequence($service, [new Response(503, [], '')]);
+
+        $openedAt = (time() - 35);
+        $source   = $this->makePlainSource(
+            [
+                'circuitBreakerState'        => 'open',
+                'circuitBreakerOpenedAt'     => $openedAt,
+                'circuitBreakerFailureCount' => 5,
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+        $last        = end($sourceSaves)['object'];
+        $this->assertSame('open', $last['circuitBreakerState']);
+        $this->assertGreaterThan($openedAt, $last['circuitBreakerOpenedAt']);
+    }//end testFailedHalfOpenProbeReopensTheBreakerImmediately()
+
+
+    /**
+     * REQ-009 — `tripCircuitBreaker()` forces the breaker open immediately,
+     * regardless of prior state/failure count.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    public function testTripCircuitBreakerForcesOpenRegardlessOfPriorState(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $source = $this->makePlainSource();
+        $saved  = $service->tripCircuitBreaker(source: $source);
+
+        $data = $saved->getObject();
+        $this->assertSame('open', $data['circuitBreakerState']);
+        $this->assertNotNull($data['circuitBreakerOpenedAt']);
+        $this->assertSame(5, $data['circuitBreakerFailureCount']);
+    }//end testTripCircuitBreakerForcesOpenRegardlessOfPriorState()
+
+
+    /**
+     * REQ-009 — `resetCircuitBreaker()` restores the breaker to closed with
+     * a zero failure count.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    public function testResetCircuitBreakerRestoresClosedState(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $source = $this->makePlainSource(
+            [
+                'circuitBreakerState'        => 'open',
+                'circuitBreakerOpenedAt'     => time(),
+                'circuitBreakerFailureCount' => 7,
+            ]
+        );
+        $saved = $service->resetCircuitBreaker(source: $source);
+
+        $data = $saved->getObject();
+        $this->assertSame('closed', $data['circuitBreakerState']);
+        $this->assertSame(0, $data['circuitBreakerFailureCount']);
+        $this->assertNull($data['circuitBreakerOpenedAt']);
+    }//end testResetCircuitBreakerRestoresClosedState()
+
 }//end class

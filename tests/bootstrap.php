@@ -69,6 +69,19 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/OpenRegister/AppHost/Controller/GenericHealthController.php';
         }
 
+        // OCA\OpenRegister AppHost observability stubs — peer app not in
+        // vendor. OpenConnectorMetricsProvider implements IMetricsProvider
+        // and returns MetricSample instances (retry-and-circuit-breaker-policies,
+        // REQ-PROM-011); MetricSample must load before IMetricsProvider's
+        // docblock @return type is referenced.
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Observability\\MetricSample') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Observability/MetricSample.php';
+        }
+
+        if (interface_exists('OCA\\OpenRegister\\AppHost\\IMetricsProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/IMetricsProvider.php';
+        }
+
         // OCA\OpenRegister stubs — peer app not in vendor.
         if (class_exists('OCA\\OpenRegister\\Db\\ObjectEntity') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
@@ -80,6 +93,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
         if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
+        }
+
+        // connector-catalog-ui: CatalogRegistryService reads OR's
+        // IntegrationRegistry — stub both the interface and the registry
+        // class so unit tests can mock them without a live OR install.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationRegistry.php';
         }
 
         if (class_exists('OCA\\OpenRegister\\Db\\RegisterMapper') === false) {
