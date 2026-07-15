@@ -149,6 +149,15 @@ class EndpointService
     private array $rateLimitHeaders = [];
 
     /**
+     * RFC 8594 `Deprecation`/`Sunset` response headers to attach to the
+     * current request's response, populated when the dispatched endpoint
+     * belongs to a `deprecated` `api_product` (REQ-APG-006/REQ-EP-008).
+     *
+     * @var array<string, string>
+     */
+    private array $deprecationHeaders = [];
+
+    /**
      * Parse the error message from the validation service for ZGW format.
      *
      * @param array $response     The response that is build.
@@ -260,14 +269,42 @@ class EndpointService
      * @throws Exception When endpoint configuration is invalid
      *
      * @spec openspec/specs/consumer-management/spec.md — Requirement: IETF RateLimit response headers (REQ-CON-RL-003)
+     * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
+     * @spec openspec/specs/endpoint-runtime/spec.md#requirement-inbound-observability-logging-for-api-product-scoped-endpoints-req-ep-009
      */
     public function handleRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response
     {
-        $this->rateLimitHeaders = [];
+        $this->rateLimitHeaders   = [];
+        $this->deprecationHeaders = [];
+        $startTime = microtime(true);
+
+        // Resolve the endpoint's api_product (if any) once, up front, so both
+        // the deprecation headers and the inbound observability log (below)
+        // reflect the SAME product resolution the rest of the pipeline used
+        // (design.md Decision 5/6, endpoint-runtime REQ-EP-008/REQ-EP-009).
+        $product = $this->resolveProductForEndpoint(endpoint: $endpoint);
+        if ($product !== null) {
+            $this->deprecationHeaders = $this->buildDeprecationHeaders(product: $product);
+        }
+
         $response = $this->doHandleRequest(endpoint: $endpoint, request: $request, path: $path);
 
         foreach ($this->rateLimitHeaders as $headerName => $headerValue) {
             $response->addHeader($headerName, $headerValue);
+        }
+
+        foreach ($this->deprecationHeaders as $headerName => $headerValue) {
+            $response->addHeader($headerName, $headerValue);
+        }
+
+        if ($product !== null) {
+            $durationMs = ((microtime(true) - $startTime) * 1000);
+            $this->recordInboundCallLog(
+                endpoint: $endpoint,
+                product: $product,
+                statusCode: $response->getStatus(),
+                durationMs: $durationMs
+            );
         }
 
         return $response;
@@ -493,7 +530,7 @@ class EndpointService
             // and BEFORE the endpoint target/schema dispatch (REQ-CON-RL-002). An
             // over-limit request short-circuits with 429 here; an under-limit
             // request records its RateLimit-* headers for the response wrapper.
-            $rateLimitResponse = $this->enforceInboundRateLimit(request: $request);
+            $rateLimitResponse = $this->enforceInboundRateLimit(request: $request, endpoint: $endpoint);
             if ($rateLimitResponse !== null) {
                 return $rateLimitResponse;
             }
@@ -649,22 +686,51 @@ class EndpointService
     /**
      * Enforce the resolved consumer's inbound rate limit and quota.
      *
-     * Keys the limiter on the resolved consumer's uuid, or — when the consumer
-     * authenticates anonymously (`authorizationType: none`) — on the client IP
-     * so distinct anonymous callers get separate buckets. When no consumer was
-     * resolved (apikey/basic/oauth authenticate a Nextcloud user, or the
-     * endpoint has no authentication rule), there is no per-consumer limit and
-     * this returns null (unlimited). On an over-limit decision it records the
-     * inbound 429 for observability and returns the 429 response; otherwise it
-     * stashes the RateLimit-* headers for the response wrapper and returns null.
+     * When the dispatched endpoint belongs to an `api_product`, this first
+     * resolves the caller's `active` `api_product_subscription` to that
+     * product and — when found — enforces the SUBSCRIPTION'S tier
+     * `rateLimit`/`quota` instead of the consumer's own, keyed separately
+     * so tier counters can never share a bucket with the consumer's plain
+     * per-endpoint counters (`REQ-APG-005`, `consumer-management`
+     * `REQ-CON-SUB-002`, design.md Decision 5). A product-attached endpoint
+     * whose caller has no `active` subscription is rejected outright with
+     * HTTP 403 — "subscribe" is opt-in access, not a silent fallback to the
+     * consumer's own limit (`REQ-APG-004`, design.md Decision 2). This is a
+     * deliberate reconciliation of two design.md passages that read as
+     * contradictory in isolation (Decision 5's "no active subscription ->
+     * behaviour is byte-for-byte unchanged" vs. Decision 2's explicit 403):
+     * the concrete Given/When/Then scenarios under REQ-APG-004 and the
+     * dedicated test-plan.md TC-10 are unambiguous that "no active
+     * subscription to a PRODUCT endpoint" blocks with 403; "byte-for-byte
+     * unchanged" is read as covering only the "endpoint is not part of any
+     * product" case and the edge case where an active subscription's tier
+     * no longer resolves to a policy (e.g. the tier was later removed from
+     * the product) — both of which fall through to the same
+     * Consumer-level path below, untouched.
      *
-     * @param IRequest $request The incoming request.
+     * Keys the plain (non-product) limiter on the resolved consumer's uuid,
+     * or — when the consumer authenticates anonymously (`authorizationType:
+     * none`) — on the client IP so distinct anonymous callers get separate
+     * buckets. When no consumer was resolved (apikey/basic/oauth
+     * authenticate a Nextcloud user, or the endpoint has no authentication
+     * rule), there is no per-consumer limit and this returns null
+     * (unlimited) — unchanged from before this change, and deliberately not
+     * extended to the product-403 gate: a product-attached endpoint that
+     * resolves no consumer identity at all has no scenario coverage in this
+     * change's spec deltas, so its behaviour is left exactly as before
+     * (design.md Risks / "no regression" default).
      *
-     * @return JSONResponse|null A 429 response when throttled, or null when the request may proceed.
+     * @param IRequest     $request  The incoming request.
+     * @param ObjectEntity $endpoint The dispatched endpoint (used to resolve its api_product, if any).
+     *
+     * @return JSONResponse|null A 429/403 response when blocked, or null when the request may proceed.
      *
      * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
+     * @spec openspec/specs/consumer-management/spec.md#requirement-per-product-tier-policy-takes-precedence-over-the-consumer-level-rate-limit-req-con-sub-002
      */
-    private function enforceInboundRateLimit(IRequest $request): ?JSONResponse
+    private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse
     {
         $consumer = $this->authorizationService->getResolvedConsumer();
         if ($consumer === null) {
@@ -673,28 +739,91 @@ class EndpointService
         }
 
         $consumerData = $consumer->getObject();
-        $rateLimit    = ($consumerData['rateLimit'] ?? null);
-        $quota        = ($consumerData['quota'] ?? null);
+        $consumerKey  = (string) ($consumer->getUuid() ?? ($consumerData['uuid'] ?? 'unknown'));
 
-        if (is_array($rateLimit) === false && is_array($quota) === false) {
-            // Unlimited consumer — backward compatible with every existing consumer.
-            return null;
-        }
+        $product = $this->resolveProductForEndpoint(endpoint: $endpoint);
+        if ($product !== null) {
+            $subscription = $this->resolveActiveSubscription(
+                consumerUuid: $consumerKey,
+                productUuid: (string) $product->getUuid()
+            );
 
-        // Anonymous consumers key on client IP; identified consumers on uuid.
+            if ($subscription === null) {
+                // REQ-APG-004 / design.md Decision 2: pending/rejected/revoked
+                // (or entirely absent) subscription blocks access outright.
+                return new JSONResponse(
+                    [
+                        'error'   => 'subscription_required',
+                        'message' => 'No active subscription to this API product',
+                    ],
+                    Http::STATUS_FORBIDDEN
+                );
+            }
+
+            $tierPolicy = $this->resolveTierPolicy(product: $product, subscription: $subscription);
+            if ($tierPolicy !== null) {
+                $key = 'product:'.((string) $product->getUuid()).':consumer:'.$consumerKey;
+
+                return $this->applyRateLimitDecision(
+                    key: $key,
+                    rateLimit: $tierPolicy['rateLimit'],
+                    quota: $tierPolicy['quota'],
+                    consumer: $consumer
+                );
+            }
+        }//end if
+
+        // Fallback: the endpoint is not part of any api_product, or an
+        // active subscription exists but its tier no longer resolves to a
+        // policy — today's Consumer-level rateLimit/quota (REQ-CON-RL-002),
+        // unchanged.
         $authType = ($consumerData['authorizationType'] ?? '');
         if ($authType === 'none' || $authType === '') {
             $key = 'ip:'.$request->getRemoteAddress();
         } else {
-            $key = 'consumer:'.((string) ($consumer->getUuid() ?? ($consumerData['uuid'] ?? 'unknown')));
+            $key = 'consumer:'.$consumerKey;
         }
 
+        return $this->applyRateLimitDecision(
+            key: $key,
+            rateLimit: ($consumerData['rateLimit'] ?? null),
+            quota: ($consumerData['quota'] ?? null),
+            consumer: $consumer
+        );
+
+    }//end enforceInboundRateLimit()
+
+    /**
+     * Shared rate-limit/quota evaluation tail: unlimited short-circuit,
+     * `InboundRateLimitService::enforce()` call, RateLimit-* header stash,
+     * and 429 response construction. Extracted so both the plain
+     * Consumer-level path and the product-tier path (`REQ-APG-005`) share
+     * one implementation of `InboundRateLimitService::enforce()` unchanged
+     * (design.md Decision 5 — the service itself is never forked).
+     *
+     * @param string       $key       The cache key to enforce against (already namespaced by the caller).
+     * @param array|null   $rateLimit `{requestsPerWindow:int, windowSeconds:int}` or null (unlimited).
+     * @param array|null   $quota     `{limit:int, period:"hour"|"day"|"month"}` or null (unlimited).
+     * @param ObjectEntity $consumer  The resolved consumer, recorded on an over-limit 429 (REQ-CON-RL-004).
+     *
+     * @return JSONResponse|null A 429 response when throttled, or null when the request may proceed.
+     *
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: Inbound rate-limit enforcement after authentication (REQ-CON-RL-002)
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
+     */
+    private function applyRateLimitDecision(string $key, ?array $rateLimit, ?array $quota, ObjectEntity $consumer): ?JSONResponse
+    {
         if (is_array($rateLimit) === false) {
             $rateLimit = null;
         }
 
         if (is_array($quota) === false) {
             $quota = null;
+        }
+
+        if ($rateLimit === null && $quota === null) {
+            // Unlimited — backward compatible with every existing consumer.
+            return null;
         }
 
         $decision = $this->rateLimitService->enforce(
@@ -720,7 +849,236 @@ class EndpointService
 
         return null;
 
-    }//end enforceInboundRateLimit()
+    }//end applyRateLimitDecision()
+
+    /**
+     * Resolve the `api_product` (if any) whose `endpoints` array contains
+     * the given endpoint's uuid. Bounded to the same 500-row `findAll()`
+     * cap used elsewhere for small, admin-curated collections
+     * (`ApprovalService::sweepExpired()`/`listFor()`); array-membership
+     * filtering happens in PHP after the fetch — there is no native
+     * array-contains filter operator on `ORObjectService::findAll()`
+     * (the same pattern `ConfigurationService::findByConfiguration()`
+     * already uses for an analogous array-of-ids lookup).
+     *
+     * When an endpoint's uuid is (unusually) referenced by more than one
+     * `api_product` row, the first match is used — normal usage keeps each
+     * product version's `endpoints` set disjoint from every other version's
+     * (design.md Decision 1), so this is not expected to occur in practice.
+     *
+     * @param ObjectEntity $endpoint The dispatched endpoint.
+     *
+     * @return ObjectEntity|null The grouping api_product, or null when the endpoint belongs to none.
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001
+     */
+    public function resolveProductForEndpoint(ObjectEntity $endpoint): ?ObjectEntity
+    {
+        $endpointUuid = (string) $endpoint->getUuid();
+        if ($endpointUuid === '') {
+            return null;
+        }
+
+        try {
+            $matches = $this->orObjectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => 'openconnector',
+                        'schema'   => 'api_product',
+                    ],
+                    'limit'   => 500,
+                ]
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning('openconnector: failed to resolve api_product for endpoint: '.$e->getMessage());
+            return null;
+        }
+
+        $results = ($matches['results'] ?? $matches);
+        if (is_array($results) === false) {
+            return null;
+        }
+
+        foreach ($results as $product) {
+            if (($product instanceof ObjectEntity) === false) {
+                continue;
+            }
+
+            $data      = $product->getObject();
+            $endpoints = ($data['endpoints'] ?? []);
+            if (is_array($endpoints) === true && in_array($endpointUuid, $endpoints, true) === true) {
+                return $product;
+            }
+        }
+
+        return null;
+
+    }//end resolveProductForEndpoint()
+
+    /**
+     * Resolve a consumer's `active` `api_product_subscription` to a given
+     * product, or null when it has none (pending_approval/rejected/revoked/
+     * absent all collapse to the same null — REQ-APG-004).
+     *
+     * @param string $consumerUuid The resolved consumer's uuid.
+     * @param string $productUuid  The api_product's uuid.
+     *
+     * @return ObjectEntity|null The active subscription, or null.
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
+     */
+    private function resolveActiveSubscription(string $consumerUuid, string $productUuid): ?ObjectEntity
+    {
+        try {
+            $matches = $this->orObjectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => 'openconnector',
+                        'schema'   => 'api_product_subscription',
+                        'consumer' => $consumerUuid,
+                        'product'  => $productUuid,
+                        'status'   => 'active',
+                    ],
+                    'limit'   => 5,
+                ]
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning('openconnector: failed to resolve api_product_subscription: '.$e->getMessage());
+            return null;
+        }
+
+        $results = ($matches['results'] ?? $matches);
+        if (is_array($results) === false || $results === []) {
+            return null;
+        }
+
+        $first = reset($results);
+        if ($first instanceof ObjectEntity) {
+            return $first;
+        }
+
+        return null;
+
+    }//end resolveActiveSubscription()
+
+    /**
+     * Resolve a subscription's tier to its `rateLimit`/`quota` policy on
+     * the owning product, or null when the tier no longer exists on the
+     * product (e.g. removed after the subscription was created).
+     *
+     * @param ObjectEntity $product      The api_product.
+     * @param ObjectEntity $subscription The active api_product_subscription.
+     *
+     * @return array{rateLimit: array|null, quota: array|null}|null
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
+     */
+    private function resolveTierPolicy(ObjectEntity $product, ObjectEntity $subscription): ?array
+    {
+        $tiers    = ($product->getObject()['tiers'] ?? []);
+        $tierName = (string) ($subscription->getObject()['tier'] ?? '');
+
+        if (is_array($tiers) === false || $tierName === ''
+            || isset($tiers[$tierName]) === false || is_array($tiers[$tierName]) === false
+        ) {
+            return null;
+        }
+
+        $tier      = $tiers[$tierName];
+        $rateLimit = ($tier['rateLimit'] ?? null);
+        $quota     = ($tier['quota'] ?? null);
+
+        if (is_array($rateLimit) === false) {
+            $rateLimit = null;
+        }
+
+        if (is_array($quota) === false) {
+            $quota = null;
+        }
+
+        return [
+            'rateLimit' => $rateLimit,
+            'quota'     => $quota,
+        ];
+
+    }//end resolveTierPolicy()
+
+    /**
+     * Build the RFC 8594 `Deprecation`/`Sunset` header pair for a product's
+     * dispatched endpoint, or `[]` when the product is not `deprecated`
+     * (REQ-APG-006/REQ-EP-008).
+     *
+     * @param ObjectEntity $product The endpoint's grouping api_product.
+     *
+     * @return array<string, string>
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-deprecated-product-version-carries-sunset-and-deprecation-headers-req-apg-006
+     * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
+     */
+    public function buildDeprecationHeaders(ObjectEntity $product): array
+    {
+        $data = $product->getObject();
+        if (($data['status'] ?? '') !== 'deprecated') {
+            return [];
+        }
+
+        $headers    = ['Deprecation' => 'true'];
+        $sunsetDate = ($data['sunsetDate'] ?? null);
+
+        if (is_string($sunsetDate) === true && $sunsetDate !== '') {
+            try {
+                $sunset = new DateTime($sunsetDate);
+                $sunset->setTimezone(new \DateTimeZone('UTC'));
+                $headers['Sunset'] = $sunset->format('D, d M Y H:i:s').' GMT';
+            } catch (\Throwable $e) {
+                $this->logger->warning('openconnector: invalid api_product.sunsetDate: '.$e->getMessage());
+            }
+        }
+
+        return $headers;
+
+    }//end buildDeprecationHeaders()
+
+    /**
+     * Persist a `direction: inbound` `call_log` row for a request dispatched
+     * through a product-attached endpoint, on every outcome (success or
+     * error) — extends the existing 429-only inbound logging
+     * (`recordInboundThrottle()`, `REQ-CON-RL-004`) to every outcome, but
+     * scoped to product-attached endpoints only (`REQ-EP-009`). Best-effort:
+     * a logging failure never blocks the response.
+     *
+     * @param ObjectEntity $endpoint   The dispatched endpoint.
+     * @param ObjectEntity $product    The endpoint's grouping api_product.
+     * @param integer      $statusCode The final HTTP status code served.
+     * @param float        $durationMs Wall-clock duration in milliseconds.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/endpoint-runtime/spec.md#requirement-inbound-observability-logging-for-api-product-scoped-endpoints-req-ep-009
+     */
+    public function recordInboundCallLog(ObjectEntity $endpoint, ObjectEntity $product, int $statusCode, float $durationMs): void
+    {
+        try {
+            $this->orObjectService->saveObject(
+                object: [
+                    'statusCode'    => $statusCode,
+                    'statusMessage' => 'Inbound API product request',
+                    'direction'     => 'inbound',
+                    'product'       => (string) $product->getUuid(),
+                    'endpoint'      => (string) $endpoint->getUuid(),
+                    'responseTime'  => (int) round($durationMs),
+                    'created'       => (new DateTime())->format('c'),
+                ],
+                register: 'openconnector',
+                schema: 'call_log'
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                'openconnector: failed to record inbound api-product call_log: '.$e->getMessage()
+            );
+        }
+
+    }//end recordInboundCallLog()
 
     /**
      * Record an inbound rate-limit/quota 429 on the CallLog observability surface.
