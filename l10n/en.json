@@ -989,7 +989,18 @@
     "Unresolved references": "Unresolved references",
     "Untitled catalog item": "Untitled catalog item",
     "Will be created": "Will be created",
-    "Will be updated": "Will be updated"
+    "Will be updated": "Will be updated",
+    "Sync mode": "Sync mode",
+    "Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.": "Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.",
+    "Cursor field": "Cursor field",
+    "e.g. updatedAt": "e.g. updatedAt",
+    "Cursor comparator": "Cursor comparator",
+    "Cursor watermark": "Cursor watermark",
+    "(not set — the next run requests an unfiltered fetch)": "(not set — the next run requests an unfiltered fetch)",
+    "Reset cursor": "Reset cursor",
+    "Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.": "Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.",
+    "Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.": "Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.",
+    "Failed to reset cursor": "Failed to reset cursor"
   },
   "plurals": {}
 }

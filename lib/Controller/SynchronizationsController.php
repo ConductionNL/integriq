@@ -414,6 +414,62 @@ class SynchronizationsController extends Controller
     }//end run()
 
     /**
+     * Clear a Synchronization's stored cursor watermark (REQ-019).
+     *
+     * Endpoint: POST /api/synchronizations/{id}/reset-cursor.
+     *
+     * Clears `cursorWatermark` only — `syncMode` and every other field are
+     * left untouched, and this action performs no target write/delete of
+     * its own. Per REQ-018, `deleteInvalidObjects()` remains hard-blocked
+     * for as long as `syncMode` stays `incremental`; restoring deletion
+     * detection requires a separate, explicit `syncMode` change to `full`
+     * (design.md Decision 3 / Risks).
+     *
+     * @param string $id The UUID of the synchronization whose cursor watermark to clear.
+     *
+     * @return JSONResponse A JSON response reflecting the cleared watermark, or 404 when not found.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+     *
+     * Security note: per REQ-005's existing, pre-existing IDOR note on this
+     * controller, `reset-cursor` inherits the same NoAdminRequired +
+     * NoCSRFRequired + no-per-object-ownership-guard posture as every other
+     * action here today — observed, pre-existing behavior this change does
+     * not alter or worsen.
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function resetCursor(string $id): JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $this->actionAuth->requireAction(user: $user, action: 'synchronization.reset-cursor');
+
+        try {
+            $synchronization = $this->orObjectService->find(
+                id: $id,
+                register: 'openconnector',
+                schema: 'synchronization',
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
+        }
+
+        $updated = $this->synchronizationService->resetCursor(synchronization: $synchronization);
+
+        return new JSONResponse(data: $updated, statusCode: 200);
+
+    }//end resetCursor()
+
+    /**
      * Get synchronization statistics.
      *
      * This method returns statistical information about synchronizations including:
