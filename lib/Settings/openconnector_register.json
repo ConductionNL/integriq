@@ -50,7 +50,8 @@
           "synchronization",
           "synchronization_contract",
           "synchronization_contract_log",
-          "synchronization_log"
+          "synchronization_log",
+          "zgw_version_translation_log"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -3755,6 +3756,79 @@
             "format": "date-time",
             "description": "Timestamp of this record's write",
             "title": "Synced At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "zgw_version_translation_log": {
+        "slug": "zgw_version_translation_log",
+        "title": "ZGW Version Translation Log",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for one ZGW version-translation attempt, produced by the zgw-version-translation shim",
+        "description": "A ZGW Version Translation Log row records one ZgwVersionTranslationService::translate() attempt — success, passthrough, or failed — never merged into a single mutable row across attempts. See openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md.",
+        "required": [
+          "resource",
+          "fromVersion",
+          "toVersion",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "resource": {
+            "type": "string",
+            "description": "The ZGW resource slug translated (zaak, zaaktype, enkelvoudiginformatieobject, besluit, rol, status, resultaat)",
+            "title": "Resource"
+          },
+          "fromVersion": {
+            "type": "string",
+            "description": "The source ZGW version (1.0, 1.6, or 2.0)",
+            "title": "From Version"
+          },
+          "toVersion": {
+            "type": "string",
+            "description": "The target ZGW version (1.0, 1.6, or 2.0)",
+            "title": "To Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "passthrough",
+              "failed"
+            ],
+            "description": "The outcome of this translation attempt",
+            "title": "Status"
+          },
+          "error": {
+            "type": "string",
+            "description": "Translation failure detail; null on success or passthrough",
+            "title": "Error"
+          },
+          "translatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's write",
+            "title": "Translated At"
           },
           "created": {
             "type": "string",
