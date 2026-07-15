@@ -65,8 +65,12 @@ turns out to be worse than described:
 
 ## Impact
 
-- Affected specs: `http-call-engine` (new REQ-006: method resolution timing
-  + body-based pagination).
+- Affected specs: `http-call-engine` (new REQ-010: method resolution timing
+  + body-based pagination). Numbered REQ-010 (not REQ-006) to avoid
+  colliding with the pre-existing canonical `REQ-006` (CallLog
+  request/response redaction before persistence) — the highest existing
+  requirement number in that spec is REQ-009 (plus the separate REQ-SBC-*
+  namespace).
 - Affected code: `lib/Service/CallService.php` (`call()`'s phase ordering,
   new `applyBodyPagination()` helper), `lib/Service/
   SynchronizationService.php` (`getNextPage()` threads `paginationIn`
