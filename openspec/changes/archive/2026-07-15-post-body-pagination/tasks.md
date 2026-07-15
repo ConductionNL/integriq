@@ -10,24 +10,37 @@
 - [x] Diagnostic: confirm (and then, after the fix, re-confirm) that a
   Source's `configuration.listMethod` override reaches `decideMethod()` —
   proved broken before, fixed after, full suite green throughout
+  — already at HEAD (throwaway diagnostic, not a persisted artifact;
+  the resulting fix below is present and verified at HEAD `f27e1db0`)
 - [x] Move `decideMethod()` + the override-key `unset()` in `CallService::
   call()` to run AFTER `mergeSourceConfiguration()` (Phase 7) instead of
   before it (previously Phase 2) — `guardCallPreconditions()` reads only
   `sourceData`, confirmed order-independent; brokered-dispatch resolution
   and the preRequest hook confirmed not to depend on `$method` being
   pre-resolved
+  — already at HEAD (`CallService::call()`, "Phase 7a: Resolve HTTP
+  method" runs right after "Phase 7: Merge source-level configuration",
+  `lib/Service/CallService.php:2148-2166`; shipped in commit `f121113d`,
+  PR #105, 2026-07-07)
 - [x] Add `sourceConfig.paginationIn` (default `"query"`) threading:
   `SynchronizationService::getNextPage()` sets
   `$config['pagination']['paginationIn']` alongside the existing
   `paginationQuery`/`page`
+  — already at HEAD (`lib/Service/SynchronizationService.php:4966-4975`;
+  commit `f121113d`, PR #105)
 - [x] Add `CallService::applyBodyPagination()`: decodes `$config['body']`
   as JSON (empty object if missing/invalid), sets the `paginationQuery`
   dot-path to the current page via `Adbar\Dot`, re-encodes; wired into
   `normaliseRequestConfig()`'s pagination branch when `paginationIn ===
   "body"`
+  — already at HEAD (`lib/Service/CallService.php:847-856` (branch) and
+  `:905-921` (helper); commit `f121113d`, PR #105)
 - [x] Document `sourceConfig.paginationIn` inline in
   `lib/Settings/openconnector_register.json` — no schema shape change
   (`sourceConfig` is already a free-form object)
+  — already at HEAD (`lib/Settings/openconnector_register.json:1555`;
+  commit `f121113d`, PR #105; REQ cross-reference in that line corrected
+  from REQ-006 to REQ-010 during this archive pass — see proposal.md)
 - [x] Unit tests (`CallServiceTest`, using the existing brokered-dispatch
   test seam to avoid live network calls): Source-level `listMethod`
   override promotes a default-GET call to POST with the static body sent
@@ -37,14 +50,23 @@
   `paginationIn: "body"` with no static body template still produces
   `{"page": N}`; query-string pagination (`paginationIn` omitted) is
   unaffected
+  — already at HEAD (`tests/Unit/Service/CallServiceTest.php:671-928`;
+  commit `f121113d`, PR #105)
 - [x] Unit tests (`SynchronizationServiceTest`): a real multi-page
   `getAllObjectsFromApi()` run threads `paginationIn: "body"` +
   incrementing `page` into `CallService::call()`'s config for every page
   after the first; a matching regression test proves the default
   (`"query"`) path is threaded unchanged when `paginationIn` is omitted
+  — already at HEAD (`tests/Unit/Service/SynchronizationServiceTest.php:
+  1150-1256`; commit `f121113d`, PR #105)
 - [x] `composer phpcs` + `composer phpstan` clean on the touched files
+  — re-verified during this archive pass (2026-07-15) via
+  `check:strict` per touched file, see verify report
 - [x] Full existing PHPUnit suite green (417/417) — no regressions from the
   phase-ordering move or from the co-located bulk-gzip-jsonl-ingestion change
+  — re-verified during this archive pass: full suite at HEAD is
+  1407/1407 (suite has grown considerably since PR #105 via later merged
+  changes), 1 pre-existing skip, no failures
 
 Acceptance criteria (plain bullets — verified by /opsx-verify):
 
