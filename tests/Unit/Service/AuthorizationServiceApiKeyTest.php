@@ -278,4 +278,51 @@ class AuthorizationServiceApiKeyTest extends TestCase
 
         $this->assertSame($consumer, $service->getResolvedConsumer());
     }//end testConsumerWithoutUserIdStillAuthenticates()
+
+
+    /**
+     * REQ-CON-002 (notificaties-api-subscriber): apiKey consumer
+     * authentication MUST remain callable outside the endpoint-runtime
+     * dispatch path. Every test in this suite already calls
+     * `authorizeApiKey()` directly (never through `EndpointsController`/
+     * `EndpointService`), which proves the contract — this test names it
+     * explicitly so a future refactor that makes the method
+     * `EndpointsController`-only fails loudly here, mirroring the first
+     * real non-endpoint-runtime consumer:
+     * `NotificatiesSubscriberController::callback()`.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/consumer-management/spec.md#requirement-apikey-consumer-authentication-must-remain-callable-outside-the-endpoint-runtime-dispatch-path-req-con-002
+     */
+    public function testApiKeyAuthWorksIdenticallyForANonEndpointRuntimeCaller(): void
+    {
+        $consumer = $this->consumer(
+            [
+                'name'                       => 'Notificaties abonnement: zaken',
+                'authorizationType'          => 'apiKey',
+                'authorizationConfiguration' => ['apiKey' => 'notif-secret-1'],
+            ]
+        );
+        $this->orObjectService->method('findAll')->willReturn(['results' => [$consumer]]);
+
+        // Simulates NotificatiesSubscriberController::callback() — a
+        // controller with zero relationship to EndpointsController/
+        // EndpointService's dispatch pipeline — calling authorizeApiKey()
+        // directly with no rule-inline keys of its own.
+        $service = $this->makeService();
+        $service->authorizeApiKey(header: 'notif-secret-1', keys: []);
+
+        $this->assertSame($consumer, $service->getResolvedConsumer());
+
+        // An unmatched key fails closed identically regardless of caller.
+        $service2 = $this->makeService();
+        $this->expectException(AuthenticationException::class);
+        try {
+            $service2->authorizeApiKey(header: 'wrong-secret', keys: []);
+        } finally {
+            $this->assertNull($service2->getResolvedConsumer());
+        }
+
+    }//end testApiKeyAuthWorksIdenticallyForANonEndpointRuntimeCaller()
 }//end class

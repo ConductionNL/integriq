@@ -80,6 +80,9 @@ class RegisterDescriptorTest extends TestCase
      * Was 32 — `dso_verzoek` and `dso_message` added by
      * openspec/changes/dso-connector-adapter, bringing the count to 34.
      *
+     * Was 34 — `notificaties_abonnement` added by
+     * openspec/changes/notificaties-api-subscriber, bringing the count to 35.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -136,6 +139,8 @@ class RegisterDescriptorTest extends TestCase
         // DSO (Digitaal Stelsel Omgevingswet) connector adapter — added by dso-connector-adapter spec.
         'DsoVerzoek'                 => 'dso_verzoek',
         'DsoMessage'                 => 'dso_message',
+        // ZGW Notificaties API subscriber/publisher — added by notificaties-api-subscriber spec.
+        'NotificatiesAbonnement'     => 'notificaties_abonnement',
     ];
 
     /**

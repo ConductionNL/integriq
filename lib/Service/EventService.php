@@ -50,6 +50,17 @@ use OCA\OpenConnector\Service\SynchronizationService;
  * be delivered without referencing them.
  * @SuppressWarnings(PHPMD.LongVariable)             -- $synchronizationService reads clearer
  * than an abbreviation for the ADR-023 action target.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           -- dispatchNotificatiesAction() (REQ-010,
+ * notificaties-api-subscriber) is the fourth action-dispatch branch (webhook/synchronization/
+ * job/notificaties), the same single-owner reuse constraint as the ExcessiveClassLength
+ * suppression above; splitting it into a sibling class would duplicate the retry/backoff/
+ * dead-letter bookkeeping it exists to reuse.
+ * @SuppressWarnings(PHPMD.StaticAccess)             -- NotificatiesSubscriberService::
+ * buildNotificationBody() is deliberately static (pure function, no service dependencies)
+ * so this class can call it directly without a constructor dependency on
+ * NotificatiesSubscriberService — that class already depends on EventService for inbound
+ * normalization, so a two-way constructor dependency would be circular (see that class's
+ * docblock).
  *
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
@@ -111,8 +122,10 @@ class EventService
      * @param WebhookSignatureService $signatureService       Signs outbound deliveries when configured.
      * @param SynchronizationService  $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
      * @param JobService              $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
+     * @param CallService             $callService            Runs `action.kind = 'notificaties'` dispatches against a `Source` (REQ-010).
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -120,7 +133,8 @@ class EventService
         private readonly LoggerInterface $logger,
         private readonly WebhookSignatureService $signatureService,
         private readonly SynchronizationService $synchronizationService,
-        private readonly JobService $jobService
+        private readonly JobService $jobService,
+        private readonly CallService $callService
     ) {
 
     }//end __construct()
@@ -775,6 +789,13 @@ class EventService
                     action: $actionArray
                 );
 
+            case 'notificaties':
+                return $this->dispatchNotificatiesAction(
+                    message: $message,
+                    subscriptionData: $subscriptionData,
+                    action: $actionArray
+                );
+
             default:
                 // Unrecognised action.kind: a configuration error, not a
                 // transient failure — fails once without entering the retry loop.
@@ -952,6 +973,165 @@ class EventService
         return true;
 
     }//end dispatchJobAction()
+
+    /**
+     * Dispatch an `action.kind = 'notificaties'` message: resolve the target
+     * Source and the matched `event`, build the ZGW notification body via
+     * {@see NotificatiesSubscriberService::buildNotificationBody()}, and POST
+     * it via {@see CallService::call()} in place of an HTTP webhook —
+     * inheriting REQ-002's exact success/failure/retry/backoff/dead-letter
+     * bookkeeping, the same way {@see dispatchSynchronizationAction} and
+     * {@see dispatchJobAction} do. `deliverMessage`/`webhook-signing` are NOT
+     * invoked for this kind (no direct webhook POST — the notification body
+     * IS the request).
+     *
+     * @param ObjectEntity $message          The message being dispatched.
+     * @param array        $subscriptionData The owning subscription's OR object array.
+     * @param array        $action           The resolved `action` block (`{kind, sourceId, kanaal,
+     *                                       hoofdObjectField?, resourceField?, actieMap?, kenmerken?}`).
+     *
+     * @return boolean True when the notification was published successfully.
+     *
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-a-publish-action-missing-kanaal-is-a-configuration-error-not-a-transient-failure-req-006
+     */
+    private function dispatchNotificatiesAction(ObjectEntity $message, array $subscriptionData, array $action): bool
+    {
+        $retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+        $kanaal      = (string) ($action['kanaal'] ?? '');
+
+        if ($kanaal === '') {
+            // Configuration error (REQ-006), NOT a transient failure — fails
+            // once without entering the retry loop, mirroring the
+            // "unrecognised action.kind" treatment above.
+            $this->recordConfigurationError(
+                message: $message,
+                error: "action.kanaal is required for action.kind='notificaties'"
+            );
+            return false;
+        }
+
+        $source = $this->findNotificatiesSource(sourceId: (string) ($action['sourceId'] ?? ''));
+        if ($source === null) {
+            // Unresolvable sourceId is retryable (the Source may be created
+            // or corrected later) — same treatment as an unresolvable
+            // synchronizationId/jobId above.
+            $this->recordFailure(
+                message: $message,
+                error: 'source not found',
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        $messageData = $message->getObject();
+        $event       = $this->findNotificatiesEvent(eventId: ($messageData['eventId'] ?? null));
+        if ($event === null) {
+            $this->recordFailure(
+                message: $message,
+                error: 'event not found',
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        $body = NotificatiesSubscriberService::buildNotificationBody(event: $event, action: $action);
+
+        try {
+            $callLog = $this->callService->call(
+                source: $source,
+                endpoint: '/notificaties',
+                method: 'POST',
+                config: ['json' => $body]
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                    'Failed to publish notificaties action for event message: '.$e->getMessage(),
+                    [
+                        'exception' => $e,
+                        'message'   => $message->jsonSerialize(),
+                    ]
+                    );
+            $this->recordFailure(
+                message: $message,
+                error: $e->getMessage(),
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }//end try
+
+        $callLogData = $callLog->getObject();
+        $statusCode  = (int) ($callLogData['statusCode'] ?? 0);
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            $this->recordDeliverySuccess(message: $message);
+            return true;
+        }
+
+        $this->recordFailure(
+            message: $message,
+            error: 'Notificaties publish failed with status code: '.$statusCode,
+            statusCode: $statusCode,
+            retryAfter: null,
+            retryPolicy: $retryPolicy
+        );
+        return false;
+
+    }//end dispatchNotificatiesAction()
+
+    /**
+     * Resolve a `notificaties` action's target `Source`, tolerating a
+     * missing/invalid/unresolvable id.
+     *
+     * @param string $sourceId The `action.sourceId`.
+     *
+     * @return ObjectEntity|null The resolved Source, or null when not found.
+     *
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     */
+    private function findNotificatiesSource(string $sourceId): ?ObjectEntity
+    {
+        if ($sourceId === '') {
+            return null;
+        }
+
+        try {
+            return $this->objectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+    }//end findNotificatiesSource()
+
+    /**
+     * Resolve the `event` OR-object a message was created for, tolerating a
+     * missing/invalid/unresolvable id.
+     *
+     * @param string|null $eventId The message's `eventId`.
+     *
+     * @return ObjectEntity|null The resolved event, or null when not found.
+     *
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     */
+    private function findNotificatiesEvent(?string $eventId): ?ObjectEntity
+    {
+        if ($eventId === null) {
+            return null;
+        }
+
+        try {
+            return $this->objectService->find(id: $eventId, register: 'openconnector', schema: 'event');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+    }//end findNotificatiesEvent()
 
     /**
      * Persist a non-webhook delivery success (`action.kind = 'synchronization'`

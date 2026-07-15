@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
+use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EventService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SynchronizationService;
@@ -62,6 +63,11 @@ class EventServiceTest extends TestCase
      */
     private $jobService;
 
+    /**
+     * @var CallService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $callService;
+
 
     /**
      * Set up test fixtures.
@@ -77,6 +83,7 @@ class EventServiceTest extends TestCase
         $this->clientService          = $this->createMock(IClientService::class);
         $this->synchronizationService = $this->createMock(SynchronizationService::class);
         $this->jobService             = $this->createMock(JobService::class);
+        $this->callService            = $this->createMock(CallService::class);
 
         $this->service = new EventService(
             $this->objectService,
@@ -85,6 +92,7 @@ class EventServiceTest extends TestCase
             new WebhookSignatureService($this->logger),
             $this->synchronizationService,
             $this->jobService,
+            $this->callService,
         );
     }//end setUp()
 
@@ -329,6 +337,7 @@ class EventServiceTest extends TestCase
             $signatureService,
             $this->synchronizationService,
             $this->jobService,
+            $this->callService,
         );
 
         // The HTTP client must never be asked for — no unsigned bytes leave

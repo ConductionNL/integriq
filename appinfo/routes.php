@@ -173,6 +173,19 @@ return [
 		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
 		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
 
+		// ZGW Notificaties API subscriber/publisher (openspec/changes/notificaties-api-subscriber).
+		// Abonnement CRUD is authenticated NC-session (action RBAC), dedicated
+		// controller — NOT the generic OR object CRUD a CnIndexPage would drive,
+		// because create/update/delete must also register/update/delete the
+		// abonnement against the remote Notificaties API (design.md File
+		// Structure). The callback is gated by consumer-apiKey auth, not an NC
+		// session (design.md Decision 1/2) — mirrors PeppolController#inbound.
+		['name' => 'notificatiesSubscriber#index', 'url' => '/api/notificaties/abonnementen', 'verb' => 'GET'],
+		['name' => 'notificatiesSubscriber#create', 'url' => '/api/notificaties/abonnementen', 'verb' => 'POST'],
+		['name' => 'notificatiesSubscriber#update', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'PUT'],
+		['name' => 'notificatiesSubscriber#destroy', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'DELETE'],
+		['name' => 'notificatiesSubscriber#callback', 'url' => '/api/notificaties/callback/{abonnementId}', 'verb' => 'POST'],
+
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
