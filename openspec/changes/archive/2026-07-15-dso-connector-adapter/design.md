@@ -251,6 +251,31 @@ four numbered scope items).
   in this fleet — same deferred `requester` story as
   `open-formulieren-intake`.
 
+### 6.1 Relationship to the canonical `openspec/specs/dso-omgevingsloket/spec.md`
+
+That canonical spec's REQ-DSO-020 ("Automatic Zaak Creation") and REQ-DSO-040
+("Status Push to DSO-LV") describe a MORE ambitious, DIFFERENT architecture
+than this change implements: direct Procest coupling (zaak fields, BAG
+validation, `EventService` dispatch, beschikking-PDF upload) rather than
+OpenRegister's generic `ns#Case` semantic handoff. **Verified**: the code
+that was supposed to satisfy those two requirements
+(`DSOAdapterService::createZaak()`, `DSOStatusService::pushStatusToDSO()`)
+is exactly the orphaned/fake code described in §1.2 — REQ-DSO-020/040 have
+been marked as requirements against code that never actually ran
+end-to-end. This is a second instance of the fleet's documented
+"spec-says-done ≠ feature runs" pattern, at the SPEC layer rather than the
+code layer. This change deliberately does NOT attempt to satisfy
+REQ-DSO-020/040 as literally written (direct Procest coupling) — per the
+task's explicit instruction to reuse the SAME generic handoff mechanism
+`open-formulieren-intake` uses. A future spec-maintenance change should
+reconcile `dso-omgevingsloket`'s REQ-DSO-020/040 to either (a) point at the
+`verzoek-to-case` handoff this change ships, retiring the direct-Procest-
+coupling framing, or (b) if direct Procest coupling (BAG validation,
+beschikking-PDF upload, `EventService` dispatch) is still genuinely wanted
+as a richer alternative, scope it as an explicit follow-up change layered
+ON TOP of this one's persistence + translation foundation — not solved
+here.
+
 ## 7. Alternatives considered
 
 - **Wiring `DSOAdapterService::processVerzoek()`/`createZaak()` into the

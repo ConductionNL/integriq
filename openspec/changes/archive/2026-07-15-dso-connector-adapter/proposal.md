@@ -266,3 +266,14 @@ signature-verification/validation behaviour is untouched and cannot regress.
   (which has no first-class "one Verzoek → N Cases" concept in v1) is a
   separate, larger design question — not solved here; a single Verzoek
   currently hands off to exactly one Case.
+- **The canonical `openspec/specs/dso-omgevingsloket/spec.md`'s
+  REQ-DSO-020/REQ-DSO-040 describe a different, more ambitious architecture**
+  (direct Procest coupling, `EventService` dispatch, beschikking-PDF upload)
+  than this change's generic `ns#Case` handoff, and were marked as
+  requirements against the orphaned/fake `DSOAdapterService::createZaak()`/
+  `DSOStatusService` code (see design.md §6.1 and Motivation) — a second
+  instance of "spec-says-done ≠ feature runs," this time at the spec layer.
+  A future spec-maintenance change should reconcile those requirements with
+  what this change actually ships; not solved here per the task's explicit
+  instruction to mirror `open-formulieren-intake`'s generic handoff
+  mechanism.
