@@ -900,7 +900,7 @@ class CallService
      *
      * @return array The config with `body` rewritten to carry the new page value.
      *
-     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
      */
     private function applyBodyPagination(array $config): array
     {
@@ -2098,7 +2098,7 @@ class CallService
      *
      * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
      * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
-     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
      * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
      * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
      */

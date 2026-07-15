@@ -14,7 +14,7 @@ the JSON request body rather than the query string.
 
 ## ADDED Requirements
 
-### Requirement: POST body sources and body-based pagination (REQ-006)
+### Requirement: POST body sources and body-based pagination (REQ-010)
 
 `CallService::call()` MUST resolve the effective HTTP method
 (`decideMethod()`) and strip the CRUD-override keys (`createMethod`/

@@ -108,6 +108,9 @@ class RegisterDescriptorTest extends TestCase
         // change's proposal.md "Impact").
         'BankfeedConnection'         => 'bankfeed_connection',
         'BankfeedBatch'              => 'bankfeed_batch',
+        // Corporate card-feed connector — added by corporate-card-feed spec.
+        'CardfeedAccount'            => 'cardfeed_account',
+        'CardfeedBatch'              => 'cardfeed_batch',
         // LTI 1.3 / LTI Advantage adapter — added by lti-13-platform.
         'LtiPlatform'                => 'lti_platform',
         'LtiTool'                    => 'lti_tool',
