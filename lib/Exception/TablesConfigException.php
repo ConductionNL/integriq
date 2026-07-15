@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Exception;
 /**
  * Thrown on a bad request-shaped `nextcloud-table` configuration.
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 class TablesConfigException extends Exception
 {

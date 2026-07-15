@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/tables-bridge/design.md#decision-2-tablesclientinterface-targets-the-v1-rest-api-not-ocs-v2-for-rowtablecolumn-crud
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * A Tables API binding: list/read tables, columns and rows; write rows.
  *
- * @spec openspec/changes/tables-bridge/design.md#decision-2-tablesclientinterface-targets-the-v1-rest-api-not-ocs-v2-for-rowtablecolumn-crud
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
  */
 interface TablesClientInterface
 {
@@ -53,7 +53,7 @@ interface TablesClientInterface
      *
      * @throws TablesUpstreamException On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
      */
     public function listTables(ObjectEntity $source): array;
 
@@ -70,7 +70,7 @@ interface TablesClientInterface
      * @throws TablesPermissionDeniedException  When the identity cannot read the table's columns.
      * @throws TablesUpstreamException          On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
      */
     public function listColumns(ObjectEntity $source, int $tableId): array;
 
@@ -91,7 +91,7 @@ interface TablesClientInterface
      * @throws TablesPermissionDeniedException  When the identity cannot read the table's rows.
      * @throws TablesUpstreamException          On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
      */
     public function listRows(ObjectEntity $source, int $tableId, ?int $viewId, int $page, int $pageSize): array;
 
@@ -107,7 +107,7 @@ interface TablesClientInterface
      * @throws TablesPermissionDeniedException  When the identity cannot read the row.
      * @throws TablesUpstreamException          On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
      */
     public function getRow(ObjectEntity $source, int $rowId): array;
 
@@ -124,7 +124,7 @@ interface TablesClientInterface
      * @throws TablesPermissionDeniedException  When the identity cannot write to the table.
      * @throws TablesUpstreamException          On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
      */
     public function createRow(ObjectEntity $source, int $tableId, array $data): array;
 
@@ -141,7 +141,7 @@ interface TablesClientInterface
      * @throws TablesPermissionDeniedException  When the identity cannot write to the row.
      * @throws TablesUpstreamException          On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
      */
     public function updateRow(ObjectEntity $source, int $rowId, array $data): array;
 
@@ -157,7 +157,7 @@ interface TablesClientInterface
      * @throws TablesPermissionDeniedException  When the identity cannot delete the row.
      * @throws TablesUpstreamException          On network failure or a non-2xx/non-4xx response.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
      */
     public function deleteRow(ObjectEntity $source, int $rowId): void;
 }//end interface

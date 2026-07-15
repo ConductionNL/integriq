@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Exception;
  *
  * Callers map this to a 409-class response (`getCode()` is pre-set to 409).
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
  */
 class TablesFeatureDisabledException extends Exception
 {

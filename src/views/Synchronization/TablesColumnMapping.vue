@@ -102,27 +102,27 @@ export default {
 	watch: {
 		tableId: {
 			immediate: true,
-			/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
 			handler() {
 				this.fetchColumns()
 			},
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
 		sourceId() {
 			this.fetchColumns()
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
 		typeHint(column) {
 			return columnTypeHint(column)
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
 		mappedValue(columnTitle) {
 			return mappedValueFor(this.config, columnTitle)
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
 		onMappingUpdate(columnTitle, value) {
 			this.$emit('update:config', upsertColumnMapping(this.config, columnTitle, value))
 		},
@@ -131,7 +131,7 @@ export default {
 		 * Soft-fails to an empty list with an inline error so the helper
 		 * degrades gracefully (contract.md 4xx/5xx).
 		 *
-		 * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
 		 */
 		async fetchColumns() {
 			if (!this.sourceId || !this.tableId) {

@@ -8,13 +8,13 @@
  * unit-tested in the repo's node-env vitest harness (which mounts no .vue),
  * exactly like src/modals/v2/sourceCredentialRef.js.
  *
- * Backend contract: openspec/changes/tables-bridge/contract.md
+ * Backend contract: openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  *   GET /apps/openconnector/api/synchronizations/tables-bridge/status
  *   GET /apps/openconnector/api/synchronizations/tables-bridge/tables?sourceId=…
  *   GET /apps/openconnector/api/synchronizations/tables-bridge/tables/{id}/columns?sourceId=…
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 
 /** The `nextcloud-table` kind discriminator value (mirrors the backend). */
@@ -27,7 +27,7 @@ export const NEXTCLOUD_TABLE_KIND = 'nextcloud-table'
  * @param {*} data The axios response body.
  * @return {Array} The results array (empty on any unexpected shape).
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
  */
 export function extractResults(data) {
 	if (Array.isArray(data?.results)) return data.results
@@ -42,7 +42,7 @@ export function extractResults(data) {
  * @return {Array<{id:number,label:string}>} NcSelect options (id kept numeric
  *         so the caller can store `tableId` as a number in the config blob).
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
  */
 export function mapTableOptions(tables) {
 	if (!Array.isArray(tables)) return []
@@ -61,7 +61,7 @@ export function mapTableOptions(tables) {
  * @param {object} column Raw `{id,title,type,subtype,mandatory,constraints}`.
  * @return {{id:number,title:string,type:string,subtype:?string,mandatory:boolean,constraints:object}}
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function normaliseColumn(column) {
 	const c = column || {}
@@ -81,7 +81,7 @@ export function normaliseColumn(column) {
  * @param {Array} columns Raw column entries.
  * @return {Array} Normalised columns.
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function mapColumnDescriptors(columns) {
 	if (!Array.isArray(columns)) return []
@@ -96,7 +96,7 @@ export function mapColumnDescriptors(columns) {
  * @param {object} column A normalised column descriptor.
  * @return {string} A hint like "number (2 decimals)" or "selection: open, paid".
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function columnTypeHint(column) {
 	const c = normaliseColumn(column)
@@ -135,7 +135,7 @@ export function columnTypeHint(column) {
  * @param {object} config The `targetConfig` blob.
  * @return {Array<{column:string,value:string}>} The mapping entries.
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function readColumnMapping(config) {
 	if (!config || typeof config !== 'object') return []
@@ -155,7 +155,7 @@ export function readColumnMapping(config) {
  * @param {string} value       The mapping output field path / expression.
  * @return {object} A new config blob with the mapping applied.
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function upsertColumnMapping(config, columnTitle, value) {
 	const base = (config && typeof config === 'object' && !Array.isArray(config)) ? { ...config } : {}
@@ -182,7 +182,7 @@ export function upsertColumnMapping(config, columnTitle, value) {
  * @param {string} columnTitle The column title.
  * @return {string} The mapped value/expression, or '' when unmapped.
  *
- * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+ * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
  */
 export function mappedValueFor(config, columnTitle) {
 	const entry = readColumnMapping(config).find((e) => e.column === columnTitle)

@@ -229,7 +229,7 @@ class SynchronizationService
         private readonly LoggerInterface $logger,
         SynchronizationLogService $synchronizationLogService,
         IAppConfig $appConfig,
-        private readonly TablesSyncAdapter $tablesSyncAdapter,
+        private readonly ?TablesSyncAdapter $tablesSyncAdapter=null,
     ) {
         $this->synchronizationLogService = $synchronizationLogService;
 
@@ -2604,7 +2604,7 @@ class SynchronizationService
      *
      * @return int The count of rows that were deleted.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
      */
     private function deleteInvalidTableRows(
         array $synchronization,
@@ -3449,8 +3449,8 @@ class SynchronizationService
      * @throws \OCP\DB\Exception
      * @throws Exception
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
-     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     public function updateTarget(array $synchronizationContract, ?array &$targetObject=[], ?string $action='save', ?string $mutationType=null): array
     {
@@ -3522,8 +3522,8 @@ class SynchronizationService
      *
      * @throws TablesFeatureDisabledException When the Tables app is not enabled.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-permission-denied-writes-fail-the-run-not-a-partial-subset-of-rows-req-006
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-permission-denied-writes-fail-the-run-not-a-partial-subset-of-rows-req-006
      * @spec openspec/changes/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     private function updateTargetTable(
@@ -3532,6 +3532,10 @@ class SynchronizationService
         ?array $targetObject=[],
         ?string $action='save'
     ): array {
+        if ($this->tablesSyncAdapter === null) {
+            throw new TablesFeatureDisabledException('The Nextcloud Tables adapter is not available.');
+        }
+
         $this->tablesSyncAdapter->assertEnabled();
 
         $targetConfig = ($synchronization['targetConfig'] ?? []);
@@ -3669,11 +3673,15 @@ class SynchronizationService
      *
      * @throws TablesFeatureDisabledException When the Tables app is not enabled.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
-     * @spec openspec/changes/tables-bridge/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      */
     public function getAllObjectsFromTable(array $synchronization, ?bool $isTest=false): array
     {
+        if ($this->tablesSyncAdapter === null) {
+            throw new TablesFeatureDisabledException('The Nextcloud Tables adapter is not available.');
+        }
+
         $this->tablesSyncAdapter->assertEnabled();
 
         $sourceConfig = ($synchronization['sourceConfig'] ?? []);

@@ -487,7 +487,7 @@ export default {
 		 * already-configured `nextcloud-table` sync keeps the option so its
 		 * type still renders a label when Tables is later disabled.
 		 *
-		 * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
 		 */
 		typeOptions() {
 			const usesTable = this.draft?.sourceType === NEXTCLOUD_TABLE_KIND
@@ -564,7 +564,7 @@ export default {
 		 * (tables-bridge REQ-004). Soft-fails to "disabled" so a backend
 		 * without the endpoint simply never offers the type.
 		 *
-		 * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
 		 */
 		async fetchTablesStatus() {
 			try {

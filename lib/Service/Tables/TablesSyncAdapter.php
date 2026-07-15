@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md
+ * @spec openspec/specs/tables-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * Column-cache, mapping-resolution, coercion, pagination, and feature-detection
  * layer between the synchronization engine and the raw Tables API client.
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md
+ * @spec openspec/specs/tables-bridge/spec.md
  */
 class TablesSyncAdapter
 {
@@ -98,7 +98,7 @@ class TablesSyncAdapter
      *
      * @return bool
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
      */
     public function isEnabled(?IUser $user=null): bool
     {
@@ -119,7 +119,7 @@ class TablesSyncAdapter
      *
      * @throws TablesFeatureDisabledException When the Tables app is absent/disabled.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
      */
     public function assertEnabled(?IUser $user=null): void
     {
@@ -145,7 +145,7 @@ class TablesSyncAdapter
      *
      * @return array<int, array<string, mixed>>
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-source-req-002
      */
     public function fetchAllRows(ObjectEntity $source, int $tableId, ?int $viewId=null, int $pageSize=100): array
     {
@@ -217,7 +217,7 @@ class TablesSyncAdapter
      *
      * @return array{id: string}|null The written row's id, or null on a per-row skip.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
      */
     public function writeRow(
         ObjectEntity $target,
@@ -278,8 +278,8 @@ class TablesSyncAdapter
      * @return array{columnId: string, value: mixed}|null The resolved pair, or null on any
      *         per-row-skip condition (already logged).
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
      */
     private function resolveMappingEntry(array $mapEntry, string $columnTitle, array $columns, array $mappedObject, int $tableId): ?array
     {
@@ -340,7 +340,7 @@ class TablesSyncAdapter
      *
      * @return bool True when the row was deleted; false when it was already absent.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
      */
     public function deleteRow(ObjectEntity $target, string $rowId): bool
     {
@@ -364,7 +364,7 @@ class TablesSyncAdapter
      *
      * @return array<int, array{id: int, title: string, ownerType: string}>
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
      */
     public function listTablesForEditor(ObjectEntity $source): array
     {
@@ -381,7 +381,7 @@ class TablesSyncAdapter
      * @return array<int, array{id: int, title: string, type: string, subtype: ?string,
      *               mandatory: bool, constraints: array<string, mixed>}>
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
      */
     public function listColumnsForEditor(ObjectEntity $source, int $tableId): array
     {
@@ -398,7 +398,7 @@ class TablesSyncAdapter
      * @return array<int, array{id: int, title: string, type: string, subtype: ?string,
      *               mandatory: bool, constraints: array<string, mixed>}>
      *
-     * @spec openspec/changes/tables-bridge/design.md#decision-5-column-metadata-is-fetched-once-per-run-cached-in-memory-not-persisted
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
      */
     private function getColumns(ObjectEntity $source, int $tableId): array
     {

@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/tables-bridge/contract.md
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
 /**
  * `nextcloud-table` feature-status + table/column discovery for the sync editor.
  *
- * @spec openspec/changes/tables-bridge/contract.md
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
  */
 class TablesBridgeController extends Controller
 {
@@ -89,7 +89,7 @@ class TablesBridgeController extends Controller
      *
      * @return JSONResponse `{"enabled": bool}`.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-feature-detection--tables-app-absence-hides-the-type-entirely-req-004
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -112,7 +112,7 @@ class TablesBridgeController extends Controller
      *
      * @return JSONResponse `{"results": [...]}` per contract.md, or a mapped error.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -150,7 +150,7 @@ class TablesBridgeController extends Controller
      *
      * @return JSONResponse `{"results": [...]}` per contract.md, or a mapped error.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-table-and-column-discovery-for-the-synchronization-editor-req-007
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

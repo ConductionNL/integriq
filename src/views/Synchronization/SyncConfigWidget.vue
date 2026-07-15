@@ -368,15 +368,15 @@ export default {
 			const schemaId = parts[1]
 			return this.schemaOptions.find((opt) => String(opt.id) === String(schemaId)) ?? null
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		tableSourceId() {
 			return `sync-config-${this.widgetUid}-table-source`
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		tablePickerId() {
 			return `sync-config-${this.widgetUid}-table`
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		selectedTable() {
 			const tableId = this.configValue('tableId')
 			if (!tableId) return null
@@ -408,7 +408,7 @@ export default {
 				}
 			},
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		sourceId() {
 			// A source change under nextcloud-table invalidates the table list.
 			if (this.type === 'nextcloud-table' && this.sourceIdValue) {
@@ -441,7 +441,7 @@ export default {
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
-		/** @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
 		onTablePick(option) {
 			// Store the numeric table id in the config blob; clear any stale
 			// column mapping since it referenced the previous table's columns.
@@ -461,7 +461,7 @@ export default {
 		 * discovery endpoint. Soft-fails to an empty list with an inline error
 		 * message so the picker degrades gracefully (contract.md 4xx/5xx).
 		 *
-		 * @spec openspec/changes/tables-bridge/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
 		 */
 		async fetchTables() {
 			if (!this.sourceIdValue) {

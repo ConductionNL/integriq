@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\OpenConnector\Exception\TablesConfigException;
 /**
  * Column-type-driven value coercion for Tables row writes.
  *
- * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
+ * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
  */
 class TablesColumnCoercer
 {
@@ -49,7 +49,7 @@ class TablesColumnCoercer
      *
      * @throws TablesConfigException When the value cannot be safely coerced.
      *
-     * @spec openspec/changes/tables-bridge/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
+     * @spec openspec/specs/tables-bridge/spec.md#requirement-column-type-coercion-req-003
      */
     public function coerce(array $column, mixed $value): mixed
     {
