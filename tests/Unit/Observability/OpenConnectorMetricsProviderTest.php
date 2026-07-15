@@ -94,9 +94,13 @@ class OpenConnectorMetricsProviderTest extends TestCase
         );
 
         $samples = $provider->metrics();
-        $this->assertCount(1, $samples);
+        // api-product-gateway added two more provider-backed gauges
+        // (api_product_latency_seconds, api_product_errors_total) alongside
+        // the pre-existing circuit_breaker_state — 3 MetricSample objects
+        // (one per metric NAME) regardless of how many points each carries.
+        $this->assertCount(3, $samples);
 
-        $sample = $samples[0];
+        $sample = $this->sampleByName($samples, 'circuit_breaker_state');
         $this->assertSame('circuit_breaker_state', $sample->name);
         $this->assertSame('gauge', $sample->type);
 
@@ -134,10 +138,10 @@ class OpenConnectorMetricsProviderTest extends TestCase
 
         $samples = $provider->metrics();
 
-        $this->assertCount(1, $samples);
-        $this->assertSame('circuit_breaker_state', $samples[0]->name);
-        $this->assertCount(1, $samples[0]->samples);
-        $this->assertSame(0, $samples[0]->samples[0]['value']);
+        $this->assertCount(3, $samples);
+        $sample = $this->sampleByName($samples, 'circuit_breaker_state');
+        $this->assertCount(1, $sample->samples);
+        $this->assertSame(0, $sample->samples[0]['value']);
     }//end testQueryFailureFallsBackToZeroValue()
 
 
@@ -153,8 +157,234 @@ class OpenConnectorMetricsProviderTest extends TestCase
 
         $samples = $provider->metrics();
 
-        $this->assertCount(1, $samples);
-        $this->assertSame(0, $samples[0]->samples[0]['value']);
+        $this->assertCount(3, $samples);
+        $circuitBreaker = $this->sampleByName($samples, 'circuit_breaker_state');
+        $this->assertSame(0, $circuitBreaker->samples[0]['value']);
     }//end testUnavailableObjectServiceFallsBackToZeroValue()
+
+
+    /**
+     * REQ-PROM-013 — latency percentiles are computed per product from its
+     * own inbound call_log rows' responseTime values, converted to seconds.
+     *
+     * @return void
+     */
+    public function testLatencyGaugeComputesPercentilesPerProduct(): void
+    {
+        // 10 inbound rows for product "prod-a" with responseTime 10..100ms
+        // (ascending, easy to hand-verify nearest-rank percentiles).
+        $callLogRows = [];
+        foreach (range(1, 10) as $i) {
+            $callLogRows[] = [
+                'direction'    => 'inbound',
+                'product'      => 'uuid-a',
+                'statusCode'   => 200,
+                'responseTime' => ($i * 10),
+            ];
+        }
+
+        $objectService = new class ($callLogRows) {
+            /**
+             * @param array $callLogRows Rows returned for the CallLog schema.
+             */
+            public function __construct(private array $callLogRows)
+            {
+            }
+
+            public function searchObjects(array $query, bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                $schemaId = ($query['@self']['schema'] ?? null);
+                if ($schemaId === 99) {
+                    return [['uuid' => 'uuid-a', 'productSlug' => 'prod-a']];
+                }
+
+                if ($schemaId === 100) {
+                    return $this->callLogRows;
+                }
+
+                return [];
+            }
+        };
+
+        $provider = $this->buildProvider(
+            objectService: $objectService,
+            schemas: [
+                ['id' => 99, 'title' => 'API Product'],
+                ['id' => 100, 'title' => 'CallLog'],
+            ],
+            registers: [['id' => 3, 'schemas' => [99, 100]]],
+        );
+
+        $samples = $provider->metrics();
+        $latency = $this->sampleByName($samples, 'api_product_latency_seconds');
+
+        $byQuantile = [];
+        foreach ($latency->samples as $point) {
+            if ($point['labels']['product'] === 'prod-a') {
+                $byQuantile[$point['labels']['quantile']] = $point['value'];
+            }
+        }
+
+        // Nearest-rank over [10,20,...,100]ms: p50 -> index ceil(0.5*10)-1=4 -> 50ms=0.05s.
+        $this->assertSame(0.05, $byQuantile['0.5']);
+        // p95 -> index ceil(0.95*10)-1=9 -> 100ms=0.1s.
+        $this->assertSame(0.1, $byQuantile['0.95']);
+        // p99 -> index ceil(0.99*10)-1=9 -> 100ms=0.1s.
+        $this->assertSame(0.1, $byQuantile['0.99']);
+    }//end testLatencyGaugeComputesPercentilesPerProduct()
+
+
+    /**
+     * REQ-PROM-013 — a product with zero inbound rows reports all three
+     * quantile samples as 0, never omitted.
+     *
+     * @return void
+     */
+    public function testLatencyGaugeReportsZeroForTrafficFreeProduct(): void
+    {
+        $objectService = new class {
+            public function searchObjects(array $query, bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                $schemaId = ($query['@self']['schema'] ?? null);
+                if ($schemaId === 99) {
+                    return [['uuid' => 'uuid-a', 'productSlug' => 'prod-a']];
+                }
+
+                return [];
+            }
+        };
+
+        $provider = $this->buildProvider(
+            objectService: $objectService,
+            schemas: [
+                ['id' => 99, 'title' => 'API Product'],
+                ['id' => 100, 'title' => 'CallLog'],
+            ],
+            registers: [['id' => 3, 'schemas' => [99, 100]]],
+        );
+
+        $samples = $provider->metrics();
+        $latency = $this->sampleByName($samples, 'api_product_latency_seconds');
+
+        $this->assertCount(3, $latency->samples);
+        foreach ($latency->samples as $point) {
+            $this->assertSame('prod-a', $point['labels']['product']);
+            $this->assertEqualsWithDelta(0.0, $point['value'], 0.0001);
+        }
+    }//end testLatencyGaugeReportsZeroForTrafficFreeProduct()
+
+
+    /**
+     * REQ-PROM-013 — a query failure degrades to a zero-value fallback, HTTP
+     * 200 still implied (the provider never throws).
+     *
+     * @return void
+     */
+    public function testLatencyGaugeQueryFailureFallsBackToZero(): void
+    {
+        $objectService = new class {
+            public function searchObjects(array $query, bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                throw new \RuntimeException('DB unavailable');
+            }
+        };
+
+        $provider = $this->buildProvider(
+            objectService: $objectService,
+            schemas: [['id' => 99, 'title' => 'API Product']],
+            registers: [['id' => 3, 'schemas' => [99]]],
+        );
+
+        $samples = $provider->metrics();
+        $latency = $this->sampleByName($samples, 'api_product_latency_seconds');
+
+        $this->assertCount(3, $latency->samples);
+        foreach ($latency->samples as $point) {
+            $this->assertSame(0, $point['value']);
+        }
+    }//end testLatencyGaugeQueryFailureFallsBackToZero()
+
+
+    /**
+     * REQ-PROM-012 — the errors_total gauge counts only statusCode>=400 rows
+     * per product.
+     *
+     * @return void
+     */
+    public function testErrorsGaugeCountsOnlyErrorStatusRows(): void
+    {
+        $callLogRows = [
+            ['direction' => 'inbound', 'product' => 'uuid-a', 'statusCode' => 200],
+            ['direction' => 'inbound', 'product' => 'uuid-a', 'statusCode' => 404],
+            ['direction' => 'inbound', 'product' => 'uuid-a', 'statusCode' => 500],
+            ['direction' => 'inbound', 'product' => 'uuid-b', 'statusCode' => 200],
+        ];
+
+        $objectService = new class ($callLogRows) {
+            /**
+             * @param array $callLogRows Rows returned for the CallLog schema.
+             */
+            public function __construct(private array $callLogRows)
+            {
+            }
+
+            public function searchObjects(array $query, bool $_rbac=true, bool $_multitenancy=true): array
+            {
+                $schemaId = ($query['@self']['schema'] ?? null);
+                if ($schemaId === 99) {
+                    return [
+                        ['uuid' => 'uuid-a', 'productSlug' => 'prod-a'],
+                        ['uuid' => 'uuid-b', 'productSlug' => 'prod-b'],
+                    ];
+                }
+
+                if ($schemaId === 100) {
+                    return $this->callLogRows;
+                }
+
+                return [];
+            }
+        };
+
+        $provider = $this->buildProvider(
+            objectService: $objectService,
+            schemas: [
+                ['id' => 99, 'title' => 'API Product'],
+                ['id' => 100, 'title' => 'CallLog'],
+            ],
+            registers: [['id' => 3, 'schemas' => [99, 100]]],
+        );
+
+        $samples = $provider->metrics();
+        $errors  = $this->sampleByName($samples, 'api_product_errors_total');
+
+        $byProduct = [];
+        foreach ($errors->samples as $point) {
+            $byProduct[$point['labels']['product']] = $point['value'];
+        }
+
+        $this->assertSame(2, $byProduct['prod-a']);
+        $this->assertSame(0, $byProduct['prod-b']);
+    }//end testErrorsGaugeCountsOnlyErrorStatusRows()
+
+
+    /**
+     * Locate a MetricSample by its `name` in the provider's metrics() array.
+     *
+     * @param array<int, \OCA\OpenRegister\AppHost\Observability\MetricSample> $samples The provider's samples.
+     * @param string                                                          $name    The metric name to find.
+     *
+     * @return \OCA\OpenRegister\AppHost\Observability\MetricSample
+     */
+    private function sampleByName(array $samples, string $name): \OCA\OpenRegister\AppHost\Observability\MetricSample
+    {
+        foreach ($samples as $sample) {
+            if ($sample->name === $name) {
+                return $sample;
+            }
+        }
+
+        $this->fail('No MetricSample named '.$name.' was produced');
+    }//end sampleByName()
 
 }//end class

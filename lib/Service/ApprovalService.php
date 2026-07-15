@@ -271,6 +271,60 @@ class ApprovalService
     }//end suspendForFlow()
 
     /**
+     * Create the `approval_request` gating an `api_product_subscription`
+     * whose chosen tier has `requiresApproval: true` (api-product-gateway
+     * REQ-APG-004). Structurally identical to
+     * {@see suspendForSynchronization()} — no FlowToken snapshot, no
+     * resumed pipeline; a *different* subject (`ProductSubscriptionsController`)
+     * resolves on `completeApproval()`/`reject()` and flips the
+     * subscription's own `status`, since that orchestration is not this
+     * service's concern (design.md Decision 4 — deliberately NOT a
+     * generalisation of `suspend()`, whose snapshot/resumeOrder fields are
+     * meaningless for a subscription).
+     *
+     * @param string  $subscriptionId The gated api_product_subscription's id.
+     * @param string  $approverGroup  The tier's configured approver group.
+     * @param string  $onReject       Outcome on reject.
+     * @param integer $ttlSeconds     TTL in seconds before expiry.
+     *
+     * @return ObjectEntity The created, `pending` approval_request.
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
+     * @spec openspec/changes/archive/2026-07-15-api-product-gateway/design.md#decision-4-subscription-approval-reuses-approvalservices-generic-state-machine-via-one-new-creation-method-not-suspend
+     */
+    public function suspendForSubscription(
+        string $subscriptionId,
+        string $approverGroup,
+        string $onReject,
+        int $ttlSeconds
+    ): ObjectEntity {
+        $now       = new DateTime();
+        $expiresAt = (clone $now)->add(new DateInterval('PT'.max($ttlSeconds, 1).'S'));
+
+        $record = $this->objectService->saveObject(
+            object: [
+                'status'          => 'pending',
+                'subscriptionId'  => $subscriptionId,
+                'timing'          => 'before',
+                'snapshot'        => [],
+                'requesterUserId' => $this->userSession->getUser()?->getUID(),
+                'approverGroup'   => $approverGroup,
+                'onReject'        => $onReject,
+                'onTimeout'       => 'error',
+                'createdAt'       => $now->format('c'),
+                'expiresAt'       => $expiresAt->format('c'),
+            ],
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        $this->notifyApprovers(approvalRequest: $record);
+
+        return $record;
+
+    }//end suspendForSubscription()
+
+    /**
      * Find an approved, not-yet-consumed approval_request for a
      * synchronization (the batch-gate's "has this run already been
      * approved" check).

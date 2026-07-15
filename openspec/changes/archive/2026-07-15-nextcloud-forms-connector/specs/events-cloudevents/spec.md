@@ -16,7 +16,7 @@ already owned by `nextcloud-forms-connector`.
 
 ## ADDED Requirements
 
-### Requirement: A subscription's action dispatch MAY additionally support a `mapping` kind (REQ-010)
+### Requirement: A subscription's action dispatch MAY additionally support a `mapping` kind (REQ-012)
 
 `EventService::attemptDelivery()`'s action-dispatch switch (base spec) MUST
 recognise `action.kind: 'mapping'` as a fourth valid value alongside

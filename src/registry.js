@@ -59,6 +59,7 @@ import SynchronizationDetailPage from './views/Synchronization/SynchronizationDe
 import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
+import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 
@@ -142,6 +143,12 @@ export default {
 	// generic CnIndexPage. See hitl-approval-rule-action.
 	ApprovalsIndex,
 	ApprovalDetail,
+
+	// API Products gateway detail (custom page): endpoint picker, tier
+	// editor, gateway analytics panel, and pending-subscription approve/
+	// reject actions for one api_product. Not expressible as a generic
+	// CnIndexPage/detail page. See api-product-gateway.
+	ApiProductDetail,
 
 	// Sync-item dead-letter operations view (custom page): a filtered
 	// sync_item_dead_letter surface backed by the admin-only
