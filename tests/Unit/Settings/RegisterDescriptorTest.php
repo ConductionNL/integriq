@@ -77,6 +77,9 @@ class RegisterDescriptorTest extends TestCase
      * hardcoded literal) — `zgw_version_translation_log` added by
      * openspec/changes/zgw-version-translation, bringing the count to 32.
      *
+     * Was 32 — `dso_verzoek` and `dso_message` added by
+     * openspec/changes/dso-connector-adapter, bringing the count to 34.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -127,6 +130,9 @@ class RegisterDescriptorTest extends TestCase
         'FscCall'                    => 'fsc_call',
         // ZGW version-translation shim — added by zgw-version-translation spec.
         'ZgwVersionTranslationLog'   => 'zgw_version_translation_log',
+        // DSO (Digitaal Stelsel Omgevingswet) connector adapter — added by dso-connector-adapter spec.
+        'DsoVerzoek'                 => 'dso_verzoek',
+        'DsoMessage'                 => 'dso_message',
     ];
 
     /**

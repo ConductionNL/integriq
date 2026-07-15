@@ -28,6 +28,18 @@ return [
 		// previous string-presence-only placeholder has been removed.
 		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
+		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
+		// surface completing the STAM koppelvlak above (which previously
+		// logged and dropped every verzoek — no persistence, no handoff, no
+		// outbound leg existed before this change). The handoff trigger
+		// deliberately requires a real authenticated actor (OpenRegister
+		// HandoffService v1 has no system-user privilege lane; see
+		// design.md §1, same constraint documented for open-formulieren-intake).
+		['name' => 'dSO#listVerzoeken', 'url' => '/api/dso/verzoeken', 'verb' => 'GET'],
+		['name' => 'dSO#status', 'url' => '/api/dso/verzoeken/{id}', 'verb' => 'GET'],
+		['name' => 'dSO#handoff', 'url' => '/api/dso/verzoeken/{id}/handoff', 'verb' => 'POST'],
+		['name' => 'dSO#postOutbound', 'url' => '/api/dso/verzoeken/{id}/status', 'verb' => 'POST'],
+
 		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).
 		// Participant/SMP lookup is an authenticated NC-session call (production
 		// binding for shillinq's PeppolTransmissionAdapterInterface::lookupParticipant).
