@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IAppConfig;
 use OCP\IConfig;
+use OCP\IRequestId;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -106,16 +107,18 @@ class EndpointServiceTest extends TestCase
         $this->approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
         $approvalService       = $this->approvalService;
 
-        // EndpointService constructor signature (18 args, no $appConfig):
+        // EndpointService constructor signature (19 args, no $appConfig):
         //   objectService, callService, logger, urlGenerator, mappingService,
         //   orObjectService, config, storageService, authorizationService,
         //   container, synchronizationService, ruleService, webhookSignatureService,
         //   rateLimitService, compositeFanoutRule, referentienummerRule, avgBsnPolicyRule,
-        //   approvalService (hitl-approval-rule-action).
+        //   approvalService (hitl-approval-rule-action), requestId
+        //   (flow-workflowengine-integration — triggerFromFlow()'s synthetic request).
         // The previous version slipped $appConfig into position 8 which made
         // $storageService land on $authService — a pre-existing test bug
         // surfaced once #1015 unblocked the suite from crashing in setUp.
         unset($appConfig);
+        $requestId = $this->createMock(IRequestId::class);
         $this->service = new EndpointService(
             $this->objectService,
             $callService,
@@ -135,6 +138,7 @@ class EndpointServiceTest extends TestCase
             $referentienummerRule,
             $avgBsnPolicyRule,
             $approvalService,
+            $requestId,
         );
     }//end setUp()
 
@@ -415,6 +419,7 @@ class EndpointServiceTest extends TestCase
             new ReferentienummerRule(),
             new AvgBsnPolicyRule(),
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+            $this->createMock(IRequestId::class),
         );
 
         $resultB = $otherService->renderSelfUrlAndHal(['id' => '1'], $endpoint);
@@ -484,4 +489,68 @@ class EndpointServiceTest extends TestCase
     }//end testCheckPutMandatoryFieldsReturnsEmptyWhenComplete()
 
 
+    /**
+     * triggerFromFlow() (flow-workflowengine-integration TC-6) synthesizes a GET
+     * request carrying the given parameters and delegates to the existing
+     * handleRequest() without duplicating any routing/proxy logic — verified via
+     * a partial mock so only handleRequest() is intercepted, real construction of
+     * the synthetic OC\AppFramework\Http\Request stub still runs.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     */
+    public function testTriggerFromFlowSynthesizesRequestAndDelegatesToHandleRequest(): void
+    {
+        $endpoint = ObjectServiceMockBuilder::objectEntity($this, ['endpoint' => 'test/trigger'], 'endpoint-uuid-flow-1');
+
+        $requestId = $this->createMock(IRequestId::class);
+        $requestId->method('getId')->willReturn('req-flow-1');
+
+        $expectedResponse = new \OCP\AppFramework\Http\JSONResponse(['ok' => true]);
+
+        $service = $this->getMockBuilder(EndpointService::class)
+            ->setConstructorArgs(
+                [
+                    $this->objectService,
+                    $this->createMock(CallService::class),
+                    $this->createMock(LoggerInterface::class),
+                    $this->urlGenerator,
+                    $this->createMock(MappingService::class),
+                    $this->orObjectService,
+                    $this->createMock(IConfig::class),
+                    $this->createMock(StorageService::class),
+                    $this->createMock(AuthorizationService::class),
+                    $this->container,
+                    $this->createMock(SynchronizationService::class),
+                    $this->createMock(RuleService::class),
+                    new \OCA\OpenConnector\Service\WebhookSignatureService($this->createMock(LoggerInterface::class)),
+                    $this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
+                    new CompositeFanoutRule($this->orObjectService, $this->createMock(LoggerInterface::class)),
+                    new ReferentienummerRule(),
+                    new AvgBsnPolicyRule(),
+                    $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+                    $requestId,
+                ]
+            )
+            ->onlyMethods(['handleRequest'])
+            ->getMock();
+
+        $service->expects($this->once())
+            ->method('handleRequest')
+            ->with(
+                $this->identicalTo($endpoint),
+                $this->callback(
+                    static function (\OCP\IRequest $request): bool {
+                        return $request->getMethod() === 'GET' && $request->getParam('foo') === 'bar';
+                    }
+                ),
+                ''
+            )
+            ->willReturn($expectedResponse);
+
+        $result = $service->triggerFromFlow($endpoint, ['foo' => 'bar']);
+
+        $this->assertSame($expectedResponse, $result);
+    }//end testTriggerFromFlowSynthesizesRequestAndDelegatesToHandleRequest()
 }//end class

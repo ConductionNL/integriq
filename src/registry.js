@@ -44,6 +44,7 @@ import {
 	viewLogsHandler,
 	openConfigurationImportHandler,
 	openConfigurationExportHandler,
+	openPromotionHandler,
 } from './handlers/actionHandlers.js'
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
@@ -82,6 +83,9 @@ export default {
 	// configuration import-preview / export dialogs via the modal bus.
 	openConfigurationImportHandler,
 	openConfigurationExportHandler,
+	// Environments page header action (environments-and-promotion): open the
+	// promote-configuration flow via the modal bus.
+	openPromotionHandler,
 
 	// Card component for the Catalog index page (connector-catalog-ui):
 	// referenced by `pages[].config.cardComponent: "CatalogItemCard"`.

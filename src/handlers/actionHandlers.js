@@ -34,6 +34,7 @@ import {
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
+	EVENT_OPEN_PROMOTION,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 
@@ -190,6 +191,19 @@ export function openConfigurationImportHandler() {
  */
 export function openConfigurationExportHandler() {
 	modalBus.$emit(EVENT_OPEN_CONFIGURATION_EXPORT, {})
+}
+
+/**
+ * Open the promote-configuration flow (environments-and-promotion): pick a
+ * configuration group and a target environment, review the merged diff
+ * preview (creates/updates/collisions/credentialRefsNeedingRebind), rebind
+ * any flagged credentialRef placeholders, then confirm. Wired to the
+ * Environments page's "Promote configuration" header action.
+ *
+ * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
+ */
+export function openPromotionHandler() {
+	modalBus.$emit(EVENT_OPEN_PROMOTION, {})
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

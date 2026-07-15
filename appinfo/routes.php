@@ -212,6 +212,7 @@ return [
 		// Synchronization endpoints
 		['name' => 'synchronizations#run', 'url' => '/api/synchronizations/{id}/run', 'verb' => 'POST'],
 		['name' => 'synchronizations#test', 'url' => '/api/synchronizations/{id}/test', 'verb' => 'POST'],
+		['name' => 'synchronizations#resetCursor', 'url' => '/api/synchronizations/{id}/reset-cursor', 'verb' => 'POST'],
 		['name' => 'synchronizations#logs', 'url' => '/api/synchronizations/logs', 'verb' => 'GET'],
 		['name' => 'synchronizations#statistics', 'url' => '/api/synchronizations/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#contracts', 'url' => '/api/synchronizations/contracts/{id}', 'verb' => 'GET'],
@@ -333,6 +334,17 @@ return [
 		['name' => 'configuration#exportRegister', 'url' => '/api/registers/{id}/export', 'verb' => 'GET'],
 		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
 		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+
+		// Environments & Promotion (environments-and-promotion). Environment
+		// CRUD (environment.manage) plus promotion preview/confirm
+		// (environment.promote) — dispatched to the target's own, unmodified
+		// /api/configurations/import/preview + /api/configurations/import
+		// endpoints via CallService::call() against the environment's sourceRef.
+		// See openspec/specs/environments-and-promotion/spec.md
+		['name' => 'environment#index', 'url' => '/api/environments', 'verb' => 'GET'],
+		['name' => 'environment#create', 'url' => '/api/environments', 'verb' => 'POST'],
+		['name' => 'promotion#preview', 'url' => '/api/promotions/preview', 'verb' => 'POST'],
+		['name' => 'promotion#confirm', 'url' => '/api/promotions', 'verb' => 'POST'],
 
 		// User CORS preflight endpoints
 		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],

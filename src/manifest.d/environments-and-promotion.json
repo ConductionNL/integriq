@@ -1,0 +1,39 @@
+{
+  "$comment": "ADR-037 manifest fragment (environments-and-promotion). Additive-only: adds the Environments index page (register/schema-driven CRUD over the `environment` schema, same declarative type:index pattern already used by Sources/Endpoints/etc — no bespoke Vue page, matching the Catalog page's own 'Standard type:index ... NO custom page' precedent) plus its menu entry, and wires a 'Promote configuration' header action into that page that opens PromotePreviewModal via the modal bus (config-group + target-environment selection happens INSIDE the modal, same pattern as ExportConfigurationDialog's own configuration-group picker). Deliberately does NOT overlay/replace the existing 'Catalog' page (buildManifest's mergePages() replaces an existing page id WHOLESALE, not by field-patch — copying the whole Catalog page definition into this fragment just to add one headerAction would risk silent drift if Catalog's own definition changes elsewhere).",
+  "pages": [
+    {
+      "id": "Environments",
+      "route": "/environments",
+      "type": "index",
+      "title": "Environments",
+      "_note": "environments-and-promotion: environment CRUD list (REQ-001) over the `environment` schema. The promote flow is reachable from this page's 'Promote configuration' header action (design.md 'promote flow reachable from a configuration group's existing actions' — surfaced here rather than duplicated onto Catalog, see fragment-level $comment) and opens PromotePreviewModal, which lets the operator pick BOTH the configuration group and the target environment.",
+      "config": {
+        "register": "openconnector",
+        "schema": "environment",
+        "columns": ["name", "slug", "role", "description"],
+        "headerActions": [
+          {
+            "id": "promote-configuration",
+            "label": "Promote configuration",
+            "icon": "RocketLaunchOutline",
+            "handler": "openPromotionHandler"
+          }
+        ],
+        "sidebar": {
+          "enabled": true,
+          "showMetadata": true
+        },
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    }
+  ],
+  "menu": [
+    {
+      "id": "Environments",
+      "label": "Environments",
+      "route": "Environments",
+      "icon": "ServerNetwork",
+      "order": 17
+    }
+  ]
+}
