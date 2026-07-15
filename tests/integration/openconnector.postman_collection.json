@@ -764,6 +764,39 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "11. Observability (AppHost health/metrics)",
+			"item": [
+				{
+					"name": "health#index anonymous (public, 200 ok)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('health 200', () => pm.response.to.have.status(200));", "const b = pm.response.json();", "pm.test('status ok', () => pm.expect(b.status).to.eql('ok'));", "pm.test('checks.database ok', () => pm.expect(b.checks.database).to.eql('ok'));", "pm.test('checks.openregister ok', () => pm.expect(b.checks.openregister).to.eql('ok'));", "pm.test('app + version present', () => { pm.expect(b.app).to.be.a('string'); pm.expect(b.version).to.be.a('string'); });" ] } } ],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/health", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "health" ] }
+					}
+				},
+				{
+					"name": "metrics#index admin (200, exposition format, all 11 metric names)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('metrics 200', () => pm.response.to.have.status(200));", "const body = pm.response.text();", "['openconnector_info','openconnector_up','openconnector_sources_total','openconnector_calls_total','openconnector_synchronizations_total','openconnector_synchronization_runs_total','openconnector_endpoints_total','openconnector_jobs_total','openconnector_job_runs_total','openconnector_mappings_total','openconnector_rules_total'].forEach((n) => pm.test('metrics contains ' + n, () => pm.expect(body).to.include(n)));" ] } } ],
+					"request": {
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"method": "GET",
+						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "text/plain" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/metrics", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "metrics" ] }
+					}
+				},
+				{
+					"name": "metrics#index no-auth (admin-only, 401)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('metrics no-auth -> 401', () => pm.response.to.have.status(401));" ] } } ],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "text/plain" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/metrics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "metrics" ] }
+					}
+				}
+			]
 		}
 	]
 }

@@ -25,6 +25,14 @@ parameters:
         # errors — exclusion is required (same pattern as SynchronizationContractProvider).
         - lib/Controller/HealthController.php
         - lib/Controller/MetricsController.php
+        # adopt-apphost: Settings/OpenConnectorAdmin, Sections/OpenConnectorAdmin
+        # and Repair/InitializeActions extend OCA\OpenRegister\AppHost generics
+        # (GenericAdminSettings / GenericSettingsSection / GenericInitializeActions)
+        # which are only available at runtime. Same "extends unknown class"
+        # PHPStan limitation as HealthController/MetricsController above.
+        - lib/Settings/OpenConnectorAdmin.php
+        - lib/Sections/OpenConnectorAdmin.php
+        - lib/Repair/InitializeActions.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
@@ -84,3 +92,8 @@ parameters:
         # is a downstream effect of the excludePaths exclusion.
         - '#Class OCA\\OpenConnector\\Controller\\HealthController does not have a constructor#'
         - '#Class OCA\\OpenConnector\\Controller\\MetricsController does not have a constructor#'
+        # adopt-apphost: same downstream effect for Settings/OpenConnectorAdmin,
+        # Sections/OpenConnectorAdmin and Repair/InitializeActions (see excludePaths above).
+        - '#Class OCA\\OpenConnector\\Settings\\OpenConnectorAdmin does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Sections\\OpenConnectorAdmin does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Repair\\InitializeActions does not have a constructor#'

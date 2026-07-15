@@ -1,21 +1,17 @@
----
-status: proposed
----
-
-# OpenConnector AppHost Adoption
+# apphost-adoption Specification
 
 ## Purpose
 
-OpenConnector serves its health and metrics endpoints through the OpenRegister AppHost declarative observability engine, with output parity to the hand-written controllers it deletes, fixing the pre-existing admin-only-health and 200-on-critical defects (ADR-006) and removing dead `SettingsService` methods.
-
-**Scope note (2026-06-16):** Only the **observability half** of the AppHost adoption is delivered in this change. The boilerplate half (`GenericPreferencesController`, `GenericDashboardController`, `GenericAdminSettings`/`GenericSettingsSection`, `GenericInitializeSettings`/`GenericInitializeActions`, and the `AppHost\Bootstrap`/`AppHost\Routes` helpers) does **not yet exist** in the OpenRegister release this app builds against — the OpenRegister change `apphost-boilerplate-controllers` is still in `proposed` state and its classes are absent from `lib/AppHost/`. Adopting controllers that do not exist would 500 every aliased route, so the Preferences/SPA-shell/Settings/Repair-step boilerplate stays bespoke until that engine half ships. Those requirements are retained below under **Deferred** so the contract is preserved.
-
-**Cross-references**: `openregister/openspec/changes/apphost-observability-engine/specs/apphost-observability/spec.md`, `openregister/openspec/changes/apphost-boilerplate-controllers/`
-
----
+OpenConnector serves its health and metrics endpoints, per-user preferences,
+admin settings panel/section, and ADR-023 action-authorization seeding
+through the OpenRegister AppHost declarative engine instead of hand-written
+controllers, fixing the pre-existing admin-only-health and 200-on-critical
+defects (ADR-006). The SPA shell (`UiController`) and the register-import
+repair step (`InitializeRegister`) stay bespoke — see
+`openspec/changes/archive/2026-07-15-adopt-apphost/specs/apphost-adoption/spec.md`
+"Not delivered" section for why.
 
 ## Requirements
-
 ### Requirement: Declarative Metrics Parity
 
 OpenConnector SHALL serve `GET /apps/openconnector/api/metrics` through the AppHost engine from `tableCount` descriptors in `src/manifest.json`, with metric names, Prometheus types, label sets, and values identical to the pre-adoption `MetricsController` output, and the endpoint SHALL remain admin-only.
@@ -25,14 +21,14 @@ OpenConnector SHALL serve `GET /apps/openconnector/api/metrics` through the AppH
 - **GIVEN** a seeded instance with rows in the legacy `openconnector_*` tables
 - **WHEN** `GET /apps/openconnector/api/metrics` is called by an admin
 - **THEN** the response MUST be Prometheus text exposition format 0.0.4 containing `openconnector_info`, `openconnector_up`, `openconnector_sources_total{type}`, `openconnector_calls_total{status}`, `openconnector_synchronizations_total`, `openconnector_synchronization_runs_total{status}`, `openconnector_endpoints_total`, `openconnector_jobs_total`, `openconnector_job_runs_total{status}`, `openconnector_mappings_total`, `openconnector_rules_total`, with types (gauge/counter) and values matching direct table counts and null group values mapped to their label defaults (`type="rest"`, `status="unknown"`)
-- @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
+- @e2e exclude API-only endpoint — covered by `tests/integration/openconnector.postman_collection.json` folder "11. Observability (AppHost health/metrics)"
 
 #### Scenario: Metrics endpoint stays admin-only
 
 - **GIVEN** a non-admin authenticated user
 - **WHEN** `GET /apps/openconnector/api/metrics` is called
 - **THEN** the request MUST be rejected by the framework (no `NoAdminRequired` posture), unchanged from pre-adoption
-- @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
+- @e2e exclude API-only endpoint — covered by `tests/integration/openconnector.postman_collection.json` folder "11. Observability (AppHost health/metrics)"
 
 #### Scenario: Dropped legacy table degrades to zero samples
 
@@ -50,14 +46,14 @@ OpenConnector SHALL serve `GET /apps/openconnector/api/health` through the AppHo
 - **GIVEN** a healthy instance
 - **WHEN** `GET /apps/openconnector/api/health` is called anonymously (no session)
 - **THEN** the response MUST be HTTP 200 with `status = "ok"`, `checks.database = "ok"`, and `checks.openregister = "ok"` in the standard shape (including `app` and `version` fields)
-- @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
+- @e2e exclude API-only endpoint — covered by `tests/integration/openconnector.postman_collection.json` folder "11. Observability (AppHost health/metrics)"
 
 #### Scenario: Critical database failure returns 503
 
 - **GIVEN** an instance whose database check fails
 - **WHEN** `GET /apps/openconnector/api/health` is called anonymously
 - **THEN** the response MUST be HTTP 503 with `status = "error"` (ADR-006 `adr006` status-code policy; pre-adoption this wrongly returned HTTP 200)
-- @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
+- @e2e exclude API-only endpoint — requires deliberately breaking the DB connection; covered by the OR AppHost engine's own unit tests, not exercised live by this app's Newman suite
 
 #### Scenario: OpenRegister unavailability only degrades
 
@@ -77,12 +73,6 @@ The app-specific `SettingsController::rebase()` action and the `SettingsService`
 - **THEN** the rebase MUST recompute log deletion timestamps and return the same response shape as before adoption, guarded by `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]`
 - @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
 
----
-
-## Deferred (blocked on `apphost-boilerplate-controllers`)
-
-The following requirements are retained as the target contract but are NOT implemented in this change — the generic classes they depend on do not exist in OpenRegister yet. OpenConnector keeps its bespoke `PreferencesController`, `UiController` (SPA shell + `connect-src *` CSP), `OpenConnectorAdmin` settings/section, and `InitializeRegister`/`InitializeActions` repair steps until the OpenRegister boilerplate engine ships.
-
 ### Requirement: Generic Preferences Controller
 
 OpenConnector SHALL serve `GET|PUT /apps/openconnector/api/preferences/{key}` through the AppHost `GenericPreferencesController`, preserving the `pref_` key namespace and the `[a-z0-9-]`/64-char key sanitisation so values written before adoption keep resolving.
@@ -94,29 +84,40 @@ OpenConnector SHALL serve `GET|PUT /apps/openconnector/api/preferences/{key}` th
 - **THEN** the response MUST return the previously stored value (`pref_` namespace unchanged)
 - @e2e exclude API-only endpoint — covered by the OR AppHost Newman contract collection
 
-### Requirement: SPA Shell via Generic Dashboard Controller
+### Requirement: Admin Settings and Section as AppHost Stubs
 
-OpenConnector SHALL serve its SPA shell (root, deep links, and the non-`api` catch-all) through a thin app-namespace subclass of `GenericDashboardController` that preserves the app-specific permissive `connect-src *` Content-Security-Policy, replacing the 21-method `UiController`; all SPA URLs SHALL be unchanged and the `appinfo/info.xml` navigation route SHALL resolve.
-
-#### Scenario: Deep link serves the SPA shell with the app CSP
-
-- **GIVEN** an authenticated user
-- **WHEN** the user navigates directly to `/apps/openconnector/sources` (or any non-`api` sub-path)
-- **THEN** the SPA shell MUST render and the client-side router MUST take over on the requested section, and the response CSP MUST allow `connect-src *`
-
-### Requirement: Admin Settings and Repair Steps as AppHost Stubs
-
-OpenConnector's admin settings panel/section and its register/action initialisation SHALL be one-line app-namespace subclasses of the AppHost generics (`GenericAdminSettings`, `GenericSettingsSection`, `GenericInitializeSettings`, `GenericInitializeActions`), the `OpenConnectorAdmin` class name SHALL remain valid for the existing `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` reference, and the repair steps SHALL be registered in `appinfo/info.xml` `<repair-steps>` (fixing the pre-existing bug where they were wired nowhere and never ran).
-
-#### Scenario: Repair steps run on install
-
-- **GIVEN** a clean install of openconnector (or `occ maintenance:repair` on an existing instance)
-- **WHEN** the app's repair steps execute
-- **THEN** the `openconnector` register and its schemas MUST be imported and the seed actions MUST be present (pre-adoption: neither ever ran because the steps were not registered)
-- @e2e exclude backend install-time repair behaviour — verified via occ maintenance:repair in CI, no UI surface
+OpenConnector's admin settings panel (`Settings\OpenConnectorAdmin`) and its section (`Sections\OpenConnectorAdmin`) SHALL be one-line app-namespace subclasses of the AppHost generics (`GenericAdminSettings`, `GenericSettingsSection`), the `OpenConnectorAdmin` class names SHALL remain valid for the existing `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` references (used across ~30 controller methods) and the `appinfo/info.xml` `<settings>` block, `getAuthorizedAppConfig()` SHALL keep returning an empty map (fail-closed, full-admin-only — unchanged from pre-adoption), and the section's display name SHALL stay translated (resolved via the app's own `IL10N` before constructing the generic section, which has no l10n hook of its own).
 
 #### Scenario: Admin settings panel still renders
 
 - **GIVEN** an admin user
 - **WHEN** the admin opens Settings → Administration → OpenConnector
-- **THEN** the settings panel MUST render through the generic admin settings stub in the existing section
+- **THEN** the settings panel MUST render through the generic admin settings stub in the existing (translated) section
+
+#### Scenario: Existing admin-only endpoints keep their exact gating
+
+- **GIVEN** a non-admin authenticated user
+- **WHEN** any controller method carrying `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` is called (e.g. `sources#test`, `jobs#run`, LTI/EUDI/DSO-PKI admin endpoints)
+- **THEN** the request MUST be rejected, identical to the pre-adoption bespoke `OpenConnectorAdmin::getAuthorizedAppConfig()` returning `[]`
+- @e2e exclude API-only endpoint gating — covered by `tests/Unit/Settings/OpenConnectorAdminTest.php`
+
+### Requirement: Action-Authorization Matrix Repair Step as AppHost Stub
+
+OpenConnector's ADR-023 action-matrix seeding repair step (`Repair\InitializeActions`) SHALL be a one-line app-namespace subclass of the AppHost `GenericInitializeActions` generic, reading/writing the same `actions` `IAppConfig` key (under the `openconnector` app id) that the still-bespoke `ActionAuthService` enforces against, and the repair steps (`InitializeRegister` and `InitializeActions`, both referenced from `appinfo/info.xml` `<repair-steps><post-migration>`) SHALL run on install and upgrade — fixing the pre-existing defect where they were wired nowhere and never ran.
+
+#### Scenario: Repair steps run on install
+
+- **GIVEN** a clean install of openconnector (or `occ maintenance:repair` on an existing instance)
+- **WHEN** the app's repair steps execute
+- **THEN** the `openconnector` register and its schemas MUST be imported (via the bespoke `InitializeRegister`) and the seed actions MUST be present (via the AppHost-generic `InitializeActions`)
+- @e2e exclude backend install-time repair behaviour — verified via occ maintenance:repair in CI, no UI surface
+
+#### Scenario: Admin-customised action matrix survives upgrade
+
+- **GIVEN** an admin has customised the action-authorization matrix (non-empty)
+- **WHEN** `InitializeActions` runs again on a subsequent upgrade
+- **THEN** the existing matrix MUST be preserved unchanged (the generic step only seeds an empty matrix)
+- @e2e exclude backend repair-step behaviour — covered by `tests/Unit/Repair/InitializeActionsAppHostAdapterTest.php` and the OR AppHost engine's own `GenericInitializeActions` unit tests
+
+---
+
