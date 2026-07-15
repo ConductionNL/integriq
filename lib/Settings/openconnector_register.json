@@ -619,6 +619,22 @@
             "title": "Enable VNG Filter/Expand Translation"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's inbound API endpoints — the surface this instance exposes to external callers. Use to discover what routes exist, which method/target they map to, or to find the endpoint behind a given slug. This is the inbound-surface inventory; it holds no credential.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "method", "targetType", "targetId", "slug"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Endpoint by id — its route, HTTP method, polymorphic target (register/schema, api, job, or synchronization), and its input/output mapping and rule pipeline. Use when investigating exactly what a specific inbound route does.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -1245,6 +1261,22 @@
             "title": "Slug"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's scheduled Jobs by name, enabled state, status, job class, or slug. Use to check whether a given background task is turned on.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "isEnabled", "status", "jobClass", "slug"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Job's schedule and state — isEnabled, interval, lastRun, nextRun. Use to check whether the nightly sync job is even turned on before digging into its logs.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -1335,6 +1367,22 @@
             "type": "string",
             "description": "Machine-readable identifier (local ADR-015)",
             "title": "Slug"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's transformation Mappings by name, slug, or cross-environment reference. Use to find the mapping responsible for a given transformation.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "slug", "reference"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Mapping's transformation rules (Twig/property-path). Use to explain exactly what a mapping does to data in transit — the single most-asked 'explain this' question in integration debugging. Holds no credential.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
@@ -1506,7 +1554,7 @@
           },
           "sourceConfig": {
             "type": "object",
-            "description": "Source-specific configuration overrides. Notable recognised keys: `resultsPosition` (dot-path to the objects array in the response, or `_root`/`_object`); `format: \"jsonl\"` (oc#97) — the fetched (and, if gzip, decompressed) body is parsed as line-delimited JSON, one record per line, instead of whole-document JSON/XML — pair with `resultsPosition: \"_root\"` since the parsed line array IS the records list; `paginationQuery` (field name/dot-path to bump per page, default `page`); `paginationIn: \"body\"` (oc#94, default `\"query\"`) — substitutes the next page value into the source's static `configuration.body` JSON template at the `paginationQuery` dot-path instead of the query string, for POST-body sources (e.g. TED's v3 search) whose pagination cursor lives in the request body. See synchronization-engine spec REQ-006 (change bulk-gzip-jsonl-ingestion) and http-call-engine spec REQ-006 (change post-body-pagination); `deletionRatioThreshold` (float 0.0-1.0, default 0.10) — the maximum share of this synchronization's existing contracts that one cleanup pass may garbage-collect before the deletion-ratio guard aborts the pass (warning logged + SynchronizationDeletionGuardedEvent dispatched); override per synchronization for legitimately volatile sources, or supply the explicit `forceDeletion` run parameter for a one-off override. See synchronization-engine spec REQ-010 (change sync-safety-guardrails).",
+            "description": "Source-specific configuration overrides. Notable recognised keys: `resultsPosition` (dot-path to the objects array in the response, or `_root`/`_object`); `format: \"jsonl\"` (oc#97) — the fetched (and, if gzip, decompressed) body is parsed as line-delimited JSON, one record per line, instead of whole-document JSON/XML — pair with `resultsPosition: \"_root\"` since the parsed line array IS the records list; `paginationQuery` (field name/dot-path to bump per page, default `page`); `paginationIn: \"body\"` (oc#94, default `\"query\"`) — substitutes the next page value into the source's static `configuration.body` JSON template at the `paginationQuery` dot-path instead of the query string, for POST-body sources (e.g. TED's v3 search) whose pagination cursor lives in the request body. See synchronization-engine spec REQ-006 (change bulk-gzip-jsonl-ingestion) and http-call-engine spec REQ-010 (change post-body-pagination); `deletionRatioThreshold` (float 0.0-1.0, default 0.10) — the maximum share of this synchronization's existing contracts that one cleanup pass may garbage-collect before the deletion-ratio guard aborts the pass (warning logged + SynchronizationDeletionGuardedEvent dispatched); override per synchronization for legitimately volatile sources, or supply the explicit `forceDeletion` run parameter for a one-off override. See synchronization-engine spec REQ-010 (change sync-safety-guardrails).",
             "title": "Source Configuration"
           },
           "sourceLastChanged": {
@@ -1636,6 +1684,22 @@
             "title": "Retry Policy Override"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector Synchronizations by name, source/target id, source/target type, or status. Use to check whether a sync is configured and what it points at.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "sourceId", "targetId", "sourceType", "targetType", "status"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Synchronization's definition plus its last-changed/checked/synced timestamps. Use to answer 'is this sync configured, and when did it last run?' Authentication lives on the Source, not here — sourceConfig/targetConfig are data-shaping keys only (e.g. resultsPosition, format), not credentials.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -1755,6 +1819,22 @@
             "type": "string",
             "description": "Deprecated alias for `originHash` — retained for backwards compatibility per chain-A REQ-A-008",
             "title": "Source Hash"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector SynchronizationContracts — per-object sync state — by synchronization id, origin id, or target id. Use to drill into why one specific record is or isn't syncing.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["synchronizationId", "originId", "targetId"]
+            },
+            "get": {
+              "description": "Fetch one openconnector SynchronizationContract — the per-object identity mapping (origin id, target id) and last-changed/checked/synced state for a single synchronized record. The drill-down from a Synchronization, and the only place origin-target identity is recorded.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
@@ -1895,6 +1975,22 @@
             "type": "integer",
             "description": "Combined request+response byte size for storage accounting",
             "title": "Size (Bytes)"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's outbound CallLog by source, status code, direction, or synchronization id. The first stop when a source is failing — see which calls errored and when.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["sourceId", "statusCode", "direction", "synchronizationId"]
+            },
+            "get": {
+              "description": "Fetch one openconnector CallLog entry — status code, status message, direction, and the captured request/response. Secrets (Authorization headers, basic-auth, query-string secrets) are redacted before the entry is ever stored, so this is safe to read; the response body may still contain upstream business data. Use to see exactly what an upstream system returned.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
@@ -2053,6 +2149,22 @@
             "title": "Size (Bytes)"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector JobLog entries by job id, level, or job class. Use to find which jobs are erroring, and with what.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["jobId", "level", "jobClass"]
+            },
+            "get": {
+              "description": "Fetch one openconnector JobLog entry — level, message, and stack trace for a single job execution. Use to see exactly why a job run failed.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
@@ -2181,6 +2293,22 @@
             "type": "integer",
             "description": "Approximate row size for storage accounting",
             "title": "Size (Bytes)"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector SynchronizationLog entries by synchronization id or user id. Use to see the run-level history of a synchronization.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["synchronizationId", "userId"]
+            },
+            "get": {
+              "description": "Fetch one openconnector SynchronizationLog entry — the outcome message and result summary for a single synchronization run. The run-level companion to a SynchronizationContract lookup.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
