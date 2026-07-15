@@ -4189,6 +4189,32 @@
               }
             }
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "suspended"
+            ],
+            "default": "pending",
+            "description": "Registration trust gate (REQ-LTI-011). Only an `approved` registration may complete login initiation, launch validation, Platform-role launch initiation, Deep Linking response signing, or service-token issuance — a `pending`/`suspended` registration is rejected identically to an unregistered issuer/client_id by LtiRegistrationResolverService. Transitioned only via the admin-gated approve()/suspend() actions.",
+            "title": "Status"
+          },
+          "identityPolicy": {
+            "type": "string",
+            "enum": [
+              "manualLinkOnly",
+              "autoProvisionAsRole"
+            ],
+            "default": "manualLinkOnly",
+            "description": "Governs how LtiIdentityLinkService resolves a validated launch's sub claim to a Nextcloud user (REQ-LTI-012). manualLinkOnly (default, conservative) never creates a Nextcloud user or matches by email/name — an unlinked sub is reported as such. autoProvisionAsRole is an explicit per-platform opt-in that provisions a first-seen sub into defaultProvisionGroup. Never consulted as part of, or able to relax, validateLaunch()'s own cryptographic trust decision.",
+            "title": "Identity Policy"
+          },
+          "defaultProvisionGroup": {
+            "type": "string",
+            "description": "Nextcloud group id a first-seen sub is provisioned into under identityPolicy: autoProvisionAsRole. Required whenever identityPolicy is autoProvisionAsRole (see the schema-level if/then); a misconfigured autoProvisionAsRole with no group fails closed to unlinked rather than provisioning with unbounded/ambient privilege.",
+            "title": "Default Provision Group"
+          },
           "created": {
             "type": "string",
             "format": "date-time",
@@ -4201,6 +4227,21 @@
             "description": "OR-managed update timestamp",
             "title": "Updated At"
           }
+        },
+        "if": {
+          "properties": {
+            "identityPolicy": {
+              "const": "autoProvisionAsRole"
+            }
+          },
+          "required": [
+            "identityPolicy"
+          ]
+        },
+        "then": {
+          "required": [
+            "defaultProvisionGroup"
+          ]
         },
         "x-openregister-seed": [],
         "appendOnly": false,
@@ -4302,6 +4343,17 @@
                 }
               }
             }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "suspended"
+            ],
+            "default": "pending",
+            "description": "Registration trust gate (REQ-LTI-011). Only an `approved` registration may complete OIDC login initiation, launch validation, or service-token issuance/verification — a `pending`/`suspended` registration is rejected identically to an unregistered client_id by LtiRegistrationResolverService::findToolByClientId(). Transitioned only via the admin-gated approve()/suspend() actions. Trust and identity are role-symmetric concerns (design.md D1) even though lti_tool registrations don't get identity-linked end-users the way lti_platform launches do.",
+            "title": "Status"
           },
           "created": {
             "type": "string",
@@ -4433,6 +4485,31 @@
             "type": "string",
             "description": "Mapping slug applied to both the AGS event payload and the NRPS response shape",
             "title": "Mapping"
+          },
+          "resourceLinkMappings": {
+            "type": "array",
+            "description": "REQ-LTI-013 resource-link-to-consuming-app-object mapping seam. Each entry is an ADR-008 {resourceLinkId, targetType, targetId} tuple, mirroring gradeSink/rosterSource's shape. resourceLinkId MAY be empty to denote a deployment-default entry. Only meaningful when ltiPlatformId is set (an inbound resource_link claim only appears on a launch this instance receives as Tool); a deployment referencing ltiToolId never populates it. Resolved (never read/written) by LtiLaunchService::resolveResourceMapping() — the adapter only tells a consuming app which target a resource_link.id maps to, it never performs the register/schema read/write itself.",
+            "title": "Resource Link Mappings",
+            "items": {
+              "type": "object",
+              "properties": {
+                "resourceLinkId": {
+                  "type": "string",
+                  "description": "The LTI resource_link.id claim value this entry matches exactly; empty denotes the deployment-default fallback entry",
+                  "title": "Resource Link ID"
+                },
+                "targetType": {
+                  "type": "string",
+                  "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                  "title": "Target Type"
+                },
+                "targetId": {
+                  "type": "string",
+                  "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                  "title": "Target ID"
+                }
+              }
+            }
           },
           "created": {
             "type": "string",
