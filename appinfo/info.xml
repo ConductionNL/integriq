@@ -53,6 +53,7 @@
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
 		<job>OCA\OpenConnector\Cron\LtiKeyRetirementJob</job>
 		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
+		<job>OCA\OpenConnector\Cron\CardfeedSyncJob</job>
 		<job>OCA\OpenConnector\Cron\EudiStatusListRefreshJob</job>
 		<job>OCA\OpenConnector\Cron\KissPullJob</job>
 		<job>OCA\OpenConnector\Cron\ApprovalTimeoutSweepJob</job>
