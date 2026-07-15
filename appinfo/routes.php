@@ -222,6 +222,11 @@ return [
 		['name' => 'tablesBridge#tables', 'url' => '/api/synchronizations/tables-bridge/tables', 'verb' => 'GET'],
 		['name' => 'tablesBridge#columns', 'url' => '/api/synchronizations/tables-bridge/tables/{tableId}/columns', 'verb' => 'GET'],
 
+		// Forms bridge discovery endpoints (nextcloud-form source editor support)
+		['name' => 'formsBridge#status', 'url' => '/api/synchronizations/forms-bridge/status', 'verb' => 'GET'],
+		['name' => 'formsBridge#forms', 'url' => '/api/synchronizations/forms-bridge/forms', 'verb' => 'GET'],
+		['name' => 'formsBridge#questions', 'url' => '/api/synchronizations/forms-bridge/forms/{formId}/questions', 'verb' => 'GET'],
+
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],

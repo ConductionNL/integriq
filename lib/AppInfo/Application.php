@@ -69,6 +69,8 @@ use OCA\OpenConnector\Service\Integration\SynchronizationContractProvider;
 use OCA\OpenConnector\Service\OrganisationBridgeService;
 use OCA\OpenConnector\Service\PeppolOutboundConsumer;
 use OCA\OpenConnector\Service\SettingsService;
+use OCA\OpenConnector\Service\Forms\FormsClientInterface;
+use OCA\OpenConnector\Service\Forms\FormsOcsClient;
 use OCA\OpenConnector\Service\Tables\TablesClientInterface;
 use OCA\OpenConnector\Service\Tables\TablesOcsClient;
 use OCA\OpenConnector\SetupCheck\OpenRegisterDependencyCheck;
@@ -368,6 +370,22 @@ class Application extends App implements IBootstrap
             TablesClientInterface::class,
             static function ($c) {
                 return $c->get(TablesOcsClient::class);
+            }
+        );
+
+        // Forms-connector: bind the polymorphic Forms API seam to its
+        // concrete v3-REST implementation (design.md Decision 1), identical
+        // shape to the TablesClientInterface binding above. `FormsOcsClient`'s
+        // own dependencies (CallService, LoggerInterface) are plain
+        // autowirable types, so only the interface binding needs an explicit
+        // factory here. No conditional/feature-detected binding — the client
+        // class itself has no `OCA\Forms\*` reference, so it is always
+        // safely constructible; only *usage* is feature-detected
+        // (FormsSyncAdapter::assertEnabled()).
+        $context->registerService(
+            FormsClientInterface::class,
+            static function ($c) {
+                return $c->get(FormsOcsClient::class);
             }
         );
 

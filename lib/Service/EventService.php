@@ -21,7 +21,10 @@ namespace OCA\OpenConnector\Service;
 use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
+use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
 use OCA\OpenConnector\Exception\InvalidMessageStateException;
+use OCA\OpenConnector\Service\Forms\FormsAnswerResolver;
+use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
@@ -29,6 +32,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Service\JobService;
+use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\SynchronizationService;
 
 /**
@@ -51,8 +55,9 @@ use OCA\OpenConnector\Service\SynchronizationService;
  * @SuppressWarnings(PHPMD.LongVariable)             -- $synchronizationService reads clearer
  * than an abbreviation for the ADR-023 action target.
  * @SuppressWarnings(PHPMD.TooManyMethods)           -- dispatchNotificatiesAction() (REQ-010,
- * notificaties-api-subscriber) is the fourth action-dispatch branch (webhook/synchronization/
- * job/notificaties), the same single-owner reuse constraint as the ExcessiveClassLength
+ * notificaties-api-subscriber) and dispatchMappingAction() (REQ-012, nextcloud-forms-connector)
+ * are the fourth and fifth action-dispatch branches (webhook/synchronization/job/notificaties/
+ * mapping), the same single-owner reuse constraint as the ExcessiveClassLength
  * suppression above; splitting it into a sibling class would duplicate the retry/backoff/
  * dead-letter bookkeeping it exists to reuse.
  * @SuppressWarnings(PHPMD.StaticAccess)             -- NotificatiesSubscriberService::
@@ -122,10 +127,16 @@ class EventService
      * @param WebhookSignatureService $signatureService       Signs outbound deliveries when configured.
      * @param SynchronizationService  $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
      * @param JobService              $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
-     * @param CallService             $callService            Runs `action.kind = 'notificaties'` dispatches against a `Source` (REQ-010).
+     * @param CallService             $callService            Runs `action.kind = 'notificaties'`/`'mapping'`
+     *                                                        dispatches against a `Source` (REQ-010/REQ-012).
+     * @param MappingService          $mappingService         Runs the answer->target transform for `action.kind = 'mapping'` (REQ-012).
+     * @param FormsAnswerResolver     $formsAnswerResolver    Answer-by-question resolution for `action.kind = 'mapping'` (REQ-012).
+     * @param FormsSyncAdapter        $formsSyncAdapter       Feature detection + submission/form fetch for `action.kind = 'mapping'`
+     *                                                        (nullable, mirrors `SynchronizationService`'s `?TablesSyncAdapter` pattern — REQ-012).
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -134,7 +145,10 @@ class EventService
         private readonly WebhookSignatureService $signatureService,
         private readonly SynchronizationService $synchronizationService,
         private readonly JobService $jobService,
-        private readonly CallService $callService
+        private readonly CallService $callService,
+        private readonly ?MappingService $mappingService=null,
+        private readonly ?FormsAnswerResolver $formsAnswerResolver=null,
+        private readonly ?FormsSyncAdapter $formsSyncAdapter=null,
     ) {
 
     }//end __construct()
@@ -737,6 +751,7 @@ class EventService
      * @return boolean True when the attempt succeeded.
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012
      */
     private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription=null): bool
     {
@@ -791,6 +806,13 @@ class EventService
 
             case 'notificaties':
                 return $this->dispatchNotificatiesAction(
+                    message: $message,
+                    subscriptionData: $subscriptionData,
+                    action: $actionArray
+                );
+
+            case 'mapping':
+                return $this->dispatchMappingAction(
                     message: $message,
                     subscriptionData: $subscriptionData,
                     action: $actionArray
@@ -1132,6 +1154,259 @@ class EventService
         }
 
     }//end findNotificatiesEvent()
+
+    /**
+     * Dispatch an `action.kind = 'mapping'` message: resolve the target
+     * `Mapping` + `Source`, fetch the full Forms submission independently
+     * (the merged trigger's event payload alone does not carry `answers` —
+     * design.md Decision 2, discovery.md Finding 3), resolve every answer
+     * reference via {@see FormsAnswerResolver} (REQ-003), run
+     * `MappingService::executeMapping()`, and call `CallService::call()`
+     * against the resolved `Source`/`action.endpoint`. Success/failure
+     * bookkeeping is identical to the sibling `synchronization`/`job`/
+     * `notificaties` branches, so retry/backoff/dead-letter/replay all apply
+     * unchanged. Never invokes `deliverMessage`/webhook-signing.
+     *
+     * @param ObjectEntity $message          The message being dispatched.
+     * @param array        $subscriptionData The owning subscription's OR object array.
+     * @param array        $action           The resolved `action` block
+     *                                       (`{kind, mappingId, sourceId, endpoint, method?}`).
+     *
+     * @return boolean True when the mapped call succeeded.
+     *
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012
+     */
+    private function dispatchMappingAction(ObjectEntity $message, array $subscriptionData, array $action): bool
+    {
+        $retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
+
+        $mappingId = (string) ($action['mappingId'] ?? '');
+        $sourceId  = (string) ($action['sourceId'] ?? '');
+
+        $mapping = null;
+        if ($mappingId !== '') {
+            $mapping = $this->findMappingActionObject(id: $mappingId, schema: 'mapping');
+        }
+
+        $source = null;
+        if ($sourceId !== '') {
+            $source = $this->findMappingActionObject(id: $sourceId, schema: 'source');
+        }
+
+        if ($mapping === null || $source === null) {
+            // Unresolvable mappingId/sourceId is retryable — the Mapping or
+            // Source may be created/corrected later — same treatment as an
+            // unresolvable synchronizationId/jobId/notificaties sourceId
+            // above (design.md Decision 4).
+            $this->recordFailure(
+                message: $message,
+                error: 'mapping or source not found',
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        if ($this->formsSyncAdapter === null || $this->formsAnswerResolver === null || $this->mappingService === null) {
+            // No Forms adapter/answer-resolver/mapping-service wired at all —
+            // this dispatch kind cannot run in this deployment. A
+            // configuration problem, not a transient one.
+            $this->recordConfigurationError(
+                message: $message,
+                error: "The Nextcloud Forms adapter is not available for action.kind='mapping' dispatch."
+            );
+            return false;
+        }
+
+        try {
+            $this->formsSyncAdapter->assertEnabled();
+        } catch (FormsFeatureDisabledException $exception) {
+            // REQ-001 scenario 3: Forms disabled is a config error (retryCount
+            // stays 0), never attempting a Forms HTTP call.
+            $this->recordConfigurationError(message: $message, error: $exception->getMessage());
+            return false;
+        }
+
+        $messageData = $message->getObject();
+        $event       = $this->findNotificatiesEvent(eventId: ($messageData['eventId'] ?? null));
+        if ($event === null) {
+            $this->recordFailure(
+                message: $message,
+                error: 'event not found',
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }
+
+        $eventData    = (array) (($event->getObject()['data'] ?? []));
+        $formId       = (int) ($eventData['formId'] ?? 0);
+        $submissionId = (int) ($eventData['submission']['id'] ?? 0);
+
+        if ($formId <= 0 || $submissionId <= 0) {
+            // Design.md Decision 4's constraint: a subscription with
+            // action.kind='mapping' matching a non-Forms event type has no
+            // formId/submission.id — a configuration error naming the gap,
+            // not a crash and not retryable (this subscription will never
+            // succeed against this event type without being reconfigured).
+            $this->recordConfigurationError(
+                message: $message,
+                error: "action.kind='mapping' requires event.data.formId and event.data.submission.id (non-Forms event?)"
+            );
+            return false;
+        }
+
+        try {
+            $submission = $this->formsSyncAdapter->fetchSubmission(source: $source, formId: $formId, submissionId: $submissionId);
+            $form       = $this->formsSyncAdapter->fetchForm(source: $source, formId: $formId);
+
+            $resolvedAnswers = $this->resolveMappingAnswers(
+                questions: $form['questions'],
+                answers: $submission['answers']
+            );
+
+            $mappedResult = $this->mappingService->executeMapping(mapping: $mapping, input: $resolvedAnswers);
+
+            $callLog = $this->callService->call(
+                source: $source,
+                endpoint: (string) ($action['endpoint'] ?? ''),
+                method: (string) ($action['method'] ?? 'POST'),
+                config: ['json' => $mappedResult]
+            );
+        } catch (\Throwable $exception) {
+            // Any resolution/mapping/call failure (including an ambiguous
+            // question-text FormsConfigException — REQ-004 scenario 2) is a
+            // standard retryable failure: a data-shape problem in a specific
+            // submission does not permanently misconfigure the subscription.
+            $this->logger->error(
+                    'Failed to dispatch mapping action for event message: '.$exception->getMessage(),
+                    [
+                        'exception' => $exception,
+                        'message'   => $message->jsonSerialize(),
+                    ]
+                    );
+            $this->recordFailure(
+                message: $message,
+                error: $exception->getMessage(),
+                statusCode: null,
+                retryAfter: null,
+                retryPolicy: $retryPolicy
+            );
+            return false;
+        }//end try
+
+        $callLogData = $callLog->getObject();
+        $statusCode  = (int) ($callLogData['statusCode'] ?? 0);
+
+        if ($statusCode >= 200 && $statusCode < 300) {
+            $this->recordDeliverySuccess(message: $message);
+            return true;
+        }
+
+        $this->recordFailure(
+            message: $message,
+            error: 'Mapping action call failed with status code: '.$statusCode,
+            statusCode: $statusCode,
+            retryAfter: null,
+            retryPolicy: $retryPolicy
+        );
+        return false;
+
+    }//end dispatchMappingAction()
+
+    /**
+     * Resolve every answer in a form's `questions` list, keyed BOTH by
+     * numeric question id (string-cast) and by question TEXT, so a `Mapping`
+     * can reference either style. Text keys are resolved via
+     * {@see FormsAnswerResolver}'s own text-resolution path, which throws
+     * `FormsConfigException` when two-or-more questions share that exact
+     * text (REQ-003) — surfaced to the caller as a standard dispatch failure
+     * (REQ-004 scenario 2), never silently picking one.
+     *
+     * @param array $questions The form's fetched `questions` (FormsClientInterface::getForm()).
+     * @param array $answers   The submission's fetched `answers` (FormsClientInterface::getSubmission()).
+     *
+     * @return array<string, mixed> `{"<id>": value, "<text>": value, ...}`, the `$input`
+     *         passed to `MappingService::executeMapping()`.
+     *
+     * @throws \OCA\OpenConnector\Exception\FormsConfigException When a question text is ambiguous.
+     *
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-answer-by-question-resolution-and-type-coercion-req-003
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+     */
+    private function resolveMappingAnswers(array $questions, array $answers): array
+    {
+        $resolved = [];
+
+        foreach ($questions as $question) {
+            if (is_array($question) === false) {
+                continue;
+            }
+
+            $id = (int) ($question['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            $resolved[(string) $id] = $this->formsAnswerResolver->resolve(
+                questions: $questions,
+                answers: $answers,
+                questionRef: $id
+            );
+        }
+
+        $seenTexts = [];
+        foreach ($questions as $question) {
+            if (is_array($question) === false) {
+                continue;
+            }
+
+            $text = (string) ($question['text'] ?? '');
+            if ($text === '' || in_array($text, $seenTexts, true) === true) {
+                continue;
+            }
+
+            $seenTexts[]     = $text;
+            $resolved[$text] = $this->formsAnswerResolver->resolve(
+                questions: $questions,
+                answers: $answers,
+                questionRef: $text
+            );
+        }
+
+        return $resolved;
+
+    }//end resolveMappingAnswers()
+
+    /**
+     * Resolve a `mapping`/`source` action reference by id, tolerating a
+     * missing/invalid/unresolvable id — the generic counterpart to
+     * {@see findNotificatiesSource} for `action.kind = 'mapping'`'s two id
+     * references.
+     *
+     * @param string $id     The OR object id/uuid to resolve.
+     * @param string $schema The OpenRegister schema slug (`'mapping'` or `'source'`).
+     *
+     * @return ObjectEntity|null The resolved object, or null when not found.
+     *
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
+     */
+    private function findMappingActionObject(string $id, string $schema): ?ObjectEntity
+    {
+        if ($id === '') {
+            return null;
+        }
+
+        try {
+            return $this->objectService->find(id: $id, register: 'openconnector', schema: $schema);
+        } catch (\Throwable $exception) {
+            return null;
+        }
+
+    }//end findMappingActionObject()
 
     /**
      * Persist a non-webhook delivery success (`action.kind = 'synchronization'`

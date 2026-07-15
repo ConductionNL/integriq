@@ -95,7 +95,7 @@
 							:input-id="'sync-source-type'"
 							:aria-label-combobox="t('openconnector', 'Source type')"
 							:value="selectedSourceType"
-							:options="typeOptions"
+							:options="sourceTypeOptions"
 							:clearable="false"
 							@input="onSourceTypeChange" />
 					</div>
@@ -387,6 +387,7 @@ import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
+import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'openconnector'
@@ -416,6 +417,14 @@ const TYPE_OPTIONS = [
  * app is enabled (tables-bridge REQ-004 / sync-editor-ui REQ-SYNCUI-006).
  */
 const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcloud Table' }
+
+/**
+ * Option appended to the SOURCE-only type list when the backend reports the
+ * Forms app is enabled (nextcloud-forms-connector REQ-001 / sync-editor-ui
+ * REQ-SYNCUI-008). Never offered as a target option — nextcloud-form is a
+ * source-only type (nextcloud-forms-connector REQ-002).
+ */
+const NEXTCLOUD_FORM_OPTION = { id: NEXTCLOUD_FORM_KIND, label: 'Nextcloud Form' }
 
 /**
  * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync
@@ -531,6 +540,8 @@ export default {
 			rawConditionsError: '',
 			/** Whether the backend reports the Tables app is enabled (REQ-004). */
 			tablesEnabled: false,
+			/** Whether the backend reports the Forms app is enabled (nextcloud-forms-connector REQ-001). */
+			formsEnabled: false,
 			/** In-flight guard for the "Reset cursor" action (REQ-019). */
 			resettingCursor: false,
 		}
@@ -582,9 +593,27 @@ export default {
 			}
 			return TYPE_OPTIONS
 		},
+		/**
+		 * Kind options offered in the SOURCE selector only. `nextcloud-form`
+		 * is appended here (never to the shared `typeOptions` the target
+		 * selector uses) — nextcloud-forms-connector REQ-002 is source-only,
+		 * so `nextcloud-form` must never appear as a target-kind option,
+		 * regardless of whether the Forms app is enabled (sync-editor-ui
+		 * REQ-SYNCUI-008). Mirrors `typeOptions`' "keep an already-configured
+		 * type visible even if the app is later disabled" behaviour.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		sourceTypeOptions() {
+			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
+			if (this.formsEnabled || usesForm) {
+				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
+			}
+			return this.typeOptions
+		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedSourceType() {
-			return this.typeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
+			return this.sourceTypeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedTargetType() {
@@ -661,6 +690,7 @@ export default {
 
 	mounted() {
 		this.fetchTablesStatus()
+		this.fetchFormsStatus()
 	},
 
 	methods: {
@@ -680,6 +710,25 @@ export default {
 				this.tablesEnabled = Boolean(response.data?.enabled)
 			} catch (_err) {
 				this.tablesEnabled = false
+			}
+		},
+		/**
+		 * Ask the backend whether the Forms app is enabled for the acting
+		 * user; only then is `nextcloud-form` offered in the SOURCE kind
+		 * selector (nextcloud-forms-connector REQ-001, sync-editor-ui
+		 * REQ-SYNCUI-008). Soft-fails to "disabled" so a backend without the
+		 * endpoint simply never offers the type.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		async fetchFormsStatus() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openconnector/api/synchronizations/forms-bridge/status'),
+				)
+				this.formsEnabled = Boolean(response.data?.enabled)
+			} catch (_err) {
+				this.formsEnabled = false
 			}
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */

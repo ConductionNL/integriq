@@ -1,27 +1,8 @@
 # nextcloud-forms-connector Specification
 
-**Status**: planned
-**Scope**: openconnector
-**OpenSpec changes**:
-- nextcloud-forms-connector (this change)
-
 ## Purpose
-
-Lets OpenConnector read Nextcloud Forms submissions as a synchronization
-source, and map a Forms submission's answers (resolved by question, not raw
-numeric position) into an outbound call to an external system on the
-already-merged Forms submission trigger (`nextcloud-event-triggers`
-REQ-004), through Forms' own public REST API only (never by reaching into
-Forms' internal PHP classes), reusing the existing Source →
-Synchronization → SynchronizationContract triad, `CallService` transport,
-`MappingService` transformation, and `EventService` subscription-dispatch
-machinery. Forms is a soft (feature-detected) runtime dependency: absent or
-disabled, `nextcloud-form` simply does not exist as a source option, and
-`action.kind: 'mapping'` subscriptions fail cleanly rather than attempting
-any Forms call.
-
-## ADDED Requirements
-
+TBD - created by archiving change nextcloud-forms-connector. Update Purpose after archive.
+## Requirements
 ### Requirement: Feature detection — Forms app absence hides the type entirely (REQ-001)
 
 The system MUST feature-detect the Forms app via
@@ -167,7 +148,7 @@ questions):
 
 ### Requirement: Outbound submission-to-call mapping dispatch (REQ-004)
 
-The system MUST, for `action.kind: 'mapping'` in `EventService`'s subscription action-dispatch switch (`events-cloudevents` REQ-008/REQ-010), resolve
+The system MUST, for `action.kind: 'mapping'` in `EventService`'s subscription action-dispatch switch (`events-cloudevents` REQ-008/REQ-012), resolve
 `action.mappingId` to a `Mapping` object and `action.sourceId` to a `Source`
 object (same not-found handling — persist the message `status='failed'`
 with a retryable error — as the existing `synchronization`/`job` branches).
@@ -244,3 +225,4 @@ Forms directly.
 - **WHEN** the editor calls the question-list endpoint for that form
 - **THEN** each question's `id`/`text`/`name`/`type` is returned, sufficient
   for the mapping helper to indicate array-vs-scalar resolution (REQ-003)
+
