@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -17,7 +17,7 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
           "bankfeed_batch",
@@ -28,6 +28,7 @@
           "event",
           "event_message",
           "event_subscription",
+          "iwmo_ijw_message",
           "job",
           "job_log",
           "kiss_klantcontact",
@@ -107,11 +108,12 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
+              "iwmo-ijw",
               "kiss",
               "open-formulieren",
               "payment",
@@ -3335,6 +3337,106 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp of the last local upsert (pull or push)",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "iwmo_ijw_message": {
+        "slug": "iwmo_ijw_message",
+        "title": "iWMO/iJW Message",
+        "icon": "HospitalBoxOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound iWMO/iJW bericht send or one inbound retour, produced by the iwmo-ijw-adapter connector",
+        "description": "An iWMO/iJW Message tracks either one outbound Wmo/Jw berichttype dispatch (a toewijzing or declaratie translated and sent) or one inbound retour (acceptance/rejection, start/stop-zorg, declaratie processing) received back — never merged into a single mutable row. See openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md.",
+        "required": [
+          "direction",
+          "berichttype",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound bericht send or an inbound retour",
+            "title": "Direction"
+          },
+          "berichttype": {
+            "type": "string",
+            "description": "The berichtcode (e.g. Wmo303, Jw321, Wmo304)",
+            "title": "Berichttype"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "wmo",
+              "jw"
+            ],
+            "description": "Wmo (Wet maatschappelijke ondersteuning) or Jw (Jeugdwet)",
+            "title": "Domain"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "accepted",
+              "rejected",
+              "care_started",
+              "care_start_confirmed",
+              "care_stopped",
+              "care_stop_confirmed",
+              "invoice_processed",
+              "invoice_rejected"
+            ],
+            "description": "Outbound: sent|failed. Inbound: derived from the retour berichttype — see design.md's inbound retour field table",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The stuurgegevens.referentienummer this OUTBOUND message carries — the correlation key a retour's kenmerk echoes back; null on inbound records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The stuurgegevens.kenmerk an INBOUND retour echoed back — resolved against a prior outbound record's ref; null on outbound records",
+            "title": "Kenmerk"
+          },
+          "caseReference": {
+            "type": "string",
+            "description": "The linked OR case object's uuid, supplied by the pushing sibling app",
+            "title": "Case Reference"
+          },
+          "caseRegister": {
+            "type": "string",
+            "description": "The linked OR case object's register slug — required (with caseSchema) to write back a retour outcome",
+            "title": "Case Register"
+          },
+          "caseSchema": {
+            "type": "string",
+            "description": "The linked OR case object's schema slug — required (with caseRegister) to write back a retour outcome",
+            "title": "Case Schema"
+          },
+          "bsnHash": {
+            "type": "string",
+            "description": "SHA-256 hash of the client BSN sent on the wire for a toewijzing — the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
+            "title": "BSN Hash"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail (outbound) or unresolved-kenmerk detail (inbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
             "title": "Synced At"
           }
         },
