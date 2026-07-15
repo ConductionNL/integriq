@@ -65,6 +65,11 @@ class RegisterDescriptorTest extends TestCase
      * Was 26 — `openformulieren_form_mapping` and `openformulieren_submission`
      * added by openspec/changes/open-formulieren-intake.
      *
+     * Was 28 — `iwmo_ijw_message` added by openspec/changes/iwmo-ijw-adapter.
+     *
+     * Was 29 — `fsc_service` and `fsc_call` added by
+     * openspec/changes/fsc-connectivity.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -108,6 +113,11 @@ class RegisterDescriptorTest extends TestCase
         // Open Formulieren intake bridge — added by open-formulieren-intake spec.
         'OpenFormulierenFormMapping' => 'openformulieren_form_mapping',
         'OpenFormulierenSubmission'  => 'openformulieren_submission',
+        // iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
+        'IwmoIjwMessage'             => 'iwmo_ijw_message',
+        // FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
+        'FscService'                 => 'fsc_service',
+        'FscCall'                    => 'fsc_call',
     ];
 
     /**

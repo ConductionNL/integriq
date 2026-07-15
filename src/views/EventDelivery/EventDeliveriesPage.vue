@@ -172,7 +172,7 @@ export default {
 		 * The visible rows after applying the Nextcloud-event provenance
 		 * filter on top of the server-side status/subscription filters.
 		 * @return {object[]}
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
 		 */
 		filteredRows() {
 			if (!this.nextcloudOnly) return this.rows

@@ -145,7 +145,7 @@ export default {
 		 * 'webhook' when the backend field is absent (e.g. an older cached
 		 * row) mirroring the server's own REQ-008 default.
 		 * @return {string}
-		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+		 * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
 		 */
 		actionKind() {
 			return this.message?.actionKind || 'webhook'

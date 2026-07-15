@@ -55,6 +55,7 @@
 		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
 		<job>OCA\OpenConnector\Cron\EudiStatusListRefreshJob</job>
 		<job>OCA\OpenConnector\Cron\KissPullJob</job>
+		<job>OCA\OpenConnector\Cron\IwmoIjwRetryJob</job>
 	</background-jobs>
 
 	<commands>
@@ -68,6 +69,7 @@
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
+			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
 		</post-migration>
 	</repair-steps>
 

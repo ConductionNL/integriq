@@ -98,7 +98,7 @@ class EventService
      *
      * @var string
      *
-     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     public const NEXTCLOUD_SOURCE_PREFIX = '/nextcloud/';
 

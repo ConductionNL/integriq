@@ -644,7 +644,7 @@ class EventsController extends Controller
      * pull() method's @NoAdminRequired across the method boundary.
      *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
-     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function deadLetterIndex(): JSONResponse
@@ -716,7 +716,7 @@ class EventsController extends Controller
      *
      * @return array The message data with `actionKind` and `nextcloudEvent` added.
      *
-     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     private function withDeadLetterProvenance(array $messageData, array &$actionKindCache): array
     {
@@ -749,7 +749,7 @@ class EventsController extends Controller
      *
      * @return string The resolved action kind.
      *
-     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     private function resolveSubscriptionActionKind(string $subscriptionId): string
     {
@@ -821,7 +821,7 @@ class EventsController extends Controller
      * @return JSONResponse The message detail with resolved subscription context.
      *
      * @spec openspec/changes/openconnector-dead-letter-replay/tasks.md#task-3
-     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     * @spec openspec/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-013
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function deadLetterShow(string $id): JSONResponse

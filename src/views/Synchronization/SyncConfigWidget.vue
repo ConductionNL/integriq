@@ -168,6 +168,57 @@
 			</div>
 		</template>
 
+		<!-- Nextcloud Table mode -->
+		<template v-else-if="type === 'nextcloud-table'">
+			<div class="sync-config__field">
+				<label :for="tableSourceId" class="sync-config__label">
+					{{ kindLabel }} {{ t('openconnector', 'source (Nextcloud instance)') }}
+				</label>
+				<NcSelect
+					:input-id="tableSourceId"
+					:aria-label-combobox="t('openconnector', 'Source (Nextcloud instance)')"
+					:value="selectedSource"
+					:options="sourceOptions"
+					:loading="sourcesLoading"
+					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
+					:placeholder="t('openconnector', 'Pick a configured source')"
+					@input="onSourcePick" />
+				<span class="sync-config__helper">
+					{{ t('openconnector', 'The Source record whose base URL + credential reach the Tables API.') }}
+				</span>
+			</div>
+
+			<div class="sync-config__field">
+				<label :for="tablePickerId" class="sync-config__label">
+					{{ t('openconnector', 'Table') }}
+				</label>
+				<NcSelect
+					:input-id="tablePickerId"
+					:aria-label-combobox="t('openconnector', 'Table')"
+					:value="selectedTable"
+					:options="tableOptions"
+					:loading="tablesLoading"
+					:disabled="!sourceIdValue"
+					:input-label="t('openconnector', 'Table')"
+					:placeholder="t('openconnector', 'Pick a table the source can access')"
+					@input="onTablePick" />
+				<span v-if="tablesError" class="sync-config__error">
+					{{ tablesError }}
+				</span>
+				<span v-else class="sync-config__helper">
+					{{ t('openconnector', 'Rows are read from (source) or written to (target) this table.') }}
+				</span>
+			</div>
+
+			<!-- Column-mapping helper (target only) -->
+			<TablesColumnMapping
+				v-if="kind === 'target' && configValue('tableId')"
+				:source-id="sourceIdValue"
+				:table-id="configValue('tableId')"
+				:config="config"
+				@update:config="(value) => $emit('update:config', value)" />
+		</template>
+
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
 			{{ t('openconnector', 'Pick a {kind} type above to configure it.', { kind: kind }) }}
@@ -181,6 +232,9 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { getFilePickerBuilder, FilePickerType } from '@nextcloud/dialogs'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
+
+import TablesColumnMapping from './TablesColumnMapping.vue'
+import { extractResults, mapTableOptions } from './tablesBridge.js'
 
 /**
  * Generate a stable input-id suffix so the two SyncConfigWidget
@@ -198,6 +252,7 @@ export default {
 		NcSelect,
 		NcTextField,
 		FolderOpenOutline,
+		TablesColumnMapping,
 	},
 
 	props: {
@@ -249,6 +304,9 @@ export default {
 			selectedRegisterRecord: null,
 			pickingFile: false,
 			pickerError: '',
+			tableOptions: [],
+			tablesLoading: false,
+			tablesError: '',
 		}
 	},
 
@@ -310,6 +368,23 @@ export default {
 			const schemaId = parts[1]
 			return this.schemaOptions.find((opt) => String(opt.id) === String(schemaId)) ?? null
 		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		tableSourceId() {
+			return `sync-config-${this.widgetUid}-table-source`
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		tablePickerId() {
+			return `sync-config-${this.widgetUid}-table`
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		selectedTable() {
+			const tableId = this.configValue('tableId')
+			if (!tableId) return null
+			return this.tableOptions.find((opt) => String(opt.id) === String(tableId)) ?? {
+				id: Number(tableId),
+				label: String(tableId),
+			}
+		},
 	},
 
 	watch: {
@@ -323,7 +398,22 @@ export default {
 				if (value === 'register/schema' && this.registerOptions.length === 0) {
 					this.fetchRegisters()
 				}
+				if (value === 'nextcloud-table') {
+					if (this.sourceOptions.length === 0) {
+						this.fetchSources()
+					}
+					if (this.sourceIdValue) {
+						this.fetchTables()
+					}
+				}
 			},
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		sourceId() {
+			// A source change under nextcloud-table invalidates the table list.
+			if (this.type === 'nextcloud-table' && this.sourceIdValue) {
+				this.fetchTables()
+			}
 		},
 	},
 
@@ -350,6 +440,51 @@ export default {
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		onTablePick(option) {
+			// Store the numeric table id in the config blob; clear any stale
+			// column mapping since it referenced the previous table's columns.
+			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
+				? { ...this.config }
+				: {}
+			if (option?.id) {
+				next.tableId = Number(option.id)
+			} else {
+				delete next.tableId
+			}
+			delete next.columnMapping
+			this.$emit('update:config', next)
+		},
+		/**
+		 * Fetch the tables the selected Source can access via the tables-bridge
+		 * discovery endpoint. Soft-fails to an empty list with an inline error
+		 * message so the picker degrades gracefully (contract.md 4xx/5xx).
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
+		async fetchTables() {
+			if (!this.sourceIdValue) {
+				this.tableOptions = []
+				return
+			}
+			this.tablesLoading = true
+			this.tablesError = ''
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openconnector/api/synchronizations/tables-bridge/tables'),
+					{ params: { sourceId: this.sourceIdValue } },
+				)
+				this.tableOptions = mapTableOptions(extractResults(response.data))
+			} catch (err) {
+				this.tableOptions = []
+				this.tablesError = err?.response?.data?.error
+					|| t('openconnector', 'Could not load tables for this source.')
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] tables fetch failed', err)
+			} finally {
+				this.tablesLoading = false
+			}
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
 		onRegisterPick(option) {
