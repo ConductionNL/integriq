@@ -2007,6 +2007,7 @@ class SynchronizationService
         );
 
     }//end replaySynchronizationItem()
+
     /**
      * Synchronizes a given synchronization (or a complete source).
      *
@@ -3659,7 +3660,7 @@ class SynchronizationService
         ?string $action='save'
     ): array {
         if ($this->tablesSyncAdapter === null) {
-            throw new TablesFeatureDisabledException('The Nextcloud Tables adapter is not available.');
+            throw new TablesFeatureDisabledException(message: 'The Nextcloud Tables adapter is not available.');
         }
 
         $this->tablesSyncAdapter->assertEnabled();
@@ -3805,7 +3806,7 @@ class SynchronizationService
     public function getAllObjectsFromTable(array $synchronization, ?bool $isTest=false): array
     {
         if ($this->tablesSyncAdapter === null) {
-            throw new TablesFeatureDisabledException('The Nextcloud Tables adapter is not available.');
+            throw new TablesFeatureDisabledException(message: 'The Nextcloud Tables adapter is not available.');
         }
 
         $this->tablesSyncAdapter->assertEnabled();
@@ -4296,7 +4297,7 @@ class SynchronizationService
      * @return array{objects: array, result: array, failed?: bool, statusCode?: int|null}
      * @throws TooManyRequestsHttpException When rate limit is exceeded
      *
-     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
@@ -4450,7 +4451,7 @@ class SynchronizationService
      *
      * @return bool True when the body is expected to be gzip-compressed.
      *
-     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      */
     private function isGzipPayload(array $source, string $endpoint, array $response): bool
     {
@@ -4556,7 +4557,7 @@ class SynchronizationService
      *
      * @return array<int, array> The decoded records, in file order.
      *
-     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      */
     private function parseJsonLines(string $body): array
     {
