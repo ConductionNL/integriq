@@ -29,8 +29,8 @@ use PHPUnit\Framework\TestCase;
  * Validates the openconnector_register.json descriptor structure.
  *
  * Checks:
- * - All 15 schema slugs are declared in the register
- * - All 15 schemas are defined in components.schemas
+ * - All schema slugs in SCHEMA_SLUGS are declared in the register
+ * - All schemas in SCHEMA_SLUGS are defined in components.schemas
  * - Log schemas carry appendOnly/immutable/archival markers
  * - Mutable schemas do NOT carry appendOnly/immutable
  * - FK relations carry $ref and x-openregister-onDelete
@@ -69,6 +69,13 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 29 — `fsc_service` and `fsc_call` added by
      * openspec/changes/fsc-connectivity.
+     *
+     * Was 31 (count re-verified at HEAD, prior "30" annotations in this
+     * history had drifted from the true count — a pre-existing, harmless
+     * comment inaccuracy fixed alongside this entry, not a structural bug:
+     * the assertions below always iterate SCHEMA_SLUGS itself, never a
+     * hardcoded literal) — `zgw_version_translation_log` added by
+     * openspec/changes/zgw-version-translation, bringing the count to 32.
      *
      * @var array<string, string>
      */
@@ -118,6 +125,8 @@ class RegisterDescriptorTest extends TestCase
         // FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
         'FscService'                 => 'fsc_service',
         'FscCall'                    => 'fsc_call',
+        // ZGW version-translation shim — added by zgw-version-translation spec.
+        'ZgwVersionTranslationLog'   => 'zgw_version_translation_log',
     ];
 
     /**

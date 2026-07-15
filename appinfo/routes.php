@@ -81,6 +81,14 @@ return [
 		['name' => 'fsc#listServices', 'url' => '/api/fsc/services', 'verb' => 'GET'],
 		['name' => 'fsc#call', 'url' => '/api/fsc/call', 'verb' => 'POST'],
 
+		// ZGW version-translation shim (openspec/changes/zgw-version-translation)
+		// — translates the fleet's current ZGW shape ("1.0", the shape
+		// procest/OpenRegister emit today) to/from VNG's incremental ZGW
+		// v1.6 stability line for sibling apps / municipalities on a
+		// different ZGW version. Authenticated NC-session call, mirrors
+		// fsc#call. See ZgwVersionTranslateController::translate().
+		['name' => 'zgwVersionTranslate#translate', 'url' => '/api/zgw-translate', 'verb' => 'POST'],
+
 		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
 		// Inbound submissions are gated by webhook signature (HMAC), not an NC
 		// session; see OpenFormulierenController::inbound(). status/handoff are
@@ -280,6 +288,8 @@ return [
 		// ConfigurationService::exportConfiguration()/importConfiguration().
 		// See openspec/changes/connector-catalog-ui/contract.md
 		['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST'],
+		// Register connector export — routed trigger for ConfigurationService::exportRegister().
+		['name' => 'configuration#exportRegister', 'url' => '/api/registers/{id}/export', 'verb' => 'GET'],
 		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
 		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
 
