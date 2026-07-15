@@ -91,12 +91,13 @@
       constructor + new endpoint tests (list/status/handoff/outbound,
       401-when-unauthenticated, ingest-persists, ingest-failure-does-not-
       break-the-202-ack).
-- [x] `composer check:routes` — all 159 routes point at existing controller
+- [x] `composer check:routes` — all 155 routes point at existing controller
       methods.
 
 ## 6. Quality gates
 
-- [x] Full PHPUnit suite green: 1326/1326, 0 failures (only the
+- [x] Full PHPUnit suite green: 1365/1365 (post-merge with origin/development's
+      concurrent `nextcloud-event-hub`/editors-live-updates waves), 0 failures (only the
       pre-existing, unrelated "deprecated phpunit.xml schema" runner
       notice — not a test failure).
 - [x] `composer phpcs` — 0 errors on every new/modified `lib/` file
