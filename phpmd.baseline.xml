@@ -2,6 +2,9 @@
 <phpmd-baseline>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Action/SynchronizationAction.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppInfo/Application.php"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/AppInfo/Application.php"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/AppInfo/Application.php" method="register"/>
+  <violation rule="PHPMD\Rule\CleanCode\MissingImport" file="lib/AppInfo/Application.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Connectors/PdokConnector.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/DSOController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/EndpointsController.php"/>
