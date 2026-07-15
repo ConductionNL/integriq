@@ -108,6 +108,63 @@
 						:config="draft.sourceConfig"
 						@update:sourceId="(value) => updateDraft('sourceId', value)"
 						@update:config="(value) => updateDraft('sourceConfig', value)" />
+
+					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
+					<div class="sync-detail__field">
+						<label :for="'sync-mode'" class="sync-detail__label">
+							{{ t('openconnector', 'Sync mode') }}
+						</label>
+						<NcSelect
+							:input-id="'sync-mode'"
+							:aria-label-combobox="t('openconnector', 'Sync mode')"
+							:value="selectedSyncMode"
+							:options="syncModeOptions"
+							:clearable="false"
+							@input="onSyncModeChange" />
+						<span class="sync-detail__helper">
+							{{ t('openconnector', 'Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.') }}
+						</span>
+					</div>
+
+					<template v-if="isIncremental">
+						<div class="sync-detail__field">
+							<NcTextField
+								:label="t('openconnector', 'Cursor field')"
+								:value="draft.sourceConfig.cursorField || ''"
+								:placeholder="t('openconnector', 'e.g. updatedAt')"
+								@update:value="(value) => updateSourceConfigField('cursorField', value)" />
+						</div>
+
+						<div class="sync-detail__field">
+							<label :for="'sync-cursor-comparator'" class="sync-detail__label">
+								{{ t('openconnector', 'Cursor comparator') }}
+							</label>
+							<NcSelect
+								:input-id="'sync-cursor-comparator'"
+								:aria-label-combobox="t('openconnector', 'Cursor comparator')"
+								:value="selectedCursorComparator"
+								:options="cursorComparatorOptions"
+								@input="onCursorComparatorChange" />
+						</div>
+
+						<div class="sync-detail__field">
+							<span class="sync-detail__label">{{ t('openconnector', 'Cursor watermark') }}</span>
+							<span class="sync-detail__helper">
+								{{ original && original.cursorWatermark ? original.cursorWatermark : t('openconnector', '(not set — the next run requests an unfiltered fetch)') }}
+							</span>
+							<NcButton
+								type="secondary"
+								:disabled="resettingCursor || !objectIdString || !(original && original.cursorWatermark)"
+								:title="t('openconnector', 'Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.')"
+								@click="resetCursor">
+								<template #icon>
+									<NcLoadingIcon v-if="resettingCursor" :size="20" />
+									<RestoreIcon v-else :size="20" />
+								</template>
+								{{ t('openconnector', 'Reset cursor') }}
+							</NcButton>
+						</div>
+					</template>
 				</section>
 
 				<section class="sync-detail__card sync-detail__general">
@@ -317,11 +374,13 @@ import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLef
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
+import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { showSuccess, showError } from '@nextcloud/dialogs'
 
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
@@ -359,6 +418,25 @@ const TYPE_OPTIONS = [
 const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcloud Table' }
 
 /**
+ * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync
+ * with the `syncMode` enum in `lib/Settings/openconnector_register.json`.
+ */
+const SYNC_MODE_OPTIONS = [
+	{ id: 'full', label: 'Full' },
+	{ id: 'incremental', label: 'Incremental' },
+]
+
+/**
+ * `sourceConfig.cursorComparator` options (REQ-016). Informational only —
+ * the engine always takes the maximum observed `cursorField` value
+ * (computeCursorWatermark()), regardless of which comparator is selected.
+ */
+const CURSOR_COMPARATOR_OPTIONS = [
+	{ id: 'gt', label: 'Greater than (gt)' },
+	{ id: 'gte', label: 'Greater than or equal (gte)' },
+]
+
+/**
  * Build an empty draft for the create case. The legacy modal defaulted
  * sourceType:'api', targetType:'register/schema' — preserve that here so
  * a newly-routed-to record without a stored type still renders a sensible
@@ -373,6 +451,7 @@ function emptyDraft() {
 		sourceConfig: {},
 		sourceTargetMapping: '',
 		sourceHashMapping: '',
+		syncMode: 'full',
 		targetType: 'register/schema',
 		targetId: '',
 		targetConfig: {},
@@ -402,6 +481,7 @@ export default {
 		DatabaseArrowRightOutline,
 		FilterVariant,
 		PlayCircleOutline,
+		RestoreIcon,
 		SwapHorizontal,
 		UndoIcon,
 		RuleConditionGroup,
@@ -451,6 +531,8 @@ export default {
 			rawConditionsError: '',
 			/** Whether the backend reports the Tables app is enabled (REQ-004). */
 			tablesEnabled: false,
+			/** In-flight guard for the "Reset cursor" action (REQ-019). */
+			resettingCursor: false,
 		}
 	},
 
@@ -507,6 +589,27 @@ export default {
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		selectedTargetType() {
 			return this.typeOptions.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		syncModeOptions() {
+			return SYNC_MODE_OPTIONS
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		selectedSyncMode() {
+			return SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode) || SYNC_MODE_OPTIONS[0]
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		isIncremental() {
+			return this.draft?.syncMode === 'incremental'
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		cursorComparatorOptions() {
+			return CURSOR_COMPARATOR_OPTIONS
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		selectedCursorComparator() {
+			const value = this.draft?.sourceConfig?.cursorComparator
+			return CURSOR_COMPARATOR_OPTIONS.find((opt) => opt.id === value) || null
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		dirty() {
@@ -770,6 +873,60 @@ export default {
 			this.$set(this.draft, 'targetType', option.id)
 			this.$set(this.draft, 'targetId', '')
 			this.$set(this.draft, 'targetConfig', {})
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		onSyncModeChange(option) {
+			if (!option?.id || !this.draft) return
+			this.$set(this.draft, 'syncMode', option.id)
+		},
+		/**
+		 * Merge a single key into `draft.sourceConfig` without clobbering the
+		 * other keys SyncConfigWidget independently manages on the same
+		 * object — mirrors SyncConfigWidget's own read-current/spread/emit
+		 * pattern so both write paths stay non-destructive of each other.
+		 *
+		 * @param {string} key   The sourceConfig key to set.
+		 * @param {string} value The new value; an empty/null value removes the key.
+		 *
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+		 */
+		updateSourceConfigField(key, value) {
+			if (!this.draft) return
+			const next = { ...(this.draft.sourceConfig || {}) }
+			if (value === '' || value === null || value === undefined) {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.$set(this.draft, 'sourceConfig', next)
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		onCursorComparatorChange(option) {
+			this.updateSourceConfigField('cursorComparator', option?.id || '')
+		},
+		/**
+		 * Clear the stored cursor watermark via `POST .../reset-cursor`
+		 * (REQ-019). Clears the watermark only — does not change `syncMode`
+		 * and does not delete any data or re-enable deletion detection
+		 * (REQ-018 stays keyed on `syncMode`, unaffected by this action).
+		 *
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+		 */
+		async resetCursor() {
+			if (!this.objectIdString || this.resettingCursor) return
+			this.resettingCursor = true
+			try {
+				const response = await axios.post(
+					generateUrl(`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`),
+				)
+				const cleared = response.data?.cursorWatermark ?? ''
+				if (this.original) this.$set(this.original, 'cursorWatermark', cleared)
+				showSuccess(t('openconnector', 'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.'))
+			} catch (err) {
+				showError(err?.response?.data?.error || err?.message || t('openconnector', 'Failed to reset cursor'))
+			} finally {
+				this.resettingCursor = false
+			}
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
 		async save() {

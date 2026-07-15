@@ -16,8 +16,8 @@
   - GIVEN an existing Synchronization object with no `syncMode` set WHEN it
     is read THEN the application treats it as `full` (no migration/backfill
     needed)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Extend Twig request-config templating with a `cursor` context key (REQ-016)
 - **spec_ref**: `openspec/changes/cdc-incremental-sync/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016`
@@ -34,8 +34,8 @@
     runs THEN the Twig context has no `cursor` key and `sourceConfig.query`
     values are passed through unrendered — byte-identical to current
     behavior (regression check)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Compute and persist the cursor watermark, gated on fetch-completeness (REQ-017)
 - **spec_ref**: `openspec/changes/cdc-incremental-sync/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017`
@@ -54,8 +54,8 @@
   - GIVEN a fetched record whose configured `cursorField` resolves to
     `null` WHEN the run processes it THEN an `Exception` is thrown naming
     the missing field, and no partial/incorrect watermark is persisted
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Hard-block `deleteInvalidObjects()` for incremental synchronizations (REQ-018)
 - **spec_ref**: `openspec/changes/cdc-incremental-sync/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018`
@@ -78,8 +78,8 @@
     on an incremental Synchronization WHEN an `ObjectDeletedEvent` fires
     THEN the single-object delete still runs unaffected (regression check —
     this path never calls the bulk-diff branch this task guards)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 5: Reset-cursor controller action and route (REQ-019)
 - **spec_ref**: `openspec/changes/cdc-incremental-sync/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019`
@@ -94,8 +94,8 @@
     not-found handling
   - GIVEN a successful reset WHEN the response is inspected THEN it
     reflects the cleared watermark (for SPA confirmation feedback)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 6: Synchronization SPA — sync mode field + reset-cursor action
 - **spec_ref**: `openspec/changes/cdc-incremental-sync/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016`
@@ -113,39 +113,44 @@
     3 / Risks)
   - GIVEN the "Reset cursor" action WHEN clicked THEN it calls `POST
     .../reset-cursor` and shows a confirmation
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [ ] Test — SPA fields/action implemented and eslint-clean (0 errors); no
+  live-instance Playwright run was performed as part of this apply pass
 
 ## Verification
-- [ ] All tasks checked off
-- [ ] `openspec validate` passes
-- [ ] Manual testing against acceptance criteria
-- [ ] Code review against spec requirements
+- [ ] All tasks checked off — Task 6's browser test is the one open item
+- [x] `openspec validate` passes
+- [ ] Manual testing against acceptance criteria — not run against a live
+  Nextcloud instance in this pass (PHPUnit + local static checks only)
+- [ ] Code review against spec requirements — self-reviewed only; no
+  independent reviewer pass in this apply session
 
 ## Tests (company-wide ADR-009)
 
-- [ ] PHPUnit unit tests for new/changed business logic (`tests/Unit/`) —
+- [x] PHPUnit unit tests for new/changed business logic (`tests/Unit/`) —
   watermark advance/no-advance (Task 3), incremental deletion block
-  (Task 4), cursor templating (Task 2)
+  (Task 4), cursor templating (Task 2); 20 new tests, all passing
 - [ ] Newman/Postman tests for new/changed API endpoints — `reset-cursor`
-  (Task 5)
+  (Task 5) — not written; no live API server available in this apply pass
 - [ ] Browser tests (Playwright MCP) for UI changes — sync mode field +
-  reset-cursor action (Task 6)
-- [ ] Integration test: two successive incremental runs against a
+  reset-cursor action (Task 6) — not run in this apply pass
+- [x] Integration test: two successive incremental runs against a
   synthetic paginated source fetch/write only the delta between them
-  (proposal.md Scope item 5)
-- [ ] All tests pass (`composer test`, `newman run`)
+  (proposal.md Scope item 5) —
+  `testTwoSuccessiveIncrementalRunsFetchOnlyTheDelta()`
+- [x] All tests pass (`composer test:unit` — 1467 tests, 4156 assertions,
+  1 pre-existing skip, 0 failures); `newman run` not exercised (no new
+  Newman collection written this pass)
 
 ## Documentation (company-wide ADR-010)
 
-- [ ] Feature documentation updated in `docs/` — incremental sync mode,
-  cursor field configuration, reset-cursor action, and the explicit
-  "incremental mode never deletes" caveat
-- [ ] Screenshot captured and committed to `docs/images/` — Synchronization
-  edit form's new Sync mode field
+- [ ] Feature documentation updated in `docs/` — not done in this apply
+  pass; deferred (see report deviations)
+- [ ] Screenshot captured and committed to `docs/images/` — not done in
+  this apply pass; deferred (see report deviations)
 
 ## i18n (company-wide hydra ADR-007)
 
-- [ ] Dutch (`nl_NL`) and English (`en_US`) translation strings added for:
+- [x] Dutch (`nl_NL`) and English (`en_US`) translation strings added for:
   "Sync mode", "Cursor field", "Cursor comparator", "Reset cursor" action
-  label + confirmation + tooltip text
+  label + confirmation + tooltip text (`l10n/en.json`, `l10n/nl.json`)

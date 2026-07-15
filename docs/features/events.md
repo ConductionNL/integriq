@@ -108,6 +108,26 @@ EventMessages are persisted before delivery is attempted. Failed deliveries are 
 
 OpenConnector fulfils the **Notificatierouteringcomponent** role in the GEMMA architecture through this events subsystem — routing notifications between components in the Common Ground ecosystem.
 
+## Triggering integrations from Nextcloud Flow
+
+Beyond the always-on CloudEvents pipeline above, OpenConnector also registers three actions with
+Nextcloud's built-in **Settings > Flow** automation UI (the `workflowengine` app), so an admin can
+wire a specific file/tag rule directly to one OpenConnector integration without writing a webhook
+receiver or an unrelated cron-polling synchronization:
+
+| Flow operation | What it does |
+|-----------------|--------------|
+| **Run synchronization** | Runs a configured synchronization when the rule matches (e.g. "file tagged `push-to-erp`" → run synchronization X). |
+| **Call endpoint** | Calls a configured endpoint when the rule matches, using the exact same request-handling path a real inbound API call uses. |
+| **Fire CloudEvent** | Emits a CloudEvent (optionally carrying static configured data) when the rule matches, fanning out to any matching `event_subscription` exactly like the pipeline above. |
+
+To use these, open **Settings > Flow** as an admin, add a new rule, scope it with any of Nextcloud's
+built-in file checks (mime type, name, size, or system tag), and pick one of the three OpenConnector
+operations as the action. This capability is independent of the always-on CloudEvents pipeline
+described above — it is the admin-configurable, per-rule layer, complementary rather than a
+replacement. It requires the bundled `workflowengine` app to be enabled; when it is disabled, the
+three operations simply do not appear in the Flow editor.
+
 ## Implementation
 
 - `lib/Service/EventService.php` — Event processing, subscription matching, message creation
@@ -116,3 +136,5 @@ OpenConnector fulfils the **Notificatierouteringcomponent** role in the GEMMA ar
 - `lib/Db/Event.php` — Event entity
 - `lib/Db/EventSubscription.php` — Subscription entity
 - `lib/Db/EventMessage.php` — Message delivery tracking entity
+- `lib/WorkflowEngine/RunSynchronizationOperation.php`, `CallEndpointOperation.php`, `FireCloudEventOperation.php` — the three Flow operation adapters
+- `lib/WorkflowEngine/RegisterOperationsListener.php` — registers the three operations with NC's `workflowengine` app
