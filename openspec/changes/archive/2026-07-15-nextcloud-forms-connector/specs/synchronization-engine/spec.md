@@ -16,7 +16,7 @@ target-write or deletion-guard branch — `nextcloud-form` is source-only
 
 ## ADDED Requirements
 
-### Requirement: `nextcloud-form` source dispatch (REQ-016)
+### Requirement: `nextcloud-form` source dispatch (REQ-020)
 
 `SynchronizationService::getAllObjectsFromSource()` MUST dispatch
 `sourceType: nextcloud-form` to the Forms source adapter (see
