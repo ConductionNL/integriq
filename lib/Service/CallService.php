@@ -1694,6 +1694,12 @@ class CallService
 
         $timeStart = microtime(true);
         $attempt   = 0;
+        // Pre-declared so static analysis can prove the post-loop read is
+        // always non-null: every loop iteration either assigns $response
+        // before falling through to `break`, or `continue`s/`throw`s without
+        // reaching the return below — the defensive guard after the loop is
+        // therefore unreachable at runtime, but makes that guarantee explicit.
+        $response = null;
         do {
             $attempt++;
 
@@ -1744,6 +1750,13 @@ class CallService
 
             break;
         } while (true);
+
+        if ($response === null) {
+            // Unreachable in practice (see the pre-loop comment) — a hard
+            // failure here is safer than silently returning a malformed
+            // dispatch result.
+            throw new \RuntimeException('dispatchWithRetry() exited its retry loop without a response.');
+        }
 
         $timeEnd = microtime(true);
 
@@ -1992,6 +2005,78 @@ class CallService
     }//end hydrateInjectedCredentials()
 
     /**
+     * Phase 7b+7c combined: resolves brokered/injected credentials for one
+     * call, or produces the synthetic config-error CallLog the caller must
+     * return immediately.
+     *
+     * Consolidates {@see resolveBrokeredDispatch()} (proxy `credentialRef`)
+     * and {@see hydrateInjectedCredentials()} (app-side placeholder
+     * injection) behind a single call so `call()` carries only ONE
+     * short-circuit check for both phases instead of three nested branches —
+     * keeps `call()`'s cyclomatic/NPath complexity within budget without
+     * changing any behaviour (REQ-SBC-001/002/003/004).
+     *
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $config       The merged call configuration (Phase 7 output).
+     * @param array          $sourceData   The raw source data array.
+     * @param boolean        $asynchronous Whether asynchronous dispatch was requested.
+     * @param \DateTime|null $errorExpires Expiry for error log entries.
+     *
+     * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array}
+     *
+     * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function resolveCallCredentials(
+        ObjectEntity $source,
+        array $config,
+        array $sourceData,
+        bool $asynchronous,
+        ?\DateTime $errorExpires,
+    ): array {
+        $brokeredCredential = $this->resolveBrokeredDispatch(
+            source: $source,
+            config: $config,
+            sourceData: $sourceData,
+            asynchronous: $asynchronous,
+            errorExpires: $errorExpires,
+        );
+        if ($brokeredCredential instanceof ObjectEntity) {
+            // A synthetic 409 config-error CallLog was persisted — hard stop.
+            return [
+                'shortCircuit'       => $brokeredCredential,
+                'brokeredCredential' => null,
+                'sourceData'         => $sourceData,
+            ];
+        }
+
+        if ($brokeredCredential === null) {
+            $injected = $this->hydrateInjectedCredentials(
+                source: $source,
+                sourceData: $sourceData,
+                errorExpires: $errorExpires,
+            );
+            if ($injected instanceof ObjectEntity) {
+                return [
+                    'shortCircuit'       => $injected,
+                    'brokeredCredential' => null,
+                    'sourceData'         => $sourceData,
+                ];
+            }
+
+            $sourceData = $injected;
+        }
+
+        return [
+            'shortCircuit'       => null,
+            'brokeredCredential' => $brokeredCredential,
+            'sourceData'         => $sourceData,
+        ];
+
+    }//end resolveCallCredentials()
+
+    /**
      * Calls a source according to given configuration.
      *
      * @param ObjectEntity $source                The source ObjectEntity to call.
@@ -2081,43 +2166,29 @@ class CallService
         $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
         unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
-        // Phase 7b: Brokered-credential guards + resolution (REQ-SBC-001/002/003).
-        // Selection happens HERE, on the merged configuration, because Phase 9
-        // strips every `authentication` key before dispatch. Any config error is
-        // a hard synthetic 409 CallLog — embedded secrets are never merged,
-        // rendered, or dispatched for a credentialRef source, and there is NO
-        // fallback path (REQ-SBC-004).
-        $brokeredCredential = $this->resolveBrokeredDispatch(
+        // Phase 7b+7c: Brokered-credential guards/resolution (REQ-SBC-001/002/003)
+        // and app-side credential injection (generic/self-hosted sources),
+        // consolidated into one helper so this method keeps a single
+        // short-circuit check for both phases. Selection happens HERE, on the
+        // merged configuration, because Phase 9 strips every `authentication`
+        // key before dispatch. Any config error is a hard synthetic 409
+        // CallLog — embedded secrets are never merged, rendered, or
+        // dispatched for a credentialRef source, and there is NO fallback
+        // path (REQ-SBC-004).
+        $credentials = $this->resolveCallCredentials(
             source: $source,
             config: $config,
             sourceData: $sourceData,
             asynchronous: $asynchronous,
             errorExpires: $errorExpires,
         );
-        if ($brokeredCredential instanceof ObjectEntity) {
+        if ($credentials['shortCircuit'] !== null) {
             // A synthetic 409 config-error CallLog was persisted — hard stop.
-            return $brokeredCredential;
+            return $credentials['shortCircuit'];
         }
 
-        // Phase 7c: App-side credential injection (generic / self-hosted sources).
-        // When the call is NOT a host-locked proxy call, any credentialRef placeholder
-        // under configuration.authentication is resolved from Doriath through the broker
-        // and substituted in place, so the normal Twig auth render (Phase 9) injects a
-        // vault-resolved secret exactly as if it had been embedded — but the schema holds
-        // only the reference. A resolution failure is a hard synthetic 409 CallLog, with
-        // no fallback to an embedded secret (mirrors the proxy path).
-        if ($brokeredCredential === null) {
-            $injected = $this->hydrateInjectedCredentials(
-                source: $source,
-                sourceData: $sourceData,
-                errorExpires: $errorExpires,
-            );
-            if ($injected instanceof ObjectEntity) {
-                return $injected;
-            }
-
-            $sourceData = $injected;
-        }
+        $brokeredCredential = $credentials['brokeredCredential'];
+        $sourceData         = $credentials['sourceData'];
 
         // Phase 8: Handle preRequest hook; capture postRequest descriptor.
         $postRequest = $this->extractAndFirePreRequest(
