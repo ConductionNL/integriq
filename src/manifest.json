@@ -477,6 +477,9 @@
           { "id": "manage-signing", "label": "Webhook signing", "icon": "ShieldKeyOutline", "handler": "manageSigningHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
+      },
+      "slots": {
+        "form-fields": "SubscriptionActionFields"
       }
     },
     {

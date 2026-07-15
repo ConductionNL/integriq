@@ -28,6 +28,7 @@ use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -63,6 +64,11 @@ class EventsControllerTest extends TestCase
     private $userSession;
 
     /**
+     * @var ActionAuthService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $actionAuth;
+
+    /**
      * @var EventsController
      */
     private EventsController $controller;
@@ -89,7 +95,7 @@ class EventsControllerTest extends TestCase
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        $actionAuth = $this->createMock(ActionAuthService::class);
+        $this->actionAuth = $this->createMock(ActionAuthService::class);
 
         $signatureService = $this->createMock(WebhookSignatureService::class);
 
@@ -100,7 +106,7 @@ class EventsControllerTest extends TestCase
             $this->eventService,
             $l,
             $this->userSession,
-            $actionAuth,
+            $this->actionAuth,
             $signatureService
         );
     }//end setUp()
@@ -201,4 +207,200 @@ class EventsControllerTest extends TestCase
         $this->assertSame('invalid-state', $results['B']);
         $this->assertSame('not-found', $results['C']);
     }//end testBulkReplayReportsMixedOutcomes()
+
+
+    /**
+     * TC-8 / REQ-005: subscribe() with an NC-native type propagates
+     * OCSForbiddenException when the per-family action is not granted — the
+     * coarse `event.subscribe` grant alone is insufficient.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+     */
+    public function testSubscribeRejectsWhenFamilyActionNotGranted(): void
+    {
+        $this->request->method('getParams')->willReturn(['types' => ['com.nextcloud.files.node.created']]);
+
+        $this->actionAuth->method('requireAction')->willReturnCallback(
+            function ($user, string $action) {
+                if ($action === 'event.subscribe-nextcloud-files') {
+                    throw new OCSForbiddenException("Action '{$action}' requires admin rights");
+                }
+            }
+        );
+
+        $this->expectException(OCSForbiddenException::class);
+        $this->controller->subscribe();
+    }//end testSubscribeRejectsWhenFamilyActionNotGranted()
+
+
+    /**
+     * TC-9 / REQ-005: subscribe() succeeds once both the coarse
+     * `event.subscribe` grant AND the per-family
+     * `event.subscribe-nextcloud-files` grant pass (neither throws).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+     */
+    public function testSubscribeSucceedsWhenFamilyActionGranted(): void
+    {
+        $this->request->method('getParams')->willReturn(['types' => ['com.nextcloud.files.node.created']]);
+        // Neither requireAction call throws — mirrors a caller whose groups
+        // hold both grants (or an admin — bypass logic lives in the real,
+        // unchanged ActionAuthService, not in this controller).
+        $this->actionAuth->method('requireAction');
+
+        $saved = ObjectServiceMockBuilder::objectEntity($this, ['types' => ['com.nextcloud.files.node.created']], 'sub-uuid');
+        $this->orObjectService->method('saveObject')->willReturn($saved);
+
+        $response = $this->controller->subscribe();
+
+        $this->assertSame(200, $response->getStatus());
+    }//end testSubscribeSucceedsWhenFamilyActionGranted()
+
+
+    /**
+     * TC-11 / REQ-005 regression: subscribing to ONLY a non-NC-native
+     * (OR-object) type triggers no per-family check — the pre-existing
+     * coarse-action-only posture is unchanged.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+     */
+    public function testSubscribeToOrObjectTypeSkipsFamilyCheck(): void
+    {
+        $this->request->method('getParams')->willReturn(['types' => ['com.nextcloud.openregister.object.created']]);
+
+        $calledActions = [];
+        $this->actionAuth->method('requireAction')->willReturnCallback(
+            function ($user, string $action) use (&$calledActions) {
+                $calledActions[] = $action;
+            }
+        );
+
+        $saved = ObjectServiceMockBuilder::objectEntity($this, ['types' => ['com.nextcloud.openregister.object.created']], 'sub-uuid');
+        $this->orObjectService->method('saveObject')->willReturn($saved);
+
+        $response = $this->controller->subscribe();
+
+        $this->assertSame(200, $response->getStatus());
+        $this->assertSame(['event.subscribe'], $calledActions);
+    }//end testSubscribeToOrObjectTypeSkipsFamilyCheck()
+
+
+    /**
+     * REQ-005: updateSubscription() layers the same per-family gate as
+     * subscribe() — a request touching an NC-native type without the family
+     * grant is rejected.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/nextcloud-event-hub/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
+     */
+    public function testUpdateSubscriptionRejectsWhenFamilyActionNotGranted(): void
+    {
+        $this->request->method('getParams')->willReturn(['types' => ['com.nextcloud.calendar.object.created']]);
+
+        $this->actionAuth->method('requireAction')->willReturnCallback(
+            function ($user, string $action) {
+                if ($action === 'event.subscribe-nextcloud-calendar') {
+                    throw new OCSForbiddenException("Action '{$action}' requires admin rights");
+                }
+            }
+        );
+
+        $this->expectException(OCSForbiddenException::class);
+        $this->controller->updateSubscription('sub-uuid');
+    }//end testUpdateSubscriptionRejectsWhenFamilyActionNotGranted()
+
+
+    /**
+     * TC-25 / dead-letter-replay REQ-DLR-007: each dead-letter row carries
+     * its own resolved `actionKind` (default 'webhook' when the subscription
+     * has no `action`).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/nextcloud-event-hub/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     */
+    public function testDeadLetterIndexSurfacesActionKindPerRow(): void
+    {
+        $rows = [
+            ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'subscriptionId' => 'sub-webhook'], 'm1'),
+            ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'subscriptionId' => 'sub-sync'], 'm2'),
+        ];
+        $this->orObjectService->method('findAll')->willReturn(['results' => $rows, 'total' => 2]);
+        $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
+
+        $this->orObjectService->method('find')->willReturnCallback(
+            function (string $id, ...$rest) {
+                if ($id === 'sub-webhook') {
+                    return ObjectServiceMockBuilder::objectEntity($this, [], 'sub-webhook');
+                }
+
+                if ($id === 'sub-sync') {
+                    return ObjectServiceMockBuilder::objectEntity($this, ['action' => ['kind' => 'synchronization']], 'sub-sync');
+                }
+
+                throw new \OCP\AppFramework\Db\DoesNotExistException('missing');
+            }
+        );
+
+        $response = $this->controller->deadLetterIndex();
+        $rowsOut  = $response->getData()['results'];
+
+        $byId = [];
+        foreach ($rowsOut as $row) {
+            $byId[$row['subscriptionId']] = $row;
+        }
+
+        $this->assertSame('webhook', $byId['sub-webhook']['actionKind']);
+        $this->assertSame('synchronization', $byId['sub-sync']['actionKind']);
+    }//end testDeadLetterIndexSurfacesActionKindPerRow()
+
+
+    /**
+     * TC-26 / dead-letter-replay REQ-DLR-007: the Nextcloud-event provenance
+     * marker is derived from `event.source` (starts with `/nextcloud/`), NOT
+     * `event.type` — so an OR-object message sharing the `com.nextcloud.`
+     * TYPE prefix is correctly excluded.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/nextcloud-event-hub/specs/dead-letter-replay/spec.md#requirement-dead-letter-listing-and-detail-must-surface-action-kind-and-nextcloud-event-provenance-req-dlr-007
+     */
+    public function testDeadLetterIndexProvenanceUsesSourceNotType(): void
+    {
+        $rows = [
+            ObjectServiceMockBuilder::objectEntity(
+                $this,
+                ['status' => 'failed', 'payload' => ['source' => '/nextcloud/files', 'type' => 'com.nextcloud.files.node.created']],
+                'm-nc'
+            ),
+            ObjectServiceMockBuilder::objectEntity(
+                $this,
+                ['status' => 'failed', 'payload' => ['source' => '/objects/person', 'type' => 'com.nextcloud.openregister.object.created']],
+                'm-or'
+            ),
+        ];
+        $this->orObjectService->method('findAll')->willReturn(['results' => $rows, 'total' => 2]);
+        $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
+
+        $response = $this->controller->deadLetterIndex();
+        $rowsOut  = $response->getData()['results'];
+
+        $byId = [];
+        foreach ($rowsOut as $row) {
+            $byId[$row['uuid'] ?? $row['id'] ?? null] = $row;
+        }
+
+        $ncRow = current(array_filter($rowsOut, static fn($r) => ($r['payload']['source'] ?? '') === '/nextcloud/files'));
+        $orRow = current(array_filter($rowsOut, static fn($r) => ($r['payload']['source'] ?? '') === '/objects/person'));
+
+        $this->assertTrue($ncRow['nextcloudEvent']);
+        $this->assertFalse($orRow['nextcloudEvent']);
+    }//end testDeadLetterIndexProvenanceUsesSourceNotType()
 }//end class

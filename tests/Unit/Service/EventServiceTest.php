@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\JobService;
+use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService;
@@ -50,6 +52,16 @@ class EventServiceTest extends TestCase
      */
     private $clientService;
 
+    /**
+     * @var SynchronizationService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $synchronizationService;
+
+    /**
+     * @var JobService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $jobService;
+
 
     /**
      * Set up test fixtures.
@@ -60,15 +72,19 @@ class EventServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectService = ObjectServiceMockBuilder::make($this);
-        $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->clientService = $this->createMock(IClientService::class);
+        $this->objectService          = ObjectServiceMockBuilder::make($this);
+        $this->logger                 = $this->createMock(LoggerInterface::class);
+        $this->clientService          = $this->createMock(IClientService::class);
+        $this->synchronizationService = $this->createMock(SynchronizationService::class);
+        $this->jobService             = $this->createMock(JobService::class);
 
         $this->service = new EventService(
             $this->objectService,
             $this->clientService,
             $this->logger,
             new WebhookSignatureService($this->logger),
+            $this->synchronizationService,
+            $this->jobService,
         );
     }//end setUp()
 
@@ -306,7 +322,14 @@ class EventServiceTest extends TestCase
         $signatureService->method('isRotationGraceActive')->willReturn(false);
         $signatureService->method('sign')->willThrowException(new \RuntimeException('signing failed'));
 
-        $service = new EventService($this->objectService, $this->clientService, $this->logger, $signatureService);
+        $service = new EventService(
+            $this->objectService,
+            $this->clientService,
+            $this->logger,
+            $signatureService,
+            $this->synchronizationService,
+            $this->jobService,
+        );
 
         // The HTTP client must never be asked for — no unsigned bytes leave
         // the process.

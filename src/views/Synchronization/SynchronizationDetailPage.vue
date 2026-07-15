@@ -305,8 +305,9 @@ import {
 } from '@nextcloud/vue'
 import {
 	CnDetailPage,
-	useObjectStore,
 } from '@conduction/nextcloud-vue'
+import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import CallSplit from 'vue-material-design-icons/CallSplit.vue'
 import CodeJson from 'vue-material-design-icons/CodeJson.vue'
@@ -408,6 +409,8 @@ export default {
 		SyncMappingPicker,
 		SyncReferenceList,
 	},
+
+	mixins: [liveObjectSubscription],
 
 	props: {
 		/**
@@ -596,6 +599,9 @@ export default {
 				}
 				this.original = data
 				this.draft = this.normalizeForDiff(data)
+				// Live updates: or-object-{uuid} events refetch this sync and
+				// applyLiveObject (dirty-guarded) refreshes the working copy.
+				this.syncLiveSubscription(this.schemaSlug, this.objectIdString)
 			} catch (err) {
 				this.loadError = err?.message || t('openconnector', 'Failed to load synchronization')
 				this.draft = null
@@ -604,6 +610,23 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * Live-update bridge (liveObjectSubscription mixin): apply a fresh
+		 * server-side version of the synchronization to the local working
+		 * copy — but NEVER over unsaved edits. When the draft is dirty the
+		 * refetched object stays in the store cache and the user's edits
+		 * win; the next save persists them.
+		 *
+		 * @param {object} fresh The refetched synchronization from the store
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		applyLiveObject(fresh) {
+			if (this.dirty || this.saving) return
+			this.original = fresh
+			this.draft = this.normalizeForDiff(fresh)
+		},
+
 		/**
 		 * Clone an object into the shape the form mutates. Ensures all
 		 * fields exist (so v-model doesn't trip on `undefined`) and that

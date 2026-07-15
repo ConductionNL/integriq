@@ -40,6 +40,17 @@ parameters:
         # OCA\DAV is server-internal and not in nextcloud/ocp stubs
         - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
+        # nextcloud-event-hub: optional/bundled-app + newer-OCP event classes
+        # referenced only via ::class / instanceof (safe when absent). OCA\Tables\
+        # + OCA\Forms\ are optional App Store apps; OCP\Calendar\Events\ is real OCP
+        # but @since 32.0.0, newer than the pinned nextcloud/ocp: dev-stable29 stub.
+        - '#unknown class OCA\\Tables\\#'
+        - '#Class OCA\\Tables\\#'
+        - '#unknown class OCA\\Forms\\#'
+        - '#Class OCA\\Forms\\#'
+        - '#on an unknown class OCA\\Forms\\#'
+        - '#unknown class OCP\\Calendar\\Events\\#'
+        - '#Class OCP\\Calendar\\Events\\#'
         # OCA classes from other apps (OpenRegister) not available during static analysis
         - '#unknown class OCA\\OpenRegister\\#'
         - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
