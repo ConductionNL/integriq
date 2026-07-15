@@ -58,6 +58,7 @@ import SynchronizationDetailPage from './views/Synchronization/SynchronizationDe
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
+import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -144,4 +145,12 @@ export default {
 	// count + cooldown countdown with a Reset action. See
 	// retry-and-circuit-breaker-policies (REQ-009).
 	CircuitBreakerBadge,
+
+	// ZGW Notificaties API Abonnementen (custom page): abonnement CRUD
+	// backed by the dedicated NotificatiesSubscriberController endpoints
+	// (create/update/delete also register/update/delete against the remote
+	// Notificaties API and provision/cascade-delete a companion consumer) —
+	// not the generic OR object CRUD a CnIndexPage drives. See
+	// notificaties-api-subscriber REQ-008.
+	NotificatiesAbonnementenPage,
 }

@@ -43,6 +43,7 @@
           "lti_platform",
           "lti_tool",
           "mapping",
+          "notificaties_abonnement",
           "openformulieren_form_mapping",
           "openformulieren_submission",
           "payment_intent",
@@ -994,12 +995,12 @@
           },
           "action": {
             "type": "object",
-            "description": "Delivery action dispatch (nextcloud-event-hub REQ-008). {kind: 'webhook'|'synchronization'|'job', sink?, synchronizationId?, jobId?}. Absent defaults to kind='webhook' using the top-level `sink` field — 100% backward compatible with subscriptions created before this field existed.",
+            "description": "Delivery action dispatch (nextcloud-event-hub REQ-008, extended by notificaties-api-subscriber REQ-010). {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field — 100% backward compatible with subscriptions created before this field existed.",
             "title": "Delivery Action",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["webhook", "synchronization", "job"],
+                "enum": ["webhook", "synchronization", "job", "notificaties"],
                 "description": "Which delivery mechanism a matched event drives",
                 "title": "Action Kind"
               },
@@ -1019,6 +1020,37 @@
                 "format": "uuid",
                 "description": "Target job UUID for kind=job",
                 "title": "Job ID"
+              },
+              "sourceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target Source UUID for kind=notificaties — the Notificaties API to POST /notificaties to",
+                "title": "Notificaties Source ID"
+              },
+              "kanaal": {
+                "type": "string",
+                "description": "Required for kind=notificaties — the ZGW kanaal name published to. Absent/empty is a configuration error (REQ-006), not a transient failure.",
+                "title": "Notificaties Kanaal"
+              },
+              "hoofdObjectField": {
+                "type": "string",
+                "description": "For kind=notificaties — dot-path into event.data used to derive the notification's hoofdObject. Absent falls back to event.subject.",
+                "title": "Hoofdobject Field"
+              },
+              "resourceField": {
+                "type": "string",
+                "description": "For kind=notificaties — dot-path into event.data used to derive the notification's resource. Absent falls back to the trailing dot-segment of event.type.",
+                "title": "Resource Field"
+              },
+              "actieMap": {
+                "type": "object",
+                "description": "For kind=notificaties — overrides the default {created:'create', updated:'update', deleted:'destroy'} event.type-suffix-to-actie mapping",
+                "title": "Actie Map"
+              },
+              "kenmerken": {
+                "type": "object",
+                "description": "For kind=notificaties — static kenmerken shallow-merged with event.data.kenmerken (event-supplied values win on key collision)",
+                "title": "Kenmerken"
               }
             }
           },
@@ -3737,6 +3769,141 @@
           }
         },
         "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "notificaties_abonnement": {
+        "slug": "notificaties_abonnement",
+        "title": "Notificaties Abonnement",
+        "icon": "BellRingOutline",
+        "version": "1.0.0",
+        "summary": "A subscriber-side abonnement registered against a remote ZGW Notificaties API kanaal",
+        "description": "A Notificaties Abonnement tracks one subscriber-side registration against a remote ZGW Notificaties API (Logius/VNG API Notificatiestandaard voor ZGW APIs): the kanalen subscribed to, the callback this app exposes for inbound delivery, and the companion consumer used to authenticate those deliveries. Lifecycle: pending (persisted before the remote registration call completes) -> active (remote API accepted the registration) -> error (registration/update/delete call failed; lastError retains the reason) -> deleted (soft-deleted after a successful remote DELETE, kept for audit). See openspec/specs/notificaties-api-connector/spec.md.",
+        "required": [
+          "name",
+          "sourceId",
+          "kanalen"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable label for this abonnement (also seeds the companion consumer's name)",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the openconnector Source describing the remote Notificaties API (location, auth)",
+            "title": "Source ID"
+          },
+          "kanalen": {
+            "type": "array",
+            "description": "The kanalen this abonnement subscribes to, each with an optional filters map",
+            "title": "Kanalen",
+            "items": {
+              "type": "object",
+              "properties": {
+                "naam": {
+                  "type": "string",
+                  "description": "The kanaal name (e.g. 'zaken', 'documenten', 'besluiten')",
+                  "title": "Naam"
+                },
+                "filters": {
+                  "type": "object",
+                  "description": "Kanaal-specific filter map (e.g. bronorganisatie)",
+                  "title": "Filters"
+                }
+              }
+            }
+          },
+          "callbackUrl": {
+            "type": "string",
+            "description": "This app's own absolute callback URL for this abonnement (/api/notificaties/callback/{abonnementId}), resolved after the object is first persisted with a generated UUID and sent to the remote API at registration time",
+            "title": "Callback URL"
+          },
+          "url": {
+            "type": "string",
+            "description": "The remote-assigned abonnement resource URL returned by the Notificaties API on successful registration (distinct from callbackUrl)",
+            "title": "Remote Abonnement URL"
+          },
+          "consumerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the companion consumer OR-object generated at creation time; its authorizationConfiguration.apiKey is sent to the remote API as the abonnement's auth value and matched on every inbound callback delivery (REQ-002). Cascade-deleted when the abonnement is deleted (REQ-004).",
+            "title": "Consumer ID"
+          },
+          "authHeaderName": {
+            "type": "string",
+            "default": "Authorization",
+            "description": "The HTTP header name the remote Notificaties Routeer Component (NRC) is expected to echo the abonnement.auth value back on for every delivered notification (design.md Decision 4 — an explicit assumption; configurable per abonnement rather than hardcoded since some NRC implementations may differ from the VNG-Realisatie default).",
+            "title": "Auth Header Name"
+          },
+          "authScheme": {
+            "type": "string",
+            "default": "",
+            "description": "Optional scheme prefix stripped from the presented authHeaderName value before apiKey comparison (e.g. 'Bearer '). Empty means the header value is compared as a bare token (the VNG-Realisatie default assumption, design.md Decision 4).",
+            "title": "Auth Scheme"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "error",
+              "deleted"
+            ],
+            "description": "Abonnement lifecycle: pending (persisted before the remote call completes) -> active | error (settled) -> deleted (soft-deleted after successful remote DELETE)",
+            "title": "Status"
+          },
+          "lastError": {
+            "type": "string",
+            "description": "Descriptive failure reason from the most recent registration/update/delete call, when status='error'",
+            "title": "Last Error"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "slug": "zaken-kanaal-abonnement",
+            "name": "Zaken kanaal abonnement",
+            "sourceId": "<zgw-notificaties-source>",
+            "kanalen": [{"naam": "zaken", "filters": {"bronorganisatie": "123443210"}}],
+            "status": "active"
+          },
+          {
+            "slug": "documenten-kanaal-abonnement",
+            "name": "Documenten kanaal abonnement",
+            "sourceId": "<zgw-notificaties-source>",
+            "kanalen": [{"naam": "documenten", "filters": {}}],
+            "status": "active"
+          },
+          {
+            "slug": "besluiten-kanaal-abonnement-error",
+            "name": "Besluiten kanaal abonnement (error)",
+            "sourceId": "<zgw-notificaties-source>",
+            "kanalen": [{"naam": "besluiten", "filters": {}}],
+            "status": "error",
+            "lastError": "Remote API returned 503 during registration"
+          }
+        ],
         "appendOnly": false,
         "immutable": false
       },

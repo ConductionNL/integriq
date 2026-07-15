@@ -169,7 +169,8 @@
         { "id": "Sources", "label": "Sources", "icon": "DatabaseArrowLeftOutline", "route": "Sources", "order": 20 },
         { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
         { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
-        { "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "Webhooks", "order": 50 }
+        { "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "Webhooks", "order": 50 },
+        { "id": "NotificatiesAbonnementen", "label": "Abonnementen", "icon": "BellRingOutline", "route": "NotificatiesAbonnementen", "order": 55 }
       ]
     },
     {
@@ -481,6 +482,19 @@
       },
       "slots": {
         "form-fields": "SubscriptionActionFields"
+      }
+    },
+    {
+      "id": "NotificatiesAbonnementen",
+      "route": "/notificaties/abonnementen",
+      "type": "custom",
+      "component": "NotificatiesAbonnementenPage",
+      "title": "Abonnementen",
+      "_note": "Custom page: abonnement CRUD backed by the dedicated NotificatiesSubscriberController endpoints (create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer) — not the generic OR object CRUD a CnIndexPage drives. See notificaties-api-subscriber REQ-008.",
+      "config": {
+        "register": "openconnector",
+        "schema": "notificaties_abonnement",
+        "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
     {
