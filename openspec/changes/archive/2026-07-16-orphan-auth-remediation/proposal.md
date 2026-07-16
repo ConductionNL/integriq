@@ -1,6 +1,8 @@
 ---
 kind: code
 depends_on: []
+status: done
+archived: 2026-07-16
 ---
 
 # openconnector — orphan-auth remediation (Hydra gate-6)
