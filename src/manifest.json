@@ -144,6 +144,19 @@
         }
       },
       {
+        "name": "traces_total",
+        "type": "counter",
+        "help": "Total execution traces by status",
+        "source": {
+          "kind": "objectCount",
+          "register": "openconnector",
+          "schema": "execution_trace",
+          "groupBy": [
+            "status"
+          ]
+        }
+      },
+      {
         "name": "api_product_requests_total",
         "type": "gauge",
         "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
@@ -224,7 +237,8 @@
         { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
         { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 },
         { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 },
-        { "id": "Flows", "label": "Flows", "icon": "TransitConnectionVariant", "route": "Flows", "order": 122 }
+        { "id": "Flows", "label": "Flows", "icon": "TransitConnectionVariant", "route": "Flows", "order": 122 },
+        { "id": "Traces", "label": "Traces", "icon": "Timeline", "route": "Traces", "order": 123 }
       ]
     },
     {
@@ -876,6 +890,30 @@
       "config": {
         "register": "openconnector",
         "schema": "approval_request"
+      }
+    },
+    {
+      "id": "Traces",
+      "route": "/traces",
+      "type": "logs",
+      "title": "Traces",
+      "_note": "execution-trace-observability REQ-007: follows the SourceLogs/EndpointLogs/CloudEventLogs `type: logs` precedent — a generic list over execution_trace with server-derived entryPoint/status filters and pagination. Row navigation opens TraceDetail (a custom page — the step timeline and Replay action are not expressible as a generic logs row).",
+      "config": {
+        "register": "openconnector",
+        "schema": "execution_trace",
+        "detailRoute": "TraceDetail"
+      }
+    },
+    {
+      "id": "TraceDetail",
+      "route": "/traces/:id",
+      "type": "custom",
+      "component": "TraceDetailPage",
+      "_note": "Custom detail page: renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output) and a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay). Not expressible as a generic detail page — mirrors ApprovalDetail's custom-detail-for-a-custom-verb pattern.",
+      "title": "Trace",
+      "config": {
+        "register": "openconnector",
+        "schema": "execution_trace"
       }
     },
     {

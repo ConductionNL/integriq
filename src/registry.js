@@ -62,6 +62,7 @@ import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
 import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
+import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
 
 export default {
 	// Row-action handlers — referenced by manifest `config.actions[].handler` strings.
@@ -169,4 +170,12 @@ export default {
 	// not the generic OR object CRUD a CnIndexPage drives. See
 	// notificaties-api-subscriber REQ-008.
 	NotificatiesAbonnementenPage,
+
+	// Execution trace detail (custom page): step-timeline + dry-run/forced
+	// Replay over one execution_trace, backed by the
+	// ExecutionTracesController REST surface. The list itself uses the
+	// generic `type: logs` CnLogsPage (Traces manifest page) — mirrors the
+	// SourceLogs/EndpointLogs/CloudEventLogs precedent — so only the detail
+	// view needs a bespoke component. See execution-trace-observability.
+	TraceDetailPage,
 }

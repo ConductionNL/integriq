@@ -306,6 +306,13 @@ return [
 		['name' => 'logs#statistics', 'url' => '/api/logs/statistics', 'verb' => 'GET'],
 		['name' => 'logs#export', 'url' => '/api/logs/export', 'verb' => 'GET'],
 
+		// Execution traces endpoints (ExecutionTracesController — execution_trace
+		// schema; execution-trace-observability). Static routes registered
+		// before the {id} wildcard.
+		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
+		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
+		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
+
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#logsExport', 'url' => '/api/synchronizations/logs/export', 'verb' => 'GET'],

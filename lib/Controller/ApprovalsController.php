@@ -316,13 +316,18 @@ class ApprovalsController extends Controller
 
         $flowToken = $this->approvalService->rehydrateFlowToken(($data['snapshot'] ?? []));
         $path      = (string) ($flowToken->getRequestAmended()['path'] ?? '');
+        // Execution-trace REQ-004: reconstruct the SAME trace this run was
+        // suspended under (null when the suspended run predates this change
+        // or was otherwise untraced) so resume appends rather than creates.
+        $trace = $this->approvalService->rehydrateTraceContext(($data['snapshot'] ?? []));
 
         $resumed = $this->endpointService->resumeFromApproval(
             endpoint: $endpoint,
             request: $this->request,
             flowToken: $flowToken,
             resumeAfterOrder: (int) ($data['resumeOrder'] ?? 0),
-            path: $path
+            path: $path,
+            trace: $trace
         );
 
         $resumeResult = 'error';

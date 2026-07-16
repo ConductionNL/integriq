@@ -10,7 +10,7 @@
 
 ## ADDED Requirements
 
-### Requirement: Trace-step emission during rule pipeline execution (REQ-RULE-009)
+### Requirement: Trace-step emission during rule pipeline execution (REQ-RULE-010)
 
 The system MUST append one ordered `Step` to the active
 `ExecutionTraceContext`'s buffer (per `execution-trace` REQ-001) for every
@@ -50,7 +50,7 @@ ordering/condition/short-circuit contract.
   it does not change REQ-RULE-001's ordering, condition evaluation, or
   short-circuit contract.
 
-### Requirement: Dry-run mode suppresses write-shaped rule dispatch (REQ-RULE-010)
+### Requirement: Dry-run mode suppresses write-shaped rule dispatch (REQ-RULE-011)
 
 `processRules()` MUST accept an optional `dryRun` parameter (default
 `false`, preserving existing behaviour exactly). When `dryRun === true`,
@@ -92,9 +92,19 @@ already knows how to no-op safely.
 
 #### Notes
 
-- `dryRun` defaults to `false`; every existing scenario in this capability's
-  REQ-RULE-001 through REQ-RULE-008 is exercised with the default and is
-  unaffected by this requirement's existence.
+- `dryRun` defaults to `false`; every pre-existing REQ-RULE-* requirement in
+  this capability is exercised with the default and is unaffected by this
+  requirement's existence.
 - This requirement exists to support `execution-trace` REQ-005/REQ-006's
   endpoint-entryPoint replay preview; it has no caller outside that replay
   path in this change's scope.
+- **Integration follow-up (not in this change's scope):** this change was
+  authored against a base that predates the `flow` rule action type
+  (REQ-RULE-009, added independently). `flow` triggers a flow run — a
+  write-shaped side effect — but is NOT in this requirement's suppression
+  set (`EndpointService::DRY_RUN_SUPPRESSED_RULE_TYPES`), because it does
+  not exist in this change's base `processRules()` type dispatch. Whoever
+  integrates the two MUST decide whether `flow` belongs in the suppression
+  set (likely yes, or a forwarded dry-run flag mirroring the
+  `synchronization` partial exception above); until then a dry-run replay of
+  an endpoint carrying a `flow` rule WOULD trigger a real flow run.
