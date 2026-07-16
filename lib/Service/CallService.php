@@ -50,6 +50,7 @@ use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Service\AuthenticationService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
@@ -1393,16 +1394,19 @@ class CallService
      * Applies rate-limit header updates, builds the CallLog payload, persists it, and
      * stitches the full response body back onto the returned ObjectEntity.
      *
-     * @param ObjectEntity   $source         The source ObjectEntity.
-     * @param array          $sourceData     The mutable source data array.
-     * @param array          $data           The structured request/response data from buildResponseData().
-     * @param boolean        $logBody        Whether to include the body in the log for non-error responses.
-     * @param \DateTime|null $successExpires Expiry for successful log entries.
-     * @param \DateTime|null $errorExpires   Expiry for error log entries.
+     * @param ObjectEntity               $source         The source ObjectEntity.
+     * @param array                      $sourceData     The mutable source data array.
+     * @param array                      $data           The structured request/response data from buildResponseData().
+     * @param boolean                    $logBody        Whether to include the body in the log for non-error responses.
+     * @param \DateTime|null             $successExpires Expiry for successful log entries.
+     * @param \DateTime|null             $errorExpires   Expiry for error log entries.
+     * @param ExecutionTraceContext|null $trace          The active execution trace context, when present.
      *
      * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
      *
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
      */
     private function buildAndPersistCallLog(
         ObjectEntity $source,
@@ -1411,6 +1415,7 @@ class CallService
         bool $logBody,
         ?\DateTime $successExpires,
         ?\DateTime $errorExpires,
+        ?ExecutionTraceContext $trace=null,
     ): ObjectEntity {
         // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
         $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
@@ -1440,6 +1445,15 @@ class CallService
             'created'       => (new \DateTime())->format('c'),
             'expires'       => $this->formatExpires(expires: $expiresChosen),
         ];
+
+        // Execution-trace REQ-011: repurpose the previously-dead
+        // call_log.sessionId field to carry the active trace's traceId, so
+        // any existing call_log consumer can join on sessionId = traceId
+        // without a migration (design.md Decision 5). Left unset — exactly
+        // as today — when no trace context is active.
+        if ($trace !== null) {
+            $callLogData['sessionId'] = $trace->getTraceId();
+        }
 
         $callLog = $this->objectService->saveObject(
             object: $callLogData,
@@ -2079,15 +2093,21 @@ class CallService
     /**
      * Calls a source according to given configuration.
      *
-     * @param ObjectEntity $source                The source ObjectEntity to call.
-     * @param string       $endpoint              The endpoint on the source to call.
-     * @param string       $method                The method on which to call the source.
-     * @param array        $config                The additional configuration to call the source.
-     * @param boolean      $asynchronous          Whether to call the source asynchronously.
-     * @param boolean      $createCertificates    Whether to create certificates for this source.
-     * @param boolean      $overruleAuth          Whether to overrule the source authentication.
-     * @param boolean      $read                  Whether this is a singular read (vs list) call.
-     * @param boolean      $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+     * @param ObjectEntity               $source                The source ObjectEntity to call.
+     * @param string                     $endpoint              The endpoint on the source to call.
+     * @param string                     $method                The method on which to call the source.
+     * @param array                      $config                The additional configuration to call the source.
+     * @param boolean                    $asynchronous          Whether to call the source asynchronously.
+     * @param boolean                    $createCertificates    Whether to create certificates for this source.
+     * @param boolean                    $overruleAuth          Whether to overrule the source authentication.
+     * @param boolean                    $read                  Whether this is a singular read (vs list) call.
+     * @param boolean                    $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+     * @param ExecutionTraceContext|null $trace                 The active execution trace context, when this call is
+     *                                                          made from within a traced execution (execution-trace
+     *                                                          REQ-001). When present, `call_log.sessionId` is set to
+     *                                                          `$trace->getTraceId()` and a `call` step is appended
+     *                                                          to the trace using the already-redacted request/
+     *                                                          response data — no second redaction pass.
      *
      * @return ObjectEntity
      *
@@ -2101,6 +2121,7 @@ class CallService
      * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
      * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
      * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
      */
     public function call(
         ObjectEntity $source,
@@ -2112,6 +2133,7 @@ class CallService
         bool $overruleAuth=false,
         bool $read=false,
         bool $runningSupportRequest=false,
+        ?ExecutionTraceContext $trace=null,
     ): ObjectEntity {
         $sourceData = $source->getObject();
 
@@ -2260,7 +2282,31 @@ class CallService
             logBody: $logBody,
             successExpires: $successExpires,
             errorExpires: $errorExpires,
+            trace: $trace,
         );
+
+        // Phase 12b: when this call was made from within a traced execution,
+        // append a `call` step reusing the exact already-redacted request/
+        // response array just persisted to `call_log` — never a second,
+        // independent redaction pass (execution-trace REQ-003 / http-call-engine
+        // REQ-011).
+        if ($trace !== null) {
+            $callStepStatus = 'success';
+            if ($data['response']['statusCode'] >= 400) {
+                $callStepStatus = 'error';
+            }
+
+            $trace->addStep(
+                type: 'call',
+                name: ($sourceData['name'] ?? $source->getUuid()),
+                timing: null,
+                status: $callStepStatus,
+                input: $data['request'],
+                output: $data['response'],
+                startedAtMicrotime: $timeStart,
+                finishedAtMicrotime: $timeEnd,
+            );
+        }
 
         // Phase 13: Fire postRequest hook if present.
         if (isset($postRequest) === true && $runningSupportRequest === false) {

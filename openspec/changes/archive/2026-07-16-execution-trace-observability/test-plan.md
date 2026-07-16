@@ -157,7 +157,7 @@
 - **test command**: /test-api
 
 ### TC-20: Trace-step emission does not change untraced rule-pipeline behaviour
-- **spec_ref**: `openspec/changes/execution-trace-observability/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-009`
+- **spec_ref**: `openspec/changes/execution-trace-observability/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010`
 - **type**: regression
 - **preconditions**: existing `rule-pipeline` REQ-RULE-001..008 PHPUnit scenarios, run with no `ExecutionTraceContext` supplied
 - **steps**: run the existing rule-pipeline PHPUnit suite unmodified
@@ -165,7 +165,7 @@
 - **test command**: /test-regression
 
 ### TC-21: dryRun suppresses write-shaped rules but not read-shaped ones
-- **spec_ref**: `openspec/changes/execution-trace-observability/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-010`
+- **spec_ref**: `openspec/changes/execution-trace-observability/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011`
 - **type**: api
 - **preconditions**: a pipeline with a `mapping` rule then a `save_object` rule, `dryRun: true`
 - **steps**: run `processRules(..., dryRun: true)`
@@ -186,8 +186,8 @@
 | execution-trace REQ-008 | TC-17 |
 | execution-trace REQ-009 | TC-18 |
 | http-call-engine REQ-011 | TC-5, TC-19 |
-| rule-pipeline REQ-RULE-009 | TC-3, TC-20 |
-| rule-pipeline REQ-RULE-010 | TC-11, TC-21 |
+| rule-pipeline REQ-RULE-010 | TC-3, TC-20 |
+| rule-pipeline REQ-RULE-011 | TC-11, TC-21 |
 
 All ADDED requirements across the three delta specs have at least one mapped test case.
 

@@ -22,11 +22,14 @@ use DateTime;
 use Exception;
 use JWadhams\JsonLogic;
 use OCA\OpenConnector\Exception\InvalidMessageStateException;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+use OCA\OpenConnector\Service\ExecutionTraceService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SynchronizationService;
@@ -116,13 +119,19 @@ class EventService
     /**
      * Constructor.
      *
-     * @param ORObjectService         $objectService          The OR ObjectService for data access.
-     * @param IClientService          $clientService          HTTP client service used to deliver push messages.
-     * @param LoggerInterface         $logger                 Logger for delivery successes and failures.
-     * @param WebhookSignatureService $signatureService       Signs outbound deliveries when configured.
-     * @param SynchronizationService  $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
-     * @param JobService              $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
-     * @param CallService             $callService            Runs `action.kind = 'notificaties'` dispatches against a `Source` (REQ-010).
+     * @param ORObjectService            $objectService          The OR ObjectService for data access.
+     * @param IClientService             $clientService          HTTP client service used to deliver push messages.
+     * @param LoggerInterface            $logger                 Logger for delivery successes and failures.
+     * @param WebhookSignatureService    $signatureService       Signs outbound deliveries when configured.
+     * @param SynchronizationService     $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
+     * @param JobService                 $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
+     * @param CallService                $callService            Runs `action.kind = 'notificaties'` dispatches against a `Source` (REQ-010).
+     * @param ExecutionTraceService|null $executionTraceService  Persists the traced delivery attempt's
+     *                                                           execution_trace (execution-trace
+     *                                                           REQ-001/REQ-004). Nullable + defaulted
+     *                                                           so pre-existing positional test
+     *                                                           instantiations keep working
+     *                                                           unmodified.
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
@@ -134,7 +143,8 @@ class EventService
         private readonly WebhookSignatureService $signatureService,
         private readonly SynchronizationService $synchronizationService,
         private readonly JobService $jobService,
-        private readonly CallService $callService
+        private readonly CallService $callService,
+        private readonly ?ExecutionTraceService $executionTraceService=null,
     ) {
 
     }//end __construct()
@@ -391,7 +401,11 @@ class EventService
     /**
      * Attempt to deliver a message.
      *
-     * @param ObjectEntity $message The pending message to deliver.
+     * @param ObjectEntity               $message The pending message to deliver.
+     * @param ExecutionTraceContext|null $trace   The active execution trace context. `deliverMessage()` dispatches
+     *                                            via `IClientService` directly (not `CallService`), so — unlike
+     *                                            every other outbound-call path — this method redacts and
+     *                                            appends its own `call` step (execution-trace REQ-002/REQ-003).
      *
      * @return boolean True when delivered successfully.
      *
@@ -399,8 +413,10 @@ class EventService
      * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
      */
-    public function deliverMessage(ObjectEntity $message): bool
+    public function deliverMessage(ObjectEntity $message, ?ExecutionTraceContext $trace=null): bool
     {
+        $callStepStart = microtime(true);
+
         try {
             $messageData    = $message->getObject();
             $subscriptionId = ($messageData['subscriptionId'] ?? null);
@@ -463,6 +479,44 @@ class EventService
                         'timeout' => 30,
                     ]
                     );
+
+            // Execution-trace REQ-002/REQ-003: this dispatch bypasses
+            // CallService (it uses IClientService directly), so it must
+            // redact and record its own `call` step rather than relying on
+            // CallService's already-redacted output.
+            if ($trace !== null) {
+                $sensitiveFieldRegistry = new SensitiveFieldRegistry();
+
+                $callStepStatus = 'success';
+                if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
+                    $callStepStatus = 'error';
+                }
+
+                $callStepInput  = $sensitiveFieldRegistry->redactArray(
+                    data: [
+                        'url'     => ($subscriptionData['sink'] ?? null),
+                        'method'  => 'POST',
+                        'headers' => $headers,
+                    ]
+                );
+                $callStepOutput = $sensitiveFieldRegistry->redactArray(
+                    data: [
+                        'statusCode' => $response->getStatusCode(),
+                        'headers'    => $response->getHeaders(),
+                    ]
+                );
+
+                $trace->addStep(
+                    type: 'call',
+                    name: ($subscriptionData['name'] ?? $subscriptionData['sink'] ?? 'webhook'),
+                    timing: null,
+                    status: $callStepStatus,
+                    input: $callStepInput,
+                    output: $callStepOutput,
+                    startedAtMicrotime: $callStepStart,
+                    finishedAtMicrotime: microtime(true),
+                );
+            }//end if
 
             if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
                 $now           = (new DateTime())->format('c');
@@ -729,16 +783,63 @@ class EventService
      * the sweep and a replay re-attempt the SAME kind of action that
      * originally ran/failed (`dead-letter-replay` REQ-DLR-003).
      *
-     * @param ObjectEntity      $message      The message to attempt delivery for.
-     * @param ObjectEntity|null $subscription The already-resolved subscription, when the
-     *                                        caller has it in hand (avoids a redundant find());
-     *                                        resolved from `message.subscriptionId` when null.
+     * @param ObjectEntity               $message      The message to attempt delivery for.
+     * @param ObjectEntity|null          $subscription The already-resolved subscription, when the
+     *                                                 caller has it in hand (avoids a redundant
+     *                                                 find()); resolved from
+     *                                                 `message.subscriptionId` when null.
+     * @param ExecutionTraceContext|null $trace        The active execution trace context. When null (the common
+     *                                                 publish/retry-sweep case), a fresh `event`-entryPoint
+     *                                                 context is minted here and its persistence owned by this
+     *                                                 method (execution-trace REQ-001/REQ-004).
+     *
+     * @return boolean True when the attempt succeeded.
+     *
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
+     */
+    private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription=null, ?ExecutionTraceContext $trace=null): bool
+    {
+        $ownsEventTrace = ($trace === null);
+        if ($ownsEventTrace === true) {
+            $trace = new ExecutionTraceContext(entryPoint: 'event', entryPointId: $message->getUuid(), triggeredBy: 'http');
+        }
+
+        $result = $this->attemptDeliveryDispatch(message: $message, subscription: $subscription, trace: $trace);
+
+        if ($ownsEventTrace === true) {
+            $attemptDeliveryTraceStatus = 'failed';
+            if ($result === true) {
+                $attemptDeliveryTraceStatus = 'success';
+            }
+
+            try {
+                $this->executionTraceService?->persist(trace: $trace, status: $attemptDeliveryTraceStatus);
+            } catch (\Throwable $exception) {
+                $this->logger->warning(
+                    'EventService: failed to persist execution_trace.',
+                    ['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+                );
+            }
+        }
+
+        return $result;
+
+    }//end attemptDelivery()
+
+    /**
+     * The action.kind switch extracted from {@see attemptDelivery()} so the
+     * trace mint/persist wrapper stays a single, uncluttered choke point.
+     *
+     * @param ObjectEntity          $message      The message to attempt delivery for.
+     * @param ObjectEntity|null     $subscription The already-resolved subscription, when known.
+     * @param ExecutionTraceContext $trace        The active execution trace context.
      *
      * @return boolean True when the attempt succeeded.
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
-    private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription=null): bool
+    private function attemptDeliveryDispatch(ObjectEntity $message, ?ObjectEntity $subscription, ExecutionTraceContext $trace): bool
     {
         if ($subscription === null) {
             $messageData    = $message->getObject();
@@ -773,20 +874,22 @@ class EventService
             case 'webhook':
                 // Unchanged REQ-002 behaviour: deliverMessage resolves the
                 // subscription itself (accepted minor redundant find()).
-                return $this->deliverMessage(message: $message);
+                return $this->deliverMessage(message: $message, trace: $trace);
 
             case 'synchronization':
                 return $this->dispatchSynchronizationAction(
                     message: $message,
                     subscriptionData: $subscriptionData,
-                    action: $actionArray
+                    action: $actionArray,
+                    trace: $trace
                 );
 
             case 'job':
                 return $this->dispatchJobAction(
                     message: $message,
                     subscriptionData: $subscriptionData,
-                    action: $actionArray
+                    action: $actionArray,
+                    trace: $trace
                 );
 
             case 'notificaties':
@@ -806,7 +909,7 @@ class EventService
                 return false;
         }//end switch
 
-    }//end attemptDelivery()
+    }//end attemptDeliveryDispatch()
 
     /**
      * Dispatch an `action.kind = 'synchronization'` message: resolve the
@@ -815,16 +918,23 @@ class EventService
      * so the message is subject to the same retry/backoff/dead-letter/replay
      * machinery as a webhook delivery.
      *
-     * @param ObjectEntity $message          The message being dispatched.
-     * @param array        $subscriptionData The owning subscription's OR object array.
-     * @param array        $action           The resolved `action` block (`{kind, synchronizationId}`).
+     * @param ObjectEntity               $message          The message being dispatched.
+     * @param array                      $subscriptionData The owning subscription's OR object array.
+     * @param array                      $action           The resolved `action` block (`{kind, synchronizationId}`).
+     * @param ExecutionTraceContext|null $trace            The active execution trace context, forwarded into
+     *                                                     `SynchronizationService::synchronize()`
+     *                                                     (execution-trace REQ-001/REQ-002).
      *
      * @return boolean True when the synchronization ran successfully.
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
-    private function dispatchSynchronizationAction(ObjectEntity $message, array $subscriptionData, array $action): bool
-    {
+    private function dispatchSynchronizationAction(
+        ObjectEntity $message,
+        array $subscriptionData,
+        array $action,
+        ?ExecutionTraceContext $trace=null
+    ): bool {
         $retryPolicy       = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
         $synchronizationId = (string) ($action['synchronizationId'] ?? '');
 
@@ -861,7 +971,7 @@ class EventService
         }
 
         try {
-            $this->synchronizationService->synchronize(synchronization: $synchronization);
+            $this->synchronizationService->synchronize(synchronization: $synchronization, trace: $trace);
         } catch (\Throwable $e) {
             $this->logger->error(
                     'Failed to run synchronization action for event message: '.$e->getMessage(),
@@ -892,15 +1002,18 @@ class EventService
      * and returns it, so success/failure here is read from that log entry's
      * `level` field (`SUCCESS` vs anything else).
      *
-     * @param ObjectEntity $message          The message being dispatched.
-     * @param array        $subscriptionData The owning subscription's OR object array.
-     * @param array        $action           The resolved `action` block (`{kind, jobId}`).
+     * @param ObjectEntity               $message          The message being dispatched.
+     * @param array                      $subscriptionData The owning subscription's OR object array.
+     * @param array                      $action           The resolved `action` block (`{kind, jobId}`).
+     * @param ExecutionTraceContext|null $trace            The active execution trace context, forwarded into
+     *                                                     `JobService::executeJob()` (execution-trace
+     *                                                     REQ-001/REQ-002).
      *
      * @return boolean True when the job ran successfully.
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
-    private function dispatchJobAction(ObjectEntity $message, array $subscriptionData, array $action): bool
+    private function dispatchJobAction(ObjectEntity $message, array $subscriptionData, array $action, ?ExecutionTraceContext $trace=null): bool
     {
         $retryPolicy = $this->resolveRetryPolicy(subscriptionData: $subscriptionData);
         $jobId       = (string) ($action['jobId'] ?? '');
@@ -934,7 +1047,7 @@ class EventService
         }
 
         try {
-            $log = $this->jobService->executeJob(job: $job, forceRun: true);
+            $log = $this->jobService->executeJob(job: $job, forceRun: true, trace: $trace);
         } catch (\Throwable $e) {
             $this->logger->error(
                     'Failed to run job action for event message: '.$e->getMessage(),
@@ -1280,6 +1393,63 @@ class EventService
         );
 
     }//end replayMessage()
+
+    /**
+     * Dry-run preview for an `execution-trace` replay of a `webhook`-kind
+     * message: resolve the outbound request (URL, method, headers) that
+     * WOULD be dispatched, WITHOUT invoking the network call. Used only by
+     * `ExecutionTraceService::replay()` — never by the normal delivery
+     * machine, which always dispatches for real (`deliverMessage()`).
+     *
+     * @param ObjectEntity $message The message that would be (re)delivered.
+     *
+     * @return array{url: string, method: string, headers: array} The resolved, redacted request.
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
+     */
+    public function previewWebhookDelivery(ObjectEntity $message): array
+    {
+        $messageData    = $message->getObject();
+        $subscriptionId = ($messageData['subscriptionId'] ?? null);
+
+        $headers = ['Content-Type' => 'application/cloudevents+json'];
+        $sink    = '';
+
+        if ($subscriptionId !== null) {
+            $subscription = $this->objectService->find(
+                id: $subscriptionId,
+                register: 'openconnector',
+                schema: 'event_subscription'
+            );
+
+            if ($subscription !== null) {
+                $subscriptionData = $subscription->getObject();
+                $sink    = (string) ($subscriptionData['sink'] ?? '');
+                $headers = [
+                    'Content-Type' => 'application/cloudevents+json',
+                    ...($subscriptionData['protocolSettings']['headers'] ?? []),
+                ];
+
+                $signingSecret = ($subscriptionData['protocolSettings']['signingSecret'] ?? null);
+                if ($signingSecret !== null && $signingSecret !== '') {
+                    // Signature presence is meaningful for a preview even
+                    // though the value itself is never resolvable without
+                    // dispatching for real; redacted below regardless.
+                    $headers['X-OpenConnector-Signature'] = '***REDACTED***';
+                    $headers['X-OpenConnector-Event-Id']  = $message->getUuid();
+                }
+            }
+        }//end if
+
+        $sensitiveFieldRegistry = new SensitiveFieldRegistry();
+
+        return [
+            'url'     => $sink,
+            'method'  => 'POST',
+            'headers' => $sensitiveFieldRegistry->redactArray(data: $headers),
+        ];
+
+    }//end previewWebhookDelivery()
 
     /**
      * Discard a dead-lettered message into the terminal `discarded` state.

@@ -185,7 +185,7 @@ no-write guarantee); for a `job`-entryPoint trace it MUST invoke
 REQ-JOB-002); for an `event`-entryPoint trace of `action.kind: webhook` it
 MUST resolve and return the request that would be dispatched WITHOUT
 invoking the network call; for an `endpoint`-entryPoint trace it MUST run
-`processRules()` with `dryRun: true` (`rule-pipeline` REQ-RULE-010),
+`processRules()` with `dryRun: true` (`rule-pipeline` REQ-RULE-011),
 suppressing every write-shaped rule's side effect. Every dry-run replay MUST
 create a NEW `execution_trace` with `isReplay: true`, `dryRun: true`, and
 `replayOf` set to the original trace's id — it MUST NOT mutate the original
