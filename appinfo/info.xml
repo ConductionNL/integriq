@@ -65,6 +65,11 @@
 		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
 		     row migration (dry-run, per-entity retry, verify). -->
 		<command>OCA\OpenConnector\Command\MigrateToOpenRegister</command>
+		<!-- ocon#151 phase C / ADR-064: reports which sources still hold an inline
+		     secret and what each would become in the credential broker. --dry-run
+		     writes nothing and emits the "clean" gate phase D must check before it
+		     may remove the schema properties. A real run is fail-closed for now. -->
+		<command>OCA\OpenConnector\Command\MigrateInlineSecrets</command>
 	</commands>
 
 	<repair-steps>
@@ -72,6 +77,11 @@
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
+			<!-- ocon#151 phase C / ADR-064: READ-ONLY. Records whether any source
+			     still holds an inline secret into appconfig (the Phase D gate). Never
+			     rewrites a live credential — the executor is blocked upstream on
+			     organisation-scope resolution; see the repair step's docblock. -->
+			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
 			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
 		</post-migration>
 	</repair-steps>
