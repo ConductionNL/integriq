@@ -28,6 +28,9 @@ use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\FscConnectivityException;
 use OCA\OpenConnector\Exception\FscDirectoryException;
 use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
+use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
@@ -68,7 +71,7 @@ class FscDirectoryClientTest extends TestCase
      * @var array
      */
     private array $configuration = [
-        'directoryUrl'    => 'https://fsc-directory.example.nl/api/v1',
+        'directoryUrl'   => 'https://fsc-directory.example.nl/api/v1',
         'authentication' => ['encryptedToken' => 'ciphertext-blob'],
     ];
 
@@ -110,7 +113,9 @@ class FscDirectoryClientTest extends TestCase
             new Client(['handler' => $stack]),
             $this->crypto,
             $this->l,
-            $this->logger
+            $this->logger,
+            new MtlsConfigResolver($this->crypto),
+            new MtlsTransportService(new MtlsTransportOptionsBuilder(), $this->logger)
         );
 
     }//end buildClient()
@@ -276,7 +281,7 @@ class FscDirectoryClientTest extends TestCase
      */
     public function testCallExtractsRefFromHeader(): void
     {
-        $client = $this->buildClient(
+        $client     = $this->buildClient(
             [new Response(200, ['X-FSC-Reference' => 'FSC-header-ref'], json_encode(['ok' => true]))]
         );
         $resolution = ['endpoint' => 'https://outway.example.nl/brp'];
@@ -366,4 +371,88 @@ class FscDirectoryClientTest extends TestCase
         $client->call(['directoryUrl' => 'https://example.nl'], $resolution, 'POST', []);
 
     }//end testCallThrowsWhenTokenMissing()
+
+    /**
+     * call() routes through MtlsTransportService (not the plain Guzzle
+     * client) when `authentication.mode=mtls` is configured — proves the
+     * mTLS capability is actually invoked, not merely built (orphaned-
+     * capability rule).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-fscdirectoryclient-routes-through-the-mtls-transport-when-configured
+     */
+    public function testCallRoutesThroughMtlsTransportWhenConfigured(): void
+    {
+        $resolution = ['endpoint' => 'https://outway.example.nl/brp'];
+
+        $mtlsTransport = $this->createMock(MtlsTransportService::class);
+        $mtlsTransport->expects($this->once())
+            ->method('request')
+            ->with(
+                $this->anything(),
+                'POST',
+                'https://outway.example.nl/brp',
+                $this->anything(),
+                $this->isInstanceOf(\OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle::class)
+            )
+            ->willReturn(new \GuzzleHttp\Psr7\Response(200, [], json_encode(['ref' => 'FSC-mtls-ref'])));
+
+        $mtlsConfigResolver = $this->createMock(MtlsConfigResolver::class);
+        $mtlsConfigResolver->method('isMtlsConfigured')->willReturn(true);
+        $mtlsConfigResolver->method('resolve')->willReturn(
+            new \OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle(certificatePem: 'CERT', privateKeyPem: 'KEY')
+        );
+
+        $client = new FscDirectoryClient(
+            new Client(),
+            $this->crypto,
+            $this->l,
+            $this->logger,
+            $mtlsConfigResolver,
+            $mtlsTransport
+        );
+
+        $result = $client->call(
+            ['directoryUrl' => 'https://fsc-directory.example.nl/api/v1', 'authentication' => ['mode' => 'mtls', 'mtls' => []]],
+            $resolution,
+            'POST',
+            ['bsn' => '123']
+        );
+
+        $this->assertSame('FSC-mtls-ref', $result['ref']);
+
+    }//end testCallRoutesThroughMtlsTransportWhenConfigured()
+
+    /**
+     * call() never routes through MtlsTransportService when `mode=token`
+     * (the default) — proves token mode is unchanged.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-token-mode-is-unchanged-when-mtls-is-not-configured
+     */
+    public function testCallNeverRoutesThroughMtlsTransportInTokenMode(): void
+    {
+        $mtlsTransport = $this->createMock(MtlsTransportService::class);
+        $mtlsTransport->expects($this->never())->method('request');
+
+        $mock  = new MockHandler([new Response(200, [], json_encode(['ref' => 'FSC-token-ref']))]);
+        $stack = HandlerStack::create($mock);
+
+        $client = new FscDirectoryClient(
+            new Client(['handler' => $stack]),
+            $this->crypto,
+            $this->l,
+            $this->logger,
+            new MtlsConfigResolver($this->crypto),
+            $mtlsTransport
+        );
+
+        $resolution = ['endpoint' => 'https://outway.example.nl/brp'];
+        $result     = $client->call($this->configuration, $resolution, 'POST', ['bsn' => '123']);
+
+        $this->assertSame('FSC-token-ref', $result['ref']);
+
+    }//end testCallNeverRoutesThroughMtlsTransportInTokenMode()
 }//end class

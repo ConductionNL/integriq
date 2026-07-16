@@ -1002,6 +1002,42 @@
       ]
     },
     {
+      "name": "14 — Execution traces",
+      "description": "execution-trace-observability: list/detail/replay over execution_trace (ExecutionTracesController).",
+      "item": [
+        {
+          "name": "GET /execution-traces",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/execution-traces", "host": ["{{ocBase}}"], "path": ["execution-traces"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const b = pm.response.json();",
+            "if (b.results && b.results.length) pm.collectionVariables.set('fxTraceId', b.results[0].traceId || b.results[0].uuid);"
+          ] }}]
+        },
+        {
+          "name": "GET /execution-traces/{fxTraceId}",
+          "request": { "method": "GET", "url": { "raw": "{{ocBase}}/execution-traces/{{fxTraceId}}", "host": ["{{ocBase}}"], "path": ["execution-traces", "{{fxTraceId}}"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/404)', () => pm.expect([200, 404]).to.include(pm.response.code));",
+            "if (pm.response.code === 200) { const b = pm.response.json(); pm.test('has steps array', () => pm.expect(b).to.have.property('steps')); }"
+          ] }}]
+        },
+        {
+          "name": "POST /execution-traces/{fxTraceId}/replay — dry-run",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{ocBase}}/execution-traces/{{fxTraceId}}/replay", "host": ["{{ocBase}}"], "path": ["execution-traces", "{{fxTraceId}}", "replay"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"force\":false}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('responds (200/404)', () => pm.expect([200, 404]).to.include(pm.response.code));",
+            "if (pm.response.code === 200) { const b = pm.response.json(); pm.test('dry-run replay flags set', () => { pm.expect(b.isReplay).to.eql(true); pm.expect(b.dryRun).to.eql(true); }); }"
+          ] }}]
+        }
+      ]
+    },
+    {
       "name": "99 — Teardown (via OR)",
       "description": "Deletes the fixtures created in folder 01.",
       "item": [

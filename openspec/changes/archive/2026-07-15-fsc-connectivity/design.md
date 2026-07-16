@@ -266,16 +266,30 @@ there is no inbound leg to verify, see "Architecture Overview" above).
 
 ## Open Questions
 
-- **Cert-exchange / Outway-Inway provisioning is out of scope.** This is the
-  central deferred concern, exactly as `iwmo-ijw-adapter` flagged its mTLS
-  gap: a real FSC deployment requires (a) this instance's own organisation
-  certificate registered in the federation, (b) a running Outway process
-  provisioned with that certificate, and (c) grants arranged with every
-  target organisation. None of that exists here. This change ships the
-  directory-resolution + call-routing + config/persistence layer only, with
-  `FscDirectoryClient` standing in for what a real Outway sidecar would
-  transparently provide — swapping in a real Outway-backed binding later
-  requires no change to `FscCallService`/`FscController`.
+- **The mTLS transport gap itself is CLOSED by
+  `mtls-client-certificate-transport` (2026-07-16)**: `FscDirectoryClient::call()`
+  (the downstream service invocation, standing in for what a real Outway
+  sidecar would transparently provide) now dispatches over a real
+  mutual-TLS connection when its source's
+  `configuration.authentication.mode=mtls` is configured
+  (`ICrypto`-encrypted-at-rest certificate/key/optional passphrase/optional
+  CA bundle under `configuration.authentication.mtls`), via the shared
+  `OCA\OpenConnector\Service\Mtls\MtlsTransportService`. Directory
+  `resolveService()` lookups remain unauthenticated/plain (a real FSC
+  Directory sits outside the Outway/Inway mTLS boundary). Token mode
+  remains the default and is unchanged.
+- **Cert-exchange / Outway-Inway provisioning remains out of scope** and is
+  the one part of the original gap that stays operator-side: a real FSC
+  deployment still requires (a) this instance's own organisation
+  certificate registered in the federation, (b) either a running Outway
+  process OR this app's own client certificate configured directly via the
+  mTLS transport above, and (c) grants arranged with every target
+  organisation. None of the federation onboarding is automated by this or
+  any change. This change ships the directory-resolution + call-routing +
+  config/persistence layer, with `FscDirectoryClient` standing in for what a
+  real Outway sidecar would transparently provide — swapping in a real
+  Outway-backed binding later requires no change to
+  `FscCallService`/`FscController`.
 - **Directory API shape is unverified** — see "Directory API shape" above;
   the exact response schema, error codes, and whether a real FSC Directory
   exposes a "resolve one service" endpoint at all (versus only a bulk

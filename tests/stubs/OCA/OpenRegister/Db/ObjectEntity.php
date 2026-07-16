@@ -33,6 +33,19 @@ class ObjectEntity extends Entity
     /** @var array */
     protected $object = [];
 
+    /**
+     * The real OCA\OpenRegister\Db\ObjectEntity declares `name`
+     * (`addType(fieldName: 'name', type: 'string')` + `@method string|null getName()`),
+     * and production code reads it via the Entity __call getter — e.g.
+     * `EndpointService::processSyncRule()`'s debug line calls
+     * `$synchronization->getName()`. Omitting it here made the stub drift from
+     * the real class, so any test exercising that path died in __call instead
+     * of testing the behaviour under test.
+     *
+     * @var string|null
+     */
+    protected $name = null;
+
     /** @var string|null */
     protected $register = null;
 

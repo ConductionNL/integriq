@@ -38,6 +38,7 @@ namespace OCA\OpenConnector\Service;
 use DateInterval;
 use DateTime;
 use OCA\OpenConnector\Exception\ApprovalStateException;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -95,12 +96,15 @@ class ApprovalService
     /**
      * Constructor.
      *
-     * @param ORObjectService      $objectService       OR object service for approval_request persistence.
-     * @param IUserSession         $userSession         Resolves the requesting/approving NC user.
-     * @param IGroupManager        $groupManager        Resolves approver-group membership.
-     * @param INotificationManager $notificationManager Dispatches the imperative actionable notification.
-     * @param IURLGenerator        $urlGenerator        Builds the Pending Approvals deep link.
-     * @param LoggerInterface      $logger              Logger for non-fatal diagnostics.
+     * @param ORObjectService            $objectService         OR object service for approval_request persistence.
+     * @param IUserSession               $userSession           Resolves the requesting/approving NC user.
+     * @param IGroupManager              $groupManager          Resolves approver-group membership.
+     * @param INotificationManager       $notificationManager   Dispatches the imperative actionable notification.
+     * @param IURLGenerator              $urlGenerator          Builds the Pending Approvals deep link.
+     * @param LoggerInterface            $logger                Logger for non-fatal diagnostics.
+     * @param ExecutionTraceService|null $executionTraceService Persists the traced run's execution_trace at
+     *                                                          suspension/resume (execution-trace REQ-004). Nullable + defaulted so
+     *                                                          pre-existing positional test instantiations keep working unmodified.
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -109,6 +113,7 @@ class ApprovalService
         private readonly INotificationManager $notificationManager,
         private readonly IURLGenerator $urlGenerator,
         private readonly LoggerInterface $logger,
+        private readonly ?ExecutionTraceService $executionTraceService=null,
     ) {
     }//end __construct()
 
@@ -118,15 +123,22 @@ class ApprovalService
      * carrying a sensitive-header-stripped FlowToken snapshot, and notify
      * the configured approver group.
      *
-     * @param ObjectEntity $endpoint  The endpoint whose pipeline suspended.
-     * @param ObjectEntity $rule      The `approval` rule that suspended it.
-     * @param FlowToken    $flowToken The in-flight FlowToken at suspension time.
+     * @param ObjectEntity               $endpoint  The endpoint whose pipeline suspended.
+     * @param ObjectEntity               $rule      The `approval` rule that suspended it.
+     * @param FlowToken                  $flowToken The in-flight FlowToken at suspension time.
+     * @param ExecutionTraceContext|null $trace     The active execution trace context at suspension time, when the
+     *                                              suspended run is traced (execution-trace REQ-004's
+     *                                              approval-resume continuation). Its `traceId` and `before`-phase
+     *                                              steps are carried in the persisted snapshot, alongside the
+     *                                              FlowToken serialization, so {@see rehydrateTraceContext()} can
+     *                                              reconstruct the SAME trace on resume.
      *
      * @return ObjectEntity The created, `pending` approval_request.
      *
      * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
      */
-    public function suspend(ObjectEntity $endpoint, ObjectEntity $rule, FlowToken $flowToken): ObjectEntity
+    public function suspend(ObjectEntity $endpoint, ObjectEntity $rule, FlowToken $flowToken, ?ExecutionTraceContext $trace=null): ObjectEntity
     {
         $ruleData = $rule->getObject();
         $config   = ($ruleData['configuration']['approval'] ?? []);
@@ -141,6 +153,15 @@ class ApprovalService
 
         $requesterUserId = $this->userSession->getUser()?->getUID();
 
+        $snapshot = $this->stripSensitiveHeaders(snapshot: $flowToken->__serialize());
+        if ($trace !== null) {
+            // Execution-trace REQ-004: carry the traceId + before-phase steps
+            // alongside the FlowToken serialization so resume appends to the
+            // SAME trace instead of creating a disconnected one.
+            $snapshot['traceId']    = $trace->getTraceId();
+            $snapshot['traceSteps'] = $trace->getSteps();
+        }
+
         $record = $this->objectService->saveObject(
             object: [
                 'status'          => 'pending',
@@ -148,7 +169,7 @@ class ApprovalService
                 'ruleId'          => $rule->getUuid(),
                 'timing'          => 'before',
                 'resumeOrder'     => (int) ($ruleData['order'] ?? 0),
-                'snapshot'        => $this->stripSensitiveHeaders(snapshot: $flowToken->__serialize()),
+                'snapshot'        => $snapshot,
                 'requesterUserId' => $requesterUserId,
                 'approverGroup'   => $approverGroup,
                 'onReject'        => $onReject,
@@ -159,6 +180,20 @@ class ApprovalService
             register: self::REGISTER,
             schema: self::SCHEMA
         );
+
+        if ($trace !== null) {
+            // Execution-trace REQ-004: the suspended run's execution_trace is
+            // persisted here (status: 'running') so it is visible while
+            // pending, not only after resume.
+            try {
+                $this->executionTraceService?->persist(trace: $trace, status: 'running');
+            } catch (Throwable $exception) {
+                $this->logger->warning(
+                    'ApprovalService: failed to persist the running execution_trace at suspension time.',
+                    ['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+                );
+            }
+        }
 
         $this->notifyApprovers(approvalRequest: $record);
 
@@ -411,6 +446,37 @@ class ApprovalService
         return $flowToken;
 
     }//end rehydrateFlowToken()
+
+    /**
+     * Reconstruct the `ExecutionTraceContext` recorded alongside the
+     * FlowToken serialization at suspension time (design.md Decision 2 /
+     * {@see suspend()}), pre-loaded with the original `traceId` and
+     * `before`-phase steps so `resumeFromApproval()` appends the `after`-
+     * phase steps to the SAME trace instead of starting a new,
+     * disconnected one (execution-trace REQ-004's approval-resume
+     * continuation scenario).
+     *
+     * @param array $snapshot The persisted `approval_request.snapshot` array.
+     *
+     * @return ExecutionTraceContext|null The rehydrated context, or null when the suspended run was untraced
+     *                                    (no `traceId` recorded — e.g. a pre-existing approval_request created
+     *                                    before this change, or a request that predates the traced entry points).
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
+     */
+    public function rehydrateTraceContext(array $snapshot): ?ExecutionTraceContext
+    {
+        if (isset($snapshot['traceId']) === false || is_string($snapshot['traceId']) === false || $snapshot['traceId'] === '') {
+            return null;
+        }
+
+        return new ExecutionTraceContext(
+            entryPoint: 'endpoint',
+            traceId: $snapshot['traceId'],
+            priorSteps: ($snapshot['traceSteps'] ?? [])
+        );
+
+    }//end rehydrateTraceContext()
 
     /**
      * Find an approval_request by id.

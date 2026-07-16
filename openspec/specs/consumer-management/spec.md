@@ -367,6 +367,7 @@ MUST throw `AuthenticationException`, and an empty presented key MUST never matc
   [])`
 - **THEN** the call SHALL succeed and `getResolvedConsumer()` SHALL return that consumer — identical
   behaviour to the `endpoint-runtime`-mediated call site
+- @e2e exclude backend service contract invoked from PHP, no browser UI — covered by PHPUnit
 
 #### Scenario: an unmatched key fails closed identically regardless of caller
 
@@ -374,6 +375,7 @@ MUST throw `AuthenticationException`, and an empty presented key MUST never matc
 - **WHEN** a non-endpoint-runtime controller calls `authorizeApiKey('wrong-key', [])`
 - **THEN** an `AuthenticationException` SHALL be thrown
 - **AND** `getResolvedConsumer()` SHALL return `null`
+- @e2e exclude backend service contract invoked from PHP, no browser UI — covered by PHPUnit
 
 ### Requirement: Consumer detail surfaces its API Product subscriptions (REQ-CON-SUB-001)
 

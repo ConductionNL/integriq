@@ -27,6 +27,9 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\DsoProviderException;
 use OCA\OpenConnector\Service\Dso\DsoClient;
+use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
@@ -109,7 +112,9 @@ class DsoClientTest extends TestCase
             new Client(['handler' => $stack]),
             $this->crypto,
             $this->l,
-            $this->logger
+            $this->logger,
+            new MtlsConfigResolver($this->crypto),
+            new MtlsTransportService(new MtlsTransportOptionsBuilder(), $this->logger)
         );
 
     }//end buildClient()
@@ -154,7 +159,7 @@ class DsoClientTest extends TestCase
      */
     public function testSendHonoursConfiguredAuthScheme(): void
     {
-        $configuration                             = $this->configuration;
+        $configuration = $this->configuration;
         $configuration['authentication']['scheme'] = 'Token';
 
         $client = $this->buildClient([new Response(200, [], json_encode(['ref' => 'DSO-abc']))]);
@@ -298,4 +303,85 @@ class DsoClientTest extends TestCase
         $client->send(['baseUrl' => 'https://example.nl'], 'dso-12345', 'status', []);
 
     }//end testSendThrowsWhenTokenMissing()
+
+    /**
+     * send() routes through MtlsTransportService (not the plain Guzzle
+     * client) when `authentication.mode=mtls` is configured — proves the
+     * mTLS capability is actually invoked, not merely built (orphaned-
+     * capability rule).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-dsoclient-routes-through-the-mtls-transport-when-configured
+     */
+    public function testSendRoutesThroughMtlsTransportWhenConfigured(): void
+    {
+        $mtlsTransport = $this->createMock(MtlsTransportService::class);
+        $mtlsTransport->expects($this->once())
+            ->method('request')
+            ->with(
+                $this->anything(),
+                'POST',
+                'https://dso-lv.example.nl/api/v1/statussen',
+                $this->anything(),
+                $this->isInstanceOf(\OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle::class)
+            )
+            ->willReturn(new \GuzzleHttp\Psr7\Response(200, [], json_encode(['ref' => 'DSO-mtls-ref'])));
+
+        $mtlsConfigResolver = $this->createMock(MtlsConfigResolver::class);
+        $mtlsConfigResolver->method('isMtlsConfigured')->willReturn(true);
+        $mtlsConfigResolver->method('resolve')->willReturn(
+            new \OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle(certificatePem: 'CERT', privateKeyPem: 'KEY')
+        );
+
+        $client = new DsoClient(
+            new Client(),
+            $this->crypto,
+            $this->l,
+            $this->logger,
+            $mtlsConfigResolver,
+            $mtlsTransport
+        );
+
+        $ref = $client->send(
+            ['baseUrl' => 'https://dso-lv.example.nl/api/v1', 'authentication' => ['mode' => 'mtls', 'mtls' => []]],
+            'dso-12345',
+            'status',
+            ['status' => 'in_behandeling']
+        );
+
+        $this->assertSame('DSO-mtls-ref', $ref);
+
+    }//end testSendRoutesThroughMtlsTransportWhenConfigured()
+
+    /**
+     * send() never routes through MtlsTransportService when `mode=token`
+     * (the default) — proves token mode is unchanged.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-token-mode-is-unchanged-when-mtls-is-not-configured
+     */
+    public function testSendNeverRoutesThroughMtlsTransportInTokenMode(): void
+    {
+        $mtlsTransport = $this->createMock(MtlsTransportService::class);
+        $mtlsTransport->expects($this->never())->method('request');
+
+        $mock  = new MockHandler([new Response(200, [], json_encode(['ref' => 'DSO-token-ref']))]);
+        $stack = HandlerStack::create($mock);
+
+        $client = new DsoClient(
+            new Client(['handler' => $stack]),
+            $this->crypto,
+            $this->l,
+            $this->logger,
+            new MtlsConfigResolver($this->crypto),
+            $mtlsTransport
+        );
+
+        $ref = $client->send($this->configuration, 'dso-12345', 'status', []);
+
+        $this->assertSame('DSO-token-ref', $ref);
+
+    }//end testSendNeverRoutesThroughMtlsTransportInTokenMode()
 }//end class

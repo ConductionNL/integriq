@@ -34,10 +34,13 @@ use OCA\OpenConnector\Rule\AvgBsnPolicyRule;
 use OCA\OpenConnector\Rule\CompositeFanoutRule;
 use OCA\OpenConnector\Rule\ReferentienummerRule;
 use OCA\OpenConnector\Service\ApprovalService;
+use OCA\OpenConnector\Service\ExecutionTraceService;
 use OCA\OpenConnector\Service\FlowRunnerService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenConnector\Service\RateLimit\InboundRateLimitService;
 use OCA\OpenConnector\Service\RateLimit\RateLimitDecision;
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -93,31 +96,63 @@ class EndpointService
     ];
 
     /**
+     * Rule types with an external or persisted side-effect — under a
+     * dry-run replay (`dryRun: true`), these MUST NOT perform their write;
+     * `processRules()` records a `skipped_dry_run` step instead
+     * (rule-pipeline REQ-RULE-011). `synchronization` is a deliberate
+     * partial exception NOT in this set — it forwards `$dryRun` into
+     * `processSyncRule()`/`SynchronizationService::synchronize()`'s own
+     * `isTest` no-write guarantee rather than being blanket-skipped.
+     *
+     * @var array<int, string>
+     */
+    private const DRY_RUN_SUPPRESSED_RULE_TYPES = [
+        'save_object',
+        'override',
+        'locking',
+        'write_file',
+        'fileparts_create',
+        'filepart_upload',
+        'composite_fanout',
+        // `flow` triggers a real FlowRunnerService::run() — every step it
+        // executes (call/save/synchronization) is write-shaped and has no
+        // dry-run forward of its own, so a traced replay must suppress it
+        // outright rather than fire a live flow run.
+        'flow',
+    ];
+
+    /**
      * Constructor for EndpointService.
      *
-     * @param ObjectService           $objectService           Service for handling object operations.
-     * @param CallService             $callService             Service for making external API calls.
-     * @param LoggerInterface         $logger                  Logger interface for error logging.
-     * @param IURLGenerator           $urlGenerator            Nextcloud URL generator used for absolute links.
-     * @param MappingService          $mappingService          Service used to apply request/response mappings.
-     * @param ORObjectService         $orObjectService         OpenRegister object service for register/schema CRUD.
-     * @param IConfig                 $config                  Nextcloud system configuration.
-     * @param StorageService          $storageService          Service used for file part and attachment storage.
-     * @param AuthorizationService    $authorizationService    Service used to authorize incoming endpoint requests.
-     * @param ContainerInterface      $containerInterface      PSR container used to resolve optional services.
-     * @param SynchronizationService  $synchronizationService  Service used to dispatch endpoint synchronizations.
-     * @param RuleService             $ruleService             Service used to load and resolve endpoint rules.
-     * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
-     * @param InboundRateLimitService $rateLimitService        Service enforcing inbound per-consumer rate limits + quotas.
-     * @param CompositeFanoutRule     $compositeFanoutRule     Dialect-agnostic composite transactional fan-out rule.
-     * @param ReferentienummerRule    $referentienummerRule    Dialect-agnostic referentienummer generation rule.
-     * @param AvgBsnPolicyRule        $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
-     * @param ApprovalService         $approvalService         Suspends the pipeline on a HITL `approval` rule.
-     * @param IRequestId              $requestId               Nextcloud request-id service, used to synthesize
-     *                                                         an `IRequest` for `triggerFromFlow()`.
-     * @param FlowRunnerService       $flowRunnerService       Executes the `flow` rule action type (REQ-RULE-009).
-     * @param ConsumerScopeService    $consumerScopeService    Enforces the resolved consumer's source allowlist
-     *                                                         (`ips`/`domains`, REQ-CON-SCOPE-001).
+     * @param ObjectService              $objectService           Service for handling object operations.
+     * @param CallService                $callService             Service for making external API calls.
+     * @param LoggerInterface            $logger                  Logger interface for error logging.
+     * @param IURLGenerator              $urlGenerator            Nextcloud URL generator used for absolute links.
+     * @param MappingService             $mappingService          Service used to apply request/response mappings.
+     * @param ORObjectService            $orObjectService         OpenRegister object service for register/schema CRUD.
+     * @param IConfig                    $config                  Nextcloud system configuration.
+     * @param StorageService             $storageService          Service used for file part and attachment storage.
+     * @param AuthorizationService       $authorizationService    Service used to authorize incoming endpoint requests.
+     * @param ContainerInterface         $containerInterface      PSR container used to resolve optional services.
+     * @param SynchronizationService     $synchronizationService  Service used to dispatch endpoint synchronizations.
+     * @param RuleService                $ruleService             Service used to load and resolve endpoint rules.
+     * @param WebhookSignatureService    $webhookSignatureService Service used to verify inbound webhook signatures.
+     * @param InboundRateLimitService    $rateLimitService        Service enforcing inbound per-consumer rate limits + quotas.
+     * @param CompositeFanoutRule        $compositeFanoutRule     Dialect-agnostic composite transactional fan-out rule.
+     * @param ReferentienummerRule       $referentienummerRule    Dialect-agnostic referentienummer generation rule.
+     * @param AvgBsnPolicyRule           $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
+     * @param ApprovalService            $approvalService         Suspends the pipeline on a HITL `approval` rule.
+     * @param IRequestId                 $requestId               Nextcloud request-id service, used to synthesize
+     *                                                            an `IRequest` for `triggerFromFlow()`.
+     * @param FlowRunnerService          $flowRunnerService       Executes the `flow` rule action type (REQ-RULE-009).
+     * @param ConsumerScopeService       $consumerScopeService    Enforces the resolved consumer's source allowlist
+     *                                                            (`ips`/`domains`, REQ-CON-SCOPE-001).
+     * @param ExecutionTraceService|null $executionTraceService   Assembles/persists the per-execution trace
+     *                                                            (execution-trace REQ-001/REQ-004).
+     *                                                            Nullable + defaulted so pre-existing
+     *                                                            positional test instantiations keep
+     *                                                            working unmodified; a real request always
+     *                                                            gets the DI container's instance.
      *
      * @return void
      */
@@ -143,6 +178,7 @@ class EndpointService
         private readonly IRequestId $requestId,
         private readonly FlowRunnerService $flowRunnerService,
         private readonly ConsumerScopeService $consumerScopeService,
+        private readonly ?ExecutionTraceService $executionTraceService=null,
     ) {
     }//end __construct()
 
@@ -406,6 +442,10 @@ class EndpointService
             return new JSONResponse(['error' => 'The following parameters are not correctly set', 'fields' => $errors], 400);
         }
 
+        // Execution-trace REQ-001: mint the traceId before any downstream
+        // work begins — one of the four execution entry points.
+        $trace = new ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: $endpoint->getUuid(), triggeredBy: 'http');
+
         try {
             $flowToken = new FlowToken(requestOriginal: $request, path: $path);
 
@@ -464,16 +504,22 @@ class EndpointService
                 data: $data,
                 timing: 'before',
                 flowToken: $flowToken,
+                trace: $trace,
             );
 
-            return $this->dispatchAfterBeforeRules(
+            $response = $this->dispatchAfterBeforeRules(
                 endpoint: $endpoint,
                 request: $request,
                 path: $path,
                 flowToken: $flowToken,
                 ruleResult: $ruleResult,
-                enforceRateLimit: true
+                enforceRateLimit: true,
+                trace: $trace
             );
+
+            $this->finalizeTrace(trace: $trace, response: $response);
+
+            return $response;
         } catch (Exception $e) {
             // C3 fix: never disclose the stack trace in the response body.
             // This endpoint is @PublicPage — unauthenticated callers must not see internal file
@@ -482,12 +528,77 @@ class EndpointService
                 'Error handling endpoint request: '.$e->getMessage(),
                 ['exception' => $e]
             );
+
+            $this->finalizeTrace(
+                trace: $trace,
+                response: null,
+                error: [
+                    'message'  => $e->getMessage(),
+                    'ruleType' => null,
+                    'ruleName' => null,
+                ]
+            );
+
             return new JSONResponse(
                 ['error' => 'Internal server error'],
                 400
             );
         }//end try
     }//end doHandleRequest()
+
+    /**
+     * Persist the assembled `ExecutionTraceContext` for one completed
+     * execution (execution-trace REQ-004): status is derived from the final
+     * `Response` (or from `$error` on an uncaught exception, per
+     * `rule-pipeline` REQ-RULE-001's HTTP 500 path). Best-effort — a
+     * persistence failure MUST NOT fail the endpoint response it is
+     * observing.
+     *
+     * @param ExecutionTraceContext|null $trace    The context to persist; a no-op when null (`executionTraceService`
+     *                                             unavailable, e.g. legacy test instantiation without it).
+     * @param Response|null              $response The final response, when the execution completed without throwing.
+     * @param array|null                 $error    The terminal error {message, ruleType, ruleName}, when set via the
+     *                                             uncaught-exception path.
+     * @param boolean                    $resume   Whether this finalizes an approval-resume continuation (design.md
+     *                                             Decision 2) — updates the SAME trace instead of creating a new one.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
+     */
+    private function finalizeTrace(?ExecutionTraceContext $trace, ?Response $response, ?array $error=null, bool $resume=false): void
+    {
+        if ($trace === null || $this->executionTraceService === null) {
+            return;
+        }
+
+        if ($error !== null) {
+            $status = 'failed';
+        } else if ($response !== null) {
+            $statusCode = $response->getStatus();
+            if ($statusCode === 202) {
+                $status = 'running';
+            } else if ($statusCode >= 200 && $statusCode < 300) {
+                $status = 'success';
+            } else if ($statusCode >= 400) {
+                $status = 'failed';
+            } else {
+                $status = 'short_circuited';
+            }
+        } else {
+            $status = 'short_circuited';
+        }
+
+        try {
+            $this->executionTraceService->persist(trace: $trace, status: $status, error: $error, resume: $resume);
+        } catch (\Throwable $exception) {
+            $this->logger->warning(
+                'EndpointService: failed to persist execution_trace.',
+                ['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+            );
+        }
+
+    }//end finalizeTrace()
 
     /**
      * Continue an endpoint request after the `before`-phase rule pipeline
@@ -499,21 +610,28 @@ class EndpointService
      * (the approver's own request) so suspension/resume needs no separate
      * dispatch implementation (rule-pipeline REQ-RULE-008 Notes).
      *
-     * @param ObjectEntity   $endpoint         The endpoint configuration.
-     * @param IRequest       $request          The current request (approver's own request on resume).
-     * @param string         $path             The endpoint sub-path.
-     * @param FlowToken      $flowToken        The (possibly rehydrated) FlowToken.
-     * @param array|Response $ruleResult       The before-phase `processRules()` result.
-     * @param boolean        $enforceRateLimit Whether to (re-)apply the inbound rate limit — false
-     *                                         on resume, since the original request already passed it
-     *                                         before suspending (design.md `resumeFromApproval`
-     *                                         notes).
+     * @param ObjectEntity               $endpoint         The endpoint configuration.
+     * @param IRequest                   $request          The current request (approver's own request on resume).
+     * @param string                     $path             The endpoint sub-path.
+     * @param FlowToken                  $flowToken        The (possibly rehydrated) FlowToken.
+     * @param array|Response             $ruleResult       The before-phase `processRules()` result.
+     * @param boolean                    $enforceRateLimit Whether to (re-)apply the inbound rate limit —
+     *                                                     false on resume, since the original request already
+     *                                                     passed it before suspending (design.md
+     *                                                     `resumeFromApproval` notes).
+     * @param ExecutionTraceContext|null $trace            The active execution trace context, threaded into the
+     *                                                     `after`-phase `processRules()` call and the
+     *                                                     source-proxy dispatch (execution-trace REQ-001).
+     * @param boolean                    $dryRun           Whether write-shaped rule dispatch is suppressed
+     *                                                     (rule-pipeline REQ-RULE-011) — threaded into the
+     *                                                     `after`-phase `processRules()` call.
      *
      * @return Response
      *
      * @throws Exception When endpoint configuration is invalid.
      *
      * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
      */
     private function dispatchAfterBeforeRules(
         ObjectEntity $endpoint,
@@ -521,7 +639,9 @@ class EndpointService
         string $path,
         FlowToken $flowToken,
         array|Response $ruleResult,
-        bool $enforceRateLimit
+        bool $enforceRateLimit,
+        ?ExecutionTraceContext $trace=null,
+        bool $dryRun=false
     ): Response {
         $endpointData = $endpoint->getObject();
 
@@ -580,7 +700,9 @@ class EndpointService
                 data: $data,
                 timing: 'after',
                 objectId: $result->getData()['id'] ?? null,
-                flowToken: $flowToken
+                flowToken: $flowToken,
+                trace: $trace,
+                dryRun: $dryRun
             );
 
             if ($ruleResult instanceof Response === true && $ruleResult->getStatus() >= 200 && $ruleResult->getStatus() < 300) {
@@ -623,7 +745,7 @@ class EndpointService
         // Check if endpoint connects to a source.
         if (($endpointData['targetType'] ?? '') === 'api') {
             // Proxy request to source via CallService.
-            return $this->handleSourceRequest(endpoint: $endpoint, request: $request);
+            return $this->handleSourceRequest(endpoint: $endpoint, request: $request, trace: $trace);
         }
 
         // Invalid endpoint configuration.
@@ -644,22 +766,34 @@ class EndpointService
      * already passed it before the run suspended, and this request belongs
      * to the approver, not a new inbound API consumer.
      *
-     * @param ObjectEntity $endpoint         The suspended endpoint.
-     * @param IRequest     $request          The approver's own request.
-     * @param FlowToken    $flowToken        The FlowToken rehydrated from the approval_request snapshot.
-     * @param integer      $resumeAfterOrder The approval rule's `order` — resume continues strictly after it.
-     * @param string       $path             The endpoint sub-path recorded at suspension time.
+     * @param ObjectEntity               $endpoint         The suspended endpoint.
+     * @param IRequest                   $request          The approver's own request.
+     * @param FlowToken                  $flowToken        The FlowToken rehydrated from the approval_request snapshot.
+     * @param integer                    $resumeAfterOrder The approval rule's `order` — resume continues strictly after
+     *                                                     it.
+     * @param string                     $path             The endpoint sub-path recorded at suspension time.
+     * @param ExecutionTraceContext|null $trace            The execution trace context rehydrated from the
+     *                                                     approval_request snapshot
+     *                                                     (`ApprovalService::rehydrateTraceContext()`),
+     *                                                     pre-loaded with the original `traceId` and
+     *                                                     `before`-phase steps — null when the
+     *                                                     suspended run was untraced. When non-null, the
+     *                                                     resumed `after`-phase steps are appended to the
+     *                                                     SAME trace and `execution_trace` is UPDATED
+     *                                                     (not created), per design.md Decision 2.
      *
      * @return Response The resumed pipeline's final result.
      *
      * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
      */
     public function resumeFromApproval(
         ObjectEntity $endpoint,
         IRequest $request,
         FlowToken $flowToken,
         int $resumeAfterOrder,
-        string $path
+        string $path,
+        ?ExecutionTraceContext $trace=null
     ): Response {
         try {
             $data = [
@@ -679,26 +813,123 @@ class EndpointService
                 data: $data,
                 timing: 'before',
                 flowToken: $flowToken,
-                resumeAfterOrder: $resumeAfterOrder
+                resumeAfterOrder: $resumeAfterOrder,
+                trace: $trace
             );
 
-            return $this->dispatchAfterBeforeRules(
+            $response = $this->dispatchAfterBeforeRules(
                 endpoint: $endpoint,
                 request: $request,
                 path: $path,
                 flowToken: $flowToken,
                 ruleResult: $ruleResult,
-                enforceRateLimit: false
+                enforceRateLimit: false,
+                trace: $trace
             );
+
+            $this->finalizeTrace(trace: $trace, response: $response, resume: true);
+
+            return $response;
         } catch (Exception $e) {
             $this->logger->error(
                 'Error resuming endpoint request after approval: '.$e->getMessage(),
                 ['exception' => $e]
             );
+
+            $this->finalizeTrace(
+                trace: $trace,
+                response: null,
+                error: [
+                    'message'  => $e->getMessage(),
+                    'ruleType' => null,
+                    'ruleName' => null,
+                ],
+                resume: true
+            );
+
             return new JSONResponse(['error' => 'Internal server error'], 500);
         }//end try
 
     }//end resumeFromApproval()
+
+    /**
+     * Replay an `endpoint`-entryPoint execution_trace against the same
+     * endpoint, re-running the rule pipeline against the ORIGINAL request
+     * snapshot (`execution-trace` REQ-005/REQ-006, `rule-pipeline`
+     * REQ-RULE-011). Dispatched by `ExecutionTraceService::replay()` — never
+     * called directly from a controller.
+     *
+     * Dry-run (`$dryRun: true`, the default) suppresses write-shaped rule
+     * dispatch via `processRules(dryRun: true)`; a `mapping`/`extend_input`/
+     * `authentication`/`error` rule still executes for real, matching
+     * REQ-005's "best-effort pre-rule envelope" scenario. Note (design.md
+     * Decision 4's rejected-alternative discussion): this is a rule-level
+     * dry-run only — an endpoint whose OWN schema/source target write is not
+     * gated by a rule (e.g. a `register/schema` endpoint with no `save_object`
+     * rule) is NOT suppressed by `$dryRun`; a full transactional dry-run of
+     * the target dispatch itself was explicitly rejected as out of scope for
+     * this change (design.md Decision 4).
+     *
+     * @param ObjectEntity          $endpoint        The endpoint to replay against.
+     * @param array                 $requestSnapshot The original request's `FlowToken::getRequestOriginal()` shape
+     *                                               (method/headers/parameters/path), read from the stored trace's
+     *                                               first `rule` step input.
+     * @param ExecutionTraceContext $trace           The NEW trace context this replay populates (already flagged
+     *                                               `isReplay: true`/`replayOf` by the caller).
+     * @param boolean               $dryRun          Whether to suppress write-shaped rule dispatch. Defaults to true.
+     *
+     * @return Response The replayed pipeline's final result.
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
+     * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-point-s-real-dispatch-path-req-006
+     */
+    public function replay(ObjectEntity $endpoint, array $requestSnapshot, ExecutionTraceContext $trace, bool $dryRun=true): Response
+    {
+        try {
+            $syntheticRequest = $this->buildSyntheticRequest(parameters: ($requestSnapshot['parameters'] ?? []));
+            $path      = (string) ($requestSnapshot['path'] ?? '');
+            $flowToken = new FlowToken(requestOriginal: $requestSnapshot, path: $path);
+
+            $data = [
+                'utility'    => [
+                    'currentDate' => (new DateTime())->format('c'),
+                ],
+                'parameters' => ($requestSnapshot['parameters'] ?? []),
+                'headers'    => ($requestSnapshot['headers'] ?? []),
+                'path'       => $path,
+                'method'     => ($requestSnapshot['method'] ?? 'GET'),
+                'body'       => ($requestSnapshot['parameters'] ?? []),
+            ];
+
+            $ruleResult = $this->processRules(
+                endpoint: $endpoint,
+                request: $syntheticRequest,
+                data: $data,
+                timing: 'before',
+                flowToken: $flowToken,
+                trace: $trace,
+                dryRun: $dryRun
+            );
+
+            return $this->dispatchAfterBeforeRules(
+                endpoint: $endpoint,
+                request: $syntheticRequest,
+                path: $path,
+                flowToken: $flowToken,
+                ruleResult: $ruleResult,
+                enforceRateLimit: false,
+                trace: $trace,
+                dryRun: $dryRun
+            );
+        } catch (Exception $e) {
+            $this->logger->error(
+                'Error replaying endpoint execution_trace: '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return new JSONResponse(['error' => 'Internal server error'], 500);
+        }//end try
+
+    }//end replay()
 
     /**
      * Enforce the resolved consumer's inbound rate limit and quota.
@@ -1955,15 +2186,17 @@ class EndpointService
     /**
      * Handles requests for source-based endpoints
      *
-     * @param ObjectEntity $endpoint The endpoint configuration
-     * @param IRequest     $request  The incoming request
+     * @param ObjectEntity               $endpoint The endpoint configuration
+     * @param IRequest                   $request  The incoming request
+     * @param ExecutionTraceContext|null $trace    The active execution trace context (execution-trace REQ-001).
      *
      * @return JSONResponse
      * @throws GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception
      *
      * @spec openspec/specs/endpoint-runtime/spec.md
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
      */
-    private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request): JSONResponse
+    private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request, ?ExecutionTraceContext $trace=null): JSONResponse
     {
         $endpointData = $endpoint->getObject();
         $headers      = $this->getHeaders(server: $_SERVER);
@@ -1991,7 +2224,8 @@ class EndpointService
                 'query'   => $request->getParams(),
                 'headers' => $headers,
                 'body'    => $this->getRawContent(),
-            ]
+            ],
+            trace: $trace
         );
         $callLogData = $callLog->getObject();
 
@@ -2129,22 +2363,36 @@ class EndpointService
     /**
      * Processes rules for an endpoint request.
      *
-     * @param ObjectEntity   $endpoint         The endpoint being processed.
-     * @param IRequest       $request          The incoming request.
-     * @param array          $data             Current request data envelope.
-     * @param string         $timing           Rule timing to filter by ("before" or "after").
-     * @param string|null    $objectId         Optional object id (for rules scoped to a single object).
-     * @param FlowToken|null $flowToken        Optional flow token threaded through the rule chain.
-     * @param integer|null   $resumeAfterOrder When resuming a suspended `approval` rule (design.md
-     *                                         Decision 3), skip every rule whose `order` is not
-     *                                         strictly greater than this value — they already ran
-     *                                         before the pipeline suspended. Null for a normal
-     *                                         (non-resumed) run.
+     * @param ObjectEntity               $endpoint         The endpoint being processed.
+     * @param IRequest                   $request          The incoming request.
+     * @param array                      $data             Current request data envelope.
+     * @param string                     $timing           Rule timing to filter by ("before" or "after").
+     * @param string|null                $objectId         Optional object id (for rules scoped to a single object).
+     * @param FlowToken|null             $flowToken        Optional flow token threaded through the rule chain.
+     * @param integer|null               $resumeAfterOrder When resuming a suspended `approval` rule (design.md
+     *                                                     Decision 3), skip every rule whose `order` is not
+     *                                                     strictly greater than this value — they already
+     *                                                     ran before the pipeline suspended. Null for a normal
+     *                                                     (non-resumed) run.
+     * @param ExecutionTraceContext|null $trace            The active execution trace context. When non-null, one ordered
+     *                                                     step is appended per evaluated rule (execution-trace REQ-002,
+     *                                                     rule-pipeline REQ-RULE-010). When null, behaviour is
+     *                                                     byte-for-byte identical to the pre-existing, untraced
+     *                                                     pipeline.
+     * @param boolean                    $dryRun           When true, write-shaped rule types (`save_object`, `override`,
+     *                                                     `locking`, `write_file`, `fileparts_create`,
+     *                                                     `filepart_upload`, `composite_fanout`) do not perform their
+     *                                                     write — a `skipped_dry_run` step is recorded instead and
+     *                                                     evaluation continues against the pre-rule data envelope
+     *                                                     (rule-pipeline REQ-RULE-011). Defaults to false, preserving
+     *                                                     existing behaviour.
      *
      * @return array|JSONResponse Returns modified data or error response if rule fails.
      *
      * @spec openspec/specs/rule-pipeline/spec.md
      * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011
      */
     private function processRules(
         ObjectEntity $endpoint,
@@ -2153,7 +2401,9 @@ class EndpointService
         string $timing,
         ?string $objectId=null,
         FlowToken $flowToken=null,
-        ?int $resumeAfterOrder=null
+        ?int $resumeAfterOrder=null,
+        ?ExecutionTraceContext $trace=null,
+        bool $dryRun=false
     ): array|Response {
         $endpointData = $endpoint->getObject();
         $rules        = $endpointData['rules'] ?? [];
@@ -2201,8 +2451,20 @@ class EndpointService
                         .' of type: '.($ruleData['type'] ?? '')
                     );
 
+                    // Execution-trace REQ-002 / rule-pipeline REQ-RULE-010: a
+                    // rule skipped by its own condition/timing check still
+                    // produces a step.
+                    if ($trace !== null) {
+                        $trace->addStep(
+                            type: 'rule',
+                            name: ($ruleData['name'] ?? ($ruleData['type'] ?? 'rule')),
+                            timing: $timing,
+                            status: 'skipped',
+                        );
+                    }
+
                     continue;
-                }
+                }//end if
 
                 if (is_string($logicResult) === true && json_decode(json: $logicResult, associative: true) !== null) {
                     $data['logicResult'] = json_decode($logicResult, true);
@@ -2219,14 +2481,37 @@ class EndpointService
                 // At this moment, setting flowToken in $data when processing rules will result in data contamination.
                 unset($data['flowToken']);
 
+                $ruleType = ($ruleData['type'] ?? '');
+
+                // Rule-pipeline REQ-RULE-011: under a dry-run replay, write-shaped
+                // rule types do not perform their write — record a
+                // `skipped_dry_run` step and continue against the pre-rule
+                // envelope. `synchronization` is a deliberate partial exception
+                // (handled inside processSyncRule() via its own $dryRun forward
+                // to SynchronizationService's isTest — it is NOT in this set).
+                if ($dryRun === true && in_array($ruleType, self::DRY_RUN_SUPPRESSED_RULE_TYPES, true) === true) {
+                    if ($trace !== null) {
+                        $trace->addStep(
+                            type: 'rule',
+                            name: ($ruleData['name'] ?? $ruleType),
+                            timing: $timing,
+                            status: 'skipped_dry_run',
+                        );
+                    }
+
+                    continue;
+                }
+
+                $ruleStepStart = microtime(true);
+
                 // Process rule based on type.
                 try {
-                    $result = match (($ruleData['type'] ?? '')) {
+                    $result = match ($ruleType) {
                         'save_object' => $this->processSaveObjectRule(rule: $rule, data: $data),
                         'authentication' => $this->processAuthenticationRule(rule: $rule, data: $data),
                         'error' => $this->processErrorRule(rule: $rule, data: $data),
                         'mapping' => $this->processMappingRule(rule: $rule, data: $data),
-                        'synchronization' => $this->processSyncRule(rule: $rule, data: $data, flowToken: $flowToken),
+                        'synchronization' => $this->processSyncRule(rule: $rule, data: $data, flowToken: $flowToken, trace: $trace, dryRun: $dryRun),
                         'javascript' => $this->processJavaScriptRule(rule: $rule, data: $data),
                         'fileparts_create' => $this->processFilePartRule(rule: $rule, data: $data, endpoint: $endpoint, objectId: $objectId),
                         'filepart_upload' => $this->processFilePartUploadRule(rule: $rule, data: $data, request: $request, objectId: $objectId),
@@ -2243,18 +2528,65 @@ class EndpointService
                         'referentienummer' => $this->processReferentienummerRule(rule: $rule, data: $data),
                         'avg_bsn_policy' => $this->processAvgBsnPolicyRule(rule: $rule, data: $data, timing: $timing),
                         'selfurl_hal' => $this->processSelfUrlHalRule(rule: $rule, endpoint: $endpoint, data: $data),
-                        'approval' => $this->processApprovalRule(rule: $rule, endpoint: $endpoint, flowToken: $flowToken, timing: $timing),
+                        'approval' => $this->processApprovalRule(
+                            rule: $rule,
+                            endpoint: $endpoint,
+                            flowToken: $flowToken,
+                            timing: $timing,
+                            trace: $trace
+                        ),
                         'flow' => $this->processFlowRule(rule: $rule, data: $data),
-                        default => throw new Exception('Unsupported rule type: '.($ruleData['type'] ?? '')),
+                        default => throw new Exception('Unsupported rule type: '.$ruleType),
                     };//end match
                 } catch (Exception $e) {
                     $message = 'Failed to apply rule for endpoint '.($endpointData['name'] ?? '')
                         .' with rule '.($ruleData['name'] ?? '')
-                        .' of type '.($ruleData['type'] ?? '')
+                        .' of type '.$ruleType
                         .'. With error message: '.$e->getMessage();
                     $this->logger->error($message);
+
+                    if ($trace !== null) {
+                        $trace->addStep(
+                            type: 'rule',
+                            name: ($ruleData['name'] ?? $ruleType),
+                            timing: $timing,
+                            status: 'error',
+                            output: [
+                                'endpoint' => ($endpointData['name'] ?? null),
+                                'rule'     => ($ruleData['name'] ?? null),
+                                'ruleType' => $ruleType,
+                                'message'  => $e->getMessage(),
+                            ],
+                            startedAtMicrotime: $ruleStepStart,
+                            finishedAtMicrotime: microtime(true),
+                        );
+                    }
+
                     return new JSONResponse(['error' => 'Rule processing failed'], 500);
                 }//end try
+
+                if ($trace !== null) {
+                    $ruleStepInputData = [];
+                    if (is_array($data) === true) {
+                        $ruleStepInputData = $data;
+                    }
+
+                    $ruleStepOutputData = [];
+                    if (is_array($result) === true) {
+                        $ruleStepOutputData = $result;
+                    }
+
+                    $trace->addStep(
+                        type: 'rule',
+                        name: ($ruleData['name'] ?? $ruleType),
+                        timing: $timing,
+                        status: 'success',
+                        input: (new SensitiveFieldRegistry())->redactArray(data: $ruleStepInputData),
+                        output: (new SensitiveFieldRegistry())->redactArray(data: $ruleStepOutputData),
+                        startedAtMicrotime: $ruleStepStart,
+                        finishedAtMicrotime: microtime(true),
+                    );
+                }//end if
 
                 // If result is JSONResponse, return error immediately.
                 if ($result instanceof JSONResponse === true || $result instanceof DataDownloadResponse === true) {
@@ -2267,7 +2599,7 @@ class EndpointService
                 $this->logger->info(
                     'Successfully applied rule for endpoint '.($endpointData['name'] ?? '')
                     .' with rule '.($ruleData['name'] ?? '')
-                    .' of type '.($ruleData['type'] ?? '')
+                    .' of type '.$ruleType
                 );
             }//end foreach
 
@@ -2327,10 +2659,14 @@ class EndpointService
      * explicit `$timing !== 'before'` guard below is what actually rejects
      * that misconfiguration (design.md Decision 1).
      *
-     * @param ObjectEntity $rule      The `approval` rule whose conditions passed.
-     * @param ObjectEntity $endpoint  The endpoint whose pipeline is suspending.
-     * @param FlowToken    $flowToken The in-flight FlowToken at suspension time.
-     * @param string       $timing    The phase `processRules()` is currently running.
+     * @param ObjectEntity               $rule      The `approval` rule whose conditions passed.
+     * @param ObjectEntity               $endpoint  The endpoint whose pipeline is suspending.
+     * @param FlowToken                  $flowToken The in-flight FlowToken at suspension time.
+     * @param string                     $timing    The phase `processRules()` is currently running.
+     * @param ExecutionTraceContext|null $trace     The active execution trace context, carried into the persisted
+     *                                              `approval_request.snapshot` so resume appends to the SAME
+     *                                              trace (execution-trace REQ-004's approval-resume
+     *                                              continuation).
      *
      * @return JSONResponse HTTP 202 with the approval_request id and a status-polling URL.
      *
@@ -2338,14 +2674,20 @@ class EndpointService
      *
      * @spec openspec/specs/rule-pipeline/spec.md#requirement-approval-rule-action-type-suspends-the-pipeline-req-rule-008
      * @spec openspec/specs/approval-workflow/spec.md#requirement-endpoint-rule-pipeline-suspension-on-approval-action-req-001
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
      */
-    private function processApprovalRule(ObjectEntity $rule, ObjectEntity $endpoint, FlowToken $flowToken, string $timing): JSONResponse
-    {
+    private function processApprovalRule(
+        ObjectEntity $rule,
+        ObjectEntity $endpoint,
+        FlowToken $flowToken,
+        string $timing,
+        ?ExecutionTraceContext $trace=null
+    ): JSONResponse {
         if ($timing !== 'before') {
             throw new Exception('approval rule type only supports timing: before (pre-write gating)');
         }
 
-        $approvalRequest = $this->approvalService->suspend(endpoint: $endpoint, rule: $rule, flowToken: $flowToken);
+        $approvalRequest = $this->approvalService->suspend(endpoint: $endpoint, rule: $rule, flowToken: $flowToken, trace: $trace);
 
         return new JSONResponse(
             data: [
@@ -3091,16 +3433,30 @@ class EndpointService
     /**
      * Processes a synchronization rule.
      *
-     * @param ObjectEntity $rule      The rule object containing synchronization details.
-     * @param array        $data      The data to be synchronized.
-     * @param FlowToken    $flowToken The current flow token threaded through the synchronization.
+     * @param ObjectEntity               $rule      The rule object containing synchronization details.
+     * @param array                      $data      The data to be synchronized.
+     * @param FlowToken                  $flowToken The current flow token threaded through the synchronization.
+     * @param ExecutionTraceContext|null $trace     The active execution trace context, threaded into
+     *                                              `SynchronizationService::synchronize()` so the
+     *                                              sync's own item/call steps join this execution's
+     *                                              trace (execution-trace REQ-001/REQ-002).
+     * @param boolean                    $dryRun    When true (a dry-run replay, rule-pipeline REQ-RULE-011), forces
+     *                                              `isTest: true` regardless of the rule's own configured
+     *                                              test/force flags — the target synchronization already knows
+     *                                              how to no-op safely.
      *
      * @return array The data after synchronization processing.
      *
      * @spec openspec/specs/rule-pipeline/spec.md
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011
      */
-    private function processSyncRule(ObjectEntity $rule, array $data, FlowToken $flowToken): array
-    {
+    private function processSyncRule(
+        ObjectEntity $rule,
+        array $data,
+        FlowToken $flowToken,
+        ?ExecutionTraceContext $trace=null,
+        bool $dryRun=false
+    ): array {
         $config = $rule->getObject()['configuration'] ?? [];
 
         // Check if base requirement is in config.
@@ -3129,7 +3485,12 @@ class EndpointService
         );
 
         // Check if the synchronization should be in test mode.
-        if (isset($data['body']['isTest']) === true) {
+        if ($dryRun === true) {
+            // Rule-pipeline REQ-RULE-011: a dry-run replay forwards isTest:
+            // true unconditionally, reusing synchronization-engine REQ-011's
+            // existing no-write guarantee rather than a second mechanism.
+            $test = true;
+        } else if (isset($data['body']['isTest']) === true) {
             $test = $data['body']['isTest'];
         } else if (isset($config['isTest']) === true) {
             $test = $config['isTest'];
@@ -3180,7 +3541,18 @@ class EndpointService
 
         // Run synchronization.
         $mutationType = null;
-        $sourceConfig = $synchronization->getSourceConfig();
+        // `getSynchronization()` returns an OpenRegister `ObjectEntity`, whose
+        // `sourceConfig` lives in the object BODY — it is not an Entity column,
+        // and `ObjectEntity` overrides no `__call`. The previous
+        // `$synchronization->getSourceConfig()` therefore always threw
+        // `BadFunctionCallException('sourceConfig is not a valid attribute')`
+        // from `Entity::getter()`, which `processRules()`'s `catch (Exception)`
+        // swallowed into a blanket HTTP 500 — i.e. EVERY `synchronization` rule
+        // on an endpoint 500'd, with the real cause hidden. Read the body the
+        // same way every other sourceConfig consumer in this codebase does
+        // (SynchronizationService reads `$synchronization['sourceConfig']`);
+        // this was the only `getSourceConfig()` call site in the app.
+        $sourceConfig = ($synchronization->getObject()['sourceConfig'] ?? []);
         if (isset($sourceConfig['synchronizationType']) === true && $sourceConfig['synchronizationType'] === 'delete') {
             $mutationType = 'delete';
         }
@@ -3198,7 +3570,8 @@ class EndpointService
             object: $fetchedObject,
             mutationType: $mutationType,
             data: $object,
-            flowToken: $flowToken
+            flowToken: $flowToken,
+            trace: $trace
         );
         $this->logger->debug(
             '[EndpointService] processSyncRule synchronize complete syncId='.$synchronization->getUuid()
