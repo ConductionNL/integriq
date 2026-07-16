@@ -61,6 +61,18 @@ class ObjectEntity extends Entity
     /** @var string|null */
     protected $owner = null;
 
+    /**
+     * The real OCA\OpenRegister\Db\ObjectEntity declares `organisation`
+     * (the owning organisation UUID, an entity column NOT carried inside
+     * `object`). InlineSecretMigrationExecutor reads it via the Entity __call
+     * getter (`$entity->getOrganisation()`) to mint a source credential at
+     * organisation scope, so the stub must declare the property for both the
+     * magic getter and setter to resolve.
+     *
+     * @var string|null
+     */
+    protected $organisation = null;
+
     /** @var array|null */
     protected $locked = null;
 
