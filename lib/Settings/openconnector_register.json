@@ -429,7 +429,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Allowed source domains (CIDR-style or hostname patterns)",
+            "description": "Allowed source domains as hostname patterns: exact (api.example.com) or suffix wildcard (*.example.com, which also matches the apex example.com). Matched against the forward-confirmed reverse DNS (FCrDNS) of the caller's IP — never against Origin/Referer/Host, which callers control and can spoof. A source with no confirmed matching hostname is rejected with HTTP 403. Absent = unrestricted; an empty list matches nothing and therefore rejects every request. Combined with 'ips' as a union: the caller is allowed if it matches an entry in either list.",
             "title": "Allowed Domains"
           },
           "ips": {
@@ -437,7 +437,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Allowed source IP addresses",
+            "description": "Allowed source IP addresses: exact IPv4/IPv6 (203.0.113.4, 2001:db8::1) or CIDR ranges (10.0.0.0/8, 2001:db8::/32). Matched against the client IP as Nextcloud derives it, which honours a forwarded header only from a proxy listed in the instance's trusted_proxies config — behind an untrusted-proxy setup this is the proxy's own address, so list that. A caller outside the list is rejected with HTTP 403. Absent = unrestricted; an empty list matches nothing and therefore rejects every request. Combined with 'domains' as a union: the caller is allowed if it matches an entry in either list.",
             "title": "Allowed IPs"
           },
           "authorizationType": {

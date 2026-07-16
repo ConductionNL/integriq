@@ -292,6 +292,11 @@ class ExecutionTraceIntegrationTest extends TestCase
         $orObjectService->method('find')->willReturn($mappingRule);
 
         $logger          = $this->createMock(LoggerInterface::class);
+        // Source scope (REQ-CON-SCOPE-001) is not what these trace tests assert;
+        // default it to "allowed" so the gate does not 403 them.
+        $consumerScopeService = $this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class);
+        $consumerScopeService->method('isAllowed')->willReturn(true);
+
         $endpointService = new EndpointService(
             $this->createMock(ObjectService::class),
             $callService,
@@ -313,6 +318,7 @@ class ExecutionTraceIntegrationTest extends TestCase
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
             $this->createMock(IRequestId::class),
             $this->createMock(FlowRunnerService::class),
+            $consumerScopeService,
         );
 
         // ONE context, threaded through both layers.

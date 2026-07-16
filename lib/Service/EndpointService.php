@@ -124,32 +124,35 @@ class EndpointService
     /**
      * Constructor for EndpointService.
      *
-     * @param ObjectService           $objectService           Service for handling object operations.
-     * @param CallService             $callService             Service for making external API calls.
-     * @param LoggerInterface         $logger                  Logger interface for error logging.
-     * @param IURLGenerator           $urlGenerator            Nextcloud URL generator used for absolute links.
-     * @param MappingService          $mappingService          Service used to apply request/response mappings.
-     * @param ORObjectService         $orObjectService         OpenRegister object service for register/schema CRUD.
-     * @param IConfig                 $config                  Nextcloud system configuration.
-     * @param StorageService          $storageService          Service used for file part and attachment storage.
-     * @param AuthorizationService    $authorizationService    Service used to authorize incoming endpoint requests.
-     * @param ContainerInterface      $containerInterface      PSR container used to resolve optional services.
-     * @param SynchronizationService  $synchronizationService  Service used to dispatch endpoint synchronizations.
-     * @param RuleService             $ruleService             Service used to load and resolve endpoint rules.
-     * @param WebhookSignatureService $webhookSignatureService Service used to verify inbound webhook signatures.
-     * @param InboundRateLimitService $rateLimitService        Service enforcing inbound per-consumer rate limits + quotas.
-     * @param CompositeFanoutRule     $compositeFanoutRule     Dialect-agnostic composite transactional fan-out rule.
-     * @param ReferentienummerRule    $referentienummerRule    Dialect-agnostic referentienummer generation rule.
-     * @param AvgBsnPolicyRule        $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
-     * @param ApprovalService         $approvalService         Suspends the pipeline on a HITL `approval` rule.
-     * @param IRequestId              $requestId               Nextcloud request-id service, used to synthesize
-     *                                                         an `IRequest` for `triggerFromFlow()`.
-     * @param FlowRunnerService       $flowRunnerService       Executes the `flow` rule action type (REQ-RULE-009).
-     * @param ExecutionTraceService|null $executionTraceService Assembles/persists the per-execution trace
-     *                                                         (execution-trace REQ-001/REQ-004). Nullable +
-     *                                                         defaulted so pre-existing positional test
-     *                                                         instantiations keep working unmodified; a real
-     *                                                         request always gets the DI container's instance.
+     * @param ObjectService              $objectService           Service for handling object operations.
+     * @param CallService                $callService             Service for making external API calls.
+     * @param LoggerInterface            $logger                  Logger interface for error logging.
+     * @param IURLGenerator              $urlGenerator            Nextcloud URL generator used for absolute links.
+     * @param MappingService             $mappingService          Service used to apply request/response mappings.
+     * @param ORObjectService            $orObjectService         OpenRegister object service for register/schema CRUD.
+     * @param IConfig                    $config                  Nextcloud system configuration.
+     * @param StorageService             $storageService          Service used for file part and attachment storage.
+     * @param AuthorizationService       $authorizationService    Service used to authorize incoming endpoint requests.
+     * @param ContainerInterface         $containerInterface      PSR container used to resolve optional services.
+     * @param SynchronizationService     $synchronizationService  Service used to dispatch endpoint synchronizations.
+     * @param RuleService                $ruleService             Service used to load and resolve endpoint rules.
+     * @param WebhookSignatureService    $webhookSignatureService Service used to verify inbound webhook signatures.
+     * @param InboundRateLimitService    $rateLimitService        Service enforcing inbound per-consumer rate limits + quotas.
+     * @param CompositeFanoutRule        $compositeFanoutRule     Dialect-agnostic composite transactional fan-out rule.
+     * @param ReferentienummerRule       $referentienummerRule    Dialect-agnostic referentienummer generation rule.
+     * @param AvgBsnPolicyRule           $avgBsnPolicyRule        Dialect-agnostic AVG BSN hash/guard rule.
+     * @param ApprovalService            $approvalService         Suspends the pipeline on a HITL `approval` rule.
+     * @param IRequestId                 $requestId               Nextcloud request-id service, used to synthesize
+     *                                                            an `IRequest` for `triggerFromFlow()`.
+     * @param FlowRunnerService          $flowRunnerService       Executes the `flow` rule action type (REQ-RULE-009).
+     * @param ConsumerScopeService       $consumerScopeService    Enforces the resolved consumer's source allowlist
+     *                                                            (`ips`/`domains`, REQ-CON-SCOPE-001).
+     * @param ExecutionTraceService|null $executionTraceService   Assembles/persists the per-execution trace
+     *                                                            (execution-trace REQ-001/REQ-004).
+     *                                                            Nullable + defaulted so pre-existing
+     *                                                            positional test instantiations keep
+     *                                                            working unmodified; a real request always
+     *                                                            gets the DI container's instance.
      *
      * @return void
      */
@@ -174,6 +177,7 @@ class EndpointService
         private readonly ApprovalService $approvalService,
         private readonly IRequestId $requestId,
         private readonly FlowRunnerService $flowRunnerService,
+        private readonly ConsumerScopeService $consumerScopeService,
         private readonly ?ExecutionTraceService $executionTraceService=null,
     ) {
     }//end __construct()
@@ -367,7 +371,7 @@ class EndpointService
      * @return Response The response `handleRequest()` produced, or a 500 `JSONResponse`
      *                   when synthetic-request construction fails (see `buildSyntheticRequest()`).
      *
-     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
      */
     public function triggerFromFlow(ObjectEntity $endpoint, array $parameters=[]): Response
     {
@@ -398,7 +402,7 @@ class EndpointService
      *
      * @return IRequest A synthetic GET request carrying `$parameters`.
      *
-     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
      */
     private function buildSyntheticRequest(array $parameters): IRequest
     {
@@ -560,7 +564,7 @@ class EndpointService
      *
      * @return void
      *
-     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
      */
     private function finalizeTrace(?ExecutionTraceContext $trace, ?Response $response, ?array $error=null, bool $resume=false): void
     {
@@ -626,7 +630,7 @@ class EndpointService
      *
      * @throws Exception When endpoint configuration is invalid.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
      */
     private function dispatchAfterBeforeRules(
@@ -646,6 +650,17 @@ class EndpointService
         }
 
         if ($enforceRateLimit === true) {
+            // Inbound consumer source-scope (REQ-CON-SCOPE-001). Runs AFTER
+            // authentication resolved a consumer and BEFORE the rate limit, so a
+            // caller outside the allowlist gets 403 rather than consuming (and
+            // being told about) the consumer's rate-limit budget. Skipped on the
+            // resume-from-approval path for the same reason the rate limit is:
+            // the original request already passed this check before suspending.
+            $scopeResponse = $this->enforceConsumerScope(request: $request);
+            if ($scopeResponse !== null) {
+                return $scopeResponse;
+            }
+
             // Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
             // Runs AFTER authentication has passed (the 'before' rule pipeline,
             // which includes the authentication rule, completed without a 401/403)
@@ -656,7 +671,7 @@ class EndpointService
             if ($rateLimitResponse !== null) {
                 return $rateLimitResponse;
             }
-        }
+        }//end if
 
         // Update request data with rule processing results.
         $flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
@@ -769,8 +784,8 @@ class EndpointService
      *
      * @return Response The resumed pipeline's final result.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
-     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
      */
     public function resumeFromApproval(
         ObjectEntity $endpoint,
@@ -866,7 +881,7 @@ class EndpointService
      * @return Response The replayed pipeline's final result.
      *
      * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
-     * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-points-real-dispatch-path-req-006
+     * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-point-s-real-dispatch-path-req-006
      */
     public function replay(ObjectEntity $endpoint, array $requestSnapshot, ExecutionTraceContext $trace, bool $dryRun=true): Response
     {
@@ -1025,6 +1040,46 @@ class EndpointService
         );
 
     }//end enforceInboundRateLimit()
+
+    /**
+     * Reject a request whose source falls outside the resolved consumer's allowlist.
+     *
+     * The `consumer` schema advertises `ips` ("Allowed source IP addresses") and
+     * `domains` ("Allowed source domains"); this is the single point that
+     * enforces them. Fails closed — an unlisted source receives HTTP 403.
+     * A consumer with neither list configured is unrestricted, preserving the
+     * behaviour of every consumer that predates this control.
+     *
+     * When no consumer was resolved (rule-inline apiKey / basic / oauth
+     * authenticate a Nextcloud user rather than a consumer) there is no
+     * consumer allowlist to apply and the request proceeds.
+     *
+     * @param IRequest $request The incoming request.
+     *
+     * @return JSONResponse|null A 403 response when the source is not allowed, null otherwise.
+     *
+     * @spec openspec/specs/consumer-management/spec.md#requirement-consumer-source-scope-enforcement-req-con-scope-001
+     */
+    private function enforceConsumerScope(IRequest $request): ?JSONResponse
+    {
+        $consumer = $this->authorizationService->getResolvedConsumer();
+        if ($consumer === null) {
+            return null;
+        }
+
+        if ($this->consumerScopeService->isAllowed(consumer: $consumer, request: $request) === true) {
+            return null;
+        }
+
+        return new JSONResponse(
+            [
+                'error'   => 'source_not_allowed',
+                'message' => 'Request source is not in this consumer\'s allowed domains or IP addresses',
+            ],
+            Http::STATUS_FORBIDDEN
+        );
+
+    }//end enforceConsumerScope()
 
     /**
      * Shared rate-limit/quota evaluation tail: unlimited short-circuit,
@@ -2139,7 +2194,7 @@ class EndpointService
      * @throws GuzzleException|LoaderError|SyntaxError|\OCP\DB\Exception
      *
      * @spec openspec/specs/endpoint-runtime/spec.md
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
      */
     private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request, ?ExecutionTraceContext $trace=null): JSONResponse
     {
@@ -2335,7 +2390,7 @@ class EndpointService
      * @return array|JSONResponse Returns modified data or error response if rule fails.
      *
      * @spec openspec/specs/rule-pipeline/spec.md
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      * @spec openspec/specs/rule-pipeline/spec.md#requirement-trace-step-emission-during-rule-pipeline-execution-req-rule-010
      * @spec openspec/specs/rule-pipeline/spec.md#requirement-dry-run-mode-suppresses-write-shaped-rule-dispatch-req-rule-011
      */
@@ -2617,9 +2672,9 @@ class EndpointService
      *
      * @throws Exception When configured with `timing: after` (invalid configuration).
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/rule-pipeline/spec.md#req-rule-008-approval-rule-action-type-suspends-the-pipeline
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
-     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-approval-rule-action-type-suspends-the-pipeline-req-rule-008
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-endpoint-rule-pipeline-suspension-on-approval-action-req-001
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
      */
     private function processApprovalRule(
         ObjectEntity $rule,
@@ -2727,7 +2782,7 @@ class EndpointService
      *
      * @return ObjectEntity|null The endpoint entity, or null when not found.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      */
     public function getEndpointById(string $id): ?ObjectEntity
     {

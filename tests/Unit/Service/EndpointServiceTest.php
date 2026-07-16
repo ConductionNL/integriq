@@ -78,6 +78,11 @@ class EndpointServiceTest extends TestCase
      */
     private $flowRunnerService;
 
+    /**
+     * @var \OCA\OpenConnector\Service\ConsumerScopeService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $consumerScopeService;
+
 
     /**
      * Set up test fixtures.
@@ -115,6 +120,13 @@ class EndpointServiceTest extends TestCase
         $this->flowRunnerService = $this->createMock(FlowRunnerService::class);
         $flowRunnerService       = $this->flowRunnerService;
 
+        // Source-scope enforcement (REQ-CON-SCOPE-001) is exercised by
+        // ConsumerScopeServiceTest + EndpointServiceConsumerScopeTest. Here it
+        // defaults to "allowed" so these tests keep asserting the behaviour they
+        // were written for; a bare mock would return false and 403 everything.
+        $this->consumerScopeService = $this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class);
+        $this->consumerScopeService->method('isAllowed')->willReturn(true);
+
         // EndpointService constructor signature (20 args, no $appConfig):
         //   objectService, callService, logger, urlGenerator, mappingService,
         //   orObjectService, config, storageService, authorizationService,
@@ -149,6 +161,7 @@ class EndpointServiceTest extends TestCase
             $approvalService,
             $requestId,
             $flowRunnerService,
+            $this->consumerScopeService,
         );
     }//end setUp()
 
@@ -507,6 +520,7 @@ class EndpointServiceTest extends TestCase
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
             $this->createMock(IRequestId::class),
             $this->createMock(FlowRunnerService::class),
+            $this->createMock(\OCA\OpenConnector\Service\ConsumerScopeService::class),
         );
 
         $resultB = $otherService->renderSelfUrlAndHal(['id' => '1'], $endpoint);
@@ -619,6 +633,7 @@ class EndpointServiceTest extends TestCase
                     $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
                     $requestId,
                     $this->createMock(FlowRunnerService::class),
+                    $this->consumerScopeService,
                 ]
             )
             ->onlyMethods(['handleRequest'])
@@ -691,6 +706,7 @@ class EndpointServiceTest extends TestCase
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
             $this->createMock(IRequestId::class),
             $this->createMock(FlowRunnerService::class),
+            $this->consumerScopeService,
         );
     }//end buildServiceForTraceTests()
 
