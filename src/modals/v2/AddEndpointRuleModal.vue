@@ -122,19 +122,19 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		endpointName() {
 			return this.endpoint?.name || this.endpoint?.title || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		canSave() {
 			return this.selectedRules.length > 0
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		endpointId() {
 			return this.endpoint?.id || this.endpoint?.uuid
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		existingRuleIds() {
 			const raw = this.endpoint?.rules
 			if (!Array.isArray(raw)) return []
@@ -146,7 +146,7 @@ export default {
 	},
 
 	watch: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -156,12 +156,12 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onClose() {
 			this.$emit('close')
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		resetState() {
 			this.selectedRules = []
 			this.saving = false
@@ -169,7 +169,7 @@ export default {
 			this.error = ''
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async fetchRules() {
 			this.loadingRules = true
 			try {
@@ -202,7 +202,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async onSave() {
 			if (!this.canSave || !this.endpointId) return
 			this.saving = true

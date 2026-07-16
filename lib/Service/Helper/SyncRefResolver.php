@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
  * `openconnector-services-direct-or-usage` requirement
  * "Synchronization.sourceId branching logic must survive intact" (D6).
  *
- * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-synchronizationsourceid-branching-logic-must-survive-intact
+ * @spec openspec/specs/openconnector-direct-or-usage/spec.md
  */
 final class SyncRefResolver
 {
@@ -63,7 +63,7 @@ final class SyncRefResolver
      *
      * @return array{value: string, variant: 'integer-pk'|'register-schema'|'uuid'|'unrecognised'}
      *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-synchronizationsourceid-branching-logic-must-survive-intact
+     * @spec openspec/specs/openconnector-direct-or-usage/spec.md
      */
     public function resolve(string $value): array
     {

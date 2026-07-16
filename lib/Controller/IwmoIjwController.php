@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 class IwmoIjwController extends Controller
 {
@@ -89,7 +89,7 @@ class IwmoIjwController extends Controller
      *
      * @return JSONResponse `{ref, berichttype}` on success, or a 400/503/502 error envelope.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -150,7 +150,7 @@ class IwmoIjwController extends Controller
      *
      * @return JSONResponse `{received: true}` on success, 401 on signature failure.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
      */
     #[NoCSRFRequired]
     #[PublicPage]

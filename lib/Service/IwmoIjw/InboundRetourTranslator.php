@@ -37,7 +37,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use SimpleXMLElement;
 /**
  * Retour XML envelope -> OR case status update.
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
 class InboundRetourTranslator
 {
@@ -90,7 +90,7 @@ class InboundRetourTranslator
      * @throws IwmoIjwTranslationException When the XML is malformed, the `kenmerk` is missing/empty,
      *                                     or the berichtcode is not one of the recognised retour codes.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-wmo304-acceptance-retour-maps-to-status-accepted
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-wmo304-acceptance-retour-maps-to-status-accepted
      */
     public function translate(string $xml): array
     {

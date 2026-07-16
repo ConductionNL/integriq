@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Migrates legacy oc_openconnector_* tables into oc_openregister_objects.
  *
- * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
+ * @spec openspec/specs/openconnector-storage-migration/spec.md
  */
 class LegacyToRegisterMigrator
 {
@@ -194,7 +194,7 @@ class LegacyToRegisterMigrator
      *
      * @return array<array{slug:string,legacyCount:int,migratedCount:int,skipped:int,fkRewrites:int,elapsedMs:int}>
      *
-     * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
+     * @spec openspec/specs/openconnector-storage-migration/spec.md
      */
     public function migrateAll(bool $dryRun=false, ?string $entitySlug=null, int $batchSize=10000): array
     {
@@ -295,7 +295,7 @@ class LegacyToRegisterMigrator
      *
      * @return array<int, array{slug:string,legacy:int,register:int,skipped:int,equal:bool}>
      *
-     * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
+     * @spec openspec/specs/openconnector-storage-migration/spec.md
      */
     public function verifyRowCounts(array $skippedBySlug=[]): array
     {

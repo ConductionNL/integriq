@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
+ * @spec openspec/specs/corporate-card-feed/spec.md#scenario-the-rest-provider-brokers-its-api-key
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * }
  * ```
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 class RestCardfeedProvider implements CardfeedProviderInterface
 {
@@ -78,7 +78,7 @@ class RestCardfeedProvider implements CardfeedProviderInterface
      *
      * @return array<int, array{cardId: string, last4: string, cardholderName: string, currency: string}> The program's cards.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
      */
     public function listCards(array $sourceConfiguration): array
     {
@@ -111,7 +111,7 @@ class RestCardfeedProvider implements CardfeedProviderInterface
      *
      * @return array<int, array<string, mixed>> The transaction rows for the window.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
      */
     public function listTransactions(array $sourceConfiguration, string $cardId, string $since, string $until): array
     {

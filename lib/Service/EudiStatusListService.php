@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use RuntimeException;
  * Assigns status-list bit indices, flips bits on revocation, and
  * builds/signs the published OAuth Status List Token.
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
  */
 class EudiStatusListService
 {
@@ -146,7 +146,7 @@ class EudiStatusListService
      *
      * @throws RuntimeException When the status list has exhausted its capacity.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-adapter-ships-as-a-catalogue-entry-backed-by-three-register-fragment-schemas-req-eudi-001
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-adapter-ships-as-a-catalogue-entry-backed-by-three-register-fragment-schemas-req-eudi-001
      */
     public function assignIndex(?string $organisationId): array
     {
@@ -188,7 +188,7 @@ class EudiStatusListService
      *
      * @throws DoesNotExistException When the status list row does not exist.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
      */
     public function revokeIndex(string $statusListId, int $index): bool
     {
@@ -280,7 +280,7 @@ class EudiStatusListService
      *
      * @return array<int, int> Bit values indexed by position.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
      */
     public static function decodeStatusList(string $lst, int $bits=1): array
     {
@@ -310,7 +310,7 @@ class EudiStatusListService
      *
      * @return string The signed token.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
      */
     public function signAndCache(ObjectEntity $entity): string
     {
@@ -367,7 +367,7 @@ class EudiStatusListService
      *
      * @return string|null The signed token, or null when the row does not exist.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
      */
     public function getPublishedToken(string $statusListId): ?string
     {
@@ -398,7 +398,7 @@ class EudiStatusListService
      *
      * @return integer Number of tokens refreshed.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-refresh-keeps-the-published-token-ahead-of-its-own-expiry-req-eudi-008b
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-refresh-keeps-the-published-token-ahead-of-its-own-expiry-req-eudi-008b
      */
     public function refreshNearExpiry(): int
     {

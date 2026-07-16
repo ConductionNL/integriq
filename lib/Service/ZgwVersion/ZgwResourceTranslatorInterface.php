@@ -27,7 +27,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\OpenConnector\Exception\ZgwLiteralLeakException;
 /**
  * A pure `1.0` ↔ `1.6` payload translator for one ZGW resource.
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 interface ZgwResourceTranslatorInterface
 {
@@ -51,7 +51,7 @@ interface ZgwResourceTranslatorInterface
      *
      * @return string The resource slug.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function getResource(): string;
 
@@ -66,7 +66,7 @@ interface ZgwResourceTranslatorInterface
      *                                 value falls outside its documented set, or
      *                                 an array-required field carries a bare scalar.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function translateToV16(array $payload): array;
 
@@ -81,7 +81,7 @@ interface ZgwResourceTranslatorInterface
      *                                 value falls outside its documented set, or
      *                                 an array-required field carries a bare scalar.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function translateToV1x(array $payload): array;
 }//end interface

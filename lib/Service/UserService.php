@@ -73,7 +73,7 @@ class UserService
      * @psalm-return   IUser|null
      * @phpstan-return IUser|null
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function getCurrentUser(): ?IUser
     {
@@ -96,7 +96,7 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function buildUserDataArray(IUser $user): array
     {
@@ -227,7 +227,7 @@ class UserService
      * @phpstan-param  array $data
      * @phpstan-return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
@@ -272,7 +272,7 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-return array{firstName: string|null, lastName: string|null, middleName: string|null}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function getCustomNameFields(IUser $user): array
     {
@@ -319,7 +319,7 @@ class UserService
      * @phpstan-param  array $nameFields
      * @phpstan-return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function setCustomNameFields(IUser $user, array $nameFields): void
     {
@@ -352,7 +352,7 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function buildQuotaInformation(IUser $user): array
     {
@@ -439,7 +439,7 @@ class UserService
      * @phpstan-param  string $userId
      * @phpstan-return int
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function getUsedSpaceMemorySafe(string $userId): int
     {
@@ -510,7 +510,7 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-return array{0: string, 1: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function getLanguageAndLocale(IUser $user): array
     {
@@ -555,7 +555,7 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function getAdditionalProfileInfo(IUser $user): array
     {
@@ -622,7 +622,7 @@ class UserService
      * @phpstan-param  IUser $user
      * @phpstan-return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function getAccountManagerPropertiesSelectively(IUser $user): array
     {
@@ -687,7 +687,7 @@ class UserService
      * @phpstan-param  array $data
      * @phpstan-return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function updateStandardUserProperties(IUser $user, array $data): void
     {
@@ -744,7 +744,7 @@ class UserService
      * @phpstan-param  array $data
      * @phpstan-return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function updateProfileProperties(IUser $user, array $data): void
     {

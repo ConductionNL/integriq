@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalService
 {
@@ -135,7 +135,7 @@ class ApprovalService
      *
      * @return ObjectEntity The created, `pending` approval_request.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     * @spec openspec/specs/approval-workflow/spec.md
      * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
      */
     public function suspend(ObjectEntity $endpoint, ObjectEntity $rule, FlowToken $flowToken, ?ExecutionTraceContext $trace=null): ObjectEntity
@@ -215,7 +215,7 @@ class ApprovalService
      *
      * @return ObjectEntity The created, `pending` approval_request.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function suspendForSynchronization(
         string $synchronizationId,
@@ -368,7 +368,7 @@ class ApprovalService
      *
      * @return ObjectEntity|null The approved, unconsumed request, or null.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function findApprovedUnconsumedForSynchronization(string $synchronizationId): ?ObjectEntity
     {
@@ -404,7 +404,7 @@ class ApprovalService
      *
      * @return void
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function markConsumed(ObjectEntity $approvalRequest): void
     {
@@ -429,7 +429,7 @@ class ApprovalService
      *
      * @return FlowToken The rehydrated token.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function rehydrateFlowToken(array $snapshot): FlowToken
     {
@@ -511,7 +511,7 @@ class ApprovalService
      *
      * @return boolean
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-006-two-layer-authorization-for-approvereject
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function isAuthorizedApprover(ObjectEntity $approvalRequest, IUser $user): bool
     {
@@ -539,7 +539,7 @@ class ApprovalService
      *
      * @throws ApprovalStateException (409) When not pending or already expired.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function assertActionable(ObjectEntity $approvalRequest): void
     {
@@ -571,7 +571,7 @@ class ApprovalService
      *
      * @return ObjectEntity The updated approval_request.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function completeApproval(
         ObjectEntity $approvalRequest,
@@ -612,7 +612,7 @@ class ApprovalService
      *
      * @throws ApprovalStateException (400) When the comment is empty.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-004-rejection-with-mandatory-audit-comment
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function reject(ObjectEntity $approvalRequest, IUser $approver, string $comment): ObjectEntity
     {
@@ -649,7 +649,7 @@ class ApprovalService
      *
      * @return array{swept: integer, deadLettered: integer} Counts for the cron log.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function sweepExpired(): array
     {
@@ -711,7 +711,7 @@ class ApprovalService
      *
      * @return array<int, ObjectEntity>
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function listFor(IUser $user, ?string $statusFilter=null): array
     {
@@ -756,7 +756,7 @@ class ApprovalService
      *
      * @return void
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function notifyApprovers(ObjectEntity $approvalRequest): void
     {
@@ -818,7 +818,7 @@ class ApprovalService
      *
      * @return array The snapshot with sensitive request headers redacted.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function stripSensitiveHeaders(array $snapshot): array
     {

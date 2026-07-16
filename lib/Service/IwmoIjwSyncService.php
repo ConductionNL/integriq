@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 class IwmoIjwSyncService
 {
@@ -123,7 +123,7 @@ class IwmoIjwSyncService
      * @throws IwmoIjwProviderException    When no active source is configured, or the transport fails
      *                                     (a `status: failed` `iwmo_ijw_message` IS persisted first).
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
      */
     public function sendBericht(array $input): array
     {
@@ -197,7 +197,7 @@ class IwmoIjwSyncService
      *
      * @return void
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
      */
     public function receiveRetour(string $rawXml): void
     {
@@ -272,7 +272,7 @@ class IwmoIjwSyncService
      *
      * @return integer The number of rows successfully retried.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
      */
     public function retryFailed(): int
     {
@@ -408,7 +408,7 @@ class IwmoIjwSyncService
      *
      * @throws IwmoIjwProviderException When no active iWMO/iJW source is configured.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -443,7 +443,7 @@ class IwmoIjwSyncService
      *
      * @return IwmoIjwProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function resolveProvider(array $configuration): IwmoIjwProviderInterface
     {

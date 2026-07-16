@@ -72,7 +72,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The encoded output.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function b64enc(string $input): string
     {
@@ -87,7 +87,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The decoded output.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function b64dec(string $input): string
     {
@@ -102,7 +102,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return array The decoded output.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function json_decode(string $input): array
     {
@@ -128,7 +128,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @throws LoaderError
      * @throws SyntaxError
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function callSource(string $sourceId, string $endpoint, string $method='GET', array $configuration=[], bool $decode=true): array|string
     {
@@ -166,7 +166,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function executeMapping(\OCA\OpenRegister\Db\Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
@@ -183,7 +183,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return UuidV4
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function generateUuid(): UuidV4
     {
@@ -199,7 +199,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string|null The file contents when found, otherwise null.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function getFileContents(string|int $fileId, string $objectId): ?string
     {
@@ -223,7 +223,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return array The formatted file metadata list.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function getFiles(string $objectId): array
     {
@@ -252,7 +252,7 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The generated slug.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-5
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function createSlug(string $text): string
     {

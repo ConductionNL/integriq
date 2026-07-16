@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 class KissSyncService
 {
@@ -138,7 +138,7 @@ class KissSyncService
      *
      * @return integer The total number of klantcontacten upserted across every source in this sweep.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function pullAll(): int
     {
@@ -187,7 +187,7 @@ class KissSyncService
      *
      * @return array{processed: integer, skipped: integer, cursor: string|null} The sweep outcome.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function pullSource(ObjectEntity $source): array
     {
@@ -262,7 +262,7 @@ class KissSyncService
      *
      * @throws KissProviderException When no active KISS source is configured, or KISS rejects the request.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function pushKlantcontact(array $input): array
     {
@@ -333,7 +333,7 @@ class KissSyncService
      *
      * @throws KissProviderException When no active KISS source is configured.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -368,7 +368,7 @@ class KissSyncService
      *
      * @return KlantinteractiesProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function resolveProvider(array $configuration): KlantinteractiesProviderInterface
     {
@@ -394,7 +394,7 @@ class KissSyncService
      *
      * @return ObjectEntity The saved local record.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     private function upsertKlantcontact(array $item, string $direction, ?string $sourceApp): ObjectEntity
     {
@@ -484,7 +484,7 @@ class KissSyncService
      *         onderwerpobjectidentificator — e.g. linking to a different object type — is left
      *         unmapped, not misattributed as a case).
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-mapping-onderwerpobjecten-to-a-case-reference
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     private function extractCaseReference(array $onderwerpobjecten): array
     {
@@ -515,7 +515,7 @@ class KissSyncService
      *
      * @return array The betrokkenen array with any `bsn`-typed identifier value SHA-256-hashed.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-mapping-onderwerpobjecten-to-a-case-reference
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     private function redactBsnIdentifiers(array $betrokkenen): array
     {

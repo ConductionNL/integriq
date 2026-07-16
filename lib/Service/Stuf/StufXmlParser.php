@@ -30,7 +30,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
  * Parses a raw XML string into a {@see SimpleXMLElement}, never throwing —
  * callers decide the domain exception on a `null` result.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
  */
 class StufXmlParser
 {
@@ -62,7 +62,7 @@ class StufXmlParser
      * @return SimpleXMLElement|null The parsed root element, or null on empty input,
      *                               malformed XML, or any libxml error.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-xxe-hardened-stuf-xml-parsing-req-000
      */
     public function parse(string $xml): ?SimpleXMLElement
     {

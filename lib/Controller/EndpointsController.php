@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+ * @spec openspec/specs/endpoint-runtime/spec.md
  */
 
 namespace OCA\OpenConnector\Controller;
@@ -57,7 +57,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CamelCaseVariableName)
  * @SuppressWarnings(PHPMD.CamelCaseParameterName)
  *
- * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+ * @spec openspec/specs/endpoint-runtime/spec.md
  * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
  */
 class EndpointsController extends Controller
@@ -131,7 +131,7 @@ class EndpointsController extends Controller
      *
      * @throws Exception On underlying service failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -198,7 +198,7 @@ class EndpointsController extends Controller
      *
      * @since 7.0.0
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -228,7 +228,7 @@ class EndpointsController extends Controller
      *
      * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
@@ -264,7 +264,7 @@ class EndpointsController extends Controller
      *
      * @return boolean True if the endpoint qualifies for the optimised simple path.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function isSimpleEndpoint(ObjectEntity $endpoint): bool
     {
@@ -319,7 +319,7 @@ class EndpointsController extends Controller
      *
      * @return JSONResponse The direct response from ObjectService, with deprecation headers merged in when applicable.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
+     * @spec openspec/specs/endpoint-runtime/spec.md
      * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
      */
     private function handleSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
@@ -358,7 +358,7 @@ class EndpointsController extends Controller
      *
      * @return JSONResponse The direct response from ObjectService.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function dispatchSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
     {
@@ -471,7 +471,7 @@ class EndpointsController extends Controller
      *
      * @return array The parsed parameters.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getPathParameters(array $endpointArray, string $path): array
     {
@@ -499,7 +499,7 @@ class EndpointsController extends Controller
      *
      * @return string The pagination URL.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function buildPaginationUrl(array $parameters, string $path): string
     {

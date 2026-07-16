@@ -137,7 +137,7 @@ export default {
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.succes = false
@@ -150,7 +150,7 @@ export default {
 				type: '',
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async testSource() {
 			this.loading = true
 
@@ -171,7 +171,7 @@ export default {
 				sourceStore.setSourceTest(false)
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		prettifyJson(json) {
 			if (!json) return ''
 			try {

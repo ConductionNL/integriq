@@ -112,7 +112,7 @@ class StUFXMLBuilder
      *
      * @return DOMElement The populated stuurgegevens element.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-042
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function buildStuurgegevens(DOMDocument $doc, string $berichtcode, array $stuurgegevens): DOMElement
     {
@@ -167,7 +167,7 @@ class StUFXMLBuilder
      *
      * @return DOMElement The populated BG:object element.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function buildPersonObject(DOMDocument $doc, array $fields, ?array $scope): DOMElement
     {
@@ -216,7 +216,7 @@ class StUFXMLBuilder
      *
      * @return DOMElement The populated verblijfsadres element.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function buildVerblijfsadresElement(DOMDocument $doc, array $adres): DOMElement
     {
@@ -249,7 +249,7 @@ class StUFXMLBuilder
      *
      * @return DOMElement The populated BG:object element.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function buildAddressObject(DOMDocument $doc, array $fields): DOMElement
     {
@@ -284,7 +284,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildNpsLa01(array $persons, array $stuurgegevens, ?array $scope=null): string
     {
@@ -320,7 +320,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildAdrLa01(array $addresses, array $stuurgegevens): string
     {
@@ -357,7 +357,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP fault XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildFo01(string $code, string $omschrijving, array $stuurgegevens): string
     {
@@ -399,7 +399,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildZakLa01(array $zaken, array $stuurgegevens): string
     {
@@ -435,7 +435,7 @@ class StUFXMLBuilder
      *
      * @return DOMElement The populated ZKN:object element.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function buildZaakObject(DOMDocument $doc, array $fields): DOMElement
     {
@@ -471,7 +471,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildBv03(string $zaakIdentificatie, array $stuurgegevens): string
     {
@@ -502,7 +502,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildFo03(string $code, string $omschrijving, array $stuurgegevens): string
     {
@@ -543,7 +543,7 @@ class StUFXMLBuilder
      *
      * @return string The complete SOAP XML string.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-010
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildNpsLv01(array $criteria, array $stuurgegevens, int $maximumAantal=100): string
     {

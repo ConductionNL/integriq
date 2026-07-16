@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 class EudiWalletController extends Controller
 {
@@ -159,7 +159,7 @@ class EudiWalletController extends Controller
      * @return string|JSONResponse The resolved consumer's uuid, or a 401
      *                              JSONResponse when authentication fails.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-creation-is-consumer-gated-and-app-facing-req-eudi-004
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-creation-is-consumer-gated-and-app-facing-req-eudi-004
      */
     private function authenticateConsumer(): string|JSONResponse
     {
@@ -206,7 +206,7 @@ class EudiWalletController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -250,7 +250,7 @@ class EudiWalletController extends Controller
      *
      * @return JSONResponse `{offerUrl, credentialOfferUri, qrPayload}` on success; 401/400 on failure.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-creation-is-consumer-gated-and-app-facing-req-eudi-004
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-creation-is-consumer-gated-and-app-facing-req-eudi-004
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -288,7 +288,7 @@ class EudiWalletController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -321,7 +321,7 @@ class EudiWalletController extends Controller
      * @return JSONResponse The OpenID4VCI `credential_offer` object, or a
      *                       generic 404 when not found/expired/consumed.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -348,7 +348,7 @@ class EudiWalletController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -373,7 +373,7 @@ class EudiWalletController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -403,7 +403,7 @@ class EudiWalletController extends Controller
      * @return DataDisplayResponse|JSONResponse The raw compact JWT
      *                                           (`application/statuslist+jwt`) on success; a JSON 404 when not found.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-status-list-publishes-single-bit-revocation-only-req-eudi-008
      */
     #[NoCSRFRequired]
     #[PublicPage]

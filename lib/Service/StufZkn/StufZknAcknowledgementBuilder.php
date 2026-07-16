@@ -30,7 +30,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-bv03-fo03-acknowledgement-shaping-req-004
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-bv03-fo03-acknowledgement-shaping-req-004
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use DOMElement;
 /**
  * Builds `Bv03Bericht`/`Fo03Bericht` StUF-ZKN reply envelopes.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-bv03-fo03-acknowledgement-shaping-req-004
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-bv03-fo03-acknowledgement-shaping-req-004
  */
 class StufZknAcknowledgementBuilder
 {
@@ -83,7 +83,7 @@ class StufZknAcknowledgementBuilder
      *
      * @return string The rendered `Bv03Bericht` SOAP envelope XML.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-successfully-processed-zaklk01-replies-with-a-bv03
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-successfully-processed-zaklk01-replies-with-a-bv03
      */
     public function buildBv03(string $crossRefnummer, string $zenderOrganisatie, string $ontvangerOrganisatie): string
     {
@@ -120,7 +120,7 @@ class StufZknAcknowledgementBuilder
      *
      * @return string The rendered `Fo03Bericht` SOAP envelope XML.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-an-unprocessable-message-replies-with-a-fo03-and-leaks-no-internal-detail
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-an-unprocessable-message-replies-with-a-fo03-and-leaks-no-internal-detail
      */
     public function buildFo03(
         string $reason,

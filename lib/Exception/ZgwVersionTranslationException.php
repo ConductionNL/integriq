@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md
+ * @spec openspec/specs/zgw-version-translation/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Exception;
 /**
  * Base exception for the ZGW version-translation shim.
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md
+ * @spec openspec/specs/zgw-version-translation/spec.md
  */
 class ZgwVersionTranslationException extends Exception
 {

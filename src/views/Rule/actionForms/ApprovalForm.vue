@@ -85,17 +85,17 @@ export default {
 		}
 	},
 	computed: {
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		groupOptions() {
 			return this.groups.map((gid) => ({ id: gid, label: gid }))
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		selectedGroup() {
 			const gid = this.value.approverGroup
 			if (!gid) return null
 			return this.groupOptions.find((opt) => opt.id === gid) || { id: gid, label: gid }
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		outcomeOptions() {
 			return OUTCOMES.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
 		},
@@ -107,7 +107,7 @@ export default {
 		patch: patchMethod(),
 		/**
 		 * Load NC groups for the approver-group picker.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async loadGroups() {
 			this.loadingGroups = true
@@ -126,21 +126,21 @@ export default {
 		 * Resolve the currently-selected option for an outcome field.
 		 * @param {string} field onReject | onTimeout.
 		 * @return {object|null}
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		selectedOutcome(field) {
 			const id = this.value[field] || 'error'
 			return this.outcomeOptions.find((opt) => opt.id === id) || null
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		onGroupPick(option) {
 			this.patch('approverGroup', option?.id || '')
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		onOutcomePick(field, option) {
 			this.patch(field, option?.id || 'error')
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		onTtlInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

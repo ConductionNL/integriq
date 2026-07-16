@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+ * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Symfony\Component\HttpFoundation\Exception\BadRequestException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+ * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
  */
 class LtiKeyService
 {
@@ -272,7 +272,7 @@ class LtiKeyService
      * @throws BadRequestException     When an active key already exists (call rotate() instead).
      * @throws LtiValidationException  When the registration does not exist.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     public function generateKey(string $registrationType, string $registrationUuid, string $algorithm='RS256'): array
     {
@@ -324,7 +324,7 @@ class LtiKeyService
      * @throws BadRequestException    When there is no active key to rotate (call generate() first).
      * @throws LtiValidationException When the registration does not exist.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     public function rotateKey(string $registrationType, string $registrationUuid, ?string $algorithm=null): array
     {
@@ -396,7 +396,7 @@ class LtiKeyService
      * @throws LtiValidationException When the registration does not exist.
      * @throws BadRequestException    When `$newStatus` is not a recognised status.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     * @spec openspec/specs/lti-platform/spec.md
      */
     private function transitionStatus(string $registrationType, string $registrationUuid, string $newStatus): array
     {
@@ -447,7 +447,7 @@ class LtiKeyService
      *
      * @throws LtiValidationException When the registration does not exist.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function approve(string $registrationType, string $registrationUuid): array
     {
@@ -468,7 +468,7 @@ class LtiKeyService
      *
      * @throws LtiValidationException When the registration does not exist.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function suspend(string $registrationType, string $registrationUuid): array
     {
@@ -489,7 +489,7 @@ class LtiKeyService
      *
      * @throws LtiValidationException When the registration does not exist.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-platformrole-launch-initiation-and-deep-linking-20-both-directions-req-lti-006
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function getActiveKeyEntry(string $registrationType, string $registrationUuid): ?array
     {
@@ -519,7 +519,7 @@ class LtiKeyService
      *
      * @throws LtiValidationException When the registration does not exist.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     public function getPublishableJwks(string $registrationType, string $registrationUuid): array
     {
@@ -547,7 +547,7 @@ class LtiKeyService
      *
      * @return integer Number of keys retired across both registration types.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     public function retireExpiredKeys(): int
     {

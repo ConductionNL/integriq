@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\OpenConnector\Exception\FscDirectoryException;
  * Sandbox FSC provider: no network call, resolves against a static
  * `knownServices` stand-in, synthetic call refs.
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class LogFscConnectivityProvider implements FscConnectivityProviderInterface
 {
@@ -59,7 +59,7 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
      *
      * @return string The stable `log` provider identifier.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -72,7 +72,7 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
      *
      * @return array<string, mixed> A schema describing the `knownServices` stand-in directory.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -104,7 +104,7 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
      *
      * @throws FscDirectoryException When the organisation or service is not in `knownServices`.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-an-unknown-organisation-is-rejected-before-any-call-is-attempted
+     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-an-unknown-organisation-is-rejected-before-any-call-is-attempted
      */
     public function resolveService(array $directoryConfig, string $organisation, string $service): array
     {
@@ -150,7 +150,7 @@ class LogFscConnectivityProvider implements FscConnectivityProviderInterface
      *
      * @return array{ref: string, statusCode: int, body: mixed} The synthetic `FSC-MOCK-<n>` outcome.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-the-log-provider-performs-no-network-call
+     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-the-log-provider-performs-no-network-call
      */
     public function call(array $directoryConfig, array $resolution, string $method, array $payload): array
     {

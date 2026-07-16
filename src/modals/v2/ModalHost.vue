@@ -92,7 +92,7 @@ export default {
 		}
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
 		modalBus.$on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.$on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
@@ -103,7 +103,7 @@ export default {
 		modalBus.$on(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	beforeDestroy() {
 		modalBus.$off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.$off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
@@ -115,19 +115,19 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openTestMapping(payload) {
 			this.testMapping = { open: true, mapping: payload?.mapping ?? null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeTestMapping() {
 			this.testMapping = { open: false, mapping: null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openAddEndpointRule(payload) {
 			this.addEndpointRule = { open: true, endpoint: payload?.endpoint ?? null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeAddEndpointRule() {
 			this.addEndpointRule = { open: false, endpoint: null }
 		},

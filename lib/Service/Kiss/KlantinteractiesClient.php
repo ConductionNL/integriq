@@ -71,7 +71,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 class KlantinteractiesClient implements KlantinteractiesProviderInterface
 {
@@ -146,7 +146,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface
      *
      * @return string The stable `rest` provider identifier.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function getProviderId(): string
     {
@@ -159,7 +159,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface
      *
      * @return array<string, mixed> The KISS source configuration JSON Schema.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function getConfigSchema(): array
     {
@@ -217,7 +217,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface
      *
      * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null}
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array
     {
@@ -271,7 +271,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface
      *
      * @return string The KISS-assigned klantcontact id (`uuid`).
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function createKlantcontact(array $sourceConfiguration, array $payload): string
     {
@@ -323,7 +323,7 @@ class KlantinteractiesClient implements KlantinteractiesProviderInterface
      *
      * @return string The KISS-assigned onderwerpobject id (`uuid`).
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function linkOnderwerpobject(
         array $sourceConfiguration,

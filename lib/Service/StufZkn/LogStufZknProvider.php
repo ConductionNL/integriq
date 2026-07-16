@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenConnector\Service\StufZkn;
 /**
  * Sandbox StUF-ZKN outbound provider: no network call, synthetic reference.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class LogStufZknProvider implements StufZknProviderInterface
 {
@@ -47,7 +47,7 @@ class LogStufZknProvider implements StufZknProviderInterface
      *
      * @return string The stable `log` provider identifier.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -60,7 +60,7 @@ class LogStufZknProvider implements StufZknProviderInterface
      *
      * @return array<string, mixed> An empty schema — the log provider needs no configuration.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -77,7 +77,7 @@ class LogStufZknProvider implements StufZknProviderInterface
      *
      * @return string The synthetic `MOCK-STUFZKN-<n>` reference.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
      */
     public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string
     {

@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\OpenConnector\Exception;
 /**
  * Thrown when a translator's literal-leak guard rejects a payload.
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 class ZgwLiteralLeakException extends ZgwVersionTranslationException
 {

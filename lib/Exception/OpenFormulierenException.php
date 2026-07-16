@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md
+ * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any Open Formulieren ingest or handoff-trigger failure.
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md
+ * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 class OpenFormulierenException extends Exception
 {

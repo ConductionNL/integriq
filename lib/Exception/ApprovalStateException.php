@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Throwable;
 /**
  * Thrown when an approval_request is not actionable in its current state.
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalStateException extends Exception
 {
@@ -55,7 +55,7 @@ class ApprovalStateException extends Exception
      *
      * @return integer
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-006-two-layer-authorization-for-approvereject
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function getHttpStatus(): int
     {

@@ -91,7 +91,7 @@ class MappingsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
+     * @spec openspec/specs/mapping-and-search/spec.md
      *
      * @example
      * Request:
@@ -249,7 +249,7 @@ class MappingsController extends Controller
      * @throws ContainerExceptionInterface Container resolution failure.
      * @throws NotFoundExceptionInterface  Container lookup miss.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function saveObject(): ?JSONResponse
@@ -288,7 +288,7 @@ class MappingsController extends Controller
      * @throws ContainerExceptionInterface Container resolution failure.
      * @throws NotFoundExceptionInterface  Container lookup miss.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-4
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function getObjects(): JSONResponse

@@ -573,7 +573,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+     * @spec openspec/specs/apphost-adoption/spec.md
      */
     private function registerAppHostObservability(IRegistrationContext $context): void
     {
@@ -729,7 +729,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+     * @spec openspec/specs/apphost-adoption/spec.md
      */
     private function registerAppHostBoilerplate(IRegistrationContext $context): void
     {
@@ -818,7 +818,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+     * @spec openspec/specs/apphost-adoption/spec.md
      */
     private function registerAppHostAdminSettings(IRegistrationContext $context): void
     {

@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  * `#[AuthorizedAdminSetting(OpenConnectorAdmin::class)]` (CSRF-protected,
  * NC-session-authenticated admin only), never `#[PublicPage]`.
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
 class EudiIssuerKeyAdminController extends Controller
 {
@@ -85,7 +85,7 @@ class EudiIssuerKeyAdminController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function status(): JSONResponse
@@ -120,7 +120,7 @@ class EudiIssuerKeyAdminController extends Controller
      *
      * @return JSONResponse The new (redacted) key entry.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function generateKey(): JSONResponse
@@ -148,7 +148,7 @@ class EudiIssuerKeyAdminController extends Controller
      *
      * @return JSONResponse The new (redacted) key entry.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function rotateKey(): JSONResponse

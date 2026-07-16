@@ -73,7 +73,7 @@ class LogCleanUpTask extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-5
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     private function cleanupSchema(string $schema): void
     {
@@ -112,7 +112,7 @@ class LogCleanUpTask extends TimedJob
      * @psalm-param   mixed $argument
      * @phpstan-param mixed $argument
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-5
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     public function run(mixed $argument): void
     {

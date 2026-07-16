@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+ * @spec openspec/specs/lti-platform/spec.md
  */
 class LtiLaunchService
 {
@@ -154,7 +154,7 @@ class LtiLaunchService
      *                                 or `login_hint`/`target_link_uri` is missing. No redirect is built
      *                                 and no nonce is persisted on failure.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-oidc-thirdparty-initiated-login-tool-role-req-lti-004
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function initiateLogin(string $deploymentUuid, array $params, string $launchUrl): array
     {
@@ -241,7 +241,7 @@ class LtiLaunchService
      *
      * @throws LtiValidationException On any validation failure (HTTP 400/401, no partial-trust fallback).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function validateLaunch(
         string $idToken,
@@ -333,7 +333,7 @@ class LtiLaunchService
      *
      * @return array|null The cached `{claims, deploymentUuid}` payload, or null if unknown/expired/already consumed.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function consumeLaunchReference(string $launchReference): ?array
     {
@@ -369,7 +369,7 @@ class LtiLaunchService
      *
      * @return array{targetType: string, targetId: string}|null The resolved target, or null when unconfigured/no match.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-013
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function resolveResourceMapping(string $deploymentUuid, string $resourceLinkId): ?array
     {
@@ -419,7 +419,7 @@ class LtiLaunchService
      *
      * @throws LtiValidationException When the deployment/tool/active key cannot be resolved.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-platformrole-launch-initiation-and-deep-linking-20-both-directions-req-lti-006
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function initiatePlatformLaunch(
         string $deploymentUuid,
@@ -491,7 +491,7 @@ class LtiLaunchService
      *
      * @throws LtiValidationException When the platform/active key cannot be resolved.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-platformrole-launch-initiation-and-deep-linking-20-both-directions-req-lti-006
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function buildDeepLinkingResponse(
         string $platformUuid,
@@ -544,7 +544,7 @@ class LtiLaunchService
      *
      * @throws LtiValidationException On any validation failure — only on success are content items returned.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-platformrole-launch-initiation-and-deep-linking-20-both-directions-req-lti-006
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function verifyDeepLinkingResponse(string $idToken): array
     {
@@ -594,7 +594,7 @@ class LtiLaunchService
      *
      * @throws LtiValidationException On any signature/registration/kid failure (HTTP 400/401, no partial trust).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function verifyIdTokenSignature(string $idToken, string $registrationType): array
     {
@@ -708,7 +708,7 @@ class LtiLaunchService
      *
      * @throws LtiValidationException HTTP 401 when the token is expired, not-yet-valid, or replayed (jti).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function validateTiming(array $payload): void
     {

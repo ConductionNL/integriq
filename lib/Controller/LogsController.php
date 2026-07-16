@@ -101,7 +101,7 @@ class LogsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -185,7 +185,7 @@ class LogsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -216,7 +216,7 @@ class LogsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-1
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -246,7 +246,7 @@ class LogsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-2
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -311,7 +311,7 @@ class LogsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-2
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

@@ -52,7 +52,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class StufZknClient implements StufZknProviderInterface
 {
@@ -117,7 +117,7 @@ class StufZknClient implements StufZknProviderInterface
      *
      * @return string The stable `rest` provider identifier.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -130,7 +130,7 @@ class StufZknClient implements StufZknProviderInterface
      *
      * @return array<string, mixed> The StUF-ZKN source configuration JSON Schema.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -195,7 +195,7 @@ class StufZknClient implements StufZknProviderInterface
      *
      * @return string The extracted (or locally-derived) reference.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-the-rest-provider-sends-the-expected-content-type-and-mtls-routing
      */
     public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string
     {

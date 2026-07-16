@@ -57,7 +57,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class IStandaardenClient implements IwmoIjwProviderInterface
 {
@@ -126,7 +126,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
      *
      * @return string The stable `rest` provider identifier.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -139,7 +139,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
      *
      * @return array<string, mixed> The iWMO/iJW source configuration JSON Schema.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -203,7 +203,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
      *
      * @return string The extracted reference.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
      */
     public function send(array $sourceConfiguration, string $berichttype, string $envelopeXml): string
     {

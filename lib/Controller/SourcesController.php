@@ -81,7 +81,7 @@ class SourcesController extends Controller
      *
      * @return JSONResponse A JSON response containing the filtered call logs and pagination.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
@@ -241,7 +241,7 @@ class SourcesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

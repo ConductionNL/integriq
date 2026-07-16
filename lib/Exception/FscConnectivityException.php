@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md
+ * @spec openspec/specs/fsc-connectivity/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Exception;
 /**
  * Thrown on any FSC provider/transport or configuration failure.
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md
+ * @spec openspec/specs/fsc-connectivity/spec.md
  */
 class FscConnectivityException extends Exception
 {

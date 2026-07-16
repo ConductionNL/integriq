@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCA\OpenConnector\Exception\StufZknProviderException;
  * A StUF-ZKN outbound transport binding: dispatch one already-translated
  * `zakLk01` envelope and report the transport-assigned/derived reference.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 interface StufZknProviderInterface
 {
@@ -45,7 +45,7 @@ interface StufZknProviderInterface
      *
      * @return string The provider identifier.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string;
 
@@ -54,7 +54,7 @@ interface StufZknProviderInterface
      *
      * @return array<string, mixed> A JSON Schema (object) fragment.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array;
 
@@ -70,7 +70,7 @@ interface StufZknProviderInterface
      *
      * @throws StufZknProviderException When the endpoint is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function send(array $sourceConfiguration, string $referentienummer, string $envelopeXml): string;
 }//end interface

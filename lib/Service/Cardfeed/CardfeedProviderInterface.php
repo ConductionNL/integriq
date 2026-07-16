@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenConnector\Exception\CardfeedProviderException;
 /**
  * A corporate-card-feed provider binding: card discovery + transaction pulls.
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 interface CardfeedProviderInterface
 {
@@ -47,7 +47,7 @@ interface CardfeedProviderInterface
      *
      * @throws CardfeedProviderException When the provider is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
      */
     public function listCards(array $sourceConfiguration): array;
 
@@ -66,7 +66,7 @@ interface CardfeedProviderInterface
      *
      * @throws CardfeedProviderException When the provider is unreachable or errors (the caller MUST NOT advance its watermark).
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
      */
     public function listTransactions(array $sourceConfiguration, string $cardId, string $since, string $until): array;
 }//end interface

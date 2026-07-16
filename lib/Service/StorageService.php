@@ -133,7 +133,7 @@ class StorageService
      * @throws InvalidPathException  When the target path is invalid.
      * @throws NotPermittedException When the target path is not writable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-storage-uploads/tasks.md#task-1
+     * @spec openspec/specs/storage-uploads/spec.md
      */
     public function createUpload(string $path, string $fileName, int $size, ?string $objectId=null): array
     {
@@ -202,7 +202,7 @@ class StorageService
      * @throws NotFoundException     When the path does not exist.
      * @throws NotPermittedException When the path is not writable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-storage-uploads/tasks.md#task-2
+     * @spec openspec/specs/storage-uploads/spec.md
      */
     public function writeFile(string $path, string $fileName, string $content): File
     {
@@ -241,7 +241,7 @@ class StorageService
      * @throws NotPermittedException When the storage is not writable.
      * @throws InvalidPathException  When a part path is invalid.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-storage-uploads/tasks.md#task-4
+     * @spec openspec/specs/storage-uploads/spec.md
      */
     private function attemptCloseUpload(array $folderContents, File $target, int $numParts): bool
     {
@@ -314,7 +314,7 @@ class StorageService
      * @throws NotFoundException     When the part folder or target does not exist.
      * @throws NotPermittedException When the storage is not writable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-storage-uploads/tasks.md#task-3
+     * @spec openspec/specs/storage-uploads/spec.md
      */
     public function writePart(int $partId, string $partUuid, string $data): bool
     {

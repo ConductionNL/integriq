@@ -40,7 +40,7 @@ use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 /**
  * Admin section provider for OpenConnector, delegated to the engine.
  *
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+ * @spec openspec/specs/apphost-adoption/spec.md
  */
 class OpenConnectorAdmin extends GenericSettingsSection
 {

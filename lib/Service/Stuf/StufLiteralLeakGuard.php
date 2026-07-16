@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\OpenConnector\Service\Stuf;
 /**
  * Scans a rendered XML string for leftover unresolved template markers.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
  */
 class StufLiteralLeakGuard
 {
@@ -47,7 +47,7 @@ class StufLiteralLeakGuard
      *
      * @return boolean True when a marker survives — the caller MUST refuse to send.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-shared-literal-leak-guard-req-000
      */
     public function hasUnresolvedPlaceholder(string $xml): bool
     {

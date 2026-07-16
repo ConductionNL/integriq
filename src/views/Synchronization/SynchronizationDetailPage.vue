@@ -513,7 +513,7 @@ export default {
 		schema: { type: String, default: SCHEMA_SLUG },
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/sync-editor-ui/spec.md */
 	setup(props) {
 		const objectStore = useObjectStore()
 		// Register the type so objectStore.fetchObject/saveObject can resolve
@@ -548,31 +548,31 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		objectIdString() {
 			return this.id != null ? String(this.id) : ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		registerSlug() {
 			return this.register || REGISTER_SLUG
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaSlug() {
 			return this.schema || SCHEMA_SLUG
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		title() {
 			if (this.draft?.name) return this.draft.name
 			return this.original?.name || t('openconnector', 'Synchronization')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		description() {
 			return this.original?.description || ''
 		},
 		hasError() {
 			return Boolean(this.loadError) && !this.draft
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
 			return this.loadError || t('openconnector', 'Failed to load synchronization')
 		},
@@ -611,11 +611,11 @@ export default {
 			}
 			return this.typeOptions
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSourceType() {
 			return this.sourceTypeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedTargetType() {
 			return this.typeOptions.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
 		},
@@ -640,7 +640,7 @@ export default {
 			const value = this.draft?.sourceConfig?.cursorComparator
 			return CURSOR_COMPARATOR_OPTIONS.find((opt) => opt.id === value) || null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dirty() {
 			if (!this.draft || !this.original) return false
 			// `normalizeForDiff` shapes both sides identically (conditions
@@ -649,7 +649,7 @@ export default {
 			// stores conditions as `array<object>`.
 			return JSON.stringify(this.draft) !== JSON.stringify(this.normalizeForDiff(this.original))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		canSave() {
 			return Boolean(this.draft?.name && this.draft.name.trim().length > 0)
 		},
@@ -660,7 +660,7 @@ export default {
 		 * (string, array, single leaf, group) end up as `{and:[...]}` /
 		 * `{or:[...]}`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		rootConditionGroup() {
 			return this.normaliseConditions(this.draft?.conditions)
@@ -670,12 +670,12 @@ export default {
 	watch: {
 		id: {
 			immediate: true,
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md */
 			handler() {
 				this.loadObject()
 			},
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rawConditions(value) {
 			if (value) {
 				try {
@@ -731,7 +731,7 @@ export default {
 				this.formsEnabled = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async loadObject() {
 			if (!this.objectIdString) {
 				// New-create surface — start with empty draft.
@@ -788,7 +788,7 @@ export default {
 		 * @param {object} obj Raw object from the store.
 		 * @return {object} Plain draft with all editable fields filled.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		normalizeForDiff(obj) {
 			const base = emptyDraft()
@@ -829,7 +829,7 @@ export default {
 		 * @param {*} raw Persisted conditions value.
 		 * @return {object} JsonLogic group node.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		normaliseConditions(raw) {
 			if (raw === null || raw === undefined || raw === '') {
@@ -865,7 +865,7 @@ export default {
 		 * @param {object} group JsonLogic group node from the builder.
 		 * @return {Array} Schema-conformant `array<object>` for persistence.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		serializeConditions(group) {
 			if (!group || typeof group !== 'object') return []
@@ -876,16 +876,16 @@ export default {
 			}
 			return [group]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
 			this.$set(this.draft, 'conditions', node)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		toggleRawConditions() {
 			this.rawConditions = !this.rawConditions
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onRawConditionsInput(value) {
 			this.rawConditionsDraft = value
 			const trimmed = value.trim()
@@ -902,12 +902,12 @@ export default {
 				this.rawConditionsError = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		updateDraft(key, value) {
 			if (!this.draft) return
 			this.$set(this.draft, key, value)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onSourceTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			// Type changed — clear the kind-specific blob + id so we don't
@@ -916,7 +916,7 @@ export default {
 			this.$set(this.draft, 'sourceId', '')
 			this.$set(this.draft, 'sourceConfig', {})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onTargetTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			this.$set(this.draft, 'targetType', option.id)
@@ -977,7 +977,7 @@ export default {
 				this.resettingCursor = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async save() {
 			if (!this.draft || this.saving) return
 			this.saving = true
@@ -1004,7 +1004,7 @@ export default {
 				this.saving = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		resetEdits() {
 			if (!this.original) return
 			this.draft = this.normalizeForDiff(this.original)

@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md
+ * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any Peppol Access Point provider or configuration failure.
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md
+ * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 class PeppolProviderException extends Exception
 {

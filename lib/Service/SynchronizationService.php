@@ -1527,7 +1527,7 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-test-runs-make-no-writes-req-011
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
      *
@@ -1931,7 +1931,7 @@ class SynchronizationService
      *
      * @return ObjectEntity|null The approved, unconsumed request, or null when the run is still gated.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function resolveApprovalForSynchronization(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity
     {
@@ -2116,7 +2116,7 @@ class SynchronizationService
      * @throws TooManyRequestsHttpException
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
@@ -5330,7 +5330,7 @@ class SynchronizationService
      *
      * @return array Updated configuration with pagination settings.
      *
-     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function getNextPage(array $config, array $sourceConfig, int $currentPage): array
     {
@@ -5708,7 +5708,7 @@ class SynchronizationService
      *
      * @return array The serialized saved object payload.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processSaveObjectRule(array $rule, array $data): array
     {
@@ -5750,7 +5750,7 @@ class SynchronizationService
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processExtendInputRule(array $config, array $data): array
     {
@@ -6833,7 +6833,7 @@ class SynchronizationService
      *
      * @return JSONResponse Response containing error details and HTTP status code.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processErrorRule(array $rule): JSONResponse
     {
@@ -6860,7 +6860,7 @@ class SynchronizationService
      * @throws LoaderError                      When there is an error loading the mapping.
      * @throws SyntaxError                      When there is a syntax error in the mapping configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processMappingRule(array $rule, array $data): array
     {
@@ -6878,7 +6878,7 @@ class SynchronizationService
      *
      * @return array The mapped data.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processMapping(OrMapping|ObjectEntity|array $mapping, array $data): array
     {
@@ -6895,7 +6895,7 @@ class SynchronizationService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processSyncRule(array $rule, array $data): array
     {
@@ -6913,7 +6913,7 @@ class SynchronizationService
      *
      * @throws Exception When the JsonLogic evaluator throws.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function checkRuleConditions(array $rule, array $data): bool
     {
@@ -6934,7 +6934,7 @@ class SynchronizationService
      *
      * @return array The array with encoded array keys
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -7306,7 +7306,7 @@ class SynchronizationService
      * @psalm-param   array<float|int> $numbers
      * @phpstan-param array<float|int> $numbers
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function calculateMedian(array $numbers): float
     {
@@ -7344,7 +7344,7 @@ class SynchronizationService
      * @psalm-return   array{name: string, duration_ms: float, description: string}
      * @phpstan-return array{name: string, duration_ms: float, description: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function getSlowestStage(array $stages): array
     {
@@ -7389,7 +7389,7 @@ class SynchronizationService
      * @psalm-param   array<string, array{duration_ms: float}> $stages
      * @phpstan-param array<string, array{duration_ms: float}> $stages
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function calculateEfficiencyRatio(array $stages): float
     {

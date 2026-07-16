@@ -32,7 +32,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
 /**
  * OR/ZGW zaak object -> `zakLk01` kennisgeving XML envelope.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-zaklk01-kennisgeving-translation-with-a-literal-leak-guard-req-003
  */
 class OutboundKennisgevingTranslator
 {
@@ -100,7 +100,7 @@ class OutboundKennisgevingTranslator
      *                                     is unsupported, or the rendered envelope still carries an
      *                                     unresolved template marker.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaak-create-translates-to-a-valid-zaklk01-toevoeging
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-complete-zaak-create-translates-to-a-valid-zaklk01-toevoeging
      */
     public function translate(
         array $zaak,
@@ -171,7 +171,7 @@ class OutboundKennisgevingTranslator
      *
      * @throws StufZknTranslationException Naming the first missing/empty required field found.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-required-field-never-reaches-the-xml--literal-leak-guard
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-a-missing-required-field-never-reaches-the-xml-literal-leak-guard
      */
     private function assertRequiredFieldsPresent(array $zaak): void
     {

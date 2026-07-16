@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
+ * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  * registration (design.md D4: "that would leak into the Bronnen list for
  * something that isn't a wired connection").
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
+ * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
  */
 class LtiJwksResolverService
 {
@@ -127,7 +127,7 @@ class LtiJwksResolverService
      * @return JWK|null The resolved key, or null when it cannot be resolved
      *                   (unknown after refetch, or the refetch guard is active).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
+     * @spec openspec/specs/lti-platform/spec.md#requirement-external-jwks-resolution-with-kid-lookup-per-registration-caching-and-rate-limited-refetch-req-lti-003
      */
     public function resolveKey(string $registrationType, string $registrationUuid, string $jwksUri, string $kid): ?JWK
     {
