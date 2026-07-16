@@ -67,7 +67,7 @@
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad — see local ADR-005.",
         "required": [
@@ -146,7 +146,7 @@
           },
           "authenticationConfig": {
             "type": "object",
-            "description": "Provider-specific auth configuration (object). Credential strings here are stored plaintext per local ADR-007 until EncryptionService ships (local ADR-016).",
+            "description": "Provider-specific auth configuration (object). WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json), because credential strings live here. Stored unencrypted at rest until field encryption ships (local ADR-016); prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "Authentication Configuration"
           },
           "authorizationPassthroughMethod": {
@@ -166,7 +166,7 @@
           },
           "jwt": {
             "type": "string",
-            "description": "JWT bearer token (plaintext per ADR-007)",
+            "description": "JWT bearer token. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "JWT Token"
           },
           "jwtId": {
@@ -176,22 +176,22 @@
           },
           "secret": {
             "type": "string",
-            "description": "OAuth client secret (plaintext per ADR-007)",
+            "description": "OAuth client secret. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "Client Secret"
           },
           "username": {
             "type": "string",
-            "description": "Basic-auth username (plaintext per ADR-007)",
+            "description": "Basic-auth username. Deliberately NOT write-only: a username is an identifier, not a credential, and the UI needs to render it to show which account a source authenticates as — the paired `password` is what carries the secret and what is stripped on read.",
             "title": "Username"
           },
           "password": {
             "type": "string",
-            "description": "Basic-auth password (plaintext per ADR-007)",
+            "description": "Basic-auth password. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "Password"
           },
           "apikey": {
             "type": "string",
-            "description": "API key value (plaintext per ADR-007)",
+            "description": "API key value. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "API Key"
           },
           "documentation": {
@@ -227,7 +227,38 @@
           "configuration": {
             "type": "object",
             "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. See http-call-engine spec REQ-SBC-001/002 (change source-broker-credentials). `configuration.decompress: \"gzip\"` (oc#97) hints that the fetched body is a gzip-compressed file (also auto-detected from a `.gz`-suffixed endpoint or an `application/gzip` response Content-Type) — gunzipped before the existing JSON/XML/JSONL parse attempts; `.tar.gz`/`.tar` archives are detected but NOT supported (logged + skipped, see synchronization-engine spec REQ-006, change bulk-gzip-jsonl-ingestion). `configuration.listMethod`/`configuration.body` (pre-existing, see decideMethod/mergeSourceConfiguration) let a source declare a static POST body template — see `sourceConfig.paginationIn` below for advancing it across pages (change post-body-pagination).",
-            "title": "Configuration"
+            "title": "Configuration",
+            "properties": {
+              "authentication": {
+                "type": "object",
+                "title": "Authentication",
+                "description": "The source's outbound authentication block. Two brokered shapes are recognised, and they never collide: (1) PROXY — `authentication.credentialRef` at the top level, which dispatches the whole call through OpenRegister's credential broker (BrokeredCallService::hasCredentialRef); any sibling key under `authentication` is then a hard 409 (BrokeredCallService::validateCredentialRef). (2) APP-SIDE INJECTION — any leaf under `authentication` may itself be `{\"credentialRef\": {...}}`, whose sole key MUST be `credentialRef` (BrokeredCallService::isPlaceholder); the secret is resolved from Doriath and substituted in place at call time. Undeclared keys remain allowed: this block is deliberately open so every pre-existing auth mechanism keeps validating.",
+                "properties": {
+                  "credentialRef": {
+                    "type": "object",
+                    "title": "Credential Reference",
+                    "description": "A reference to a credential held by OpenRegister's broker, so the secret is never stored on this source. EXACTLY ONE of `credentialId` (primary) or `credentialName` (convenience) — setting both, neither, an empty/non-string value, or any other key is a hard 409 config error at call time (BrokeredCallService::validateInnerRef + extractSingleRefValue). A `credentialName` resolving to 0 or >1 owned credentials is likewise a 409.",
+                    "properties": {
+                      "credentialId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Credential ID",
+                        "description": "UUID of the broker credential to use. The primary, unambiguous form."
+                      },
+                      "credentialName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Credential Name",
+                        "description": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches)."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "maxProperties": 1
+                  }
+                }
+              }
+            }
           },
           "endpointsConfig": {
             "type": "object",
@@ -369,7 +400,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -416,7 +447,7 @@
           },
           "authorizationConfiguration": {
             "type": "object",
-            "description": "Provider-specific auth config (plaintext per ADR-007)",
+            "description": "Provider-specific auth config for this consumer's INBOUND authentication — `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
           },
           "created": {
@@ -923,7 +954,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],

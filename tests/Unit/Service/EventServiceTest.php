@@ -366,6 +366,58 @@ class EventServiceTest extends TestCase
 
 
     /**
+     * ocon#147: deliverMessage MUST read its subscription in system context.
+     *
+     * `event_subscription.protocolSettings` is `writeOnly`, so OpenRegister's
+     * render boundary strips it from every `_rbac: true` read — signingSecret
+     * and headers included. The delivery engine is not a user reading a
+     * subscription; it is the engine signing an outbound push, so it must read
+     * with `_rbac: false` exactly as CallService reads a source's credential.
+     *
+     * Without this guard the regression is SILENT: dropping `_rbac: false`
+     * leaves every test above green (they stub find() regardless of arguments)
+     * while, on a real instance, the secret vanishes from the rendered read and
+     * every webhook goes out UNSIGNED. This asserts the argument, not the stub.
+     *
+     * @return void
+     */
+    public function testDeliverMessageReadsSubscriptionInSystemContext(): void
+    {
+        $message = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            'msg-uuid'
+        );
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['style' => 'pull'],
+            'sub-uuid'
+        );
+
+        // PHPUnit hands a willReturnCallback the arguments that were actually
+        // SUPPLIED, compacted into a positional list — the `name:` bindings of a
+        // named-argument call site are not preserved. So the call is asserted as
+        // the exact argument contract it is, rather than by parameter name.
+        $capturedArgs = null;
+        $this->objectService->method('find')->willReturnCallback(
+            function (...$args) use (&$capturedArgs, $subscription) {
+                $capturedArgs = $args;
+                return $subscription;
+            }
+        );
+
+        $this->service->deliverMessage($message);
+
+        $this->assertSame(
+            ['sub-uuid', 'openconnector', 'event_subscription', false, false],
+            $capturedArgs,
+            'deliverMessage must read the subscription with _rbac: false (and _multitenancy: false) — '
+            .'a rendered read strips the writeOnly protocolSettings and every push would go out unsigned.'
+        );
+    }//end testDeliverMessageReadsSubscriptionInSystemContext()
+
+
+    /**
      * REQ-WHS-001 fail-open guard: a signing failure MUST NOT result in an
      * unsigned delivery. `sign()` throwing (e.g. a future crypto failure)
      * must abort before the HTTP POST — the client is never invoked — and
