@@ -40,6 +40,7 @@ use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\BrokeredCallService;
 use OCA\OpenConnector\Service\CallService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\EndpointService;
 use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
@@ -311,6 +312,7 @@ class ExecutionTraceIntegrationTest extends TestCase
             new AvgBsnPolicyRule(),
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
             $this->createMock(IRequestId::class),
+            $this->createMock(FlowRunnerService::class),
         );
 
         // ONE context, threaded through both layers.

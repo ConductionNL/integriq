@@ -690,6 +690,7 @@ class EndpointServiceTest extends TestCase
             new AvgBsnPolicyRule(),
             $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
             $this->createMock(IRequestId::class),
+            $this->createMock(FlowRunnerService::class),
         );
     }//end buildServiceForTraceTests()
 
