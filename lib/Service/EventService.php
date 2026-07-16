@@ -428,10 +428,18 @@ class EventService
                 return false;
             }
 
+            // System context (ocon#147): `protocolSettings` is `writeOnly`, so a
+            // rendered read returns the subscription WITHOUT its signingSecret and
+            // headers. This is the delivery engine reading a subscription in order
+            // to sign an outbound push — not a user reading it — so it reads in
+            // system context exactly as CallService reads a source's credential.
+            // Without `_rbac: false` every push would silently go out UNSIGNED.
             $subscription = $this->objectService->find(
                 id: $subscriptionId,
                 register: 'openconnector',
-                schema: 'event_subscription'
+                schema: 'event_subscription',
+                _rbac: false,
+                _multitenancy: false
             );
 
             if ($subscription === null) {
@@ -767,10 +775,15 @@ class EventService
                 return false;
             }
 
+            // System context (ocon#147): see deliverMessage(). The engine dispatches
+            // this subscription's action; it must see the whole subscription, and
+            // `protocolSettings` is stripped from any rendered (`_rbac: true`) read.
             $subscription = $this->objectService->find(
                 id: $subscriptionId,
                 register: 'openconnector',
-                schema: 'event_subscription'
+                schema: 'event_subscription',
+                _rbac: false,
+                _multitenancy: false
             );
             if ($subscription === null) {
                 return false;
@@ -1235,7 +1248,19 @@ class EventService
         }
 
         try {
-            return $this->objectService->find(id: $sourceId, register: 'openconnector', schema: 'source');
+            // System context (ocon#147): the resolved Source is handed straight to
+            // CallService::call(), which authenticates from the entity it is GIVEN
+            // ($source->getObject()) and never re-reads it. A rendered read strips
+            // the `writeOnly` credential fields (apikey/secret/password/jwt/
+            // authenticationConfig), so a rendered Source would publish to the
+            // notificaties API with NO credentials at all.
+            return $this->objectService->find(
+                id: $sourceId,
+                register: 'openconnector',
+                schema: 'source',
+                _rbac: false,
+                _multitenancy: false
+            );
         } catch (\Throwable $e) {
             return null;
         }
@@ -1512,7 +1537,19 @@ class EventService
         }
 
         try {
-            return $this->objectService->find(id: $id, register: 'openconnector', schema: $schema);
+            // System context (ocon#147): with `$schema = 'source'` the resolved
+            // object is handed to FormsOcsClient and CallService::call(), both of
+            // which authenticate from the entity they are given. See
+            // findNotificatiesSource() — a rendered read would strip the Source's
+            // `writeOnly` credential fields and the outbound call would go out
+            // unauthenticated.
+            return $this->objectService->find(
+                id: $id,
+                register: 'openconnector',
+                schema: $schema,
+                _rbac: false,
+                _multitenancy: false
+            );
         } catch (\Throwable $exception) {
             return null;
         }
