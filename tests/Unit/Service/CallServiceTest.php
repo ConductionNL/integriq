@@ -21,6 +21,7 @@ use OCA\OpenConnector\Service\BrokeredCallService;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenConnector\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -499,6 +500,266 @@ class CallServiceTest extends TestCase
         $this->assertStringContainsString('page=2', $log['request']['url']);
         $this->assertStringNotContainsString('live_abc123', json_encode($log));
     }//end testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl()
+
+
+    /**
+     * Build a CallService whose ObjectService is the render-boundary double.
+     *
+     * The double reproduces OpenRegister's writeOnly render boundary: a
+     * `_render: true` read strips the source's credential fields; `_render: false`
+     * returns them intact. A mock Guzzle client captures the outbound `$config`
+     * in-process so a test can assert what the engine would send upstream.
+     *
+     * @param RenderBoundarySimulatingObjectService $double         The render-boundary object service.
+     * @param array|null                            &$capturedConfig By-ref sink for the outbound Guzzle config.
+     * @param Response|null                         $response       Response the mock client returns (default 200).
+     *
+     * @return CallService
+     */
+    private function buildRenderBoundaryService(
+        RenderBoundarySimulatingObjectService $double,
+        ?array &$capturedConfig,
+        ?Response $response=null
+    ): CallService {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('hasKey')->willReturn(false);
+
+        $service = new CallService(
+            $double,
+            new ArrayLoader([]),
+            $this->createMock(AuthenticationService::class),
+            $appConfig,
+            $this->createMock(LoggerInterface::class),
+            $brokered,
+            new SensitiveFieldRegistry(),
+        );
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturnCallback(
+            function (string $method, string $url, array $config) use (&$capturedConfig, $response) {
+                $capturedConfig = $config;
+                return ($response ?? new Response(200, [], '{"ok":true}'));
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        return $service;
+    }//end buildRenderBoundaryService()
+
+
+    /**
+     * ocon#215 — call() re-resolves the source RAW with `_render: false`.
+     *
+     * The engine is handed a RENDERED source (its writeOnly credential already
+     * stripped, exactly as any of the ~18 callers would after a normal read).
+     * call() MUST re-read the source itself, and the load-bearing argument of
+     * that read is `_render: false` — NOT `_rbac: false`, which the earlier
+     * ocon#212 fix mistakenly relied on before ocon#226 corrected it. This
+     * asserts the CONTRACT (the arguments of the read), not the double's return.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testCallReResolvesSourceWithRenderFalse(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+        $double->stored['src-uuid-215'] = [
+            'name'      => 'secret-source',
+            'isEnabled' => true,
+            'location'  => 'https://api.example.invalid',
+            'apikey'    => 'live-secret-key',
+        ];
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // Pass a RENDERED source — apikey already stripped by the render boundary.
+        $rendered = new ObjectEntity();
+        $rendered->setUuid('src-uuid-215');
+        $rendered->setObject(
+            [
+                'name'      => 'secret-source',
+                'isEnabled' => true,
+                'location'  => 'https://api.example.invalid',
+            ]
+        );
+
+        $service->call(source: $rendered, endpoint: '/v1/items');
+
+        // Exactly one raw re-resolve of the source, and it used `_render: false`.
+        $sourceReads = array_values(
+            array_filter(
+                $double->reads,
+                function (array $read): bool {
+                    return $read['uuid'] === 'src-uuid-215';
+                }
+            )
+        );
+        $this->assertNotEmpty($sourceReads, 'call() must re-resolve the source from storage.');
+        $this->assertFalse(
+            $sourceReads[0]['_render'],
+            'The re-resolve MUST use _render:false — the load-bearing arg (ocon#215/#226).'
+        );
+    }//end testCallReResolvesSourceWithRenderFalse()
+
+
+    /**
+     * ocon#215 — a rendered (secret-stripped) source still dispatches WITH its
+     * credential after the engine-side re-resolve. THIS IS THE MUTATION GUARD.
+     *
+     * The raw stored source carries a top-level writeOnly `apikey` and an
+     * auth header template `Bearer {{ source.apikey }}`. The caller passes the
+     * RENDERED source (no apikey). If call() dispatched with the source as
+     * given, the header would render to a credential-free `Bearer ` and the
+     * outbound call would go out UNAUTHENTICATED (the #215 defect). Because
+     * call() re-resolves raw, the outbound request carries the real secret.
+     *
+     * Revert the `resolveSourceForDispatch()` re-resolve (use the passed source
+     * as-is) and this assertion fails — the mutation guard the class lacked.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testRenderedSourceStillDispatchesWithCredential(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+        $double->stored['src-uuid-cred'] = [
+            'name'          => 'auth-source',
+            'isEnabled'     => true,
+            'location'      => 'https://api.example.invalid',
+            'apikey'        => 'live-secret-key',
+            'configuration' => [
+                'headers' => ['Authorization' => 'Bearer {{ source.apikey }}'],
+            ],
+        ];
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // The render boundary already stripped apikey from what the caller holds.
+        $rendered = new ObjectEntity();
+        $rendered->setUuid('src-uuid-cred');
+        $rendered->setObject(
+            [
+                'name'          => 'auth-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'headers' => ['Authorization' => 'Bearer {{ source.apikey }}'],
+                ],
+            ]
+        );
+
+        $service->call(source: $rendered, endpoint: '/v1/items');
+
+        $this->assertNotNull($capturedConfig, 'The outbound Guzzle request must have been dispatched.');
+        $this->assertSame(
+            'Bearer live-secret-key',
+            $capturedConfig['headers']['Authorization'],
+            'Re-resolved credential MUST reach the outbound request — else the call goes out unauthenticated (#215).'
+        );
+    }//end testRenderedSourceStillDispatchesWithCredential()
+
+
+    /**
+     * ocon#215 — an unpersisted / in-memory source (no uuid) falls back to the
+     * passed entity and NEVER throws or dispatches an empty source.
+     *
+     * A source built in-process (a test, a PingAction probe, a freshly
+     * constructed entity) has no uuid to re-read. call() must dispatch using
+     * the passed entity's own data, and must not attempt a raw find.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testUnpersistedSourceFallsBackWithoutReResolve(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // No uuid — an in-memory source with its credential header present.
+        $inMemory = new ObjectEntity();
+        $inMemory->setObject(
+            [
+                'name'          => 'in-memory-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'headers' => ['Authorization' => 'Bearer in-memory-token'],
+                ],
+            ]
+        );
+
+        // Must not throw.
+        $service->call(source: $inMemory, endpoint: '/v1/items');
+
+        $this->assertSame([], $double->reads, 'A source with no uuid must NOT trigger a raw find.');
+        $this->assertNotNull($capturedConfig, 'The in-memory source must still be dispatched.');
+        $this->assertSame('Bearer in-memory-token', $capturedConfig['headers']['Authorization']);
+    }//end testUnpersistedSourceFallsBackWithoutReResolve()
+
+
+    /**
+     * ocon#215 — `overruleAuth` is respected: a caller deliberately supplying
+     * auth on the passed entity is NOT clobbered by a raw re-read.
+     *
+     * The stored raw source carries a DIFFERENT credential from the one the
+     * caller injected on the passed entity. With `overruleAuth: true` the
+     * engine must dispatch with the CALLER's value and never re-resolve.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testOverruleAuthSkipsReResolveAndKeepsCallerAuth(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+        $double->stored['src-uuid-overrule'] = [
+            'name'          => 'stored-source',
+            'isEnabled'     => true,
+            'location'      => 'https://api.example.invalid',
+            'configuration' => [
+                'headers' => ['Authorization' => 'Bearer STORED-should-not-be-used'],
+            ],
+        ];
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // Caller injected its own auth on the entity it hands to call().
+        $injected = new ObjectEntity();
+        $injected->setUuid('src-uuid-overrule');
+        $injected->setObject(
+            [
+                'name'          => 'stored-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'headers' => ['Authorization' => 'Bearer CALLER-injected'],
+                ],
+            ]
+        );
+
+        $service->call(source: $injected, endpoint: '/v1/items', overruleAuth: true);
+
+        $this->assertSame([], $double->reads, 'overruleAuth:true must skip the raw re-resolve.');
+        $this->assertSame(
+            'Bearer CALLER-injected',
+            $capturedConfig['headers']['Authorization'],
+            'overruleAuth must keep the caller-supplied auth — never clobber it with the stored value.'
+        );
+    }//end testOverruleAuthSkipsReResolveAndKeepsCallerAuth()
 
 
     /**

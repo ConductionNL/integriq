@@ -2091,6 +2091,95 @@ class CallService
     }//end resolveCallCredentials()
 
     /**
+     * Re-resolve the dispatch source RAW from storage so the engine's
+     * credentials are its OWN property, never the caller's read (ocon#215).
+     *
+     * THE DEFECT CLASS (ocon#215): since ocon#147 the `source` schema's
+     * plaintext credential fields (`apikey`/`secret`/`password`/`jwt`/
+     * `authenticationConfig`) are `writeOnly: true`. OpenRegister's render
+     * boundary strips every writeOnly property on ANY rendered read —
+     * openregister#389 computes `$doWriteOnly = $schema->hasWriteOnlyProperties()`,
+     * so the strip is SCHEMA-gated, NOT `_rbac`-gated: an admin read, an
+     * `_rbac: false` read and a SystemOperationContext read all lose the
+     * secret (openregister#389/#429). So ANY of the ~18 callers that resolved a
+     * Source with rendering ON and handed it to {@see call()} was handing the
+     * engine a credential-free Source — and the outbound call went out
+     * UNAUTHENTICATED. Two sites were patched per-caller in ocon#212/#226;
+     * this closes the class STRUCTURALLY instead: `call()` re-reads the source
+     * itself before it touches auth, so a rendered Source can never cause an
+     * unauthenticated dispatch regardless of how the caller read it.
+     *
+     * `_render: false` IS THE LOAD-BEARING ARGUMENT — the same lesson ocon#212
+     * learned the hard way when its first fix used `_rbac: false` and webhooks
+     * still went out unsigned until ocon#226. `_render: false` returns the raw
+     * entity BEFORE renderEntity() is ever reached, keeping the writeOnly
+     * secret AND the `configuration.authentication.credentialRef` (the ref
+     * lives in `configuration`, which is not writeOnly, so it already survives
+     * — re-reading raw simply keeps the whole source consistent).
+     *
+     * Fallbacks (never throw, never dispatch an empty source):
+     *  - `$overruleAuth === true`: the caller is DELIBERATELY supplying auth on
+     *    the passed entity (the param's documented meaning — "overrule the
+     *    source authentication"). Re-reading would clobber that intent, so the
+     *    entity is honoured exactly as given.
+     *  - no uuid: an unpersisted / in-memory source (a source built in a test,
+     *    a PingAction probe, a freshly constructed entity) has nothing to
+     *    re-read; return it as passed.
+     *  - raw read misses or errors: fall back to the passed entity — this is
+     *    the pre-ocon#215 status quo for that source, never a regression, and
+     *    the engine still dispatches rather than silently dropping the call.
+     *
+     * @param ObjectEntity $source       The source ObjectEntity as passed by the caller.
+     * @param boolean      $overruleAuth Whether the caller is deliberately supplying auth (skip re-resolve).
+     *
+     * @return ObjectEntity The raw source entity (secrets intact), or the passed entity on any fallback.
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function resolveSourceForDispatch(ObjectEntity $source, bool $overruleAuth): ObjectEntity
+    {
+        // The caller deliberately overrides auth on the passed entity —
+        // re-reading from storage would clobber it.
+        if ($overruleAuth === true) {
+            return $source;
+        }
+
+        $uuid = $source->getUuid();
+
+        // Unpersisted / in-memory source: nothing to re-read.
+        if (empty($uuid) === true) {
+            return $source;
+        }
+
+        try {
+            $raw = $this->objectService->find(
+                id: $uuid,
+                register: 'openconnector',
+                schema: 'source',
+                _rbac: false,
+                _multitenancy: false,
+                _render: false
+            );
+        } catch (\Throwable $exception) {
+            // A raw re-read failure must never break an outbound call that
+            // worked before this engine-side hardening — fall back to the
+            // passed entity (pre-ocon#215 behaviour for this source).
+            $this->logger->warning(
+                'CallService could not re-resolve source raw for dispatch; using the passed entity. '.$exception->getMessage(),
+                ['exception' => $exception, 'sourceUuid' => $uuid]
+            );
+            return $source;
+        }
+
+        if ($raw === null) {
+            return $source;
+        }
+
+        return $raw;
+
+    }//end resolveSourceForDispatch()
+
+    /**
      * Calls a source according to given configuration.
      *
      * @param ObjectEntity               $source                The source ObjectEntity to call.
@@ -2135,6 +2224,15 @@ class CallService
         bool $runningSupportRequest=false,
         ?ExecutionTraceContext $trace=null,
     ): ObjectEntity {
+        // Ocon#215: re-resolve the Source RAW from storage BEFORE any auth is
+        // read, so the engine's credentials are its OWN property and can never
+        // be silenced by a rendered (writeOnly-stripped) read upstream. This
+        // reassigns $source to the raw entity so EVERY downstream use — the
+        // sourceData below, the SOAP path in dispatchRequest(), persisted
+        // source-state writes and the CallLog — operates on secrets-intact
+        // data. See {@see resolveSourceForDispatch()} for the full rationale
+        // and the `_render: false` / overruleAuth / unpersisted fallbacks.
+        $source     = $this->resolveSourceForDispatch(source: $source, overruleAuth: $overruleAuth);
         $sourceData = $source->getObject();
 
         // Phase 1: Compute expiry values for log retention.
