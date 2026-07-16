@@ -65,6 +65,7 @@
     },
     "schemas": {
       "source": {
+        "_comment": "ocon#151 PHASE D — DO NOT REMOVE apikey/secret/password/jwt/authenticationConfig from this schema descriptor. These five inline-secret fields MUST stay declared here even though the RemoveMigratedSourceSecretFields repair step deletes the first four from the LIVE schema per-instance. WHY: OpenRegister's Schema::hydrate() applies `properties` via setProperties() — a WHOLESALE REPLACE — so a version-bumping register import (ImportHandler::handleSchema -> updateFromArray, verified at OR origin/development) PRUNES any property ABSENT from this JSON, UNGATED by an instance's migration state. Removing a field here would therefore drop it fleet-wide on the next upgrade that bumps the source schema version, orphaning every un-migrated inline secret. Removal happens ONLY in the repair step, per-instance, gated on a verified-clean raw scan. Permanently deleting these four from this JSON is a FUTURE change, valid only once the whole fleet has converged (tracked in ocon#232, the ocon#151 follow-up).",
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",

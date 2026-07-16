@@ -79,11 +79,20 @@
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
-			<!-- ocon#151 phase C / ADR-064: READ-ONLY. Records whether any source
-			     still holds an inline secret into appconfig (the Phase D gate). Never
-			     rewrites a live credential — the executor is blocked upstream on
-			     organisation-scope resolution; see the repair step's docblock. -->
+			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
+			     verify, write credentialRef, null the inline value) now that
+			     organisation-scope resolution is unblocked (openregister#450/#440),
+			     then records whether any source still holds an inline secret into
+			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
+			     repair step's docblock. -->
 			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
+			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
+			     secret fields (apikey, secret, password, jwt) from the LIVE source
+			     schema ONLY once every source is verifiably clean of inline values in
+			     them. Runs AFTER the migration above so the gate can be clean.
+			     authenticationConfig is excluded (manual review). The register JSON
+			     keeps all five fields on purpose (see the step's docblock). -->
+			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
 			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
 		</post-migration>
 	</repair-steps>
