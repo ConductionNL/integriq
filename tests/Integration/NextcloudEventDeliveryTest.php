@@ -35,6 +35,7 @@ namespace OCA\OpenConnector\Tests\Integration;
 use OCA\OpenConnector\EventListener\NextcloudFileEventListener;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
@@ -169,7 +170,8 @@ class NextcloudEventDeliveryTest extends TestCase
             new WebhookSignatureService($logger),
             $this->createMock(SynchronizationService::class),
             $this->createMock(JobService::class),
-            $this->createMock(CallService::class)
+            $this->createMock(CallService::class),
+            $this->createMock(FlowRunnerService::class)
         );
 
         $this->listener = new NextcloudFileEventListener($this->eventService, $logger);

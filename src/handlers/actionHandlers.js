@@ -124,6 +124,28 @@ export async function runSynchronizationHandler({ item }) {
 }
 
 /**
+ * Trigger a flow run via POST /api/flows/{id}/run (visual-flow-orchestration
+ * REQ-007d — the manual trigger surface, wired to the Flows index page's
+ * row action here; the Flow detail page's own "Run" header action calls the
+ * same endpoint directly).
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function runFlowHandler({ item }) {
+	try {
+		const response = await axios.post(generateUrl(`/apps/openconnector/api/flows/${rowId(item)}/run`))
+		const status = response.data?.status || 'completed'
+		if (status === 'failed' || status === 'stopped' || status === 'dead_letter') {
+			showError(t('openconnector', 'Flow run ended with status: {status}', { status }))
+			return
+		}
+		showSuccess(t('openconnector', 'Flow run triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Flow run failed') + errorDetail(err))
+	}
+}
+
+/**
  * Test a synchronization (dry run) via POST /api/synchronizations/{id}/test.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.

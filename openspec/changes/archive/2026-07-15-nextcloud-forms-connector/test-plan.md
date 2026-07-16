@@ -124,7 +124,7 @@
 - **test command**: `/test-api`
 
 ### TC-16: `nextcloud-form` source dispatch reaches the Forms adapter
-- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-016`
+- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-020`
 - **type**: regression
 - **preconditions**: A synchronization with `sourceType: nextcloud-form`
 - **steps**: Run `getAllObjectsFromSource()` (via a synchronization run)
@@ -132,7 +132,7 @@
 - **test command**: `/test-regression`
 
 ### TC-17: nextcloud-form target type still throws Unsupported target type
-- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-016`
+- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-020`
 - **type**: regression
 - **preconditions**: A synchronization with `targetType: nextcloud-form`
 - **steps**: Trigger a target write
@@ -164,7 +164,7 @@
 - **test command**: `/test-accessibility`
 
 ### TC-21: action.kind=mapping dispatches to dispatchMappingAction, not deliverMessage
-- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-010`
+- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012`
 - **type**: regression
 - **preconditions**: Subscription with `action.kind: 'mapping'`
 - **steps**: Dispatch a matching `event_message`
@@ -172,7 +172,7 @@
 - **test command**: `/test-regression`
 
 ### TC-22: pre-existing action kinds (webhook/synchronization/job) are unaffected
-- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-010`
+- **spec_ref**: `openspec/changes/nextcloud-forms-connector/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012`
 - **type**: regression
 - **preconditions**: Existing subscriptions covering each of the 3 pre-existing kinds (plus absent `action`)
 - **steps**: Run the existing `events-cloudevents` REQ-008 test suite unmodified
@@ -188,10 +188,10 @@
 | `nextcloud-forms-connector` REQ-003 (answer resolution/coercion) | TC-7, TC-8, TC-9, TC-10 |
 | `nextcloud-forms-connector` REQ-004 (outbound mapping dispatch) | TC-11, TC-12, TC-13 |
 | `nextcloud-forms-connector` REQ-005 (discovery endpoints) | TC-14, TC-15 |
-| `synchronization-engine` REQ-016 (source dispatch delta) | TC-16, TC-17 |
+| `synchronization-engine` REQ-020 (source dispatch delta) | TC-16, TC-17 |
 | `sync-editor-ui` REQ-SYNCUI-008 (form picker) | TC-18, TC-19 |
 | `sync-editor-ui` REQ-SYNCUI-009 (field-mapping helper) | TC-20 |
-| `events-cloudevents` REQ-010 (mapping action kind) | TC-21, TC-22 |
+| `events-cloudevents` REQ-012 (mapping action kind) | TC-21, TC-22 |
 
 ## Out of Scope
 

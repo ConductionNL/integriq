@@ -222,6 +222,11 @@ return [
 		['name' => 'tablesBridge#tables', 'url' => '/api/synchronizations/tables-bridge/tables', 'verb' => 'GET'],
 		['name' => 'tablesBridge#columns', 'url' => '/api/synchronizations/tables-bridge/tables/{tableId}/columns', 'verb' => 'GET'],
 
+		// Forms bridge discovery endpoints (nextcloud-form source editor support)
+		['name' => 'formsBridge#status', 'url' => '/api/synchronizations/forms-bridge/status', 'verb' => 'GET'],
+		['name' => 'formsBridge#forms', 'url' => '/api/synchronizations/forms-bridge/forms', 'verb' => 'GET'],
+		['name' => 'formsBridge#questions', 'url' => '/api/synchronizations/forms-bridge/forms/{formId}/questions', 'verb' => 'GET'],
+
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
 		['name' => 'mappings#saveObject', 'url' => '/api/mappings/objects', 'verb' => 'POST'],
@@ -325,6 +330,22 @@ return [
 		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
 		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
 
+		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
+		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
+		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
+		// API Products gateway (openspec/changes/api-product-gateway). api_product/
+		// api_product_subscription CRUD goes through OR's generic object API
+		// (design.md API Design); these are the bespoke, non-CRUD actions.
+		// Auth: subscribe/analytics are admin-only (default Controller posture, no
+		// #[NoAdminRequired] — matches ConsumersController's posture); approve/reject
+		// use the same #[NoAdminRequired] + in-body approverGroup authorization as
+		// the HITL approvals routes above.
+		['name' => 'productSubscriptions#subscribe', 'url' => '/api/products/{productId}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
+		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
+		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
 		// these two are the bespoke, non-CRUD actions.
@@ -411,6 +432,8 @@ return [
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
 		['name' => 'ui#approvals', 'url' => '/approvals', 'verb' => 'GET'],
 		['name' => 'ui#approvalsId', 'url' => '/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'ui#products', 'url' => '/products', 'verb' => 'GET'],
+		['name' => 'ui#productsId', 'url' => '/products/{id}', 'verb' => 'GET'],
 		['name' => 'ui#catalog', 'url' => '/catalog', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.

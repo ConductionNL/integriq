@@ -155,6 +155,42 @@
             "status"
           ]
         }
+      },
+      {
+        "name": "api_product_requests_total",
+        "type": "gauge",
+        "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
+        "source": {
+          "kind": "tableCount",
+          "table": "openconnector_call_logs",
+          "groupBy": [
+            "product",
+            "status_code"
+          ],
+          "labelMap": {
+            "status_code": "status"
+          },
+          "labelDefaults": {
+            "product": "",
+            "status_code": "unknown"
+          }
+        }
+      },
+      {
+        "name": "api_product_errors_total",
+        "type": "gauge",
+        "help": "Total inbound error (statusCode>=400) requests per API Product — provider escape hatch (api-product-gateway REQ-PROM-012): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by OpenConnectorMetricsProvider instead of a groupBy — see lib/Observability/OpenConnectorMetricsProvider.php::apiProductErrorsSample().",
+        "source": {
+          "kind": "provider"
+        }
+      },
+      {
+        "name": "api_product_latency_seconds",
+        "type": "gauge",
+        "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99) — provider escape hatch (api-product-gateway REQ-PROM-013, prometheus-metrics): needs sorted per-group values, not a row count.",
+        "source": {
+          "kind": "provider"
+        }
       }
     ]
   },
@@ -182,6 +218,7 @@
         { "id": "Sources", "label": "Sources", "icon": "DatabaseArrowLeftOutline", "route": "Sources", "order": 20 },
         { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
         { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
+        { "id": "ApiProducts", "label": "API Products", "icon": "PackageVariantClosed", "route": "ApiProducts", "order": 45 },
         { "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "Webhooks", "order": 50 },
         { "id": "NotificatiesAbonnementen", "label": "Abonnementen", "icon": "BellRingOutline", "route": "NotificatiesAbonnementen", "order": 55 }
       ]
@@ -200,7 +237,8 @@
         { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
         { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 },
         { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 },
-        { "id": "Traces", "label": "Traces", "icon": "Timeline", "route": "Traces", "order": 122 }
+        { "id": "Flows", "label": "Flows", "icon": "TransitConnectionVariant", "route": "Flows", "order": 122 },
+        { "id": "Traces", "label": "Traces", "icon": "Timeline", "route": "Traces", "order": 123 }
       ]
     },
     {
@@ -456,7 +494,7 @@
             { "title": "Failed", "countLabel": "dead-letter", "variant": "error", "register": "openconnector", "schema": "event_message", "metric": "count", "filter": { "consumer": "@objectId", "status": "failed" }, "route": { "name": "EventDeliveries", "query": { "consumer": "@objectId", "status": "failed" } } }
           ] } },
           { "id": "con-data",    "type": "data", "icon": "ShieldCheckOutline", "title": "Access policy", "content": { "columns": 2 } },
-          { "id": "con-related", "type": "related", "icon": "LinkVariant", "title": "Subscriptions" },
+          { "id": "con-subscriptions", "type": "object-list", "icon": "PackageVariantClosed", "title": "API Product subscriptions", "content": { "register": "openconnector", "schema": "api_product_subscription", "filter": { "consumer": "@objectId" }, "sort": { "createdAt": "desc" }, "columns": [ { "key": "product", "label": "Product" }, { "key": "tier", "label": "Tier" }, { "key": "status", "label": "Status" } ], "limit": 25, "allowCreate": false, "rowRoute": "ApiProductDetail", "emptyText": "This consumer has no API Product subscriptions yet." } },
           { "id": "con-deliveries", "type": "object-list", "icon": "Email", "title": "Recent deliveries", "content": { "register": "openconnector", "schema": "event_message", "filter": { "consumer": "@objectId" }, "sort": { "created": "desc" }, "columns": [ { "key": "created", "label": "When" }, { "key": "status", "label": "Status" }, { "key": "retryCount", "label": "Retries" }, { "key": "lastAttempt", "label": "Last attempt" } ], "limit": 25, "allowCreate": false, "rowRoute": "EventDeliveries", "viewAllRoute": "EventDeliveries", "viewAllQuery": { "consumer": "@objectId" }, "emptyText": "No event deliveries to this consumer yet." } }
         ],
         "layout": [
@@ -464,7 +502,7 @@
           { "id": "2a", "widgetId": "con-kpis-deliveries", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 2 },
           { "id": "2b", "widgetId": "con-kpis-failed",     "gridX": 8, "gridY": 2, "gridWidth": 4, "gridHeight": 2 },
           { "id": "3", "widgetId": "con-deliveries", "gridX": 0, "gridY": 4, "gridWidth": 8, "gridHeight": 6 },
-          { "id": "4", "widgetId": "con-related",    "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 6 }
+          { "id": "4", "widgetId": "con-subscriptions", "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 6 }
         ],
         "sidebar": {
           "enabled": true,
@@ -473,6 +511,38 @@
             { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
           ]
         },
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "ApiProducts",
+      "route": "/products",
+      "type": "index",
+      "title": "API Products",
+      "_note": "PURPOSE: an api_product is a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier (api-product-gateway REQ-APG-001/002). Plain generic index — browsing/create/delete needs no bespoke chrome; the endpoint picker, tier editor, analytics panel, and subscription approve/reject actions all live on the custom ApiProductDetail page instead (design.md/discovery.md: 'a plain index for browsing').",
+      "config": {
+        "register": "openconnector",
+        "schema": "api_product",
+        "columns": ["name", "productSlug", "version", "status", "visibility", "updated"],
+        "includeFields": ["name", "description", "productSlug", "version", "visibility", "status", "sunsetDate", "defaultTier"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "showViewAction": false,
+        "actions": [
+          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "ApiProductDetail" }
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "ApiProductDetail",
+      "route": "/products/:id",
+      "type": "custom",
+      "component": "ApiProductDetail",
+      "_note": "Custom detail page for one api_product: endpoint picker (add/remove existing Endpoints), named-tier editor (rateLimit/quota/requiresApproval/approverGroup), the gateway analytics panel (request count, error rate, p50/p95/p99 latency via GET /api/products/{id}/analytics), and pending subscriptions with approve/reject actions — a generic OR CRUD detail page can't express any of these (api-product-gateway REQ-APG-002/007, design.md 'it will be custom, mirroring ApprovalDetail').",
+      "title": "API Product",
+      "config": {
+        "register": "openconnector",
+        "schema": "api_product",
         "documentationUrl": "https://openconnector.conduction.nl"
       }
     },
@@ -777,6 +847,37 @@
         "register": "openconnector",
         "schema": "sync_item_dead_letter",
         "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "Flows",
+      "route": "/flows",
+      "type": "index",
+      "title": "Flows",
+      "config": {
+        "register": "openconnector",
+        "schema": "flow",
+        "columns": ["name", "isEnabled", "description"],
+        "includeFields": ["name", "description"],
+        "sidebar": { "enabled": true, "showMetadata": true },
+        "rowAction": { "id": "edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
+        "actions": [
+          { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
+          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runFlowHandler" }
+        ],
+        "documentationUrl": "https://openconnector.conduction.nl"
+      }
+    },
+    {
+      "id": "FlowDetail",
+      "route": "/flows/:id",
+      "type": "custom",
+      "title": "Flow",
+      "component": "FlowDetailPage",
+      "_note": "Custom page: the ordered, reorderable step-list editor (typed rows: type/configRef/condition/onError, plus branch sub-targets) and the manual Run action + run-log tab cannot be expressed by the generic detail page. See visual-flow-orchestration REQ-009. No separate Edit modal — flow metadata (name/description/isEnabled) is edited inline on this page, matching the current RuleDetailPage/SynchronizationDetailPage/MappingDetailPage convention (the legacy src/modals/<Entity>/Edit*.vue modal pattern design.md referenced is unwired dead code post chain-C, per src/handlers/actionHandlers.js's own docblock).",
+      "config": {
+        "register": "openconnector",
+        "schema": "flow"
       }
     },
     {

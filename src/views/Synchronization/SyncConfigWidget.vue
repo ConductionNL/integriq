@@ -219,6 +219,55 @@
 				@update:config="(value) => $emit('update:config', value)" />
 		</template>
 
+		<!-- Nextcloud Form mode (source only — nextcloud-forms-connector REQ-002) -->
+		<template v-else-if="type === 'nextcloud-form'">
+			<div class="sync-config__field">
+				<label :for="formSourceId" class="sync-config__label">
+					{{ kindLabel }} {{ t('openconnector', 'source (Nextcloud instance)') }}
+				</label>
+				<NcSelect
+					:input-id="formSourceId"
+					:aria-label-combobox="t('openconnector', 'Source (Nextcloud instance)')"
+					:value="selectedSource"
+					:options="sourceOptions"
+					:loading="sourcesLoading"
+					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
+					:placeholder="t('openconnector', 'Pick a configured source')"
+					@input="onSourcePick" />
+				<span class="sync-config__helper">
+					{{ t('openconnector', 'The Source record whose base URL + credential reach the Forms API.') }}
+				</span>
+			</div>
+
+			<div class="sync-config__field">
+				<label :for="formPickerId" class="sync-config__label">
+					{{ t('openconnector', 'Form') }}
+				</label>
+				<NcSelect
+					:input-id="formPickerId"
+					:aria-label-combobox="t('openconnector', 'Form')"
+					:value="selectedForm"
+					:options="formOptions"
+					:loading="formsLoading"
+					:disabled="!sourceIdValue"
+					:input-label="t('openconnector', 'Form')"
+					:placeholder="t('openconnector', 'Pick a form the source can access')"
+					@input="onFormPick" />
+				<span v-if="formsError" class="sync-config__error">
+					{{ formsError }}
+				</span>
+				<span v-else class="sync-config__helper">
+					{{ t('openconnector', 'Submissions are read from this form (nextcloud-form is a source-only type).') }}
+				</span>
+			</div>
+
+			<!-- Field-mapping (question reference) helper -->
+			<FormsFieldMapping
+				v-if="configValue('formId')"
+				:source-id="sourceIdValue"
+				:form-id="configValue('formId')" />
+		</template>
+
 		<!-- Unknown / not set -->
 		<div v-else class="sync-config__placeholder">
 			{{ t('openconnector', 'Pick a {kind} type above to configure it.', { kind: kind }) }}
@@ -234,7 +283,9 @@ import { getFilePickerBuilder, FilePickerType } from '@nextcloud/dialogs'
 import FolderOpenOutline from 'vue-material-design-icons/FolderOpenOutline.vue'
 
 import TablesColumnMapping from './TablesColumnMapping.vue'
+import FormsFieldMapping from './FormsFieldMapping.vue'
 import { extractResults, mapTableOptions } from './tablesBridge.js'
+import { mapFormOptions } from './formsBridge.js'
 
 /**
  * Generate a stable input-id suffix so the two SyncConfigWidget
@@ -253,6 +304,7 @@ export default {
 		NcTextField,
 		FolderOpenOutline,
 		TablesColumnMapping,
+		FormsFieldMapping,
 	},
 
 	props: {
@@ -307,6 +359,9 @@ export default {
 			tableOptions: [],
 			tablesLoading: false,
 			tablesError: '',
+			formOptions: [],
+			formsLoading: false,
+			formsError: '',
 		}
 	},
 
@@ -385,6 +440,23 @@ export default {
 				label: String(tableId),
 			}
 		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		formSourceId() {
+			return `sync-config-${this.widgetUid}-form-source`
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		formPickerId() {
+			return `sync-config-${this.widgetUid}-form`
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		selectedForm() {
+			const formId = this.configValue('formId')
+			if (!formId) return null
+			return this.formOptions.find((opt) => String(opt.id) === String(formId)) ?? {
+				id: Number(formId),
+				label: String(formId),
+			}
+		},
 	},
 
 	watch: {
@@ -406,6 +478,14 @@ export default {
 						this.fetchTables()
 					}
 				}
+				if (value === 'nextcloud-form') {
+					if (this.sourceOptions.length === 0) {
+						this.fetchSources()
+					}
+					if (this.sourceIdValue) {
+						this.fetchForms()
+					}
+				}
 			},
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
@@ -413,6 +493,11 @@ export default {
 			// A source change under nextcloud-table invalidates the table list.
 			if (this.type === 'nextcloud-table' && this.sourceIdValue) {
 				this.fetchTables()
+			}
+			// A source change under nextcloud-form invalidates the form list
+			// (sync-editor-ui REQ-SYNCUI-008).
+			if (this.type === 'nextcloud-form' && this.sourceIdValue) {
+				this.fetchForms()
 			}
 		},
 	},
@@ -484,6 +569,51 @@ export default {
 				console.warn('[SyncConfigWidget] tables fetch failed', err)
 			} finally {
 				this.tablesLoading = false
+			}
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		onFormPick(option) {
+			// Store the numeric form id in the config blob; clear no other
+			// keys — unlike nextcloud-table there is no columnMapping stored
+			// here (FormsFieldMapping is read-only labelling, no write payload).
+			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
+				? { ...this.config }
+				: {}
+			if (option?.id) {
+				next.formId = Number(option.id)
+			} else {
+				delete next.formId
+			}
+			this.$emit('update:config', next)
+		},
+		/**
+		 * Fetch the forms the selected Source can access via the forms-bridge
+		 * discovery endpoint. Soft-fails to an empty list with an inline error
+		 * message so the picker degrades gracefully.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		async fetchForms() {
+			if (!this.sourceIdValue) {
+				this.formOptions = []
+				return
+			}
+			this.formsLoading = true
+			this.formsError = ''
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openconnector/api/synchronizations/forms-bridge/forms'),
+					{ params: { sourceId: this.sourceIdValue } },
+				)
+				this.formOptions = mapFormOptions(extractResults(response.data))
+			} catch (err) {
+				this.formOptions = []
+				this.formsError = err?.response?.data?.error
+					|| t('openconnector', 'Could not load forms for this source.')
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] forms fetch failed', err)
+			} finally {
+				this.formsLoading = false
 			}
 		},
 		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */

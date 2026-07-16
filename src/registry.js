@@ -38,6 +38,7 @@ import {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	runFlowHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
 	manageSigningHandler,
@@ -55,8 +56,10 @@ import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
+import FlowDetailPage from './views/Flow/FlowDetailPage.vue'
 import ApprovalsIndex from './views/Approvals/ApprovalsIndex.vue'
 import ApprovalDetail from './views/Approvals/ApprovalDetail.vue'
+import ApiProductDetail from './views/ApiProducts/ApiProductDetail.vue'
 import CircuitBreakerBadge from './components/CircuitBreakerBadge.vue'
 import NotificatiesAbonnementenPage from './views/NotificatiesAbonnement/NotificatiesAbonnementenPage.vue'
 import TraceDetailPage from './views/ExecutionTrace/TraceDetailPage.vue'
@@ -68,6 +71,8 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// Flows index row action (visual-flow-orchestration): manual run trigger.
+	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,
 	// the App.vue-mounted ModalHost picks up and renders the modal.
 	testMappingModalHandler,
@@ -123,6 +128,11 @@ export default {
 	RuleDetailPage,
 	SynchronizationDetailPage,
 
+	// Flow detail (custom page): the ordered step-list editor + manual Run +
+	// run-log tab that a generic detail page cannot express. See
+	// visual-flow-orchestration REQ-009.
+	FlowDetailPage,
+
 	// Dead-letter operations view (custom page): a filtered event_message
 	// surface backed by the admin-only /api/events/dead-letter endpoints with
 	// per-row + bulk Replay/Discard. See openconnector-dead-letter-replay.
@@ -134,6 +144,12 @@ export default {
 	// generic CnIndexPage. See hitl-approval-rule-action.
 	ApprovalsIndex,
 	ApprovalDetail,
+
+	// API Products gateway detail (custom page): endpoint picker, tier
+	// editor, gateway analytics panel, and pending-subscription approve/
+	// reject actions for one api_product. Not expressible as a generic
+	// CnIndexPage/detail page. See api-product-gateway.
+	ApiProductDetail,
 
 	// Sync-item dead-letter operations view (custom page): a filtered
 	// sync_item_dead_letter surface backed by the admin-only

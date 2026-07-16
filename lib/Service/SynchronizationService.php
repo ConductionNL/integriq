@@ -31,6 +31,8 @@ use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
 use OCA\OpenConnector\Service\ExecutionTraceService;
 use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
+use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
 use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
@@ -223,6 +225,7 @@ class SynchronizationService
      * @param IAppConfig                $appConfig                 The app configuration.
      * @param ApprovalService           $approvalService           HITL batch-approval gate (hitl-approval-rule-action).
      * @param TablesSyncAdapter         $tablesSyncAdapter         The `nextcloud-table` source/target adapter (tables-bridge).
+     * @param FormsSyncAdapter          $formsSyncAdapter          The `nextcloud-form` source adapter (nextcloud-forms-connector).
      */
     public function __construct(
         private readonly CallService $callService,
@@ -235,6 +238,7 @@ class SynchronizationService
         IAppConfig $appConfig,
         private readonly ApprovalService $approvalService,
         private readonly ?TablesSyncAdapter $tablesSyncAdapter=null,
+        private readonly ?FormsSyncAdapter $formsSyncAdapter=null,
     ) {
         $this->synchronizationLogService = $synchronizationLogService;
 
@@ -4013,6 +4017,8 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-020
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
      */
     public function getAllObjectsFromSource(
         array $synchronization,
@@ -4045,7 +4051,10 @@ class SynchronizationService
             case 'nextcloud-table':
                 $objects = $this->getAllObjectsFromTable(synchronization: $synchronization, isTest: $isTest);
                 break;
-        }
+            case 'nextcloud-form':
+                $objects = $this->getAllObjectsFromForm(synchronization: $synchronization, isTest: $isTest);
+                break;
+        }//end switch
 
         return $objects;
     }//end getAllObjectsFromSource()
@@ -4098,6 +4107,53 @@ class SynchronizationService
         return $rows;
 
     }//end getAllObjectsFromTable()
+
+    /**
+     * Fetches all submissions from a `nextcloud-form` source for a given synchronization.
+     *
+     * Delegates to {@see FormsSyncAdapter::fetchAllSubmissions()}; the Forms
+     * submission id (`Submission.id`) is exposed as the top-level `id` key of
+     * each returned array so the existing `getOriginId()` default
+     * `idPosition` ('id') resolves it with no adapter-specific override,
+     * exactly like the `nextcloud-table` branch above. No accompanying
+     * target/deletion branch exists for `nextcloud-form` — source-only
+     * (`nextcloud-forms-connector` REQ-002, `synchronization-engine` REQ-020).
+     *
+     * @param array     $synchronization The synchronization object containing source information.
+     * @param bool|null $isTest          If true, only a single submission is returned for testing purposes.
+     *
+     * @return array An array of submissions retrieved from the form.
+     *
+     * @throws FormsFeatureDisabledException When the Forms app is not enabled.
+     *
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-020
+     */
+    public function getAllObjectsFromForm(array $synchronization, ?bool $isTest=false): array
+    {
+        if ($this->formsSyncAdapter === null) {
+            throw new FormsFeatureDisabledException(message: 'The Nextcloud Forms adapter is not available.');
+        }
+
+        $this->formsSyncAdapter->assertEnabled();
+
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+        $formId       = (int) ($sourceConfig['formId'] ?? 0);
+        if ($formId <= 0) {
+            throw new Exception('nextcloud-form source is missing a required sourceConfig.formId');
+        }
+
+        $source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+
+        $submissions = $this->formsSyncAdapter->fetchAllSubmissions(source: $source, formId: $formId);
+
+        if ($isTest === true && count($submissions) > 1) {
+            $submissions = [$submissions[0]];
+        }
+
+        return $submissions;
+
+    }//end getAllObjectsFromForm()
 
     /**
      * Fetches all objects from an API source for a given synchronization.
