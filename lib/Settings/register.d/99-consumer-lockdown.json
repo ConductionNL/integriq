@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment — consumer-secret-lockdown (ocon#147 phase B). SECURITY FIX. Exactly the gap 99-source-lockdown.json closed for `source`, left open on `consumer`: the schema had NO `authorization` block at all, so it fell back to OpenRegister's default — readable by ANY authenticated user. Combined with `authorizationConfiguration` carrying the consumer's inbound apiKey in cleartext, that meant `GET /apps/openregister/api/objects/openconnector/consumer` handed every account on the instance the exact key needed to impersonate that consumer against OpenConnector's own endpoints — a privilege escalation, not just a disclosure. The companion writeonly fragment removes the secret from the response; this one removes the row from the wrong hands as well, because the consumer's `domains`/`ips` allowlist is itself a map of the trust boundary. Consumers are ADMIN-OWNED CONFIGURATION — an operator provisions them and the endpoint runtime, not the end user, consumes them — so every verb is admin-only. Nothing user-facing regresses: ConsumersController holds no read endpoint (the consumers tab is an admin settings surface), and the two engine readers (AuthorizationService::findIssuer / ::resolveConsumerByApiKey) already read with `_rbac: false`, so inbound authentication for non-admin and anonymous callers is untouched — it is the engine, not the user, that needs the consumer, and the user must never see it. This closes the disclosure; removing the plaintext credential field entirely (Doriath-backed, ocon#151) is the follow-up.",
+	"components": {
+		"schemas": {
+			"consumer": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}
