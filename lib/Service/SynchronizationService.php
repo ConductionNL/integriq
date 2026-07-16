@@ -4853,13 +4853,23 @@ class SynchronizationService
      * @param string $method   The HTTP method.
      * @param array  $config   The call configuration.
      * @param bool   $read     Whether this is a single-object read call.
+     * @param mixed  $sink     Optional stream resource passed through to CallService::call() as its Guzzle
+     *                         `sink` option so the response body streams into it (stream-file-content #110);
+     *                         null = unchanged buffered behaviour.
      *
      * @return ObjectEntity The resulting call log (an OpenRegister object).
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      */
-    private function callSourceObject(array $source, string $endpoint='', string $method='GET', array $config=[], bool $read=false): ObjectEntity
-    {
+    private function callSourceObject(
+        array $source,
+        string $endpoint='',
+        string $method='GET',
+        array $config=[],
+        bool $read=false,
+        mixed $sink=null
+    ): ObjectEntity {
         // A transient, never-persisted ad-hoc source (REQ-012 — see
         // findOrCreateSourceByLocation()) has no OpenRegister object to
         // resolve; bridge it into the in-memory ObjectEntity shape CallService
@@ -4869,7 +4879,7 @@ class SynchronizationService
             $sourceObject->setUuid((string) ($source['uuid'] ?? ''));
             $sourceObject->setObject($source);
 
-            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read);
+            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink);
         }
 
         // Address the source by its OpenRegister uuid (the canonical identifier);
@@ -4881,7 +4891,7 @@ class SynchronizationService
 
         $sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
 
-        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read);
+        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink);
     }//end callSourceObject()
 
     /**
@@ -5617,131 +5627,179 @@ class SynchronizationService
 
         $config['sourceConfiguration'] = $sourceConfig;
 
-        $result   = $this->callSourceObject(
-            source: $source,
-            endpoint: $endpoint,
-            method: $config['method'] ?? 'GET',
-            config: $config['sourceConfiguration'] ?? []
-        );
-        $response = $this->callLogResponse(callLog: $result);
+        // Choose the transport up front (stream-file-content #110): a raw binary
+        // download — no contentPath/filenamePath addressing a JSON envelope —
+        // streams straight into a disk-backed php://temp handle via CallService's
+        // sink option, so the file is never buffered in a PHP string. A JSON
+        // envelope response stays on the existing in-memory string path (its body
+        // must be parsed to extract contentPath/filenamePath).
+        $useSink = (empty($config['contentPath']) === true && empty($config['filenamePath']) === true);
 
-        $body = $response['body'];
-
-        if (($decodedBody = json_decode(json: $body, associative: true)) !== null
-            && isset($response['headers']['Content-Disposition']) === false
-        ) {
-            $body = $decodedBody;
-        } else if (($decodedBody = base64_decode(string: $body, strict: true)) !== false) {
-            $body = $decodedBody;
+        $sink = null;
+        if ($useSink === true) {
+            $sink = fopen('php://temp/maxmemory:2097152', 'r+');
+            if ($sink === false) {
+                // The php://temp handle could not be opened; fall back to the buffered path.
+                $sink    = null;
+                $useSink = false;
+            }
         }
-
-        if (isset($config['contentPath']) === true && empty($config['contentPath']) === false) {
-            $content = base64_decode((new Dot($body))->get($config['contentPath']));
-        }
-
-        if (isset($config['filenamePath']) === true && empty($config['filenamePath']) === false) {
-            $filename = (new Dot($body))->get($config['filenamePath']);
-        }
-
-        if (isset($config['fileExtension']) === true && empty($config['fileExtension']) === false) {
-            $filename = $filename.$config['fileExtension'];
-        }
-
-        // Check if response is valid.
-        if ($response === null) {
-            throw new Exception("Failed to fetch file from endpoint: {$originalEndpoint}. No response received.");
-        }
-
-        if (isset($config['write']) === true && $config['write'] === false) {
-            return base64_encode($body);
-        }
-
-        if ($filename === null) {
-            // Get a filename from the response. First try to do this using the Content-Disposition header.
-            $filename = $this->getFilenameFromHeaders(response: $response, result: $result);
-        }
-
-        if ($filename === null) {
-            throw new Exception("Could not write file from endpoint {$originalEndpoint}: no filename could be determined");
-        }
-
-        // Validate objectId format (should be a UUID).
-        if (empty($objectId) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId) !== 1) {
-            throw new Exception("Invalid object ID format: {$objectId}. Expected a valid UUID.");
-        }
-
-        $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-
-        if (isset($content) === false) {
-            $content = $body;
-        }
-
-        if (empty($tags) === false && isset($config['autoShare']) === true) {
-            $shouldShare = $config['autoShare'];
-        } else {
-            $shouldShare = false;
-        }
-
-        // Determine if file should be published based on the published parameter.
-        $shouldPublish = $this->shouldPublishFile(published: $published);
 
         try {
-            $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-            $objectEntity  = $objectService->find(id: $objectId);
-            $file          = $fileService->saveFile(
-                objectEntity: $objectEntity,
-                fileName: $filename,
-                content: $content,
-                share: $shouldShare,
-                tags: $tags
+            $result   = $this->callSourceObject(
+                source: $source,
+                endpoint: $endpoint,
+                method: $config['method'] ?? 'GET',
+                config: $config['sourceConfiguration'] ?? [],
+                sink: $sink
             );
+            $response = $this->callLogResponse(callLog: $result);
 
-            // Publish the file if needed.
-            if ($shouldPublish === true && $file !== null) {
-                try {
-                    $fileService->publishFile(object: $objectEntity, file: $filename);
-                } catch (Exception $e) {
-                    // Log but don't fail the entire operation.
-                    $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+            // Check if response is valid (status/headers are recorded even when the
+            // body streamed to the sink).
+            if ($response === null) {
+                throw new Exception("Failed to fetch file from endpoint: {$originalEndpoint}. No response received.");
+            }
+
+            $body    = null;
+            $content = null;
+            if ($useSink === false) {
+                $body = $response['body'];
+
+                if (($decodedBody = json_decode(json: $body, associative: true)) !== null
+                    && isset($response['headers']['Content-Disposition']) === false
+                ) {
+                    $body = $decodedBody;
+                } else if (($decodedBody = base64_decode(string: $body, strict: true)) !== false) {
+                    $body = $decodedBody;
                 }
-            }
-        } catch (DoesNotExistException $exception) {
-            // If the object cannot be found, continue with register/schema/objectId combination.
-            $register = $config['register'] ?? null;
-            $schema   = $config['schema'] ?? null;
 
-            $addFileShare = false;
-            if (isset($config['autoShare']) === true) {
-                $addFileShare = $config['autoShare'];
-            }
-
-            $file = $fileService->addFile(
-                objectEntity: $objectId,
-                fileName: $filename,
-                content: $response['body'],
-                share: $addFileShare,
-                tags: $tags,
-                _schema: $schema,
-                _register: $register,
-                registerId: $registerId
-            );
-
-            // For the addFile case, we'll need to get the object entity to publish.
-            if ($shouldPublish === true && $file !== null) {
-                try {
-                    $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-                    $objectEntity  = $objectService->find(id: $objectId);
-                    $fileService->publishFile(object: $objectEntity, file: $filename);
-                } catch (Exception $e) {
-                    // Log but don't fail the entire operation.
-                    $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+                if (isset($config['contentPath']) === true && empty($config['contentPath']) === false) {
+                    $content = base64_decode((new Dot($body))->get($config['contentPath']));
                 }
+
+                if (isset($config['filenamePath']) === true && empty($config['filenamePath']) === false) {
+                    $filename = (new Dot($body))->get($config['filenamePath']);
+                }
+            }//end if
+
+            if (isset($config['fileExtension']) === true && empty($config['fileExtension']) === false) {
+                $filename = $filename.$config['fileExtension'];
             }
-        } catch (Exception $e) {
-            throw new Exception("Failed to save file {$filename} for object {$objectId}: ".$e->getMessage());
+
+            if (isset($config['write']) === true && $config['write'] === false) {
+                if ($useSink === true) {
+                    rewind($sink);
+                    return base64_encode((string) stream_get_contents($sink));
+                }
+
+                return base64_encode($body);
+            }
+
+            if ($filename === null) {
+                // Get a filename from the response. First try to do this using the Content-Disposition header.
+                $filename = $this->getFilenameFromHeaders(response: $response, result: $result);
+            }
+
+            if ($filename === null) {
+                throw new Exception("Could not write file from endpoint {$originalEndpoint}: no filename could be determined");
+            }
+
+            // Validate objectId format (should be a UUID).
+            if (empty($objectId) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId) !== 1) {
+                throw new Exception("Invalid object ID format: {$objectId}. Expected a valid UUID.");
+            }
+
+            $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+
+            // Resolve the content handed to FileService: the streamed resource on the
+            // binary path (rewound first), otherwise the decoded string body.
+            if ($useSink === true) {
+                rewind($sink);
+                $saveContent = $sink;
+                $addContent  = $sink;
+            } else {
+                $saveContent = ($content ?? $body);
+                $addContent  = $response['body'];
+            }
+
+            if (empty($tags) === false && isset($config['autoShare']) === true) {
+                $shouldShare = $config['autoShare'];
+            } else {
+                $shouldShare = false;
+            }
+
+            // Determine if file should be published based on the published parameter.
+            $shouldPublish = $this->shouldPublishFile(published: $published);
+
+            try {
+                $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+                $objectEntity  = $objectService->find(id: $objectId);
+                $file          = $fileService->saveFile(
+                    objectEntity: $objectEntity,
+                    fileName: $filename,
+                    content: $saveContent,
+                    share: $shouldShare,
+                    tags: $tags
+                );
+
+                // Publish the file if needed.
+                if ($shouldPublish === true && $file !== null) {
+                    try {
+                        $fileService->publishFile(object: $objectEntity, file: $filename);
+                    } catch (Exception $e) {
+                        // Log but don't fail the entire operation.
+                        $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+                    }
+                }
+            } catch (DoesNotExistException $exception) {
+                // If the object cannot be found, continue with register/schema/objectId combination.
+                $register = $config['register'] ?? null;
+                $schema   = $config['schema'] ?? null;
+
+                $addFileShare = false;
+                if (isset($config['autoShare']) === true) {
+                    $addFileShare = $config['autoShare'];
+                }
+
+                // Rewind the sink so addFile reads the full streamed body from the start.
+                if ($useSink === true) {
+                    rewind($sink);
+                }
+
+                $file = $fileService->addFile(
+                    objectEntity: $objectId,
+                    fileName: $filename,
+                    content: $addContent,
+                    share: $addFileShare,
+                    tags: $tags,
+                    _schema: $schema,
+                    _register: $register,
+                    registerId: $registerId
+                );
+
+                // For the addFile case, we'll need to get the object entity to publish.
+                if ($shouldPublish === true && $file !== null) {
+                    try {
+                        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+                        $objectEntity  = $objectService->find(id: $objectId);
+                        $fileService->publishFile(object: $objectEntity, file: $filename);
+                    } catch (Exception $e) {
+                        // Log but don't fail the entire operation.
+                        $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+                    }
+                }
+            } catch (Exception $e) {
+                throw new Exception("Failed to save file {$filename} for object {$objectId}: ".$e->getMessage());
+            }//end try
+
+            return $originalEndpoint;
+        } finally {
+            // Always release the disk-backed temp handle on the streamed path.
+            if ($sink !== null) {
+                fclose($sink);
+            }
         }//end try
-
-        return $originalEndpoint;
     }//end fetchFile()
 
     /**

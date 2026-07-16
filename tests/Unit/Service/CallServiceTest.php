@@ -502,6 +502,110 @@ class CallServiceTest extends TestCase
 
 
     /**
+     * stream-file-content #110: a `$sink` resource passed to call() is handed to
+     * Guzzle as its `sink` request option (so the body streams into it), and the
+     * resource is kept OUT of the persisted CallLog request config.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+     */
+    public function testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $capturedOptions = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturnCallback(
+            function ($method, $url, $options) use (&$capturedOptions) {
+                $capturedOptions = $options;
+
+                return new Response(200, [], 'binary-bytes');
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-sink');
+        $source->setObject(
+            [
+                'name'          => 'sink-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $sink = fopen('php://temp', 'r+');
+
+        $service->call(source: $source, endpoint: '/download', sink: $sink);
+
+        // The sink was handed to Guzzle as its `sink` request option.
+        $this->assertIsArray($capturedOptions);
+        $this->assertArrayHasKey('sink', $capturedOptions);
+        $this->assertSame($sink, $capturedOptions['sink']);
+
+        // The resource is never persisted into the CallLog request config.
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertArrayNotHasKey('sink', $logs[0]['object']['request']);
+
+        fclose($sink);
+    }//end testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog()
+
+
+    /**
+     * Regression: with no `$sink` argument, call() passes no `sink` option to
+     * Guzzle — existing callers are byte-for-byte unchanged.
+     *
+     * @return void
+     */
+    public function testCallWithoutSinkPassesNoSinkOptionToGuzzle(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $capturedOptions = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturnCallback(
+            function ($method, $url, $options) use (&$capturedOptions) {
+                $capturedOptions = $options;
+
+                return new Response(200, [], '[]');
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-nosink');
+        $source->setObject(
+            [
+                'name'          => 'nosink-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/things');
+
+        $this->assertIsArray($capturedOptions);
+        $this->assertArrayNotHasKey('sink', $capturedOptions);
+    }//end testCallWithoutSinkPassesNoSinkOptionToGuzzle()
+
+
+    /**
      * A paginated brokered sync issues ONE brokered request per page and the
      * engine's rate-limit tracking keeps working off the returned headers.
      *

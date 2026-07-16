@@ -133,11 +133,44 @@ string path skips it today.
 No auth/CORS/CSRF surface changes (no new endpoints). Input validation on the
 content is preserved as described above.
 
+## CallService sink capability (2026-07-16 correction)
+
+The original design assumed the OpenConnector side was "only
+`SynchronizationService.php`". Verifying against the code found this is not
+achievable there alone: `fetchFile` reads its bytes from the CallLog
+(`callLogResponse()`), and `CallService::call()` buffers the whole body via
+`$response->getBody()->getContents()` (`buildResponseData`, ~line 1080) before
+`fetchFile` ever sees it. There is no streaming path on the transport today, so
+a `sink` cannot be introduced purely in `fetchFile`.
+
+**Decision:** add a first-class, optional `$sink` parameter to
+`CallService::call()`, threaded to the private `dispatchRequest()` and injected
+as Guzzle's `sink` request option **only** on the `$this->client->request(...)`
+call. It is deliberately kept OUT of the `$config` array that
+`buildResponseData()` logs, redacts, and persists — a stream resource is not
+JSON-persistable and must never reach the CallLog object. With a sink in play,
+`getBody()->getContents()` returns `''` (bytes were written to the sink), so the
+CallLog naturally records an empty body while status, headers, and size are
+preserved. Default `$sink = null` keeps every existing caller byte-for-byte
+unchanged.
+
+`SynchronizationService::callSourceObject()` gains a matching optional `$sink`
+pass-through so `fetchFile` can supply its `php://temp` handle.
+
+**Up-front branch selection.** Because a sunk response has no in-memory body to
+inspect, `fetchFile` must choose the path BEFORE the call. It uses the sink
+(binary) path only when neither `config['contentPath']` nor `config['filenamePath']`
+is set — i.e. a raw binary download. Any JSON-envelope response (which needs the
+body parsed for `contentPath`/`filenamePath`) stays on the existing string path.
+The `write === false` dry-run case on the sink path base64-encodes the temp
+handle's contents (a bounded, non-persist path) to preserve its return contract.
+
 ## File Structure
 ```
 openconnector/
   lib/Service/
-    SynchronizationService.php        # fetchFile: sink→php://temp, rewind, pass resource, fclose in finally
+    CallService.php                   # call()/dispatchRequest(): optional $sink → Guzzle 'sink' option, kept out of logged config
+    SynchronizationService.php        # callSourceObject(): $sink pass-through; fetchFile: sink→php://temp, rewind, pass resource, fclose in finally
 openregister/
   lib/Service/
     FileService.php                   # saveFile/addFile: string $content → mixed (@param string|resource)

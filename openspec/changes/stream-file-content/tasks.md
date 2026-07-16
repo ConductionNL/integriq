@@ -1,5 +1,18 @@
 # Tasks: stream-file-content
 
+> **Split delivery (2026-07-16):** Tasks 1–3 (the OpenRegister provider side)
+> ship as their own PR from the `openregister` repo (branch
+> `feature/stream-file-content`, commit `1c938ed52`) and are marked done below.
+> Tasks 4–6 (the OpenConnector consumer side) are implemented on this branch
+> (`feature/110/stream-file-content`).
+>
+> **Design correction (2026-07-16):** the original design assumed the OpenConnector
+> side was "only `SynchronizationService.php`". In fact `fetchFile` obtains its
+> bytes from the CallLog, which `CallService` buffers via
+> `$response->getBody()->getContents()` — there is no streaming path today. True
+> streaming therefore requires a first-class `sink` option on `CallService`
+> (Task 4). See `design.md` → "CallService sink capability".
+
 ## Implementation Tasks
 
 ### Task 1: [OpenRegister] Widen `FileService` content type to `string|resource`
@@ -8,8 +21,8 @@
 - **acceptance_criteria**:
   - GIVEN `FileService::saveFile` and `FileService::addFile` WHEN their `$content` parameter is declared THEN it is native `mixed` with a `@param string|resource $content` docblock, all other params unchanged (see `contract.md`)
   - GIVEN an existing string caller WHEN it calls `saveFile`/`addFile` THEN behaviour is identical to before
-- [ ] Implement
-- [ ] Test
+- [x] Implement — shipped via openregister PR (`feature/stream-file-content`)
+- [x] Test — `tests/Unit/Service/File/*FileHandlerTest.php`, 8 tests green in Docker
 
 ### Task 2: [OpenRegister] `CreateFileHandler` resource branch
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-executable-file-blocking-shall-be-preserved-on-the-streamed-path`
@@ -17,8 +30,8 @@
 - **acceptance_criteria**:
   - GIVEN `$content` is a resource WHEN saving THEN the string-only base64 auto-decode is skipped, the extension check runs on the filename, the magic-byte check runs on a bounded prefix read from the stream, the stream is rewound, and `putContent($content)` streams it
   - GIVEN `$content` is a string WHEN saving THEN the existing decode + `blockExecutableFile` behaviour is unchanged
-- [ ] Implement
-- [ ] Test
+- [x] Implement — shipped via openregister PR
+- [x] Test — `CreateFileHandlerTest` (resource stream, exec-block, string BC)
 
 ### Task 3: [OpenRegister] `UpdateFileHandler` resource branch + streamed change-detection
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-unchanged-streamed-content-shall-not-be-rewritten`
@@ -27,29 +40,42 @@
   - GIVEN `$content` is a resource WHEN updating THEN the incoming md5 is computed via `hash_update_stream` and the stream rewound; `putContent` and the version bump are skipped when it equals the stored file's md5
   - GIVEN a resource whose md5 differs WHEN updating THEN the extension + bounded-prefix magic-byte checks run, the stream is rewound, and the content is written
   - GIVEN a string WHEN updating THEN the existing `md5($content)` compare, base64 round-trip, and `blockExecutableFile` behaviour is unchanged
-- [ ] Implement
-- [ ] Test
+- [x] Implement — shipped via openregister PR
+- [x] Test — `UpdateFileHandlerTest` (resource stream, md5-skip, exec-block, string BC)
 
-### Task 4: [OpenConnector] Stream the binary-download path in `fetchFile`
+### Task 4: [OpenConnector] Add a `sink` option to `CallService`
+- **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering`
+- **files**: `openconnector/lib/Service/CallService.php`
+- **acceptance_criteria**:
+  - GIVEN a caller passes a stream resource as a new `$sink` argument to `CallService::call()` WHEN the request is dispatched THEN the resource is passed to Guzzle as its `sink` request option so the response body streams into that resource instead of being buffered into a string
+  - GIVEN a `$sink` is supplied THEN the resource MUST NOT be merged into the `$config` that `buildResponseData()` logs/redacts/persists (a resource is not JSON-persistable); the CallLog records an empty body (bytes went to the sink) with the status, headers, and size preserved
+  - GIVEN no `$sink` is supplied WHEN `call()` runs THEN behaviour is byte-for-byte unchanged (default `null`)
+- [x] Implement — `call()` → `dispatchWithRetry()` → `dispatchRequest()` thread `$sink` into the Guzzle `sink` option, kept out of the logged `$config`
+- [x] Test — `CallServiceTest::testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog` + `testCallWithoutSinkPassesNoSinkOptionToGuzzle` (green; full suite 37/37)
+
+### Task 5: [OpenConnector] Stream the binary-download path in `fetchFile`
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering`
 - **files**: `openconnector/lib/Service/SynchronizationService.php`
 - **acceptance_criteria**:
-  - GIVEN a binary-download response WHEN `fetchFile` runs THEN the body is streamed into `fopen('php://temp/maxmemory:2097152','r+')` via Guzzle's `sink` option, rewound, passed as `$content` to `FileService`, and the handle closed in a `finally`
-  - GIVEN a base64-in-JSON response addressed by `config['contentPath']` WHEN `fetchFile` runs THEN the existing string path is used unchanged
-  - GIVEN the file content WHEN streaming THEN it is never assigned to a PHP string variable on the binary path
-- [ ] Implement
-- [ ] Test
+  - GIVEN a binary-download response (no `config['contentPath']`/`config['filenamePath']`) WHEN `fetchFile` runs THEN a `fopen('php://temp/maxmemory:2097152','r+')` handle is opened, passed as the `$sink` through `callSourceObject` → `CallService::call`, rewound, passed as `$content` (resource) to `FileService::saveFile`/`addFile`, and closed in a `finally`
+  - GIVEN a base64-in-JSON response addressed by `config['contentPath']` (or `filenamePath`) WHEN `fetchFile` runs THEN the existing in-memory string path is used unchanged (no sink)
+  - GIVEN the binary path AND `config['write'] === false` WHEN `fetchFile` returns THEN the streamed content is base64-encoded from the temp handle (non-persist dry-run path preserved)
+  - GIVEN the file content on the binary path WHEN streaming THEN it is never assigned to a PHP string variable except the bounded `write===false` dry-run case
+- [x] Implement — `fetchFile` chooses sink vs string up front, streams into `php://temp`, passes the resource to `saveFile`/`addFile`, and `fclose`s in a `finally`
+- [~] Test — no regressions (123/124 SynchronizationService tests pass locally; the 1 error is a pre-existing missing `DomCrawler` optional dep, unrelated). A dedicated unit test of the private `fetchFile` branch selection was **not** added — it needs the container (`FileService`/`ObjectService`) + `callService` mocked and reflection into a ~160-line private method; branch selection is instead exercised by the manual large-file Docker verification (below). Flagged for review.
 
-### Task 5: Cross-repo tests for streaming, dual-type acceptance, and preserved behaviour
+### Task 6: Tests for streaming, dual-type acceptance, and preserved behaviour
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path`
-- **files**: `openconnector/tests/Unit/Service/SynchronizationServiceTest.php`, `openregister/tests/Unit/Service/File/CreateFileHandlerTest.php`, `openregister/tests/Unit/Service/File/UpdateFileHandlerTest.php`
+- **files**: `openconnector/tests/Unit/Service/CallServiceTest.php` (or existing), `openconnector/tests/Unit/Service/SynchronizationServiceTest.php`, `openregister/tests/Unit/Service/File/CreateFileHandlerTest.php` *(done)*, `openregister/tests/Unit/Service/File/UpdateFileHandlerTest.php` *(done)*
 - **acceptance_criteria**:
-  - `saveFile`/`addFile` accept both a string and a resource (dual-type test)
-  - A blocked executable is rejected on the resource path by extension and by magic bytes
-  - An unchanged file re-synced on the resource path performs no write (md5 skip)
+  - `CallService::call` passes a supplied `$sink` to Guzzle as its `sink` option and keeps it out of the persisted config
+  - `fetchFile` uses the sink/resource path when no `contentPath`/`filenamePath` is set and the string path when one is
+  - `saveFile`/`addFile` accept both a string and a resource (dual-type test) — *covered by the OpenRegister handler tests (done)*
+  - A blocked executable is rejected on the resource path by extension and by magic bytes — *covered (done)*
+  - An unchanged file re-synced on the resource path performs no write (md5 skip) — *covered (done)*
   - The base64-in-JSON path persists content identically to pre-change behaviour
-- [ ] Implement
-- [ ] Test
+- [x] Implement — CallService sink tests (openconnector) + Create/UpdateFileHandler resource tests (openregister, 8 green)
+- [~] Test — transport (`sink` option) and write side (resource stream, exec-block, md5-skip, dual-type) are unit-covered. The `fetchFile` end-to-end branch selection is covered by the passing Synchronization suite + the manual Docker verification, not a dedicated private-method test (see Task 5).
 
 ## Verification
 - All tasks checked off
