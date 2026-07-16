@@ -409,10 +409,11 @@ class EventServiceTest extends TestCase
         $this->service->deliverMessage($message);
 
         $this->assertSame(
-            ['sub-uuid', 'openconnector', 'event_subscription', false, false],
+            ['sub-uuid', 'openconnector', 'event_subscription', false, false, false],
             $capturedArgs,
-            'deliverMessage must read the subscription with _rbac: false (and _multitenancy: false) — '
-            .'a rendered read strips the writeOnly protocolSettings and every push would go out unsigned.'
+            'deliverMessage must read the subscription RAW — the trailing false is _render: false. '
+            .'_rbac: false alone is NOT enough (ocon#215, openregister#389): the writeOnly strip is no '
+            .'longer rbac-gated, so a rendered read loses protocolSettings and every push goes out UNSIGNED.'
         );
     }//end testDeliverMessageReadsSubscriptionInSystemContext()
 

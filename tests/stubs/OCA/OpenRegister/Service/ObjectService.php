@@ -37,17 +37,55 @@ class ObjectService
      * compatibility. PHPStan sees the @throws annotation and treats any catch
      * of DoesNotExistException as live.
      *
+     * ─────────────────────────────────────────────────────────────────────────
+     * `$_render` PARITY (ocon#215 / ADR-060 test-reality) — READ BEFORE EDITING
+     * ─────────────────────────────────────────────────────────────────────────
+     * `$_render` was ABSENT from this stub until ocon#151 phase C. That absence
+     * was not cosmetic: it made it structurally IMPOSSIBLE for any unit test to
+     * express — or to catch the loss of — the `_render: false` raw-read
+     * contract. That blind spot is exactly how ocon#215 shipped.
+     *
+     * Why it matters: a `source`'s credential fields are `writeOnly: true`, and
+     * OpenRegister's render boundary strips `writeOnly` UNCONDITIONALLY — admins
+     * included, `_rbac: false` included, and the `@self.relations` mirror
+     * included (openregister#389/#429). `_render: false` is the ONLY read that
+     * still carries a secret. Code that needs a raw secret and forgets it gets a
+     * credential-free object and dispatches unauthenticated, silently.
+     *
+     * KNOWN, DELIBERATE REMAINING DRIFT from the real OpenRegister signature
+     * (`origin/development` lib/Service/ObjectService.php::find()), which is:
+     *
+     *     find($id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render)
+     *
+     * This stub omits `$_extend` and `$files` and therefore orders its
+     * parameters differently. That is TOLERATED, not endorsed: every
+     * openconnector caller invokes find() with NAMED arguments, so parameter
+     * ORDER is not load-bearing for them, whereas a dozen existing tests use
+     * POSITIONAL `willReturnCallback(function ($id, $register, $schema) {...})`
+     * closures written against this shape. Restoring true parity would break
+     * those 38 assertions and is a separate, mechanical change — filed rather
+     * than smuggled into a credential-migration PR. `$_render` is appended LAST
+     * so it is reachable by name without disturbing any existing positional
+     * callback.
+     *
      * @param  string|int  $id
      * @param  string|null $register
      * @param  string|null $schema
      * @param  bool        $_rbac         Apply RBAC filters when true.
      * @param  bool        $_multitenancy Apply multitenancy filters when true.
+     * @param  bool        $_render       Render before returning; false yields the RAW entity (secrets intact).
      * @return ObjectEntity|null
      *
      * @throws DoesNotExistException When the object is not found.
      */
-    public function find($id, ?string $register = null, ?string $schema = null, bool $_rbac = true, bool $_multitenancy = true): ?ObjectEntity
-    {
+    public function find(
+        $id,
+        ?string $register = null,
+        ?string $schema = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $_render = true
+    ): ?ObjectEntity {
         return new ObjectEntity();
     }
 

@@ -447,13 +447,23 @@ class EventService
             // headers. This is the delivery engine reading a subscription in order
             // to sign an outbound push — not a user reading it — so it reads in
             // system context exactly as CallService reads a source's credential.
-            // Without `_rbac: false` every push would silently go out UNSIGNED.
+            //
+            // `_render: false` IS THE LOAD-BEARING ARGUMENT, not `_rbac: false`
+            // (ocon#215, openregister#389/#429). The writeOnly strip stopped being
+            // rbac-gated: RenderObject::renderEntity() computes
+            // `$doWriteOnly = $schema->hasWriteOnlyProperties()` and strips on that
+            // alone — admins, `_rbac: false` and SystemOperationContext included
+            // (only the property-`authorization` strip is still rbac-gated). So
+            // `_rbac: false` ALONE no longer preserves protocolSettings, and every
+            // push was silently going out UNSIGNED. Only `_render: false`, which
+            // returns the entity before renderEntity() is ever reached, keeps it.
             $subscription = $this->objectService->find(
                 id: $subscriptionId,
                 register: 'openconnector',
                 schema: 'event_subscription',
                 _rbac: false,
-                _multitenancy: false
+                _multitenancy: false,
+                _render: false
             );
 
             if ($subscription === null) {
@@ -876,13 +886,16 @@ class EventService
 
             // System context (ocon#147): see deliverMessage(). The engine dispatches
             // this subscription's action; it must see the whole subscription, and
-            // `protocolSettings` is stripped from any rendered (`_rbac: true`) read.
+            // `protocolSettings` is stripped from EVERY rendered read — including
+            // an `_rbac: false` one (ocon#215, openregister#389/#429). `_render: false`
+            // is what actually preserves it; see the note on deliverMessage().
             $subscription = $this->objectService->find(
                 id: $subscriptionId,
                 register: 'openconnector',
                 schema: 'event_subscription',
                 _rbac: false,
-                _multitenancy: false
+                _multitenancy: false,
+                _render: false
             );
             if ($subscription === null) {
                 return false;
