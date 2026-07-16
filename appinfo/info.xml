@@ -72,6 +72,17 @@
 		     (XML comments must not contain a double hyphen, so the dry-run flag is
 		     not written with its leading dashes here.) -->
 		<command>OCA\OpenConnector\Command\MigrateInlineSecrets</command>
+		<!-- ocon#232 (ocon#151 follow-up): audits the VESTIGIAL source
+		     authenticationConfig field. No code authenticates from it, so removal
+		     (not a credentialRef migration) is the correct treatment. The default
+		     action is a READ ONLY audit reporting key NAMES only, never values.
+		     Removal DELETES credential data and therefore happens only when a human
+		     passes the explicit opt in flag; it is registered here as a command and
+		     never as a repair step, so an upgrade or maintenance:repair can never
+		     reach the deleting path.
+		     (XML comments must not contain a double hyphen, so the flags are not
+		     written with their leading dashes here.) -->
+		<command>OCA\OpenConnector\Command\AuthenticationConfig</command>
 	</commands>
 
 	<repair-steps>

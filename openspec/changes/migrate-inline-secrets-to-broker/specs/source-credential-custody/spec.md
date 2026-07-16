@@ -98,3 +98,64 @@ status. A real run SHALL re-report the true post-run gate from fresh raw reads.
 
 - **WHEN** any source still holds an inline secret or an unmappable field after a run
 - **THEN** `inline_secrets_clean` is `'0'` and Phase D must not remove the schema properties
+
+## Requirement: Authentication Config Audit
+
+`authenticationConfig` SHALL NOT be migrated to a `credentialRef`: it is VESTIGIAL —
+no code authenticates from it (`AuthenticationService` reads `$configuration[...]`;
+`AuthenticationRuntime` reads `configuration.authentication.*`; the only live
+references are redaction), so a minted ref would never be resolved. It SHALL instead
+be AUDITED and then removed (ocon#232).
+
+The audit SHALL report, per source, the uuid, the name, whether the field is
+absent/empty, and — for a non-empty bag — the KEY NAMES ONLY (`array_keys()`) plus a
+value-shape hint and a non-reversible truncated fingerprint. It SHALL NEVER print,
+log, or return a value. It SHALL read via `_render: false` (the field is `writeOnly`,
+so a rendered read reports "empty" for a source holding a live credential). It SHALL
+offer `--json`, and SHALL be read-only.
+
+#### Scenario: The audit reports key names but never a value
+
+- **WHEN** a source holds `authenticationConfig: {client_id, client_secret}`
+- **THEN** the report carries the key names, a shape hint (e.g. `string(36)`) and a truncated sha256 prefix
+- **AND** no report field or log line contains the secret value
+
+#### Scenario: The audit reads raw, not through the render boundary
+
+- **WHEN** the audit inspects a source holding a `writeOnly` `authenticationConfig`
+- **THEN** the read passes `_render: false` and the source is reported as holding a value, never as clear
+
+#### Scenario: A Twig template referencing the field makes it live
+
+- **WHEN** a source's `configuration` contains a template referencing `source.authenticationConfig`
+- **THEN** the source is reported `referenced` with the configuration path, because `CallService::renderValue()` renders `configuration` against the RAW source and the reference resolves to a live secret
+- **AND** the field is not reported as safely removable
+
+## Requirement: Authentication Config Removal
+
+Removal of `authenticationConfig` DELETES credential data and SHALL therefore be
+reachable ONLY via an explicit human opt-in flag on an occ command. It SHALL NOT be
+performed by any repair step, app upgrade, or `occ maintenance:repair`, and SHALL NOT
+be armed by a persistent appconfig flag (which would re-trigger unattended on a later
+upgrade). Per source it SHALL null the value and save with `_rbac: false,
+_multitenancy: false`; it SHALL isolate failures per source, skip already-clear
+sources (idempotent), refuse Twig-referenced sources, and log secret-free.
+
+`authenticationConfig` SHALL remain declared in `lib/Settings/openconnector_register.json`:
+`Schema::hydrate()` replaces `properties` wholesale, so removing it there would prune
+the property fleet-wide and ungated on the next version-bumping import.
+
+#### Scenario: Nothing is written without the explicit flag
+
+- **WHEN** the command is run without `--remove-authentication-config`
+- **THEN** it audits only and no source object is written
+
+#### Scenario: One failing source does not abort the batch
+
+- **WHEN** one source's save throws during a removal run
+- **THEN** that source keeps its value, the remaining sources are still cleared, and the outcome is reported per source
+
+#### Scenario: A second run is a no-op
+
+- **WHEN** the removal is run again after a successful run
+- **THEN** every source is skipped as already clear and no save is issued
