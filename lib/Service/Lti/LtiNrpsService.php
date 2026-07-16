@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Throwable;
 /**
  * NRPS roster read (Platform role, synchronous) + outbound roster pull (Tool role).
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+ * @spec openspec/specs/lti-platform/spec.md
  */
 class LtiNrpsService
 {
@@ -77,7 +77,7 @@ class LtiNrpsService
      *
      * @throws LtiValidationException 401/403 on an invalid/unscoped token, 400 when `rosterSource` is unconfigured.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function readRoster(string $accessToken, string $deploymentUuid): array
     {
@@ -179,7 +179,7 @@ class LtiNrpsService
      * @throws LtiValidationException When the deployment/platform/active key cannot be resolved, or the token
      *                                 endpoint call fails.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function pullRoster(string $deploymentUuid, string $membershipUrl): array
     {

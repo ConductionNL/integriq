@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\OpenConnector\Exception\FscDirectoryException;
  * An FSC transport binding: resolve one organisation+service against the
  * directory, then dispatch one call against the resolved endpoint.
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 interface FscConnectivityProviderInterface
 {
@@ -51,7 +51,7 @@ interface FscConnectivityProviderInterface
      *
      * @return string The provider identifier.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string;
 
@@ -60,7 +60,7 @@ interface FscConnectivityProviderInterface
      *
      * @return array<string, mixed> A JSON Schema (object) fragment.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array;
 
@@ -78,7 +78,7 @@ interface FscConnectivityProviderInterface
      * @throws FscDirectoryException    When the organisation or service is not known to the directory.
      * @throws FscConnectivityException When the directory itself is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
      */
     public function resolveService(array $directoryConfig, string $organisation, string $service): array;
 
@@ -96,7 +96,7 @@ interface FscConnectivityProviderInterface
      *
      * @throws FscConnectivityException When the endpoint is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
      */
     public function call(array $directoryConfig, array $resolution, string $method, array $payload): array;
 }//end interface

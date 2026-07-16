@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCP\Notification\INotifier;
 /**
  * Notifier for the imperatively-dispatched `approval_pending` notification.
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalNotifier implements INotifier
 {
@@ -61,7 +61,7 @@ class ApprovalNotifier implements INotifier
      *
      * @return string
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function getID(): string
     {
@@ -74,7 +74,7 @@ class ApprovalNotifier implements INotifier
      *
      * @return string
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function getName(): string
     {
@@ -94,7 +94,7 @@ class ApprovalNotifier implements INotifier
      *
      * @throws InvalidArgumentException When this notifier does not own the notification's app/subject (INotifier contract).
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {

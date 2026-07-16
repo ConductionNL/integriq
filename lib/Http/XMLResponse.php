@@ -97,7 +97,7 @@ class XMLResponse extends Response
      * @return       array<string, mixed> The data for rendering.
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-1
+     * @spec openspec/specs/xml-response/spec.md
      */
     protected function getData(): array
     {
@@ -114,7 +114,7 @@ class XMLResponse extends Response
      *
      * @psalm-param callable(array<string, mixed>): string $callback
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-1
+     * @spec openspec/specs/xml-response/spec.md
      */
     public function setRenderCallback(callable $callback): self
     {
@@ -128,7 +128,7 @@ class XMLResponse extends Response
      *
      * @return string The rendered XML.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-2
+     * @spec openspec/specs/xml-response/spec.md
      */
     public function render(): string
     {
@@ -159,7 +159,7 @@ class XMLResponse extends Response
      * @psalm-param  array<string, mixed> $data
      * @psalm-return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-3
+     * @spec openspec/specs/xml-response/spec.md
      */
     public function arrayToXml(array $data, ?string $rootTag=null): string
     {
@@ -216,7 +216,7 @@ class XMLResponse extends Response
      * @psalm-param DOMElement $element
      * @psalm-param array<string, mixed> $data
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-4
+     * @spec openspec/specs/xml-response/spec.md
      */
     private function buildXmlElement(DOMDocument $dom, DOMElement $element, array $data): void
     {
@@ -280,7 +280,7 @@ class XMLResponse extends Response
      * @psalm-param string $tagName
      * @psalm-param array<string, mixed>|string|object $data
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-5
+     * @spec openspec/specs/xml-response/spec.md
      */
     private function createChildElement(DOMDocument $dom, DOMElement $parentElement, string $tagName, $data): void
     {
@@ -322,7 +322,7 @@ class XMLResponse extends Response
      * @psalm-param  string $text
      * @psalm-return \DOMNode
      *
-     * @spec openspec/changes/retrofit-2026-05-24-xml-response/tasks.md#task-5
+     * @spec openspec/specs/xml-response/spec.md
      */
     private function createSafeTextNode(DOMDocument $dom, string $text): \DOMNode
     {

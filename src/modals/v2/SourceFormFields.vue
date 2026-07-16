@@ -245,7 +245,7 @@ export default {
 		 * while brokered so the mutually-exclusive state can never be authored.
 		 *
 		 * @return {object[]} The visible field descriptors.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
@@ -279,7 +279,7 @@ export default {
 		 * The credential option matching the written credentialId, if any.
 		 *
 		 * @return {object|null} The selected credential option.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		selectedCredential() {
 			const id = readCredentialId(this.formData)
@@ -305,7 +305,7 @@ export default {
 	 * the picker resolves its current selection to a labelled option.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	created() {
 		if (this.brokeredEnabled) {
@@ -346,7 +346,7 @@ export default {
 		 *
 		 * @param {boolean} value The new switch state.
 		 * @return {void}
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		onToggleBrokered(value) {
 			this.brokeredEnabled = value
@@ -365,7 +365,7 @@ export default {
 		 *
 		 * @param {object} option The picked credential option.
 		 * @return {void}
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		onCredentialPick(option) {
 			if (option?.id) {
@@ -380,7 +380,7 @@ export default {
 		 * brokerUnavailable) on 404 / broker absence — never crashes the editor.
 		 *
 		 * @return {Promise<void>} Resolves once the options are loaded.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
 		 */
 		async fetchCredentials() {
 			this.credentialsLoading = true

@@ -71,7 +71,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -96,7 +96,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class FscDirectoryClient implements FscConnectivityProviderInterface
 {
@@ -134,7 +134,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      *
      * @return string The stable `rest` provider identifier.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -147,7 +147,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      *
      * @return array<string, mixed> The FSC source configuration JSON Schema.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -219,7 +219,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      * @throws FscDirectoryException    When the directory reports the organisation/service as unknown.
      * @throws FscConnectivityException When the directory is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
      */
     public function resolveService(array $directoryConfig, string $organisation, string $service): array
     {
@@ -301,7 +301,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
      *
      * @throws FscConnectivityException When the endpoint is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header-on-call
+     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header-on-call
      */
     public function call(array $directoryConfig, array $resolution, string $method, array $payload): array
     {

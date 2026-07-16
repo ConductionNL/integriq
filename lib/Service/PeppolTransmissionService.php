@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md
+ * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ElseExpression)
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md
+ * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 class PeppolTransmissionService
 {
@@ -142,7 +142,7 @@ class PeppolTransmissionService
      *
      * @return boolean True when the shape is valid (a numeric ISO/IEC 6523 scheme, a colon, a non-empty identifier).
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-a-malformed-participant-id-is-rejected-with-400
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-a-malformed-participant-id-is-rejected-with-400
      */
     public function isValidPeppolId(string $peppolId): bool
     {
@@ -159,7 +159,7 @@ class PeppolTransmissionService
      *
      * @throws PeppolProviderException When no Peppol source is configured, or the Access Point errors.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant--smp-lookup-endpoint-req-001
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
      */
     public function lookupParticipant(string $peppolId): array
     {
@@ -185,7 +185,7 @@ class PeppolTransmissionService
      *
      * @return ObjectEntity|null The resulting transmission, or null when the payload is unusable.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
      */
     public function handleOutboundRequested(array $eventData): ?ObjectEntity
     {
@@ -324,7 +324,7 @@ class PeppolTransmissionService
      *
      * @return ObjectEntity|null The updated transmission, or null when the transmissionId is unknown.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
      */
     public function handleDeliveryCallback(string $transmissionId, string $status, ?string $detail): ?ObjectEntity
     {
@@ -393,7 +393,7 @@ class PeppolTransmissionService
      *
      * @return array<ObjectEntity> The created CloudEvent messages.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-an-inbound-document-is-republished-as-a-cloudevent
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-an-inbound-document-is-republished-as-a-cloudevent
      */
     public function handleInboundDocument(string $senderPeppolId, string $documentType, string $payloadReference): array
     {
@@ -450,7 +450,7 @@ class PeppolTransmissionService
      *
      * @return PeppolAccessPointProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
      */
     public function resolveProvider(array $configuration): PeppolAccessPointProviderInterface
     {
@@ -501,7 +501,7 @@ class PeppolTransmissionService
      *
      * @return void
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
      */
     private function emitDeliveryStatus(ObjectEntity $transmission): void
     {

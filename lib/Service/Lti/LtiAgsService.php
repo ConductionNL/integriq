@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+ * @spec openspec/specs/lti-platform/spec.md
  */
 class LtiAgsService
 {
@@ -130,7 +130,7 @@ class LtiAgsService
      *
      * @throws LtiValidationException On any assertion/deployment/scope failure (no cross-deployment token — design.md D8).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function issueAccessToken(string $clientAssertion, string $requestedScope, string $deploymentUuid): array
     {
@@ -208,7 +208,7 @@ class LtiAgsService
      *
      * @return array{deploymentUuid: string, toolUuid: string, scopes: string[]}|null Null when unknown/expired.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function resolveAccessToken(string $accessToken): ?array
     {
@@ -239,7 +239,7 @@ class LtiAgsService
      *
      * @throws LtiValidationException 401 on an invalid/unknown token, 403 on a scope/deployment mismatch.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function assertScopedToDeployment(string $accessToken, string $deploymentUuid, string $requiredScope): array
     {
@@ -282,7 +282,7 @@ class LtiAgsService
      *
      * @throws LtiValidationException On an invalid token/scope/deployment mismatch.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function receiveScore(string $accessToken, string $deploymentUuid, string $lineItemId, array $scorePayload): array
     {
@@ -388,7 +388,7 @@ class LtiAgsService
      * @throws LtiValidationException When the deployment/platform/active key cannot be resolved, or the token
      *                                 endpoint call fails (never silently dropped — REQ-LTI-008 scenario 2).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-outbound-score-publish-and-result-read-tool-role-req-lti-008
+     * @spec openspec/specs/lti-platform/spec.md#requirement-ags-outbound-score-publish-and-result-read-tool-role-req-lti-008
      */
     public function publishScore(string $deploymentUuid, string $lineItemUrl, array $scorePayload): array
     {
@@ -428,7 +428,7 @@ class LtiAgsService
      * @throws LtiValidationException When the deployment/platform/active key cannot be resolved, or the token
      *                                 endpoint call fails.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-outbound-score-publish-and-result-read-tool-role-req-lti-008
+     * @spec openspec/specs/lti-platform/spec.md#requirement-ags-outbound-score-publish-and-result-read-tool-role-req-lti-008
      */
     public function readResult(string $deploymentUuid, string $lineItemUrl): array
     {
@@ -453,7 +453,7 @@ class LtiAgsService
      * @throws LtiValidationException When the deployment/platform/active key cannot be resolved, or the token
      *                                 endpoint call fails.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function pullResourceForDeployment(string $deploymentUuid, string $url, string $scope): array
     {

@@ -59,20 +59,20 @@ export default {
 		}
 	},
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSchema() {
 			const id = String(this.value?.schemaId || '')
 			if (!id) return null
 			return this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mappingId || '')
 			if (!id) return null
 			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.schemasLoading = true
 		this.mappingsLoading = true

@@ -39,21 +39,21 @@ export default {
 	},
 	data() { return { options: [], loading: false } },
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selected() {
 			const idStr = String(this.id || '')
 			if (!idStr) return null
 			return this.options.find((opt) => opt.id === idStr) ?? { id: idStr, label: idStr }
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		this.options = await fetchOpenRegisterCollection('mapping')
 		this.loading = false
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onPick(option) {
 			this.$emit('update:id', option?.id ? String(option.id) : '')
 		},

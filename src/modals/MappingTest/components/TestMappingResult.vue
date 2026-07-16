@@ -150,7 +150,7 @@ export default {
 			required: true,
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	setup() {
 		return {
 			mdiCheckCircle,
@@ -175,7 +175,7 @@ export default {
 		this.fetchRegisters()
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		fetchRegisters() {
 			this.fetchRegistersLoading = true
 
@@ -199,7 +199,7 @@ export default {
 					this.fetchRegistersLoading = false
 				})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		saveObject() {
 			this.saveObjectLoading = true
 			this.saveObjectSuccess = null

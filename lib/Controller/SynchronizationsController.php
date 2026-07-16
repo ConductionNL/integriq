@@ -92,7 +92,7 @@ class SynchronizationsController extends Controller
      *
      * @return JSONResponse A JSON response containing the call logs.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function contracts(int $id): JSONResponse
@@ -130,7 +130,7 @@ class SynchronizationsController extends Controller
      *
      * @return JSONResponse A JSON response containing the filtered synchronization logs and pagination.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
@@ -262,7 +262,7 @@ class SynchronizationsController extends Controller
      *     "validationErrors": []
      * }
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -341,7 +341,7 @@ class SynchronizationsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      */
     #[NoAdminRequired]
@@ -482,7 +482,7 @@ class SynchronizationsController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function statistics(): JSONResponse
@@ -548,7 +548,7 @@ class SynchronizationsController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logsStatistics(): JSONResponse
@@ -635,7 +635,7 @@ class SynchronizationsController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logsExport(): JSONResponse
@@ -715,7 +715,7 @@ class SynchronizationsController extends Controller
      * @phpstan-param  int $id
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

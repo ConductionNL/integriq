@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Exception;
 /**
  * Thrown on any KISS / VNG Klantinteracties provider or configuration failure.
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 class KissProviderException extends Exception
 {

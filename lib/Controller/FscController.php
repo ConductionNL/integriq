@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md
+ * @spec openspec/specs/fsc-connectivity/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md
+ * @spec openspec/specs/fsc-connectivity/spec.md
  */
 class FscController extends Controller
 {
@@ -86,7 +86,7 @@ class FscController extends Controller
      *
      * @return JSONResponse `{services: [...]}`.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-listing-services-returns-the-current-cache
+     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-listing-services-returns-the-current-cache
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -110,7 +110,7 @@ class FscController extends Controller
      *
      * @return JSONResponse `{ref, statusCode, body}` on success, or a 400/404/502/503 error envelope.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

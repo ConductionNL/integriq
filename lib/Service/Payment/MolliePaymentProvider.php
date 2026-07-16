@@ -33,7 +33,7 @@
  * @link https://www.OpenConnector.nl
  * @link https://docs.mollie.com/reference/v2/payments-api/create-payment
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#scenario-the-mollie-provider-brokers-its-api-key
+ * @spec openspec/specs/live-payment-providers/spec.md#scenario-the-mollie-provider-brokers-its-api-key
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
 /**
  * Mollie Payments API v2 provider, dispatched through the credential broker.
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
+ * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
 class MolliePaymentProvider implements PaymentProviderInterface
 {
@@ -85,7 +85,7 @@ class MolliePaymentProvider implements PaymentProviderInterface
      *
      * @return array{providerPaymentId: string, paymentStatus: string, checkoutUrl: string, extras: array}
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-creation-endpoint-accepting-shillinqs-payload-contract-req-lpp-001
+     * @spec openspec/specs/live-payment-providers/spec.md
      */
     public function createPayment(array $sourceConfiguration, array $payload): array
     {
@@ -146,7 +146,7 @@ class MolliePaymentProvider implements PaymentProviderInterface
      *
      * @return array{providerPaymentId: string, paymentStatus: string}
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
+     * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
      */
     public function fetchPaymentStatus(array $sourceConfiguration, string $providerPaymentId): array
     {

@@ -33,7 +33,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 class StufZknController extends Controller
 {
@@ -113,7 +113,7 @@ class StufZknController extends Controller
      * @return DataDisplayResponse|JSONResponse A `Bv03`/`Fo03` StUF reply body (200), or a
      *         401 JSON error envelope on signature failure.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -165,7 +165,7 @@ class StufZknController extends Controller
      *
      * @return JSONResponse `{referentienummer, ref}` on success, or a 400/503/502 error envelope.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

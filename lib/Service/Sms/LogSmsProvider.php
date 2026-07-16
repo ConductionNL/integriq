@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
+ * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenConnector\Service\Sms;
 /**
  * Sandbox SMS provider: no network call, synthetic message ids, canned status.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
+ * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
  */
 class LogSmsProvider implements SmsProviderInterface
 {
@@ -52,7 +52,7 @@ class LogSmsProvider implements SmsProviderInterface
      *
      * @return string The stable `log` provider identifier.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
      */
     public function getProviderId(): string
     {
@@ -65,7 +65,7 @@ class LogSmsProvider implements SmsProviderInterface
      *
      * @return string The provider display name.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
      */
     public function getProviderName(): string
     {
@@ -78,7 +78,7 @@ class LogSmsProvider implements SmsProviderInterface
      *
      * @return array<string, mixed> An empty config schema — the log provider needs no configuration.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
      */
     public function getConfigSchema(): array
     {
@@ -99,7 +99,7 @@ class LogSmsProvider implements SmsProviderInterface
      *
      * @return DeliveryResult A synthetic `queued` result carrying a `MOCK-SMS-<n>` id.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#scenario-the-log-provider-sends-without-a-network-call-or-secret
      */
     public function send(array $sourceConfiguration, string $to, string $body, array $options=[]): DeliveryResult
     {
@@ -121,7 +121,7 @@ class LogSmsProvider implements SmsProviderInterface
      *
      * @return DeliveryResult A deterministic `delivered` result.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback-req-007
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback-req-007
      */
     public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult
     {

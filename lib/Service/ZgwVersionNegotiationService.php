@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCP\IRequest;
 /**
  * Resolves and validates `1.0`/`1.6`/`2.0` version declarations.
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
 class ZgwVersionNegotiationService
 {
@@ -98,8 +98,8 @@ class ZgwVersionNegotiationService
      *
      * @return string The resolved version string.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-no-version-signal-at-all-is-a-full-passthrough
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-an-explicit-body-field-takes-precedence-over-headers
+     * @spec openspec/specs/zgw-version-translation/spec.md#scenario-no-version-signal-at-all-is-a-full-passthrough
+     * @spec openspec/specs/zgw-version-translation/spec.md#scenario-an-explicit-body-field-takes-precedence-over-headers
      */
     public function resolveVersion(IRequest $request, ?string $explicit): string
     {
@@ -130,7 +130,7 @@ class ZgwVersionNegotiationService
      *
      * @throws ZgwUnknownVersionException When `$version` is not `1.0`, `1.6`, or `2.0`.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-an-unknown-version-is-rejected-before-any-translator-runs
+     * @spec openspec/specs/zgw-version-translation/spec.md#scenario-an-unknown-version-is-rejected-before-any-translator-runs
      */
     public function assertKnownVersion(string $version): void
     {
@@ -154,7 +154,7 @@ class ZgwVersionNegotiationService
      *                                            placeholder (currently only `2.0`)
      *                                            with no implemented translator yet.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-the-next-generation-placeholder-version-is-recognised-but-not-implemented
+     * @spec openspec/specs/zgw-version-translation/spec.md#scenario-the-next-generation-placeholder-version-is-recognised-but-not-implemented
      */
     public function assertImplementedVersion(string $version): void
     {
@@ -181,7 +181,7 @@ class ZgwVersionNegotiationService
      *
      * @return array<string, mixed> The same set with `expand` removed, if present.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#scenario-an-unresolvable-expand-hint-is-stripped-not-silently-honoured
+     * @spec openspec/specs/zgw-version-translation/spec.md#scenario-an-unresolvable-expand-hint-is-stripped-not-silently-honoured
      */
     public function stripUnsupportedExpandHint(array $queryParams): array
     {

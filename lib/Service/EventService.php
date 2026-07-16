@@ -72,7 +72,7 @@ use OCA\OpenConnector\Service\SynchronizationService;
  *
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-2
  * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
  */
 class EventService
 {
@@ -210,7 +210,7 @@ class EventService
      *
      * @throws Exception On failure to process the event.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
+     * @spec openspec/specs/events-cloudevents/spec.md
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
      */
     public function processEvent(ObjectEntity $event): array
@@ -266,7 +266,7 @@ class EventService
      *
      * @return boolean
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     private function doesEventMatchSubscription(ObjectEntity $event, ObjectEntity $subscription): bool
     {
@@ -311,7 +311,7 @@ class EventService
      * static `apply()` entry point (same call convention EndpointService's
      * rule-condition engine already uses); there is no instance API to inject.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
+     * @spec openspec/specs/events-cloudevents/spec.md
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-cloudevent-fan-out-to-matching-subscriptions-req-001
      */
     private function evaluateFilters(array $eventData, array $filters): bool
@@ -392,7 +392,7 @@ class EventService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-1
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     private function createEventMessage(ObjectEntity $event, ObjectEntity $subscription): ObjectEntity
     {
@@ -2011,7 +2011,7 @@ class EventService
      *
      * @return array{messages: ObjectEntity[], cursor: string|null}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-3
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     public function pullEvents(ObjectEntity $subscription, ?int $limit=100, ?string $cursor=null): array
     {
@@ -2066,7 +2066,7 @@ class EventService
      * @throws Exception         On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-delivery-status-cloudevents-on-every-state-change-req-004
      */
     public function emitCloudEvent(string $type, string $source, ?string $subject, array $data, ?string $userId=null): array
     {
@@ -2141,7 +2141,7 @@ class EventService
      * @throws Exception        On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-4
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     public function handleObjectCreated(ObjectEntity $object): array
     {
@@ -2178,7 +2178,7 @@ class EventService
      * @throws Exception        On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-4
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     public function handleObjectUpdated(ObjectEntity $oldObject, ObjectEntity $newObject): array
     {
@@ -2219,7 +2219,7 @@ class EventService
      * @throws Exception        On event processing failure.
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-4
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     public function handleObjectDeleted(ObjectEntity $object): array
     {

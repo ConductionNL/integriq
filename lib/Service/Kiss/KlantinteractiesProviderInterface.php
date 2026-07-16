@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\OpenConnector\Exception\KissProviderException;
  * onderwerpobject linking (the mechanism that ties a klantcontact to a
  * case/zaak identifier).
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 interface KlantinteractiesProviderInterface
 {
@@ -51,7 +51,7 @@ interface KlantinteractiesProviderInterface
      *
      * @return string The provider identifier.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function getProviderId(): string;
 
@@ -60,7 +60,7 @@ interface KlantinteractiesProviderInterface
      *
      * @return array<string, mixed> A JSON Schema (object) fragment.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function getConfigSchema(): array;
 
@@ -81,7 +81,7 @@ interface KlantinteractiesProviderInterface
      *
      * @throws KissProviderException When the KISS instance is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array;
 
@@ -97,7 +97,7 @@ interface KlantinteractiesProviderInterface
      *
      * @throws KissProviderException When KISS is unreachable, rejects the request, or is misconfigured.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function createKlantcontact(array $sourceConfiguration, array $payload): string;
 
@@ -113,7 +113,7 @@ interface KlantinteractiesProviderInterface
      *
      * @throws KissProviderException When KISS is unreachable, rejects the request, or is misconfigured.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function linkOnderwerpobject(
         array $sourceConfiguration,

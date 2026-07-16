@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\OpenConnector\Service\StufZkn;
 /**
  * StUF-ZKN 3.10 XML namespace URIs assumed by this bridge.
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 final class StufZknNamespaces
 {

@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenConnector\Service\Sms;
 /**
  * The normalised outcome of a send/status-lookup call against an SMS provider.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 final class DeliveryResult
 {
@@ -64,7 +64,7 @@ final class DeliveryResult
      *
      * @return array{providerMessageId: string, status: string, detail: string|null} The array shape.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
      */
     public function toArray(): array
     {

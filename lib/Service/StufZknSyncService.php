@@ -42,7 +42,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md
+ * @spec openspec/specs/stuf-zkn-bridge/spec.md
  */
 class StufZknSyncService
 {
@@ -176,7 +176,7 @@ class StufZknSyncService
      *
      * @return string The rendered `Bv03Bericht` (success) or `Fo03Bericht` (fault) reply XML.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-soap-endpoint-with-bv03-fo03-shaping-req-005
      */
     public function receiveInbound(string $soapXml): string
     {
@@ -271,7 +271,7 @@ class StufZknSyncService
      * @throws StufZknProviderException    When no active source is configured, or the transport fails
      *                                     (a `status: failed` `stuf_message` IS persisted first).
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-outbound-kennisgeving-dispatch-with-per-message-audit-req-006
      */
     public function sendKennisgeving(array $zaak, string $verwerkingssoort): array
     {
@@ -329,7 +329,7 @@ class StufZknSyncService
      *
      * @return integer The number of rows successfully retried.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
      */
     public function retryFailed(): int
     {
@@ -373,7 +373,7 @@ class StufZknSyncService
      *
      * @throws StufZknProviderException When no active StUF-ZKN source is configured.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -424,7 +424,7 @@ class StufZknSyncService
      *
      * @return StufZknProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-stufzkn-outbound-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function resolveProvider(array $configuration): StufZknProviderInterface
     {
@@ -470,7 +470,7 @@ class StufZknSyncService
      *
      * @return void
      *
-     * @spec openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md#requirement-inbound-zaklk01-edclk01-translation-with-a-literal-leak-guard-req-002
+     * @spec openspec/specs/stuf-zkn-bridge/spec.md#requirement-inbound-zaklk01-edclk01-translation-with-a-literal-leak-guard-req-002
      */
     private function upsertOrObject(array $translated): void
     {

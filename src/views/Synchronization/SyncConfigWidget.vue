@@ -366,33 +366,33 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		kindLabel() {
 			return this.kind === 'source'
 				? t('openconnector', 'Source')
 				: t('openconnector', 'Target')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		apiSourceId() {
 			return `sync-config-${this.widgetUid}-api-source`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		registerSelectId() {
 			return `sync-config-${this.widgetUid}-register`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaSelectId() {
 			return `sync-config-${this.widgetUid}-schema`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		filePathId() {
 			return `sync-config-${this.widgetUid}-file-path`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		sourceIdValue() {
 			return this.sourceId != null ? String(this.sourceId) : ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSource() {
 			if (!this.sourceIdValue) return null
 			return this.sourceOptions.find((opt) => opt.id === this.sourceIdValue) ?? {
@@ -400,13 +400,13 @@ export default {
 				label: this.sourceIdValue,
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedRegister() {
 			const [registerId] = this.sourceIdValue.split('/')
 			if (!registerId) return null
 			return this.registerOptions.find((opt) => String(opt.id) === String(registerId)) ?? null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaOptions() {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg) return []
@@ -416,7 +416,7 @@ export default {
 				label: schema.title || schema.name || schema.slug || String(schema),
 			}))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSchema() {
 			const parts = this.sourceIdValue.split('/')
 			if (parts.length < 2) return null
@@ -462,7 +462,7 @@ export default {
 	watch: {
 		type: {
 			immediate: true,
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md */
 			handler(value) {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
@@ -503,14 +503,14 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		configValue(key) {
 			if (!this.config || typeof this.config !== 'object') return ''
 			const v = this.config[key]
 			if (v == null) return ''
 			return typeof v === 'string' ? v : String(v)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onConfigUpdate(key, value) {
 			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
 				? { ...this.config }
@@ -522,7 +522,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
@@ -616,7 +616,7 @@ export default {
 				this.formsLoading = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -630,7 +630,7 @@ export default {
 			// the user picks a schema below.
 			this.$emit('update:sourceId', String(option.id) + '/')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onSchemaPick(option) {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg || !option?.id) {
@@ -639,7 +639,7 @@ export default {
 			}
 			this.$emit('update:sourceId', String(reg.id) + '/' + String(option.id))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchSources() {
 			this.sourcesLoading = true
 			try {
@@ -673,7 +673,7 @@ export default {
 		 * are commonly XML/CSV/JSON without consistent mime detection on
 		 * server uploads.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		async openFilePicker() {
 			this.pickerError = ''
@@ -705,7 +705,7 @@ export default {
 				this.pickingFile = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchRegisters() {
 			this.registersLoading = true
 			try {

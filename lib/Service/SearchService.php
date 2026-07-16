@@ -73,7 +73,7 @@ class SearchService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function mergeFacets(array $existingAggregation, array $newAggregation): array
     {
@@ -112,7 +112,7 @@ class SearchService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     private function mergeAggregations(?array $existingAggregations, ?array $newAggregations): array
     {
@@ -141,7 +141,7 @@ class SearchService
      *
      * @return integer
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function sortResultArray(array $a, array $b): int
     {
@@ -159,7 +159,7 @@ class SearchService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi=[]): array
     {
@@ -286,7 +286,7 @@ class SearchService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     private function recursiveRequestQueryKey(array &$vars, string $name, string $nameKey, string $value): void
     {
@@ -321,7 +321,7 @@ class SearchService
      *
      * @return array $filters
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function unsetSpecialQueryParams(array $filters): array
     {
@@ -342,7 +342,7 @@ class SearchService
      *
      * @return array The resulting array of query parameters.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function parseQueryString(string $queryString=''): array
     {

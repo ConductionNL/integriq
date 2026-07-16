@@ -63,7 +63,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  * @SuppressWarnings(PHPMD.LongVariable)
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalsController extends Controller
 {
@@ -104,7 +104,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     #[NoAdminRequired]
     public function index(): JSONResponse
@@ -168,8 +168,8 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse The resumed pipeline's final result, envelope-wrapped with `_approval`.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-006-two-layer-authorization-for-approvereject
+     * @spec openspec/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     #[NoAdminRequired]
     public function approve(string $id): JSONResponse
@@ -233,7 +233,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse `{ id, status, comment, rejectedAt }` (design.md).
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-004-rejection-with-mandatory-audit-comment
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     #[NoAdminRequired]
     public function reject(string $id): JSONResponse
@@ -305,7 +305,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function approveEndpointSuspension(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse
     {
@@ -361,7 +361,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function approveSynchronizationGate(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse
     {

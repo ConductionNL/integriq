@@ -202,12 +202,12 @@ export default {
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		closeModal() {
 			navigationStore.setModal(false)
 			synchronizationStore.synchronizationRun = null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async runSynchronization() {
 			this.success = null
 			this.loading = true

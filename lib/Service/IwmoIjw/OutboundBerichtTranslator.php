@@ -33,7 +33,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
 /**
  * Toewijzing/declaratie case object -> Wmo/Jw XML envelope.
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
 class OutboundBerichtTranslator
 {
@@ -135,7 +135,7 @@ class OutboundBerichtTranslator
      *                                     `kind`/`domain` is given, or the rendered envelope still
      *                                     carries an unresolved template marker.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-toewijzing-translates-to-a-valid-wmo303-envelope
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-toewijzing-translates-to-a-valid-wmo303-envelope
      */
     public function translate(array $caseObject, string $kind, string $domain): array
     {
@@ -225,7 +225,7 @@ class OutboundBerichtTranslator
      *
      * @throws IwmoIjwTranslationException Naming the first missing/empty required field found.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-xml--literal-leak-guard
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-xml-literal-leak-guard
      */
     private function assertRequiredFieldsPresent(array $caseObject, string $kind): void
     {

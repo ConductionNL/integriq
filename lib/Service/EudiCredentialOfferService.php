@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 class EudiCredentialOfferService
 {
@@ -144,7 +144,7 @@ class EudiCredentialOfferService
      *
      * @return string|null
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     public function resolveOrganisationId(): ?string
     {
@@ -208,7 +208,7 @@ class EudiCredentialOfferService
      *
      * @throws EudiIssuanceException On a missing/invalid field (HTTP 400).
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-creation-is-consumer-gated-and-app-facing-req-eudi-004
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-creation-is-consumer-gated-and-app-facing-req-eudi-004
      */
     public function createOffer(array $data, string $consumerId): array
     {
@@ -331,7 +331,7 @@ class EudiCredentialOfferService
      * @return array|null The OpenID4VCI `credential_offer` object, or null when
      *                     not found / expired / already consumed (REQ-EUDI-005).
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-offer-resolution-is-public-single-fetch-short-ttl-req-eudi-005
      */
     public function resolveOfferForWallet(string $uuid): ?array
     {
@@ -434,7 +434,7 @@ class EudiCredentialOfferService
      *
      * @throws EudiIssuanceException On any failure (`invalid_grant`/`invalid_request`, HTTP 400).
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-token-endpoint-issues-a-single-use-pre-authorized-code-grant-req-eudi-006
      */
     public function exchangeToken(array $data): array
     {
@@ -563,7 +563,7 @@ class EudiCredentialOfferService
      *
      * @throws EudiIssuanceException On any verification failure (HTTP 400).
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
      */
     private function verifyProof(string $proofJwt, string $expectedNonce): array
     {
@@ -628,7 +628,7 @@ class EudiCredentialOfferService
      *
      * @throws EudiIssuanceException On any failure (HTTP 400/401), never returning credential material.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
      */
     public function issueCredential(string $bearerAccessToken, array $data): array
     {
@@ -742,7 +742,7 @@ class EudiCredentialOfferService
      *
      * @return string The SD-JWT VC serialization.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
      */
     private function buildSdJwtCredential(
         array $claims,
@@ -801,7 +801,7 @@ class EudiCredentialOfferService
      * @throws EudiIssuanceException 404 when the offer does not exist, 403 when
      *                                the authenticated consumer does not own it.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
      */
     public function revoke(string $offerUuid, string $consumerId): array
     {
@@ -860,7 +860,7 @@ class EudiCredentialOfferService
      *
      * @return void
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-revocation-flips-one-status-list-bit-and-fires-a-signed-callback-req-eudi-009
      */
     private function fireStatusCallback(array $offerData): void
     {

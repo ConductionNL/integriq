@@ -77,7 +77,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with the rebase result.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function rebase(): JSONResponse

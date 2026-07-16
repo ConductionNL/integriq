@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md
+ * @spec openspec/specs/corporate-card-feed/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md
+ * @spec openspec/specs/corporate-card-feed/spec.md
  */
 class CardfeedSyncService
 {
@@ -149,7 +149,7 @@ class CardfeedSyncService
      *
      * @throws CardfeedProviderException When the source is unknown/disabled or the provider errors.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#scenario-enrollment-discovers-and-records-cards-idempotently
+     * @spec openspec/specs/corporate-card-feed/spec.md#scenario-enrollment-discovers-and-records-cards-idempotently
      */
     public function enrollSource(string $sourceSlug): array
     {
@@ -217,7 +217,7 @@ class CardfeedSyncService
      *
      * @return integer The number of batches persisted in this sweep.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
      */
     public function syncAll(): int
     {
@@ -347,7 +347,7 @@ class CardfeedSyncService
      *
      * @throws CardfeedProviderException When a provider pull fails (nothing persisted, watermark untouched).
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-idempotent-sync-on-transaction-id-req-004
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-idempotent-sync-on-transaction-id-req-004
      */
     private function pullNewTransactions(
         array $configuration,
@@ -403,7 +403,7 @@ class CardfeedSyncService
      *
      * @return array{count: int, newIds: array<int, string>} The batch count and the newly emitted transaction ids.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003
      */
     private function persistBatchesAndEmit(array $pulled, array $data, string $since, string $until): array
     {
@@ -457,7 +457,7 @@ class CardfeedSyncService
      *
      * @throws CardfeedProviderException When the source is missing, not `type=cardfeed`, or disabled.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
      */
     public function resolveSource(string $sourceSlug): ObjectEntity
     {
@@ -499,7 +499,7 @@ class CardfeedSyncService
      *
      * @return CardfeedProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+     * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-abstraction-with-log-and-generic-rest-bindings-req-001
      */
     public function resolveProvider(array $configuration): CardfeedProviderInterface
     {

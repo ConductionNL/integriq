@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md
+ * @spec openspec/specs/zgw-version-translation/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ShortVariable)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md
+ * @spec openspec/specs/zgw-version-translation/spec.md
  */
 class ZgwVersionTranslateController extends Controller
 {
@@ -94,7 +94,7 @@ class ZgwVersionTranslateController extends Controller
      * @return JSONResponse `{resource, fromVersion, toVersion, payload}` on success,
      *                      or a 400/401/422/501 error envelope.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-rest-surface-for-sibling-apps-and-external-consumers-req-003
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-rest-surface-for-sibling-apps-and-external-consumers-req-003
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

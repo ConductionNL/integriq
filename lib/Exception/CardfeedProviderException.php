@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-credentials-brokered-never-plaintext-req-005
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-credentials-brokered-never-plaintext-req-005
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any corporate-card-feed provider or configuration failure.
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-card-provider-credentials-brokered-never-plaintext-req-005
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-card-provider-credentials-brokered-never-plaintext-req-005
  */
 class CardfeedProviderException extends Exception
 {

@@ -200,28 +200,28 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		actionType() {
 			return this.configuration?.type || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		typeOptions() {
 			return ACTION_TYPES.map((entry) => ({ id: entry.id, label: this.t('openconnector', entry.label) }))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedTypeOption() {
 			return this.typeOptions.find((option) => option.id === this.actionType) || null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formComponent() {
 			return ACTION_FORM_MAP[this.actionType] || null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		slotValue() {
 			const raw = this.configuration?.[this.actionType]
 			return raw && typeof raw === 'object' ? raw : {}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rawDraft() {
 			const draft = this.rawDrafts[this.actionType]
 			if (draft !== undefined) return draft
@@ -230,27 +230,27 @@ export default {
 			if (typeof raw === 'string') return raw
 			try { return JSON.stringify(raw, null, 2) } catch (_e) { return String(raw) }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rawEditorLabel() {
 			return this.t('openconnector', 'Raw configuration for {type}', { type: this.actionType })
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onTypePick(option) {
 			if (!option) return
 			const next = { ...(this.configuration || {}), type: option.id }
 			this.$emit('update', next)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onSlotUpdate(next) {
 			const merged = { ...(this.configuration || {}), [this.actionType]: next }
 			this.$emit('update', merged)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onMappingIdUpdate(id) {
 			const next = { ...(this.configuration || {}) }
 			if (id) {
@@ -261,13 +261,13 @@ export default {
 			this.$emit('update', next)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onJavascriptCodeUpdate(code) {
 			const next = { ...(this.configuration || {}), javascript: code }
 			this.$emit('update', next)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onRawInput(value) {
 			this.$set(this.rawDrafts, this.actionType, value)
 			const trimmed = value.trim()

@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+ * @spec openspec/specs/rule-pipeline/spec.md
  */
 
 namespace OCA\OpenConnector\Service;
@@ -212,7 +212,7 @@ class RuleService
      *
      * @return string The resolved property identifier.
      *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md
+     * @spec openspec/specs/openconnector-direct-or-usage/spec.md
      */
     private function resolvePropertyRef(string $configKey, string $default): string
     {
@@ -242,7 +242,7 @@ class RuleService
      *
      * @return array|JSONResponse The updated data array (or a JSONResponse if the rule short-circuits).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -267,7 +267,7 @@ class RuleService
      *
      * @return array The updated data array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processSoftwareCatalogusRule(ObjectEntity $rule, array $data): array
     {
@@ -433,7 +433,7 @@ class RuleService
      *
      * @return string The id of the 'Publiceren' property.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function getPublishPropertyId(array $propertyDefinitions): string
     {
@@ -460,7 +460,7 @@ class RuleService
      *
      * @return array The updated data
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processPropertyDefinitionsAndMetadata(array $data): array
     {
@@ -529,7 +529,7 @@ class RuleService
      *
      * @return array An array with [$applicationFolderKey, $relationsFolderKey, $applicationFolderCount, $relationsFolderCount]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function setupOrganizationalFolders(array &$data): array
     {
@@ -597,7 +597,7 @@ class RuleService
      *
      * @return array The updated data.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processVoorzieningenData(
         array $data,
@@ -730,7 +730,7 @@ class RuleService
      *
      * @return array The connection array shape consumed by the catalogue exporter.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function createConnection(string $relationId, string $sourceId, string $targetId)
     {
@@ -774,7 +774,7 @@ class RuleService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processNodes(
         array &$nodes,
@@ -918,7 +918,7 @@ class RuleService
      *
      * @return string The relation ID.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function createRelation(
         array &$data,
@@ -970,7 +970,7 @@ class RuleService
      *
      * @return array|JSONResponse A JSON-response with the outcome, or the data on no-op paths.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -1004,7 +1004,7 @@ class RuleService
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\SyntaxError
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function getExternalObject(string $url, array $configuration, string|int $schemaId): array
     {
@@ -1079,7 +1079,7 @@ class RuleService
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     public function extendExternalUrl(ObjectEntity $rule, array $data): array|JSONResponse
     {

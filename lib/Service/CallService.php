@@ -71,8 +71,8 @@ use Twig\Sandbox\SecurityPolicy;
 /**
  * Executes outbound API calls against configured Sources and persists CallLog entries.
  *
- * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
- * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ * @spec openspec/specs/http-call-engine/spec.md
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
 class CallService
 {
@@ -165,7 +165,7 @@ class CallService
      * @param BrokeredCallService    $brokeredCallService    Brokered (credentialRef) dispatch through the OpenRegister credential broker.
      * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -220,7 +220,7 @@ class CallService
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -245,7 +245,7 @@ class CallService
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function renderValue(array|string $value, array $sourceData): array|string
     {
@@ -286,7 +286,7 @@ class CallService
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function renderConfiguration(array $configuration, array $sourceData): array
     {
@@ -312,7 +312,7 @@ class CallService
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function decideMethod(string $default, array $configuration, bool $read=false): string
     {
@@ -355,7 +355,7 @@ class CallService
      *
      * @return string File location on disk.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function writeFile(string $baseFileName, string $contents): string
     {
@@ -394,7 +394,7 @@ class CallService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function removeFile($filename): void
     {
@@ -414,7 +414,7 @@ class CallService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function getCertificate(array &$config)
     {
@@ -451,7 +451,7 @@ class CallService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function removeFiles(array $config): void
     {
@@ -941,7 +941,7 @@ class CallService
      *
      * @throws GuzzleException On HTTP transport failure.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function dispatchRequest(
         ObjectEntity $source,
@@ -1487,7 +1487,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function guardCallPreconditions(
         ObjectEntity $source,
@@ -1945,7 +1945,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function resolveBrokeredDispatch(
         ObjectEntity $source,
@@ -1994,7 +1994,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function hydrateInjectedCredentials(
         ObjectEntity $source,
@@ -2040,7 +2040,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function resolveCallCredentials(
         ObjectEntity $source,
@@ -2134,7 +2134,7 @@ class CallService
      *
      * @return ObjectEntity The raw source entity (secrets intact), or the passed entity on any fallback.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function resolveSourceForDispatch(ObjectEntity $source, bool $overruleAuth): ObjectEntity
     {
@@ -2205,8 +2205,8 @@ class CallService
      * @throws SyntaxError       On Twig syntax error.
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
      * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
      * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
@@ -2429,7 +2429,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-3
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers): array
     {
@@ -2535,7 +2535,7 @@ class CallService
      *
      * @return array The updated config array.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function applyConfigDot(array $config): array
     {

@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\OpenConnector\Exception;
 /**
  * Thrown when an organisation or service cannot be resolved via the directory.
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
+ * @spec openspec/specs/fsc-connectivity/spec.md#requirement-directory-resolution-req-002
  */
 class FscDirectoryException extends FscConnectivityException
 {

@@ -95,7 +95,7 @@ class StUFZKNService
      *
      * @return string The complete Bv03 or Fo03 SOAP XML response.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function handleZakLk01(string $soapXml, array $stuurgegevens): string
     {
@@ -160,7 +160,7 @@ class StUFZKNService
      *
      * @return string The complete zakLa01 or Fo03 SOAP XML response.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function handleZakLv01(string $soapXml, array $stuurgegevens): string
     {
@@ -208,7 +208,7 @@ class StUFZKNService
      *
      * @return array Zaak property array for OpenRegister storage.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractZaakData(SimpleXMLElement $body, string $zknNs): array
     {
@@ -250,7 +250,7 @@ class StUFZKNService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractZakLv01Criteria(SimpleXMLElement $body, string $zknNs, string $stufNs): array
     {
@@ -288,7 +288,7 @@ class StUFZKNService
      *
      * @return array StUF field name to value pairs.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function mapZaakToStuf(array $zaak): array
     {
@@ -312,7 +312,7 @@ class StUFZKNService
      *
      * @return string The zaakidentificatie of the persisted zaak.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function persistZaak(array $zaakData): string
     {
@@ -369,7 +369,7 @@ class StUFZKNService
      *
      * @return array Array of zaak property arrays.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-020
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function searchZaken(array $criteria): array
     {
@@ -394,7 +394,7 @@ class StUFZKNService
      *
      * @return string|null The referentienummer, or null if not present.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-042
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractCrossRefnummer(SimpleXMLElement $body, string $stufNs): ?string
     {

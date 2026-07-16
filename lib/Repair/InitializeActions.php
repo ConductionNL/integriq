@@ -30,7 +30,7 @@
  * @link https://www.OpenConnector.nl
  *
  * @spec openspec/architecture/adr-023-action-authorization.md
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+ * @spec openspec/specs/apphost-adoption/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCA\OpenRegister\AppHost\Repair\GenericInitializeActions;
  * Seeds the action-authorization matrix on install, delegated to the engine.
  *
  * @spec openspec/architecture/adr-023-action-authorization.md
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+ * @spec openspec/specs/apphost-adoption/spec.md
  */
 class InitializeActions extends GenericInitializeActions
 {

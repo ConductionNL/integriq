@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
+ * @spec openspec/specs/corporate-card-feed/spec.md#requirement-source-enrollment-and-card-discovery-req-002
  */
 class CardfeedController extends Controller
 {
@@ -85,7 +85,7 @@ class CardfeedController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#scenario-enrollment-discovers-and-records-cards-idempotently
+     * @spec openspec/specs/corporate-card-feed/spec.md#scenario-enrollment-discovers-and-records-cards-idempotently
      */
     #[NoAdminRequired]
     public function enroll(string $sourceSlug=''): JSONResponse

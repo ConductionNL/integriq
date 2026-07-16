@@ -196,7 +196,7 @@ class UserController extends Controller
      *
      * @return Response The CORS response with appropriate headers.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-4
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -215,7 +215,7 @@ class UserController extends Controller
      *
      * @return Response The CORS response with appropriate headers.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-4
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -232,7 +232,7 @@ class UserController extends Controller
      *
      * @return Response
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-4
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function buildCorsPreflightResponse(): Response
     {
@@ -267,7 +267,7 @@ class UserController extends Controller
      *
      * @return JSONResponse The response with CORS headers added.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-4
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function addCorsHeaders(JSONResponse $response): JSONResponse
     {
@@ -305,7 +305,7 @@ class UserController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -372,7 +372,7 @@ class UserController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-1
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -443,7 +443,7 @@ class UserController extends Controller
      * @psalm-return   JSONResponse
      * @phpstan-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -636,7 +636,7 @@ class UserController extends Controller
      * @phpstan-param  string $memoryLimit
      * @phpstan-return int
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function convertToBytes(string $memoryLimit): int
     {
@@ -670,7 +670,7 @@ class UserController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-3
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]

@@ -14,7 +14,7 @@
   routes. No inline NcModal/NcDialog is used, so the interaction stays within
   the page without tripping the modal-isolation gate.
 
-  @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+  @spec openspec/specs/approval-workflow/spec.md
 -->
 <template>
 	<div class="approvalDetail">
@@ -137,7 +137,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		requestId() {
 			return this.$route?.params?.id
 		},
@@ -151,14 +151,14 @@ export default {
 		t,
 		/**
 		 * Navigate back to the approvals list.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		goBack() {
 			this.$router.push('/approvals')
 		},
 		/**
 		 * Fetch this request's detail from the two-layer-authorized endpoint.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async load() {
 			this.loading = true
@@ -173,7 +173,7 @@ export default {
 		},
 		/**
 		 * Approve the request (optional comment), resuming the suspended chain.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async approve() {
 			this.busy = true
@@ -193,7 +193,7 @@ export default {
 		},
 		/**
 		 * Reject the request with a mandatory comment.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-004-rejection-with-mandatory-audit-comment
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async reject() {
 			if (!this.comment.trim()) {

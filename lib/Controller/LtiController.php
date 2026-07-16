@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md
+ * @spec openspec/specs/lti-platform/spec.md
  */
 class LtiController extends Controller
 {
@@ -151,7 +151,7 @@ class LtiController extends Controller
      *
      * @return RedirectResponse|JSONResponse 302 to the platform on success; 400 on an unregistered issuer (no redirect, no nonce persisted).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-oidc-thirdparty-initiated-login-tool-role-req-lti-004
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -186,7 +186,7 @@ class LtiController extends Controller
      *
      * @return RedirectResponse|JSONResponse 302 to `launchTargetUrl` on success; 400/401 on any validation failure.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -235,7 +235,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse The access token on success; 400/401/403 per the specific failure.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -283,7 +283,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse 200 on success; 401/403/400 per the specific failure.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -320,7 +320,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -356,7 +356,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse The IMS NRPS membership container; 401/403/400 per the specific failure.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-nrps-inbound-roster-read-platform-role-via-the-adr-008-registerschema-dispatch-and-outbound-roster-pull-tool-role-req-lti-009
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -389,7 +389,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse A `{"keys": [...]}` JWKS document (active + previous public keys only).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -419,7 +419,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse The new (redacted) key entry.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function generateKey(string $registrationType, string $registrationUuid): JSONResponse
@@ -444,7 +444,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse The new (redacted) key entry.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
+     * @spec openspec/specs/lti-platform/spec.md#requirement-own-signing-key-lifecycle-with-rotation-and-a-per-registration-jwks-publish-endpoint-req-lti-002
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function rotateKey(string $registrationType, string $registrationUuid): JSONResponse
@@ -473,7 +473,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse `{registrationType, registrationUuid, status}`.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function approve(string $registrationType, string $registrationUuid): JSONResponse
@@ -498,7 +498,7 @@ class LtiController extends Controller
      *
      * @return JSONResponse `{registrationType, registrationUuid, status}`.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     * @spec openspec/specs/lti-platform/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function suspend(string $registrationType, string $registrationUuid): JSONResponse
