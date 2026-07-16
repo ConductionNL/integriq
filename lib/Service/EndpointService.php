@@ -116,6 +116,8 @@ class EndpointService
      * @param IRequestId              $requestId               Nextcloud request-id service, used to synthesize
      *                                                         an `IRequest` for `triggerFromFlow()`.
      * @param FlowRunnerService       $flowRunnerService       Executes the `flow` rule action type (REQ-RULE-009).
+     * @param ConsumerScopeService    $consumerScopeService    Enforces the resolved consumer's source allowlist
+     *                                                         (`ips`/`domains`, REQ-CON-SCOPE-001).
      *
      * @return void
      */
@@ -140,6 +142,7 @@ class EndpointService
         private readonly ApprovalService $approvalService,
         private readonly IRequestId $requestId,
         private readonly FlowRunnerService $flowRunnerService,
+        private readonly ConsumerScopeService $consumerScopeService,
     ) {
     }//end __construct()
 
@@ -527,6 +530,17 @@ class EndpointService
         }
 
         if ($enforceRateLimit === true) {
+            // Inbound consumer source-scope (REQ-CON-SCOPE-001). Runs AFTER
+            // authentication resolved a consumer and BEFORE the rate limit, so a
+            // caller outside the allowlist gets 403 rather than consuming (and
+            // being told about) the consumer's rate-limit budget. Skipped on the
+            // resume-from-approval path for the same reason the rate limit is:
+            // the original request already passed this check before suspending.
+            $scopeResponse = $this->enforceConsumerScope(request: $request);
+            if ($scopeResponse !== null) {
+                return $scopeResponse;
+            }
+
             // Inbound per-consumer rate limiting + quota (consumer-rate-limiting).
             // Runs AFTER authentication has passed (the 'before' rule pipeline,
             // which includes the authentication rule, completed without a 401/403)
@@ -795,6 +809,46 @@ class EndpointService
         );
 
     }//end enforceInboundRateLimit()
+
+    /**
+     * Reject a request whose source falls outside the resolved consumer's allowlist.
+     *
+     * The `consumer` schema advertises `ips` ("Allowed source IP addresses") and
+     * `domains` ("Allowed source domains"); this is the single point that
+     * enforces them. Fails closed — an unlisted source receives HTTP 403.
+     * A consumer with neither list configured is unrestricted, preserving the
+     * behaviour of every consumer that predates this control.
+     *
+     * When no consumer was resolved (rule-inline apiKey / basic / oauth
+     * authenticate a Nextcloud user rather than a consumer) there is no
+     * consumer allowlist to apply and the request proceeds.
+     *
+     * @param IRequest $request The incoming request.
+     *
+     * @return JSONResponse|null A 403 response when the source is not allowed, null otherwise.
+     *
+     * @spec openspec/specs/consumer-management/spec.md#requirement-consumer-source-scope-enforcement-req-con-scope-001
+     */
+    private function enforceConsumerScope(IRequest $request): ?JSONResponse
+    {
+        $consumer = $this->authorizationService->getResolvedConsumer();
+        if ($consumer === null) {
+            return null;
+        }
+
+        if ($this->consumerScopeService->isAllowed(consumer: $consumer, request: $request) === true) {
+            return null;
+        }
+
+        return new JSONResponse(
+            [
+                'error'   => 'source_not_allowed',
+                'message' => 'Request source is not in this consumer\'s allowed domains or IP addresses',
+            ],
+            Http::STATUS_FORBIDDEN
+        );
+
+    }//end enforceConsumerScope()
 
     /**
      * Shared rate-limit/quota evaluation tail: unlimited short-circuit,

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\ApprovalService;
+use OCA\OpenConnector\Service\ConsumerScopeService;
 use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\AuthorizationService;
 use OCA\OpenConnector\Service\CallService;
@@ -118,6 +119,12 @@ class EndpointServiceTierPolicyTest extends TestCase
         $requestId            = $this->createMock(IRequestId::class);
         $flowRunnerService    = $this->createMock(FlowRunnerService::class);
 
+        // These tests assert tier-policy rate limiting, not source scope
+        // (REQ-CON-SCOPE-001) — default to "allowed" so the scope gate, which
+        // runs first, does not 403 them. A bare mock would return false.
+        $consumerScopeService = $this->createMock(ConsumerScopeService::class);
+        $consumerScopeService->method('isAllowed')->willReturn(true);
+
         $this->service = new EndpointService(
             $objectService,
             $callService,
@@ -139,6 +146,7 @@ class EndpointServiceTierPolicyTest extends TestCase
             $approvalService,
             $requestId,
             $flowRunnerService,
+            $consumerScopeService,
         );
     }//end setUp()
 
