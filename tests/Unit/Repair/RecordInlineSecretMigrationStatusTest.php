@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Repair;
 
 use OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus;
+use OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor;
+use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
 use OCA\OpenConnector\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
@@ -94,6 +96,85 @@ class RecordingAppConfig implements IAppConfig
     public function deleteApp(string $app): void {}
     public function clearCache(bool $reload = false): void {}
     // phpcs:enable
+}//end class
+
+/**
+ * A migration executor spy that records whether migrateAll() ran, without touching
+ * \OCP\Server or any real broker.
+ */
+class SpyMigrationExecutor extends InlineSecretMigrationExecutor
+{
+
+    /**
+     * How many times migrateAll() was invoked.
+     *
+     * @var int
+     */
+    public int $migrateCalls = 0;
+
+    /**
+     * When true, migrateAll() throws (simulating a blocked/absent broker).
+     *
+     * @var boolean
+     */
+    public bool $throws = false;
+
+    /**
+     * Record the invocation and return a fixed summary.
+     *
+     * @param int $limit Unused.
+     *
+     * @return array<string, mixed>
+     */
+    public function migrateAll(int $limit = 1000): array
+    {
+        $this->migrateCalls++;
+        if ($this->throws === true) {
+            throw new \RuntimeException('broker unavailable (test)');
+        }
+
+        return [
+            'sources'      => [],
+            'totalSources' => 0,
+            'migrated'     => 1,
+            'failed'       => 0,
+            'blocked'      => 0,
+            'skipped'      => 0,
+            'postRun'      => ['clean' => true, 'pending' => 0, 'manual' => 0],
+        ];
+    }//end migrateAll()
+}//end class
+
+/**
+ * A step subclass that returns the spy executor from the makeExecutor() seam and
+ * records the call order relative to the appconfig recording.
+ */
+class TestableRecordStep extends RecordInlineSecretMigrationStatus
+{
+
+    /**
+     * The spy handed back from makeExecutor().
+     *
+     * @var SpyMigrationExecutor|null
+     */
+    public ?SpyMigrationExecutor $spy = null;
+
+    /**
+     * Return the spy instead of a real executor.
+     *
+     * @param OrObjectService              $objectService The object service.
+     * @param InlineSecretMigrationPlanner $planner       The planner.
+     *
+     * @return InlineSecretMigrationExecutor
+     */
+    protected function makeExecutor(OrObjectService $objectService, InlineSecretMigrationPlanner $planner): InlineSecretMigrationExecutor
+    {
+        if ($this->spy === null) {
+            $this->spy = new SpyMigrationExecutor($objectService, $planner, new NullLogger());
+        }
+
+        return $this->spy;
+    }//end makeExecutor()
 }//end class
 
 /**
@@ -243,4 +324,107 @@ class RecordInlineSecretMigrationStatusTest extends TestCase
 
         $this->assertSame('live-secret', $stored['src-1']['apikey'], 'The inline secret must be untouched.');
     }//end testStepNeverMutatesASource()
+
+    /**
+     * The step now RUNS the migration (executor) before recording the gate — the
+     * ordering contract Phase D relies on.
+     *
+     * @return void
+     */
+    public function testExecutorRunsBeforeRecording(): void
+    {
+        $appConfig     = new RecordingAppConfig();
+        $objectService = new RenderBoundarySimulatingObjectService();
+        // A migrated source: after the (spied) run the fleet reads clean.
+        $objectService->stored = ['src-1' => ['name' => 'Migrated', 'apikey' => ['credentialRef' => ['credentialId' => 'abc']]]];
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willReturnCallback(
+            static function (string $id) use ($objectService) {
+                if ($id === OrObjectService::class || $id === 'OCA\\OpenRegister\\Service\\ObjectService') {
+                    return $objectService;
+                }
+
+                throw new \RuntimeException('unexpected service: '.$id);
+            }
+        );
+
+        $step = new TestableRecordStep($container, $appConfig, new NullLogger());
+        $step->run($this->createMock(IOutput::class));
+
+        $this->assertNotNull($step->spy);
+        $this->assertSame(1, $step->spy->migrateCalls, 'The migration executor must run exactly once.');
+        // And the gate was recorded afterwards.
+        $this->assertSame('1', $appConfig->written[RecordInlineSecretMigrationStatus::KEY_CLEAN]);
+    }//end testExecutorRunsBeforeRecording()
+
+    /**
+     * An executor failure (blocked/absent broker) is non-fatal: the step does not
+     * throw, still records — and a dirty fleet stays NOT-clean.
+     *
+     * @return void
+     */
+    public function testExecutorFailureIsNonFatalAndKeepsGateClosed(): void
+    {
+        $appConfig     = new RecordingAppConfig();
+        $objectService = new RenderBoundarySimulatingObjectService();
+        $objectService->stored = ['src-1' => ['name' => 'Live', 'apikey' => 'still-inline']];
+
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willReturnCallback(
+            static function (string $id) use ($objectService) {
+                if ($id === OrObjectService::class || $id === 'OCA\\OpenRegister\\Service\\ObjectService') {
+                    return $objectService;
+                }
+
+                throw new \RuntimeException('unexpected service: '.$id);
+            }
+        );
+
+        $step      = new TestableRecordStep($container, $appConfig, new NullLogger());
+        $step->spy = new SpyMigrationExecutor($objectService, new InlineSecretMigrationPlanner($objectService, new NullLogger()), new NullLogger());
+        $step->spy->throws = true;
+
+        // Must not throw.
+        $step->run($this->createMock(IOutput::class));
+
+        $this->assertSame(1, $step->spy->migrateCalls);
+        $this->assertSame('0', $appConfig->written[RecordInlineSecretMigrationStatus::KEY_CLEAN], 'A dirty fleet must stay NOT-clean when the executor could not run.');
+        $this->assertSame('1', $appConfig->written[RecordInlineSecretMigrationStatus::KEY_PENDING]);
+    }//end testExecutorFailureIsNonFatalAndKeepsGateClosed()
+
+    /**
+     * The repair-step ORDERING contract in info.xml: the migration/record step runs
+     * AFTER FlagSourceSecretsWriteOnly and BEFORE the Phase D removal step, which in
+     * turn runs before MaterializeCatalogItems.
+     *
+     * @return void
+     */
+    public function testRepairStepOrderingContract(): void
+    {
+        $infoXml = __DIR__.'/../../../appinfo/info.xml';
+        $this->assertFileExists($infoXml);
+
+        $xml = simplexml_load_file($infoXml);
+        $this->assertNotFalse($xml, 'info.xml must parse.');
+
+        $steps = [];
+        foreach ($xml->xpath('//repair-steps/post-migration/step') as $node) {
+            $steps[] = (string) $node;
+        }
+
+        $flag   = array_search('OCA\\OpenConnector\\Repair\\FlagSourceSecretsWriteOnly', $steps, true);
+        $record = array_search('OCA\\OpenConnector\\Repair\\RecordInlineSecretMigrationStatus', $steps, true);
+        $remove = array_search('OCA\\OpenConnector\\Repair\\RemoveMigratedSourceSecretFields', $steps, true);
+        $mat    = array_search('OCA\\OpenConnector\\Repair\\MaterializeCatalogItems', $steps, true);
+
+        $this->assertIsInt($flag);
+        $this->assertIsInt($record);
+        $this->assertIsInt($remove);
+        $this->assertIsInt($mat);
+
+        $this->assertLessThan($record, $flag, 'FlagSourceSecretsWriteOnly must run before the migration/record step.');
+        $this->assertLessThan($remove, $record, 'The migration must run before the Phase D removal.');
+        $this->assertLessThan($mat, $remove, 'The Phase D removal must run before MaterializeCatalogItems.');
+    }//end testRepairStepOrderingContract()
 }//end class

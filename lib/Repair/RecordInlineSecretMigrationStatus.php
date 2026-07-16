@@ -1,31 +1,45 @@
 <?php
 
 /**
- * OpenConnector — record the inline-secret migration status (Phase C / ADR-064).
+ * OpenConnector — migrate inline source secrets, then record the Phase D gate
+ * (Phase C / ADR-064; ocon#151).
  *
- * READ-ONLY BY DESIGN. This step NEVER mints, writes a credentialRef, or nulls an
- * inline secret. It runs the {@see InlineSecretMigrationPlanner} on every upgrade
- * and persists the answer to one question into appconfig:
+ * ─────────────────────────────────────────────────────────────────────────────
+ * THE EXECUTOR IS NOW UNBLOCKED — this step RUNS the migration.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * This step originally only PLANNED: at the time an organisation-scoped `source`
+ * credential (ADR-064 Rule 4) could not be resolved without a live user session,
+ * so a sessionless upgrade could not perform the mandatory verify step and the
+ * safe thing was to REPORT only. openregister#450 (the sessionless
+ * `actingOrganisationId` assertion on `resolveInjectable()`) and the `_rbac: false`
+ * sessionless `mint()` (openregister#440) removed that blocker, so this step now
+ * EXECUTES {@see \OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor}
+ * — for every `source` it mints a broker credential, VERIFIES the secret
+ * round-trips, and only then writes the `{credentialRef}` placeholder and nulls
+ * the inline value — and THEN records the status.
+ *
+ * The execution is fail-closed and NON-FATAL: a source with no organisation, an
+ * old/absent broker, a mint/verify/save failure — each leaves the inline value
+ * COMPLETELY INTACT (the source keeps working) and keeps the gate closed. A total
+ * executor failure (e.g. the broker cannot be resolved) is caught and swallowed so
+ * it can never brick an `occ upgrade`; the recording pass then reflects the true,
+ * still-dirty state.
+ *
+ * After execution it runs the {@see InlineSecretMigrationPlanner} and persists the
+ * answer to one question into appconfig:
  *
  *     "Do any `source` objects still hold an inline secret?"
  *
- * That persisted flag is the gate Phase D (the schema-property removal) must
- * check: Phase D MUST NOT remove `apikey`/`secret`/`password`/`jwt`/
- * `authenticationConfig` from the source schema while
- * `openconnector / inline_secrets_clean` is anything but `'1'`.
+ * That persisted flag is one signal Phase D
+ * ({@see \OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields}) observes.
+ * Phase D itself re-derives its OWN four-field gate from a fresh raw scan (it does
+ * not trust this flag alone), and it EXCLUDES `authenticationConfig` (manual
+ * review) — so an unmigrated auth-config keeps THIS flag `'0'` but does not block
+ * removal of the four auto-migratable fields.
  *
- * Why a repair step and not the executor: the actual migration is blocked
- * upstream — a `source` credential must be minted at `organisation` scope
- * (ADR-064 Rule 4), and an organisation-scoped credential cannot be resolved (so
- * the mandatory verify step cannot pass, and runtime background sync would fail
- * closed) without a live user session, which a sessionless upgrade/occ run does
- * not have. See {@see \OCA\OpenConnector\Command\MigrateInlineSecrets} and
- * {@see InlineSecretMigrationPlanner::planAll()} for the full reasoning. Until
- * that is unblocked, the safe and useful thing an automatic step can do is
- * REPORT — never rewrite live credentials on an unattended upgrade.
- *
- * Idempotent, never fatal, and a no-op when OpenRegister is absent. No secret
- * value is ever logged or persisted — only counts and field names.
+ * Idempotent (already-migrated sources are skipped from a fresh raw read), never
+ * fatal, and a no-op when OpenRegister is absent. No secret value is ever logged
+ * or persisted — only counts, field names and provider ids.
  *
  * @category Repair
  * @package  OCA\OpenConnector\Repair
@@ -46,7 +60,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Repair;
 
+use OCA\OpenConnector\Service\Security\InlineSecretMigrationExecutor;
 use OCA\OpenConnector\Service\Security\InlineSecretMigrationPlanner;
+use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -55,7 +71,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Persists the Phase D "zero unmigrated inline secrets" gate to appconfig.
+ * Runs the inline-secret migration, then persists the Phase D gate to appconfig.
  *
  * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-phase-d-gate-signal
  */
@@ -125,11 +141,11 @@ class RecordInlineSecretMigrationStatus implements IRepairStep
      */
     public function getName(): string
     {
-        return 'Record whether any OpenConnector source still holds an inline secret (Phase D gate)';
+        return 'Migrate OpenConnector source inline secrets to the broker, then record the Phase D gate';
     }//end getName()
 
     /**
-     * Compute and persist the migration status. NEVER writes to any source.
+     * Run the migration (mint → verify → null), then compute and persist the gate.
      *
      * @param IOutput $output The output interface.
      *
@@ -140,7 +156,7 @@ class RecordInlineSecretMigrationStatus implements IRepairStep
     public function run(IOutput $output): void
     {
         if (class_exists('\\'.self::OR_OBJECT_SERVICE) === false) {
-            $output->info('OpenConnector: OpenRegister not available; skipping inline-secret status check.');
+            $output->info('OpenConnector: OpenRegister not available; skipping inline-secret migration and status check.');
             return;
         }
 
@@ -151,11 +167,16 @@ class RecordInlineSecretMigrationStatus implements IRepairStep
                 logger: $this->logger
             );
 
+            // PHASE C EXECUTION (now unblocked): mint → verify → write ref → null.
+            // Non-fatal and fail-closed — a failure here leaves every inline secret
+            // intact and the recording pass below then reflects the still-dirty state.
+            $this->runMigration(objectService: $objectService, planner: $planner, output: $output);
+
             $plan = $planner->planAll();
 
-            $clean     = (bool) ($plan['clean'] ?? false);
-            $pending   = (int) ($plan['wouldMigrate'] ?? 0);
-            $manual    = (int) ($plan['needsReview'] ?? 0);
+            $clean     = (bool) $plan['clean'];
+            $pending   = (int) $plan['wouldMigrate'];
+            $manual    = (int) $plan['needsReview'];
             $cleanFlag = '0';
             if ($clean === true) {
                 $cleanFlag = '1';
@@ -191,4 +212,71 @@ class RecordInlineSecretMigrationStatus implements IRepairStep
             );
         }//end try
     }//end run()
+
+    /**
+     * Execute the inline-secret migration. Fail-closed and NON-FATAL.
+     *
+     * A total executor failure (an absent or too-old broker, a container that
+     * cannot resolve the broker) is caught here and swallowed so it can never brick
+     * an `occ upgrade`. The subsequent recording pass re-reads the true state, so a
+     * migration that could not run simply keeps the gate closed — no inline secret
+     * is ever nulled without a verified round-trip (the executor's own contract).
+     *
+     * Secret-free: only the migration COUNTS and the broker error's class/message
+     * (never a secret) are surfaced.
+     *
+     * @param OrObjectService              $objectService The OpenRegister object service.
+     * @param InlineSecretMigrationPlanner $planner       The read-safe planner (reused by the executor).
+     * @param IOutput                      $output        The output interface.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+     */
+    protected function runMigration(OrObjectService $objectService, InlineSecretMigrationPlanner $planner, IOutput $output): void
+    {
+        try {
+            $executor = $this->makeExecutor(objectService: $objectService, planner: $planner);
+            $result   = $executor->migrateAll();
+
+            // Counts only — never a secret.
+            $output->info(
+                sprintf(
+                    'OpenConnector: inline-secret migration ran — %d migrated, %d blocked, %d failed, %d skipped.',
+                    (int) $result['migrated'],
+                    (int) $result['blocked'],
+                    (int) $result['failed'],
+                    (int) $result['skipped']
+                )
+            );
+        } catch (Throwable $e) {
+            // A blocked/old/absent broker (or any executor-level failure) must NOT
+            // abort the upgrade and must NOT record a clean gate. The recording pass
+            // will observe the still-dirty state and keep Phase D closed.
+            $output->warning('OpenConnector: inline-secret migration could not run: '.$e->getMessage());
+            $this->logger->warning(
+                '[openconnector] RecordInlineSecretMigrationStatus: executor did not run; inline secrets left intact',
+                ['errorClass' => get_class($e)]
+            );
+        }//end try
+    }//end runMigration()
+
+    /**
+     * Build the migration executor (a protected seam so tests can inject a double).
+     *
+     * @param OrObjectService              $objectService The OpenRegister object service.
+     * @param InlineSecretMigrationPlanner $planner       The read-safe planner reused for classification + the post-run gate.
+     *
+     * @return InlineSecretMigrationExecutor The executor.
+     *
+     * @spec exclude Construction seam — no domain behavior (overridden in tests).
+     */
+    protected function makeExecutor(OrObjectService $objectService, InlineSecretMigrationPlanner $planner): InlineSecretMigrationExecutor
+    {
+        return new InlineSecretMigrationExecutor(
+            objectService: $objectService,
+            planner: $planner,
+            logger: $this->logger
+        );
+    }//end makeExecutor()
 }//end class
