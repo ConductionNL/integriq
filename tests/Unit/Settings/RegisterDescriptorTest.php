@@ -83,6 +83,9 @@ class RegisterDescriptorTest extends TestCase
      * Was 34 — `notificaties_abonnement` added by
      * openspec/changes/notificaties-api-subscriber, bringing the count to 35.
      *
+     * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
+     * bringing the count to 36.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -141,6 +144,8 @@ class RegisterDescriptorTest extends TestCase
         'DsoMessage'                 => 'dso_message',
         // ZGW Notificaties API subscriber/publisher — added by notificaties-api-subscriber spec.
         'NotificatiesAbonnement'     => 'notificaties_abonnement',
+        // StUF-ZKN (StUF-ZKN 3.10) bridge — added by stuf-zkn-bridge spec.
+        'StufMessage'                => 'stuf_message',
     ];
 
     /**

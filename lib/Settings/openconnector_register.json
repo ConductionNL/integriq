@@ -9,7 +9,7 @@
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk) + fsc_service/fsc_call (fsc-connectivity connector — FSC directory resolution cache and per-call audit log, correlated by organisation+service) + dso_verzoek/dso_message (dso-connector-adapter — completes the pre-existing DSO STAM koppelvlak, which validated+parsed a Verzoek but never persisted it; dso_verzoek is the inbound Verzoek lifecycle record declaring x-openregister-handoff targeting ns#Case, dso_message is the outbound status/besluit audit log, correlated by verzoekUuid). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk) + fsc_service/fsc_call (fsc-connectivity connector — FSC directory resolution cache and per-call audit log, correlated by organisation+service) + dso_verzoek/dso_message (dso-connector-adapter — completes the pre-existing DSO STAM koppelvlak, which validated+parsed a Verzoek but never persisted it; dso_verzoek is the inbound Verzoek lifecycle record declaring x-openregister-handoff targeting ns#Case, dso_message is the outbound status/besluit audit log, correlated by verzoekUuid) + stuf_message (stuf-zkn-bridge connector — audit record for one inbound zakLk01/edcLk01 kennisgeving or one outbound zakLk01 kennisgeving send, StUF-ZKN 3.10 SOAP bridge letting a municipality adopt procest without first migrating off its legacy StUF estate, correlated by referentienummer with idempotent redelivery). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -52,6 +52,7 @@
           "rule",
           "sms_message",
           "source",
+          "stuf_message",
           "synchronization",
           "synchronization_contract",
           "synchronization_contract_log",
@@ -4365,6 +4366,90 @@
           "error": {
             "type": "string",
             "description": "Transport/provider failure detail (outbound) or unresolved-kenmerk detail (inbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "stuf_message": {
+        "slug": "stuf_message",
+        "title": "StUF-ZKN Message",
+        "icon": "FileXmlBox",
+        "version": "1.0.0",
+        "summary": "Audit record for one inbound zakLk01/edcLk01 kennisgeving or one outbound zakLk01 kennisgeving send, produced by the stuf-zkn-bridge connector",
+        "description": "A StUF-ZKN Message tracks either one inbound zakLk01/edcLk01 kennisgeving (a municipality's legacy StUF estate pushing a zaak/document create/update/vervallen) or one outbound zakLk01 kennisgeving (an OR/ZGW zaak change translated and sent to a subscribed StUF consumer) — never merged into a single mutable row, except that a redelivered inbound message with the same referentienummer updates its own row in place (idempotency), never creating a duplicate. See openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md.",
+        "required": [
+          "direction",
+          "berichttype",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound kennisgeving send or an inbound kennisgeving receipt",
+            "title": "Direction"
+          },
+          "berichttype": {
+            "type": "string",
+            "enum": [
+              "zakLk01",
+              "edcLk01",
+              "unknown"
+            ],
+            "description": "The StUF-ZKN berichttype tag; \"unknown\" when an inbound envelope could not even be identified",
+            "title": "Berichttype"
+          },
+          "referentienummer": {
+            "type": "string",
+            "description": "The stuurgegevens.referentienummer this message carries — the idempotency/correlation key for redelivery detection and the Bv03/Fo03 crossRefnummer",
+            "title": "Referentienummer"
+          },
+          "verwerkingssoort": {
+            "type": "string",
+            "enum": [
+              "T",
+              "W",
+              "I",
+              "V"
+            ],
+            "description": "StUF 3.01 core verwerkingssoort: T=toevoeging, W=wijziging, I=wijziging van een identificerend gegeven, V=vervallen; null when unknown (translation failed before it could be read)",
+            "title": "Verwerkingssoort"
+          },
+          "entiteittype": {
+            "type": "string",
+            "enum": [
+              "ZAK",
+              "EDC"
+            ],
+            "description": "StUF entiteittype: ZAK (zaak) or EDC (document); null when unknown",
+            "title": "Entiteittype"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "processed",
+              "sent",
+              "failed"
+            ],
+            "description": "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome)",
+            "title": "Status"
+          },
+          "error": {
+            "type": "string",
+            "description": "Translation/OR-upsert failure detail (inbound) or transport/provider failure detail (outbound); null on success",
             "title": "Error"
           },
           "syncedAt": {

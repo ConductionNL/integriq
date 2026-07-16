@@ -58,6 +58,7 @@
 		<job>OCA\OpenConnector\Cron\KissPullJob</job>
 		<job>OCA\OpenConnector\Cron\ApprovalTimeoutSweepJob</job>
 		<job>OCA\OpenConnector\Cron\IwmoIjwRetryJob</job>
+		<job>OCA\OpenConnector\Cron\StufZknRetryJob</job>
 	</background-jobs>
 
 	<commands>
