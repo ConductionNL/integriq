@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Service\ConsumerScopeService;
+use OCA\OpenConnector\Service\Scope\IpMatcher;
+use OCA\OpenConnector\Service\Scope\ReverseDnsResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -40,6 +42,11 @@ class ConsumerScopeServiceTest extends TestCase
     /**
      * Build the service under test with a stubbed DNS seam.
      *
+     * Uses the REAL IpMatcher — the address arithmetic is exactly what these
+     * tests are asserting — and stubs only the DNS round-trip, via a
+     * ReverseDnsResolver subclass overriding its lookup seams. That keeps the
+     * forward-confirmation logic itself under test rather than mocked away.
+     *
      * @param array $ptr     Map of ip => PTR hostname.
      * @param array $forward Map of hostname => list of addresses it forward-resolves to.
      *
@@ -47,39 +54,41 @@ class ConsumerScopeServiceTest extends TestCase
      */
     private function makeService(array $ptr = [], array $forward = []): ConsumerScopeService
     {
-        $cache        = $this->createMock(ICache::class);
+        $cache = $this->createMock(ICache::class);
         $cache->method('get')->willReturn(null);
         $cacheFactory = $this->createMock(ICacheFactory::class);
         $cacheFactory->method('createDistributed')->willReturn($cache);
 
-        return new class($cacheFactory, $this->createMock(LoggerInterface::class), $ptr, $forward) extends ConsumerScopeService
+        $ipMatcher = new IpMatcher();
+
+        $resolver = new class($cacheFactory, $ipMatcher, $ptr, $forward) extends ReverseDnsResolver
         {
 
 
             /**
-             * @param ICacheFactory   $cacheFactory Cache factory.
-             * @param LoggerInterface $logger       Logger.
-             * @param array           $ptr          Stubbed reverse-DNS map.
-             * @param array           $forward      Stubbed forward-DNS map.
+             * @param ICacheFactory $cacheFactory Cache factory.
+             * @param IpMatcher     $ipMatcher    Real matcher.
+             * @param array         $ptr          Stubbed reverse-DNS map.
+             * @param array         $forward      Stubbed forward-DNS map.
              */
             public function __construct(
                 ICacheFactory $cacheFactory,
-                LoggerInterface $logger,
+                IpMatcher $ipMatcher,
                 private array $ptr,
                 private array $forward
             ) {
-                parent::__construct($cacheFactory, $logger);
+                parent::__construct($cacheFactory, $ipMatcher);
             }
 
 
             /**
-             * @param string $ip The client IP.
+             * @param string $address The client IP.
              *
              * @return string|null The stubbed PTR hostname.
              */
-            protected function reverseLookup(string $ip): ?string
+            protected function reverseLookup(string $address): ?string
             {
-                return ($this->ptr[$ip] ?? null);
+                return ($this->ptr[$address] ?? null);
             }
 
 
@@ -93,6 +102,8 @@ class ConsumerScopeServiceTest extends TestCase
                 return ($this->forward[$hostname] ?? []);
             }
         };
+
+        return new ConsumerScopeService($ipMatcher, $resolver, $this->createMock(LoggerInterface::class));
     }//end makeService()
 
 

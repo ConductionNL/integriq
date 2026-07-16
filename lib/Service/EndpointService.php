@@ -335,7 +335,7 @@ class EndpointService
      * @return Response The response `handleRequest()` produced, or a 500 `JSONResponse`
      *                   when synthetic-request construction fails (see `buildSyntheticRequest()`).
      *
-     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
      */
     public function triggerFromFlow(ObjectEntity $endpoint, array $parameters=[]): Response
     {
@@ -366,7 +366,7 @@ class EndpointService
      *
      * @return IRequest A synthetic GET request carrying `$parameters`.
      *
-     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operations-onevent-must-dispatch-to-endpointservicetriggerfromflow-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
      */
     private function buildSyntheticRequest(array $parameters): IRequest
     {
@@ -513,7 +513,7 @@ class EndpointService
      *
      * @throws Exception When endpoint configuration is invalid.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      */
     private function dispatchAfterBeforeRules(
         ObjectEntity $endpoint,
@@ -551,7 +551,7 @@ class EndpointService
             if ($rateLimitResponse !== null) {
                 return $rateLimitResponse;
             }
-        }
+        }//end if
 
         // Update request data with rule processing results.
         $flowToken = $this->updateRequestWithRuleData(flowToken: $flowToken, ruleData: $ruleResult);
@@ -652,7 +652,7 @@ class EndpointService
      *
      * @return Response The resumed pipeline's final result.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      */
     public function resumeFromApproval(
         ObjectEntity $endpoint,
@@ -2144,7 +2144,7 @@ class EndpointService
      * @return array|JSONResponse Returns modified data or error response if rule fails.
      *
      * @spec openspec/specs/rule-pipeline/spec.md
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      */
     private function processRules(
         ObjectEntity $endpoint,
@@ -2336,8 +2336,8 @@ class EndpointService
      *
      * @throws Exception When configured with `timing: after` (invalid configuration).
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/rule-pipeline/spec.md#req-rule-008-approval-rule-action-type-suspends-the-pipeline
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     * @spec openspec/specs/rule-pipeline/spec.md#requirement-approval-rule-action-type-suspends-the-pipeline-req-rule-008
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-endpoint-rule-pipeline-suspension-on-approval-action-req-001
      */
     private function processApprovalRule(ObjectEntity $rule, ObjectEntity $endpoint, FlowToken $flowToken, string $timing): JSONResponse
     {
@@ -2440,7 +2440,7 @@ class EndpointService
      *
      * @return ObjectEntity|null The endpoint entity, or null when not found.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
      */
     public function getEndpointById(string $id): ?ObjectEntity
     {
