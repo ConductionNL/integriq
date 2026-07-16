@@ -83,6 +83,18 @@ return [
 		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
 
+		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
+		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
+		// standard, letting a municipality adopt procest without ripping out
+		// its StUF estate first. The inbound SOAP endpoint is gated by webhook
+		// signature (HMAC), not an NC session, and always replies with a
+		// Bv03/Fo03 StUF body — see StufZknController::inbound(). The outbound
+		// push endpoint is an authenticated NC-session call (production
+		// binding for sibling apps' own zaak modules) — mirrors
+		// iwmoIjw#createBericht.
+		['name' => 'stufZkn#inbound', 'url' => '/api/stuf-zkn/inbound', 'verb' => 'POST'],
+		['name' => 'stufZkn#outbound', 'url' => '/api/stuf-zkn/kennisgevingen', 'verb' => 'POST'],
+
 		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
 		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both
 		// routes are authenticated NC-session calls (production binding for
