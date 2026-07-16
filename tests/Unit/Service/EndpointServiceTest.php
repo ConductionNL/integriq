@@ -641,4 +641,365 @@ class EndpointServiceTest extends TestCase
 
         $this->assertSame($expectedResponse, $result);
     }//end testTriggerFromFlowSynthesizesRequestAndDelegatesToHandleRequest()
+
+
+    /**
+     * Build a dedicated EndpointService instance for the trace-propagation
+     * tests below, with a caller-supplied RuleService mock (so `custom` rule
+     * dispatch is assertable) and container mock (so `save_object`'s OR
+     * write is assertable never-called under dry-run).
+     *
+     * @param \PHPUnit\Framework\MockObject\MockObject      $ruleService     RuleService mock.
+     * @param \PHPUnit\Framework\MockObject\MockObject      $container       ContainerInterface mock.
+     * @param \PHPUnit\Framework\MockObject\MockObject|null $mappingService  Optional MappingService mock
+     *                                                                       (the `mapping` rule's collaborator).
+     * @param \PHPUnit\Framework\MockObject\MockObject|null $syncService     Optional SynchronizationService mock
+     *                                                                       (the `synchronization` rule's collaborator).
+     *
+     * @return EndpointService
+     */
+    private function buildServiceForTraceTests($ruleService, $container, $mappingService=null, $syncService=null): EndpointService
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+
+        if ($mappingService === null) {
+            $mappingService = $this->createMock(MappingService::class);
+        }
+
+        if ($syncService === null) {
+            $syncService = $this->createMock(SynchronizationService::class);
+        }
+
+        return new EndpointService(
+            $this->objectService,
+            $this->createMock(CallService::class),
+            $logger,
+            $this->urlGenerator,
+            $mappingService,
+            $this->orObjectService,
+            $this->createMock(IConfig::class),
+            $this->createMock(StorageService::class),
+            $this->createMock(AuthorizationService::class),
+            $container,
+            $syncService,
+            $ruleService,
+            new \OCA\OpenConnector\Service\WebhookSignatureService($logger),
+            $this->createMock(\OCA\OpenConnector\Service\RateLimit\InboundRateLimitService::class),
+            new CompositeFanoutRule($this->orObjectService, $logger),
+            new ReferentienummerRule(),
+            new AvgBsnPolicyRule(),
+            $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+            $this->createMock(IRequestId::class),
+            $this->createMock(FlowRunnerService::class),
+        );
+    }//end buildServiceForTraceTests()
+
+
+    /**
+     * A traced pipeline records one step per evaluated rule, in order,
+     * including a `skipped` status for a rule whose conditions fail —
+     * execution-trace REQ-002, rule-pipeline REQ-RULE-010.
+     *
+     * @return void
+     */
+    public function testProcessRulesEmitsOrderedStepsIncludingSkipped(): void
+    {
+        $ruleService = $this->createMock(RuleService::class);
+        $ruleService->method('processCustomRule')->willReturn(['body' => ['ok' => true]]);
+        $container = $this->createMock(ContainerInterface::class);
+
+        $service = $this->buildServiceForTraceTests($ruleService, $container);
+
+        $endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => ['rule-skip', 'rule-custom']], 'endpoint-trace-1');
+
+        $skippedRule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['order' => 10, 'name' => 'Skipped rule', 'type' => 'custom', 'timing' => 'before', 'conditions' => ['==' => [1, 2]]],
+            'rule-skip'
+        );
+        $customRule  = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['order' => 20, 'name' => 'Custom rule', 'type' => 'custom', 'timing' => 'before'],
+            'rule-custom'
+        );
+
+        $this->orObjectService->method('find')->willReturnCallback(
+            static function (string $id, ...$rest) use ($skippedRule, $customRule) {
+                unset($rest);
+                return match ($id) {
+                    'rule-skip' => $skippedRule,
+                    'rule-custom' => $customRule,
+                    default => null,
+                };
+            }
+        );
+
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+        $trace     = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-1');
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processRules');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $service,
+            $endpoint,
+            $this->createMock(\OCP\IRequest::class),
+            ['parameters' => [], 'headers' => [], 'path' => '/x', 'method' => 'GET', 'body' => []],
+            'before',
+            null,
+            $flowToken,
+            null,
+            $trace,
+            false
+        );
+
+        $steps = $trace->getSteps();
+        $this->assertCount(2, $steps);
+        $this->assertSame(1, $steps[0]['order']);
+        $this->assertSame('skipped', $steps[0]['status']);
+        $this->assertSame(2, $steps[1]['order']);
+        $this->assertSame('success', $steps[1]['status']);
+    }//end testProcessRulesEmitsOrderedStepsIncludingSkipped()
+
+
+    /**
+     * When no ExecutionTraceContext is supplied, processRules() behaves
+     * identically to its pre-existing, untraced behaviour — no step
+     * buffering occurs (there is nothing to assert on since no trace object
+     * exists), and the rule chain still runs to completion — rule-pipeline
+     * REQ-RULE-010 Notes.
+     *
+     * @return void
+     */
+    public function testProcessRulesWithoutTraceRunsUnaffected(): void
+    {
+        $ruleService = $this->createMock(RuleService::class);
+        $ruleService->method('processCustomRule')->willReturn(['body' => ['ok' => true]]);
+        $container = $this->createMock(ContainerInterface::class);
+
+        $service = $this->buildServiceForTraceTests($ruleService, $container);
+
+        $endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => ['rule-custom']], 'endpoint-trace-2');
+        $customRule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['order' => 10, 'name' => 'Custom rule', 'type' => 'custom', 'timing' => 'before'],
+            'rule-custom'
+        );
+        $this->orObjectService->method('find')->willReturn($customRule);
+
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processRules');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            $service,
+            $endpoint,
+            $this->createMock(\OCP\IRequest::class),
+            ['parameters' => [], 'headers' => [], 'path' => '/x', 'method' => 'GET', 'body' => []],
+            'before',
+            null,
+            $flowToken,
+            null,
+            null,
+            false
+        );
+
+        $this->assertIsArray($result);
+        $this->assertSame(['ok' => true], $result['body']);
+    }//end testProcessRulesWithoutTraceRunsUnaffected()
+
+
+    /**
+     * Under a dry-run replay, a `save_object` rule does NOT perform its
+     * write — the OpenRegister ObjectService is never resolved from the
+     * container — and the recorded step carries `status: 'skipped_dry_run'`
+     * — rule-pipeline REQ-RULE-011.
+     *
+     * @return void
+     */
+    public function testProcessRulesDryRunSuppressesSaveObjectWrite(): void
+    {
+        $ruleService = $this->createMock(RuleService::class);
+        $container   = $this->createMock(ContainerInterface::class);
+        $container->expects($this->never())->method('get');
+
+        $service = $this->buildServiceForTraceTests($ruleService, $container);
+
+        $endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => ['rule-save']], 'endpoint-trace-3');
+        $saveRule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['order' => 10, 'name' => 'Save object', 'type' => 'save_object', 'timing' => 'before', 'configuration' => ['save_object' => ['register' => 'openconnector', 'schema' => 'x']]],
+            'rule-save'
+        );
+        $this->orObjectService->method('find')->willReturn($saveRule);
+
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+        $trace     = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-3');
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processRules');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $service,
+            $endpoint,
+            $this->createMock(\OCP\IRequest::class),
+            ['parameters' => [], 'headers' => [], 'path' => '/x', 'method' => 'GET', 'body' => []],
+            'before',
+            null,
+            $flowToken,
+            null,
+            $trace,
+            true
+        );
+
+        $steps = $trace->getSteps();
+        $this->assertCount(1, $steps);
+        $this->assertSame('skipped_dry_run', $steps[0]['status']);
+    }//end testProcessRulesDryRunSuppressesSaveObjectWrite()
+
+
+    /**
+     * Under a dry-run replay, a `mapping` rule (no external side-effect) is
+     * NOT suppressed — the mapping is applied for real and the step carries a
+     * normal `status: 'success'` — rule-pipeline REQ-RULE-011's
+     * "dryRun does not suppress a mapping rule" scenario.
+     *
+     * @return void
+     */
+    public function testProcessRulesDryRunDoesNotSuppressMappingRule(): void
+    {
+        $mappingService = $this->createMock(MappingService::class);
+        $mappingService->method('getMapping')->willReturn($this->createMock(\OCA\OpenRegister\Db\Mapping::class));
+        // The mapping MUST actually execute under dryRun — this expectation is
+        // the assertion that REQ-RULE-011 does not over-suppress.
+        $mappingService->expects($this->once())
+            ->method('executeMapping')
+            ->willReturn(['mapped' => true]);
+
+        $service = $this->buildServiceForTraceTests(
+            $this->createMock(RuleService::class),
+            $this->createMock(ContainerInterface::class),
+            $mappingService
+        );
+
+        $endpoint    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => ['rule-map']], 'endpoint-trace-4');
+        $mappingRule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['order' => 10, 'name' => 'Map it', 'type' => 'mapping', 'timing' => 'before', 'configuration' => ['mapping' => 'mapping-1']],
+            'rule-map'
+        );
+        $this->orObjectService->method('find')->willReturn($mappingRule);
+
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+        $trace     = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-4');
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processRules');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $service,
+            $endpoint,
+            $this->createMock(\OCP\IRequest::class),
+            ['parameters' => [], 'headers' => [], 'path' => '/x', 'method' => 'GET', 'body' => []],
+            'before',
+            null,
+            $flowToken,
+            null,
+            $trace,
+            true
+        );
+
+        $steps = $trace->getSteps();
+        $this->assertCount(1, $steps);
+        $this->assertSame('success', $steps[0]['status']);
+        $this->assertNotSame('skipped_dry_run', $steps[0]['status']);
+    }//end testProcessRulesDryRunDoesNotSuppressMappingRule()
+
+
+    /**
+     * Under a dry-run replay, a `synchronization` rule is a deliberate partial
+     * exception: it is NOT blanket-skipped but forwards `isTest: true` into
+     * SynchronizationService::synchronize(), reusing synchronization-engine
+     * REQ-011's existing no-write guarantee — rule-pipeline REQ-RULE-011's
+     * "dryRun forwards isTest to a synchronization rule" scenario.
+     *
+     * @return void
+     */
+    public function testProcessRulesDryRunForwardsIsTestToSynchronizationRule(): void
+    {
+        $synchronizationEntity = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'sync-1'], 'sync-uuid-dry');
+        // processSyncRule()'s debug line reads the entity's own `name` column
+        // (not the object body) via the Entity __call getter.
+        $synchronizationEntity->setName('sync-1');
+
+        $syncService = $this->createMock(SynchronizationService::class);
+        $syncService->method('getSynchronization')->willReturn($synchronizationEntity);
+        $syncService->expects($this->once())
+            ->method('synchronize')
+            ->with(
+                $this->anything(),
+                // isTest MUST be true under dryRun.
+                true,
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->isInstanceOf(\OCA\OpenConnector\Service\Helper\ExecutionTraceContext::class)
+            )
+            ->willReturn(['result' => []]);
+
+        $service = $this->buildServiceForTraceTests(
+            $this->createMock(RuleService::class),
+            $this->createMock(ContainerInterface::class),
+            null,
+            $syncService
+        );
+
+        $endpoint = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'ep', 'rules' => ['rule-sync']], 'endpoint-trace-5');
+        $syncRule = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'order'         => 10,
+                'name'          => 'Sync it',
+                'type'          => 'synchronization',
+                'timing'        => 'before',
+                'configuration' => ['synchronization' => 'sync-uuid-dry'],
+            ],
+            'rule-sync'
+        );
+        $this->orObjectService->method('find')->willReturn($syncRule);
+
+        $flowToken = new \OCA\OpenConnector\Service\Helper\FlowToken();
+        $trace     = new \OCA\OpenConnector\Service\Helper\ExecutionTraceContext(entryPoint: 'endpoint', entryPointId: 'endpoint-trace-5');
+
+        $method = new \ReflectionMethod(EndpointService::class, 'processRules');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $service,
+            $endpoint,
+            $this->createMock(\OCP\IRequest::class),
+            ['parameters' => [], 'headers' => [], 'path' => '/x', 'method' => 'GET', 'body' => []],
+            'before',
+            null,
+            $flowToken,
+            null,
+            $trace,
+            true
+        );
+
+        // Not blanket-skipped — the rule ran (for real, in test mode).
+        $steps = $trace->getSteps();
+        $this->assertCount(1, $steps);
+        $this->assertNotSame('skipped_dry_run', $steps[0]['status']);
+        // Guards the regression this test surfaced: processSyncRule() used to
+        // throw BadFunctionCallException on getSourceConfig(), which
+        // processRules() swallowed into a generic 500 + an `error` step.
+        $this->assertSame('success', $steps[0]['status']);
+    }//end testProcessRulesDryRunForwardsIsTestToSynchronizationRule()
 }//end class
