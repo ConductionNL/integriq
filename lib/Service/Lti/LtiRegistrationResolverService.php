@@ -212,7 +212,7 @@ class LtiRegistrationResolverService
     public function findDeploymentByUuid(string $deploymentUuid): ?ObjectEntity
     {
         try {
-            return $this->orObjectService->find(
+            $deployment = $this->orObjectService->find(
                 id: $deploymentUuid,
                 register: 'openconnector',
                 schema: 'lti_deployment',
@@ -222,6 +222,18 @@ class LtiRegistrationResolverService
         } catch (DoesNotExistException $exception) {
             return null;
         }
+
+        // REQ-LTI-001 scenario 2 defensive re-check, at the single owner of
+        // deployment-by-uuid resolution — the read-time counterpart to the OR
+        // schema `oneOf` write-time constraint the docblock references. Every
+        // live AGS/NRPS dispatch resolves its deployment through this method,
+        // so an ambiguous row (both `ltiPlatformId` and `ltiToolId`, or
+        // neither) that reached storage bypassing OR validation now fails
+        // closed here instead of silently resolving to an ambiguous
+        // registration at token-issuance/roster-read time.
+        $this->assertSingleRegistrationReference(deploymentData: $deployment->getObject());
+
+        return $deployment;
 
     }//end findDeploymentByUuid()
 
