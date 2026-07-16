@@ -304,12 +304,20 @@ here.
   translation layer with a `log`/sandbox default so the full
   inbound→mapped→handoff→outbound path is demonstrable and testable without
   any live DSO-LV access.
-- **PKIoverheid client-certificate (mTLS) auth on the OUTBOUND leg is not
-  implemented** — `DsoClient` uses Bearer-token auth as a documented
-  deviation (§5); a future revision adds `configuration.certPath`/mTLS
-  support without touching `DsoConnectorProviderInterface`. Note the
-  INBOUND leg already has real PKIoverheid chain validation
+- ~~PKIoverheid client-certificate (mTLS) auth on the OUTBOUND leg is not
+  implemented~~ — **CLOSED by `mtls-client-certificate-transport`
+  (2026-07-16)**: `DsoClient::send()` now dispatches over a real PKIoverheid
+  mutual-TLS connection when its source's
+  `configuration.authentication.mode=mtls` is configured
+  (`ICrypto`-encrypted-at-rest certificate/key/optional passphrase/optional
+  CA bundle under `configuration.authentication.mtls`), via the shared
+  `OCA\OpenConnector\Service\Mtls\MtlsTransportService`. Bearer-token mode
+  remains the default and is unchanged. This is independent of the INBOUND
+  leg's existing PKIoverheid chain validation
   (`DSOSignatureVerifierService`, pre-existing, unaffected by this change).
+  What remains operator-side: actual DSO-LV certification and PKIoverheid
+  certificate issuance/provisioning (see the item above — unchanged, still
+  deferred).
 - **The exact DSO-LV outbound status/besluit endpoint paths, payload field
   names, and response envelope are unverified** (§5) — isolated to
   `DsoClient` alone should a correction be needed.

@@ -48,6 +48,17 @@
  * `BrokeredCallService` — see design.md "Provider seam, credential
  * storage, feature gating".
  *
+ * mTLS: closed by `mtls-client-certificate-transport` — set
+ * `configuration.authentication.mode=mtls` (default remains `token`) and
+ * populate `configuration.authentication.mtls` (ICrypto-encrypted
+ * certificate/key/optional passphrase/optional CA bundle, same at-rest
+ * pattern as the token above) to dispatch the downstream `call()` over a
+ * real mutual-TLS connection via {@see
+ * \OCA\OpenConnector\Service\Mtls\MtlsTransportService}, standing in for a
+ * real Outway process. Directory `resolveService()` lookups stay
+ * unauthenticated/plain (mirrors a real FSC Directory, which is not itself
+ * behind the Outway/Inway mTLS boundary). Token mode is unchanged.
+ *
  * @category Service
  * @package  OCA\OpenConnector\Service\Fsc
  *
@@ -71,6 +82,9 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenConnector\Exception\FscConnectivityException;
 use OCA\OpenConnector\Exception\FscDirectoryException;
+use OCA\OpenConnector\Exception\MtlsTransportException;
+use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use Psr\Http\Message\ResponseInterface;
@@ -97,16 +111,20 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
     /**
      * Constructor.
      *
-     * @param Client          $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
-     * @param ICrypto         $crypto     Encrypts/decrypts the stored API token at rest.
-     * @param IL10N           $l          The localization service.
-     * @param LoggerInterface $logger     Logger for secret-free failure diagnostics.
+     * @param Client               $httpClient         Guzzle client (test seam: inject one with a MockHandler stack).
+     * @param ICrypto              $crypto             Encrypts/decrypts the stored API token at rest.
+     * @param IL10N                $l                  The localization service.
+     * @param LoggerInterface      $logger             Logger for secret-free failure diagnostics.
+     * @param MtlsConfigResolver   $mtlsConfigResolver Resolves `authentication.mtls` into a certificate bundle.
+     * @param MtlsTransportService $mtlsTransport      Dispatches the request with a client certificate attached.
      */
     public function __construct(
         private readonly Client $httpClient,
         private readonly ICrypto $crypto,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly MtlsConfigResolver $mtlsConfigResolver,
+        private readonly MtlsTransportService $mtlsTransport,
     ) {
 
     }//end __construct()
@@ -144,19 +162,35 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
                 ],
                 'authentication' => [
                     'type'       => 'object',
-                    'required'   => ['encryptedToken'],
                     'properties' => [
+                        'mode'           => [
+                            'type'        => 'string',
+                            'enum'        => ['token', 'mtls'],
+                            'default'     => 'token',
+                            'description' => '`token` (default) sends a Bearer Authorization header from '
+                                .'`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
+                                .'`mtls.*` — closes the real Outway/Inway transport gap.',
+                        ],
                         'encryptedToken' => [
                             'type'        => 'string',
-                            'description' => 'The FSC-fronting API token, encrypted at rest via '
-                                .'OCP\\Security\\ICrypto — never store the raw token. NOTE: the real FSC transport '
-                                .'is mutual TLS between Outway/Inway gateway processes, not a bearer token — see '
-                                .'design.md "Outway/mTLS deviation".',
+                            'description' => 'Required when `mode=token` (the default). The FSC-fronting API token, '
+                                .'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
                         ],
                         'scheme'         => [
                             'type'        => 'string',
-                            'description' => 'Authorization header scheme.',
+                            'description' => 'Authorization header scheme, used only when `mode=token`.',
                             'default'     => self::DEFAULT_AUTH_SCHEME,
+                        ],
+                        'mtls'           => [
+                            'type'        => 'object',
+                            'description' => 'Required when `mode=mtls`. Client certificate material, each field '
+                                .'individually encrypted at rest via OCP\\Security\\ICrypto.',
+                            'properties'  => [
+                                'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
+                                'encryptedPrivateKey'  => ['type' => 'string', 'description' => 'PEM private key.'],
+                                'encryptedPassphrase'  => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
+                                'encryptedCaBundle'    => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
+                            ],
                         ],
                     ],
                 ],
@@ -278,18 +312,41 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
             );
         }
 
+        $authConfig = (array) ($directoryConfig['authentication'] ?? []);
+        $useMtls    = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Accept'       => 'application/json',
+        ];
+        if ($useMtls === false) {
+            // Token mode (default) — unchanged from before this change.
+            $headers['Authorization'] = $this->buildAuthorizationHeader(directoryConfig: $directoryConfig);
+        }
+
         $requestOptions = [
-            'headers'     => [
-                'Authorization' => $this->buildAuthorizationHeader(directoryConfig: $directoryConfig),
-                'Content-Type'  => 'application/json',
-                'Accept'        => 'application/json',
-            ],
+            'headers'     => $headers,
             'json'        => $payload,
             'http_errors' => false,
         ];
 
         try {
-            $response = $this->httpClient->request(strtoupper($method), $endpoint, $requestOptions);
+            $response = $this->dispatch(
+                useMtls: $useMtls,
+                authConfig: $authConfig,
+                method: strtoupper($method),
+                url: $endpoint,
+                requestOptions: $requestOptions
+            );
+        } catch (MtlsTransportException $exception) {
+            $this->logger->warning(
+                '[FscDirectoryClient] mTLS call failed',
+                ['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+            );
+            throw new FscConnectivityException(
+                message: 'The FSC mTLS call failed ('.$exception->getErrorCode().'): '.$exception->getMessage(),
+                previous: $exception
+            );
         } catch (GuzzleException $exception) {
             $this->logger->warning(
                 '[FscDirectoryClient] unexpected transport failure',
@@ -299,7 +356,7 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
                 message: 'The FSC call failed unexpectedly: '.$exception->getMessage(),
                 previous: $exception
             );
-        }
+        }//end try
 
         $status = $response->getStatusCode();
         $body   = (string) $response->getBody();
@@ -314,6 +371,41 @@ class FscDirectoryClient implements FscConnectivityProviderInterface
         ];
 
     }//end call()
+
+    /**
+     * Dispatch the downstream call over mTLS when configured, else over the
+     * existing token-mode path (unchanged). Never falls back between the
+     * two: an mTLS resolve/handshake failure propagates as
+     * {@see MtlsTransportException}.
+     *
+     * @param boolean $useMtls        Whether `authentication.mode=mtls` is configured.
+     * @param array   $authConfig     The source's `configuration.directory.authentication` object.
+     * @param string  $method         The already-uppercased HTTP method.
+     * @param string  $url            The absolute request URL.
+     * @param array   $requestOptions The Guzzle request options.
+     *
+     * @return ResponseInterface The Guzzle response.
+     *
+     * @throws MtlsTransportException When mTLS is configured but the material is unusable or the handshake fails.
+     * @throws GuzzleException        When the token-mode dispatch fails.
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-fscdirectoryclient-routes-through-the-mtls-transport-when-configured
+     */
+    private function dispatch(
+        bool $useMtls,
+        array $authConfig,
+        string $method,
+        string $url,
+        array $requestOptions
+    ): ResponseInterface {
+        if ($useMtls === true) {
+            $bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
+            return $this->mtlsTransport->request($this->httpClient, $method, $url, $requestOptions, $bundle);
+        }
+
+        return $this->httpClient->request($method, $url, $requestOptions);
+
+    }//end dispatch()
 
     /**
      * Extract a usable reference from the response — prefers an
