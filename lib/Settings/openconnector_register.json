@@ -1458,7 +1458,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": [
@@ -4690,7 +4690,7 @@
         "slug": "lti_platform",
         "title": "LTI Platform",
         "icon": "SchoolOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An external LTI 1.3 Platform (LMS) that may launch into this instance — this instance acts as Tool",
         "description": "An lti_platform row describes an external Platform (e.g. a Moodle-based state platform) that launches a signed id_token INTO this instance via OIDC third-party-initiated login. This instance acts as Tool for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [
@@ -4851,7 +4851,7 @@
         "slug": "lti_tool",
         "title": "LTI Tool",
         "icon": "ApplicationOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
         "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
         "required": [

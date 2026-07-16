@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment — lti-tool-lockdown (ocon#147 phase C). SECURITY FIX. The `lti_tool` schema had NO `authorization` block, so it fell back to OpenRegister's default: readable by ANY authenticated user. An LTI Tool registration is admin-owned trust config — its `clientId`, `oidcLoginUrl`, `launchUrl` and `jwksUri` define which external tool this instance launches into and trusts — and it carries the (now writeOnly) private signing keys. Every verb is admin-only, mirroring source/consumer/lti_platform: operators provision tools under Beheer > Authenticatie and the launch runtime consumes them. Nothing regresses: LtiRegistrationResolverService / LtiKeyService / LtiLaunchService read every tool registration with _rbac: false, so launch and JWKS publish keep working for anonymous and non-admin callers.",
+	"components": {
+		"schemas": {
+			"lti_tool": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}
