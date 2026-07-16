@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Copyright (C) 2026 Conduction B.V.
 
+// Must run before any other import so webpack's publicPath is set before the
+// first lazy chunk loads (fixes chunk 404s on non-/apps install paths).
+import './publicpath.js'
+
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import { PiniaVuePlugin } from 'pinia'
