@@ -20,7 +20,17 @@ key management (REQ-LTI-002) MUST surface under *Beheer > Authenticatie*, per
 ADR-017 Rule 3/Rule 7 (the same sanctioned split as
 `digid-eherkenning-auth-adapter`).
 
-@e2e exclude adapter catalogue registration + schema declaration — covered by PHPUnit, no dedicated browser journey
+The `lti_deployment` "exactly one of `lti_platform` OR `lti_tool`" constraint
+MUST be enforced not only at write time (the OpenRegister schema `oneOf`) but
+also **at read time**, when a deployment is resolved for dispatch. The single
+deployment-by-uuid resolution owner (`LtiRegistrationResolverService::findDeploymentByUuid()`,
+called by every AGS token-issuance and NRPS roster-read dispatch) MUST re-assert
+the single-reference constraint and fail closed (reject the resolution) on any
+deployment referencing both registrations or neither — so a row that reached
+storage bypassing OR write-time validation cannot resolve to an ambiguous
+registration at token-issuance or roster-read time.
+
+@e2e exclude adapter catalogue registration + schema declaration + read-time deployment-resolution gate — covered by PHPUnit, no dedicated browser journey
 
 #### Scenario: LTI ships as an Adapters card referencing three schemas
 
@@ -38,6 +48,19 @@ ADR-017 Rule 3/Rule 7 (the same sanctioned split as
 - **THEN** it SHALL reference exactly one of `lti_platform` or `lti_tool`
   (never both, never neither)
 - @e2e exclude schema validation — covered by PHPUnit
+
+#### Scenario: the single-reference constraint is re-asserted at dispatch-time deployment resolution
+
+- **GIVEN** an `lti_deployment` row that references BOTH an `ltiPlatformId`
+  and an `ltiToolId` (or neither), reaching storage past OR write-time
+  validation
+- **WHEN** a live AGS token-issuance or NRPS roster-read dispatch resolves that
+  deployment by UUID
+- **THEN** resolution SHALL fail closed with an `LtiValidationException`
+  rather than returning an ambiguous deployment
+- **AND** a well-formed deployment referencing exactly one registration SHALL
+  resolve unchanged
+- @e2e exclude backend read-time deployment-resolution gate — covered by PHPUnit
 
 ### Requirement: Own signing-key lifecycle with rotation and a per-registration JWKS publish endpoint (REQ-LTI-002)
 
