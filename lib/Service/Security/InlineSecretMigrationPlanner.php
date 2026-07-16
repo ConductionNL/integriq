@@ -397,13 +397,16 @@ class InlineSecretMigrationPlanner
      * {@see readRawSource()}. Reading identity through the render boundary keeps
      * the raw-secret surface as small as possible — one object at a time.
      *
+     * Public so {@see AuthenticationConfigAuditor} can enumerate the SAME fleet
+     * through the SAME listing rather than re-implementing it (ocon#232).
+     *
      * @param int $limit Maximum number of sources to list.
      *
      * @return array<string, string> uuid => name.
      *
      * @spec openspec/changes/migrate-inline-secrets-to-broker/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-plan
      */
-    private function listSourceUuids(int $limit): array
+    public function listSourceUuids(int $limit): array
     {
         try {
             $result = $this->objectService->findAll(

@@ -1,5 +1,5 @@
 {
-  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt, authenticationConfig) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
+  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). The top-level `authenticationConfig` field is NOT seeded at all: ocon#232 established it is vestigial (nothing reads it), so seeding it would plant dead data on every install and teach the wrong pattern — credentials belong under `configuration.authentication`. Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
   "source": [
     {
       "@self": { "register": "openconnector", "schema": "source", "slug": "example-rest-api" },
@@ -29,11 +29,22 @@
     {
       "@self": { "register": "openconnector", "schema": "source", "slug": "example-oauth2" },
       "name": "Example OAuth2 Source",
-      "description": "Placeholder source using OAuth2 client credentials. Replace authenticationConfig before enabling.",
+      "description": "Placeholder source using OAuth2 client credentials. Replace configuration.authentication before enabling.",
       "type": "api",
       "location": "https://oauth.example.com",
       "auth": "oauth",
-      "authenticationConfig": { "client_id": "<placeholder>", "client_secret": "<placeholder>", "token_url": "https://oauth.example.com/token" },
+      "$comment": "ocon#232: the OAuth parameters live under `configuration.authentication` because that is what AuthenticationRuntime::oauthToken() actually reads (`new Dot($source['configuration'])` -> `authentication`). This seed previously used the top-level `authenticationConfig` field, which NOTHING reads — it seeded dead data into every install and modelled a pattern that silently produces unauthenticated calls.",
+      "configuration": {
+        "headers": { "Authorization": "Bearer {{ oauthToken(source) }}" },
+        "authentication": {
+          "grant_type": "client_credentials",
+          "authentication": "body",
+          "tokenUrl": "https://oauth.example.com/token",
+          "scope": "api",
+          "client_id": "<placeholder>",
+          "client_secret": "<placeholder>"
+        }
+      },
       "isEnabled": false,
       "test": true,
       "version": "1.0.0"
