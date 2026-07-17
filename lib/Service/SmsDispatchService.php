@@ -35,6 +35,7 @@ use DateTime;
 use OCA\OpenConnector\Exception\SmsProviderException;
 use OCA\OpenConnector\Service\Sms\DeliveryResult;
 use OCA\OpenConnector\Service\Sms\LogSmsProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Service\Sms\PhoneNumberValidator;
 use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
 use OCA\OpenConnector\Service\Sms\SmsProviderInterface;
@@ -95,12 +96,13 @@ class SmsDispatchService
     /**
      * Constructor.
      *
-     * @param ORObjectService      $objectService    OR object service for source/message persistence.
-     * @param LogSmsProvider       $logProvider      The sandbox provider binding.
-     * @param RestNotifyNlProvider $notifyNlProvider The NotifyNL REST provider binding.
-     * @param EventService         $eventService     Emits delivery-status CloudEvents.
-     * @param IL10N                $l                The localization service.
-     * @param LoggerInterface      $logger           Logger for non-fatal diagnostics.
+     * @param ORObjectService      $objectService     OR object service for source/message persistence.
+     * @param LogSmsProvider       $logProvider       The sandbox provider binding.
+     * @param RestNotifyNlProvider $notifyNlProvider  The NotifyNL REST provider binding.
+     * @param EventService         $eventService      Emits delivery-status CloudEvents.
+     * @param IL10N                $l                 The localization service.
+     * @param LoggerInterface      $logger            Logger for non-fatal diagnostics.
+     * @param RawSourceResolver    $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -109,6 +111,7 @@ class SmsDispatchService
         private readonly EventService $eventService,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -393,7 +396,7 @@ class SmsDispatchService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 

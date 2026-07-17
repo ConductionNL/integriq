@@ -26,6 +26,7 @@ use OCA\OpenConnector\Service\Dso\DsoClient;
 use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
 use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
 use OCA\OpenConnector\Service\DsoIngestService;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
@@ -115,6 +116,20 @@ class DsoIngestServiceTest extends TestCase
                     return ($this->verzoekStore[(string) $id] ?? null);
                 }
 
+                // RawSourceResolver re-reads the located source by uuid with
+                // `_render: false` (ocon#242). The fake must model that read, or
+                // the synthetic fallback below silently REPLACES the source with
+                // a credential-free stub and the assertions stop meaning anything.
+                if ($schema === DsoIngestService::SCHEMA_SOURCE) {
+                    foreach ($this->sourceFixtures as $sourceFixture) {
+                        if ($sourceFixture->getUuid() === (string) $id) {
+                            return $sourceFixture;
+                        }
+                    }
+
+                    return null;
+                }
+
                 // Handoff-target lookups: any non-verzoek find() returns a synthetic target entity.
                 return $this->buildEntity(['title' => 'Case'], (string) $id);
             }
@@ -168,7 +183,8 @@ class DsoIngestServiceTest extends TestCase
             translator: new DsoVerzoekTranslator(),
             logProvider: new LogDsoConnectorProvider(),
             restProvider: $this->restProvider,
-            logger: $this->createMock(LoggerInterface::class)
+            logger: $this->createMock(LoggerInterface::class),
+            rawSourceResolver: new RawSourceResolver($objectService, $this->createMock(LoggerInterface::class))
         );
 
     }//end buildService()

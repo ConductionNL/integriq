@@ -22,6 +22,7 @@ namespace OCA\OpenConnector\Tests\Unit\Service;
 
 use OCA\OpenConnector\Exception\SmsProviderException;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Service\Sms\DeliveryResult;
 use OCA\OpenConnector\Service\Sms\LogSmsProvider;
 use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
@@ -101,7 +102,8 @@ class SmsDispatchServiceTest extends TestCase
             $this->notifyNlProvider,
             $this->eventService,
             $this->l,
-            $this->logger
+            $this->logger,
+            new RawSourceResolver($this->objectService, $this->logger)
         );
 
     }//end setUp()

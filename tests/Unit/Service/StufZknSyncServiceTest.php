@@ -26,6 +26,7 @@ use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
 use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
 use OCA\OpenConnector\Service\StufZkn\StufZknAcknowledgementBuilder;
 use OCA\OpenConnector\Service\StufZkn\StufZknClient;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Service\StufZknSyncService;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -188,7 +189,8 @@ class StufZknSyncServiceTest extends TestCase
             new InboundBerichtTranslator(),
             new OutboundKennisgevingTranslator(),
             new StufZknAcknowledgementBuilder(),
-            $this->logger
+            $this->logger,
+            new RawSourceResolver($this->objectService, $this->logger)
         );
 
     }//end setUp()

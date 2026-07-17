@@ -37,6 +37,7 @@ use OCA\OpenConnector\Exception\FscDirectoryException;
 use OCA\OpenConnector\Service\Fsc\FscConnectivityProviderInterface;
 use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
 use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
@@ -89,14 +90,16 @@ class FscCallService
     /**
      * Constructor.
      *
-     * @param ORObjectService            $objectService OR object service for source/cache/log persistence.
-     * @param LogFscConnectivityProvider $logProvider   The sandbox provider binding.
-     * @param FscDirectoryClient         $restProvider  The generic REST provider binding.
+     * @param ORObjectService            $objectService     OR object service for source/cache/log persistence.
+     * @param LogFscConnectivityProvider $logProvider       The sandbox provider binding.
+     * @param FscDirectoryClient         $restProvider      The generic REST provider binding.
+     * @param RawSourceResolver          $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
         private readonly LogFscConnectivityProvider $logProvider,
         private readonly FscDirectoryClient $restProvider,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -249,7 +252,7 @@ class FscCallService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 
