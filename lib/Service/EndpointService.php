@@ -2766,11 +2766,26 @@ class EndpointService
     private function getRuleById(string $id): ?ObjectEntity
     {
         try {
-            return $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'rule', _rbac: false, _multitenancy: false);
+            // SECURITY (ocon#147 / openregister#459 / #463): an `authentication`-type rule stores
+            // its inbound apiKey => userId impersonation map at `configuration.authentication.keys`,
+            // now declared write-only (99-rule-nested-auth-writeonly.json). The write-only strip is
+            // SCHEMA-gated (RenderObject::schemaHasWriteOnlyRule), NOT `_rbac`-gated — so `_rbac: false`
+            // alone still comes back stripped and `processAuthenticationRule()` would call
+            // authorizeApiKey() with an EMPTY keys map, refusing every inbound apiKey. Only `_render: false`
+            // returns the raw entity BEFORE renderEntity()'s strip, so the engine keeps seeing the keys.
+            // This mirrors CallService::resolveSourceForDispatch()'s raw source re-resolve (ocon#215/#236).
+            return $this->orObjectService->find(
+                id: $id,
+                register: 'openconnector',
+                schema: 'rule',
+                _rbac: false,
+                _multitenancy: false,
+                _render: false
+            );
         } catch (Exception $e) {
             $this->logger->error('Error fetching rule: '.$e->getMessage());
             return null;
-        }
+        }//end try
     }//end getRuleById()
 
     /**

@@ -254,6 +254,56 @@ class AuthorizationServiceApiKeyTest extends TestCase
 
 
     /**
+     * SECURITY (ocon#147 last residual): inbound apiKey auth end-to-end through
+     * authorizeApiKey() given a RAW-read rule. The rule's `configuration.authentication.keys`
+     * map is now write-only, so EndpointService::getRuleById() reads it with `_render: false`;
+     * this test proves that the keys map the engine gets from that raw read authenticates the
+     * mapped Nextcloud user exactly as before the strip.
+     *
+     * @return void
+     */
+    public function testRawReadRuleKeysAuthenticateInboundApiKey(): void
+    {
+        // The engine reads the rule raw (_render: false), so the keys map arrives intact.
+        $rawRuleKeys = ['SUPER-SECRET-INBOUND-KEY-1' => 'alice'];
+
+        $this->orObjectService->expects($this->never())->method('findAll');
+
+        $user = $this->createMock(IUser::class);
+        $this->userManager->expects($this->once())->method('get')->with('alice')->willReturn($user);
+        $this->userSession->expects($this->once())->method('setUser')->with($user);
+
+        $service = $this->makeService();
+        $service->authorizeApiKey(header: 'SUPER-SECRET-INBOUND-KEY-1', keys: $rawRuleKeys);
+
+        // Rule-inline keys authenticate a NC user, not a consumer.
+        $this->assertNull($service->getResolvedConsumer());
+    }//end testRawReadRuleKeysAuthenticateInboundApiKey()
+
+
+    /**
+     * SECURITY (ocon#147 last residual): the mirror image — a STRIPPED read. If getRuleById()
+     * had used only `_rbac: false` (not `_render: false`), the write-only strip would blank the
+     * keys map and the engine would call authorizeApiKey() with `keys: []`. With no consumer
+     * backing the presented key, auth then fails closed (401). This documents why `_render: false`
+     * is load-bearing: without it, every inbound apiKey is refused.
+     *
+     * @return void
+     */
+    public function testStrippedRuleKeysRefuseInboundApiKey(): void
+    {
+        // A stripped rule yields an empty keys map; no consumer matches the presented key.
+        $this->orObjectService->method('findAll')->willReturn(['results' => []]);
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $service = $this->makeService();
+
+        $this->expectException(AuthenticationException::class);
+        $service->authorizeApiKey(header: 'SUPER-SECRET-INBOUND-KEY-1', keys: []);
+    }//end testStrippedRuleKeysRefuseInboundApiKey()
+
+
+    /**
      * A matching consumer without a backing userId is still authenticated.
      *
      * @return void

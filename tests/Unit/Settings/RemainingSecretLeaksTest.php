@@ -9,11 +9,15 @@
  *  - `rule` — an `authentication`-type rule stores its inbound API keys at
  *    `configuration.authentication.keys` (a map of apiKey => nextcloud userId; a caller
  *    presenting one authenticates AS that user). The secret is NESTED inside the untyped
- *    `configuration` object, and the rule editor reads that whole object back to populate
- *    every action form — so it can be neither writeOnly-stripped (OpenRegister resolves
- *    writeOnly from TOP-LEVEL properties only) nor blanket-hidden. The fix is a schema-level
- *    admin-only lockdown: the engine reads rules with `_rbac: false`, so execution is
- *    unaffected, and non-admins can no longer read the impersonation keys.
+ *    `configuration` object. Phase C first shipped a schema-level admin-only lockdown, which
+ *    closed the disclosure to NON-admins but left an admin-readable residual (blanket-hiding
+ *    `configuration` breaks the editor, and OpenRegister then resolved writeOnly from TOP-LEVEL
+ *    properties only). The ocon#147 LAST residual closes that gap: openregister#459 added
+ *    `x-openregister-writeonly-paths`, so 99-rule-nested-auth-writeonly.json declares
+ *    `configuration.authentication.keys` write-only — stripped from EVERY rendered read (admins
+ *    included). The engine is unaffected because EndpointService::getRuleById() re-reads the rule
+ *    with `_render: false`, and the editor omits the keys on save so openregister#463 preserves
+ *    them (see RuleNestedAuthWriteOnlyTest). The admin-only lockdown remains in place on top.
  *  - `lti_platform` / `lti_tool` — `signingKeys[].privateKeySecret` is PEM private-key
  *    material. Nested in an array, so the whole `signingKeys` array is marked writeOnly
  *    (the public JWKS is served via `_rbac: false`, unaffected). Plus an admin-only lockdown,
@@ -210,7 +214,10 @@ class RemainingSecretLeaksTest extends TestCase
     public function testTouchedSchemasHadTheirVersionBumped(): void
     {
         $expected = [
-            'rule'                  => '1.2.0',
+            // rule bumped 1.2.0 -> 1.3.0 in 99-rule-nested-auth-writeonly.json: the ocon#147
+            // last residual makes `configuration.authentication.keys` write-only, closing the
+            // admin-readable inbound-apiKey impersonation map the lockdown phase left open.
+            'rule'                  => '1.3.0',
             'lti_platform'          => '1.1.0',
             'lti_tool'              => '1.1.0',
             'eudi_credential_offer' => '1.1.0',
