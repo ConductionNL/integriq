@@ -2,6 +2,7 @@
 import { ruleStore, navigationStore, mappingStore, synchronizationStore, sourceStore } from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 import { Rule } from '../../entities/index.js'
+import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
 import { translate as t } from '@nextcloud/l10n'
 </script>
 
@@ -206,6 +207,9 @@ import { translate as t } from '@nextcloud/l10n'
 						:options="authenticationTypeOptions.options"
 						:input-label="t('openconnector', 'Authentication Type')" />
 					<template v-if="authenticationTypeOptions.value.value === 'api-key'">
+						<NcNoteCard type="warning">
+							{{ t('openconnector', 'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.') }}
+						</NcNoteCard>
 						<VueDraggable v-model="apiKeys" easing="ease-in-out" draggable="div:not(:last-child)">
 							<div v-for="(item, index) in apiKeys" :key="index" class="draggable-item-container">
 								<div :class="`draggable-form-item ${getTheme()}`">
@@ -1543,17 +1547,17 @@ export default {
 				configuration.javascript = this.ruleItem.configuration.javascript
 				break
 			case 'authentication':
-				configuration.authentication = {
+				// SECURITY (ocon#147 / openregister#463): the inbound apiKey => userId map is
+				// write-only, so this editor never sees the stored keys and `apiKeys` seeds empty.
+				// buildAuthenticationConfiguration() OMITS `keys` when no complete new key was
+				// entered, so openregister#463 preserves the stored keys instead of the PUT-null-fill
+				// destroying them. Only a non-empty `keys` REPLACES the stored keys. See that module.
+				configuration.authentication = buildAuthenticationConfiguration({
 					type: this.authenticationTypeOptions.value.value,
 					users: this.ruleItem.configuration.authentication.users.map(user => user.id),
 					groups: this.ruleItem.configuration.authentication.groups.map(group => group.value),
-					keys: this.apiKeys
-						.filter(key => key.apiKey && key.user?.id) // Filter out incomplete entries
-						.map(key => ({
-							[key.apiKey]: key.user.id,
-						}))
-						.filter(Boolean),
-				}
+					apiKeys: this.apiKeys,
+				})
 				break
 			case 'download':
 				configuration.download = {
