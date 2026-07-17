@@ -36,6 +36,7 @@ use OCA\OpenConnector\Exception\KissProviderException;
 use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
 use OCA\OpenConnector\Service\Kiss\KlantinteractiesProviderInterface;
 use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -112,11 +113,12 @@ class KissSyncService
     /**
      * Constructor.
      *
-     * @param ORObjectService             $objectService OR object service for source/klantcontact persistence.
-     * @param LogKlantinteractiesProvider $logProvider   The sandbox provider binding.
-     * @param KlantinteractiesClient      $restProvider  The generic REST provider binding.
-     * @param IL10N                       $l             The localization service.
-     * @param LoggerInterface             $logger        Logger for non-fatal diagnostics.
+     * @param ORObjectService             $objectService     OR object service for source/klantcontact persistence.
+     * @param LogKlantinteractiesProvider $logProvider       The sandbox provider binding.
+     * @param KlantinteractiesClient      $restProvider      The generic REST provider binding.
+     * @param IL10N                       $l                 The localization service.
+     * @param LoggerInterface             $logger            Logger for non-fatal diagnostics.
+     * @param RawSourceResolver           $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -124,6 +126,7 @@ class KissSyncService
         private readonly KlantinteractiesClient $restProvider,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -357,7 +360,7 @@ class KissSyncService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 

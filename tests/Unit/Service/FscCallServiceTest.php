@@ -25,10 +25,12 @@ use OCA\OpenConnector\Exception\FscDirectoryException;
 use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
 use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
 use OCA\OpenConnector\Service\FscCallService;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the FSC directory-resolve-then-call routing (provider selection,
@@ -142,7 +144,12 @@ class FscCallServiceTest extends TestCase
             }
         );
 
-        $this->service = new FscCallService($this->objectService, $this->logProvider, $this->restProvider);
+        $this->service = new FscCallService(
+            $this->objectService,
+            $this->logProvider,
+            $this->restProvider,
+            new RawSourceResolver($this->objectService, $this->createMock(LoggerInterface::class))
+        );
 
     }//end setUp()
 

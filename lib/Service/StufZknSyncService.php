@@ -52,6 +52,7 @@ namespace OCA\OpenConnector\Service;
 use DateTime;
 use OCA\OpenConnector\Exception\StufZknProviderException;
 use OCA\OpenConnector\Exception\StufZknTranslationException;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Service\StufZkn\InboundBerichtTranslator;
 use OCA\OpenConnector\Service\StufZkn\LogStufZknProvider;
 use OCA\OpenConnector\Service\StufZkn\OutboundKennisgevingTranslator;
@@ -151,6 +152,7 @@ class StufZknSyncService
      * @param OutboundKennisgevingTranslator $outboundTranslator Translates an OR zaak into a kennisgeving.
      * @param StufZknAcknowledgementBuilder  $ackBuilder         Builds Bv03/Fo03 replies.
      * @param LoggerInterface                $logger             Logger for non-fatal diagnostics.
+     * @param RawSourceResolver              $rawSourceResolver  Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -160,6 +162,7 @@ class StufZknSyncService
         private readonly OutboundKennisgevingTranslator $outboundTranslator,
         private readonly StufZknAcknowledgementBuilder $ackBuilder,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -397,7 +400,7 @@ class StufZknSyncService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 

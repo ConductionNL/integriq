@@ -24,6 +24,7 @@ use OCA\OpenConnector\Exception\KissProviderException;
 use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
 use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
 use OCA\OpenConnector\Service\KissSyncService;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -152,7 +153,8 @@ class KissSyncServiceTest extends TestCase
             $this->logProvider,
             $this->restProvider,
             $this->l,
-            $this->logger
+            $this->logger,
+            new RawSourceResolver($this->objectService, $this->logger)
         );
 
     }//end setUp()
