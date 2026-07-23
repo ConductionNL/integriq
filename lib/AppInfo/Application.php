@@ -33,6 +33,7 @@ use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\OpenConnector\Capabilities;
 use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
 use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
@@ -403,6 +404,11 @@ class Application extends App implements IBootstrap
         // without a notifier registered under this app id, the notification
         // manager silently drops it when preparing it for display.
         $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
+
+        // dashboard-http-datasource: advertise the capability so a leaf
+        // dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
+        // for the resolve façade via the OCS capabilities document.
+        $context->registerCapability(Capabilities::class);
     }//end register()
 
     /**
