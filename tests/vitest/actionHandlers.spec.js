@@ -38,6 +38,7 @@ import { setRouter } from '../../src/handlers/routerRef.js'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 } from '../../src/handlers/modalBus.js'
 
@@ -48,12 +49,18 @@ beforeEach(() => {
 })
 
 describe('POST action handlers — endpoint + success toast', () => {
-	it('testSourceHandler posts to /api/sources/test/{id} (prefers id over uuid)', async () => {
-		post.mockResolvedValueOnce({})
-		await testSourceHandler({ item: { id: 7, uuid: 'u-7' } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/sources/test/7')
-		expect(showSuccess).toHaveBeenCalledTimes(1)
-		expect(showError).not.toHaveBeenCalled()
+	it('testSourceHandler opens the Test-connection modal (emits EVENT_OPEN_TEST_SOURCE), no POST', () => {
+		const spy = vi.fn()
+		modalBus.$on(EVENT_OPEN_TEST_SOURCE, spy)
+		const item = { id: 7, uuid: 'u-7', name: 'my-source' }
+		testSourceHandler({ item })
+		modalBus.$off(EVENT_OPEN_TEST_SOURCE, spy)
+		// The handler now hands the whole source to the modal (which resolves id/uuid and
+		// runs the request interactively) rather than firing a blind POST + toast.
+		expect(spy).toHaveBeenCalledTimes(1)
+		expect(spy).toHaveBeenCalledWith({ source: item })
+		expect(post).not.toHaveBeenCalled()
+		expect(showSuccess).not.toHaveBeenCalled()
 	})
 
 	it('runJobHandler posts to /api/jobs/run/{id}', async () => {
@@ -81,10 +88,10 @@ describe('POST action handlers — endpoint + success toast', () => {
 		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/synchronizations/9/test')
 	})
 
-	it('falls back to uuid when id is absent', async () => {
+	it('testSynchronizationHandler falls back to uuid when id is absent', async () => {
 		post.mockResolvedValueOnce({})
-		await testSourceHandler({ item: { uuid: 'abc' } })
-		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/sources/test/abc')
+		await testSynchronizationHandler({ item: { uuid: 'abc' } })
+		expect(post).toHaveBeenCalledWith('/index.php/apps/openconnector/api/synchronizations/abc/test')
 	})
 })
 

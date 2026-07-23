@@ -30,6 +30,7 @@ import { translate as t } from '@nextcloud/l10n'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
@@ -72,13 +73,10 @@ function errorDetail(err) {
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
-export async function testSourceHandler({ item }) {
-	try {
-		await axios.post(generateUrl(`/apps/openconnector/api/sources/test/${rowId(item)}`))
-		showSuccess(t('openconnector', 'Source connection test triggered'))
-	} catch (err) {
-		showError(t('openconnector', 'Source connection test failed') + errorDetail(err))
-	}
+export function testSourceHandler({ item }) {
+	// Open the interactive Test-connection modal (method + endpoint + body input,
+	// live request, full response panel) instead of the old fire-and-forget POST.
+	modalBus.$emit(EVENT_OPEN_TEST_SOURCE, { source: item })
 }
 
 /**

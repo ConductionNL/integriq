@@ -33,6 +33,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for source-test and call-log endpoints.
@@ -58,6 +59,7 @@ class SourcesController extends Controller
      * @param IL10N             $l               The localization service.
      * @param IUserSession      $userSession     The user session.
      * @param ActionAuthService $actionAuth      The action authorization service.
+     * @param LoggerInterface   $logger          Logger for source-test failures.
      *
      * @return void
      */
@@ -68,6 +70,7 @@ class SourcesController extends Controller
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -304,10 +307,35 @@ class SourcesController extends Controller
             }
         }
 
-        // Fire the call.
-        $callLog = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
+        // Fire the call. Any failure inside the engine must surface as a clean JSON
+        // error, never an empty 200: an uncaught Throwable here previously produced a
+        // blank response the UI could not interpret ("no response data"). Catching it
+        // keeps the endpoint's contract — always JSON — so the Test-connection modal can
+        // show the operator what went wrong.
+        try {
+            $callLog = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'Source test failed: '.$e->getMessage(),
+                ['app' => 'openconnector', 'sourceId' => $id, 'exception' => $e]
+            );
+            return new JSONResponse(
+                data: ['error' => $this->l->t('The source test could not be completed: %s', [$e->getMessage()])],
+                statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
+            );
+        }
 
-        return new JSONResponse($callLog->getObject());
+        $result = $callLog->getObject();
+        if (is_array($result) === false || isset($result['response']) === false) {
+            // The engine returned without a usable response (e.g. an early-exit CallLog).
+            // Give the UI an explicit error rather than an empty/opaque body.
+            return new JSONResponse(
+                data: ['error' => $this->l->t('The source test returned no response data.')],
+                statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
+            );
+        }
+
+        return new JSONResponse($result);
     }//end test()
 
     /**
