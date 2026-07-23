@@ -209,6 +209,13 @@ return [
 		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
 		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
 
+		// dashboard-http-datasource: governed, read-only "resolve one value
+		// from a configured source" façade for dashboard/widget hosts
+		// (openspec/changes/dashboard-http-datasource). Authenticated NC
+		// session; honours the source's own read-authorization (403
+		// otherwise); egress is always the stored source, never the caller.
+		['name' => 'datasource#resolve', 'url' => '/api/datasource/{sourceId}/resolve', 'verb' => 'POST'],
+
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
 		['name' => 'jobs#test', 'url' => '/api/jobs/test/{id}', 'verb' => 'POST'],
