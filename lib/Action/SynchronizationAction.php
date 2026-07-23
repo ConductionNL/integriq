@@ -98,12 +98,21 @@ class SynchronizationAction
             $response['stackTrace'][] = 'Force enabled for synchronization job';
         }
 
+        // Execution-trace REQ-001: JobService::executeJob() threads the
+        // active `job`-entryPoint trace context via this internal argument
+        // key (never part of the job's own persisted `arguments`). Only
+        // JobService populates this key, always with an ExecutionTraceContext
+        // or nothing — `synchronize(trace:)`'s own `?ExecutionTraceContext`
+        // type hint is the single source of truth for this contract.
+        $trace = ($argument['_executionTrace'] ?? null);
+
         // Run the synchronization.
         $response['stackTrace'][] = 'Doing the synchronization';
         try {
             $objects = $this->synchronizationService->synchronize(
                 synchronization: $synchronization,
-                force: $force
+                force: $force,
+                trace: $trace
             );
         } catch (TooManyRequestsHttpException $e) {
             $response['level']        = 'WARNING';

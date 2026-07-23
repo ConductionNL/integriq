@@ -79,7 +79,7 @@ class SourceMappingService
      *
      * @return Client The configured Guzzle client.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function getClient(array $config): Client
     {
@@ -100,8 +100,8 @@ class SourceMappingService
      *
      * @throws GuzzleException When the HTTP request fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-2
+     * @spec openspec/specs/object-service-shim/spec.md
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function saveObject(array $data, array $config): array
     {
@@ -136,7 +136,7 @@ class SourceMappingService
      *
      * @throws GuzzleException When the HTTP request fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function findObjects(array $filters, array $config): array
     {
@@ -172,7 +172,7 @@ class SourceMappingService
      *
      * @throws GuzzleException When the HTTP request fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function findObject(array $filters, array $config): array
     {
@@ -207,7 +207,7 @@ class SourceMappingService
      *
      * @throws GuzzleException When the HTTP request fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function updateObject(array $filters, array $update, array $config): array
     {
@@ -240,7 +240,7 @@ class SourceMappingService
      *
      * @throws GuzzleException When the HTTP request fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-1
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function deleteObject(array $filters, array $config): array
     {
@@ -270,7 +270,7 @@ class SourceMappingService
      *
      * @throws GuzzleException When the HTTP request fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-3
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function aggregateObjects(array $filters, array $pipeline, array $config):array
     {
@@ -301,7 +301,7 @@ class SourceMappingService
      * @throws ContainerExceptionInterface When the container fails.
      * @throws NotFoundExceptionInterface  When the service is not bound.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-4
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function getOpenRegisters(): ?\OCA\OpenRegister\Service\ObjectService
     {
@@ -335,7 +335,7 @@ class SourceMappingService
      * @throws NotFoundExceptionInterface  When the service is not bound.
      * @throws InvalidArgumentException    If an unknown object type is provided.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-service-shim/tasks.md#task-5
+     * @spec openspec/specs/object-service-shim/spec.md
      */
     public function getMapper(?string $objectType=null, ?int $schema=null, ?int $register=null): mixed
     {

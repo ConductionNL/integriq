@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use Exception;
 /**
  * Exception for EUDI wallet issuance protocol validation failures.
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
  */
 class EudiIssuanceException extends Exception
 {
@@ -79,7 +79,7 @@ class EudiIssuanceException extends Exception
      *
      * @return integer
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
      */
     public function getHttpStatus(): int
     {
@@ -92,7 +92,7 @@ class EudiIssuanceException extends Exception
      *
      * @return string|null
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
      */
     public function getErrorCode(): ?string
     {
@@ -105,7 +105,7 @@ class EudiIssuanceException extends Exception
      *
      * @return array The details array.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md
      */
     public function getDetails(): array
     {

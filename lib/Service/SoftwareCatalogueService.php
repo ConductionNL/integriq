@@ -108,7 +108,7 @@ class SoftwareCatalogueService
      * @throws \Psr\Container\ContainerExceptionInterface Container failure.
      * @throws \Psr\Container\NotFoundExceptionInterface  Container miss.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-1
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     public function extendModel(int|string $modelId): PromiseInterface
     {
@@ -184,7 +184,7 @@ class SoftwareCatalogueService
      *
      * @psalm-return PromiseInterface<void>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-1
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     public function extendView(array $viewPromise, array $modelPromise): PromiseInterface
     {
@@ -299,7 +299,7 @@ class SoftwareCatalogueService
      *
      * @psalm-return PromiseInterface<array>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-2
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function extendNode(array $node): PromiseInterface
     {
@@ -367,7 +367,7 @@ class SoftwareCatalogueService
      *
      * @return PromiseInterface The resulting promise.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-2
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function extendConnection(array $connection): PromiseInterface
     {
@@ -421,7 +421,7 @@ class SoftwareCatalogueService
      *
      * @return array|null The matching element or null if not found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-3
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function findElementForNode(array $node): ?array
     {
@@ -450,7 +450,7 @@ class SoftwareCatalogueService
      *
      * @return array|null The matching relationship or null if not found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-3
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function findRelationForConnection(array $connection): ?array
     {
@@ -479,7 +479,7 @@ class SoftwareCatalogueService
      *
      * @return array Array of relations.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-3
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function findRelationsForElement(array $element): array
     {
@@ -509,7 +509,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the operation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     public function handleNewOrganization(ObjectEntity $organization): void
     {
@@ -533,7 +533,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the operation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     public function handleNewContact(ObjectEntity $contact): void
     {
@@ -554,7 +554,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the operation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     public function handleContactUpdate(ObjectEntity $contact): void
     {
@@ -575,7 +575,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the operation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     public function handleContactDeletion(ObjectEntity $contact): void
     {
@@ -596,7 +596,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the email sending fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function sendWelcomeEmail(ObjectEntity $organization): void
     {
@@ -614,7 +614,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the notification sending fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function sendVngNotification(ObjectEntity $organization): void
     {
@@ -632,7 +632,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the security group creation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function createSecurityGroup(ObjectEntity $organization): void
     {
@@ -650,7 +650,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the user creation/enabling fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function createOrEnableUser(ObjectEntity $contact): void
     {
@@ -668,7 +668,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the user update fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function updateUser(ObjectEntity $contact): void
     {
@@ -686,7 +686,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the user disabling fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function disableUser(ObjectEntity $contact): void
     {
@@ -704,7 +704,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the email sending fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function sendContactWelcomeEmail(ObjectEntity $contact): void
     {
@@ -722,7 +722,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the email sending fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function sendContactUpdateEmail(ObjectEntity $contact): void
     {
@@ -740,7 +740,7 @@ class SoftwareCatalogueService
      *
      * @throws \Exception If the email sending fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-5
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function sendContactDeletionEmail(ObjectEntity $contact): void
     {

@@ -114,4 +114,41 @@ class SourceHandlerTest extends TestCase
 
         $this->assertSame('application/json', $export['configuration']['headers.Accept']);
     }//end testExportRetainsNonSensitiveHeaders()
+
+
+    /**
+     * environments-and-promotion REQ-010 regression — a Source's
+     * `configuration.authentication.credentialRef` placeholder passes
+     * through export byte-for-byte unchanged: neither `credentialId` nor
+     * `credentialName` matches `SensitiveFieldRegistry::SECRET_NAME_PATTERN`/
+     * `EXACT_MATCH_NAMES`, so `redactArray()` never touches it. Pins this
+     * previously-undocumented behaviour, which `environments-and-promotion`'s
+     * promotion-specific `credentialRefsNeedingRebind` classification relies on.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-credentialref-authentication-placeholders-pass-through-export-and-import-unresolved-and-untranslated-req-010
+     */
+    public function testExportLeavesCredentialRefPlaceholderUnredacted(): void
+    {
+        $source = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'slug'          => 'my-api-source',
+                'configuration' => [
+                    'authentication' => [
+                        'credentialRef' => ['credentialId' => '550e8400-e29b-41d4-a716-446655440000'],
+                    ],
+                ],
+            ],
+            'source-uuid-3'
+        );
+
+        $export = $this->handler->export($source, []);
+
+        $this->assertSame(
+            '550e8400-e29b-41d4-a716-446655440000',
+            $export['configuration']['authentication']['credentialRef']['credentialId']
+        );
+    }//end testExportLeavesCredentialRefPlaceholderUnredacted()
 }//end class

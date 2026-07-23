@@ -71,18 +71,18 @@ export default {
 	computed: {
 		// Both shapes round-trip — legacy `synchronization` was sometimes
 		// a bare id, sometimes nested under `synchronization.synchronization`.
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		syncId() {
 			return this.value?.synchronization || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSync() {
 			const id = String(this.syncId)
 			if (!id) return null
 			return this.syncOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		this.syncOptions = await fetchOpenRegisterCollection('synchronization')
@@ -90,7 +90,7 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		patchNumber(key, raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
@@ -102,7 +102,7 @@ export default {
 			if (Number.isNaN(num)) return
 			this.patch(key, num)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onSyncPick(option) {
 			const next = { ...(this.value || {}) }
 			if (option?.id) {

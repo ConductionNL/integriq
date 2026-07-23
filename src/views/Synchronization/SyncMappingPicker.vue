@@ -118,21 +118,21 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		primaryId() { return `sync-mapping-${this.pickerUid}-primary` },
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		reverseId() { return `sync-mapping-${this.pickerUid}-reverse` },
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		hashId() { return `sync-mapping-${this.pickerUid}-hash` },
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedPrimary() {
 			return this.resolveOption(this.value)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedReverse() {
 			return this.resolveOption(this.targetSourceValue)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedHash() {
 			return this.resolveOption(this.hashValue)
 		},
@@ -143,7 +143,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		resolveOption(id) {
 			if (!id) return null
 			return this.mappingOptions.find((opt) => opt.id === String(id)) ?? {
@@ -151,7 +151,7 @@ export default {
 				label: String(id),
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async fetchMappings() {
 			this.loading = true
 			try {

@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
+ * @spec openspec/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ namespace OCA\OpenConnector\Service\Payment;
 /**
  * Sandbox payment provider: canned checkout URL, synthetic payment ids, seeded status.
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
+ * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
  */
 class LogPaymentProvider implements PaymentProviderInterface
 {
@@ -59,7 +59,7 @@ class LogPaymentProvider implements PaymentProviderInterface
      *
      * @return array{providerPaymentId: string, paymentStatus: string, checkoutUrl: string, extras: array}
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
+     * @spec openspec/specs/live-payment-providers/spec.md#scenario-the-log-provider-creates-a-payment-without-a-network-call-or-secret
      */
     public function createPayment(array $sourceConfiguration, array $payload): array
     {
@@ -88,7 +88,7 @@ class LogPaymentProvider implements PaymentProviderInterface
      *
      * @return array{providerPaymentId: string, paymentStatus: string}
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
+     * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
      */
     public function fetchPaymentStatus(array $sourceConfiguration, string $providerPaymentId): array
     {

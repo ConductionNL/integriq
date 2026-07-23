@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenConnector\Service\IwmoIjw;
 /**
  * Sandbox iWMO/iJW provider: no network call, synthetic reference.
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class LogIwmoIjwProvider implements IwmoIjwProviderInterface
 {
@@ -51,7 +51,7 @@ class LogIwmoIjwProvider implements IwmoIjwProviderInterface
      *
      * @return string The stable `log` provider identifier.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -64,7 +64,7 @@ class LogIwmoIjwProvider implements IwmoIjwProviderInterface
      *
      * @return array<string, mixed> An empty schema — the log provider needs no configuration.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -81,7 +81,7 @@ class LogIwmoIjwProvider implements IwmoIjwProviderInterface
      *
      * @return string The synthetic `MOCK-IWMO-<n>` reference.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-the-log-provider-sends-nothing-over-the-network-and-returns-a-synthetic-ref
      */
     public function send(array $sourceConfiguration, string $berichttype, string $envelopeXml): string
     {

@@ -113,6 +113,48 @@ class SourceSecretsWriteOnlyTest extends TestCase
     }
 
     /**
+     * THE PRUNE TRAP (ocon#232): the BASE register JSON must keep declaring
+     * `authenticationConfig` even though the app can now remove it per-instance.
+     *
+     * ocon#232 makes `authenticationConfig` removable — it is vestigial (no code
+     * authenticates from it), so `occ openconnector:authentication-config
+     * --drop-schema-property` drops it from the LIVE schema on one instance. The
+     * tempting "tidy-up" is to delete the property from this JSON too. THAT WOULD BE
+     * A FLEET-WIDE, UNGATED DATA-LOSS BUG:
+     *
+     * OpenRegister's `Schema::hydrate()` applies `properties` via `setProperties()` —
+     * a WHOLESALE REPLACE — so a version-bumping register import
+     * (`ImportHandler::handleSchema` -> `updateFromArray`) PRUNES every property
+     * ABSENT from this file, on EVERY instance, regardless of whether that instance
+     * ever ran the audit or the removal command. Un-migrated `authenticationConfig`
+     * values on other instances would be orphaned on their next upgrade.
+     *
+     * Removal is per-instance and human-gated ON PURPOSE. Deleting the declaration
+     * here is a FUTURE change, valid only once the whole fleet has converged.
+     *
+     * This asserts against the BASE descriptor (not the merged view) because it is
+     * the base file that a version-bumping import replays.
+     *
+     * @return void
+     */
+    public function testTheBaseRegisterStillDeclaresAuthenticationConfig(): void
+    {
+        $root       = dirname(__DIR__, 3);
+        $descriptor = json_decode((string) file_get_contents($root.'/lib/Settings/openconnector_register.json'), true);
+
+        $properties = $descriptor['components']['schemas']['source']['properties'];
+
+        $this->assertArrayHasKey(
+            'authenticationConfig',
+            $properties,
+            'openconnector_register.json MUST keep declaring `authenticationConfig`. Schema::hydrate() '
+            .'REPLACES properties wholesale, so removing it here prunes the property fleet-wide on the next '
+            .'version-bumping import — ungated, on instances that never opted in. Per-instance removal is the '
+            .'ONLY sanctioned path (ocon#232).'
+        );
+    }
+
+    /**
      * A basic-auth username is not a secret and stays readable — the admin UI needs it to
      * show how a source is configured. Over-redacting would hurt without helping.
      *

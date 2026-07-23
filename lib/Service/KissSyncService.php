@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -36,6 +36,7 @@ use OCA\OpenConnector\Exception\KissProviderException;
 use OCA\OpenConnector\Service\Kiss\KlantinteractiesClient;
 use OCA\OpenConnector\Service\Kiss\KlantinteractiesProviderInterface;
 use OCA\OpenConnector\Service\Kiss\LogKlantinteractiesProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -48,7 +49,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 class KissSyncService
 {
@@ -112,11 +113,12 @@ class KissSyncService
     /**
      * Constructor.
      *
-     * @param ORObjectService             $objectService OR object service for source/klantcontact persistence.
-     * @param LogKlantinteractiesProvider $logProvider   The sandbox provider binding.
-     * @param KlantinteractiesClient      $restProvider  The generic REST provider binding.
-     * @param IL10N                       $l             The localization service.
-     * @param LoggerInterface             $logger        Logger for non-fatal diagnostics.
+     * @param ORObjectService             $objectService     OR object service for source/klantcontact persistence.
+     * @param LogKlantinteractiesProvider $logProvider       The sandbox provider binding.
+     * @param KlantinteractiesClient      $restProvider      The generic REST provider binding.
+     * @param IL10N                       $l                 The localization service.
+     * @param LoggerInterface             $logger            Logger for non-fatal diagnostics.
+     * @param RawSourceResolver           $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -124,6 +126,7 @@ class KissSyncService
         private readonly KlantinteractiesClient $restProvider,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -138,7 +141,7 @@ class KissSyncService
      *
      * @return integer The total number of klantcontacten upserted across every source in this sweep.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function pullAll(): int
     {
@@ -187,7 +190,7 @@ class KissSyncService
      *
      * @return array{processed: integer, skipped: integer, cursor: string|null} The sweep outcome.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function pullSource(ObjectEntity $source): array
     {
@@ -262,7 +265,7 @@ class KissSyncService
      *
      * @throws KissProviderException When no active KISS source is configured, or KISS rejects the request.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function pushKlantcontact(array $input): array
     {
@@ -333,7 +336,7 @@ class KissSyncService
      *
      * @throws KissProviderException When no active KISS source is configured.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -357,7 +360,7 @@ class KissSyncService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 
@@ -368,7 +371,7 @@ class KissSyncService
      *
      * @return KlantinteractiesProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function resolveProvider(array $configuration): KlantinteractiesProviderInterface
     {
@@ -394,7 +397,7 @@ class KissSyncService
      *
      * @return ObjectEntity The saved local record.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     private function upsertKlantcontact(array $item, string $direction, ?string $sourceApp): ObjectEntity
     {
@@ -484,7 +487,7 @@ class KissSyncService
      *         onderwerpobjectidentificator — e.g. linking to a different object type — is left
      *         unmapped, not misattributed as a case).
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-mapping-onderwerpobjecten-to-a-case-reference
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     private function extractCaseReference(array $onderwerpobjecten): array
     {
@@ -515,7 +518,7 @@ class KissSyncService
      *
      * @return array The betrokkenen array with any `bsn`-typed identifier value SHA-256-hashed.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-mapping-onderwerpobjecten-to-a-case-reference
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     private function redactBsnIdentifiers(array $betrokkenen): array
     {

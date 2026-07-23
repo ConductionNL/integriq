@@ -140,7 +140,7 @@ class JobHandler implements ConfigurationHandlerInterface
      *
      * @return Entity The imported job entity.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function import(array $data, array $mappings): Entity
     {

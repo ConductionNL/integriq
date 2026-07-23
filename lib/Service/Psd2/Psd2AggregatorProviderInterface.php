@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\OpenConnector\Exception\Psd2ProviderException;
 /**
  * A PSD2 AIS aggregator binding: SCA requisition + consent + accounts + transactions.
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
  */
 interface Psd2AggregatorProviderInterface
 {
@@ -51,7 +51,7 @@ interface Psd2AggregatorProviderInterface
      *
      * @throws Psd2ProviderException When the aggregator is unreachable, errors, or is misconfigured.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
      */
     public function createRequisition(array $sourceConfiguration, string $institutionId, string $redirectUrl): array;
 
@@ -74,7 +74,7 @@ interface Psd2AggregatorProviderInterface
      * @throws Psd2ProviderException       When the aggregator is unreachable, errors, or the reference is unknown.
      * @throws Psd2ConsentRevokedException When the consent was rejected/revoked at the bank.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
      */
     public function finaliseConsent(array $sourceConfiguration, string $reference): array;
 
@@ -89,7 +89,7 @@ interface Psd2AggregatorProviderInterface
      * @throws Psd2ProviderException       When the aggregator is unreachable or errors.
      * @throws Psd2ConsentRevokedException When the consent is no longer usable.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-account-discovery-after-consent-req-003
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-account-discovery-after-consent-req-003
      */
     public function listAccounts(array $sourceConfiguration, string $consentReference): array;
 
@@ -106,7 +106,7 @@ interface Psd2AggregatorProviderInterface
      * @throws Psd2ProviderException       When the aggregator is unreachable or errors (the caller MUST NOT advance its watermark).
      * @throws Psd2ConsentRevokedException When the consent is no longer usable.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
      */
     public function listTransactions(array $sourceConfiguration, string $accountId, string $since, string $until): array;
 }//end interface

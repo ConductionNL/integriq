@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 ### Added
+- Read-only MCP tool surface (ADR-063): 8 schemas (endpoint, job, mapping,
+  synchronization, synchronization_contract, call_log, job_log,
+  synchronization_log) declare an `x-openregister-mcp` dialect exposing only
+  `search` and `get` verbs, so AI agents can query integration state via MCP.
+  Credential-bearing schemas (source, consumer) are deliberately excluded; no
+  write/destructive verbs are exposed.
 - LTI Tool-role governance layer: a `status` (`pending | approved | suspended`)
   trust gate on `lti_platform`/`lti_tool` — a registration cannot complete a
   login/launch/token-issuance flow until an admin-gated `approve()` action

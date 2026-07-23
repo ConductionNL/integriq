@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * if/else dispatch on the inbound payload shape (a known providerMessageId vs. an
  * unrecognised payload) is more readable as one linear branch than an early return.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 class NotifyNlController extends Controller
 {
@@ -90,7 +90,7 @@ class NotifyNlController extends Controller
      *
      * @return JSONResponse The created `sms_message` record, or a 400/502 error envelope.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -159,7 +159,7 @@ class NotifyNlController extends Controller
      *
      * @return JSONResponse The (possibly updated) message, or a 400/404/502 error envelope.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -202,7 +202,7 @@ class NotifyNlController extends Controller
      *
      * @return JSONResponse `{received: true}` on success, 401 on signature failure.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]

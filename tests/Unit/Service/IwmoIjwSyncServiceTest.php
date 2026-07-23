@@ -27,6 +27,7 @@ use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
 use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator;
 use OCA\OpenConnector\Service\IwmoIjwSyncService;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -171,7 +172,8 @@ class IwmoIjwSyncServiceTest extends TestCase
             new OutboundBerichtTranslator(),
             new InboundRetourTranslator(),
             $l,
-            $this->logger
+            $this->logger,
+            new RawSourceResolver($this->objectService, $this->logger)
         );
 
     }//end setUp()

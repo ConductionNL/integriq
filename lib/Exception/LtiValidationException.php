@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenConnector\Exception;
  * `catch (AuthenticationException $e)` block, while adding an explicit HTTP
  * status so callers do not have to guess 400 vs 401 vs 403 from the message.
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md
+ * @spec openspec/specs/lti-platform/spec.md
  */
 class LtiValidationException extends AuthenticationException
 {
@@ -62,7 +62,7 @@ class LtiValidationException extends AuthenticationException
      *
      * @return integer
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function getHttpStatus(): int
     {

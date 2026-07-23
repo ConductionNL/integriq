@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Registration + deployment lookups for the LTI adapter.
  *
- * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-lti-registration-model-is-a-catalogue-entry-not-a-menu-req-lti-001
+ * @spec openspec/specs/lti-platform/spec.md#requirement-lti-registration-model-is-a-catalogue-entry-not-a-menu-req-lti-001
  */
 class LtiRegistrationResolverService
 {
@@ -75,7 +75,7 @@ class LtiRegistrationResolverService
      *
      * @return ObjectEntity|null The registration when (and only when) its `status` is `approved`; `null` otherwise.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-011
+     * @spec openspec/specs/lti-platform/spec.md#requirement-registration-trust-gate-a-platform-tool-is-unusable-until-an-admin-approves-it-req-lti-011
      */
     private function requireApproved(?ObjectEntity $registration, string $registrationType): ?ObjectEntity
     {
@@ -105,7 +105,7 @@ class LtiRegistrationResolverService
      *
      * @return ObjectEntity|null The registration, or null when not found.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-oidc-thirdparty-initiated-login-tool-role-req-lti-004
+     * @spec openspec/specs/lti-platform/spec.md#requirement-oidc-third-party-initiated-login-tool-role-req-lti-004
      */
     public function findPlatformByIssuer(string $issuer, ?string $clientId=null): ?ObjectEntity
     {
@@ -139,7 +139,7 @@ class LtiRegistrationResolverService
      *
      * @return ObjectEntity|null The registration, or null when not found.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-scoreline-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
+     * @spec openspec/specs/lti-platform/spec.md#requirement-ags-service-token-issuance-and-inbound-score-line-item-endpoints-platform-role-fanned-out-as-a-cloudevent-req-lti-007
      */
     public function findToolByClientId(string $clientId): ?ObjectEntity
     {
@@ -172,7 +172,7 @@ class LtiRegistrationResolverService
      *                           under this registration (per-deployment
      *                           isolation — design.md D8).
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+     * @spec openspec/specs/lti-platform/spec.md#requirement-launch-id-token-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
      */
     public function findDeployment(string $registrationType, string $registrationUuid, string $deploymentIdClaim): ?ObjectEntity
     {
@@ -207,12 +207,12 @@ class LtiRegistrationResolverService
      *
      * @return ObjectEntity|null The deployment, or null when not found.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-launch-idtoken-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
+     * @spec openspec/specs/lti-platform/spec.md#requirement-launch-id-token-validation-and-dispatch-to-the-consuming-app-tool-role-req-lti-005
      */
     public function findDeploymentByUuid(string $deploymentUuid): ?ObjectEntity
     {
         try {
-            return $this->orObjectService->find(
+            $deployment = $this->orObjectService->find(
                 id: $deploymentUuid,
                 register: 'openconnector',
                 schema: 'lti_deployment',
@@ -222,6 +222,18 @@ class LtiRegistrationResolverService
         } catch (DoesNotExistException $exception) {
             return null;
         }
+
+        // REQ-LTI-001 scenario 2 defensive re-check, at the single owner of
+        // deployment-by-uuid resolution — the read-time counterpart to the OR
+        // schema `oneOf` write-time constraint the docblock references. Every
+        // live AGS/NRPS dispatch resolves its deployment through this method,
+        // so an ambiguous row (both `ltiPlatformId` and `ltiToolId`, or
+        // neither) that reached storage bypassing OR validation now fails
+        // closed here instead of silently resolving to an ambiguous
+        // registration at token-issuance/roster-read time.
+        $this->assertSingleRegistrationReference(deploymentData: $deployment->getObject());
+
+        return $deployment;
 
     }//end findDeploymentByUuid()
 
@@ -233,7 +245,7 @@ class LtiRegistrationResolverService
      *
      * @return ObjectEntity|null The registration, or null when not found.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-platformrole-launch-initiation-and-deep-linking-20-both-directions-req-lti-006
+     * @spec openspec/specs/lti-platform/spec.md#requirement-platform-role-launch-initiation-and-deep-linking-2-0-both-directions-req-lti-006
      */
     public function findRegistrationByUuid(string $registrationType, string $registrationUuid): ?ObjectEntity
     {
@@ -274,7 +286,7 @@ class LtiRegistrationResolverService
      *
      * @throws LtiValidationException When both or neither is set.
      *
-     * @spec openspec/changes/lti-13-platform/specs/lti-platform/spec.md#requirement-lti-registration-model-is-a-catalogue-entry-not-a-menu-req-lti-001
+     * @spec openspec/specs/lti-platform/spec.md#requirement-lti-registration-model-is-a-catalogue-entry-not-a-menu-req-lti-001
      */
     public function assertSingleRegistrationReference(array $deploymentData): string
     {

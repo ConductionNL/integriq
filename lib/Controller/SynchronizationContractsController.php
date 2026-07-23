@@ -118,7 +118,7 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The activation response.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -158,7 +158,7 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The deactivation response.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -198,7 +198,7 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The execution response.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -236,7 +236,7 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The statistics response
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function statistics(): JSONResponse
@@ -273,7 +273,7 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The performance response
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function performance(): JSONResponse
@@ -319,7 +319,7 @@ class SynchronizationContractsController extends Controller
      *
      * @return JSONResponse The export response.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function export(

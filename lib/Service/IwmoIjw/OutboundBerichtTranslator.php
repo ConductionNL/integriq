@@ -14,9 +14,12 @@
  * {@see IwmoIjwTranslationException} BEFORE any XML is built — this
  * translator MUST NEVER emit an empty tag, a null literal, or an
  * unresolved template marker for a required field. As defense in depth,
- * the fully rendered envelope is scanned for leftover `{{`/`}}`/
- * `%%UNRESOLVED%%` markers and rejected if any survive (see design.md
- * "Literal-leak guard").
+ * the fully rendered envelope is scanned (via the shared
+ * {@see \OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard}, extracted
+ * here as part of `stuf-zkn-bridge` so this class and the sibling
+ * StUF-ZKN translator share one scan implementation) for leftover `{{`/
+ * `}}`/`%%UNRESOLVED%%` markers and rejected if any survive (see
+ * design.md "Literal-leak guard").
  *
  * @category Service
  * @package  OCA\OpenConnector\Service\IwmoIjw
@@ -30,7 +33,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
 
 declare(strict_types=1);
@@ -41,11 +44,12 @@ use DateTime;
 use DOMDocument;
 use DOMElement;
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
+use OCA\OpenConnector\Service\Stuf\StufLiteralLeakGuard;
 
 /**
  * Toewijzing/declaratie case object -> Wmo/Jw XML envelope.
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-outbound-berichttype-translation-with-a-literal-leak-guard-req-002
  */
 class OutboundBerichtTranslator
 {
@@ -77,6 +81,16 @@ class OutboundBerichtTranslator
      * @var string
      */
     private const CODE_DECLARATIE = '321';
+
+    /**
+     * Constructor.
+     *
+     * @param StufLiteralLeakGuard $leakGuard Shared literal-leak scan.
+     */
+    public function __construct(private readonly StufLiteralLeakGuard $leakGuard=new StufLiteralLeakGuard())
+    {
+
+    }//end __construct()
 
     /**
      * Required fields per kind — see design.md's outbound field table.
@@ -121,7 +135,7 @@ class OutboundBerichtTranslator
      *                                     `kind`/`domain` is given, or the rendered envelope still
      *                                     carries an unresolved template marker.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-toewijzing-translates-to-a-valid-wmo303-envelope
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-complete-toewijzing-translates-to-a-valid-wmo303-envelope
      */
     public function translate(array $caseObject, string $kind, string $domain): array
     {
@@ -211,7 +225,7 @@ class OutboundBerichtTranslator
      *
      * @throws IwmoIjwTranslationException Naming the first missing/empty required field found.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-xml--literal-leak-guard
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-missing-required-field-never-reaches-the-xml-literal-leak-guard
      */
     private function assertRequiredFieldsPresent(array $caseObject, string $kind): void
     {
@@ -335,7 +349,8 @@ class OutboundBerichtTranslator
 
     /**
      * Scan the rendered envelope for leftover unresolved template markers —
-     * defense in depth beyond the required-fields pre-check.
+     * defense in depth beyond the required-fields pre-check. Delegates to
+     * the shared {@see StufLiteralLeakGuard}.
      *
      * @param string $xml The fully rendered envelope XML.
      *
@@ -345,7 +360,7 @@ class OutboundBerichtTranslator
      */
     private function assertNoUnresolvedPlaceholder(string $xml): void
     {
-        if (preg_match('/\{\{.*?\}\}|%%UNRESOLVED%%/', $xml) === 1) {
+        if ($this->leakGuard->hasUnresolvedPlaceholder(xml: $xml) === true) {
             throw new IwmoIjwTranslationException(
                 message: 'Rendered envelope still contains an unresolved template marker — refusing to send.'
             );

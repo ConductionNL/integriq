@@ -55,7 +55,7 @@ export default {
 	components: { NcButton, NcCheckboxRadioSwitch, NcTextField, Close, Plus },
 	props: { ...valueProp },
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rows() {
 			const props = Array.isArray(this.value?.properties) ? this.value.properties : []
 			return props.map((entry) => ({
@@ -65,34 +65,34 @@ export default {
 		},
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		emitRows(rows) {
 			const next = { ...(this.value || {}), properties: rows.filter((row) => row.property) }
 			this.$emit('update:value', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onValidateToggle(checked) {
 			this.$emit('update:value', { ...(this.value || {}), validate: !!checked })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onPropertyInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onSchemaInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], schema: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addRow() {
 			const rows = this.rows.slice()
 			rows.push({ property: '', schema: '' })
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeRow(index) {
 			const rows = this.rows.slice()
 			rows.splice(index, 1)

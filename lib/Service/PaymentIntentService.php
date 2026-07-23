@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md
+ * @spec openspec/specs/live-payment-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md
+ * @spec openspec/specs/live-payment-providers/spec.md
  */
 class PaymentIntentService
 {
@@ -139,7 +139,7 @@ class PaymentIntentService
      * @throws PaymentProviderException When no source is configured or the provider errors
      *                                  (caller maps to HTTP 502).
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-creation-endpoint-accepting-shillinqs-payload-contract-req-lpp-001
+     * @spec openspec/specs/live-payment-providers/spec.md
      */
     public function createPayment(array $payload): array
     {
@@ -201,7 +201,7 @@ class PaymentIntentService
      * @return array{result: string, outcome: ?string} `result` is one of
      *         `applied`|`noop`|`not-found`; `outcome` is the mapped outcome when applied.
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
+     * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
      */
     public function handleWebhook(string $providerPaymentId): array
     {
@@ -287,7 +287,7 @@ class PaymentIntentService
      *
      * @throws PaymentProviderException When no active payment source is configured.
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
+     * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -370,7 +370,7 @@ class PaymentIntentService
      *
      * @return PaymentProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
+     * @spec openspec/specs/live-payment-providers/spec.md#requirement-payment-provider-abstraction-with-log-and-mollie-bindings-req-lpp-002
      */
     private function resolveProvider(array $configuration): PaymentProviderInterface
     {
@@ -424,7 +424,7 @@ class PaymentIntentService
      *
      * @return void
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-status-mapping-to-shillinqs-outcome-vocabulary-and-cloudevent-emission-req-lpp-004
+     * @spec openspec/specs/live-payment-providers/spec.md
      */
     private function emitStatusEvent(string $providerPaymentId, string $outcome): void
     {

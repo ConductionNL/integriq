@@ -45,7 +45,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Migrates openconnector legacy tables into OpenRegister storage from the CLI.
  *
- * @spec openspec/changes/openconnector-register-storage/specs/openconnector-storage-migration/spec.md
+ * @spec openspec/specs/openconnector-storage-migration/spec.md
  */
 class MigrateToOpenRegister extends Command
 {

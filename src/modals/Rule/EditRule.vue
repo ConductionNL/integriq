@@ -2,6 +2,7 @@
 import { ruleStore, navigationStore, mappingStore, synchronizationStore, sourceStore } from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 import { Rule } from '../../entities/index.js'
+import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
 import { translate as t } from '@nextcloud/l10n'
 </script>
 
@@ -206,6 +207,9 @@ import { translate as t } from '@nextcloud/l10n'
 						:options="authenticationTypeOptions.options"
 						:input-label="t('openconnector', 'Authentication Type')" />
 					<template v-if="authenticationTypeOptions.value.value === 'api-key'">
+						<NcNoteCard type="warning">
+							{{ t('openconnector', 'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.') }}
+						</NcNoteCard>
 						<VueDraggable v-model="apiKeys" easing="ease-in-out" draggable="div:not(:last-child)">
 							<div v-for="(item, index) in apiKeys" :key="index" class="draggable-item-container">
 								<div :class="`draggable-form-item ${getTheme()}`">
@@ -835,7 +839,7 @@ export default {
 	},
 	watch: {
 		apiKeys: {
-			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				const currentApiKeysLength = newVal.length
 
@@ -855,7 +859,7 @@ export default {
 		},
 		// Auto-add empty extend_input item when last one is filled
 		'ruleItem.configuration.extend_input.items': {
-			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -878,7 +882,7 @@ export default {
 		},
 		// Auto-add empty extend_external_input property when last one is filled
 		'ruleItem.configuration.extend_external_input.properties': {
-			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -903,7 +907,7 @@ export default {
 			deep: true,
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	mounted() {
 
 		if (this.IS_EDIT) {
@@ -1046,7 +1050,7 @@ export default {
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getMappings() {
 			try {
 				this.mappingOptions.loading = true
@@ -1109,7 +1113,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		getSources() {
 			this.sourcesLoading = true
 
@@ -1137,7 +1141,7 @@ export default {
 					this.sourcesLoading = false
 				})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getSchemas() {
 			this.schemasLoading = true
 
@@ -1191,7 +1195,7 @@ export default {
 			this.schemasLoading = false
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getSynchronizations() {
 			try {
 				this.syncOptions.loading = true
@@ -1222,7 +1226,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getAllowedUsers() {
 			this.usersLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/users/details', {
@@ -1269,7 +1273,7 @@ export default {
 			this.usersLoading = false
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getApiKeysUsers() {
 			this.usersLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/users/details', {
@@ -1328,7 +1332,7 @@ export default {
 
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getGroups() {
 			this.groupsLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/groups/details', {
@@ -1370,7 +1374,7 @@ export default {
 			this.groupsLoading = false
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		setMethodOptions() {
 			const options = [
 				{ label: 'GET' },
@@ -1386,7 +1390,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		setActionOptions() {
 			const options = [
 				{ label: 'Post (Create)', id: 'post' },
@@ -1401,7 +1405,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		setTimingOptions() {
 			const options = [
 				{ label: 'Before', id: 'before' },
@@ -1414,38 +1418,38 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendExternalItem() {
 			if (!this.ruleItem.configuration.extend_external_input) {
 				this.ruleItem.configuration.extend_external_input = { validate: true, properties: [] }
 			}
 			this.ruleItem.configuration.extend_external_input.properties.push({ property: '', schema: '' })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendExternalItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_external_input.properties.splice(index, 1)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendInputItem() {
 			if (!this.ruleItem.configuration.extend_input) {
 				this.ruleItem.configuration.extend_input = { items: [] }
 			}
 			this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendInputItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_input.items.splice(index, 1)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeTimeoutFunc)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isValidJson(str) {
 			if (!str) return true
 			try {
@@ -1456,7 +1460,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formatJSONCondictions() {
 			try {
 				if (this.ruleItem.conditions) {
@@ -1469,7 +1473,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formatJSONSourceConfiguration() {
 			try {
 				if (this.ruleItem.configuration.fetch_file.sourceConfiguration) {
@@ -1481,7 +1485,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async installOpenRegister() {
 			console.info('Installing Open Register')
 			const token = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
@@ -1513,7 +1517,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		editRule() {
 			this.loading = true
 
@@ -1543,17 +1547,17 @@ export default {
 				configuration.javascript = this.ruleItem.configuration.javascript
 				break
 			case 'authentication':
-				configuration.authentication = {
+				// SECURITY (ocon#147 / openregister#463): the inbound apiKey => userId map is
+				// write-only, so this editor never sees the stored keys and `apiKeys` seeds empty.
+				// buildAuthenticationConfiguration() OMITS `keys` when no complete new key was
+				// entered, so openregister#463 preserves the stored keys instead of the PUT-null-fill
+				// destroying them. Only a non-empty `keys` REPLACES the stored keys. See that module.
+				configuration.authentication = buildAuthenticationConfiguration({
 					type: this.authenticationTypeOptions.value.value,
 					users: this.ruleItem.configuration.authentication.users.map(user => user.id),
 					groups: this.ruleItem.configuration.authentication.groups.map(group => group.value),
-					keys: this.apiKeys
-						.filter(key => key.apiKey && key.user?.id) // Filter out incomplete entries
-						.map(key => ({
-							[key.apiKey]: key.user.id,
-						}))
-						.filter(Boolean),
-				}
+					apiKeys: this.apiKeys,
+				})
 				break
 			case 'download':
 				configuration.download = {

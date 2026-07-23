@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+ * @spec openspec/specs/endpoint-runtime/spec.md
  */
 
 namespace OCA\OpenConnector\Controller;
@@ -56,6 +56,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  * @SuppressWarnings(PHPMD.CamelCaseVariableName)
  * @SuppressWarnings(PHPMD.CamelCaseParameterName)
+ *
+ * @spec openspec/specs/endpoint-runtime/spec.md
+ * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
  */
 class EndpointsController extends Controller
 {
@@ -128,7 +131,7 @@ class EndpointsController extends Controller
      *
      * @throws Exception On underlying service failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -195,7 +198,7 @@ class EndpointsController extends Controller
      *
      * @since 7.0.0
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -225,7 +228,7 @@ class EndpointsController extends Controller
      *
      * Admin-only: gated at the middleware layer via #[AuthorizedAdminSetting].
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
@@ -261,7 +264,7 @@ class EndpointsController extends Controller
      *
      * @return boolean True if the endpoint qualifies for the optimised simple path.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function isSimpleEndpoint(ObjectEntity $endpoint): bool
     {
@@ -290,7 +293,15 @@ class EndpointsController extends Controller
     }//end isSimpleEndpoint()
 
     /**
-     * Handle simple GET-only schema requests directly without EndpointService overhead.
+     * Handle simple GET-only schema requests directly without EndpointService
+     * overhead, while still attaching RFC 8594 deprecation headers and
+     * product-scoped inbound observability logging when the endpoint belongs
+     * to an `api_product` — this fast path bypasses `EndpointService::
+     * handleRequest()` entirely, so those two concerns (normally applied at
+     * that choke point) are wired here directly via the small set of public
+     * `EndpointService` helpers built for exactly this purpose
+     * (`resolveProductForEndpoint()`/`buildDeprecationHeaders()`/
+     * `recordInboundCallLog()`).
      *
      * Only reachable when isSimpleEndpoint() returns true, which requires:
      *   - HTTP method = GET
@@ -298,16 +309,58 @@ class EndpointsController extends Controller
      *   - no rules / conditions / mappings / configurations
      * Write methods (POST/PUT/PATCH/DELETE) are always routed through the full
      * EndpointService so OR's ObjectService write RBAC (OR #1949/#1951) is
-     * honoured end-to-end.
+     * honoured end-to-end. Because the simple path never authenticates a
+     * consumer (no rule pipeline runs), per-tier rate-limit enforcement does
+     * not apply here — there is no consumer identity to resolve a
+     * subscription against.
+     *
+     * @param ObjectEntity $endpoint The endpoint configuration.
+     * @param string       $path     The request path.
+     *
+     * @return JSONResponse The direct response from ObjectService, with deprecation headers merged in when applicable.
+     *
+     * @spec openspec/specs/endpoint-runtime/spec.md
+     * @spec openspec/specs/endpoint-runtime/spec.md#requirement-deprecated-product-version-dispatch-attaches-sunset-deprecation-headers-req-ep-008
+     */
+    private function handleSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
+    {
+        $startTime = microtime(true);
+        $product   = $this->endpointService->resolveProductForEndpoint(endpoint: $endpoint);
+
+        $response = $this->dispatchSimpleSchemaRequest(endpoint: $endpoint, path: $path);
+
+        if ($product !== null) {
+            foreach ($this->endpointService->buildDeprecationHeaders(product: $product) as $headerName => $headerValue) {
+                $response->addHeader($headerName, $headerValue);
+            }
+
+            $durationMs = ((microtime(true) - $startTime) * 1000);
+            $this->endpointService->recordInboundCallLog(
+                endpoint: $endpoint,
+                product: $product,
+                statusCode: $response->getStatus(),
+                durationMs: $durationMs
+            );
+        }
+
+        return $response;
+
+    }//end handleSimpleSchemaRequest()
+
+    /**
+     * The original simple-endpoint dispatch logic (renamed, unchanged), now
+     * wrapped by {@see handleSimpleSchemaRequest()} so deprecation headers
+     * and product-scoped inbound logging apply uniformly to every return
+     * path below without duplicating them at each `return` statement.
      *
      * @param ObjectEntity $endpoint The endpoint configuration.
      * @param string       $path     The request path.
      *
      * @return JSONResponse The direct response from ObjectService.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-2
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
-    private function handleSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
+    private function dispatchSimpleSchemaRequest(ObjectEntity $endpoint, string $path): JSONResponse
     {
         try {
             $endpointData = $endpoint->getObject();
@@ -408,7 +461,7 @@ class EndpointsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Simple endpoint error: %s', [$e->getMessage()])], 500);
         }//end try
 
-    }//end handleSimpleSchemaRequest()
+    }//end dispatchSimpleSchemaRequest()
 
     /**
      * Parse path parameters from endpoint pattern and actual path.
@@ -418,7 +471,7 @@ class EndpointsController extends Controller
      *
      * @return array The parsed parameters.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function getPathParameters(array $endpointArray, string $path): array
     {
@@ -446,7 +499,7 @@ class EndpointsController extends Controller
      *
      * @return string The pagination URL.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-1
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function buildPaginationUrl(array $parameters, string $path): string
     {

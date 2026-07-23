@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenConnector exposes application metrics in Prometheus text exposition format and a JSON health check endpoint for container orchestration environments.
+OpenConnector exposes application metrics in Prometheus text exposition format and a JSON health check endpoint for container orchestration environments, served through the shared OpenRegister AppHost declarative observability engine (ADR-040) instead of a hand-written controller. The engine renders both endpoints from the `observability` block in `src/manifest.json` — that block is the source of truth for the exact check/metric contract; this page documents it for operators.
 
 ## Endpoints
 
@@ -10,7 +10,7 @@ OpenConnector exposes application metrics in Prometheus text exposition format a
 
 Returns metrics in Prometheus text exposition format (`text/plain; version=0.0.4; charset=utf-8`).
 
-**Authentication:** Requires Nextcloud admin session or API token.
+**Authentication:** Requires Nextcloud admin session or API token (unchanged — metrics stay admin-only).
 
 **Example response:**
 
@@ -56,8 +56,8 @@ openconnector_rules_total 8
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
-| `openconnector_info` | gauge | version, php_version, nextcloud_version | Application version info (always 1) |
-| `openconnector_up` | gauge | - | Application health (1=healthy, 0=degraded) |
+| `openconnector_info` | gauge | version, php_version, nextcloud_version | Application version info (always 1) — engine-implicit |
+| `openconnector_up` | gauge | - | Application health (1=healthy, 0=degraded) — engine-implicit |
 | `openconnector_sources_total` | gauge | type | Sources grouped by type |
 | `openconnector_calls_total` | counter | status | API calls grouped by HTTP status code |
 | `openconnector_synchronizations_total` | gauge | - | Total configured synchronizations |
@@ -72,36 +72,56 @@ openconnector_rules_total 8
 
 Returns JSON health status for liveness/readiness probes.
 
-**Authentication:** Requires Nextcloud admin session or API token.
+**Authentication:** Public — no session or token required (ADR-006; fixed a pre-adoption defect where this endpoint was wrongly admin-only).
+
+Two checks are declared: `database` (critical) and `openregister` (degraded-only — replaces the pre-adoption bespoke `sources_table` join probe with a generic OpenRegister-availability check; same degraded semantics).
 
 **Example response (healthy):**
 
 ```json
 {
   "status": "ok",
+  "app": "openconnector",
+  "version": "0.2.21",
   "checks": {
     "database": "ok",
-    "sources_table": "ok"
+    "openregister": "ok"
   }
 }
 ```
 
-**Example response (degraded):**
+**Example response (degraded — HTTP 200):**
 
 ```json
 {
   "status": "degraded",
+  "app": "openconnector",
+  "version": "0.2.21",
   "checks": {
     "database": "ok",
-    "sources_table": "error"
+    "openregister": "failed: OpenRegister ObjectService unavailable"
   }
 }
 ```
 
-**Status values:**
-- `ok` -- all checks pass
-- `degraded` -- application works but some components are unavailable
-- `error` -- critical failure (e.g., database inaccessible)
+**Example response (error — HTTP 503):**
+
+```json
+{
+  "status": "error",
+  "app": "openconnector",
+  "version": "0.2.21",
+  "checks": {
+    "database": "failed: could not connect",
+    "openregister": "ok"
+  }
+}
+```
+
+**Status values (ADR-006 `adr006` status-code policy):**
+- `ok` -- HTTP 200. All checks pass.
+- `degraded` -- HTTP 200. A non-critical check failed; application works but some components are unavailable.
+- `error` -- **HTTP 503.** The critical `database` check failed (pre-adoption this wrongly returned HTTP 200 — fixed by the engine).
 
 ## Prometheus Configuration
 
@@ -122,34 +142,33 @@ scrape_configs:
 
 ## Kubernetes Health Probes
 
+Health is public, so no `Authorization` header is needed. A liveness/readiness probe should treat HTTP 503 as unhealthy (the ADR-006 policy):
+
 ```yaml
 livenessProbe:
   httpGet:
     path: /index.php/apps/openconnector/api/health
     port: 80
-    httpHeaders:
-      - name: Authorization
-        value: "Basic <base64-encoded-credentials>"
   initialDelaySeconds: 30
   periodSeconds: 60
 readinessProbe:
   httpGet:
     path: /index.php/apps/openconnector/api/health
     port: 80
-    httpHeaders:
-      - name: Authorization
-        value: "Basic <base64-encoded-credentials>"
   initialDelaySeconds: 10
   periodSeconds: 15
 ```
 
 ## Error Handling
 
-All metric collectors use independent try/catch blocks. If one collector fails (e.g., a table does not exist), it emits a zero-value fallback and the endpoint still returns HTTP 200 with the remaining metrics. This ensures partial availability under degraded conditions.
+Each `tableCount` metric descriptor is evaluated independently by the engine. If a source table does not exist (e.g. on an instance where the chain-C legacy-table drop migration has already run), that metric emits a zero-value sample and the endpoint still returns HTTP 200 with the remaining metrics — mirroring the pre-adoption per-collector try/catch fallback. This ensures partial availability under degraded conditions. The health endpoint is the one place a failure changes the HTTP status: a failed `database` (critical) check returns 503 per ADR-006.
 
 ## Implementation
 
-- **MetricsController**: `lib/Controller/MetricsController.php`
-- **HealthController**: `lib/Controller/HealthController.php`
-- **Routes**: `appinfo/routes.php` (lines 19-20)
-- **Tests**: `tests/Unit/Controller/MetricsControllerTest.php`, `tests/Unit/Controller/HealthControllerTest.php`
+- **Manifest**: `src/manifest.json` — `observability.health.checks[]` + `observability.metrics[]`, the source of truth for both endpoints.
+- **Engine**: OpenRegister's `AppHost\Observability\*` (`ManifestLoader`, `HealthCheckExecutor`, `MetricsEngine`) and `AppHost\Controller\GenericHealthController`/`GenericMetricsController`.
+- **Thin app-namespace adapters**: `lib/Controller/HealthController.php`, `lib/Controller/MetricsController.php` — resolve the engine collaborators scoped to `appName=openconnector` and carry the route-level auth posture (`#[PublicPage]` on health, admin-only on metrics); no metric/health logic of their own.
+- **Wiring**: `lib/AppInfo/Application.php::registerAppHostObservability()`.
+- **Routes**: `appinfo/routes.php` (`health#index`, `metrics#index` — URLs unchanged).
+- **Spec**: `openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md`.
+- **Contract tests**: `tests/integration/openconnector.postman_collection.json` (folder "11. Observability (AppHost health/metrics)"), run via `tests/integration/run-newman.sh`.

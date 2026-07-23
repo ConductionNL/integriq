@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md
+ * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md
+ * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 class OpenFormulierenIntakeService
 {
@@ -133,7 +133,7 @@ class OpenFormulierenIntakeService
      *
      * @throws OpenFormulierenException When no active source is configured.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -176,7 +176,7 @@ class OpenFormulierenIntakeService
      *
      * @return ObjectEntity The persisted `openformulieren_submission` record (any status).
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-openformulieren_submission-lifecycle-with-per-submission-isolation-req-003
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-openformulieren-submission-lifecycle-with-per-submission-isolation-req-003
      */
     public function ingest(
         string $formSlug,
@@ -255,7 +255,7 @@ class OpenFormulierenIntakeService
      *
      * @throws OpenFormulierenException When no submission exists for the uuid.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-openformulieren_submission-lifecycle-with-per-submission-isolation-req-003
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-openformulieren-submission-lifecycle-with-per-submission-isolation-req-003
      */
     public function getSubmission(string $submissionUuid): array
     {
@@ -291,7 +291,7 @@ class OpenFormulierenIntakeService
      * OCA\OpenRegister\Exception\* types as Throwable subtypes (same limitation
      * documented in phpstan.neon's `unknown class OCA\\OpenRegister\\` ignores).
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-004
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-004
      */
     public function handoff(string $submissionUuid): array
     {
@@ -384,7 +384,7 @@ class OpenFormulierenIntakeService
      *
      * @return array<int, array<string, mixed>> One entry per ref: `{key, filename, status, fileId?, error?}`.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-best-effort-attachment-handling-req-005
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-best-effort-attachment-handling-req-005
      */
     private function fetchAndStoreAttachments(ObjectEntity $submission, array $attachmentRefs): array
     {
@@ -455,7 +455,7 @@ class OpenFormulierenIntakeService
      *
      * @return void
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-best-effort-attachment-handling-req-005
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-best-effort-attachment-handling-req-005
      */
     private function recordHandoffSuccess(ObjectEntity $submission, array $result): void
     {

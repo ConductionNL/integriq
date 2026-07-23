@@ -478,4 +478,216 @@ class JobServiceTest extends TestCase
     }//end testExecuteJobSkipsJobWhenConfiguredUserMissing()
 
 
+    /**
+     * TC-21 / job-scheduling spec REQ-004 — #1006 regression pin, combined
+     * scenario: a throwing job A (userId: alice) followed by job B (no
+     * userId) in the SAME run() pass. The session user during/after job B's
+     * execution must NOT be alice — proving executeJob()'s try/finally
+     * session restoration (already fixed in HEAD) survives a `run()`-driven
+     * cron pass, not just a single isolated executeJob() call.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/job-scheduling/spec.md#requirement-job-scheduling-registration-and-execution-with-retention-bounded-logs-req-004
+     */
+    public function testRunDoesNotBleedThrowingUserScopedJobIdentityIntoNextJob(): void
+    {
+        $now = (new \DateTime('-1 hour'))->format('c');
+
+        $jobA = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'isEnabled' => true,
+                'jobClass'  => 'OCA\\OpenConnector\\Action\\ThrowingUserAction',
+                'interval'  => 300,
+                'nextRun'   => $now,
+                'userId'    => 'alice',
+                'arguments' => [],
+            ],
+            'job-a-throwing-user'
+        );
+        $jobB = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            [
+                'isEnabled' => true,
+                'jobClass'  => 'OCA\\OpenConnector\\Action\\NoUserAction',
+                'interval'  => 300,
+                'nextRun'   => $now,
+                'arguments' => [],
+            ],
+            'job-b-no-user'
+        );
+
+        $this->objectService->method('findAll')->willReturnCallback(
+            static fn() => ['results' => [$jobA, $jobB], 'total' => 2]
+        );
+        $this->objectService->method('saveObject')->willReturnCallback(
+            fn(...$args) => ObjectServiceMockBuilder::objectEntity($this, is_array($args[0] ?? null) === true ? $args[0] : [], 'saved')
+        );
+
+        $alice = $this->createMock(IUser::class);
+        // No prior session user — cron starts as system (matches
+        // testExecuteJobRestoresPriorSessionUser's baseline).
+        $this->session->method('getUser')->willReturn(null);
+        $this->userMgr->method('get')->with('alice')->willReturn($alice);
+
+        $sessionUserDuringJobB = 'not-observed';
+        $setUserCalls          = [];
+        $this->session->method('setUser')->willReturnCallback(
+            static function ($user) use (&$setUserCalls) {
+                $setUserCalls[] = $user;
+            }
+        );
+
+        $this->container->method('get')->willReturnCallback(
+            function (string $class) use (&$sessionUserDuringJobB) {
+                if ($class === 'OCA\\OpenConnector\\Action\\ThrowingUserAction') {
+                    return new class {
+                        public function run(array $args): array
+                        {
+                            throw new \RuntimeException('boom from user-scoped job A');
+                        }
+                    };
+                }
+
+                // Job B: record whatever the session's getUser() would resolve
+                // to at this point via the recorded setUser() call history —
+                // the LAST setUser call before job B runs must be the restore
+                // (null), never alice again.
+                return new class {
+                    public function run(array $args): array
+                    {
+                        return ['level' => 'SUCCESS', 'message' => 'ok'];
+                    }
+                };
+            }
+        );
+
+        // Act
+        $this->service->run();
+
+        // Assert — setUser call sequence: [alice (job A start), null (job A
+        // finally-restore)] and job B, having no userId, never triggers a
+        // THIRD setUser call — so the session identity in effect for job B is
+        // whatever the last recorded call restored it to (null), never alice.
+        $this->assertSame($alice, $setUserCalls[0], 'Job A must apply its configured user');
+        $this->assertNull($setUserCalls[1], "Job A's finally-block MUST restore the prior (null) session user before job B runs");
+        $this->assertCount(
+            2,
+            $setUserCalls,
+            'Job B has no userId configured, so it must not trigger any further setUser() call — '
+                .'the session stays at whatever job A restored it to, never alice'
+        );
+    }//end testRunDoesNotBleedThrowingUserScopedJobIdentityIntoNextJob()
+
+
+    /**
+     * TC-22 / job-scheduling spec REQ-004 — #1005 regression pin, combined
+     * scenario: three due jobs (A throws, B and C succeed) in the same
+     * run() pass. B and C must both execute and produce logs, and A's
+     * nextRun must advance by its configured interval (not left unchanged).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/job-scheduling/spec.md#requirement-job-scheduling-registration-and-execution-with-retention-bounded-logs-req-004
+     */
+    public function testRunProcessesAllThreeJobsWhenTheFirstThrows(): void
+    {
+        $now = (new \DateTime('-1 hour'))->format('c');
+
+        $makeJob = function (string $uuid, string $class) use ($now) {
+            return ObjectServiceMockBuilder::objectEntity(
+                $this,
+                [
+                    'isEnabled' => true,
+                    'jobClass'  => $class,
+                    'interval'  => 300,
+                    'nextRun'   => $now,
+                    'arguments' => [],
+                ],
+                $uuid
+            );
+        };
+
+        $jobA = $makeJob('job-a', 'OCA\\OpenConnector\\Action\\ThrowingActionABC');
+        $jobB = $makeJob('job-b', 'OCA\\OpenConnector\\Action\\HealthyActionB');
+        $jobC = $makeJob('job-c', 'OCA\\OpenConnector\\Action\\HealthyActionC');
+
+        $this->objectService->method('findAll')->willReturnCallback(
+            static fn() => ['results' => [$jobA, $jobB, $jobC], 'total' => 3]
+        );
+
+        $bCalled = false;
+        $cCalled = false;
+        $this->container->method('get')->willReturnCallback(
+            function (string $class) use (&$bCalled, &$cCalled) {
+                if ($class === 'OCA\\OpenConnector\\Action\\ThrowingActionABC') {
+                    return new class {
+                        public function run(array $args): array
+                        {
+                            throw new \RuntimeException('boom from A');
+                        }
+                    };
+                }
+
+                if ($class === 'OCA\\OpenConnector\\Action\\HealthyActionB') {
+                    return new class($bCalled) {
+                        private bool $called;
+                        public function __construct(bool &$called)
+                        {
+                            $this->called =& $called;
+                        }
+                        public function run(array $args): array
+                        {
+                            $this->called = true;
+                            return ['level' => 'SUCCESS', 'message' => 'ok'];
+                        }
+                    };
+                }
+
+                return new class($cCalled) {
+                    private bool $called;
+                    public function __construct(bool &$called)
+                    {
+                        $this->called =& $called;
+                    }
+                    public function run(array $args): array
+                    {
+                        $this->called = true;
+                        return ['level' => 'SUCCESS', 'message' => 'ok'];
+                    }
+                };
+            }
+        );
+
+        $savedJobRows = [];
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (...$args) use (&$savedJobRows) {
+                $object = ($args[0] ?? []);
+                $schema = ($args[2] ?? null);
+                $uuid   = ($args[3] ?? null);
+                if (is_array($object) === true && $schema === 'job' && $uuid === 'job-a') {
+                    $savedJobRows[] = $object;
+                }
+                return ObjectServiceMockBuilder::objectEntity($this, is_array($object) === true ? $object : [], $uuid ?? 'saved');
+            }
+        );
+
+        // Act
+        $results = $this->service->run();
+
+        // Assert — B and C both ran despite A throwing first in the pass.
+        $this->assertTrue($bCalled, 'Job B must run even though job A (earlier in the pass) threw');
+        $this->assertTrue($cCalled, 'Job C must run even though job A (earlier in the pass) threw');
+
+        // Assert — three job logs collected (A=ERROR, B/C=SUCCESS).
+        $this->assertCount(3, $results, 'run() must return a log entry for every one of the three due jobs');
+
+        // Assert — job A's nextRun advanced by its interval (not left as the
+        // original due timestamp, which would re-block every subsequent tick).
+        $this->assertNotEmpty($savedJobRows, "Job A's job row must have been persisted with an advanced nextRun");
+        $advancedNextRun = new \DateTime($savedJobRows[0]['nextRun']);
+        $this->assertGreaterThan(new \DateTime($now), $advancedNextRun, "Job A's nextRun must advance past the original due timestamp");
+    }//end testRunProcessesAllThreeJobsWhenTheFirstThrows()
+
 }//end class

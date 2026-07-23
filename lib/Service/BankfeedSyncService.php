@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess) -- \OCP\Server::get is the only way to lazily resolve the optional OR credential store (class may not exist), mirroring BrokeredCallService.
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 class BankfeedSyncService
 {
@@ -177,7 +177,7 @@ class BankfeedSyncService
      *
      * @throws Psd2ProviderException When the source is unknown/disabled or the aggregator errors.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-connect-returns-a-bank-sca-redirect-url
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-connect-returns-a-bank-sca-redirect-url
      */
     public function connect(string $sourceSlug, string $institutionId, string $redirectUrl): array
     {
@@ -229,7 +229,7 @@ class BankfeedSyncService
      *
      * @throws Psd2ProviderException When the reference is unknown, already finalised, or the aggregator errors.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-callback-finalises-consent-and-stores-only-the-reference
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-callback-finalises-consent-and-stores-only-the-reference
      */
     public function finaliseConsent(string $reference): array
     {
@@ -295,7 +295,7 @@ class BankfeedSyncService
      *
      * @throws Psd2ProviderException When the connection is unknown or not active, or the aggregator errors.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-re-discovery-is-idempotent
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-re-discovery-is-idempotent
      */
     public function discoverAccounts(string $connectionId): array
     {
@@ -360,7 +360,7 @@ class BankfeedSyncService
      *
      * @return integer The number of batches persisted in this sweep.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
      */
     public function syncAll(): int
     {
@@ -519,7 +519,7 @@ class BankfeedSyncService
      *
      * @return boolean True when the connection remains syncable (active, unexpired).
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-an-approaching-expiry-emits-an-expiring-event-once
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-an-approaching-expiry-emits-an-expiring-event-once
      */
     private function applyExpiryLifecycle(ObjectEntity $connection): bool
     {
@@ -585,7 +585,7 @@ class BankfeedSyncService
      *
      * @return void
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
      */
     public function markRevoked(ObjectEntity $connection, string $reason): void
     {
@@ -618,7 +618,7 @@ class BankfeedSyncService
      *
      * @throws Psd2ProviderException When the source is missing, not `type=psd2`, or disabled.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
      */
     public function resolveSource(string $sourceSlug): ObjectEntity
     {
@@ -660,7 +660,7 @@ class BankfeedSyncService
      *
      * @return Psd2AggregatorProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-aggregator-provider-abstraction-with-log-and-generic-rest-bindings-req-001
      */
     public function resolveProvider(array $configuration): Psd2AggregatorProviderInterface
     {
@@ -688,7 +688,7 @@ class BankfeedSyncService
      *
      * @throws Psd2ProviderException When the credential store cannot broker the token.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-tokens-and-aggregator-credentials-brokered-never-plaintext-req-006
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-tokens-and-aggregator-credentials-brokered-never-plaintext-req-006
      */
     private function brokerConsentToken(string $token, string $connectionId): void
     {
@@ -791,7 +791,7 @@ class BankfeedSyncService
      *
      * @return void
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
      */
     private function emitConsentEvent(string $type, ObjectEntity $connection): void
     {

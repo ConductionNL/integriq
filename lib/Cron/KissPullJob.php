@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 class KissPullJob extends TimedJob
 {
@@ -60,7 +60,7 @@ class KissPullJob extends TimedJob
      * @param KissSyncService $syncService The KISS sync service.
      * @param LoggerInterface $logger      Logger for sweep outcomes and containment.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -95,7 +95,7 @@ class KissPullJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-pull-sync-of-klantcontacten-with-a-persisted-cursor
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function run(mixed $argument): void
     {

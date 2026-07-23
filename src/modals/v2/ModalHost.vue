@@ -42,6 +42,9 @@
 		<ExportConfigurationDialog
 			:open="configurationExport.open"
 			@close="closeConfigurationExport" />
+		<PromotePreviewModal
+			:open="promotion.open"
+			@close="closePromotion" />
 	</div>
 </template>
 
@@ -52,6 +55,7 @@ import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.v
 import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.vue'
+import PromotePreviewModal from '../PromotePreviewModal.vue'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
@@ -60,6 +64,7 @@ import {
 	EVENT_OPEN_CATALOG_ITEM_DETAIL,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
+	EVENT_OPEN_PROMOTION,
 } from '../../handlers/modalBus.js'
 
 export default {
@@ -72,6 +77,7 @@ export default {
 		CatalogItemDetailDialog,
 		ImportPreviewDialog,
 		ExportConfigurationDialog,
+		PromotePreviewModal,
 	},
 
 	data() {
@@ -82,10 +88,11 @@ export default {
 			catalogItemDetail: { open: false, item: null },
 			configurationImport: { open: false },
 			configurationExport: { open: false },
+			promotion: { open: false },
 		}
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
 		modalBus.$on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.$on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
@@ -93,9 +100,10 @@ export default {
 		modalBus.$on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
 		modalBus.$on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.$on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.$on(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	beforeDestroy() {
 		modalBus.$off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
 		modalBus.$off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
@@ -103,22 +111,23 @@ export default {
 		modalBus.$off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
 		modalBus.$off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.$off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.$off(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openTestMapping(payload) {
 			this.testMapping = { open: true, mapping: payload?.mapping ?? null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeTestMapping() {
 			this.testMapping = { open: false, mapping: null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openAddEndpointRule(payload) {
 			this.addEndpointRule = { open: true, endpoint: payload?.endpoint ?? null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeAddEndpointRule() {
 			this.addEndpointRule = { open: false, endpoint: null }
 		},
@@ -153,6 +162,14 @@ export default {
 		/** @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui */
 		closeConfigurationExport() {
 			this.configurationExport = { open: false }
+		},
+		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
+		openPromotion() {
+			this.promotion = { open: true }
+		},
+		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
+		closePromotion() {
+			this.promotion = { open: false }
 		},
 	},
 }

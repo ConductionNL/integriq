@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment — lti-platform-lockdown (ocon#147 phase C). SECURITY FIX. The `lti_platform` schema had NO `authorization` block, so it fell back to OpenRegister's default: readable by ANY authenticated user. An LTI Platform registration is an admin-owned trust anchor — its `issuer`, `clientId`, `authTokenUrl` and `jwksUri` define which external LMS this instance trusts to launch into it, and the row also carries the (now writeOnly, see sibling fragment) private signing keys. Exactly as 99-source-lockdown.json / 99-consumer-lockdown.json did for source/consumer, every verb is admin-only: an operator provisions registrations under Beheer > Authenticatie (LtiController key/approval endpoints are all #[AuthorizedAdminSetting(OpenConnectorAdmin)]), and the LTI launch runtime — not the end user — consumes them. Nothing user-facing regresses: every registration read in LtiRegistrationResolverService / LtiKeyService / LtiLaunchService passes _rbac: false, so launch, key rotation and the public JWKS endpoint keep working for anonymous and non-admin callers — it is the engine, not the user, that needs the registration, and the user must never see its trust config or keys.",
+	"components": {
+		"schemas": {
+			"lti_platform": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}

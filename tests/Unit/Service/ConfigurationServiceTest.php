@@ -395,4 +395,63 @@ class ConfigurationServiceTest extends TestCase
         $this->assertStringContainsString('***REDACTED***', $exportJson);
     }//end testExportConfigurationLeaksNoSecretShapedValueForAnyEntityType()
 
+
+    /**
+     * environments-and-promotion REQ-010 regression — importing an OAS
+     * document whose Source carries a `credentialRef` that does not
+     * correspond to any credential broker entry on the importing
+     * environment does NOT block the write: the Source is created exactly
+     * as REQ-003 describes, with the reference stored verbatim (no
+     * exception at import time — the dangling reference only surfaces later
+     * when that Source is actually dispatched).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-credentialref-authentication-placeholders-pass-through-export-and-import-unresolved-and-untranslated-req-010
+     */
+    public function testImportConfigurationDoesNotBlockOnNonResolvingCredentialRef(): void
+    {
+        $this->orObjectService = ObjectServiceMockBuilder::make($this);
+        $this->orObjectService->method('findAll')->willReturn(['results' => [], 'total' => 0]);
+
+        $savedCapture = null;
+        $this->orObjectService->method('saveObject')
+            ->willReturnCallback(
+                function ($object, $register=null, $schema=null, $uuid=null) use (&$savedCapture) {
+                    $savedCapture = $object;
+                    return ObjectServiceMockBuilder::objectEntity($this, (array) $object, 'imported-source-uuid');
+                }
+            );
+
+        $this->service = $this->buildService();
+
+        $oas = [
+            'components' => [
+                'sources' => [
+                    'my-api-source' => [
+                        'slug'          => 'my-api-source',
+                        'name'          => 'My API Source',
+                        'configuration' => [
+                            'authentication' => [
+                                'credentialRef' => ['credentialId' => 'non-resolving-uuid-on-this-environment'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Act — must not throw.
+        $result = $this->service->importConfiguration($oas);
+
+        // Assert: the Source was written (REQ-003), and the credentialRef
+        // survives the write verbatim — REQ-004's translation vocabulary
+        // does not include `authentication`, so it is untouched.
+        $this->assertArrayHasKey('my-api-source', $result['sources']);
+        $this->assertSame(
+            'non-resolving-uuid-on-this-environment',
+            $savedCapture['configuration']['authentication']['credentialRef']['credentialId']
+        );
+    }//end testImportConfigurationDoesNotBlockOnNonResolvingCredentialRef()
+
 }//end class
