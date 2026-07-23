@@ -129,6 +129,9 @@ class CatalogRegistryServiceTest extends TestCase
         $this->assertContains('source-template:kvk', $slugs);
         $this->assertContains('source-template:xwiki', $slugs);
         $this->assertContains('source-template:opencorporates', $slugs);
+        // endoflife-date-source: seeded enabled/credential-free (unlike the
+        // dormant presets above) — @spec openspec/specs/endoflife-date-source/spec.md#requirement-the-preset-is-automatically-visible-on-the-catalog-page
+        $this->assertContains('source-template:endoflife-date', $slugs);
 
         // No duplicates — slugs are the upsert keys.
         $this->assertSame(count($slugs), count(array_unique($slugs)));
