@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md
+ * @spec openspec/specs/live-payment-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -85,7 +85,7 @@ class PaymentsController extends Controller
      *
      * @return JSONResponse The checkout envelope, or a 400/502 error envelope.
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-creation-endpoint-accepting-shillinqs-payload-contract-req-lpp-001
+     * @spec openspec/specs/live-payment-providers/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -134,7 +134,7 @@ class PaymentsController extends Controller
      *
      * @return JSONResponse `{received: true}` on any verified/processed call, 401 on signature failure.
      *
-     * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
+     * @spec openspec/specs/live-payment-providers/spec.md#requirement-signature-gated-webhook-that-never-trusts-an-inbound-status-claim-req-lpp-003
      */
     #[NoCSRFRequired]
     #[PublicPage]

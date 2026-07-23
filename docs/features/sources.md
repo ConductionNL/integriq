@@ -15,7 +15,31 @@ A **Source** is a configured connection to an external system. Sources are the f
 
 ## Authentication Methods
 
-Sources support multiple authentication strategies configured in the source's `authenticationConfig` field.
+Sources support multiple authentication strategies, configured in the source's
+**`configuration.authentication`** object.
+
+> [!WARNING]
+> **`authenticationConfig` is vestigial — do not use it.** Earlier versions of this page
+> told you to put OAuth/JWT/Basic credentials in a top-level `authenticationConfig`
+> field. **No code reads it.** The Twig runtime moved to `configuration.authentication`
+> in November 2024 and the docs were never updated, so any credential placed in
+> `authenticationConfig` is simply inert — the call goes out unauthenticated.
+> Put credentials in `configuration.authentication` (or, better, use a
+> [brokered `credentialRef`](#brokered-credentials-credentialref--recommended)).
+>
+> If your instance still holds data there, audit it — key names only, never values:
+>
+> ```bash
+> occ openconnector:authentication-config
+> ```
+>
+> and then, once you have reviewed what it reports, delete it:
+>
+> ```bash
+> occ openconnector:authentication-config --remove-authentication-config
+> ```
+>
+> See [ocon#232](https://codeberg.org/Conduction/openconnector/issues/232).
 
 ### Brokered Credentials (`credentialRef`) — recommended
 
@@ -157,16 +181,21 @@ Supported grant types:
 | `client_credentials` | `grant_type`, `scope`, `tokenUrl`, `authentication`, `client_id`, `client_secret` |
 | `password` | `grant_type`, `scope`, `tokenUrl`, `username`, `password` |
 
-Example `authenticationConfig`:
+These fields live under `configuration.authentication` — `oauthToken(source)` reads
+`source.configuration.authentication`, **not** `authenticationConfig`:
 
 ```json
 {
-  "grant_type": "client_credentials",
-  "scope": "api",
-  "authentication": "body",
-  "tokenUrl": "https://example.com/oauth/token",
-  "client_id": "my-client",
-  "client_secret": "my-secret"
+  "configuration": {
+    "authentication": {
+      "grant_type": "client_credentials",
+      "scope": "api",
+      "authentication": "body",
+      "tokenUrl": "https://example.com/oauth/token",
+      "client_id": "my-client",
+      "client_secret": "my-secret"
+    }
+  }
 }
 ```
 
@@ -178,20 +207,25 @@ Generate a signed JWT automatically:
 Bearer {{ jwToken(source) }}
 ```
 
-Required `authenticationConfig` fields: `payload`, `secret`, `algorithm` (e.g. `HS256`, `RS256`, `PS256`).
+Required `configuration.authentication` fields: `payload`, `secret`, `algorithm` (e.g. `HS256`, `RS256`, `PS256`).
 
 ### ZGW JWT
 
-Dutch government ZGW authentication using the VNG JWT standard. Uses `client_id` and `secret` from `authenticationConfig`, and automatically includes `iss`, `iat`, and `user_id` claims.
+Dutch government ZGW authentication using the VNG JWT standard. Uses `client_id` and `secret` from
+`configuration.authentication`, and automatically includes `iss`, `iat`, and `user_id` claims.
 
 ### Basic Auth
 
-Set credentials in `authenticationConfig`:
+Set credentials under `configuration.authentication`:
 
 ```json
 {
-  "username": "user",
-  "password": "pass"
+  "configuration": {
+    "authentication": {
+      "username": "user",
+      "password": "pass"
+    }
+  }
 }
 ```
 
@@ -213,8 +247,8 @@ For connections to Dutch government services requiring client certificate authen
 | `authorizationHeader` | Header name for the auth token (default: `Authorization`) |
 | `headers` | Default headers added to every request |
 | `query` | Default query parameters added to every request |
-| `configuration` | Auth-specific configuration (OAuth params, cert paths) |
-| `authenticationConfig` | Dynamic auth parameters (resolved by Twig) |
+| `configuration` | Auth-specific configuration (OAuth params, cert paths). **`configuration.authentication` is where credentials belong.** |
+| `authenticationConfig` | **Deprecated / vestigial — nothing reads it.** Retained only so existing data is not silently pruned; audit and remove it with `occ openconnector:authentication-config` (ocon#232). |
 | `timeout` | HTTP request timeout in seconds |
 | `verify` | TLS certificate verification (boolean) |
 | `isEnabled` | Whether the source is active |

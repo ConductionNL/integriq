@@ -397,7 +397,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		tabs() {
 			return [
 				{
@@ -417,14 +417,14 @@ export default {
 				},
 			]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingRowList() {
 			return Object.keys(this.mappingRules).map((key) => ({
 				key,
 				value: this.mappingRules[key],
 			}))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castRowList() {
 			return Object.keys(this.castRules).map((key) => ({
 				key,
@@ -435,21 +435,21 @@ export default {
 
 	watch: {
 		mappingRules: {
-			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+			/** @spec openspec/specs/mapping-editor-ui/spec.md */
 			handler(next) {
 				this.mappingDraft = objectToRowList(next)
 			},
 			deep: true,
 		},
 		castRules: {
-			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+			/** @spec openspec/specs/mapping-editor-ui/spec.md */
 			handler(next) {
 				this.castDraft = objectToRowList(next)
 			},
 			deep: true,
 		},
 		unsetRules: {
-			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+			/** @spec openspec/specs/mapping-editor-ui/spec.md */
 			handler(next) {
 				this.unsetDraft = [...next]
 			},
@@ -458,7 +458,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		formatTemplate(value) {
 			if (value == null) return ''
 			if (typeof value === 'string') return value
@@ -468,7 +468,7 @@ export default {
 				return String(value)
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		existingKeysFor(kind, currentProperty) {
 			let keys = []
 			if (kind === 'mapping') keys = Object.keys(this.mappingRules)
@@ -480,7 +480,7 @@ export default {
 			return keys
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		openCreate(kind) {
 			this.editing = {
 				kind,
@@ -488,7 +488,7 @@ export default {
 				value: kind === 'cast' ? 'string' : '',
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		openEdit(kind, property) {
 			const source = kind === 'mapping' ? this.mappingRules : this.castRules
 			this.editing = {
@@ -497,7 +497,7 @@ export default {
 				value: source[property] ?? (kind === 'cast' ? 'string' : ''),
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		openEditUnset(property) {
 			this.editing = {
 				kind: 'unset',
@@ -506,7 +506,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onSubmitDialog(payload) {
 			const { kind, property, value } = payload
 			if (kind === 'mapping') {
@@ -519,7 +519,7 @@ export default {
 			this.editing = null
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		commitMapping(oldKey, newKey, newValue) {
 			const next = { ...this.mappingRules }
 			if (oldKey && oldKey !== newKey) {
@@ -528,7 +528,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-mapping', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		commitCast(oldKey, newKey, newValue) {
 			const next = { ...this.castRules }
 			if (oldKey && oldKey !== newKey) {
@@ -537,7 +537,7 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-cast', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		commitUnset(oldProperty, newProperty) {
 			const next = [...this.unsetRules]
 			if (oldProperty) {
@@ -562,7 +562,7 @@ export default {
 			this.$emit('update-unset', deduped)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		deleteRule(kind, key) {
 			if (kind === 'mapping') {
 				const next = { ...this.mappingRules }
@@ -574,7 +574,7 @@ export default {
 				this.$emit('update-cast', next)
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		deleteUnset(property) {
 			const next = this.unsetRules.filter((entry) => entry !== property)
 			this.$emit('update-unset', next)
@@ -583,16 +583,16 @@ export default {
 		/**
 		 * Drag-end handler: emit a rebuilt object in the new order.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		onMappingReorder() {
 			this.$emit('update-mapping', rowListToObject(this.mappingDraft))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onCastReorder() {
 			this.$emit('update-cast', rowListToObject(this.castDraft))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onUnsetReorder() {
 			this.$emit('update-unset', [...this.unsetDraft])
 		},
@@ -606,7 +606,7 @@ export default {
 		 * @param {number} index Current row index.
 		 * @param {number} direction -1 to move up, 1 to move down.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		moveRow(kind, index, direction) {
 			let list

@@ -165,7 +165,7 @@ class SecurityService
      *
      * @return array Result with 'allowed' boolean and optional 'delay' or 'lockout_until'.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
@@ -265,7 +265,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
@@ -341,7 +341,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
@@ -382,7 +382,7 @@ class SecurityService
      *
      * @return mixed Sanitized input.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-5
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
@@ -440,7 +440,7 @@ class SecurityService
      *
      * @return array Validated and sanitized credentials or error information.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function validateLoginCredentials(array $credentials): array
     {
@@ -501,7 +501,7 @@ class SecurityService
      *
      * @return JSONResponse The response with added security headers.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-5
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function addSecurityHeaders(JSONResponse $response): JSONResponse
     {
@@ -538,7 +538,7 @@ class SecurityService
      *
      * @return string The client IP address.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     public function getClientIpAddress(IRequest $request): string
     {
@@ -584,7 +584,7 @@ class SecurityService
      *
      * @return string Sanitized cache key.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function sanitizeForCacheKey(string $input): string
     {
@@ -605,7 +605,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-user-management-and-login/tasks.md#task-2
+     * @spec openspec/specs/user-management-and-login/spec.md
      */
     private function logSecurityEvent(string $event, array $context=[]): void
     {

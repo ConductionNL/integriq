@@ -147,22 +147,22 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingName() {
 			return this.mapping?.name || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		placeholder() {
 			return '{\n  "key": "value"\n}'
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canRun() {
 			return !!this.mapping && this.inputJson.trim().length > 0
 		},
 		hasResult() {
 			return this.result !== null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		resultJson() {
 			try {
 				return JSON.stringify(this.result, null, 2)
@@ -173,7 +173,7 @@ export default {
 	},
 
 	watch: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		open(value) {
 			if (value) {
 				this.resetState()
@@ -183,12 +183,12 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onClose() {
 			this.$emit('close')
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		resetState() {
 			this.runError = ''
 			this.inputError = ''
@@ -196,7 +196,7 @@ export default {
 			this.validation = { isValid: true, errors: [] }
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		async fetchSchemas() {
 			this.schemasLoading = true
 			try {
@@ -223,7 +223,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		async runTest() {
 			this.resetState()
 			let parsedInput = null
@@ -269,7 +269,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		formatValidationError(err) {
 			if (typeof err === 'string') return err
 			return err?.message || err?.error || JSON.stringify(err)

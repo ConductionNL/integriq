@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenConnector\Service\Kiss;
 /**
  * Sandbox KISS provider: empty pulls, synthetic created/linked ids.
  *
- * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+ * @spec openspec/specs/kiss-kcc-bridge/spec.md
  */
 class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
 {
@@ -53,7 +53,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
      *
      * @return string The stable `log` provider identifier.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function getProviderId(): string
     {
@@ -66,7 +66,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
      *
      * @return array<string, mixed> An empty schema — the log provider needs no configuration.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-klantinteracties-provider-abstraction-with-log-and-rest-bindings
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function getConfigSchema(): array
     {
@@ -83,7 +83,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
      *
      * @return array{items: array<int, array<string, mixed>>, nextCursor: string|null} Always an empty page.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#scenario-the-log-provider-pulls-nothing-without-a-network-call-or-secret
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md#scenario-the-log-provider-pulls-nothing-without-a-network-call-or-secret
      */
     public function listKlantcontacten(array $sourceConfiguration, ?string $since, int $pageSize): array
     {
@@ -99,7 +99,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
      *
      * @return string The synthetic `MOCK-KISS-<n>` klantcontact id.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#scenario-the-log-provider-creates-without-a-network-call-or-secret
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function createKlantcontact(array $sourceConfiguration, array $payload): string
     {
@@ -118,7 +118,7 @@ class LogKlantinteractiesProvider implements KlantinteractiesProviderInterface
      *
      * @return string The synthetic `MOCK-KISS-<n>` onderwerpobject id.
      *
-     * @spec openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md#requirement-push-endpoint-registering-a-klantcontact-and-linking-a-case
+     * @spec openspec/specs/kiss-kcc-bridge/spec.md
      */
     public function linkOnderwerpobject(
         array $sourceConfiguration,

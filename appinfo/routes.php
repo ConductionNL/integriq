@@ -28,6 +28,18 @@ return [
 		// previous string-presence-only placeholder has been removed.
 		['name' => 'dSO#receiveVerzoek', 'url' => '/api/dso/stam/verzoeken', 'verb' => 'POST'],
 
+		// dso-connector-adapter: authenticated NC-session read/handoff/outbound
+		// surface completing the STAM koppelvlak above (which previously
+		// logged and dropped every verzoek — no persistence, no handoff, no
+		// outbound leg existed before this change). The handoff trigger
+		// deliberately requires a real authenticated actor (OpenRegister
+		// HandoffService v1 has no system-user privilege lane; see
+		// design.md §1, same constraint documented for open-formulieren-intake).
+		['name' => 'dSO#listVerzoeken', 'url' => '/api/dso/verzoeken', 'verb' => 'GET'],
+		['name' => 'dSO#status', 'url' => '/api/dso/verzoeken/{id}', 'verb' => 'GET'],
+		['name' => 'dSO#handoff', 'url' => '/api/dso/verzoeken/{id}/handoff', 'verb' => 'POST'],
+		['name' => 'dSO#postOutbound', 'url' => '/api/dso/verzoeken/{id}/status', 'verb' => 'POST'],
+
 		// Peppol Access Point connector (openspec/changes/peppol-access-point-connector).
 		// Participant/SMP lookup is an authenticated NC-session call (production
 		// binding for shillinq's PeppolTransmissionAdapterInterface::lookupParticipant).
@@ -70,6 +82,36 @@ return [
 		// IwmoIjwController::inbound().
 		['name' => 'iwmoIjw#createBericht', 'url' => '/api/iwmo-ijw/berichten', 'verb' => 'POST'],
 		['name' => 'iwmoIjw#inbound', 'url' => '/api/iwmo-ijw/retour', 'verb' => 'POST'],
+
+		// StUF-ZKN (StUF-ZKN 3.10, VNG/EGEM) bridge (openspec/changes/
+		// stuf-zkn-bridge) — the legacy Dutch municipal SOAP/XML message
+		// standard, letting a municipality adopt procest without ripping out
+		// its StUF estate first. The inbound SOAP endpoint is gated by webhook
+		// signature (HMAC), not an NC session, and always replies with a
+		// Bv03/Fo03 StUF body — see StufZknController::inbound(). The outbound
+		// push endpoint is an authenticated NC-session call (production
+		// binding for sibling apps' own zaak modules) — mirrors
+		// iwmoIjw#createBericht.
+		['name' => 'stufZkn#inbound', 'url' => '/api/stuf-zkn/inbound', 'verb' => 'POST'],
+		['name' => 'stufZkn#outbound', 'url' => '/api/stuf-zkn/kennisgevingen', 'verb' => 'POST'],
+
+		// FSC (Federatieve Service Connectiviteit) connectivity — the standard
+		// that replaced NLX in 2025 (openspec/changes/fsc-connectivity). Both
+		// routes are authenticated NC-session calls (production binding for
+		// sibling apps reaching another organisation's published service via
+		// the directory + provider seam) — there is no inbound leg (see
+		// design.md "Architecture Overview"), so unlike the connectors above
+		// there is no signed webhook receiver here.
+		['name' => 'fsc#listServices', 'url' => '/api/fsc/services', 'verb' => 'GET'],
+		['name' => 'fsc#call', 'url' => '/api/fsc/call', 'verb' => 'POST'],
+
+		// ZGW version-translation shim (openspec/changes/zgw-version-translation)
+		// — translates the fleet's current ZGW shape ("1.0", the shape
+		// procest/OpenRegister emit today) to/from VNG's incremental ZGW
+		// v1.6 stability line for sibling apps / municipalities on a
+		// different ZGW version. Authenticated NC-session call, mirrors
+		// fsc#call. See ZgwVersionTranslateController::translate().
+		['name' => 'zgwVersionTranslate#translate', 'url' => '/api/zgw-translate', 'verb' => 'POST'],
 
 		// Open Formulieren intake bridge (openspec/changes/open-formulieren-intake).
 		// Inbound submissions are gated by webhook signature (HMAC), not an NC
@@ -137,12 +179,35 @@ return [
 		['name' => 'psd2#callback', 'url' => '/api/psd2/callback', 'verb' => 'GET'],
 		['name' => 'psd2#discoverAccounts', 'url' => '/api/psd2/connections/{connectionId}/accounts', 'verb' => 'POST'],
 
+		// Corporate card-feed connector (openspec/changes/corporate-card-feed).
+		// enroll discovers a card program's cards and records a cardfeed_account
+		// (admin action RBAC — grants access to real card data). The scheduled
+		// transaction sync is cron-driven (CardfeedSyncJob), not a route.
+		['name' => 'cardfeed#enroll', 'url' => '/api/cardfeed/sources/{sourceSlug}/enroll', 'verb' => 'POST'],
+
+		// ZGW Notificaties API subscriber/publisher (openspec/changes/notificaties-api-subscriber).
+		// Abonnement CRUD is authenticated NC-session (action RBAC), dedicated
+		// controller — NOT the generic OR object CRUD a CnIndexPage would drive,
+		// because create/update/delete must also register/update/delete the
+		// abonnement against the remote Notificaties API (design.md File
+		// Structure). The callback is gated by consumer-apiKey auth, not an NC
+		// session (design.md Decision 1/2) — mirrors PeppolController#inbound.
+		['name' => 'notificatiesSubscriber#index', 'url' => '/api/notificaties/abonnementen', 'verb' => 'GET'],
+		['name' => 'notificatiesSubscriber#create', 'url' => '/api/notificaties/abonnementen', 'verb' => 'POST'],
+		['name' => 'notificatiesSubscriber#update', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'PUT'],
+		['name' => 'notificatiesSubscriber#destroy', 'url' => '/api/notificaties/abonnementen/{id}', 'verb' => 'DELETE'],
+		['name' => 'notificatiesSubscriber#callback', 'url' => '/api/notificaties/callback/{abonnementId}', 'verb' => 'POST'],
+
 		// Source endpoints
 		['name' => 'sources#test', 'url' => '/api/sources/test/{id}', 'verb' => 'POST'],
 		['name' => 'sources#logs', 'url' => '/api/sources/logs', 'verb' => 'GET'],
 		// sources#statistics route removed — controller method was deleted by the
 		// chain-C agent's overreach. Dashboard stats now come from declarative
 		// manifest widgets resolving against OR's aggregate endpoint.
+
+		// Circuit breaker manual trip/reset (admin-only, CSRF intact — REQ-009).
+		['name' => 'sources#tripCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/trip', 'verb' => 'POST'],
+		['name' => 'sources#resetCircuitBreaker', 'url' => '/api/sources/{id}/circuit-breaker/reset', 'verb' => 'POST'],
 
 		// Job endpoints
 		['name' => 'jobs#run', 'url' => '/api/jobs/run/{id}', 'verb' => 'POST'],
@@ -159,9 +224,20 @@ return [
 		// Synchronization endpoints
 		['name' => 'synchronizations#run', 'url' => '/api/synchronizations/{id}/run', 'verb' => 'POST'],
 		['name' => 'synchronizations#test', 'url' => '/api/synchronizations/{id}/test', 'verb' => 'POST'],
+		['name' => 'synchronizations#resetCursor', 'url' => '/api/synchronizations/{id}/reset-cursor', 'verb' => 'POST'],
 		['name' => 'synchronizations#logs', 'url' => '/api/synchronizations/logs', 'verb' => 'GET'],
 		['name' => 'synchronizations#statistics', 'url' => '/api/synchronizations/statistics', 'verb' => 'GET'],
 		['name' => 'synchronizations#contracts', 'url' => '/api/synchronizations/contracts/{id}', 'verb' => 'GET'],
+
+		// Tables bridge discovery endpoints (nextcloud-table source/target editor support)
+		['name' => 'tablesBridge#status', 'url' => '/api/synchronizations/tables-bridge/status', 'verb' => 'GET'],
+		['name' => 'tablesBridge#tables', 'url' => '/api/synchronizations/tables-bridge/tables', 'verb' => 'GET'],
+		['name' => 'tablesBridge#columns', 'url' => '/api/synchronizations/tables-bridge/tables/{tableId}/columns', 'verb' => 'GET'],
+
+		// Forms bridge discovery endpoints (nextcloud-form source editor support)
+		['name' => 'formsBridge#status', 'url' => '/api/synchronizations/forms-bridge/status', 'verb' => 'GET'],
+		['name' => 'formsBridge#forms', 'url' => '/api/synchronizations/forms-bridge/forms', 'verb' => 'GET'],
+		['name' => 'formsBridge#questions', 'url' => '/api/synchronizations/forms-bridge/forms/{formId}/questions', 'verb' => 'GET'],
 
 		// Mapping endpoints
 		['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
@@ -213,12 +289,29 @@ return [
 		['name' => 'events#replay', 'url' => '/api/events/dead-letter/{id}/replay', 'verb' => 'POST'],
 		['name' => 'events#discard', 'url' => '/api/events/dead-letter/{id}/discard', 'verb' => 'POST'],
 
+		// Sync-item dead-letter queue inspection and replay (admin-only, CSRF
+		// intact — REQ-DLR-007..011). Bulk (static) routes registered BEFORE
+		// the {id} wildcard, mirroring the events# ordering above.
+		['name' => 'syncDeadLetter#index', 'url' => '/api/sync-dead-letter', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#bulkReplay', 'url' => '/api/sync-dead-letter/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#bulkDiscard', 'url' => '/api/sync-dead-letter/discard', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#show', 'url' => '/api/sync-dead-letter/{id}', 'verb' => 'GET'],
+		['name' => 'syncDeadLetter#replay', 'url' => '/api/sync-dead-letter/{id}/replay', 'verb' => 'POST'],
+		['name' => 'syncDeadLetter#discard', 'url' => '/api/sync-dead-letter/{id}/discard', 'verb' => 'POST'],
+
 		// Logs endpoints (LogsController — synchronization_log schema)
 		['name' => 'logs#index', 'url' => '/api/logs', 'verb' => 'GET'],
 		['name' => 'logs#show', 'url' => '/api/logs/{id}', 'verb' => 'GET'],
 		['name' => 'logs#destroy', 'url' => '/api/logs/{id}', 'verb' => 'DELETE'],
 		['name' => 'logs#statistics', 'url' => '/api/logs/statistics', 'verb' => 'GET'],
 		['name' => 'logs#export', 'url' => '/api/logs/export', 'verb' => 'GET'],
+
+		// Execution traces endpoints (ExecutionTracesController — execution_trace
+		// schema; execution-trace-observability). Static routes registered
+		// before the {id} wildcard.
+		['name' => 'executionTraces#index', 'url' => '/api/execution-traces', 'verb' => 'GET'],
+		['name' => 'executionTraces#show', 'url' => '/api/execution-traces/{id}', 'verb' => 'GET'],
+		['name' => 'executionTraces#replay', 'url' => '/api/execution-traces/{id}/replay', 'verb' => 'POST'],
 
 		// Logs sub-endpoints on SynchronizationsController
 		['name' => 'synchronizations#logsStatistics', 'url' => '/api/synchronizations/logs/statistics', 'verb' => 'GET'],
@@ -239,6 +332,32 @@ return [
 		['name' => 'pdok#freeAction', 'url' => '/api/pdok/free', 'verb' => 'GET'],
 		['name' => 'pdok#reverseAction', 'url' => '/api/pdok/reverse', 'verb' => 'GET'],
 
+		// HITL approval workflow (openspec/changes/hitl-approval-rule-action).
+		// Auth: #[NoAdminRequired] with in-body two-layer authorization
+		// (ADR-023 action matrix + per-request approverGroup membership,
+		// see ApprovalsController). Standard NC CSRF protection applies to
+		// approve/reject — no #[NoCSRFRequired] (design.md API Design).
+		['name' => 'approvals#index', 'url' => '/api/approvals', 'verb' => 'GET'],
+		['name' => 'approvals#show', 'url' => '/api/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'approvals#approve', 'url' => '/api/approvals/{id}/approve', 'verb' => 'POST'],
+		['name' => 'approvals#reject', 'url' => '/api/approvals/{id}/reject', 'verb' => 'POST'],
+
+		// Flow orchestration (openspec/changes/visual-flow-orchestration). Standard
+		// `flow` CRUD goes through OR's generic /api/objects/openconnector/flow/*
+		// routes (ADR-022) — this is the one bespoke, non-CRUD action.
+		['name' => 'flows#run', 'url' => '/api/flows/{id}/run', 'verb' => 'POST'],
+		// API Products gateway (openspec/changes/api-product-gateway). api_product/
+		// api_product_subscription CRUD goes through OR's generic object API
+		// (design.md API Design); these are the bespoke, non-CRUD actions.
+		// Auth: subscribe/analytics are admin-only (default Controller posture, no
+		// #[NoAdminRequired] — matches ConsumersController's posture); approve/reject
+		// use the same #[NoAdminRequired] + in-body approverGroup authorization as
+		// the HITL approvals routes above.
+		['name' => 'productSubscriptions#subscribe', 'url' => '/api/products/{productId}/subscriptions', 'verb' => 'POST'],
+		['name' => 'productSubscriptions#analytics', 'url' => '/api/products/{productId}/analytics', 'verb' => 'GET'],
+		['name' => 'productSubscriptions#approve', 'url' => '/api/products/subscriptions/{subscriptionId}/approve', 'verb' => 'POST'],
+		['name' => 'productSubscriptions#reject', 'url' => '/api/products/subscriptions/{subscriptionId}/reject', 'verb' => 'POST'],
+
 		// Catalog endpoints (connector-catalog-ui). Listing/search/filter goes
 		// through OR's generic /api/objects/openconnector/catalog_item (ADR-022);
 		// these two are the bespoke, non-CRUD actions.
@@ -251,8 +370,21 @@ return [
 		// ConfigurationService::exportConfiguration()/importConfiguration().
 		// See openspec/changes/connector-catalog-ui/contract.md
 		['name' => 'configuration#export', 'url' => '/api/configurations/{id}/export', 'verb' => 'POST'],
+		// Register connector export — routed trigger for ConfigurationService::exportRegister().
+		['name' => 'configuration#exportRegister', 'url' => '/api/registers/{id}/export', 'verb' => 'GET'],
 		['name' => 'configuration#previewImport', 'url' => '/api/configurations/import/preview', 'verb' => 'POST'],
 		['name' => 'configuration#import', 'url' => '/api/configurations/import', 'verb' => 'POST'],
+
+		// Environments & Promotion (environments-and-promotion). Environment
+		// CRUD (environment.manage) plus promotion preview/confirm
+		// (environment.promote) — dispatched to the target's own, unmodified
+		// /api/configurations/import/preview + /api/configurations/import
+		// endpoints via CallService::call() against the environment's sourceRef.
+		// See openspec/specs/environments-and-promotion/spec.md
+		['name' => 'environment#index', 'url' => '/api/environments', 'verb' => 'GET'],
+		['name' => 'environment#create', 'url' => '/api/environments', 'verb' => 'POST'],
+		['name' => 'promotion#preview', 'url' => '/api/promotions/preview', 'verb' => 'POST'],
+		['name' => 'promotion#confirm', 'url' => '/api/promotions', 'verb' => 'POST'],
 
 		// User CORS preflight endpoints
 		['name' => 'user#preflightedCorsMe', 'url' => '/api/user/me', 'verb' => 'OPTIONS'],
@@ -310,6 +442,10 @@ return [
 		['name' => 'ui#cloudEventsEvents', 'url' => '/cloud-events/events', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsEventsId', 'url' => '/cloud-events/events/{id}', 'verb' => 'GET'],
 		['name' => 'ui#cloudEventsLogs', 'url' => '/cloud-events/logs', 'verb' => 'GET'],
+		['name' => 'ui#approvals', 'url' => '/approvals', 'verb' => 'GET'],
+		['name' => 'ui#approvalsId', 'url' => '/approvals/{id}', 'verb' => 'GET'],
+		['name' => 'ui#products', 'url' => '/products', 'verb' => 'GET'],
+		['name' => 'ui#productsId', 'url' => '/products/{id}', 'verb' => 'GET'],
 		['name' => 'ui#catalog', 'url' => '/catalog', 'verb' => 'GET'],
 		// SPA catch-all — serves the Vue app for any frontend route (history mode routing)
 		// Catch-all SPA route: serve the Vue app for any sub-path that no specific ui#* route handles.

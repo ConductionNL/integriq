@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+ * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
  */
 class EudiIssuerKeyService
 {
@@ -227,7 +227,7 @@ class EudiIssuerKeyService
      *
      * @return array{kid: string, publicKeyPem: string, algorithm: string} Public material only.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     public function generateKey(?string $organisationId=null): array
     {
@@ -262,7 +262,7 @@ class EudiIssuerKeyService
      *
      * @return array{kid: string, publicKeyPem: string, algorithm: string} Public material only.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     public function rotateKey(?string $organisationId=null): array
     {
@@ -320,7 +320,7 @@ class EudiIssuerKeyService
      *
      * @return array{kid: string, publicKeyPem: string, privateKeyPem: string}
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     public function resolveActiveKey(?string $organisationId=null): array
     {
@@ -349,7 +349,7 @@ class EudiIssuerKeyService
      *
      * @return string|null The public key PEM, or null when not found.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-signing-key-lifecycle-under-beheer-authenticatie-req-eudi-002
      */
     public function resolvePublicKeyByFingerprint(?string $organisationId, string $kid): ?string
     {
@@ -416,7 +416,7 @@ class EudiIssuerKeyService
      *
      * @return array A `{"keys": [...]}` JWKS document of public JWKs only.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
      */
     public function getJwks(?string $organisationId=null): array
     {
@@ -447,7 +447,7 @@ class EudiIssuerKeyService
      *
      * @return array The active public JWK.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-issuer-metadata-endpoint-req-eudi-003
      */
     public function getActivePublicJwk(?string $organisationId=null): array
     {
@@ -471,7 +471,7 @@ class EudiIssuerKeyService
      *
      * @return string The compact-serialized signed JWT.
      *
-     * @spec openspec/changes/eudi-wallet-credential-issuance/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
+     * @spec openspec/specs/eudi-wallet-credential-issuance/spec.md#requirement-credential-endpoint-verifies-proof-of-possession-and-dispatches-by-format-req-eudi-007
      */
     public function signJwt(?string $organisationId, array $payload, array $extraHeaderClaims=[]): string
     {

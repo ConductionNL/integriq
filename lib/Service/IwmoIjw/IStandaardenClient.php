@@ -36,6 +36,15 @@
  * accepted deviation from `credentialRef`/`BrokeredCallService` — see
  * design.md "Provider seam, credential storage, feature gating".
  *
+ * mTLS: closed by `mtls-client-certificate-transport` — set
+ * `configuration.authentication.mode=mtls` (default remains `token`) and
+ * populate `configuration.authentication.mtls` (ICrypto-encrypted
+ * certificate/key/optional passphrase/optional CA bundle, same at-rest
+ * pattern as the token above) to dispatch this GGk/VECOZO-fronted request
+ * over a real mutual-TLS connection via {@see
+ * \OCA\OpenConnector\Service\Mtls\MtlsTransportService}. Token mode is
+ * unchanged.
+ *
  * @category Service
  * @package  OCA\OpenConnector\Service\IwmoIjw
  *
@@ -48,7 +57,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 
 declare(strict_types=1);
@@ -58,8 +67,12 @@ namespace OCA\OpenConnector\Service\IwmoIjw;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenConnector\Exception\IwmoIjwProviderException;
+use OCA\OpenConnector\Exception\MtlsTransportException;
+use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,7 +81,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
  */
 class IStandaardenClient implements IwmoIjwProviderInterface
 {
@@ -90,16 +103,20 @@ class IStandaardenClient implements IwmoIjwProviderInterface
     /**
      * Constructor.
      *
-     * @param Client          $httpClient Guzzle client (test seam: inject one with a MockHandler stack).
-     * @param ICrypto         $crypto     Encrypts/decrypts the stored API token at rest.
-     * @param IL10N           $l          The localization service.
-     * @param LoggerInterface $logger     Logger for secret-free failure diagnostics.
+     * @param Client               $httpClient         Guzzle client (test seam: inject one with a MockHandler stack).
+     * @param ICrypto              $crypto             Encrypts/decrypts the stored API token at rest.
+     * @param IL10N                $l                  The localization service.
+     * @param LoggerInterface      $logger             Logger for secret-free failure diagnostics.
+     * @param MtlsConfigResolver   $mtlsConfigResolver Resolves `authentication.mtls` into a certificate bundle.
+     * @param MtlsTransportService $mtlsTransport      Dispatches the request with a client certificate attached.
      */
     public function __construct(
         private readonly Client $httpClient,
         private readonly ICrypto $crypto,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly MtlsConfigResolver $mtlsConfigResolver,
+        private readonly MtlsTransportService $mtlsTransport,
     ) {
 
     }//end __construct()
@@ -109,7 +126,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
      *
      * @return string The stable `rest` provider identifier.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getProviderId(): string
     {
@@ -122,7 +139,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
      *
      * @return array<string, mixed> The iWMO/iJW source configuration JSON Schema.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function getConfigSchema(): array
     {
@@ -136,18 +153,35 @@ class IStandaardenClient implements IwmoIjwProviderInterface
                 ],
                 'authentication' => [
                     'type'       => 'object',
-                    'required'   => ['encryptedToken'],
                     'properties' => [
+                        'mode'           => [
+                            'type'        => 'string',
+                            'enum'        => ['token', 'mtls'],
+                            'default'     => 'token',
+                            'description' => '`token` (default) sends a Bearer Authorization header from '
+                                .'`encryptedToken`. `mtls` dispatches over a real mutual-TLS connection using '
+                                .'`mtls.*` — closes the real GGk/VECOZO transport gap.',
+                        ],
                         'encryptedToken' => [
                             'type'        => 'string',
-                            'description' => 'The iStandaarden API token, encrypted at rest via OCP\\Security\\ICrypto — '
-                                .'never store the raw token. NOTE: the real GGk/VECOZO transport historically uses '
-                                .'client-certificate (mTLS) auth, not a bearer token — see design.md "Open Questions".',
+                            'description' => 'Required when `mode=token` (the default). The iStandaarden API token, '
+                                .'encrypted at rest via OCP\\Security\\ICrypto — never store the raw token.',
                         ],
                         'scheme'         => [
                             'type'        => 'string',
-                            'description' => 'Authorization header scheme.',
+                            'description' => 'Authorization header scheme, used only when `mode=token`.',
                             'default'     => self::DEFAULT_AUTH_SCHEME,
+                        ],
+                        'mtls'           => [
+                            'type'        => 'object',
+                            'description' => 'Required when `mode=mtls`. Client certificate material, each field '
+                                .'individually encrypted at rest via OCP\\Security\\ICrypto.',
+                            'properties'  => [
+                                'encryptedCertificate' => ['type' => 'string', 'description' => 'PEM client certificate.'],
+                                'encryptedPrivateKey'  => ['type' => 'string', 'description' => 'PEM private key.'],
+                                'encryptedPassphrase'  => ['type' => 'string', 'description' => 'Optional private key passphrase.'],
+                                'encryptedCaBundle'    => ['type' => 'string', 'description' => 'Optional PEM CA bundle to verify the peer against.'],
+                            ],
                         ],
                     ],
                 ],
@@ -169,7 +203,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
      *
      * @return string The extracted reference.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-the-rest-provider-sends-the-expected-bearer-auth-header
      */
     public function send(array $sourceConfiguration, string $berichttype, string $envelopeXml): string
     {
@@ -180,19 +214,43 @@ class IStandaardenClient implements IwmoIjwProviderInterface
             );
         }
 
+        $authConfig = (array) ($sourceConfiguration['authentication'] ?? []);
+        $useMtls    = $this->mtlsConfigResolver->isMtlsConfigured(authConfig: $authConfig);
+
+        $headers = [
+            'Content-Type'  => 'application/xml',
+            'Accept'        => 'application/xml, application/json',
+            'X-Berichttype' => $berichttype,
+        ];
+        if ($useMtls === false) {
+            // Token mode (default) — unchanged from before this change.
+            $headers['Authorization'] = $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration);
+        }
+
         $requestOptions = [
-            'headers'     => [
-                'Authorization' => $this->buildAuthorizationHeader(sourceConfiguration: $sourceConfiguration),
-                'Content-Type'  => 'application/xml',
-                'Accept'        => 'application/xml, application/json',
-                'X-Berichttype' => $berichttype,
-            ],
+            'headers'     => $headers,
             'body'        => $envelopeXml,
             'http_errors' => false,
         ];
 
+        $url = $baseUrl.self::DEFAULT_PATH;
+
         try {
-            $response = $this->httpClient->request('POST', $baseUrl.self::DEFAULT_PATH, $requestOptions);
+            $response = $this->dispatch(
+                useMtls: $useMtls,
+                authConfig: $authConfig,
+                url: $url,
+                requestOptions: $requestOptions
+            );
+        } catch (MtlsTransportException $exception) {
+            $this->logger->warning(
+                '[IStandaardenClient] mTLS request failed',
+                ['exception' => $exception->getMessage(), 'errorCode' => $exception->getErrorCode()]
+            );
+            throw new IwmoIjwProviderException(
+                message: 'The iStandaarden mTLS request failed ('.$exception->getErrorCode().'): '.$exception->getMessage(),
+                previous: $exception
+            );
         } catch (GuzzleException $exception) {
             $this->logger->warning(
                 '[IStandaardenClient] unexpected transport failure',
@@ -202,7 +260,7 @@ class IStandaardenClient implements IwmoIjwProviderInterface
                 message: 'The iStandaarden request failed unexpectedly: '.$exception->getMessage(),
                 previous: $exception
             );
-        }
+        }//end try
 
         $status = $response->getStatusCode();
         $body   = (string) $response->getBody();
@@ -213,6 +271,34 @@ class IStandaardenClient implements IwmoIjwProviderInterface
         return $this->extractRef(body: $body);
 
     }//end send()
+
+    /**
+     * Dispatch the request over mTLS when configured, else over the existing
+     * token-mode path (unchanged). Never falls back between the two: an mTLS
+     * resolve/handshake failure propagates as {@see MtlsTransportException}.
+     *
+     * @param boolean $useMtls        Whether `authentication.mode=mtls` is configured.
+     * @param array   $authConfig     The source's `configuration.authentication` object.
+     * @param string  $url            The absolute request URL.
+     * @param array   $requestOptions The Guzzle request options.
+     *
+     * @return ResponseInterface The Guzzle response.
+     *
+     * @throws MtlsTransportException When mTLS is configured but the material is unusable or the handshake fails.
+     * @throws GuzzleException        When the token-mode dispatch fails.
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-istandaardenclient-routes-through-the-mtls-transport-when-configured
+     */
+    private function dispatch(bool $useMtls, array $authConfig, string $url, array $requestOptions): ResponseInterface
+    {
+        if ($useMtls === true) {
+            $bundle = $this->mtlsConfigResolver->resolve(authConfig: $authConfig);
+            return $this->mtlsTransport->request($this->httpClient, 'POST', $url, $requestOptions, $bundle);
+        }
+
+        return $this->httpClient->request('POST', $url, $requestOptions);
+
+    }//end dispatch()
 
     /**
      * Extract a usable reference from the response body — either a bare

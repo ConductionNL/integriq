@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use DateTime;
 /**
  * Sandbox PSD2 aggregator provider: canned SCA URL, accounts, and transactions.
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-the-log-provider-drives-the-full-path-without-a-network-call-or-secret
  */
 class LogPsd2AggregatorProvider implements Psd2AggregatorProviderInterface
 {
@@ -80,7 +80,7 @@ class LogPsd2AggregatorProvider implements Psd2AggregatorProviderInterface
      *
      * @return array{reference: string, redirectUrl: string} A synthetic reference + canned SCA URL.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
      */
     public function createRequisition(array $sourceConfiguration, string $institutionId, string $redirectUrl): array
     {
@@ -103,7 +103,7 @@ class LogPsd2AggregatorProvider implements Psd2AggregatorProviderInterface
      * @return array The finalised consent (no token — the sandbox holds no secret):
      *               `{consentReference, consentExpiresAt, accounts, consentToken: null}`.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-callback-finalises-consent-and-stores-only-the-reference
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-callback-finalises-consent-and-stores-only-the-reference
      */
     public function finaliseConsent(array $sourceConfiguration, string $reference): array
     {
@@ -127,7 +127,7 @@ class LogPsd2AggregatorProvider implements Psd2AggregatorProviderInterface
      * @return array<int, array{aggregatorAccountId: string, bic: string, currency: string, iban: string}> The
      *         canned authorised accounts.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-account-discovery-after-consent-req-003
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-account-discovery-after-consent-req-003
      */
     public function listAccounts(array $sourceConfiguration, string $consentReference): array
     {
@@ -145,7 +145,7 @@ class LogPsd2AggregatorProvider implements Psd2AggregatorProviderInterface
      *
      * @return array<int, array<string, mixed>> Canned aggregator-shaped transaction rows inside the window.
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-004
      */
     public function listTransactions(array $sourceConfiguration, string $accountId, string $since, string $until): array
     {

@@ -300,9 +300,17 @@ consuming app's own status enum was never designed to hold.
 
 ## Open Questions
 
-- Client-certificate (mTLS) auth for a real GGk/VECOZO connection is
-  explicitly deferred (see "Provider seam" above) — `IStandaardenClient`
-  ships with token auth only, a documented gap, not a silent omission.
+- ~~Client-certificate (mTLS) auth for a real GGk/VECOZO connection is
+  explicitly deferred~~ — **CLOSED by `mtls-client-certificate-transport`
+  (2026-07-16)**: `IStandaardenClient` now dispatches over a real mutual-TLS
+  connection when its source's `configuration.authentication.mode=mtls` is
+  configured (`ICrypto`-encrypted-at-rest certificate/key/optional
+  passphrase/optional CA bundle under `configuration.authentication.mtls`),
+  via the shared `OCA\OpenConnector\Service\Mtls\MtlsTransportService`.
+  Token mode remains the default and is unchanged. What remains
+  operator-side: obtaining and registering the actual PKIoverheid client
+  certificate with GGk/VECOZO, and rotating it before expiry — cert
+  provisioning/enrolment is not automated by this or any change.
 - Whether municipalities exchange iWmo/iJw directly with GGk or via a
   regional Gegevensknooppunt intermediary varies by region; this design
   treats `configuration.baseUrl` as "whatever endpoint the deployment

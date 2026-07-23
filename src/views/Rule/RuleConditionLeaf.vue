@@ -228,7 +228,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		operatorOptions() {
 			return OPERATORS.map((op) => ({
 				id: op.id,
@@ -236,22 +236,22 @@ export default {
 				group: op.group ? this.t('openconnector', op.group) : '',
 			}))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		currentOperator() {
 			const keys = Object.keys(this.node || {})
 			const op = keys.find((key) => OPERATORS.some((entry) => entry.id === key))
 			return op || '=='
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		schema() {
 			return OPERATORS.find((entry) => entry.id === this.currentOperator) || OPERATORS[0]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedOperator() {
 			return this.operatorOptions.find((option) => option.id === this.currentOperator)
 				?? this.operatorOptions[0]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		args() {
 			const value = this.node?.[this.currentOperator]
 			if (Array.isArray(value)) return value
@@ -261,7 +261,7 @@ export default {
 			}
 			return []
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varPath() {
 			const first = this.args[0]
 			if (first && typeof first === 'object' && Object.prototype.hasOwnProperty.call(first, 'var')) {
@@ -270,7 +270,7 @@ export default {
 			if (typeof first === 'string') return first
 			return ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		varOnlyPath() {
 			// For top-level `var` ops, args[0] is the dotted-path string.
 			const first = this.args[0]
@@ -280,34 +280,34 @@ export default {
 			}
 			return ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		mergeJson() {
 			try { return JSON.stringify(this.args, null, 2) } catch (_e) { return '[]' }
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onVarInput(value) {
 			this.emitUpdate({ varPath: value })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onVarOnlyInput(value) {
 			// Emit `{ "var": [<path>] }` — jsonlogic-php accepts both
 			// `{ var: "a" }` and `{ var: ["a"] }`; we use the array form
 			// here for shape parity with other ops in the tree.
 			this.$emit('update', { var: [value] })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onOperatorPick(option) {
 			if (!option) return
 			this.emitUpdate({ operator: option.id })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onSlotInput(slot, value) {
 			this.emitUpdate({ slot, slotValue: this.coerce(value) })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onJsonSlotInput(slot, value) {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
@@ -323,7 +323,7 @@ export default {
 				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onMergeInput(value) {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
@@ -343,7 +343,7 @@ export default {
 				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		slotString(index) {
 			const raw = this.args[index]
 			if (raw === null || raw === undefined) return ''
@@ -352,7 +352,7 @@ export default {
 			}
 			return String(raw)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		slotJson(index, { fallback = '' } = {}) {
 			const raw = this.args[index]
 			if (raw === undefined) return fallback
@@ -369,7 +369,7 @@ export default {
 		 * @param {string} raw User-entered text.
 		 * @return {*} Coerced value.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		coerce(raw) {
 			if (raw === '') return ''
@@ -389,7 +389,7 @@ export default {
 		 *   Partial change — fields omitted come from current state.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		emitUpdate(patch) {
 			const operator = patch.operator ?? this.currentOperator
@@ -433,7 +433,7 @@ export default {
 		 *   reuse of the current var/value across an op change.
 		 * @return {Array} Initial args array.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-2
+		 * @spec openspec/specs/rule-editor-ui/spec.md
 		 */
 		argsForKind(schema, { carryVar = '', carryValue = '' } = {}) {
 			switch (schema.kind) {

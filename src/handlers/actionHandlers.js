@@ -34,6 +34,7 @@ import {
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
+	EVENT_OPEN_PROMOTION,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 
@@ -123,6 +124,28 @@ export async function runSynchronizationHandler({ item }) {
 }
 
 /**
+ * Trigger a flow run via POST /api/flows/{id}/run (visual-flow-orchestration
+ * REQ-007d — the manual trigger surface, wired to the Flows index page's
+ * row action here; the Flow detail page's own "Run" header action calls the
+ * same endpoint directly).
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export async function runFlowHandler({ item }) {
+	try {
+		const response = await axios.post(generateUrl(`/apps/openconnector/api/flows/${rowId(item)}/run`))
+		const status = response.data?.status || 'completed'
+		if (status === 'failed' || status === 'stopped' || status === 'dead_letter') {
+			showError(t('openconnector', 'Flow run ended with status: {status}', { status }))
+			return
+		}
+		showSuccess(t('openconnector', 'Flow run triggered'))
+	} catch (err) {
+		showError(t('openconnector', 'Flow run failed') + errorDetail(err))
+	}
+}
+
+/**
  * Test a synchronization (dry run) via POST /api/synchronizations/{id}/test.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
@@ -190,6 +213,19 @@ export function openConfigurationImportHandler() {
  */
 export function openConfigurationExportHandler() {
 	modalBus.$emit(EVENT_OPEN_CONFIGURATION_EXPORT, {})
+}
+
+/**
+ * Open the promote-configuration flow (environments-and-promotion): pick a
+ * configuration group and a target environment, review the merged diff
+ * preview (creates/updates/collisions/credentialRefsNeedingRebind), rebind
+ * any flagged credentialRef placeholders, then confirm. Wired to the
+ * Environments page's "Promote configuration" header action.
+ *
+ * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
+ */
+export function openPromotionHandler() {
+	modalBus.$emit(EVENT_OPEN_PROMOTION, {})
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Service\Lti;
 
+use OCA\OpenConnector\Exception\LtiValidationException;
 use OCA\OpenConnector\Service\Lti\LtiRegistrationResolverService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -304,4 +305,69 @@ class LtiRegistrationResolverServiceTest extends TestCase
         $this->assertNull($service->findRegistrationByUuid('lti_tool', 'tool-4'));
 
     }//end testSuspendedRegistrationResolvesAsNotFoundByUuid()
+
+
+    // =========================================================================
+    // findDeploymentByUuid() — REQ-LTI-001 scenario 2 single-reference gate
+    // (defensive re-check now wired at the single deployment-resolution owner
+    // every AGS/NRPS dispatch calls).
+    // =========================================================================
+
+    /**
+     * A deployment referencing exactly one registration resolves normally
+     * (the `ltiToolId`-only shape an AGS token-issuance dispatch expects).
+     *
+     * @return void
+     */
+    public function testDeploymentWithSingleReferenceResolves(): void
+    {
+        $this->registrations['dep-ok'] = ['@schema' => 'lti_deployment', 'ltiToolId' => 'tool-1'];
+        $service = $this->makeService();
+
+        $result = $service->findDeploymentByUuid('dep-ok');
+
+        $this->assertNotNull($result);
+        $this->assertSame('dep-ok', $result->getUuid());
+
+    }//end testDeploymentWithSingleReferenceResolves()
+
+
+    /**
+     * An ambiguous deployment referencing BOTH `ltiPlatformId` and `ltiToolId`
+     * fails closed at resolution time — the exact row that could otherwise pass
+     * an AGS `ltiToolId === tool` isolation check while also belonging to a
+     * platform, issuing a token scoped to an ambiguous deployment.
+     *
+     * @return void
+     */
+    public function testDeploymentWithBothReferencesIsRejected(): void
+    {
+        $this->registrations['dep-both'] = [
+            '@schema'       => 'lti_deployment',
+            'ltiPlatformId' => 'plat-1',
+            'ltiToolId'     => 'tool-1',
+        ];
+        $service = $this->makeService();
+
+        $this->expectException(LtiValidationException::class);
+        $service->findDeploymentByUuid('dep-both');
+
+    }//end testDeploymentWithBothReferencesIsRejected()
+
+
+    /**
+     * A deployment referencing NEITHER registration fails closed at resolution
+     * time rather than resolving to an unusable, un-scoped placement.
+     *
+     * @return void
+     */
+    public function testDeploymentWithNeitherReferenceIsRejected(): void
+    {
+        $this->registrations['dep-none'] = ['@schema' => 'lti_deployment'];
+        $service = $this->makeService();
+
+        $this->expectException(LtiValidationException::class);
+        $service->findDeploymentByUuid('dep-none');
+
+    }//end testDeploymentWithNeitherReferenceIsRejected()
 }//end class

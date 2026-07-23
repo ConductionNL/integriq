@@ -35,6 +35,8 @@ use OCA\OpenConnector\Service\ConfigurationHandlers\RuleHandler;
 /**
  * Service class for managing configurations and their associated entities.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -151,7 +153,7 @@ class ConfigurationService
      *
      * @return array{idToSlug: array<string,string>, slugToId: array<string,string>}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function buildSchemaSlugMaps(string $schema): array
     {
@@ -183,7 +185,7 @@ class ConfigurationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function resetMappings(): void
     {
@@ -231,7 +233,7 @@ class ConfigurationService
      *
      * @return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function fetchBySchema(string $schema, array $filters=[]): array
     {
@@ -256,7 +258,7 @@ class ConfigurationService
      *
      * @return array<string,array> Array containing all entities grouped by type and indexed by slug.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function getEntitiesByConfiguration(string $configurationId): array
     {
@@ -312,7 +314,7 @@ class ConfigurationService
      *
      * @return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function findByConfiguration(string $schema, string $configurationId): array
     {
@@ -338,7 +340,7 @@ class ConfigurationService
      *
      * @return array<string,array> JSON-serializable array containing all entities.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function exportConfiguration(string $configurationId): array
     {
@@ -451,7 +453,7 @@ class ConfigurationService
      *
      * @return array Organized entities by component.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function organizeEntitiesByComponent(array $entities): array
     {
@@ -475,7 +477,7 @@ class ConfigurationService
      *
      * @return string The component type.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function getEntityComponent($entity): string
     {
@@ -529,7 +531,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI source specification.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function exportSource(ObjectEntity $source): array
     {
@@ -543,7 +545,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI endpoint specification.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function exportEndpoint(ObjectEntity $endpoint): array
     {
@@ -558,7 +560,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI mapping specification.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function exportMapping(ObjectEntity $mapping, array &$mappingIds=[]): array
     {
@@ -573,7 +575,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI rule specification.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function exportRule(ObjectEntity $rule, array &$mappingIds=[]): array
     {
@@ -587,7 +589,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI job specification.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function exportJob(ObjectEntity $job): array
     {
@@ -601,7 +603,7 @@ class ConfigurationService
      *
      * @return array The OpenAPI synchronization specification.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-1
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function exportSynchronization(ObjectEntity $synchronization): array
     {
@@ -616,7 +618,7 @@ class ConfigurationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-2
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function buildRegisterAndSchemaMappings(array $registerIds=[], array $schemaIds=[]): void
     {
@@ -663,7 +665,7 @@ class ConfigurationService
      *
      * @return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-2
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function getEndpointsByTarget(string $registerId): array
     {
@@ -693,7 +695,7 @@ class ConfigurationService
      *
      * @return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-2
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function getSynchronizationsByTarget(string $registerId, bool $searchSource=true, bool $searchTarget=true): array
     {
@@ -733,7 +735,7 @@ class ConfigurationService
      *
      * @return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-2
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function findJobsByArgumentIds(array $synchronizationIds=[], array $endpointIds=[], array $sourceIds=[]): array
     {
@@ -787,7 +789,7 @@ class ConfigurationService
      *
      * @return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-2
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function findByUuids(string $schema, array $uuids): array
     {
@@ -820,7 +822,7 @@ class ConfigurationService
      *
      * @return array<string,array> JSON-serializable array containing all connected entities.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-2
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function exportRegister(
         string $registerId,
@@ -1049,7 +1051,7 @@ class ConfigurationService
      *
      * @throws \InvalidArgumentException If required components are missing or invalid.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function importConfiguration(array $oas): array
     {

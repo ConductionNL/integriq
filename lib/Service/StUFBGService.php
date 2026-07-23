@@ -97,7 +97,7 @@ class StUFBGService
      *
      * @return string The complete npsLa01 or Fo01 SOAP XML response.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function handleNpsLv01(string $soapXml, array $stuurgegevens): string
     {
@@ -166,7 +166,7 @@ class StUFBGService
      *
      * @return string The complete adrLa01 or Fo01 SOAP XML response.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function handleAdrLv01(string $soapXml, array $stuurgegevens): string
     {
@@ -222,7 +222,7 @@ class StUFBGService
      *
      * @return array Array of OpenRegister-mapped person property arrays.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-010
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function parseNpsLa01Response(string $soapXml): array
     {
@@ -270,7 +270,7 @@ class StUFBGService
      *
      * @return array Associative array of OpenRegister filter criteria.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractNpsCriteria(SimpleXMLElement $body, string $bgNs): array
     {
@@ -317,7 +317,7 @@ class StUFBGService
      *
      * @return array Associative array of filter criteria.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractAdrCriteria(SimpleXMLElement $body, string $bgNs): array
     {
@@ -365,7 +365,7 @@ class StUFBGService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractScope(SimpleXMLElement $body, string $bgNs, string $stufNs): ?array
     {
@@ -410,7 +410,7 @@ class StUFBGService
      *
      * @return int Maximum number of records, defaulting to 100.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractMaximumAantal(SimpleXMLElement $body, string $stufNs): int
     {
@@ -450,7 +450,7 @@ class StUFBGService
      *
      * @return string|null The referentienummer, or null if not present.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-042
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function extractCrossRefnummer(SimpleXMLElement $body, string $stufNs): ?string
     {
@@ -484,7 +484,7 @@ class StUFBGService
      *
      * @return array OpenRegister-mapped person properties.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-010
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function parsePersonObject(SimpleXMLElement $obj, string $bgNs, string $stufNs): array
     {
@@ -523,7 +523,7 @@ class StUFBGService
      *
      * @return array Array of person property arrays.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-001
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function searchPersons(array $criteria, int $limit=100): array
     {
@@ -548,7 +548,7 @@ class StUFBGService
      *
      * @return array Array of address property arrays.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     private function searchAddresses(array $criteria): array
     {

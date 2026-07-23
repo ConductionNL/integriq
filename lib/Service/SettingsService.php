@@ -70,7 +70,7 @@ class SettingsService
      *
      * @return string The SQL expression.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     private function expiresExpression(string $createdColumn): string
     {
@@ -93,7 +93,7 @@ class SettingsService
      *
      * @return bool True when the column exists, false otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     private function columnExists(string $unprefixedTable, string $column): bool
     {
@@ -174,7 +174,7 @@ class SettingsService
      * @return array Array containing the rebase operation results
      * @throws \RuntimeException If the rebase operation fails
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-5
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     public function rebase(): array
     {

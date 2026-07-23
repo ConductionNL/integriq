@@ -20,7 +20,6 @@ openconnector-local concept with no OpenRegister equivalent.
 
 **OpenSpec changes**
 - [`vng-klantinteracties-adapter`](../../changes/archive/2026-07-12-vng-klantinteracties-adapter/) _(archived 2026-07-12)_ — added a composite transactional fan-out Rule type (REQ-RULE-006, used for VNG's composite `maak-klantcontact`) and a `referentienummer` generation Rule (REQ-RULE-007). Both are dialect-agnostic gateway mechanics (ADR-031 external-integration exception).
-
 ## Requirements
 
 ### REQ-RULE-UI-001: Rule Management UI
@@ -365,6 +364,216 @@ generated reference MUST be stable for the response in which it is issued.
 **Implementation:** `lib/Rule/ReferentienummerRule.php`, dispatched from
 `EndpointService::processRules()`'s `referentienummer` case. Scheme tokens:
 `{uuid}`, `{year}`.
+
+### Requirement: `approval` rule action type suspends the pipeline (REQ-RULE-008)
+
+The system MUST provide an `approval` rule type in
+`EndpointService::processRules()`'s type dispatch, valid only for
+`timing: before`. When a `before`-phase `approval` rule's conditions pass,
+processing MUST NOT continue to later rules in the same run; instead the
+system MUST delegate to `ApprovalService::suspend()` (see
+`approval-workflow` REQ-001) and return the resulting `JSONResponse(202)`
+through the pipeline's existing short-circuit contract (the same contract
+`error` and other terminal rule types already use — no new Response type).
+An `approval` rule configured with `timing: after` MUST be treated as
+invalid configuration and MUST NOT be dispatched.
+
+@e2e exclude backend rule pipeline execution — covered by PHPUnit, not browser UI
+
+#### Scenario: approval rule short-circuits the before-phase pipeline
+
+- **GIVEN** an endpoint with rules at order 10 (`authentication`), 20
+  (`approval`), and 30 (`save_object`)
+- **WHEN** the `before`-phase pipeline runs and the order-20 rule's
+  conditions pass
+- **THEN** the order-10 rule runs normally, the order-20 rule suspends the
+  pipeline via `ApprovalService::suspend()`, the pipeline returns HTTP 202,
+  and the order-30 rule does NOT run in this request
+
+#### Scenario: an approval rule configured for the after phase never dispatches
+
+- **GIVEN** an `approval` rule configured with `timing: after`
+- **WHEN** the pipeline evaluates rules for either phase
+- **THEN** the rule is never matched to the `approval` dispatch case (timing
+  mismatch is invalid configuration, not a runtime skip)
+
+#### Notes
+
+- This requirement only adds a new entry to the existing `match` dispatch
+  in `processRules()` (alongside `save_object`, `authentication`, `error`,
+  etc.) and does not change REQ-RULE-001's ordering/condition/short-circuit
+  contract, which the `approval` type reuses as-is.
+- Resume (the counterpart to this suspension) is specified in
+  `approval-workflow` REQ-003, not here — resuming calls back into
+  `processRules()` for the remaining rules in the same phase, so no
+  separate "resume" rule type exists.
+
+### Requirement: Trace-step emission during rule pipeline execution (REQ-RULE-010)
+
+The system MUST append one ordered `Step` to the active
+`ExecutionTraceContext`'s buffer (per `execution-trace` REQ-001) for every
+rule `processRules()` evaluates, when a non-null `ExecutionTraceContext` is
+supplied. This MUST include rules skipped by REQ-RULE-001's condition/timing
+checks (`status: 'skipped'`), rules that mutate the data envelope
+(`status: 'success'`, redacted input/output per `execution-trace` REQ-003),
+and rules whose processing throws (`status: 'error'`, the same
+endpoint/rule name/type/message the HTTP 500 body carries). When no
+`ExecutionTraceContext` is supplied, `processRules()` MUST behave
+identically to its current, untraced behaviour — no step buffering, no
+additional OpenRegister writes, no change to REQ-RULE-001's
+ordering/condition/short-circuit contract.
+
+@e2e exclude backend rule pipeline execution — covered by PHPUnit, not browser UI
+
+#### Scenario: a traced pipeline records a step per evaluated rule
+
+- **GIVEN** an endpoint with three rules of `order` 10, 20, 30 and an active
+  `ExecutionTraceContext`
+- **WHEN** the pipeline runs and the order-20 rule's conditions fail
+- **THEN** three steps are appended in order 10, 20, 30
+- **AND** the order-20 step carries `status: 'skipped'`
+
+#### Scenario: an untraced pipeline is unaffected
+
+- **GIVEN** an endpoint call with no `ExecutionTraceContext` supplied
+  (`traceId` not minted — e.g. a code path that predates this change)
+- **WHEN** `processRules()` runs
+- **THEN** behaviour is byte-for-byte identical to REQ-RULE-001's existing
+  scenarios — no step is buffered, no `execution_trace` write occurs
+
+#### Notes
+
+- This requirement only adds an optional-parameter hook to the existing
+  `processRules()`/`dispatchAfterBeforeRules()` signatures (default `null`);
+  it does not change REQ-RULE-001's ordering, condition evaluation, or
+  short-circuit contract.
+
+### Requirement: Dry-run mode suppresses write-shaped rule dispatch (REQ-RULE-011)
+
+`processRules()` MUST accept an optional `dryRun` parameter (default
+`false`, preserving existing behaviour exactly). When `dryRun === true`,
+rule types with an external or persisted side-effect — `save_object`,
+`override`, `locking`, `write_file`, `fileparts_create`, `filepart_upload`,
+`composite_fanout` (per `rule-pipeline` REQ-RULE-006) — MUST NOT perform
+their write; the pipeline MUST instead record a step with `status:
+'skipped_dry_run'` and continue evaluating downstream rules against the
+pre-rule data envelope. Rule types with no external side-effect —
+`mapping`, `extend_input`, `authentication`, `error` — MUST execute
+normally under `dryRun: true`. A `synchronization` rule under `dryRun: true`
+MUST forward `isTest: true` to `SynchronizationService::synchronize()`
+(reusing `synchronization-engine` REQ-011's existing no-write guarantee)
+rather than being unconditionally skipped, since the target synchronization
+already knows how to no-op safely.
+
+@e2e exclude backend rule pipeline execution — covered by PHPUnit, not browser UI
+
+#### Scenario: dryRun suppresses a save_object rule's write
+
+- **GIVEN** a `save_object` rule and `dryRun: true`
+- **WHEN** the pipeline reaches it
+- **THEN** no OpenRegister object is persisted
+- **AND** the recorded step carries `status: 'skipped_dry_run'`
+
+#### Scenario: dryRun does not suppress a mapping rule
+
+- **GIVEN** a `mapping` rule and `dryRun: true`
+- **WHEN** the pipeline reaches it
+- **THEN** the mapping is applied for real and the step carries a normal
+  `status: 'success'`
+
+#### Scenario: dryRun forwards isTest to a synchronization rule
+
+- **GIVEN** a `synchronization` rule and `dryRun: true`
+- **WHEN** the pipeline reaches it
+- **THEN** `SynchronizationService::synchronize()` is invoked with
+  `isTest: true`, and no target write occurs
+
+#### Notes
+
+- `dryRun` defaults to `false`; every pre-existing REQ-RULE-* requirement in
+  this capability is exercised with the default and is unaffected by this
+  requirement's existence.
+- This requirement exists to support `execution-trace` REQ-005/REQ-006's
+  endpoint-entryPoint replay preview; it has no caller outside that replay
+  path in this change's scope.
+- **Integration follow-up (not in this change's scope):** this change was
+  authored against a base that predates the `flow` rule action type
+  (REQ-RULE-009, added independently). `flow` triggers a flow run — a
+  write-shaped side effect — but is NOT in this requirement's suppression
+  set (`EndpointService::DRY_RUN_SUPPRESSED_RULE_TYPES`), because it does
+  not exist in this change's base `processRules()` type dispatch. Whoever
+  integrates the two MUST decide whether `flow` belongs in the suppression
+  set (likely yes, or a forwarded dry-run flag mirroring the
+  `synchronization` partial exception above); until then a dry-run replay of
+  an endpoint carrying a `flow` rule WOULD trigger a real flow run.
+### Requirement: `flow` rule action type triggers a flow run (REQ-RULE-009)
+
+The system MUST provide a `flow` rule type in
+`EndpointService::processRules()`'s type dispatch (the existing 22-way
+`match` on `$ruleData['type']`, alongside `save_object`, `approval`,
+etc.), valid for either `timing: before` or `timing: after`. When a
+`flow` rule's conditions pass (per the existing `checkRuleConditions()`
+contract, REQ-RULE-001), the system MUST resolve the rule's `configRef`
+to a `flow` OR object and call `FlowRunnerService::run($flow, data:
+$data)` (see `flow-orchestration` REQ-001/REQ-007). The flow runs
+synchronously within the same request; its result MUST NOT alter the
+pipeline's existing before/after ordering or short-circuit contract for
+other rules (matching REQ-RULE-008's precedent for the `approval` type —
+this requirement only adds one new dispatch entry, it does not change
+REQ-RULE-001's ordering/condition/short-circuit contract).
+
+If the referenced flow's run ends with `flow_run.status: failed`,
+`stopped`, or `dead_letter`, the rule pipeline MUST treat this the same
+way it treats any other rule-level failure today (surfaced as an error
+through the pipeline's existing error contract) — a flow rule does not
+introduce a new pipeline-level failure mode beyond what `error`/`approval`
+rule types already establish.
+
+@e2e exclude backend rule pipeline dispatch — covered by PHPUnit, not browser UI
+
+#### Scenario: a `flow` rule triggers a flow run mid-pipeline
+
+- **GIVEN** an endpoint with rules at order 10 (`authentication`), order
+  20 (`flow`, `configRef` pointing at an enabled flow), and order 30
+  (`save_object`)
+- **WHEN** the pipeline evaluates the `before`-phase rules and the
+  order-20 rule's conditions pass
+- **THEN** `FlowRunnerService::run()` is called for the referenced flow
+- **AND** the order-10 and order-30 rules still run in their existing
+  order, unaffected by the flow rule's dispatch
+
+#### Scenario: a flow rule's conditions gate whether the flow runs
+
+- **GIVEN** a `flow` rule with a condition that evaluates false for the
+  current request
+- **WHEN** the pipeline reaches that rule
+- **THEN** `FlowRunnerService::run()` is NOT called
+- **AND** the pipeline proceeds to the next rule as normal
+
+#### Notes
+
+- This requirement only adds a new entry to the existing `match` dispatch
+  in `processRules()` (alongside `save_object`, `authentication`,
+  `approval`, etc.) — the exact same integration pattern REQ-RULE-008
+  already used for the `approval` type. It does not change
+  REQ-RULE-001's ordering/condition/short-circuit contract, which the
+  `flow` type reuses as-is.
+- Unlike the `approval` type (REQ-RULE-008, `timing: before` only), a
+  `flow` rule is valid at either timing — a flow can be a pre-write
+  side-effect (`before`) or a post-write follow-up action (`after`),
+  matching how `synchronization`/`mapping` rule types are already valid
+  at either timing.
+- A `flow` rule referencing a flow that itself contains an `approval`
+  step will suspend that flow run (per `flow-orchestration` REQ-005) —
+  from the endpoint rule pipeline's perspective this is treated
+  identically to any other rule dispatch that completes without altering
+  the pipeline's own response; the pipeline does NOT wait on or surface
+  the flow's suspension state synchronously. This is a deliberate v1
+  simplification: chaining a suspending flow off an endpoint rule is
+  supported for triggering, but the endpoint response is not itself
+  gated on that flow's eventual approval outcome (only a direct
+  `approval` rule type, per REQ-RULE-008, gates the endpoint response
+  itself).
 
 ## Non-Functional Requirements
 

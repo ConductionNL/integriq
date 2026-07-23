@@ -29,8 +29,8 @@ use PHPUnit\Framework\TestCase;
  * Validates the openconnector_register.json descriptor structure.
  *
  * Checks:
- * - All 15 schema slugs are declared in the register
- * - All 15 schemas are defined in components.schemas
+ * - All schema slugs in SCHEMA_SLUGS are declared in the register
+ * - All schemas in SCHEMA_SLUGS are defined in components.schemas
  * - Log schemas carry appendOnly/immutable/archival markers
  * - Mutable schemas do NOT carry appendOnly/immutable
  * - FK relations carry $ref and x-openregister-onDelete
@@ -67,6 +67,25 @@ class RegisterDescriptorTest extends TestCase
      *
      * Was 28 — `iwmo_ijw_message` added by openspec/changes/iwmo-ijw-adapter.
      *
+     * Was 29 — `fsc_service` and `fsc_call` added by
+     * openspec/changes/fsc-connectivity.
+     *
+     * Was 31 (count re-verified at HEAD, prior "30" annotations in this
+     * history had drifted from the true count — a pre-existing, harmless
+     * comment inaccuracy fixed alongside this entry, not a structural bug:
+     * the assertions below always iterate SCHEMA_SLUGS itself, never a
+     * hardcoded literal) — `zgw_version_translation_log` added by
+     * openspec/changes/zgw-version-translation, bringing the count to 32.
+     *
+     * Was 32 — `dso_verzoek` and `dso_message` added by
+     * openspec/changes/dso-connector-adapter, bringing the count to 34.
+     *
+     * Was 34 — `notificaties_abonnement` added by
+     * openspec/changes/notificaties-api-subscriber, bringing the count to 35.
+     *
+     * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
+     * bringing the count to 36.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -95,6 +114,9 @@ class RegisterDescriptorTest extends TestCase
         // change's proposal.md "Impact").
         'BankfeedConnection'         => 'bankfeed_connection',
         'BankfeedBatch'              => 'bankfeed_batch',
+        // Corporate card-feed connector — added by corporate-card-feed spec.
+        'CardfeedAccount'            => 'cardfeed_account',
+        'CardfeedBatch'              => 'cardfeed_batch',
         // LTI 1.3 / LTI Advantage adapter — added by lti-13-platform.
         'LtiPlatform'                => 'lti_platform',
         'LtiTool'                    => 'lti_tool',
@@ -112,6 +134,18 @@ class RegisterDescriptorTest extends TestCase
         'OpenFormulierenSubmission'  => 'openformulieren_submission',
         // iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
         'IwmoIjwMessage'             => 'iwmo_ijw_message',
+        // FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
+        'FscService'                 => 'fsc_service',
+        'FscCall'                    => 'fsc_call',
+        // ZGW version-translation shim — added by zgw-version-translation spec.
+        'ZgwVersionTranslationLog'   => 'zgw_version_translation_log',
+        // DSO (Digitaal Stelsel Omgevingswet) connector adapter — added by dso-connector-adapter spec.
+        'DsoVerzoek'                 => 'dso_verzoek',
+        'DsoMessage'                 => 'dso_message',
+        // ZGW Notificaties API subscriber/publisher — added by notificaties-api-subscriber spec.
+        'NotificatiesAbonnement'     => 'notificaties_abonnement',
+        // StUF-ZKN (StUF-ZKN 3.10) bridge — added by stuf-zkn-bridge spec.
+        'StufMessage'                => 'stuf_message',
     ];
 
     /**

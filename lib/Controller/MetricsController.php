@@ -42,7 +42,7 @@ use OCP\AppFramework\Http\TextPlainResponse;
 /**
  * Admin-only declarative Prometheus metrics endpoint, delegated to the engine.
  *
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+ * @spec openspec/specs/apphost-adoption/spec.md
  */
 class MetricsController extends GenericMetricsController
 {
@@ -54,7 +54,7 @@ class MetricsController extends GenericMetricsController
      *
      * @return TextPlainResponse Prometheus text exposition 0.0.4.
      *
-     * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Declarative Metrics Parity
+     * @spec openspec/specs/apphost-adoption/spec.md — Requirement: Declarative Metrics Parity
      */
     #[NoCSRFRequired]
     public function index(): TextPlainResponse

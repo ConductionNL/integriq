@@ -33,7 +33,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+ * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCA\OpenConnector\Exception\MappingResolutionException;
 /**
  * Resolves per-form `fieldMapping` config against submitted values.
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+ * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
 class FormFieldMapper
 {
@@ -92,7 +92,7 @@ class FormFieldMapper
      *
      * @throws MappingResolutionException When the config is invalid.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
      */
     public function validateConfig(array $fieldMapping): void
     {
@@ -132,7 +132,7 @@ class FormFieldMapper
      *
      * @throws MappingResolutionException When a declared entry cannot resolve.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
      */
     public function map(array $fieldMapping, array $submittedValues): array
     {

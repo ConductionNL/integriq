@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -35,6 +35,7 @@ use DateTime;
 use OCA\OpenConnector\Exception\SmsProviderException;
 use OCA\OpenConnector\Service\Sms\DeliveryResult;
 use OCA\OpenConnector\Service\Sms\LogSmsProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenConnector\Service\Sms\PhoneNumberValidator;
 use OCA\OpenConnector\Service\Sms\RestNotifyNlProvider;
 use OCA\OpenConnector\Service\Sms\SmsProviderInterface;
@@ -52,7 +53,7 @@ use Throwable;
  * dependency-free static helper (REQ-005); injecting it as a service would add DI ceremony
  * around a function with no state or side effects.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 class SmsDispatchService
 {
@@ -95,12 +96,13 @@ class SmsDispatchService
     /**
      * Constructor.
      *
-     * @param ORObjectService      $objectService    OR object service for source/message persistence.
-     * @param LogSmsProvider       $logProvider      The sandbox provider binding.
-     * @param RestNotifyNlProvider $notifyNlProvider The NotifyNL REST provider binding.
-     * @param EventService         $eventService     Emits delivery-status CloudEvents.
-     * @param IL10N                $l                The localization service.
-     * @param LoggerInterface      $logger           Logger for non-fatal diagnostics.
+     * @param ORObjectService      $objectService     OR object service for source/message persistence.
+     * @param LogSmsProvider       $logProvider       The sandbox provider binding.
+     * @param RestNotifyNlProvider $notifyNlProvider  The NotifyNL REST provider binding.
+     * @param EventService         $eventService      Emits delivery-status CloudEvents.
+     * @param IL10N                $l                 The localization service.
+     * @param LoggerInterface      $logger            Logger for non-fatal diagnostics.
+     * @param RawSourceResolver    $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -109,6 +111,7 @@ class SmsDispatchService
         private readonly EventService $eventService,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -129,7 +132,7 @@ class SmsDispatchService
      * @throws SmsProviderException When the recipient is not a valid phone number, no active SMS source is
      *                              configured, or the provider rejects/cannot reach the request.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function sendMessage(
         string $to,
@@ -246,7 +249,7 @@ class SmsDispatchService
      *
      * @throws SmsProviderException When the message is unknown or has no `providerMessageId` yet.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function pollStatus(string $uuid): ObjectEntity
     {
@@ -289,7 +292,7 @@ class SmsDispatchService
      *
      * @return ObjectEntity|null The updated message, or null when the providerMessageId is unknown.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function handleStatusCallback(string $providerMessageId, string $status, ?string $detail): ?ObjectEntity
     {
@@ -349,7 +352,7 @@ class SmsDispatchService
      *
      * @return SmsProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function resolveProvider(array $configuration): SmsProviderInterface
     {
@@ -369,7 +372,7 @@ class SmsDispatchService
      *
      * @throws SmsProviderException When no active SMS source is configured.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps-req-006
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-send-endpoint-consumable-by-sibling-apps-req-006
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -393,7 +396,7 @@ class SmsDispatchService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 
@@ -433,7 +436,7 @@ class SmsDispatchService
      *
      * @return void
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     private function emitDeliveryStatus(ObjectEntity $message): void
     {

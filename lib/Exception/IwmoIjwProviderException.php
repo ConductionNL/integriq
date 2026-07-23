@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Exception;
 /**
  * Thrown on any iWMO/iJW provider/transport or configuration failure.
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 class IwmoIjwProviderException extends Exception
 {

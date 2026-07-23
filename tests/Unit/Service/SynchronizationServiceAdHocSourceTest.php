@@ -153,6 +153,7 @@ class SynchronizationServiceAdHocSourceTest extends TestCase
                     $logger,
                     $logService,
                     $appConfig,
+                    $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
                 ]
             )
             ->onlyMethods(['synchronizeContract'])

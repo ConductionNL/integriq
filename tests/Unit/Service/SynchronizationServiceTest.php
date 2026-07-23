@@ -19,6 +19,7 @@ use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\SynchronizationLogService;
 use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -54,6 +55,11 @@ class SynchronizationServiceTest extends TestCase
     private $callService;
 
     /**
+     * @var TablesSyncAdapter|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $tablesSyncAdapter;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
@@ -72,6 +78,8 @@ class SynchronizationServiceTest extends TestCase
         $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
         $appConfig = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
+        $approvalService = $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class);
+        $this->tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
 
         $this->service = new SynchronizationService(
             $this->callService,
@@ -82,6 +90,8 @@ class SynchronizationServiceTest extends TestCase
             $this->logger,
             $synchronizationLogService,
             $appConfig,
+            $approvalService,
+            $this->tablesSyncAdapter,
         );
     }//end setUp()
 
@@ -1245,4 +1255,284 @@ HTML;
         $this->assertCount(2, $captured);
         $this->assertSame('query', $captured[1]['pagination']['paginationIn']);
     }//end testDefaultPaginationInIsQueryWhenOmitted()
+
+    /**
+     * Route `orObjectService::find()` to a synchronization payload when the
+     * schema is `synchronization` and a source payload when the schema is
+     * `source` — needed because `stubSource()` alone would make EVERY
+     * find() call resolve to the source, which breaks `updateTarget()`'s own
+     * internal `findSynchronization()` lookup.
+     *
+     * @param array $syncBody   The synchronization payload to return.
+     * @param array $sourceBody The source payload to return.
+     *
+     * @return void
+     */
+    private function stubSynchronizationAndSource(array $syncBody, array $sourceBody): void
+    {
+        $syncEntity   = ObjectServiceMockBuilder::objectEntity($this, $syncBody, ($syncBody['uuid'] ?? 'sync-uuid'));
+        $sourceEntity = ObjectServiceMockBuilder::objectEntity($this, $sourceBody, ($sourceBody['uuid'] ?? 'source-uuid'));
+
+        $this->orObjectService->method('find')->willReturnCallback(
+            function ($id, ?string $register=null, ?string $schema=null, bool $_rbac=true, bool $_multitenancy=true) use ($syncEntity, $sourceEntity) {
+                if ($schema === 'synchronization') {
+                    return $syncEntity;
+                }
+
+                return $sourceEntity;
+            }
+        );
+
+    }//end stubSynchronizationAndSource()
+
+    /**
+     * `getAllObjectsFromSource()` dispatches `sourceType: nextcloud-table` to
+     * the Tables adapter and returns its rows unchanged (synchronization-engine
+     * REQ-014; tables-bridge REQ-002).
+     *
+     * @return void
+     */
+    public function testGetAllObjectsFromSourceDispatchesNextcloudTable(): void
+    {
+        $this->stubSource(['uuid' => 'source-uuid-nt-1', 'location' => 'https://nc.example.test']);
+
+        $rows = [['id' => '1', '7' => '10'], ['id' => '2', '7' => '20']];
+        $this->tablesSyncAdapter->expects($this->once())->method('assertEnabled');
+        $this->tablesSyncAdapter->expects($this->once())->method('fetchAllRows')
+            ->with($this->anything(), 42, null)
+            ->willReturn($rows);
+
+        $result = $this->service->getAllObjectsFromSource(
+            synchronization: [
+                'sourceId'     => 'source-uuid-nt-1',
+                'sourceType'   => 'nextcloud-table',
+                'sourceConfig' => ['tableId' => 42],
+            ]
+        );
+
+        $this->assertSame($rows, $result);
+
+    }//end testGetAllObjectsFromSourceDispatchesNextcloudTable()
+
+    /**
+     * A `nextcloud-table` source with no `sourceConfig.tableId` fails loudly
+     * instead of silently returning an empty set.
+     *
+     * @return void
+     */
+    public function testGetAllObjectsFromSourceNextcloudTableMissingTableIdThrows(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/tableId/');
+
+        $this->service->getAllObjectsFromSource(
+            synchronization: [
+                'sourceId'     => 'source-uuid-nt-2',
+                'sourceType'   => 'nextcloud-table',
+                'sourceConfig' => [],
+            ]
+        );
+
+    }//end testGetAllObjectsFromSourceNextcloudTableMissingTableIdThrows()
+
+    /**
+     * `updateTarget()` for `targetType: nextcloud-table` with no existing
+     * contract `targetId` creates a row and records the returned row id as
+     * the contract's `targetId` (tables-bridge REQ-001).
+     *
+     * @return void
+     */
+    public function testUpdateTargetNextcloudTableCreatesRowAndSetsTargetId(): void
+    {
+        $this->stubSynchronizationAndSource(
+            syncBody: [
+                'uuid'         => 'sync-uuid-nt-1',
+                'targetId'     => 'target-source-uuid-1',
+                'targetType'   => 'nextcloud-table',
+                'targetConfig' => ['tableId' => 42, 'columnMapping' => [['column' => 'Amount', 'value' => 'total']]],
+            ],
+            sourceBody: ['uuid' => 'target-source-uuid-1', 'location' => 'https://nc.example.test']
+        );
+
+        $this->tablesSyncAdapter->expects($this->once())->method('assertEnabled');
+        $this->tablesSyncAdapter->expects($this->once())->method('writeRow')
+            ->with($this->anything(), 42, null, ['total' => 19.99], [['column' => 'Amount', 'value' => 'total']])
+            ->willReturn(['id' => '100']);
+
+        $targetObject = ['total' => 19.99];
+        $contract     = $this->service->updateTarget(
+            synchronizationContract: ['synchronizationId' => 'sync-uuid-nt-1', 'originId' => 'origin-1'],
+            targetObject: $targetObject
+        );
+
+        $this->assertSame('100', $contract['targetId']);
+        $this->assertNotNull($contract['targetHash']);
+
+    }//end testUpdateTargetNextcloudTableCreatesRowAndSetsTargetId()
+
+    /**
+     * `updateTarget()` for `targetType: nextcloud-table` with an existing
+     * `targetId` routes through an update (not a create) — the adapter
+     * receives the existing row id.
+     *
+     * @return void
+     */
+    public function testUpdateTargetNextcloudTableUpdatesExistingRow(): void
+    {
+        $this->stubSynchronizationAndSource(
+            syncBody: [
+                'uuid'         => 'sync-uuid-nt-2',
+                'targetId'     => 'target-source-uuid-2',
+                'targetType'   => 'nextcloud-table',
+                'targetConfig' => ['tableId' => 42, 'columnMapping' => []],
+            ],
+            sourceBody: ['uuid' => 'target-source-uuid-2', 'location' => 'https://nc.example.test']
+        );
+
+        $this->tablesSyncAdapter->method('assertEnabled');
+        $this->tablesSyncAdapter->expects($this->once())->method('writeRow')
+            ->with($this->anything(), 42, '100', $this->anything(), $this->anything())
+            ->willReturn(['id' => '100']);
+
+        $targetObject = ['total' => 25];
+        $contract     = $this->service->updateTarget(
+            synchronizationContract: ['synchronizationId' => 'sync-uuid-nt-2', 'originId' => 'origin-1', 'targetId' => '100'],
+            targetObject: $targetObject
+        );
+
+        $this->assertSame('100', $contract['targetId']);
+
+    }//end testUpdateTargetNextcloudTableUpdatesExistingRow()
+
+    /**
+     * A per-row skip signalled by the adapter (`null` return — ambiguous
+     * title or coercion failure) leaves the contract's `targetId` untouched
+     * rather than throwing (the row is retried on the next run; the overall
+     * run continues per REQ-001/REQ-003).
+     *
+     * @return void
+     */
+    public function testUpdateTargetNextcloudTableAdapterSkipLeavesContractUnchanged(): void
+    {
+        $this->stubSynchronizationAndSource(
+            syncBody: [
+                'uuid'         => 'sync-uuid-nt-3',
+                'targetId'     => 'target-source-uuid-3',
+                'targetType'   => 'nextcloud-table',
+                'targetConfig' => ['tableId' => 42, 'columnMapping' => []],
+            ],
+            sourceBody: ['uuid' => 'target-source-uuid-3', 'location' => 'https://nc.example.test']
+        );
+
+        $this->tablesSyncAdapter->method('assertEnabled');
+        $this->tablesSyncAdapter->method('writeRow')->willReturn(null);
+
+        $targetObject = ['total' => 25];
+        $contract     = $this->service->updateTarget(
+            synchronizationContract: ['synchronizationId' => 'sync-uuid-nt-3', 'originId' => 'origin-1'],
+            targetObject: $targetObject
+        );
+
+        $this->assertArrayNotHasKey('targetId', $contract);
+
+    }//end testUpdateTargetNextcloudTableAdapterSkipLeavesContractUnchanged()
+
+    /**
+     * `updateTarget()` for a `nextcloud-table` target with `action: delete`
+     * calls the adapter's `deleteRow()` and clears the contract's `targetId`.
+     *
+     * @return void
+     */
+    public function testUpdateTargetNextcloudTableDeleteCallsAdapterDeleteRow(): void
+    {
+        $this->stubSynchronizationAndSource(
+            syncBody: [
+                'uuid'         => 'sync-uuid-nt-4',
+                'targetId'     => 'target-source-uuid-4',
+                'targetType'   => 'nextcloud-table',
+                'targetConfig' => ['tableId' => 42],
+            ],
+            sourceBody: ['uuid' => 'target-source-uuid-4', 'location' => 'https://nc.example.test']
+        );
+
+        $this->tablesSyncAdapter->method('assertEnabled');
+        $this->tablesSyncAdapter->expects($this->once())->method('deleteRow')
+            ->with($this->anything(), '100')
+            ->willReturn(true);
+
+        $contract = $this->service->updateTarget(
+            synchronizationContract: ['synchronizationId' => 'sync-uuid-nt-4', 'originId' => 'origin-1', 'targetId' => '100'],
+            action: 'delete'
+        );
+
+        $this->assertNull($contract['targetId']);
+
+    }//end testUpdateTargetNextcloudTableDeleteCallsAdapterDeleteRow()
+
+    /**
+     * `updateTarget()` still throws `Unsupported target type` for a type that
+     * is neither a recognised legacy type nor `nextcloud-table` — regression
+     * guard for synchronization-engine REQ-014's "unrecognised type still
+     * throws" scenario.
+     *
+     * @return void
+     */
+    public function testUpdateTargetUnrecognisedTypeStillThrows(): void
+    {
+        $this->stubSynchronizationAndSource(
+            syncBody: ['uuid' => 'sync-uuid-nt-5', 'targetType' => 'some-future-type'],
+            sourceBody: []
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Unsupported target type: some-future-type');
+
+        $this->service->updateTarget(
+            synchronizationContract: ['synchronizationId' => 'sync-uuid-nt-5', 'originId' => 'origin-1']
+        );
+
+    }//end testUpdateTargetUnrecognisedTypeStillThrows()
+
+    /**
+     * `deleteInvalidObjects()` for a `nextcloud-table` target deletes rows
+     * whose contracts are absent from the fetched set, via the SAME
+     * diff-and-delete mechanism as `register/schema` (tables-bridge REQ-005 —
+     * composes with, does not duplicate, the shared deletion-safety guard).
+     *
+     * @return void
+     */
+    public function testDeleteInvalidObjectsNextcloudTableDeletesMissingContracts(): void
+    {
+        $this->stubSynchronizationAndSource(
+            syncBody: [
+                'id'           => 'sync-id-nt-6',
+                'uuid'         => 'sync-uuid-nt-6',
+                'targetId'     => 'target-source-uuid-6',
+                'targetType'   => 'nextcloud-table',
+                'targetConfig' => ['tableId' => 42],
+            ],
+            sourceBody: ['uuid' => 'target-source-uuid-6', 'location' => 'https://nc.example.test']
+        );
+
+        $keptContract    = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'sync-id-nt-6', 'originId' => 'origin-kept', 'targetId' => '1'], 'contract-kept');
+        $orphanContract  = ObjectServiceMockBuilder::objectEntity($this, ['synchronizationId' => 'sync-id-nt-6', 'originId' => 'origin-orphan', 'targetId' => '2'], 'contract-orphan');
+
+        $this->orObjectService->method('findAll')->willReturn(['results' => [$keptContract, $orphanContract]]);
+        $this->orObjectService->method('saveObject')->willReturnCallback(
+            fn (array $object, string $register, string $schema, ?string $uuid=null) => ObjectServiceMockBuilder::objectEntity($this, $object, $uuid ?? 'saved-contract')
+        );
+
+        $this->tablesSyncAdapter->method('assertEnabled');
+        $this->tablesSyncAdapter->expects($this->once())->method('deleteRow')
+            ->with($this->anything(), '2')
+            ->willReturn(true);
+
+        $deletedCount = $this->service->deleteInvalidObjects(
+            synchronization: ['id' => 'sync-id-nt-6', 'targetType' => 'nextcloud-table'],
+            synchronizedTargetIds: ['1']
+        );
+
+        $this->assertSame(1, $deletedCount);
+
+    }//end testDeleteInvalidObjectsNextcloudTableDeletesMissingContracts()
 }//end class

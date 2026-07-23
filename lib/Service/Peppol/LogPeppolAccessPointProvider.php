@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-the-log-provider-transmits-without-a-network-call-or-secret
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-log-provider-transmits-without-a-network-call-or-secret
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenConnector\Service\Peppol;
 /**
  * Sandbox Peppol Access Point provider: canned lookups, synthetic transmission ids.
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-the-log-provider-transmits-without-a-network-call-or-secret
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-log-provider-transmits-without-a-network-call-or-secret
  */
 class LogPeppolAccessPointProvider implements PeppolAccessPointProviderInterface
 {
@@ -63,7 +63,7 @@ class LogPeppolAccessPointProvider implements PeppolAccessPointProviderInterface
      *
      * @return array{exists: bool, supportedDocTypes: string[]} The lookup result.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant--smp-lookup-endpoint-req-001
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
      */
     public function lookupParticipant(array $sourceConfiguration, string $peppolId): array
     {
@@ -96,7 +96,7 @@ class LogPeppolAccessPointProvider implements PeppolAccessPointProviderInterface
      *
      * @return string The synthetic `MOCK-PEPPOL-<n>` transmission id.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-the-log-provider-transmits-without-a-network-call-or-secret
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-log-provider-transmits-without-a-network-call-or-secret
      */
     public function submitDocument(
         array $sourceConfiguration,

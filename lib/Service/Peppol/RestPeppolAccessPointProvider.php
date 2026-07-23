@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
 /**
  * Generic REST Peppol Access Point provider, dispatched through the credential broker.
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
  */
 class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterface
 {
@@ -67,7 +67,7 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
      *
      * @return array{exists: bool, supportedDocTypes: string[]} The lookup result.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant--smp-lookup-endpoint-req-001
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
      */
     public function lookupParticipant(array $sourceConfiguration, string $peppolId): array
     {
@@ -100,7 +100,7 @@ class RestPeppolAccessPointProvider implements PeppolAccessPointProviderInterfac
      *
      * @return string The Access Point-assigned transmission id.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#scenario-the-rest-provider-brokers-its-api-key
      */
     public function submitDocument(
         array $sourceConfiguration,
