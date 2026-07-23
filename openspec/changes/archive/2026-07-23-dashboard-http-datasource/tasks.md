@@ -13,7 +13,7 @@
 - [ ] Live smoke against a public no-auth source (e.g. endoflife.date) proving the resolve chain end-to-end without a credential. NOT DONE — task instructions for this session explicitly forbid deploying to or testing against the shared Nextcloud instance; needs a follow-up session with live-instance access.
 
 ## Docs
-- [ ] Document the resolve API + capability contract for leaf-app authors; cross-reference LaunchPad `live-data-tile-widget`. NOT DONE this session — scope was backend implementation + unit tests only.
+- [x] Document the resolve API + capability contract for leaf-app authors; cross-reference LaunchPad `live-data-tile-widget`. (`docs/developers/dashboard-http-datasource.md`)
 
 ## Out of scope
 - Write/POST actions against a source (read-only façade).
