@@ -76,11 +76,33 @@ class ObjectEntity extends Entity
     /** @var array|null */
     protected $locked = null;
 
+    /**
+     * The real OCA\OpenRegister\Db\ObjectEntity declares `updated`/`created`
+     * (`addType(fieldName: 'updated', type: 'datetime')` +
+     * `addType(fieldName: 'created', type: 'datetime')`), and production code
+     * reads them via the Entity __call getter — e.g.
+     * `SynchronizationService::synchronizeContract()`'s no-op-write skip
+     * check calls `$sourceTargetMapping->getUpdated()` to decide whether a
+     * mapping was edited since the contract was last checked. Omitting these
+     * here made the stub drift from the real class, so any test exercising a
+     * synchronization with a real (non-null) `sourceTargetMapping`/`source`
+     * died in Entity::__call ("updated is not a valid attribute") instead of
+     * testing the behaviour under test.
+     *
+     * @var \DateTime|null
+     */
+    protected $updated = null;
+
+    /** @var \DateTime|null */
+    protected $created = null;
+
     public function __construct()
     {
         $this->addType('object', 'json');
         $this->addType('files', 'json');
         $this->addType('locked', 'json');
+        $this->addType('updated', 'datetime');
+        $this->addType('created', 'datetime');
     }
 
     /**
