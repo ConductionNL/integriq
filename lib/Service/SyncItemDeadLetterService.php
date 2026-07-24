@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Capture/replay/discard machinery for dead-lettered synchronization items.
  *
- * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
  */
 class SyncItemDeadLetterService
 {
@@ -118,7 +118,7 @@ class SyncItemDeadLetterService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      */
     public function recordFailure(
         array $synchronization,
