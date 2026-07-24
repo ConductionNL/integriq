@@ -281,10 +281,16 @@
         "schema": "source",
         "_note": "PURPOSE: A source is an external system OpenConnector calls (REST/SOAP/DB/file). This is the CONFIG/TECHNICAL archetype — an integrator lands here to check whether the connection is healthy and to triage failed calls, not to read documents. DESIGN RATIONALE: the body leads with operational data. Four KPI stats across the top (total calls, errors, avg size, objects fetched) give an at-a-glance health read; the primary body region is a recent-call-log table (child call_log filtered by source UUID = @objectId, sorted newest-first) because triaging HTTP failures is the #1 job on this page. Connection config (data, 3 columns to fit the many auth/rate-limit fields) and Related sit below/beside. NO comms leaves — a source does not email or hold meetings; the schema declares no email/calendar linkedType. Rarely-opened raw JSON blobs (paths/headers/loggingConfig) stay in the sidebar metadata, and audit-trail is a sidebar tab. ADR-062 rev3: the four health KPIs (calls, errors, objects fetched, avg payload) live in ONE in-grid stats-block top-right of the Connection core-data widget — entries[] carries per-entry metric/field so the sum (objectCount) and avg (size, raw bytes via countLabel) are expressible alongside the two counts. Registry icons; call log is read-only (allowCreate:false) with a View-all to SourceLogs.",
         "widgets": [
-          { "id": "src-kpis", "type": "stats-block", "icon": "Gauge", "title": "Health", "content": { "entries": [
-            { "title": "Calls", "countLabel": "logged", "register": "openconnector", "schema": "call_log", "metric": "count", "filter": { "source": "@objectId" }, "route": { "name": "SourceLogs", "query": { "source": "@objectId" } } },
-            { "title": "Errors", "countLabel": ">=400", "variant": "error", "register": "openconnector", "schema": "call_log", "metric": "count", "filter": { "source": "@objectId", "statusCode": ">=400" }, "route": { "name": "SourceLogs", "query": { "source": "@objectId" } } },
-            { "title": "Objects", "countLabel": "fetched", "register": "openconnector", "schema": "source", "metric": "sum", "field": "objectCount", "filter": { "id": "@objectId" } },
+          { "id": "src-kpis-calls", "type": "stats-block", "icon": "Gauge", "title": "Calls", "content": { "entries": [
+            { "title": "Calls", "countLabel": "logged", "register": "openconnector", "schema": "call_log", "metric": "count", "filter": { "source": "@objectId" }, "route": { "name": "SourceLogs", "query": { "source": "@objectId" } } }
+          ] } },
+          { "id": "src-kpis-errors", "type": "stats-block", "icon": "Gauge", "title": "Errors", "content": { "entries": [
+            { "title": "Errors", "countLabel": ">=400", "variant": "error", "register": "openconnector", "schema": "call_log", "metric": "count", "filter": { "source": "@objectId", "statusCode": ">=400" }, "route": { "name": "SourceLogs", "query": { "source": "@objectId" } } }
+          ] } },
+          { "id": "src-kpis-objects", "type": "stats-block", "icon": "Gauge", "title": "Objects", "content": { "entries": [
+            { "title": "Objects", "countLabel": "fetched", "register": "openconnector", "schema": "source", "metric": "sum", "field": "objectCount", "filter": { "id": "@objectId" } }
+          ] } },
+          { "id": "src-kpis-payload", "type": "stats-block", "icon": "Gauge", "title": "Payload", "content": { "entries": [
             { "title": "Payload", "countLabel": "bytes (avg)", "register": "openconnector", "schema": "call_log", "metric": "avg", "field": "size", "filter": { "source": "@objectId" } }
           ] } },
           { "id": "src-calls",   "type": "object-list", "icon": "Timeline", "title": "Recent calls", "content": { "register": "openconnector", "schema": "call_log", "filter": { "source": "@objectId" }, "sort": { "created": "desc" }, "columns": [ { "key": "created", "label": "When" }, { "key": "statusCode", "label": "Status" }, { "key": "statusMessage", "label": "Message" }, { "key": "size", "label": "Size" } ], "limit": 25, "allowCreate": false, "rowRoute": "SourceLogs", "viewAllRoute": "SourceLogs", "viewAllQuery": { "source": "@objectId" }, "emptyText": "No calls logged for this source yet." } },
@@ -293,9 +299,12 @@
         ],
         "layout": [
           { "id": "1", "widgetId": "src-data",    "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 6 },
-          { "id": "2", "widgetId": "src-kpis",    "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 6 },
-          { "id": "3", "widgetId": "src-calls",   "gridX": 0, "gridY": 6, "gridWidth": 8, "gridHeight": 6 },
-          { "id": "4", "widgetId": "src-related", "gridX": 8, "gridY": 6, "gridWidth": 4, "gridHeight": 6 }
+          { "id": "2a", "widgetId": "src-kpis-calls",   "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 2 },
+          { "id": "2b", "widgetId": "src-kpis-errors",  "gridX": 8, "gridY": 2, "gridWidth": 4, "gridHeight": 2 },
+          { "id": "2c", "widgetId": "src-kpis-objects", "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 2 },
+          { "id": "2d", "widgetId": "src-kpis-payload", "gridX": 8, "gridY": 6, "gridWidth": 4, "gridHeight": 2 },
+          { "id": "3", "widgetId": "src-calls",   "gridX": 0, "gridY": 8, "gridWidth": 8, "gridHeight": 6 },
+          { "id": "4", "widgetId": "src-related", "gridX": 8, "gridY": 8, "gridWidth": 4, "gridHeight": 6 }
         ],
         "sidebar": {
           "enabled": true,
@@ -405,8 +414,10 @@
         "schema": "consumer",
         "_note": "PURPOSE: A consumer is an external client authorised to call OpenConnector (auth type + allowed domains/IPs). CONFIG/TECHNICAL archetype. DESIGN RATIONALE: the two things an admin does here are (1) confirm the access policy and (2) see what this consumer has actually been sent. The body pairs a compact access-config panel (data, 2 columns: authorizationType, domains, ips) with a Related panel, then leads the lower body with an event-delivery table — event_message rows filtered by the consumer UUID (@objectId), newest-first, showing status/retries/last-attempt — because delivery health is the operational signal for a subscribed consumer. Two KPI stats (deliveries, failed) sit up top. NO comms leaves — a consumer is a machine client, not a person; the schema declares no email/calendar linkedType. Audit-trail is a sidebar tab. ADR-062 rev3: deliveries+failed are ONE in-grid stats-block (entries[]) top-right of the access-policy core-data widget, each entry deep-linking into EventDeliveries filtered on this consumer. event_message list is read-only (allowCreate:false) with a View-all to EventDeliveries; registry icons.",
         "widgets": [
-          { "id": "con-kpis", "type": "stats-block", "icon": "Gauge", "title": "Delivery health", "content": { "entries": [
-            { "title": "Deliveries", "countLabel": "events sent", "register": "openconnector", "schema": "event_message", "metric": "count", "filter": { "consumer": "@objectId" }, "route": { "name": "EventDeliveries", "query": { "consumer": "@objectId" } } },
+          { "id": "con-kpis-deliveries", "type": "stats-block", "icon": "Gauge", "title": "Deliveries", "content": { "entries": [
+            { "title": "Deliveries", "countLabel": "events sent", "register": "openconnector", "schema": "event_message", "metric": "count", "filter": { "consumer": "@objectId" }, "route": { "name": "EventDeliveries", "query": { "consumer": "@objectId" } } }
+          ] } },
+          { "id": "con-kpis-failed", "type": "stats-block", "icon": "Gauge", "title": "Failed", "content": { "entries": [
             { "title": "Failed", "countLabel": "dead-letter", "variant": "error", "register": "openconnector", "schema": "event_message", "metric": "count", "filter": { "consumer": "@objectId", "status": "failed" }, "route": { "name": "EventDeliveries", "query": { "consumer": "@objectId", "status": "failed" } } }
           ] } },
           { "id": "con-data",    "type": "data", "icon": "ShieldCheckOutline", "title": "Access policy", "content": { "columns": 2 } },
@@ -415,7 +426,8 @@
         ],
         "layout": [
           { "id": "1", "widgetId": "con-data",       "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 4 },
-          { "id": "2", "widgetId": "con-kpis",       "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 4 },
+          { "id": "2a", "widgetId": "con-kpis-deliveries", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 2 },
+          { "id": "2b", "widgetId": "con-kpis-failed",     "gridX": 8, "gridY": 2, "gridWidth": 4, "gridHeight": 2 },
           { "id": "3", "widgetId": "con-deliveries", "gridX": 0, "gridY": 4, "gridWidth": 8, "gridHeight": 6 },
           { "id": "4", "widgetId": "con-related",    "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 6 }
         ],
