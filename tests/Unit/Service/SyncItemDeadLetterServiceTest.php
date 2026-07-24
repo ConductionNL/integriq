@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for the sync-item dead-letter capture/replay/discard machinery.
  *
- * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
  */
 class SyncItemDeadLetterServiceTest extends TestCase
 {

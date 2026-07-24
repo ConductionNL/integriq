@@ -14,6 +14,9 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
@@ -1530,6 +1533,8 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
@@ -1701,6 +1706,31 @@ class SynchronizationService
             $objectProcessingTimes = [];
 
             foreach ($objectList as $object) {
+                // Bare-scalar source item coercion (synchronization-engine
+                // spec REQ-002/REQ-008, change sync-engine-scalar-items):
+                // getOriginId() and processSynchronizationObject() are
+                // `array`-typed; PHP does not coerce a scalar across a
+                // strict type hint, so an uncoerced scalar (e.g. a source
+                // returning a bare array of strings) throws a TypeError at
+                // the call boundary before either method body — and before
+                // processSynchronizationObject()'s own defensive
+                // is_array() === false skip-check — ever runs. Wrap a bare
+                // scalar into a canonical ['value' => ...] shape here, the
+                // single earliest point common to every sourceType, so it
+                // flows through mapping/identity/write like any other item
+                // instead of dead-lettering with an opaque low-level type
+                // error. A synchronization whose source returns scalar
+                // items MUST set sourceConfig.idPosition to 'value' for
+                // getOriginId()'s default idPosition ('id') to be
+                // overridden and resolve identity on this coerced shape.
+                // Guarded by is_array() === false so every existing
+                // array-shaped item — the overwhelming common case — is
+                // returned completely untouched, with no behaviour change
+                // to identity-hash semantics for non-scalar sources.
+                if (is_array($object) === false) {
+                    $object = ['value' => $object];
+                }
+
                 $objectStartTime = microtime(true);
 
                 // Per-item isolation (synchronization-engine spec REQ-008,
@@ -1969,7 +1999,7 @@ class SynchronizationService
      *
      * @return void
      *
-     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      */
     private function captureSyncItemFailure(array $synchronization, mixed $object, \Throwable $exception): void
     {
@@ -2304,6 +2334,15 @@ class SynchronizationService
 
     /**
      * Gets id from object as is in the origin.
+     *
+     * A synchronization whose source returns bare-scalar items is coerced
+     * to a `['value' => <scalar>]` shape by the per-item loop in
+     * `synchronizeExternToIntern()` (change sync-engine-scalar-items)
+     * before this method is ever called. Such a synchronization MUST set
+     * `sourceConfig.idPosition` to `'value'` — the default `idPosition`
+     * (`'id'`) will not resolve on the coerced shape and, per the existing
+     * behaviour below, throws a clear `Exception` naming the missing key
+     * rather than silently failing.
      *
      * @param array $synchronization The synchronization containing the source config.
      * @param array $object          The object to extract the origin id from.

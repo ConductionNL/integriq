@@ -20,7 +20,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
 /**
  * TC-11 — one bad sync item does not abort the pass.
  *
- * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+ * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
  */
 class SynchronizationItemIsolationTest extends TestCase
 {
@@ -159,7 +159,7 @@ class SynchronizationItemIsolationTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      */
     public function testOneBadItemDoesNotAbortTheSyncPass(): void
     {
