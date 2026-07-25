@@ -58,6 +58,16 @@
   composite `maak-klantcontact` onto pipelinq's canonical schema.org CRM
   schemas. (vng-klantinteracties-adapter)
 
+### Changed
+- i18n(schema): re-authored the 24 remaining Dutch-language schema property
+  titles to English across `event_subscription` (the `notificaties` action
+  block), `ris_sync_record`, `dso_verzoek`/`dso_message`,
+  `notificaties_abonnement`, `kiss_klantcontact`, `iwmo_ijw_message` and
+  `stuf_message` — titles are the canonical UI label source and must be
+  English-authored; Dutch display is now carried by `l10n/nl.json`/`nl.js`.
+  Property keys and all other schema fields are unchanged. Register
+  `info.version` bumped 1.1.0 → 1.1.1.
+
 ## 0.1.7 – 2024-09-19
 ### Added
 - New features for this release
