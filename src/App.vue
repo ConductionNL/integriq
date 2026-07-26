@@ -5,6 +5,7 @@
 			:ai-companion="true"
 			:manifest="manifest"
 			:custom-components="customComponents"
+			:registry="registry"
 			:page-types="pageTypes"
 			app-id="openconnector"
 			:translate="translateForApp"
@@ -37,6 +38,16 @@ export default {
 			required: true,
 		},
 		customComponents: {
+			type: Object,
+			default: () => ({}),
+		},
+		/**
+		 * V2 component registry (ADR-036) — map of registry-key →
+		 * `{ kind, component }`. Forwarded verbatim to CnAppRoot, which resolves
+		 * `type:"custom"` page components against the `kind:'page'` entries.
+		 * Replaces the deprecated `customComponents` string map for v2 manifests.
+		 */
+		registry: {
 			type: Object,
 			default: () => ({}),
 		},

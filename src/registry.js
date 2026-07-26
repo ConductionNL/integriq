@@ -179,3 +179,38 @@ export default {
 	// view needs a bespoke component. See execution-trace-observability.
 	TraceDetailPage,
 }
+
+// V2 component registry (ADR-036). Under @conduction/nextcloud-vue@2, CnAppRoot
+// resolves a `type:"custom"` page's `component` string against the `registry`
+// prop, matching on `kind: 'page'` (CnPageRenderer.resolveCustomComponent with
+// requireKind='page'); the legacy `customComponents` string map above is
+// deprecated for v2 manifests and no longer drives page rendering — passing it
+// alone left CnAppRoot with zero resolvable pages and the shell rendered blank.
+//
+// Every entry below corresponds 1:1 to a manifest `type:"custom"` page's
+// `component` key (11 pages: ApiProductDetail, NotificatiesAbonnementen,
+// MappingDetail, RuleDetail, SynchronizationDetail, EventDeliveries, Approvals,
+// SyncDeadLetters, FlowDetail, ApprovalDetail, TraceDetail). The `page` kind
+// requires no metadata beyond `component`.
+//
+// The remaining registry-resolved surfaces — row-action HANDLERS (functions),
+// the Catalog card (`config.cardComponent`), the CnFormDialog `form-fields`
+// slot components, and the CircuitBreakerBadge body section — continue to
+// resolve through the legacy `customComponents` default export above:
+// CnPageRenderer resolves slot/card/section components and create-overrides by
+// name with no `kind` constraint (requireKind=null), so its legacy fallback
+// still applies to them. Only `type:"custom"` PAGES need the kind-tagged
+// registry, so only they are listed here.
+export const registry = {
+	ApiProductDetail: { kind: 'page', component: ApiProductDetail },
+	NotificatiesAbonnementenPage: { kind: 'page', component: NotificatiesAbonnementenPage },
+	MappingDetailPage: { kind: 'page', component: MappingDetailPage },
+	RuleDetailPage: { kind: 'page', component: RuleDetailPage },
+	SynchronizationDetailPage: { kind: 'page', component: SynchronizationDetailPage },
+	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
+	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
+	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
+	FlowDetailPage: { kind: 'page', component: FlowDetailPage },
+	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
+	TraceDetailPage: { kind: 'page', component: TraceDetailPage },
+}

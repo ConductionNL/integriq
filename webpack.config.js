@@ -131,6 +131,19 @@ webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
 	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
+	// Vue 3 (ADR-066): the app has ~70 script-context bare `t(...)` / `n(...)`
+	// calls (computeds, methods, data — NOT `this.t`, NOT imported). Under Vue 2
+	// these free identifiers resolved to Nextcloud's global `window.t` / `window.n`
+	// because babel emitted non-strict code; the strict ESM Vue-3 bundle makes
+	// them a `ReferenceError` (crashes e.g. the Catalog card/detail, Rule action
+	// forms, Synchronization editors). ProvidePlugin auto-imports @nextcloud/l10n's
+	// `translate`/`translatePlural` for every FREE `t`/`n` identifier only —
+	// locally-declared `t`/`n`, `this.t`, and compiled template `_ctx.t` are
+	// untouched. This is the idiomatic NC fix (the old vue2 mixin's job).
+	new webpack.ProvidePlugin({
+		t: ['@nextcloud/l10n', 'translate'],
+		n: ['@nextcloud/l10n', 'translatePlural'],
+	}),
 	// Vue 3 build feature flags (ADR-066): silence the "feature flag not
 	// explicitly defined" runtime warnings and tree-shake the Options-API /
 	// devtools / hydration-mismatch paths. Options API stays ON — the app +

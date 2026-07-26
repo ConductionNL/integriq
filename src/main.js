@@ -20,7 +20,7 @@ import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
-import customComponents from './registry.js'
+import customComponents, { registry } from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 import { createMappingAndOpen } from './handlers/actionHandlers.js'
 
@@ -191,6 +191,10 @@ tryLoadTranslations()
 // the values the lib resolves at render time.
 const pageTypesProp = { ...defaultPageTypes }
 const customComponentsProp = { ...customComponents }
+// V2 component registry (ADR-036): kind-tagged custom-page map CnAppRoot uses to
+// resolve `type:"custom"` page components under nc-vue@2. Shallow-cloned for the
+// same extensibility reason as the maps above.
+const registryProp = { ...registry }
 
 const app = createApp({
 	// This root uses a native Vue-3 render() (h from 'vue'). @vue/compat would
@@ -202,6 +206,7 @@ const app = createApp({
 	render: () => h(App, {
 		manifest: mergedManifest,
 		customComponents: customComponentsProp,
+		registry: registryProp,
 		pageTypes: pageTypesProp,
 	}),
 })
