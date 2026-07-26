@@ -6,7 +6,12 @@ const { VueLoaderPlugin } = require('vue-loader')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
-webpackConfig.devtool = isDev ? 'cheap-source-map' : 'source-map'
+// Production must not ship a full 'source-map' devtool: it emits a separate
+// .js.map exposing original unminified source alongside the publicly-served
+// bundle, and — with `optimization.sideEffects = false` retaining the entire
+// library module graph — a full source-map balloons the build's memory to an
+// OOM. Use the non-source-exposing, lighter variant.
+webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
 webpackConfig.stats = {
 	colors: true,
@@ -154,5 +159,23 @@ webpackConfig.plugins = [
 		__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
 	}),
 ]
+
+// Published-dist tree-shaking guard (ADR-066): @conduction/nextcloud-vue@2
+// (and @nextcloud/vue@9) attach each dual-Vue component's compiled Vue-3
+// render via a side-effect-only `.vue.js` dispatcher import in the barrel
+// (`import './CnAppRoot.vue.js'` does `script.render = render`). The published
+// package's `sideEffects` allowlist covers only **/*.vue + **/*.css, NOT those
+// compiled `.vue.js` dispatchers, so an isolated/CI build that resolves the
+// PUBLISHED dist (not the src sibling) tree-shakes the dispatcher away and the
+// render never attaches -> every library component (CnAppRoot, CnPageRenderer,
+// CnAppNav, ...) renders a silent empty comment and the whole shell is blank.
+// Disabling sideEffects pruning keeps those render-attach imports. A targeted
+// per-module rule for .vue.js does NOT work; only turning the optimization off
+// does (confirmed on the decidesk sister migration). Costs a modest bundle-size
+// increase.
+webpackConfig.optimization = {
+	...(webpackConfig.optimization || {}),
+	sideEffects: false,
+}
 
 module.exports = webpackConfig
