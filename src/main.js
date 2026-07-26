@@ -197,12 +197,8 @@ const customComponentsProp = { ...customComponents }
 const registryProp = { ...registry }
 
 const app = createApp({
-	// This root uses a native Vue-3 render() (h from 'vue'). @vue/compat would
-	// otherwise treat ANY `render` option as the deprecated Vue-2 RENDER_FUNCTION
-	// API and wrap it, which nulls `currentRenderingInstance` for the whole
-	// subtree — breaking renderSlot/resolveComponent in CnAppRoot (ADR-066).
-	compatConfig: { RENDER_FUNCTION: false },
-	// Vue 3: props pass FLAT (no `props:` wrapper in the data object).
+	// Pure Vue 3 (ADR-066): native render() with `h` from 'vue'. Props pass
+	// FLAT (no `props:` wrapper in the data object).
 	render: () => h(App, {
 		manifest: mergedManifest,
 		customComponents: customComponentsProp,

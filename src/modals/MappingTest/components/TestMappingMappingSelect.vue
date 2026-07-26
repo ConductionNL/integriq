@@ -128,31 +128,31 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="edit-mapping">
 				<h4>{{ t('openconnector', 'Edit mapping') }}</h4>
 
-				<NcTextField :value.sync="mappingItem.name"
+				<NcTextField v-model="mappingItem.name"
 					:label="t('openconnector', 'Name')" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.description"
+					v-model="mappingItem.description"
 					:label="t('openconnector', 'Description')" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.mapping"
+					v-model="mappingItem.mapping"
 					:label="t('openconnector', 'Mapping')"
 					:error="!validJson(mappingItem.mapping)"
 					:helper-text="!validJson(mappingItem.mapping) ? t('openconnector', 'Invalid JSON') : ''" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.cast"
+					v-model="mappingItem.cast"
 					:label="t('openconnector', 'Cast')"
 					:error="!validJson(mappingItem.cast, true)"
 					:helper-text="!validJson(mappingItem.cast, true) ? t('openconnector', 'Invalid JSON') : ''" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.unset"
+					v-model="mappingItem.unset"
 					:label="t('openconnector', 'Unset')"
 					:helper-text="t('openconnector', 'Enter a comma-separated list of keys.')" />
 

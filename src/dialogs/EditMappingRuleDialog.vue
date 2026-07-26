@@ -31,7 +31,7 @@
 			<form class="cn-rule-dialog__form" @submit.prevent="onSubmit">
 				<label class="cn-rule-dialog__field">
 					<span class="cn-rule-dialog__label">{{ propertyLabel }}</span>
-					<NcTextField :value.sync="propertyDraft"
+					<NcTextField v-model="propertyDraft"
 						:placeholder="propertyPlaceholder"
 						:error="!!propertyError"
 						:helper-text="propertyError"

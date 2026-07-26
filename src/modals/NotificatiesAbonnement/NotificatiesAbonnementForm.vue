@@ -25,7 +25,7 @@
 			<h2>{{ isEdit ? t('openconnector', 'Edit abonnement') : t('openconnector', 'Add abonnement') }}</h2>
 
 			<NcTextField :label="t('openconnector', 'Name') + ' *'"
-				:value.sync="model.name"
+				v-model="model.name"
 				:helper-text="errors.name"
 				:error="!!errors.name" />
 
@@ -71,11 +71,11 @@
 			</div>
 
 			<NcTextField :label="t('openconnector', 'Auth header name')"
-				:value.sync="model.authHeaderName"
+				v-model="model.authHeaderName"
 				:helper-text="t('openconnector', 'Header the remote Notificaties Routeer Component echoes the abonnement secret back on. Default: Authorization.')" />
 
 			<NcTextField :label="t('openconnector', 'Auth scheme prefix')"
-				:value.sync="model.authScheme"
+				v-model="model.authScheme"
 				:helper-text="t('openconnector', 'Optional prefix stripped before comparison (e.g. \'Bearer \'). Leave empty for a bare token.')" />
 
 			<div class="abonnementForm__actions">

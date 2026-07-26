@@ -73,9 +73,9 @@
 					<dd>{{ mapping.description || '-' }}</dd>
 					<dt>{{ t('openconnector', 'Pass through') }}</dt>
 					<dd>
-						<NcCheckboxRadioSwitch :checked="!!mapping.passThrough"
+						<NcCheckboxRadioSwitch :model-value="!!mapping.passThrough"
 							:disabled="saving"
-							@update:checked="onTogglePassThrough">
+							@update:model-value="onTogglePassThrough">
 							{{ passThroughLabel }}
 						</NcCheckboxRadioSwitch>
 						<p class="cn-mapping-detail__hint">

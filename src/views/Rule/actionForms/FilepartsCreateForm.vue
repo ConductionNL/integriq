@@ -9,32 +9,32 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'Size location (dot path, required)')"
-			:value="value.sizeLocation || ''"
+			:model-value="value.sizeLocation || ''"
 			placeholder="body.size"
-			@update:value="(next) => patch('sizeLocation', next)" />
+			@update:model-value="(next) => patch('sizeLocation', next)" />
 		<label class="action-form__label">{{ t('openconnector', 'Schema') }}</label>
 		<NcSelect
 			data-testid="action-form-fileparts-schema"
 			:aria-label-combobox="t('openconnector', 'Schema')"
-			:value="selectedSchema"
+			:model-value="selectedSchema"
 			:options="schemaOptions"
 			:loading="schemasLoading"
 			:placeholder="t('openconnector', 'Select a schema')"
 			@input="(option) => patch('schemaId', option?.id ? String(option.id) : '')" />
 		<NcTextField
 			:label="t('openconnector', 'Filename location (default: filename)')"
-			:value="value.filenameLocation || ''"
+			:model-value="value.filenameLocation || ''"
 			placeholder="filename"
-			@update:value="(next) => patch('filenameLocation', next)" />
+			@update:model-value="(next) => patch('filenameLocation', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filepart location (default: fileParts)')"
-			:value="value.filePartLocation || ''"
+			:model-value="value.filePartLocation || ''"
 			placeholder="fileParts"
-			@update:value="(next) => patch('filePartLocation', next)" />
+			@update:model-value="(next) => patch('filePartLocation', next)" />
 		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
-			:value="selectedMapping"
+			:model-value="selectedMapping"
 			:options="mappingOptions"
 			:loading="mappingsLoading"
 			:placeholder="t('openconnector', 'Pick a mapping')"

@@ -14,7 +14,7 @@
 		<NcSelect
 			data-testid="action-form-fetch-source"
 			:aria-label-combobox="t('openconnector', 'Source')"
-			:value="selectedSource"
+			:model-value="selectedSource"
 			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:placeholder="t('openconnector', 'Select a source')"
@@ -22,53 +22,53 @@
 
 		<NcTextField
 			:label="t('openconnector', 'File path (dot path)')"
-			:value="value.filePath || ''"
+			:model-value="value.filePath || ''"
 			placeholder="body.attachment.url"
-			@update:value="(next) => patch('filePath', next)" />
+			@update:model-value="(next) => patch('filePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Endpoint (optional)')"
-			:value="value.endpoint || ''"
+			:model-value="value.endpoint || ''"
 			placeholder="https://upstream/file/123"
-			@update:value="(next) => patch('endpoint', next)" />
+			@update:model-value="(next) => patch('endpoint', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Object ID path (optional)')"
-			:value="value.objectIdPath || ''"
+			:model-value="value.objectIdPath || ''"
 			placeholder="body.id"
-			@update:value="(next) => patch('objectIdPath', next)" />
+			@update:model-value="(next) => patch('objectIdPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Origin ID path (optional)')"
-			:value="value.originIdPath || ''"
+			:model-value="value.originIdPath || ''"
 			placeholder="body.origin.id"
-			@update:value="(next) => patch('originIdPath', next)" />
+			@update:model-value="(next) => patch('originIdPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Content path (optional)')"
-			:value="value.contentPath || ''"
+			:model-value="value.contentPath || ''"
 			placeholder="body.attachment.content"
-			@update:value="(next) => patch('contentPath', next)" />
+			@update:model-value="(next) => patch('contentPath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filename path (optional)')"
-			:value="value.filenamePath || ''"
+			:model-value="value.filenamePath || ''"
 			placeholder="body.attachment.name"
-			@update:value="(next) => patch('filenamePath', next)" />
+			@update:model-value="(next) => patch('filenamePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'File extension (optional)')"
-			:value="value.fileExtension || ''"
+			:model-value="value.fileExtension || ''"
 			placeholder="pdf"
-			@update:value="(next) => patch('fileExtension', next)" />
+			@update:model-value="(next) => patch('fileExtension', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Sub-object filepath (optional)')"
-			:value="value.subObjectFilepath || ''"
+			:model-value="value.subObjectFilepath || ''"
 			placeholder="body.objects.0.url"
-			@update:value="(next) => patch('subObjectFilepath', next)" />
+			@update:model-value="(next) => patch('subObjectFilepath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Tags (comma-separated)')"
-			:value="csv(value.tags)"
+			:model-value="csv(value.tags)"
 			placeholder="invoice,inbox"
-			@update:value="(next) => patch('tags', toArray(next))" />
+			@update:model-value="(next) => patch('tags', toArray(next))" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.autoShare"
-			@update:checked="(next) => patch('autoShare', !!next)">
+			:model-value="!!value.autoShare"
+			@update:model-value="(next) => patch('autoShare', !!next)">
 			{{ t('openconnector', 'Auto-share fetched files') }}
 		</NcCheckboxRadioSwitch>
 

@@ -29,13 +29,13 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						<NcTextField
 							id="endpoint"
 							:label="t('openconnector', 'Endpoint')"
-							:value.sync="testSourceItem.endpoint" />
+							v-model="testSourceItem.endpoint" />
 					</div>
 					<NcTextArea
 						id="body"
 						resize="vertical"
 						:label="t('openconnector', 'Body')"
-						:value.sync="testSourceItem.body" />
+						v-model="testSourceItem.body" />
 				</div>
 			</form>
 

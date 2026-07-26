@@ -68,14 +68,16 @@ webpackConfig.resolve = {
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
 		//
-		// VUE 3 STAGING (ADR-066): route the runtime `vue` import to @vue/compat
-		// (MODE 2, set per-SFC via vue-loader compilerOptions below) so the
-		// un-migrated Vue-2 template syntax (.sync, $set, filters) stays correct
-		// during the straddle. vue-loader still finds the real SFC compiler via
-		// @vue/compiler-sfc. One ABSOLUTE file so the app + aliased lib source
-		// share ONE Vue copy (dual-copy = two currentRenderingInstance states →
-		// CnAppRoot null crash).
-		'vue$': path.resolve(__dirname, 'node_modules/@vue/compat/dist/vue.runtime.esm-bundler.js'),
+		// PURE VUE 3 (ADR-066): the app source is now compat-construct-free
+		// (.sync → v-model:arg, $set/$delete → assignment, no filters/$on), so the
+		// build runs on the REAL Vue 3 runtime — NOT @vue/compat. @vue/compat
+		// globally wraps every library component's compiled `render` as a Vue-2
+		// RENDER_FUNCTION, which breaks the pure-Vue-3 @conduction/nextcloud-vue@2
+		// + @nextcloud/vue@9 components at runtime (`this.$slots.default is not a
+		// function`, `Cannot destructure 'href'`). One ABSOLUTE file so the app +
+		// any aliased lib source share ONE Vue copy (dual-copy = two
+		// currentRenderingInstance states → CnAppRoot null crash).
+		'vue$': path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
 		'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
 		// Dedupe vue-router to ONE copy (absolute file): a per-importer resolve
 		// gives @nextcloud/vue's RouterLink a different router instance than
@@ -95,16 +97,11 @@ webpackConfig.resolve = {
 webpackConfig.module = {
 	rules: [
 		{
+			// PURE VUE 3 (ADR-066): the @vue/compat MODE-2 compiler shim is gone
+			// — the source is compat-construct-free, so vue-loader compiles the
+			// SFC templates as native Vue 3.
 			test: /\.vue$/,
 			loader: 'vue-loader',
-			options: {
-				// @vue/compat MODE 2 (ADR-066 straddle): keep Vue-2 template
-				// semantics (.sync, filters, v-on native mod) valid until the
-				// per-SFC de-compat sweep lands. Removed once source is pure V3.
-				compilerOptions: {
-					compatConfig: { MODE: 2 },
-				},
-			},
 		},
 		{
 			test: /\.ts$/,

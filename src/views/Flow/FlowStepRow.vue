@@ -33,7 +33,7 @@
 				<NcSelect
 					:input-id="'flow-step-type-' + uid"
 					:input-label="t('openconnector', 'Step type')"
-					:value="selectedType"
+					:model-value="selectedType"
 					:options="typeOptions"
 					:clearable="false"
 					@input="onTypePick" />
@@ -43,7 +43,7 @@
 				<NcSelect
 					:input-id="'flow-step-config-ref-' + uid"
 					:input-label="configRefLabel"
-					:value="selectedConfigRef"
+					:model-value="selectedConfigRef"
 					:options="configRefOptions"
 					:loading="configRefLoading"
 					:clearable="false"
@@ -55,7 +55,7 @@
 				<NcSelect
 					:input-id="'flow-step-on-error-' + uid"
 					:input-label="t('openconnector', 'On error')"
-					:value="selectedOnError"
+					:model-value="selectedOnError"
 					:options="onErrorOptions"
 					:clearable="false"
 					@input="onOnErrorPick" />
@@ -90,25 +90,25 @@
 
 		<!-- call: endpoint/method -->
 		<div v-if="step.type === 'call'" class="flow-step-row__config">
-			<NcTextField :label="t('openconnector', 'Endpoint path')" :value="step.config.endpoint || ''" @update:value="(value) => updateConfig('endpoint', value)" />
-			<NcTextField :label="t('openconnector', 'HTTP method')" :value="step.config.method || 'GET'" @update:value="(value) => updateConfig('method', value)" />
+			<NcTextField :label="t('openconnector', 'Endpoint path')" :model-value="step.config.endpoint || ''" @update:model-value="(value) => updateConfig('endpoint', value)" />
+			<NcTextField :label="t('openconnector', 'HTTP method')" :model-value="step.config.method || 'GET'" @update:model-value="(value) => updateConfig('method', value)" />
 		</div>
 
 		<!-- event: type/source/subject -->
 		<div v-else-if="step.type === 'event'" class="flow-step-row__config">
-			<NcTextField :label="t('openconnector', 'CloudEvent type') + '*'" :value="step.config.type || ''" @update:value="(value) => updateConfig('type', value)" />
-			<NcTextField :label="t('openconnector', 'CloudEvent source') + '*'" :value="step.config.source || ''" @update:value="(value) => updateConfig('source', value)" />
-			<NcTextField :label="t('openconnector', 'CloudEvent subject')" :value="step.config.subject || ''" @update:value="(value) => updateConfig('subject', value)" />
+			<NcTextField :label="t('openconnector', 'CloudEvent type') + '*'" :model-value="step.config.type || ''" @update:model-value="(value) => updateConfig('type', value)" />
+			<NcTextField :label="t('openconnector', 'CloudEvent source') + '*'" :model-value="step.config.source || ''" @update:model-value="(value) => updateConfig('source', value)" />
+			<NcTextField :label="t('openconnector', 'CloudEvent subject')" :model-value="step.config.subject || ''" @update:model-value="(value) => updateConfig('subject', value)" />
 		</div>
 
 		<!-- approval: approverGroup/onReject/onTimeout/ttlSeconds -->
 		<div v-else-if="step.type === 'approval'" class="flow-step-row__config">
-			<NcTextField :label="t('openconnector', 'Approver group') + '*'" :value="step.config.approverGroup || ''" @update:value="(value) => updateConfig('approverGroup', value)" />
+			<NcTextField :label="t('openconnector', 'Approver group') + '*'" :model-value="step.config.approverGroup || ''" @update:model-value="(value) => updateConfig('approverGroup', value)" />
 			<div class="flow-step-row__field">
 				<NcSelect
 					:input-id="'flow-step-on-reject-' + uid"
 					:input-label="t('openconnector', 'On reject')"
-					:value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onReject || 'error')"
+					:model-value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onReject || 'error')"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
 					@input="(option) => updateConfig('onReject', option?.id || 'error')" />
@@ -117,7 +117,7 @@
 				<NcSelect
 					:input-id="'flow-step-on-timeout-' + uid"
 					:input-label="t('openconnector', 'On timeout')"
-					:value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onTimeout || 'error')"
+					:model-value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onTimeout || 'error')"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
 					@input="(option) => updateConfig('onTimeout', option?.id || 'error')" />
@@ -125,8 +125,8 @@
 			<NcTextField
 				:label="t('openconnector', 'TTL (seconds)')"
 				type="number"
-				:value="String(step.config.ttlSeconds || 86400)"
-				@update:value="(value) => updateConfig('ttlSeconds', parseInt(value, 10) || 86400)" />
+				:model-value="String(step.config.ttlSeconds || 86400)"
+				@update:model-value="(value) => updateConfig('ttlSeconds', parseInt(value, 10) || 86400)" />
 		</div>
 
 		<!-- branch: branches[] + defaultNextStepOrder -->
@@ -140,7 +140,7 @@
 					<NcSelect
 						:input-id="'flow-step-branch-target-' + uid + '-' + branchIndex"
 						:input-label="t('openconnector', 'Then go to step')"
-						:value="resolveOrderOption(branch.nextStepOrder)"
+						:model-value="resolveOrderOption(branch.nextStepOrder)"
 						:options="orderOptions"
 						:clearable="false"
 						@input="(option) => updateBranchTarget(branchIndex, option?.id)" />
@@ -161,7 +161,7 @@
 				<NcSelect
 					:input-id="'flow-step-default-target-' + uid"
 					:input-label="t('openconnector', 'Otherwise go to step')"
-					:value="resolveOrderOption(step.defaultNextStepOrder)"
+					:model-value="resolveOrderOption(step.defaultNextStepOrder)"
 					:options="orderOptions"
 					:clearable="true"
 					@input="(option) => $emit('update', { ...step, defaultNextStepOrder: option?.id ?? null })" />

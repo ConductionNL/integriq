@@ -127,19 +127,19 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="subsection">
 							<h4>{{ t('openconnector', 'Source configuration') }}</h4>
 							<div class="form-group">
-								<NcTextField :value.sync="synchronizationItem.sourceConfig.idPosition"
+								<NcTextField v-model="synchronizationItem.sourceConfig.idPosition"
 									:label="t('openconnector', 'ID position')"
 									:placeholder="t('openconnector', 'Position of id in source object')" />
 
-								<NcTextField :value.sync="synchronizationItem.sourceConfig.resultsPosition"
+								<NcTextField v-model="synchronizationItem.sourceConfig.resultsPosition"
 									:label="t('openconnector', 'Results position')"
 									:placeholder="t('openconnector', 'Position of results in source object')" />
 
-								<NcTextField :value.sync="synchronizationItem.sourceConfig.endpoint"
+								<NcTextField v-model="synchronizationItem.sourceConfig.endpoint"
 									:label="t('openconnector', 'Endpoint')"
 									:placeholder="t('openconnector', 'Endpoint on which to fetch data')" />
 
-								<NcTextField :value.sync="synchronizationItem.sourceHashPosition"
+								<NcTextField v-model="synchronizationItem.sourceHashPosition"
 									:label="t('openconnector', 'Source hash position')"
 									:placeholder="t('openconnector', 'Position of hash in source object')" />
 							</div>
@@ -158,14 +158,14 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="section-content">
 							<form @submit.prevent="handleSubmit">
 								<div class="form-group">
-									<NcTextField :value.sync="synchronizationItem.name"
+									<NcTextField v-model="synchronizationItem.name"
 										:label="t('openconnector', 'Name')"
 										:placeholder="t('openconnector', 'Enter synchronization name')"
 										required />
 
 									<NcTextArea
 										resize="vertical"
-										:value.sync="synchronizationItem.description"
+										v-model="synchronizationItem.description"
 										:label="t('openconnector', 'Description')"
 										:placeholder="t('openconnector', 'Describe what this synchronization does')" />
 								</div>
@@ -201,7 +201,7 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="form-group">
 								<NcTextArea
 									resize="vertical"
-									:value.sync="synchronizationItem.conditions"
+									v-model="synchronizationItem.conditions"
 									:label="t('openconnector', 'Conditions (JSON logic)')"
 									:placeholder="t('openconnector', 'Enter JSON logic conditions')" />
 

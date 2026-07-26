@@ -8,23 +8,23 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'File path (dot path on data, required)')"
-			:value="value.filePath || ''"
+			:model-value="value.filePath || ''"
 			placeholder="body.attachment"
-			@update:value="(next) => patch('filePath', next)" />
+			@update:model-value="(next) => patch('filePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Filename path (dot path on data, required)')"
-			:value="value.fileNamePath || ''"
+			:model-value="value.fileNamePath || ''"
 			placeholder="body.filename"
-			@update:value="(next) => patch('fileNamePath', next)" />
+			@update:model-value="(next) => patch('fileNamePath', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Tags (comma-separated)')"
-			:value="csv(value.tags)"
+			:model-value="csv(value.tags)"
 			placeholder="invoice,outbox"
-			@update:value="(next) => patch('tags', toArray(next))" />
+			@update:model-value="(next) => patch('tags', toArray(next))" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.autoShare"
-			@update:checked="(next) => patch('autoShare', !!next)">
+			:model-value="!!value.autoShare"
+			@update:model-value="(next) => patch('autoShare', !!next)">
 			{{ t('openconnector', 'Auto-share written files') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">

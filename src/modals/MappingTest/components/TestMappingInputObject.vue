@@ -6,7 +6,7 @@ import { translate as t } from '@nextcloud/l10n'
 	<div class="input-object-container">
 		<h4>{{ t('openconnector', 'Input object') }}</h4>
 
-		<NcTextArea :value.sync="inputObject"
+		<NcTextArea v-model="inputObject"
 			resize="vertical"
 			class="textarea"
 			:error="!validJson(inputObject)"

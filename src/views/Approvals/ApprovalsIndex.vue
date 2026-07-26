@@ -23,7 +23,7 @@
 			<div class="approvals__filters">
 				<NcSelect :input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					:value.sync="statusFilter"
+					v-model="statusFilter"
 					@input="reload" />
 			</div>
 		</div>
