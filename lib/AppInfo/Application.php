@@ -739,13 +739,19 @@ class Application extends App implements IBootstrap
      */
     private function registerAppHostBoilerplate(IRegistrationContext $context): void
     {
-        // Bind the leaf-namespaced AppHost preferences controller class (which
-        // does not physically exist in this app — same pattern as the
-        // Health/Metrics observability aliases) to the OpenRegister generic,
-        // with appName=openconnector so the `pref_` user-value namespace is
-        // scoped to this app.
+        // Bind the AppHost preferences controller (which does not physically
+        // exist in this app — same pattern as the Health/Metrics observability
+        // aliases) to the OpenRegister generic, with appName=openconnector so
+        // the `pref_` user-value namespace is scoped to this app.
+        //
+        // The service key MUST be the STANDARD `OCA\OpenConnector\Controller\…`
+        // namespace, because that is the class name NC's App::main synthesises
+        // from the plain `genericPreferences#…` route name (see the matching
+        // note in appinfo/routes.php). A non-standard namespace key (e.g.
+        // `…\AppHost\Controller\…`) is never looked up by the router, so every
+        // request 503s with "App controller is not enabled".
         $context->registerService(
-            'OCA\\OpenConnector\\AppHost\\Controller\\GenericPreferencesController',
+            'OCA\\OpenConnector\\Controller\\GenericPreferencesController',
             static function (ContainerInterface $c) {
                 return new GenericPreferencesController(
                     appName: self::APP_ID,

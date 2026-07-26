@@ -28,7 +28,7 @@
 				<NcSelect :input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
 					v-model="statusFilter"
-					@input="reload" />
+					@update:model-value="reload" />
 				<NcTextField :label="t('openconnector', 'Synchronization')"
 					v-model="synchronizationFilter"
 					@update:model-value="reloadDebounced" />

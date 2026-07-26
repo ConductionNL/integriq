@@ -23,9 +23,12 @@ test.describe('Webhooks — index surface', () => {
 	test('Webhooks page renders heading via nav-click without app errors', async ({ page }) => {
 		const sink = trackErrors(page)
 		await navTo(page, 'Webhooks', '/webhooks')
-		await expect(page.getByRole('heading', { name: /^Webhooks$/ }).first())
-			.toBeVisible({ timeout: 15_000 })
-		// A create button is present and correctly labelled (see below).
+		// Schema-driven index pages render via nc-vue CnIndexPage, whose title
+		// header is gated behind `showTitle` (default FALSE, not set by the
+		// manifest) — so there is no `<h1>/<h2>` page-title heading element on an
+		// index page (unchanged between the Vue 2 and Vue 3 builds). navTo already
+		// asserts the route resolved; the schema-scoped "Add Webhook" create button
+		// is the page-identity signal that DOES render.
 		const addBtn = page.getByRole('button', { name: /Add Webhook/i }).first()
 		await expect(addBtn, 'Webhooks page must offer a create action').toBeVisible({ timeout: 15_000 })
 		assertNoAppErrors(sink)

@@ -36,12 +36,12 @@
 				<NcSelect input-id="notificaties-abonnement-source"
 					:input-label="t('openconnector', 'Source')"
 					:aria-label-combobox="t('openconnector', 'Source')"
-					:value="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select the Notificaties API source')"
-					@input="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="abonnementForm__helper">
 					{{ t('openconnector', 'The openconnector Source describing the remote Notificaties API (location, auth).') }}
 				</span>
@@ -54,13 +54,13 @@
 				<NcSelect input-id="notificaties-abonnement-kanalen"
 					:input-label="t('openconnector', 'Kanalen')"
 					:aria-label-combobox="t('openconnector', 'Kanalen')"
-					:value="kanaalNames"
+					:model-value="kanaalNames"
 					:options="kanaalNames"
 					:taggable="true"
 					:multiple="true"
 					:clearable="true"
 					:placeholder="t('openconnector', 'Type a kanaal name and press enter (e.g. zaken)')"
-					@input="onKanalenChange">
+					@update:model-value="onKanalenChange">
 					<template #no-options>
 						{{ t('openconnector', 'Type to add a kanaal name') }}
 					</template>

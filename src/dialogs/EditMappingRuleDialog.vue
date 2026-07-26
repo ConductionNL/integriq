@@ -56,12 +56,12 @@
 					<span class="cn-rule-dialog__label">
 						{{ t('openconnector', 'Cast type') }}
 					</span>
-					<NcSelect :value="castSelectValue"
+					<NcSelect :model-value="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
 						:aria-label-combobox="t('openconnector', 'Cast type')"
 						input-id="cn-rule-dialog-cast-type"
-						@input="onCastTypeInput" />
+						@update:model-value="onCastTypeInput" />
 				</label>
 
 				<div class="cn-rule-dialog__actions">

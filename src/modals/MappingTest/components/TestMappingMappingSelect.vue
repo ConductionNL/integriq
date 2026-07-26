@@ -60,7 +60,7 @@ import { translate as t } from '@nextcloud/l10n'
 					:clearable="false"
 					:loading="mappingsLoading || mappingTest.loading"
 					required
-					@input="emitMappingSelected">
+					@update:model-value="emitMappingSelected">
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">
@@ -95,7 +95,7 @@ import { translate as t } from '@nextcloud/l10n'
 					:loading="schemasLoading"
 					:disabled="!openRegister.isInstalled"
 					required
-					@input="emitSchemaSelected">
+					@update:model-value="emitSchemaSelected">
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">

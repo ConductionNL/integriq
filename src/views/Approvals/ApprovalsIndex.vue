@@ -24,7 +24,7 @@
 				<NcSelect :input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
 					v-model="statusFilter"
-					@input="reload" />
+					@update:model-value="reload" />
 			</div>
 		</div>
 

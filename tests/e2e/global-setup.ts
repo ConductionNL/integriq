@@ -113,6 +113,31 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		)
 	}
 
+	// Seed the CnSupportDialog "seen" flag into the openconnector origin's
+	// localStorage BEFORE any spec loads the app.
+	//
+	// `@conduction/nextcloud-vue`'s `useSupportDialog` (mode `'server'`, wired
+	// by CnAppRoot with `app-id="openconnector"`) treats
+	// `localStorage['cn-support-dialog-shown:openconnector'] === '1'` as the
+	// authoritative "already seen" signal and never opens the dialog when it is
+	// set (see resolveServerVisibility's first guard). Seeding it here means the
+	// support-dialog `modal-mask` never mounts, so it can never intercept the
+	// pointer events that `expandNavGroups` / `navTo` rely on. This is durable
+	// across every spec because the flag rides in the persisted storageState.
+	//
+	// This also decouples the harness from the server preferences endpoint: on a
+	// fresh browser with no flag, a non-2xx GET of the preferences endpoint sends
+	// the composable down its fail-open catch branch and re-opens the dialog on
+	// every load — exactly the cascade this seed prevents.
+	await page.goto('/apps/openconnector/')
+	await page.evaluate(() => {
+		try {
+			window.localStorage.setItem('cn-support-dialog-shown:openconnector', '1')
+		} catch (e) {
+			/* private-mode / quota — storageState seed is best-effort */
+		}
+	})
+
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
 }
