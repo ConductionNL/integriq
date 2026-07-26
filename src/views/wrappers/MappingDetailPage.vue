@@ -460,7 +460,7 @@ export default {
 		 */
 		openTestModal() {
 			if (!this.hasMapping) return
-			modalBus.$emit(EVENT_OPEN_TEST_MAPPING, { mapping: this.mapping })
+			modalBus.emit(EVENT_OPEN_TEST_MAPPING, { mapping: this.mapping })
 		},
 
 		/**

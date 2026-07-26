@@ -144,7 +144,7 @@ export default {
 		 * @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002
 		 */
 		openDetail() {
-			modalBus.$emit(EVENT_OPEN_CATALOG_ITEM_DETAIL, { item: this.catalogItem })
+			modalBus.emit(EVENT_OPEN_CATALOG_ITEM_DETAIL, { item: this.catalogItem })
 		},
 	},
 }

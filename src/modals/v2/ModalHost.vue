@@ -94,24 +94,24 @@ export default {
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
-		modalBus.$on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
-		modalBus.$on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
-		modalBus.$on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
-		modalBus.$on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
-		modalBus.$on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
-		modalBus.$on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
-		modalBus.$on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
+		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
+		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
-	beforeDestroy() {
-		modalBus.$off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
-		modalBus.$off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
-		modalBus.$off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
-		modalBus.$off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
-		modalBus.$off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
-		modalBus.$off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
-		modalBus.$off(EVENT_OPEN_PROMOTION, this.openPromotion)
+	beforeUnmount() {
+		modalBus.off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
+		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
+		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
 	methods: {

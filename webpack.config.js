@@ -62,9 +62,23 @@ webpackConfig.resolve = {
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-		'vue$': path.resolve(__dirname, 'node_modules/vue'),
+		//
+		// VUE 3 STAGING (ADR-066): route the runtime `vue` import to @vue/compat
+		// (MODE 2, set per-SFC via vue-loader compilerOptions below) so the
+		// un-migrated Vue-2 template syntax (.sync, $set, filters) stays correct
+		// during the straddle. vue-loader still finds the real SFC compiler via
+		// @vue/compiler-sfc. One ABSOLUTE file so the app + aliased lib source
+		// share ONE Vue copy (dual-copy = two currentRenderingInstance states →
+		// CnAppRoot null crash).
+		'vue$': path.resolve(__dirname, 'node_modules/@vue/compat/dist/vue.runtime.esm-bundler.js'),
 		'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
-		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
+		// Dedupe vue-router to ONE copy (absolute file): a per-importer resolve
+		// gives @nextcloud/vue's RouterLink a different router instance than
+		// app.use(router) provided → NcAppNavigationItem's <router-link> crash.
+		'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.mjs'),
+		// v9 is ESM-only: exports maps '.' -> ./dist/index.mjs with no main/module,
+		// so a directory alias can't resolve it. Point at the explicit entry file.
+		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
 		// Force @nextcloud/dialogs and @nextcloud/axios to resolve from this
 		// app's node_modules, preventing the nextcloud-vue submodule's nested
 		// deps from leaking in.
@@ -78,6 +92,14 @@ webpackConfig.module = {
 		{
 			test: /\.vue$/,
 			loader: 'vue-loader',
+			options: {
+				// @vue/compat MODE 2 (ADR-066 straddle): keep Vue-2 template
+				// semantics (.sync, filters, v-on native mod) valid until the
+				// per-SFC de-compat sweep lands. Removed once source is pure V3.
+				compilerOptions: {
+					compatConfig: { MODE: 2 },
+				},
+			},
 		},
 		{
 			test: /\.ts$/,
@@ -109,6 +131,15 @@ webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
 	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
+	// Vue 3 build feature flags (ADR-066): silence the "feature flag not
+	// explicitly defined" runtime warnings and tree-shake the Options-API /
+	// devtools / hydration-mismatch paths. Options API stays ON — the app +
+	// nc-vue components are Options-API SFCs.
+	new webpack.DefinePlugin({
+		__VUE_OPTIONS_API__: JSON.stringify(true),
+		__VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+		__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+	}),
 ]
 
 module.exports = webpackConfig
