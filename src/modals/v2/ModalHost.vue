@@ -11,7 +11,7 @@
     1. The modals live outside the manifest-rendered router-view tree, so
        a page swap mid-test cannot unmount the modal from under the user.
     2. Each handler stays a plain function with no Vue-instance context —
-       it just calls `modalBus.$emit('open-foo', { item })` and the host
+       it just calls `modalBus.emit('open-foo', { item })` and the host
        picks it up.
 
   Adding a new modal here is three lines: import the SFC, register an
