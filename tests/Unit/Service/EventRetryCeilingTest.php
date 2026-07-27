@@ -36,8 +36,6 @@ use ReflectionMethod;
  */
 class EventRetryCeilingTest extends TestCase
 {
-
-
     /**
      * The sweep and the abandon decision must share one source of truth.
      *
@@ -59,7 +57,6 @@ class EventRetryCeilingTest extends TestCase
 
     }//end testTheSweepDefaultMatchesTheClassDefault()
 
-
     /**
      * The ceiling actually applied is resolved per message, from its own
      * subscription — not taken from the sweep's argument alone.
@@ -78,7 +75,6 @@ class EventRetryCeilingTest extends TestCase
         $this->assertSame('int', (string) $m->getReturnType());
 
     }//end testThereIsAPerMessageCeilingResolver()
-
 
     /**
      * An exhausted message is dead-lettered rather than skipped.
@@ -100,7 +96,6 @@ class EventRetryCeilingTest extends TestCase
         $this->assertSame('void', (string) $m->getReturnType());
 
     }//end testExhaustedMessagesAreAbandonedNotSkipped()
-
 
     /**
      * The sweep takes the HIGHER of its argument and the message's own policy,
@@ -125,4 +120,55 @@ class EventRetryCeilingTest extends TestCase
         );
 
     }//end testTheSweepArgumentIsAFloorNotACeiling()
+
+    /**
+     * A transport failure has no HTTP status, and the attempt must OMIT the key
+     * rather than write null.
+     *
+     * `attempts[].statusCode` is typed `integer` and OpenRegister refuses both
+     * `null` and `{}` for a nested array-item property. Writing null made every
+     * transport-level failure — connection refused, DNS, timeout, i.e. the
+     * common case — throw out of recordFailure(), so the attempt was never
+     * recorded, retryCount never advanced, and the exception aborted the whole
+     * sweep.
+     *
+     * @return void
+     */
+    public function testATransportFailureAttemptOmitsTheStatusCode(): void
+    {
+        $m = new ReflectionMethod(EventService::class, 'appendAttempt');
+        $m->setAccessible(true);
+
+        $svc = (new ReflectionClass(EventService::class))->newInstanceWithoutConstructor();
+
+        $attempts = $m->invoke($svc, [], '2026-01-01T00:00:00+00:00', null, 'cURL error 7');
+
+        $this->assertCount(1, $attempts);
+        $this->assertArrayNotHasKey(
+            'statusCode',
+            $attempts[0],
+            'a null statusCode must be omitted, not written — OpenRegister rejects null here'
+        );
+        $this->assertSame('cURL error 7', $attempts[0]['error']);
+        $this->assertSame('2026-01-01T00:00:00+00:00', $attempts[0]['at']);
+
+    }//end testATransportFailureAttemptOmitsTheStatusCode()
+
+    /**
+     * An HTTP-level failure records its status and omits the empty error.
+     *
+     * @return void
+     */
+    public function testAnHttpFailureRecordsTheStatusAndOmitsANullError(): void
+    {
+        $m = new ReflectionMethod(EventService::class, 'appendAttempt');
+        $m->setAccessible(true);
+        $svc = (new ReflectionClass(EventService::class))->newInstanceWithoutConstructor();
+
+        $attempts = $m->invoke($svc, [], '2026-01-01T00:00:00+00:00', 503, null);
+
+        $this->assertSame(503, $attempts[0]['statusCode']);
+        $this->assertArrayNotHasKey('error', $attempts[0], 'a null error must be omitted too');
+
+    }//end testAnHttpFailureRecordsTheStatusAndOmitsANullError()
 }//end class

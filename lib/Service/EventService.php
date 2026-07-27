@@ -462,8 +462,11 @@ class EventService
             // `_rbac: false` ALONE no longer preserves protocolSettings, and every
             // push was silently going out UNSIGNED. Only `_render: false`, which
             // returns the entity before renderEntity() is ever reached, keeps it.
+            // Cast: `event_message.subscriptionId` is typed INTEGER in the schema
+            // and `find()` signs for a string $id, so an uncast value raises a
+            // TypeError before delivery is even attempted.
             $subscription = $this->objectService->find(
-                id: $subscriptionId,
+                id: (string) $subscriptionId,
                 register: 'openconnector',
                 schema: 'event_subscription',
                 _rbac: false,
@@ -599,8 +602,13 @@ class EventService
             $this->logger->error(
                     'Failed to deliver message: '.$e->getMessage(),
                     [
-                        'exception' => $e,
-                        'message'   => $message->jsonSerialize(),
+                        'exception'    => $e,
+                        // NOT 'message': Nextcloud's logger treats a `message`
+                        // key in the CONTEXT as the log message itself, so an
+                        // array here makes OC\Log::getLogLevel() receive an
+                        // array and throw — the error handler fatals, turning a
+                        // handled delivery failure into an uncaught TypeError.
+                        'eventMessage' => $message->jsonSerialize(),
                     ]
                     );
 
@@ -805,11 +813,31 @@ class EventService
      */
     private function appendAttempt(array $attempts, string $at, ?int $statusCode, ?string $error): array
     {
-        $attempts[] = [
-            'at'         => $at,
-            'statusCode' => $statusCode,
-            'error'      => $error,
-        ];
+        // OMIT a null rather than writing it. `attempts[].statusCode` is typed
+        // `integer` and `attempts[].error` `string` in the schema, and
+        // OpenRegister refuses BOTH `null` and `{}` for a nested array-item
+        // property — the only accepted way to say "absent" is to leave the key
+        // out entirely.
+        //
+        // Writing `statusCode => null` made every TRANSPORT-level failure
+        // (connection refused, DNS, timeout — the common case, where there is
+        // no HTTP status by definition) throw a ValidationException from inside
+        // recordFailure(). The attempt was never recorded, retryCount never
+        // advanced, the message was never abandoned, and the exception unwound
+        // through deliverMessage() and processRetries() to abort the entire
+        // retry sweep. Delivery failures that DID return a status code were
+        // recorded fine, which is why this survived: the failure mode only bit
+        // the messages nobody could deliver at all.
+        $attempt = ['at' => $at];
+        if ($statusCode !== null) {
+            $attempt['statusCode'] = $statusCode;
+        }
+
+        if ($error !== null) {
+            $attempt['error'] = $error;
+        }
+
+        $attempts[] = $attempt;
         return $attempts;
 
     }//end appendAttempt()
@@ -894,8 +922,13 @@ class EventService
             // `protocolSettings` is stripped from EVERY rendered read — including
             // an `_rbac: false` one (ocon#215, openregister#389/#429). `_render: false`
             // is what actually preserves it; see the note on deliverMessage().
+            // `event_message.subscriptionId` is typed INTEGER in the schema,
+            // while `find()` signs for a string $id and raises a TypeError on an
+            // int. Uncast, this line threw for every message the retry sweep
+            // touched — and nothing here caught it, so the sweep died on the
+            // first such message and every later one went unretried too.
             $subscription = $this->objectService->find(
-                id: $subscriptionId,
+                id: (string) $subscriptionId,
                 register: 'openconnector',
                 schema: 'event_subscription',
                 _rbac: false,
@@ -1039,8 +1072,13 @@ class EventService
             $this->logger->error(
                     'Failed to run synchronization action for event message: '.$e->getMessage(),
                     [
-                        'exception' => $e,
-                        'message'   => $message->jsonSerialize(),
+                        'exception'    => $e,
+                        // NOT 'message': Nextcloud's logger treats a `message`
+                        // key in the CONTEXT as the log message itself, so an
+                        // array here makes OC\Log::getLogLevel() receive an
+                        // array and throw — the error handler fatals, turning a
+                        // handled delivery failure into an uncaught TypeError.
+                        'eventMessage' => $message->jsonSerialize(),
                     ]
                     );
             $this->recordFailure(
@@ -1051,7 +1089,7 @@ class EventService
                 retryPolicy: $retryPolicy
             );
             return false;
-        }
+        }//end try
 
         $this->recordDeliverySuccess(message: $message);
         return true;
@@ -1115,8 +1153,13 @@ class EventService
             $this->logger->error(
                     'Failed to run job action for event message: '.$e->getMessage(),
                     [
-                        'exception' => $e,
-                        'message'   => $message->jsonSerialize(),
+                        'exception'    => $e,
+                        // NOT 'message': Nextcloud's logger treats a `message`
+                        // key in the CONTEXT as the log message itself, so an
+                        // array here makes OC\Log::getLogLevel() receive an
+                        // array and throw — the error handler fatals, turning a
+                        // handled delivery failure into an uncaught TypeError.
+                        'eventMessage' => $message->jsonSerialize(),
                     ]
                     );
             $this->recordFailure(
@@ -1127,7 +1170,7 @@ class EventService
                 retryPolicy: $retryPolicy
             );
             return false;
-        }
+        }//end try
 
         $level = 'SUCCESS';
         if ($log !== null) {
@@ -1218,8 +1261,13 @@ class EventService
             $this->logger->error(
                     'Failed to run flow action for event message: '.$e->getMessage(),
                     [
-                        'exception' => $e,
-                        'message'   => $message->jsonSerialize(),
+                        'exception'    => $e,
+                        // NOT 'message': Nextcloud's logger treats a `message`
+                        // key in the CONTEXT as the log message itself, so an
+                        // array here makes OC\Log::getLogLevel() receive an
+                        // array and throw — the error handler fatals, turning a
+                        // handled delivery failure into an uncaught TypeError.
+                        'eventMessage' => $message->jsonSerialize(),
                     ]
                     );
             $this->recordFailure(
@@ -1327,8 +1375,13 @@ class EventService
             $this->logger->error(
                     'Failed to publish notificaties action for event message: '.$e->getMessage(),
                     [
-                        'exception' => $e,
-                        'message'   => $message->jsonSerialize(),
+                        'exception'    => $e,
+                        // NOT 'message': Nextcloud's logger treats a `message`
+                        // key in the CONTEXT as the log message itself, so an
+                        // array here makes OC\Log::getLogLevel() receive an
+                        // array and throw — the error handler fatals, turning a
+                        // handled delivery failure into an uncaught TypeError.
+                        'eventMessage' => $message->jsonSerialize(),
                     ]
                     );
             $this->recordFailure(
@@ -1549,8 +1602,13 @@ class EventService
             $this->logger->error(
                     'Failed to dispatch mapping action for event message: '.$exception->getMessage(),
                     [
-                        'exception' => $exception,
-                        'message'   => $message->jsonSerialize(),
+                        'exception'    => $exception,
+                        // NOT 'message': Nextcloud's logger treats a `message`
+                        // key in the CONTEXT as the log message itself, so an
+                        // array here makes OC\Log::getLogLevel() receive an
+                        // array and throw — the error handler fatals, turning a
+                        // handled delivery failure into an uncaught TypeError.
+                        'eventMessage' => $message->jsonSerialize(),
                     ]
                     );
             $this->recordFailure(
@@ -1963,8 +2021,14 @@ class EventService
         }
 
         try {
+            // Cast deliberately: `event_message.subscriptionId` is typed integer
+            // in the schema, while `find()` signs for a string $id and raises a
+            // TypeError on an int. Passing it through unconverted made this
+            // resolver throw, get swallowed below, and silently return the
+            // default — defeating the fix for exactly the messages it exists to
+            // rescue. Live-verified: numeric id yielded 5, uuid yielded 10.
             $subscription = $this->objectService->find(
-                id: $subscriptionId,
+                id: (string) $subscriptionId,
                 register: 'openconnector',
                 schema: 'event_subscription',
                 _rbac: false,
