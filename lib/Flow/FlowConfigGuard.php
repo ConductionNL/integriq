@@ -64,6 +64,41 @@ final class FlowConfigGuard
 {
 
     /**
+     * Escape code: the endpoint carries a control character or newline.
+     *
+     * @var string
+     */
+    public const ESCAPE_CONTROL_CHARACTER = 'control-character';
+
+    /**
+     * Escape code: the endpoint is scheme-relative (`//host`, `\\host`).
+     *
+     * @var string
+     */
+    public const ESCAPE_SCHEME_RELATIVE = 'scheme-relative';
+
+    /**
+     * Escape code: the endpoint is an absolute URL (it carries a scheme).
+     *
+     * @var string
+     */
+    public const ESCAPE_ABSOLUTE_URL = 'absolute-url';
+
+    /**
+     * Escape code: the endpoint percent-decodes to a scheme-relative reference.
+     *
+     * @var string
+     */
+    public const ESCAPE_DECODED_SCHEME_RELATIVE = 'decoded-scheme-relative';
+
+    /**
+     * Escape code: the endpoint leaves its Source location via `../`.
+     *
+     * @var string
+     */
+    public const ESCAPE_PATH_TRAVERSAL = 'path-traversal';
+
+    /**
      * Config keys that would let a flow document name an outbound target.
      *
      * Matched on the key's normalised form (lower-cased, non-alphanumerics
@@ -354,18 +389,51 @@ final class FlowConfigGuard
      */
     private static function endpointEscapeReason(string $endpoint, IL10N $l10n): ?string
     {
+        return match (self::endpointEscapeCode(endpoint: $endpoint)) {
+            self::ESCAPE_CONTROL_CHARACTER => $l10n->t('it contains a control character'),
+            self::ESCAPE_SCHEME_RELATIVE => $l10n->t('it is scheme-relative and would name another host'),
+            self::ESCAPE_ABSOLUTE_URL => $l10n->t('it is an absolute URL'),
+            self::ESCAPE_DECODED_SCHEME_RELATIVE => $l10n->t('it decodes to a scheme-relative reference'),
+            self::ESCAPE_PATH_TRAVERSAL => $l10n->t('it escapes the Source location through path traversal'),
+            default => null,
+        };
+
+    }//end endpointEscapeReason()
+
+    /**
+     * Name, as a stable machine code, the reason an endpoint escapes its
+     * Source — or null when the endpoint is contained.
+     *
+     * THE RULES LIVE HERE AND ONLY HERE. This is the single containment
+     * predicate for the whole app: {@see endpointEscapeReason()} translates its
+     * verdict for the flow-node validation messages, and
+     * {@see \OCA\OpenConnector\Service\CallService::renderEndpointPath()} calls
+     * it directly (it has no IL10N and needs a verdict, not a sentence) for the
+     * templated `targetType: api` upstream path (ocon#1069). The class docblock
+     * already states that a divergence between two copies of these rules would
+     * be a security defect rather than a style inconsistency; a shared,
+     * translation-free predicate is how that is prevented.
+     *
+     * @param string $endpoint The endpoint value (literal or rendered).
+     *
+     * @return string|null One of the ESCAPE_* codes, or null when contained.
+     *
+     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+     */
+    public static function endpointEscapeCode(string $endpoint): ?string
+    {
         // A control character or a newline would let an endpoint smuggle a
         // second request line or an extra header past the HTTP client.
         if (preg_match('/[\x00-\x1F\x7F]/', $endpoint) === 1) {
-            return $l10n->t('it contains a control character');
+            return self::ESCAPE_CONTROL_CHARACTER;
         }
 
         if (str_starts_with($endpoint, '//') === true || str_starts_with($endpoint, '\\\\') === true) {
-            return $l10n->t('it is scheme-relative and would name another host');
+            return self::ESCAPE_SCHEME_RELATIVE;
         }
 
         if (preg_match('#^[A-Za-z][A-Za-z0-9+.\-]*:#', $endpoint) === 1) {
-            return $l10n->t('it is an absolute URL');
+            return self::ESCAPE_ABSOLUTE_URL;
         }
 
         $decoded = strtolower(rawurldecode($endpoint));
@@ -373,7 +441,7 @@ final class FlowConfigGuard
             // Re-run the host-ish checks over the percent-decoded form so an
             // encoded `%2f%2f` or `%2e%2e%2f` cannot slip through.
             if (str_starts_with($decoded, '//') === true) {
-                return $l10n->t('it decodes to a scheme-relative reference');
+                return self::ESCAPE_DECODED_SCHEME_RELATIVE;
             }
         }
 
@@ -382,12 +450,12 @@ final class FlowConfigGuard
             || str_contains($decoded, '/../') === true
             || str_ends_with($decoded, '/..') === true
         ) {
-            return $l10n->t('it escapes the Source location through path traversal');
+            return self::ESCAPE_PATH_TRAVERSAL;
         }
 
         return null;
 
-    }//end endpointEscapeReason()
+    }//end endpointEscapeCode()
 
     /**
      * Normalise a config key or header name for rule matching.
