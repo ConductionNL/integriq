@@ -181,6 +181,43 @@ class SynchronizationContractProviderTest extends TestCase
 
 
     /**
+     * Test that list degrades to an empty array (not a 500) when the OR query
+     * throws — e.g. the `synchronization_contract` schema is declared in the
+     * register JSON but not yet mapped into the `openconnector` register on this
+     * instance (a lagging/forced-import state, openregister#2075). This leaf
+     * loads on every page and is queried from every app's OR sidebar, so a
+     * throw here must not surface as a fleet-wide 500 (AD-23 resilience).
+     *
+     * @return void
+     */
+    public function testListReturnsEmptyArrayWhenQueryThrows(): void
+    {
+        // Arrange — provider enabled, but the OR query throws (unmapped schema).
+        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig->method('getAppValueString')->willReturn('true');
+
+        $this->objectService = ObjectServiceMockBuilder::make($this);
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('findAll')
+            ->willThrowException(new \RuntimeException('schema synchronization_contract not found in register openconnector'));
+
+        $provider = new SynchronizationContractProvider(
+            $this->objectService,
+            $this->appConfig,
+            $this->l10n,
+        );
+
+        // Act
+        $result = $provider->list('reg', 'schema', 'obj-uuid-err');
+
+        // Assert — empty array, no exception propagated (endpoint stays 200).
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }//end testListReturnsEmptyArrayWhenQueryThrows()
+
+
+    /**
      * Test that health returns unavailable when provider is disabled.
      *
      * @return void

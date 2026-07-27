@@ -420,11 +420,18 @@ return [
 		['name' => 'dsoPkiSettings#setConfig', 'url' => '/api/admin/dso-pki-config', 'verb' => 'PUT'],
 
 		// Generic per-user preferences (used by shared nextcloud-vue widgets, e.g. CnSupportDialog) —
-		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The leaf-namespaced
-		// controller class is bound to the engine generic in lib/AppInfo/Application.php (appName=openconnector,
-		// so the `pref_` user-value namespace stays scoped to this app). URLs + JSON contract unchanged.
-		['name' => 'AppHost\Controller\GenericPreferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
-		['name' => 'AppHost\Controller\GenericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
+		// served by OpenRegister's AppHost GenericPreferencesController (ADR-040). The engine generic is
+		// bound under the standard `OCA\OpenConnector\Controller\GenericPreferencesController` service key
+		// in lib/AppInfo/Application.php (appName=openconnector, so the `pref_` user-value namespace stays
+		// scoped to this app). The route name MUST resolve to that key: NC's App::main only prepends the
+		// `OCA\<App>\Controller\` namespace when the built controller name does NOT already contain
+		// `\Controller\`, so a namespaced route name like `AppHost\Controller\GenericPreferences` is looked
+		// up verbatim, fails the container lookup, and NC then reads its second path segment ("Controller")
+		// as an app id — throwing HintException "App controller is not enabled" (HTTP 503) on every call.
+		// A plain `genericPreferences` name builds `GenericPreferencesController`, gets the standard
+		// namespace prefix, and resolves the service. URLs + JSON contract unchanged.
+		['name' => 'genericPreferences#getPreference', 'url' => '/api/preferences/{key}', 'verb' => 'GET'],
+		['name' => 'genericPreferences#setPreference', 'url' => '/api/preferences/{key}', 'verb' => 'PUT'],
 
 		// UI page routes for SPA deep links
 		['name' => 'ui#dashboard', 'url' => '/', 'verb' => 'GET'],

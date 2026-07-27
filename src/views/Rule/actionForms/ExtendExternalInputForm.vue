@@ -9,8 +9,8 @@
 	<div class="action-form">
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.validate"
-			@update:checked="onValidateToggle">
+			:model-value="!!value.validate"
+			@update:model-value="onValidateToggle">
 			{{ t('openconnector', 'Validate fetched object against schema') }}
 		</NcCheckboxRadioSwitch>
 
@@ -18,14 +18,14 @@
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:value="row.property"
+				:model-value="row.property"
 				placeholder="body.relations.contact"
-				@update:value="(next) => onPropertyInput(index, next)" />
+				@update:model-value="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="t('openconnector', 'Schema ID')"
-				:value="row.schema"
+				:model-value="row.schema"
 				placeholder="contact"
-				@update:value="(next) => onSchemaInput(index, next)" />
+				@update:model-value="(next) => onSchemaInput(index, next)" />
 			<NcButton
 				type="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"

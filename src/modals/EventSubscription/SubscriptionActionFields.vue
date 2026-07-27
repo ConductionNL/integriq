@@ -53,22 +53,22 @@
 
 			<NcCheckboxRadioSwitch
 				v-else-if="field.widget === 'checkbox'"
-				:checked="!!formData[field.key]"
+				:model-value="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:checked="(value) => updateField(field.key, value)">
+				@update:model-value="(value) => updateField(field.key, value)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
 			<NcTextField
 				v-else
 				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 				:helper-text="errors[field.key] || field.description"
 				:error="!!errors[field.key]"
 				:disabled="field.readOnly"
 				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value)" />
+				@update:model-value="(value) => updateField(field.key, value)" />
 		</div>
 
 		<!-- Delivery action block (REQ-008). -->
@@ -80,7 +80,7 @@
 				input-id="cn-subscription-action-kind"
 				:input-label="t('openconnector', 'Delivery action')"
 				:aria-label-combobox="t('openconnector', 'Delivery action')"
-				:value="selectedKindOption"
+				:model-value="selectedKindOption"
 				:options="kindOptions"
 				:clearable="false"
 				@input="onKindPick" />
@@ -96,7 +96,7 @@
 					input-id="cn-subscription-action-target"
 					:input-label="t('openconnector', 'Synchronization')"
 					:aria-label-combobox="t('openconnector', 'Synchronization')"
-					:value="selectedSynchronization"
+					:model-value="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="false"
@@ -112,7 +112,7 @@
 					input-id="cn-subscription-action-target"
 					:input-label="t('openconnector', 'Job')"
 					:aria-label-combobox="t('openconnector', 'Job')"
-					:value="selectedJob"
+					:model-value="selectedJob"
 					:options="jobOptions"
 					:loading="jobsLoading"
 					:clearable="false"
@@ -124,9 +124,9 @@
 		<!-- Retry policy block (REQ-009) — optional, independently overridable. -->
 		<div class="cn-subscription-action-fields__field cn-subscription-action-fields__section">
 			<NcCheckboxRadioSwitch
-				:checked="retryPolicyEnabled"
+				:model-value="retryPolicyEnabled"
 				type="switch"
-				@update:checked="onToggleRetryPolicy">
+				@update:model-value="onToggleRetryPolicy">
 				{{ t('openconnector', 'Custom retry policy') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-subscription-action-fields__helper">
@@ -137,24 +137,24 @@
 				<div class="cn-subscription-action-fields__retry-grid">
 					<NcTextField
 						:label="t('openconnector', 'Base seconds')"
-						:value="retryPolicyValue('baseSeconds')"
+						:model-value="retryPolicyValue('baseSeconds')"
 						type="number"
-						@update:value="(value) => onRetryPolicyField('baseSeconds', value)" />
+						@update:model-value="(value) => onRetryPolicyField('baseSeconds', value)" />
 					<NcTextField
 						:label="t('openconnector', 'Factor')"
-						:value="retryPolicyValue('factor')"
+						:model-value="retryPolicyValue('factor')"
 						type="number"
-						@update:value="(value) => onRetryPolicyField('factor', value)" />
+						@update:model-value="(value) => onRetryPolicyField('factor', value)" />
 					<NcTextField
 						:label="t('openconnector', 'Cap seconds')"
-						:value="retryPolicyValue('capSeconds')"
+						:model-value="retryPolicyValue('capSeconds')"
 						type="number"
-						@update:value="(value) => onRetryPolicyField('capSeconds', value)" />
+						@update:model-value="(value) => onRetryPolicyField('capSeconds', value)" />
 					<NcTextField
 						:label="t('openconnector', 'Max retries')"
-						:value="retryPolicyValue('maxRetries')"
+						:model-value="retryPolicyValue('maxRetries')"
 						type="number"
-						@update:value="(value) => onRetryPolicyField('maxRetries', value)" />
+						@update:model-value="(value) => onRetryPolicyField('maxRetries', value)" />
 				</div>
 			</template>
 		</div>

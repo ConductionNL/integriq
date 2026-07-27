@@ -11,7 +11,7 @@
     1. The modals live outside the manifest-rendered router-view tree, so
        a page swap mid-test cannot unmount the modal from under the user.
     2. Each handler stays a plain function with no Vue-instance context —
-       it just calls `modalBus.$emit('open-foo', { item })` and the host
+       it just calls `modalBus.emit('open-foo', { item })` and the host
        picks it up.
 
   Adding a new modal here is three lines: import the SFC, register an
@@ -94,24 +94,24 @@ export default {
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
-		modalBus.$on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
-		modalBus.$on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
-		modalBus.$on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
-		modalBus.$on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
-		modalBus.$on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
-		modalBus.$on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
-		modalBus.$on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
+		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
+		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
-	beforeDestroy() {
-		modalBus.$off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
-		modalBus.$off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
-		modalBus.$off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
-		modalBus.$off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
-		modalBus.$off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
-		modalBus.$off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
-		modalBus.$off(EVENT_OPEN_PROMOTION, this.openPromotion)
+	beforeUnmount() {
+		modalBus.off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
+		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
+		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
 	methods: {

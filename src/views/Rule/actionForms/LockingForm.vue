@@ -11,16 +11,16 @@
 		<label class="action-form__label">{{ t('openconnector', 'Lock action') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Lock action')"
-			:value="selectedAction"
+			:model-value="selectedAction"
 			:options="actionOptions"
 			:clearable="false"
 			@input="onActionPick" />
 		<NcTextField
 			:label="t('openconnector', 'Duration (seconds, default 3600)')"
 			type="number"
-			:value="value.duration != null ? String(value.duration) : ''"
+			:model-value="value.duration != null ? String(value.duration) : ''"
 			placeholder="3600"
-			@update:value="onDurationInput" />
+			@update:model-value="onDurationInput" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'Lock or unlock the object identified by the request. Duration only applies to lock; unlock ignores it.') }}
 		</span>

@@ -27,15 +27,15 @@
 			<div class="eventDeliveries__filters">
 				<NcSelect :input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					:value.sync="statusFilter"
-					@input="reload" />
+					v-model="statusFilter"
+					@update:model-value="reload" />
 				<NcTextField :label="t('openconnector', 'Subscription')"
-					:value.sync="subscriptionFilter"
-					@update:value="reloadDebounced" />
-				<NcCheckboxRadioSwitch :checked="nextcloudOnly"
+					v-model="subscriptionFilter"
+					@update:model-value="reloadDebounced" />
+				<NcCheckboxRadioSwitch :model-value="nextcloudOnly"
 					type="switch"
 					data-testid="nextcloud-event-filter"
-					@update:checked="(value) => (nextcloudOnly = value)">
+					@update:model-value="(value) => (nextcloudOnly = value)">
 					{{ t('openconnector', 'Nextcloud event') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -86,8 +86,8 @@
 			<tbody>
 				<tr v-for="row in filteredRows" :key="row.uuid || row.id">
 					<td>
-						<NcCheckboxRadioSwitch :checked="isSelected(row)"
-							@update:checked="toggleSelect(row)" />
+						<NcCheckboxRadioSwitch :model-value="isSelected(row)"
+							@update:model-value="toggleSelect(row)" />
 					</td>
 					<td>{{ rowEventType(row) }}</td>
 					<td>{{ row.subscriptionId }}</td>

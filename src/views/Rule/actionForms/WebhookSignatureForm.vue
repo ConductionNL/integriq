@@ -13,26 +13,26 @@
 		<label class="action-form__label">{{ t('openconnector', 'Signature scheme') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Signature scheme')"
-			:value="selectedSchemeOption"
+			:model-value="selectedSchemeOption"
 			:options="schemeOptions"
 			:clearable="false"
 			@input="onSchemePick" />
 		<NcTextField
 			:label="t('openconnector', 'Signature header')"
-			:value="value.header || ''"
+			:model-value="value.header || ''"
 			placeholder="X-OpenConnector-Signature"
-			@update:value="(next) => patch('header', next)" />
+			@update:model-value="(next) => patch('header', next)" />
 		<NcTextField
 			:label="t('openconnector', 'Shared secret')"
 			type="password"
-			:value="value.secret || ''"
-			@update:value="(next) => patch('secret', next)" />
+			:model-value="value.secret || ''"
+			@update:model-value="(next) => patch('secret', next)" />
 		<NcTextField
 			v-if="value.scheme !== 'github'"
 			:label="t('openconnector', 'Timestamp tolerance (seconds)')"
-			:value="String(value.toleranceSeconds || 300)"
+			:model-value="String(value.toleranceSeconds || 300)"
 			placeholder="300"
-			@update:value="(next) => patch('toleranceSeconds', Number(next) || 300)" />
+			@update:model-value="(next) => patch('toleranceSeconds', Number(next) || 300)" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'The signature is verified over the raw request body before any other rule runs. For scheme "github" the timestamp tolerance is ignored.') }}
 		</span>

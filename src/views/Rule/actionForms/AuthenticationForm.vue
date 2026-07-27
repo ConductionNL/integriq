@@ -12,33 +12,33 @@
 		<label class="action-form__label">{{ t('openconnector', 'Authentication type') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Authentication type')"
-			:value="selectedTypeOption"
+			:model-value="selectedTypeOption"
 			:options="typeOptions"
 			:clearable="false"
 			@input="onTypePick" />
 		<NcTextField
 			:label="t('openconnector', 'Header (default: Authorization)')"
-			:value="value.header || ''"
+			:model-value="value.header || ''"
 			placeholder="Authorization"
-			@update:value="(next) => patch('header', next)" />
+			@update:model-value="(next) => patch('header', next)" />
 		<template v-if="value.type === 'apikey'">
 			<NcTextField
 				:label="t('openconnector', 'API keys (comma-separated)')"
-				:value="csv(value.keys)"
+				:model-value="csv(value.keys)"
 				placeholder="key-one,key-two"
-				@update:value="(next) => patch('keys', toArray(next))" />
+				@update:model-value="(next) => patch('keys', toArray(next))" />
 		</template>
 		<template v-else-if="value.type === 'basic' || value.type === 'oauth'">
 			<NcTextField
 				:label="t('openconnector', 'Allowed users (comma-separated UIDs)')"
-				:value="csv(value.users)"
+				:model-value="csv(value.users)"
 				placeholder="alice,bob"
-				@update:value="(next) => patch('users', toArray(next))" />
+				@update:model-value="(next) => patch('users', toArray(next))" />
 			<NcTextField
 				:label="t('openconnector', 'Allowed groups (comma-separated)')"
-				:value="csv(value.groups)"
+				:model-value="csv(value.groups)"
 				placeholder="admin,users"
-				@update:value="(next) => patch('groups', toArray(next))" />
+				@update:model-value="(next) => patch('groups', toArray(next))" />
 		</template>
 		<span class="action-form__helper">
 			{{ t('openconnector', 'For JWT / JWT-ZGW the rule only checks the signed bearer; no extra fields are required.') }}

@@ -94,7 +94,7 @@
 						<NcSelect
 							:input-id="'sync-source-type'"
 							:aria-label-combobox="t('openconnector', 'Source type')"
-							:value="selectedSourceType"
+							:model-value="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
 							@input="onSourceTypeChange" />
@@ -117,7 +117,7 @@
 						<NcSelect
 							:input-id="'sync-mode'"
 							:aria-label-combobox="t('openconnector', 'Sync mode')"
-							:value="selectedSyncMode"
+							:model-value="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
 							@input="onSyncModeChange" />
@@ -130,9 +130,9 @@
 						<div class="sync-detail__field">
 							<NcTextField
 								:label="t('openconnector', 'Cursor field')"
-								:value="draft.sourceConfig.cursorField || ''"
+								:model-value="draft.sourceConfig.cursorField || ''"
 								:placeholder="t('openconnector', 'e.g. updatedAt')"
-								@update:value="(value) => updateSourceConfigField('cursorField', value)" />
+								@update:model-value="(value) => updateSourceConfigField('cursorField', value)" />
 						</div>
 
 						<div class="sync-detail__field">
@@ -142,7 +142,7 @@
 							<NcSelect
 								:input-id="'sync-cursor-comparator'"
 								:aria-label-combobox="t('openconnector', 'Cursor comparator')"
-								:value="selectedCursorComparator"
+								:model-value="selectedCursorComparator"
 								:options="cursorComparatorOptions"
 								@input="onCursorComparatorChange" />
 						</div>
@@ -176,9 +176,9 @@
 					<div class="sync-detail__field">
 						<NcTextField
 							:label="t('openconnector', 'Name')"
-							:value="draft.name || ''"
+							:model-value="draft.name || ''"
 							required
-							@update:value="(value) => updateDraft('name', value)" />
+							@update:model-value="(value) => updateDraft('name', value)" />
 					</div>
 
 					<div class="sync-detail__field">
@@ -229,7 +229,7 @@
 						<NcSelect
 							:input-id="'sync-target-type'"
 							:aria-label-combobox="t('openconnector', 'Target type')"
-							:value="selectedTargetType"
+							:model-value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
 							@input="onTargetTypeChange" />
@@ -879,7 +879,7 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
-			this.$set(this.draft, 'conditions', node)
+			this.draft['conditions'] = node
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		toggleRawConditions() {
@@ -905,28 +905,28 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		updateDraft(key, value) {
 			if (!this.draft) return
-			this.$set(this.draft, key, value)
+			this.draft[key] = value
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onSourceTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			// Type changed — clear the kind-specific blob + id so we don't
 			// carry stale `endpoint:'/foo'` over into a register/schema mode.
-			this.$set(this.draft, 'sourceType', option.id)
-			this.$set(this.draft, 'sourceId', '')
-			this.$set(this.draft, 'sourceConfig', {})
+			this.draft['sourceType'] = option.id
+			this.draft['sourceId'] = ''
+			this.draft['sourceConfig'] = {}
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onTargetTypeChange(option) {
 			if (!option?.id || !this.draft) return
-			this.$set(this.draft, 'targetType', option.id)
-			this.$set(this.draft, 'targetId', '')
-			this.$set(this.draft, 'targetConfig', {})
+			this.draft['targetType'] = option.id
+			this.draft['targetId'] = ''
+			this.draft['targetConfig'] = {}
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		onSyncModeChange(option) {
 			if (!option?.id || !this.draft) return
-			this.$set(this.draft, 'syncMode', option.id)
+			this.draft['syncMode'] = option.id
 		},
 		/**
 		 * Merge a single key into `draft.sourceConfig` without clobbering the
@@ -947,7 +947,7 @@ export default {
 			} else {
 				next[key] = value
 			}
-			this.$set(this.draft, 'sourceConfig', next)
+			this.draft['sourceConfig'] = next
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		onCursorComparatorChange(option) {
@@ -969,7 +969,7 @@ export default {
 					generateUrl(`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`),
 				)
 				const cleared = response.data?.cursorWatermark ?? ''
-				if (this.original) this.$set(this.original, 'cursorWatermark', cleared)
+				if (this.original) this.original['cursorWatermark'] = cleared
 				showSuccess(t('openconnector', 'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.'))
 			} catch (err) {
 				showError(err?.response?.data?.error || err?.message || t('openconnector', 'Failed to reset cursor'))

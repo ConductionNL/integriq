@@ -25,7 +25,7 @@
 			<h2>{{ isEdit ? t('openconnector', 'Edit abonnement') : t('openconnector', 'Add abonnement') }}</h2>
 
 			<NcTextField :label="t('openconnector', 'Name') + ' *'"
-				:value.sync="model.name"
+				v-model="model.name"
 				:helper-text="errors.name"
 				:error="!!errors.name" />
 
@@ -36,12 +36,12 @@
 				<NcSelect input-id="notificaties-abonnement-source"
 					:input-label="t('openconnector', 'Source')"
 					:aria-label-combobox="t('openconnector', 'Source')"
-					:value="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select the Notificaties API source')"
-					@input="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="abonnementForm__helper">
 					{{ t('openconnector', 'The openconnector Source describing the remote Notificaties API (location, auth).') }}
 				</span>
@@ -54,13 +54,13 @@
 				<NcSelect input-id="notificaties-abonnement-kanalen"
 					:input-label="t('openconnector', 'Kanalen')"
 					:aria-label-combobox="t('openconnector', 'Kanalen')"
-					:value="kanaalNames"
+					:model-value="kanaalNames"
 					:options="kanaalNames"
 					:taggable="true"
 					:multiple="true"
 					:clearable="true"
 					:placeholder="t('openconnector', 'Type a kanaal name and press enter (e.g. zaken)')"
-					@input="onKanalenChange">
+					@update:model-value="onKanalenChange">
 					<template #no-options>
 						{{ t('openconnector', 'Type to add a kanaal name') }}
 					</template>
@@ -71,11 +71,11 @@
 			</div>
 
 			<NcTextField :label="t('openconnector', 'Auth header name')"
-				:value.sync="model.authHeaderName"
+				v-model="model.authHeaderName"
 				:helper-text="t('openconnector', 'Header the remote Notificaties Routeer Component echoes the abonnement secret back on. Default: Authorization.')" />
 
 			<NcTextField :label="t('openconnector', 'Auth scheme prefix')"
-				:value.sync="model.authScheme"
+				v-model="model.authScheme"
 				:helper-text="t('openconnector', 'Optional prefix stripped before comparison (e.g. \'Bearer \'). Leave empty for a bare token.')" />
 
 			<div class="abonnementForm__actions">

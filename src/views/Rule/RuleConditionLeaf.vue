@@ -23,21 +23,21 @@
 			v-if="schema.kind !== 'var-only'"
 			class="rule-condition-leaf__var"
 			:label="t('openconnector', 'Field')"
-			:value="varPath"
+			:model-value="varPath"
 			:placeholder="t('openconnector', 'e.g. body.status')"
-			@update:value="onVarInput" />
+			@update:model-value="onVarInput" />
 		<NcTextField
 			v-else
 			class="rule-condition-leaf__var"
 			:label="t('openconnector', 'Variable path')"
-			:value="varOnlyPath"
+			:model-value="varOnlyPath"
 			:placeholder="t('openconnector', 'e.g. user.email')"
-			@update:value="onVarOnlyInput" />
+			@update:model-value="onVarOnlyInput" />
 		<NcSelect
 			class="rule-condition-leaf__op"
 			:input-id="'rule-condition-op-' + uid"
 			:input-label="t('openconnector', 'Operator')"
-			:value="selectedOperator"
+			:model-value="selectedOperator"
 			:options="operatorOptions"
 			:clearable="false"
 			:placeholder="t('openconnector', 'Operator')"
@@ -55,16 +55,16 @@
 			<NcTextField
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[0] || t('openconnector', 'Value')"
-				:value="slotString(1)"
+				:model-value="slotString(1)"
 				:placeholder="schema.placeholders?.[0] || t('openconnector', 'Comparison value')"
-				@update:value="(value) => onSlotInput(1, value)" />
+				@update:model-value="(value) => onSlotInput(1, value)" />
 			<NcTextField
 				v-if="schema.kind === 'ternary'"
 				class="rule-condition-leaf__value"
 				:label="schema.labels?.[1] || t('openconnector', 'Length')"
-				:value="slotString(2)"
+				:model-value="slotString(2)"
 				:placeholder="schema.placeholders?.[1] || ''"
-				@update:value="(value) => onSlotInput(2, value)" />
+				@update:model-value="(value) => onSlotInput(2, value)" />
 		</template>
 		<template v-else-if="schema.kind === 'if'">
 			<label class="rule-condition-leaf__json-label">

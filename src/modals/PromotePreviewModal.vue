@@ -34,23 +34,23 @@
 
 			<!-- Step 1: pick configuration group + target environment -->
 			<div v-if="step === 'select'" class="oc-promote-modal__step">
-				<NcSelect :value="selectedConfig"
+				<NcSelect :model-value="selectedConfig"
 					:options="configOptions"
 					:loading="loadingConfigs"
 					:input-label="t('openconnector', 'Configuration group')"
 					:placeholder="t('openconnector', 'Select a configuration group')"
 					label="label"
 					data-testid="promote-configuration-select"
-					@input="onSelectConfig" />
+					@update:model-value="onSelectConfig" />
 
-				<NcSelect :value="selectedEnvironment"
+				<NcSelect :model-value="selectedEnvironment"
 					:options="environmentOptions"
 					:loading="loadingEnvironments"
 					:input-label="t('openconnector', 'Target environment')"
 					:placeholder="t('openconnector', 'Select a target environment')"
 					label="label"
 					data-testid="promote-target-environment-select"
-					@input="onSelectEnvironment" />
+					@update:model-value="onSelectEnvironment" />
 
 				<NcNoteCard v-if="errorMessage" type="error">
 					{{ errorMessage }}

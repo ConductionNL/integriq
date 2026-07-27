@@ -194,16 +194,30 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
         // against the numeric register/schema columns — which silently matches
         // nothing. Setting context via setRegister()/setSchema() and keeping
         // `filters` to `targetId` alone is what actually returns the contracts.
-        $matches = $this->objectService
-            ->setRegister(self::REGISTER_SLUG)
-            ->setSchema(self::SCHEMA_SLUG)
-            ->findAll(
-                config: [
-                    'filters' => ['targetId' => $objectId],
-                    'limit'   => $limit,
-                    'offset'  => $offset,
-                ]
-            );
+        //
+        // Resilience (AD-23): this leaf loads on EVERY Nextcloud page and its
+        // list endpoint is called from EVERY app's OR sidebar. When the
+        // `synchronization_contract` schema is declared in the register JSON but
+        // not yet MAPPED into the `openconnector` register on this instance
+        // (a lagging/forced-import state — see openregister#2075), setSchema()/
+        // findAll() throws, which would surface as a 500 fleet-wide. Degrade to
+        // an empty result instead so the sidebar renders the quiet "not created
+        // by a synchronization" state rather than a broken tab. The register
+        // import (occ) restores the real contracts without a code change.
+        try {
+            $matches = $this->objectService
+                ->setRegister(self::REGISTER_SLUG)
+                ->setSchema(self::SCHEMA_SLUG)
+                ->findAll(
+                    config: [
+                        'filters' => ['targetId' => $objectId],
+                        'limit'   => $limit,
+                        'offset'  => $offset,
+                    ]
+                );
+        } catch (\Throwable $e) {
+            return [];
+        }
 
         $rows = $matches['results'] ?? $matches;
         if (is_array($rows) === false) {

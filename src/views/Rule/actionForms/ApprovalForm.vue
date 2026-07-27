@@ -17,7 +17,7 @@
 		<NcSelect
 			:input-id="'rule-action-approval-group-' + uid"
 			:input-label="t('openconnector', 'Approver group')"
-			:value="selectedGroup"
+			:model-value="selectedGroup"
 			:options="groupOptions"
 			:loading="loadingGroups"
 			:clearable="false"
@@ -27,9 +27,9 @@
 		<NcTextField
 			:label="t('openconnector', 'Time to live (seconds, default 86400)')"
 			type="number"
-			:value="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
+			:model-value="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
 			placeholder="86400"
-			@update:value="onTtlInput" />
+			@update:model-value="onTtlInput" />
 
 		<label class="action-form__label" :for="'rule-action-approval-reject-' + uid">
 			{{ t('openconnector', 'On reject') }}
@@ -37,7 +37,7 @@
 		<NcSelect
 			:input-id="'rule-action-approval-reject-' + uid"
 			:input-label="t('openconnector', 'On reject')"
-			:value="selectedOutcome('onReject')"
+			:model-value="selectedOutcome('onReject')"
 			:options="outcomeOptions"
 			:clearable="false"
 			@input="(opt) => onOutcomePick('onReject', opt)" />
@@ -48,7 +48,7 @@
 		<NcSelect
 			:input-id="'rule-action-approval-timeout-' + uid"
 			:input-label="t('openconnector', 'On timeout')"
-			:value="selectedOutcome('onTimeout')"
+			:model-value="selectedOutcome('onTimeout')"
 			:options="outcomeOptions"
 			:clearable="false"
 			@input="(opt) => onOutcomePick('onTimeout', opt)" />
