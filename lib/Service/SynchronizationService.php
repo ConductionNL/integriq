@@ -38,6 +38,7 @@ use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
 use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
 use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -4862,10 +4863,12 @@ class SynchronizationService
         // Try parsing the response body in different formats, starting with JSON.
         $result = json_decode($body, true);
 
-        // If JSON parsing failed, try XML.
+        // If JSON parsing failed, try XML. `$body` is the response of an
+        // arbitrary configured Source, so it is untrusted input and must go
+        // through SafeXmlParser (pinned null entity loader + LIBXML_NONET).
         if (empty($result) === true) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($body, "SimpleXMLElement", LIBXML_NOCDATA);
+            $xml = SafeXmlParser::parse($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
             if ($xml !== false) {
                 $result = $this->xmlToArray(xml: $xml);

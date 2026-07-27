@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Service\Adapter\DataInfra;
 
 use OCA\OpenConnector\Service\Adapter\AbstractCategoryAdapterProvider;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 
@@ -225,7 +226,10 @@ class S3Adapter extends AbstractCategoryAdapterProvider
     {
         $previous = libxml_use_internal_errors(true);
         try {
-            $doc = simplexml_load_string($xml);
+            // The listing comes back from a configured S3 endpoint, so it is
+            // untrusted input: parse it through SafeXmlParser rather than
+            // simplexml_load_string directly.
+            $doc = SafeXmlParser::parse($xml);
         } finally {
             libxml_use_internal_errors($previous);
         }
