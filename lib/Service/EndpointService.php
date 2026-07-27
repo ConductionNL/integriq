@@ -64,6 +64,7 @@ use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
 use Twig\Error\LoaderError;
 use Twig\Error\SyntaxError;
+use UnexpectedValueException;
 use ValueError;
 use function React\Async\await;
 use function React\Promise\all;
@@ -745,7 +746,7 @@ class EndpointService
         // Check if endpoint connects to a source.
         if (($endpointData['targetType'] ?? '') === 'api') {
             // Proxy request to source via CallService.
-            return $this->handleSourceRequest(endpoint: $endpoint, request: $request, trace: $trace);
+            return $this->handleSourceRequest(endpoint: $endpoint, request: $request, path: $path, trace: $trace);
         }
 
         // Invalid endpoint configuration.
@@ -2188,6 +2189,9 @@ class EndpointService
      *
      * @param ObjectEntity               $endpoint The endpoint configuration
      * @param IRequest                   $request  The incoming request
+     * @param string                     $path     The inbound sub-path, used to resolve the endpoint's own
+     *                                             named path segments into the upstream path template
+     *                                             (ocon#1069).
      * @param ExecutionTraceContext|null $trace    The active execution trace context (execution-trace REQ-001).
      *
      * @return JSONResponse
@@ -2196,10 +2200,15 @@ class EndpointService
      * @spec openspec/specs/endpoint-runtime/spec.md
      * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
      */
-    private function handleSourceRequest(ObjectEntity $endpoint, IRequest $request, ?ExecutionTraceContext $trace=null): JSONResponse
-    {
+    private function handleSourceRequest(
+        ObjectEntity $endpoint,
+        IRequest $request,
+        string $path='',
+        ?ExecutionTraceContext $trace=null
+    ): JSONResponse {
         $endpointData = $endpoint->getObject();
         $headers      = $this->getHeaders(server: $_SERVER);
+        $rawBody      = $this->getRawContent();
 
         // Fetch the source entity by targetId.
         //
@@ -2215,15 +2224,45 @@ class EndpointService
             _multitenancy: false
         );
 
+        // Render the upstream path from the inbound request (ocon#1069), so a
+        // `targetType: api` endpoint can proxy `/hydra/label/{owner}/{repo}`
+        // onto `/repos/{owner}/{repo}/issues/{issue}/labels` instead of sending
+        // the braces literally. CallService owns both the rendering and the
+        // post-substitution SSRF containment check; a refusal is a 400 here and
+        // never a dispatched request.
+        try {
+            $upstreamPath = $this->callService->renderEndpointPath(
+                endpoint: (string) ($endpointData['endpoint'] ?? ''),
+                context: $this->buildUpstreamPathContext(
+                    endpointData: $endpointData,
+                    request: $request,
+                    path: $path,
+                    rawBody: $rawBody
+                )
+            );
+        } catch (UnexpectedValueException $exception) {
+            // The message names the offending rendered path, which is built
+            // from caller-supplied values — log it, do not return it.
+            $this->logger->warning(
+                'openconnector: refused upstream endpoint path for endpoint '
+                .($endpointData['name'] ?? $endpoint->getUuid()).': '.$exception->getMessage()
+            );
+
+            return new JSONResponse(
+                ['error' => 'The upstream path for this endpoint could not be resolved to a contained path'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }//end try
+
         // Proxy the request to the source via CallService.
         $callLog     = $this->callService->call(
             source: $source,
-            endpoint: $endpointData['endpoint'] ?? '',
+            endpoint: $upstreamPath,
             method: $request->getMethod(),
             config: [
                 'query'   => $request->getParams(),
                 'headers' => $headers,
-                'body'    => $this->getRawContent(),
+                'body'    => $rawBody,
             ],
             trace: $trace
         );
@@ -2234,6 +2273,73 @@ class EndpointService
             $callLogData['statusCode'] ?? 200
         );
     }//end handleSourceRequest()
+
+    /**
+     * Build the template context the upstream path is rendered against
+     * (ocon#1069).
+     *
+     * Three named scopes, plus a flattened view so a path may simply say
+     * `{owner}`:
+     *
+     *  - `path`       — the endpoint's OWN named inbound segments, resolved by
+     *                   {@see getPathParameters()} against the request path.
+     *                   Keys are trimmed, because that helper leaves the
+     *                   surrounding whitespace of a `{{ id }}` segment on them.
+     *  - `parameters` — the request's query/form parameters.
+     *  - `body`       — the decoded JSON request body, when the body is a JSON
+     *                   object. A non-JSON or non-object body yields an empty
+     *                   scope rather than a guess.
+     *
+     * Precedence in the flattened view is body < parameters < path: the most
+     * specific, most structural source wins. The three named scopes are merged
+     * in LAST so a caller cannot shadow them with a body key called `path`.
+     *
+     * The source object is deliberately NOT in the context — see
+     * {@see CallService::renderEndpointPath()} for why a URL is the wrong place
+     * for anything a Source holds.
+     *
+     * @param array    $endpointData The endpoint's object data.
+     * @param IRequest $request      The inbound request.
+     * @param string   $path         The inbound sub-path.
+     * @param string   $rawBody      The raw request body.
+     *
+     * @return array The rendering context.
+     *
+     * @spec openspec/specs/endpoint-runtime/spec.md
+     */
+    private function buildUpstreamPathContext(
+        array $endpointData,
+        IRequest $request,
+        string $path,
+        string $rawBody
+    ): array {
+        $pathParameters = [];
+        foreach ($this->getPathParameters(endpointArray: ($endpointData['endpointArray'] ?? []), path: $path) as $key => $value) {
+            $pathParameters[trim((string) $key)] = $value;
+        }
+
+        $parameters = $request->getParams();
+
+        $body = [];
+        if (trim($rawBody) !== '') {
+            $decoded = json_decode($rawBody, true);
+            if (is_array($decoded) === true) {
+                $body = $decoded;
+            }
+        }
+
+        return array_merge(
+            $body,
+            $parameters,
+            $pathParameters,
+            [
+                'path'       => $pathParameters,
+                'parameters' => $parameters,
+                'body'       => $body,
+            ]
+        );
+
+    }//end buildUpstreamPathContext()
 
     /**
      * Generates url based on available endpoints for the object type.
@@ -2400,7 +2506,7 @@ class EndpointService
         array $data,
         string $timing,
         ?string $objectId=null,
-        FlowToken $flowToken=null,
+        ?FlowToken $flowToken=null,
         ?int $resumeAfterOrder=null,
         ?ExecutionTraceContext $trace=null,
         bool $dryRun=false
@@ -2895,6 +3001,34 @@ class EndpointService
             return $data;
         }
 
+        $authenticationType = (string) ($configuration['authentication']['type'] ?? '');
+
+        // The `nc-session` type authorises the CURRENT Nextcloud session user
+        // (ocon#1068). It is dispatched BEFORE the header-presence guard below
+        // because it is the one type presenting no `Authorization` header — a
+        // browser calling from inside a Nextcloud page carries a session cookie
+        // and a `requesttoken`, nothing more. Running it after the guard would
+        // 403 every such request before the session was ever consulted, which
+        // is exactly the defect being fixed. CSRF is verified inside
+        // {@see AuthorizationService::authorizeNcSession()}, because the
+        // dispatch route is #[NoCSRFRequired] and NC has therefore already
+        // skipped its own check by this point.
+        if ($authenticationType === 'nc-session') {
+            try {
+                $this->authorizationService->authorizeNcSession(
+                    users: ($configuration['authentication']['users'] ?? []),
+                    groups: ($configuration['authentication']['groups'] ?? [])
+                );
+            } catch (AuthenticationException $exception) {
+                return new JSONResponse(
+                    data: ['error' => $exception->getMessage(), 'details' => $exception->getDetails()],
+                    statusCode: 401
+                );
+            }
+
+            return $data;
+        }//end if
+
         if (isset($configuration['authentication']['header']) === true) {
             // Convert configured header name to lowercase + underscore variant
             // for a single normalised lookup against $normalisedHeaders.
@@ -2909,7 +3043,7 @@ class EndpointService
             );
         }
 
-        switch ($configuration['authentication']['type']) {
+        switch ($authenticationType) {
             case 'apikey':
                 try {
                     $this->authorizationService->authorizeApiKey(header: $header, keys: $configuration['authentication']['keys']);
