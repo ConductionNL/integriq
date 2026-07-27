@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service\Stuf;
 
+use OCA\OpenConnector\Util\SafeXmlParser;
 use SimpleXMLElement;
 use Throwable;
 
@@ -72,7 +73,11 @@ class StufXmlParser
 
         $previous = libxml_use_internal_errors(true);
         try {
-            $root = simplexml_load_string($xml, SimpleXMLElement::class, LIBXML_NONET);
+            // LIBXML_NONET alone blocks network fetches but leaves whatever
+            // external-entity loader happens to be installed in place. SafeXmlParser
+            // pins it to null for the duration of the parse, which is the half of
+            // the defence this call site was missing.
+            $root = SafeXmlParser::parse($xml, SimpleXMLElement::class, LIBXML_NONET);
         } catch (Throwable) {
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
