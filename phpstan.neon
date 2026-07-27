@@ -33,6 +33,18 @@ parameters:
         - lib/Settings/OpenConnectorAdmin.php
         - lib/Sections/OpenConnectorAdmin.php
         - lib/Repair/InitializeActions.php
+        # The contributed flow nodes and their registration listener implement /
+        # reference OCA\OpenRegister\Service\Flow\* (IFlowNode,
+        # RegisterFlowNodesEvent), which exists only at runtime and only on an
+        # OpenRegister that ships the flow engine — that is precisely what the
+        # class_exists() guard in Application::registerFlowNodes() is for.
+        # "implements unknown interface" cannot be baselined, so exclusion is
+        # required (same pattern as SynchronizationContractProvider above). The
+        # flow helpers that do NOT touch OpenRegister types (FlowConfigGuard,
+        # FlowNodeSupport, FlowOwner, FlowTemplate) stay analysed.
+        - lib/Flow/FlowNodeListener.php
+        - lib/Flow/SourceCallNode.php
+        - lib/Flow/SynchronizationRunNode.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
