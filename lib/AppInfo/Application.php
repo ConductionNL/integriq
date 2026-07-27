@@ -199,6 +199,12 @@ class Application extends App implements IBootstrap
         // design.md Decision 2).
         $this->registerWorkflowEngineOperations(context: $context, dispatcher: $dispatcher);
 
+        // Flow nodes contributed to OpenRegister's flow engine (ADR-065): the
+        // `source-call` and `synchronization-run` nodes that let a flow reach an
+        // external API through a governed OpenConnector Source. Guarded on the
+        // OR flow engine being present so this app still boots without it.
+        $this->registerFlowNodes(dispatcher: $dispatcher);
+
         // Endpoint routing cache: clear it whenever an openconnector/endpoint
         // object is created, updated, or deleted so the runtime path matcher
         // (EndpointCacheService) never serves stale routing (self-gated on
@@ -575,6 +581,39 @@ class Application extends App implements IBootstrap
      * because each diverges behaviourally from the manifest-driven generics
      * (see that method's docblock for the per-class rationale).
      *
+     * @param IRegistrationContext $context Registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/apphost-adoption/spec.md
+     */
+    /**
+     * Register OpenConnector's contributed flow nodes with OpenRegister's flow engine.
+     *
+     * Feature-detected on the OR flow engine being present: without it this is a
+     * no-op, so OpenConnector still boots on an instance whose OpenRegister
+     * predates the flow engine.
+     *
+     * @param IEventDispatcher $dispatcher The NC event dispatcher.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+     */
+    private function registerFlowNodes(IEventDispatcher $dispatcher): void
+    {
+        if (class_exists('\\OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
+            return;
+        }
+
+        $dispatcher->addServiceListener(
+            eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+            className: \OCA\OpenConnector\Flow\FlowNodeListener::class
+        );
+
+    }//end registerFlowNodes()
+
+    /**
      * @param IRegistrationContext $context Registration context.
      *
      * @return void
