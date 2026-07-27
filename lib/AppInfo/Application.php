@@ -199,6 +199,21 @@ class Application extends App implements IBootstrap
         // design.md Decision 2).
         $this->registerWorkflowEngineOperations(context: $context, dispatcher: $dispatcher);
 
+        // Consume OpenRegister's flow engine (ADR-065, openconnector-flow-migration
+        // Phase 1): openconnector contributes the `openconnector.synchronization`
+        // node so a synchronisation can be triggered and chained from a declarative
+        // OR flow graph instead of the bespoke JobTask / lifecycle-listener /
+        // followUps code. This makes openconnector a CONSUMER of the fleet's one
+        // flow engine. Guarded on the event class existing so an instance whose
+        // OpenRegister predates the flow engine still boots (the node is additive;
+        // the legacy paths remain until parity is proven).
+        if (class_exists(\OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class) === true) {
+            $dispatcher->addServiceListener(
+                eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+                className: \OCA\OpenConnector\EventListener\RegisterFlowNodesListener::class
+            );
+        }
+
         // Endpoint routing cache: clear it whenever an openconnector/endpoint
         // object is created, updated, or deleted so the runtime path matcher
         // (EndpointCacheService) never serves stale routing (self-gated on
@@ -405,7 +420,7 @@ class Application extends App implements IBootstrap
         // manager silently drops it when preparing it for display.
         $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
 
-        // dashboard-http-datasource: advertise the capability so a leaf
+        // Dashboard-http-datasource: advertise the capability so a leaf
         // dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
         // for the resolve façade via the OCS capabilities document.
         $context->registerCapability(Capabilities::class);

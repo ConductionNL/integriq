@@ -87,6 +87,19 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
         }
 
+        // OCA\OpenRegister flow-engine stubs — peer app not in vendor. Used by
+        // the openconnector.synchronization leaf + its registration listener
+        // (openconnector-flow-migration Phase 1). IFlowNode must load before
+        // SynchronizationNode (which implements it); RegisterFlowNodesEvent
+        // before the listener.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/RegisterFlowNodesEvent.php';
+        }
+
         if (class_exists('OCA\\OpenRegister\\Service\\ObjectService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/ObjectService.php';
         }

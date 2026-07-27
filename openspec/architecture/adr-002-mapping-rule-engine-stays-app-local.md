@@ -73,3 +73,31 @@ openconnector.
   app-local. KEEP."
 - `openspec/changes/openconnector-adopt-or-abstractions/design.md:26-30` —
   Non-Goals enumerating the KEEP.
+
+## Amendment (2026-07-27 — openconnector-flow-migration, per ADR-065)
+
+The OpenRegister flow-parity programme (ADR-065) designates openconnector's
+bespoke sync/cron **chaining** as a CONSUMER of OpenRegister's single flow
+engine. This amends — but does not overturn — this ADR:
+
+- **Still app-local (unchanged):** the mapping/rule EXECUTION engine (Twig +
+  JSON Logic evaluation, connector-specific extensions and runtime loaders) and
+  every connector-specific transform. This logic now lives INSIDE openconnector
+  flow **leaves** (`openconnector.synchronization`, and in later phases
+  `openconnector.source-fetch` / `write-target` / `save-object` / `fetch-file` /
+  `write-file` / `extra-data`). The code stays in openconnector; only its
+  invocation surface becomes an `IFlowNode`.
+- **Moves to the flow engine (amended):** the CHAINING and ORDERING concern —
+  `JobTask`/`JobService` interval scheduling, object-lifecycle-listener
+  triggering, the ordered `actions`/rule pipeline sequencing, and `followUps`.
+  These become declarative flow constructs (schedule/object triggers, edges with
+  `order`/`condition`, and `openregister.sub-flow`), not app-local orchestration.
+
+ADR-005 (Source → Synchronization → SynchronizationContract triad) is
+**preserved**: the contract-hash change-detection stays the sync's own concern,
+owned by the `openconnector.write-target` leaf. Phase 1 changes no
+`SynchronizationService::synchronize()` internals; it only adds the coarse
+`openconnector.synchronization` leaf alongside the legacy paths.
+
+See [ADR-018](adr-018-flow-leaves-declare-a-contract.md) for the companion rule
+that every contributed leaf must declare a contract.
