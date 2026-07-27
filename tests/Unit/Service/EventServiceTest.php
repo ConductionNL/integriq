@@ -750,12 +750,20 @@ class EventServiceTest extends TestCase
         $this->objectService->method('findAll')->willReturn(['results' => $entities, 'total' => count($entities)]);
         $this->objectService->method('find')->willReturn($subscription);
 
-        // Count how many times delivery (saveObject) is reached.
+        // Count writes by what they DO, not merely that saveObject was reached:
+        // the sweep now also writes when it dead-letters an exhausted message,
+        // and counting every write would conflate the two.
         $delivered = 0;
+        $abandoned = 0;
         $this->stubHttpResponse(200, 'ok');
         $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object) use (&$delivered, $entities) {
-                $delivered++;
+            function (array $object) use (&$delivered, &$abandoned, $entities) {
+                if (($object['status'] ?? '') === 'abandoned') {
+                    $abandoned++;
+                } else {
+                    $delivered++;
+                }
+
                 return $entities[0];
             }
         );
@@ -765,6 +773,12 @@ class EventServiceTest extends TestCase
         // Only the single due, under-cap, non-terminal failed message is delivered.
         $this->assertSame(1, $count);
         $this->assertSame(1, $delivered);
+
+        // The over-cap message is now DEAD-LETTERED rather than silently skipped.
+        // Skipping left it in `failed` for ever, re-selected and re-skipped by
+        // every subsequent pass, and never reaching a state an operator could
+        // filter on.
+        $this->assertSame(1, $abandoned, 'an exhausted message must reach a terminal state');
     }//end testProcessRetriesSelectionMatrix()
 
 
