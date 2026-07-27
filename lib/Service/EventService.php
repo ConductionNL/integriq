@@ -124,25 +124,30 @@ class EventService
     /**
      * Constructor.
      *
-     * @param ORObjectService         $objectService          The OR ObjectService for data access.
-     * @param IClientService          $clientService          HTTP client service used to deliver push messages.
-     * @param LoggerInterface         $logger                 Logger for delivery successes and failures.
-     * @param WebhookSignatureService $signatureService       Signs outbound deliveries when configured.
-     * @param SynchronizationService  $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
-     * @param JobService              $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
-     * @param CallService             $callService            Runs `action.kind = 'notificaties'`/`'mapping'`
-     *                                                        dispatches against a `Source` (REQ-010/REQ-012).
-     * @param FlowRunnerService       $flowRunnerService      Runs `action.kind = 'flow'`
-     *                                                        dispatches (visual-flow-orchestration,
-     *                                                        event-triggered flows).
-     * @param MappingService          $mappingService         Runs the answer->target transform for `action.kind = 'mapping'` (REQ-012).
-     * @param FormsAnswerResolver     $formsAnswerResolver    Answer-by-question resolution for `action.kind = 'mapping'` (REQ-012).
-     * @param FormsSyncAdapter        $formsSyncAdapter       Feature detection + submission/form fetch for `action.kind = 'mapping'`
-     *                                                        (nullable, mirrors `SynchronizationService`'s `?TablesSyncAdapter` pattern — REQ-012).
-     * @param ExecutionTraceService|null $executionTraceService Persists the traced delivery attempt's
-     *                                                        execution_trace (execution-trace REQ-001/REQ-004).
-     *                                                        Nullable + defaulted so pre-existing positional
-     *                                                        test instantiations keep working unmodified.
+     * @param ORObjectService            $objectService          The OR ObjectService for data access.
+     * @param IClientService             $clientService          HTTP client service used to deliver push messages.
+     * @param LoggerInterface            $logger                 Logger for delivery successes and failures.
+     * @param WebhookSignatureService    $signatureService       Signs outbound deliveries when configured.
+     * @param SynchronizationService     $synchronizationService Runs `action.kind = 'synchronization'` dispatches (REQ-008).
+     * @param JobService                 $jobService             Runs `action.kind = 'job'` dispatches (REQ-008).
+     * @param CallService                $callService            Runs `action.kind = 'notificaties'`/`'mapping'`
+     *                                                           dispatches against a `Source`
+     *                                                           (REQ-010/REQ-012).
+     * @param FlowRunnerService          $flowRunnerService      Runs `action.kind = 'flow'`
+     *                                                           dispatches
+     *                                                           (visual-flow-orchestration,
+     *                                                           event-triggered flows).
+     * @param MappingService             $mappingService         Runs the answer->target transform for `action.kind = 'mapping'` (REQ-012).
+     * @param FormsAnswerResolver        $formsAnswerResolver    Answer-by-question resolution for `action.kind = 'mapping'` (REQ-012).
+     * @param FormsSyncAdapter           $formsSyncAdapter       Feature detection + submission/form fetch for `action.kind = 'mapping'`
+     *                                                           (nullable, mirrors `SynchronizationService`'s `?TablesSyncAdapter`
+     *                                                           pattern — REQ-012).
+     * @param ExecutionTraceService|null $executionTraceService  Persists the traced delivery attempt's
+     *                                                           execution_trace (execution-trace
+     *                                                           REQ-001/REQ-004). Nullable + defaulted
+     *                                                           so pre-existing positional test
+     *                                                           instantiations keep working
+     *                                                           unmodified.
      *
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
@@ -1936,23 +1941,119 @@ class EventService
     }//end discardMessage()
 
     /**
+     * The retry ceiling that actually applies to one message.
+     *
+     * Resolved from the message's own subscription, so this sweep agrees with
+     * {@see recordFailure()} about when a message is exhausted. A subscription
+     * that cannot be resolved (deleted, or the message carries no
+     * `subscriptionId`) yields the class default rather than zero — refusing to
+     * retry a message merely because its subscription is gone would strand it.
+     *
+     * @param array<string,mixed> $messageData The message's stored object.
+     *
+     * @return int The applicable maxRetries.
+     *
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
+     */
+    private function maxRetriesForMessage(array $messageData): int
+    {
+        $subscriptionId = ($messageData['subscriptionId'] ?? null);
+        if ($subscriptionId === null) {
+            return self::DEFAULT_MAX_RETRIES;
+        }
+
+        try {
+            $subscription = $this->objectService->find(
+                id: $subscriptionId,
+                register: 'openconnector',
+                schema: 'event_subscription',
+                _rbac: false,
+                _multitenancy: false,
+                _render: false
+            );
+        } catch (\Throwable $e) {
+            return self::DEFAULT_MAX_RETRIES;
+        }
+
+        if (($subscription instanceof ObjectEntity) === false) {
+            return self::DEFAULT_MAX_RETRIES;
+        }
+
+        return (int) $this->resolveRetryPolicy(subscriptionData: $subscription->getObject())['maxRetries'];
+
+    }//end maxRetriesForMessage()
+
+    /**
+     * Dead-letter a message this sweep will never retry again.
+     *
+     * Without this an exhausted message stayed `failed` for ever: the sweep's
+     * query selects `pending` and `failed`, so every pass re-loaded it, skipped
+     * it, and moved on — work that grows with the number of dead messages and
+     * achieves nothing, while the message never reaches a terminal state an
+     * operator can filter on.
+     *
+     * @param ObjectEntity        $message     The message to abandon.
+     * @param array<string,mixed> $messageData Its stored object.
+     * @param int                 $limit       The ceiling it exhausted.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/dead-letter-replay/spec.md
+     */
+    private function abandonExhausted(ObjectEntity $message, array $messageData, int $limit): void
+    {
+        $messageData['status']      = 'abandoned';
+        $messageData['nextAttempt'] = null;
+
+        try {
+            $message->setObject($messageData);
+            $this->objectService->saveObject(
+                object: $messageData,
+                register: 'openconnector',
+                schema: 'event_message',
+                uuid: $message->getUuid()
+            );
+            $this->logger->warning(
+                'Abandoned event message "'.$message->getUuid().'" after exhausting '.$limit
+                .' delivery attempts; it is now dead-lettered and can be replayed.'
+            );
+        } catch (\Throwable $e) {
+            // Never let a bookkeeping failure abort the sweep — the remaining
+            // messages still deserve their attempt.
+            $this->logger->error(
+                'Could not abandon exhausted event message "'.$message->getUuid().'": '.$e->getMessage()
+            );
+        }
+
+    }//end abandonExhausted()
+
+    /**
      * Process pending message retries.
      *
-     * The `$maxRetries` parameter is a sweep-level pre-filter only (a coarse,
-     * global safety cap) — the terminal `abandoned` decision for each message
-     * is made by {@see recordFailure} using the resolved subscription's own
-     * `retryPolicy.maxRetries`, so a message whose subscription sets
-     * `maxRetries=3` correctly stops being swept once it reaches `abandoned`
-     * even though this sweep runs with the default `$maxRetries=5` (REQ-002).
+     * `$maxRetries` is a FLOOR, not a ceiling. The terminal `abandoned` decision
+     * belongs to {@see recordFailure}, which uses the subscription's own
+     * `retryPolicy.maxRetries`; this sweep takes whichever of the two is higher
+     * so it can never stop retrying a message its own policy still considers
+     * live.
      *
-     * @param integer $maxRetries Maximum number of retry attempts (sweep-level pre-filter).
+     * The previous behaviour treated it as a hard cap, which was right for a
+     * subscription setting `maxRetries=3` (recordFailure abandons first, at 3)
+     * and wrong for one setting `maxRetries=10`: at 5 this sweep stopped
+     * retrying, while recordFailure never abandoned because 10 was not reached.
+     * Such a message sat in `failed` permanently — never retried, never
+     * dead-lettered — and was re-loaded and re-skipped on every pass, so the
+     * sweep's cost grew with the number of dead messages while achieving
+     * nothing. A message that genuinely exhausts its ceiling here is now
+     * abandoned rather than skipped.
+     *
+     * @param integer $maxRetries Lower bound on the per-message retry ceiling.
      *
      * @return integer Number of successfully delivered messages.
      *
      * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-3
      * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
      */
-    public function processRetries(int $maxRetries=5): int
+    public function processRetries(int $maxRetries=self::DEFAULT_MAX_RETRIES): int
     {
         // Terminal states (delivered, abandoned, discarded) are never selected.
         // Both 'pending' (crash-stranded or never-attempted) and 'failed'
@@ -1977,8 +2078,22 @@ class EventService
                 continue;
             }
 
+            // The abandon decision belongs to recordFailure(), which resolves the
+            // SUBSCRIPTION's retryPolicy.maxRetries. Second-guessing it here with
+            // a caller-supplied cap strands messages: a subscription allowing 10
+            // retries produces a message that this sweep stops retrying at the
+            // default 5, while recordFailure never abandons it because its own
+            // policy is not exhausted. The message then sits in `failed` for
+            // good — never retried, never dead-lettered — and is re-loaded and
+            // re-skipped on every pass of this cron, forever.
+            //
+            // So the cap here is only a backstop against a message whose policy
+            // cannot be resolved at all, and it uses the same constant the rest
+            // of the class does rather than a second, different literal.
             $retryCount = (int) ($messageData['retryCount'] ?? 0);
-            if ($retryCount >= $maxRetries) {
+            $limit      = max($maxRetries, $this->maxRetriesForMessage(messageData: $messageData));
+            if ($retryCount >= $limit) {
+                $this->abandonExhausted(message: $message, messageData: $messageData, limit: $limit);
                 continue;
             }
 
