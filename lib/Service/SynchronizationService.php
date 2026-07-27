@@ -76,6 +76,24 @@ class SynchronizationService
 {
 
     /**
+     * The synchronizations currently on the chaining call stack.
+     *
+     * OpenConnector chains synchronizations two ways — a `synchronization` rule
+     * and a `followUps` entry — and both re-enter `synchronize()` on this same
+     * service. Neither had any cycle or depth guard, so A -> B -> A recursed
+     * until the process died. One shared stack guards both, because a cycle can
+     * be formed out of either kind of hop, or a mix of the two.
+     *
+     * Static because the recursion runs through the container's single shared
+     * instance, so a per-call variable would not see the outer frame. Entries
+     * are pushed before the nested run and popped in a `finally`, so a failed
+     * run does not leave the chain permanently blocked.
+     *
+     * @var array<int, string>
+     */
+    private static array $syncChainStack = [];
+
+    /**
      * Retention period in milliseconds for error synchronization logs.
      *
      * @var integer
@@ -1891,18 +1909,50 @@ class SynchronizationService
         }
 
         // Stage 6: Follow-up synchronizations.
-        $stageStartTime = microtime(true);
-        $followUpCount  = 0;
-        foreach (($synchronization['followUps'] ?? []) as $followUp) {
-            $followUpSynchronization = $this->findSynchronization(id: $followUp);
-            $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
-            $followUpCount++;
+        //
+        // This is openconnector's oldest chaining mechanism and it had no cycle
+        // or depth guard: A listing B as a follow-up while B lists A recursed
+        // until the process died, taking the whole request with it. The shared
+        // chain stack bounds it — a follow-up already running higher up the
+        // stack is skipped and reported, not re-entered.
+        //
+        // Chaining like this is what the OpenRegister flow migration replaces:
+        // a flow states the order explicitly, the engine bounds the recursion,
+        // and each hop gets its own persisted, inspectable run.
+        $stageStartTime  = microtime(true);
+        $followUpCount   = 0;
+        $followUpSkipped = [];
+        $selfId          = (string) ($synchronization['id'] ?? ($synchronization['uuid'] ?? ''));
+        if ($selfId !== '') {
+            self::$syncChainStack[] = $selfId;
+        }
+
+        try {
+            foreach (($synchronization['followUps'] ?? []) as $followUp) {
+                if (in_array((string) $followUp, self::$syncChainStack, true) === true) {
+                    $followUpSkipped[] = (string) $followUp;
+                    $this->logger->warning(
+                        'Skipped follow-up synchronization "'.$followUp.'": it is already running on this chain '
+                        .'(cycle). Express the chain as an OpenRegister flow instead.'
+                    );
+                    continue;
+                }
+
+                $followUpSynchronization = $this->findSynchronization(id: $followUp);
+                $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
+                $followUpCount++;
+            }
+        } finally {
+            if ($selfId !== '') {
+                array_pop(self::$syncChainStack);
+            }
         }
 
         $result['timing']['stages']['follow_ups'] = [
             'duration_ms'         => round((microtime(true) - $stageStartTime) * 1000, 2),
             'description'         => 'Executing follow-up synchronizations',
             'follow_ups_executed' => $followUpCount,
+            'follow_ups_skipped'  => $followUpSkipped,
         ];
 
         // Calculate total timing.
@@ -6938,7 +6988,47 @@ class SynchronizationService
      */
     private function processSyncRule(array $rule, array $data): array
     {
-        // $rule is reserved for future synchronization logic; return data unchanged.
+        $target = trim(
+                (string) (($rule['configuration']['synchronization']['synchronization'] ?? null) ?? ($rule['configuration']['synchronization'] ?? ''))
+                );
+
+        // A rule type that is offered in the editor and silently does nothing is
+        // worse than one that is absent: the author sees their rule listed, in
+        // order, apparently applied. Say so instead.
+        if ($target === '' || is_array($target) === true) {
+            throw new Exception(
+                'A "synchronization" rule must name the synchronization to run in '
+                .'configuration.synchronization.synchronization.'
+            );
+        }
+
+        // Guard the obvious loop. A synchronization whose own rule runs itself
+        // recurses until the process dies, and the same holds for any chain that
+        // comes back round — so every synchronization already entered on this
+        // call stack is off limits, not merely the immediate one.
+        if (in_array($target, self::$syncChainStack, true) === true) {
+            throw new Exception(
+                'A "synchronization" rule would re-enter synchronization "'.$target
+                .'", which is already running. Chain synchronizations with a flow '
+                .'instead: an OpenRegister flow expresses ordering explicitly and '
+                .'the engine bounds the recursion.'
+            );
+        }
+
+        self::$syncChainStack[] = $target;
+
+        try {
+            $this->synchronize(
+                synchronization: $this->getSynchronization(id: $target),
+                isTest: false,
+                force: filter_var((($rule['configuration']['synchronization']['force'] ?? false)), FILTER_VALIDATE_BOOLEAN)
+            );
+        } finally {
+            array_pop(self::$syncChainStack);
+        }
+
+        // A sync rule is a side effect, not a transform: the record travelling
+        // through the pipeline is unchanged by having triggered another sync.
         return $data;
     }//end processSyncRule()
 
