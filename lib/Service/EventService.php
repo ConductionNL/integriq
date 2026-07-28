@@ -207,6 +207,56 @@ class EventService
     }//end hasActiveSubscriptions()
 
     /**
+     * Resolve the numeric schema ids of this app's own CloudEvent storage
+     * (`event`, `event_message`) within the `openconnector` register.
+     *
+     * {@see \OCA\OpenConnector\EventListener\CloudEventListener} needs these
+     * to recognise its own writes and not re-forward them. It cannot compare
+     * slugs, because `ObjectEntity::getSchema()` returns a numeric id.
+     *
+     * Resolved by reading one object per schema rather than through the schema
+     * mapper, so this stays inside the ObjectService boundary (ADR-022) — the
+     * ids are a property of whatever objects the register actually holds.
+     * A schema with zero objects contributes no id, which is correct: with no
+     * rows there is nothing to recurse on yet, and the id appears as soon as
+     * the first one is written.
+     *
+     * @return array<int, string> Schema ids as strings; empty when unresolvable.
+     *
+     * @spec openspec/changes/stop-cloudevent-recursion/specs/events/spec.md
+     */
+    public function getSelfSchemaIds(): array
+    {
+        $ids = [];
+        foreach (['event', 'event_message'] as $slug) {
+            try {
+                $matches = $this->objectService->findAll(
+                        config: [
+                            'filters' => [
+                                'register' => 'openconnector',
+                                'schema'   => $slug,
+                            ],
+                            'limit'   => 1,
+                        ]
+                        );
+                $results = ($matches['results'] ?? $matches);
+                foreach ($results as $row) {
+                    if ($row instanceof ObjectEntity) {
+                        $ids[] = (string) $row->getSchema();
+                    }
+                }
+            } catch (Exception $e) {
+                $this->logger->warning(
+                        '[EventService] could not resolve own schema id for "'.$slug.'": '.$e->getMessage()
+                        );
+            }//end try
+        }//end foreach
+
+        return array_values(array_unique($ids));
+
+    }//end getSelfSchemaIds()
+
+    /**
      * Process a new event and create messages for all matching subscriptions.
      *
      * @param ObjectEntity $event The event ObjectEntity to process.
