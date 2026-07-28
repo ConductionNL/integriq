@@ -83,7 +83,7 @@ class JobsController extends Controller
      *
      * @return JSONResponse A JSON response containing the filtered job logs and pagination.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-1
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
@@ -198,7 +198,7 @@ class JobsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-2
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -268,7 +268,7 @@ class JobsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-2
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

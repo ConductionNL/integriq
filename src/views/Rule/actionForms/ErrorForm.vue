@@ -10,14 +10,14 @@
 		<NcTextField
 			:label="t('openconnector', 'HTTP status code')"
 			type="number"
-			:value="value.code != null ? String(value.code) : ''"
+			:model-value="value.code != null ? String(value.code) : ''"
 			placeholder="500"
-			@update:value="onCodeInput" />
+			@update:model-value="onCodeInput" />
 		<NcTextField
 			:label="t('openconnector', 'Error title')"
-			:value="value.name || ''"
+			:model-value="value.name || ''"
 			:placeholder="t('openconnector', 'Something went wrong')"
-			@update:value="(next) => patch('name', next)" />
+			@update:model-value="(next) => patch('name', next)" />
 		<label class="action-form__label" :for="'rule-action-error-msg-' + uid">
 			{{ t('openconnector', 'Error message') }}
 		</label>
@@ -30,8 +30,8 @@
 			@input="(event) => patch('message', event.target.value)" />
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.includeJsonLogicResult"
-			@update:checked="(next) => patch('includeJsonLogicResult', !!next)">
+			:model-value="!!value.includeJsonLogicResult"
+			@update:model-value="(next) => patch('includeJsonLogicResult', !!next)">
 			{{ t('openconnector', 'Include JSON Logic results in errors array') }}
 		</NcCheckboxRadioSwitch>
 	</div>
@@ -50,7 +50,7 @@ export default {
 	data() { return { uid: ++uidCounter } },
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onCodeInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

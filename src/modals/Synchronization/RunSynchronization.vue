@@ -18,9 +18,9 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						</p>
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
-						:checked="testMode"
+						:model-value="testMode"
 						type="switch"
-						@update:checked="testMode = $event">
+						@update:model-value="testMode = $event">
 						{{ t('openconnector', 'Test mode') }}
 					</NcCheckboxRadioSwitch>
 					<NcNoteCard type="info">
@@ -29,9 +29,9 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						</p>
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
-						:checked="forceSync"
+						:model-value="forceSync"
 						type="switch"
-						@update:checked="forceSync = $event">
+						@update:model-value="forceSync = $event">
 						{{ t('openconnector', 'Force synchronization') }}
 					</NcCheckboxRadioSwitch>
 				</div>
@@ -202,12 +202,12 @@ export default {
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		closeModal() {
 			navigationStore.setModal(false)
 			synchronizationStore.synchronizationRun = null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async runSynchronization() {
 			this.success = null
 			this.loading = true

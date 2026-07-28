@@ -45,7 +45,7 @@ use OCP\IL10N;
 /**
  * Exposes openconnector SyncContract objects as integration leaves on OR objects.
  *
- * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+ * @spec openspec/specs/synchronization-engine/spec.md
  */
 class SynchronizationContractProvider extends AbstractIntegrationProvider
 {
@@ -84,7 +84,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return string The provider identifier.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function getId(): string
     {
@@ -97,7 +97,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return string The translated label.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function getLabel(): string
     {
@@ -110,7 +110,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return string The icon identifier.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function getIcon(): string
     {
@@ -123,7 +123,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return string|null The group identifier.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function getGroup(): ?string
     {
@@ -136,7 +136,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return string|null The required app id.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function getRequiredApp(): ?string
     {
@@ -149,7 +149,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return string The storage strategy identifier.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function getStorageStrategy(): string
     {
@@ -170,7 +170,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return array The list of contract summaries.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -194,16 +194,30 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
         // against the numeric register/schema columns — which silently matches
         // nothing. Setting context via setRegister()/setSchema() and keeping
         // `filters` to `targetId` alone is what actually returns the contracts.
-        $matches = $this->objectService
-            ->setRegister(self::REGISTER_SLUG)
-            ->setSchema(self::SCHEMA_SLUG)
-            ->findAll(
-                config: [
-                    'filters' => ['targetId' => $objectId],
-                    'limit'   => $limit,
-                    'offset'  => $offset,
-                ]
-            );
+        //
+        // Resilience (AD-23): this leaf loads on EVERY Nextcloud page and its
+        // list endpoint is called from EVERY app's OR sidebar. When the
+        // `synchronization_contract` schema is declared in the register JSON but
+        // not yet MAPPED into the `openconnector` register on this instance
+        // (a lagging/forced-import state — see openregister#2075), setSchema()/
+        // findAll() throws, which would surface as a 500 fleet-wide. Degrade to
+        // an empty result instead so the sidebar renders the quiet "not created
+        // by a synchronization" state rather than a broken tab. The register
+        // import (occ) restores the real contracts without a code change.
+        try {
+            $matches = $this->objectService
+                ->setRegister(self::REGISTER_SLUG)
+                ->setSchema(self::SCHEMA_SLUG)
+                ->findAll(
+                    config: [
+                        'filters' => ['targetId' => $objectId],
+                        'limit'   => $limit,
+                        'offset'  => $offset,
+                    ]
+                );
+        } catch (\Throwable $e) {
+            return [];
+        }
 
         $rows = $matches['results'] ?? $matches;
         if (is_array($rows) === false) {
@@ -356,7 +370,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return array The health descriptor.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function health(): array
     {
@@ -389,7 +403,7 @@ class SynchronizationContractProvider extends AbstractIntegrationProvider
      *
      * @return bool True when the storage migration has run, false otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function isEnabled(): bool
     {

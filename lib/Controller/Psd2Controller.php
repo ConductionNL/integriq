@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ShortVariable)
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-redirect-based-sca-consent-flow-req-002
  */
 class Psd2Controller extends Controller
 {
@@ -87,7 +87,7 @@ class Psd2Controller extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-connect-returns-a-bank-sca-redirect-url
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-connect-returns-a-bank-sca-redirect-url
      */
     #[NoAdminRequired]
     public function connect(string $sourceSlug='', string $institutionId='', string $redirectUrl=''): JSONResponse
@@ -147,7 +147,7 @@ class Psd2Controller extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-callback-finalises-consent-and-stores-only-the-reference
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-callback-finalises-consent-and-stores-only-the-reference
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -200,7 +200,7 @@ class Psd2Controller extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#scenario-accounts-are-discovered-and-recorded-for-an-active-connection
+     * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#scenario-accounts-are-discovered-and-recorded-for-an-active-connection
      */
     #[NoAdminRequired]
     public function discoverAccounts(string $connectionId=''): JSONResponse

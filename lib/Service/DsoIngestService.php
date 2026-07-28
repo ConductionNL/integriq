@@ -48,6 +48,7 @@ use OCA\OpenConnector\Service\Dso\DsoClient;
 use OCA\OpenConnector\Service\Dso\DsoConnectorProviderInterface;
 use OCA\OpenConnector\Service\Dso\DsoVerzoekTranslator;
 use OCA\OpenConnector\Service\Dso\LogDsoConnectorProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -119,12 +120,13 @@ class DsoIngestService
     /**
      * Constructor.
      *
-     * @param ORObjectService         $objectService  OR object service for source/verzoek/message persistence.
-     * @param HandoffService          $handoffService Executes the declared handoff under the caller's RBAC.
-     * @param DsoVerzoekTranslator    $translator     Translates a parsed Verzoek into normalised handoff fields.
-     * @param LogDsoConnectorProvider $logProvider    The sandbox outbound provider binding.
-     * @param DsoClient               $restProvider   The generic REST outbound provider binding.
-     * @param LoggerInterface         $logger         Logger for non-fatal diagnostics.
+     * @param ORObjectService         $objectService     OR object service for source/verzoek/message persistence.
+     * @param HandoffService          $handoffService    Executes the declared handoff under the caller's RBAC.
+     * @param DsoVerzoekTranslator    $translator        Translates a parsed Verzoek into normalised handoff fields.
+     * @param LogDsoConnectorProvider $logProvider       The sandbox outbound provider binding.
+     * @param DsoClient               $restProvider      The generic REST outbound provider binding.
+     * @param LoggerInterface         $logger            Logger for non-fatal diagnostics.
+     * @param RawSourceResolver       $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -133,6 +135,7 @@ class DsoIngestService
         private readonly LogDsoConnectorProvider $logProvider,
         private readonly DsoClient $restProvider,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -422,7 +425,7 @@ class DsoIngestService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 

@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+ * @spec openspec/specs/rule-pipeline/spec.md
  */
 
 namespace OCA\OpenConnector\Service;
@@ -97,14 +97,6 @@ class RuleService
     // @TODO: replace this with a way to store these uuids somewhere.
 
     /**
-     * Index for tracking the current relation ID for software catalog.
-     *
-     * Used to ensure consistent relation identifiers in the output.
-     *
-     * @var integer
-     */
-    private int $currentRelationIdIndex = 0;
-
     // @TODO: replace this with a way to store these uuids somewhere.
     /**
      * Predefined relation IDs for software catalog connections
@@ -161,15 +153,6 @@ class RuleService
     private const BRON = 'id-a5524578-7a1c-464e-b628-c6125dc4a6c6';
 
     /**
-     * Stores relation IDs created during processing for the software catalog.
-     *
-     * Used to add all relations to the relations folder in a single batch.
-     *
-     * @var array<int, string>
-     */
-    private array $createdRelationIds = [];
-
-    /**
      * Constructor for RuleService.
      *
      * @param ObjectService                $objectService    OpenConnector object-service facade.
@@ -197,44 +180,6 @@ class RuleService
     }//end __construct()
 
     /**
-     * Resolve a software-catalogue propertyDefinitionRef through app config.
-     *
-     * Consumer admins can override the hardcoded `id-*` constants by
-     * setting `swc_<context>_property = <id>` in openconnector's app
-     * config. When the resolver is unavailable (unit tests) or the
-     * config key is unset, the in-code default is used so behaviour is
-     * preserved end-to-end.
-     *
-     * @param string $configKey App-config key (e.g. `swc_type_property`).
-     * @param string $default   Default property identifier used when the
-     *                          config key is unset or the resolver is
-     *                          unavailable.
-     *
-     * @return string The resolved property identifier.
-     *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md
-     */
-    private function resolvePropertyRef(string $configKey, string $default): string
-    {
-        if ($this->registerResolver === null) {
-            return $default;
-        }
-
-        try {
-            return $this->registerResolver->resolvePropertyId(
-                appId: 'openconnector',
-                configKey: $configKey,
-                default: $default,
-            );
-        } catch (\Throwable $e) {
-            // Resolver failures must not break the catalogue export
-            // pipeline — fall back to the in-code constant.
-            return $default;
-        }
-
-    }//end resolvePropertyRef()
-
-    /**
      * Process a custom rule.
      *
      * @param ObjectEntity $rule The rule to process.
@@ -242,7 +187,7 @@ class RuleService
      *
      * @return array|JSONResponse The updated data array (or a JSONResponse if the rule short-circuits).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     public function processCustomRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -250,476 +195,23 @@ class RuleService
         $type     = ($ruleData['configuration']['type'] ?? '');
 
         // Process custom rule based on type.
+        //
+        // `softwareCatalogus` was removed. It was a rule type hard-coded to one
+        // consumer's domain model — Voorziening / VoorzieningGebruik /
+        // Organisatie / VoorzieningAanbod schemas, a `vng-gemma` register, an
+        // `extendview` schema and literal `propertyDefinitionRef` ids — living
+        // in the connector's shared rule pipeline, where every other connector
+        // pays for it in surface area and nobody else can use it. That belongs
+        // to the software-catalog app, or to a flow composed of generic steps,
+        // which is where the OpenRegister flow migration takes the rest of this
+        // pipeline anyway.
         $data = match ($type) {
-            'softwareCatalogus' => $this->processSoftwareCatalogusRule(rule: $rule, data: $data),
             'connectRelations' => $this->processCustomConnectionsRule(rule: $rule, data: $data),
             default => throw new Exception('Unsupported custom rule type: '.($ruleData['type'] ?? '')),
         };
 
         return $data;
     }//end processCustomRule()
-
-    /**
-     * Process a Software Catalogus rule
-     *
-     * @param ObjectEntity $rule The rule to process
-     * @param array        $data The data to process
-     *
-     * @return array The updated data array
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
-     */
-    private function processSoftwareCatalogusRule(ObjectEntity $rule, array $data): array
-    {
-        $ruleData = $rule->getObject();
-        $config   = $ruleData['configuration']['configuration'] ?? [];
-
-        // Get register ID and schema IDs.
-        $registerId          = $config['register'];
-        $voorzieningSchemaId = $config['VoorzieningSchema'];
-        $voorzieningGebruikSchemaId = $config['VoorzieningGebruikSchema'];
-        $organisatieSchemaId        = $config['OrganisatieSchema'];
-        $voorzieningAanbodSchemaId  = $config['VoorzieningAanbodSchema'];
-
-        // Get OpenRegisters instance and set the register.
-        $openRegisters = $this->objectService->getOpenRegisters();
-        $openRegisters->setRegister($registerId);
-
-        // Fetch Voorziening objects.
-        $openRegisters->setSchema($voorzieningSchemaId);
-        $objectEntityMapper = $openRegisters->getMapper('objectEntity');
-
-        // Fetch VoorzieningGebruik objects.
-        $openRegisters->setSchema($voorzieningGebruikSchemaId);
-        $objectEntityMapper   = $openRegisters->getMapper('objectEntity');
-        $voorzieningGebruiken = $objectEntityMapper->findAll(
-            filters: [
-                'register'      => $registerId,
-                'schema'        => $voorzieningGebruikSchemaId,
-                'organisatieId' => $data['parameters']['organisatie'],
-            ]
-        );
-
-        $voorzieningIds = array_map(
-                function (ObjectEntity $voorzieningGebruik):?string {
-                    $json = $voorzieningGebruik->jsonSerialize();
-
-                    return $json['voorzieningId'] ?? null;
-                },
-                $voorzieningGebruiken
-                );
-
-        $voorzieningIds = array_values(array_filter($voorzieningIds));
-
-        $voorzieningen = $objectEntityMapper->findAll(
-            filters: [
-                'register' => $registerId,
-                'schema'   => $voorzieningSchemaId,
-            ],
-            ids: $voorzieningIds,
-        );
-
-        // Process property definitions and update basic metadata.
-        $data = $this->processPropertyDefinitionsAndMetadata(data: $data);
-
-        $register   = $this->registerMapper->find('vng-gemma');
-        $schema     = $this->schemaMapper->find('extendview');
-        $addedViews = $this->objectService->getOpenRegisters()->findAll(
-            ['filters' => ['register' => $register->getId(), 'schema' => $schema->getId()]]
-        );
-
-        $addedViews = array_map(
-                function (ObjectEntity $view): array {
-                    $view = $view->jsonSerialize();
-
-                    if (str_ends_with($view['identifier'], SoftwareCatalogueService::SUFFIX) === false) {
-                        $view['identifier'] = $view['identifier'].SoftwareCatalogueService::SUFFIX;
-                    }
-
-                    return $view;
-                },
-                $addedViews
-                );
-
-        $publishPropertyId = $this->getPublishPropertyId(propertyDefinitions: $data['body']['propertyDefinitions']);
-
-        $addedViews = array_filter(
-                $addedViews,
-                function (array $view) use ($publishPropertyId) {
-                    return count(
-                    $properties = array_filter(
-                    $view['properties'],
-                    function ($property) use ($publishPropertyId) {
-                        return $property['propertyDefinitionRef'] === $publishPropertyId;
-                    }
-                    )
-                    ) !== 0
-                    && array_shift($properties)['value'] === 'Softwarecatalogus en GEMMA Online en redactie';
-                }
-                );
-
-        // Find and configure organizational folders.
-        list($applicationFolderKey, $relationsFolderKey, $applicationFolderCount, $relationsFolderCount)
-            = $this->setupOrganizationalFolders(data: $data);
-
-        // Process voorzieningen data and add to export.
-        $data = $this->processVoorzieningenData(
-            data: $data,
-            voorzieningen: $voorzieningen,
-            applicationFolderKey: $applicationFolderKey,
-            applicationFolderCount: $applicationFolderCount,
-            views: $addedViews
-        );
-
-        $data['body']['views'] = array_merge($data['body']['views'], $addedViews);
-
-        $viewIds = array_column($addedViews, 'identifier');
-
-        $organization = [
-            "label"      => 'Views (Softwarecatalogus)',
-            "label-lang" => "en",
-        ];
-        foreach ($viewIds as $viewId) {
-            $organization['item'][] = ['identifierRef' => $viewId];
-        }
-
-        $data['body']['organizations'][] = $organization;
-
-        // Add all created relations to the Relations folder.
-        foreach ($this->createdRelationIds as $relationId) {
-            $data['body']['organizations'][$relationsFolderKey]['item'][$relationsFolderCount]['item'][] = [
-                'identifierRef' => $relationId,
-            ];
-        }
-
-        // // Add organisaties (leveranciers) to response data
-        // foreach ($organisaties as $organisatie) {
-        // $organisatie = $organisatie->jsonSerialize();
-        // $newUuid = Uuid::v4();
-        // $elementId = "id-{$newUuid}";
-        // $data['body']['elements'][] = [
-        // 'identifier' => $elementId,
-        // 'name' => $organisatie['naam'],
-        // 'name-lang' => 'nl',
-        // 'documentation' => $organisatie['beschrijving'],
-        // 'documentation-lang' => 'nl',
-        // 'type' => 'BusinessActor',
-        // 'properties' => [
-        // 0 => [
-        // 'propertyDefinitionRef' => 'id-c3355444b6cb8fb34b62e241dd073043', // SWC type
-        // 'value' => 'Leverancier',
-        // ],
-        // 1 => [
-        // 'propertyDefinitionRef' => 'propid-2', // Object ID
-        // 'value' => $newUuid,
-        // ],
-        // 2 => [
-        // 'propertyDefinitionRef' => 'propid-39', // URL
-        // 'value' => '',
-        // ],
-        // ],
-        // ];
-        // }
-        // foreach ($voorzieningAanbod as $voorzieningAanbod) {
-        // $voorzieningAanbod = $voorzieningAanbod->jsonSerialize();
-        // }
-        return $data;
-    }//end processSoftwareCatalogusRule()
-
-    /**
-     * Find the 'publiceren' property by name in the list of propertyDefinitions.
-     *
-     * @param array $propertyDefinitions The list of propertyDefinitions.
-     *
-     * @return string The id of the 'Publiceren' property.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
-     */
-    private function getPublishPropertyId(array $propertyDefinitions): string
-    {
-        $ids = array_column(
-                array_filter(
-                $propertyDefinitions,
-                function ($propertyDefinition) {
-                    return $propertyDefinition['name'] === 'Publiceren';
-                }
-                ),
-                'identifier'
-                );
-
-        return array_shift($ids);
-    }//end getPublishPropertyId()
-
-    /**
-     * Process property definitions and update basic metadata in the data structure
-     *
-     * Validates existing property definitions, adds missing ones, and sets up
-     * basic metadata like export date and file name.
-     *
-     * @param array $data The data structure to update
-     *
-     * @return array The updated data
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
-     */
-    private function processPropertyDefinitionsAndMetadata(array $data): array
-    {
-        // Check if property definitions already exist.
-        $propertyDefinitions = array_fill_keys(array_keys(self::PROPERTY_DEFINITIONS), false);
-
-        foreach ($data['body']['propertyDefinitions'] as $propertyDefinition) {
-            if (isset($propertyDefinition['identifier']) === true
-                && array_key_exists($propertyDefinition['identifier'], $propertyDefinitions) === true
-            ) {
-                // Verify the name matches what we expect.
-                if (isset($propertyDefinition['name']) === true
-                    && $propertyDefinition['name'] !== self::PROPERTY_DEFINITIONS[$propertyDefinition['identifier']]
-                ) {
-                    throw new Exception(
-                            sprintf(
-                        'Property definition with ID %s has unexpected name: "%s". Expected: "%s"',
-                        $propertyDefinition['identifier'],
-                        $propertyDefinition['name'],
-                        self::PROPERTY_DEFINITIONS[$propertyDefinition['identifier']]
-                    )
-                            );
-                }
-
-                $propertyDefinitions[$propertyDefinition['identifier']] = true;
-            }
-        }//end foreach
-
-        // Add property definitions that don't exist yet.
-        foreach (self::PROPERTY_DEFINITIONS as $id => $name) {
-            if ($propertyDefinitions[$id] === false) {
-                $data['body']['propertyDefinitions'][] = [
-                    'identifier' => $id,
-                    'type'       => 'string',
-                    'name'       => $name,
-                ];
-            }
-        }
-
-        // Add datum export.
-        $datumExport = new DateTime();
-        $data['body']['properties'][] = [
-            // Datum export.
-            'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_datum_export_property', default: self::PROP_DATUM_EXPORT),
-            'value'                 => $datumExport->format('Y-m-d H:i:s'),
-            'value-lang'            => 'nl',
-        ];
-
-        // Update Model name.
-        $data['body']['name'] = "Turfburg (test VNG Realisatie)";
-
-        // Update filename.
-        $filename = $datumExport->format('d-m-Y').'_GEMMA 2_'.$data['body']['name'].'_ameff_model.xml';
-        $data['headers']['Content-Disposition'] = 'attachment; filename="'.$filename.'"';
-
-        return $data;
-    }//end processPropertyDefinitionsAndMetadata()
-
-    /**
-     * Find and configure organization folders in the data structure
-     *
-     * Locates Application and Relations folders, validates their existence,
-     * and adds appropriate subfolders for the software catalog.
-     *
-     * @param array $data The data structure to update
-     *
-     * @return array An array with [$applicationFolderKey, $relationsFolderKey, $applicationFolderCount, $relationsFolderCount]
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
-     */
-    private function setupOrganizationalFolders(array &$data): array
-    {
-        // Get all folder keys.
-        $applicationFolderKey = null;
-        $relationsFolderKey   = null;
-
-        foreach ($data['body']['organizations'] as $key => $organization) {
-            if (isset($organization['label']) === true) {
-                switch ($organization['label']) {
-                    case 'Application':
-                        $applicationFolderKey = $key;
-                        break;
-                    case 'Relations':
-                        $relationsFolderKey = $key;
-                        break;
-                    // Add more cases here as needed for future folder types.
-                }
-            }
-        }
-
-        // Check if both required folders exist.
-        if ($applicationFolderKey === null || $relationsFolderKey === null) {
-            $missingFolders = array_filter(
-                    [
-                        'Application' => $applicationFolderKey === null,
-                        'Relations'   => $relationsFolderKey === null,
-                    ]
-                    );
-            throw new Exception('Required folder(s) not found in organizations: '.implode(', ', array_keys($missingFolders)));
-        }
-
-        // Add the Applicaties / Pakketten (Softwarecatalogus) folder.
-        // Index for adding to this organization/folder later on.
-        $applicationFolderCount = count($data['body']['organizations'][$applicationFolderKey]['item']);
-        $data['body']['organizations'][$applicationFolderKey]['item'][] = [
-            'identifier' => "id-29ec7061-0aba-c9eb-25fd-7c9232e4f0",
-            'label'      => "Applicaties (Softwarecatalogus)",
-            'label-lang' => "nl",
-        ];
-
-        // Add the Relaties (Softwarecatalogus) folder.
-        // Index for adding to this organization/folder later on.
-        $relationsFolderCount = count($data['body']['organizations'][$relationsFolderKey]['item']);
-        $data['body']['organizations'][$relationsFolderKey]['item'][] = [
-            'identifier' => "id-8e7d5c3b-6a2f-9d4e-1b3c-7a9e2d5f8c0b",
-            'label'      => "Relaties (Softwarecatalogus)",
-            'label-lang' => "nl",
-        ];
-
-        return [$applicationFolderKey, $relationsFolderKey, $applicationFolderCount, $relationsFolderCount];
-    }//end setupOrganizationalFolders()
-
-    /**
-     * Process voorzieningen data and add to export structure.
-     *
-     * Processes voorzieningen objects, counts children for reference components,
-     * creates elements and relationships, and adds them to the appropriate folders.
-     *
-     * @param array  $data                   The data structure to update.
-     * @param array  $voorzieningen          The voorzieningen to process.
-     * @param string $applicationFolderKey   The key of the Application folder.
-     * @param int    $applicationFolderCount The count of items in the Application folder.
-     * @param array  $views                  The set of catalogue views to extend with new connections (passed by reference).
-     *
-     * @return array The updated data.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
-     */
-    private function processVoorzieningenData(
-        array $data,
-        array $voorzieningen,
-        string $applicationFolderKey,
-        int $applicationFolderCount,
-        array &$views,
-    ): array {
-        // Reset relation IDs array.
-        $this->createdRelationIds = [];
-
-        // Count the total amount of children we are going to add for each referentieComponent.
-        $newChildrenCount = [];
-        foreach ($voorzieningen as $voorziening) {
-            $voorziening = $voorziening->jsonSerialize();
-
-            foreach ($voorziening['referentieComponenten'] as $referentieComponent) {
-                if (isset($newChildrenCount[$referentieComponent]) === false) {
-                    $newChildrenCount[$referentieComponent] = 0;
-                }
-
-                $newChildrenCount[$referentieComponent]++;
-            }
-        }
-
-        // Add voorzieningen (pakketten/applicaties) to response data.
-        foreach ($voorzieningen as $voorziening) {
-            $voorziening = $voorziening->jsonSerialize();
-
-            if (isset($voorziening['id']) === false) {
-                $voorziening['id'] = $voorziening['@self']['id'];
-            }
-
-            $elementId = "id-{$voorziening['id']}";
-
-            // Add voorziening to Application folder.
-            $data['body']['organizations'][$applicationFolderKey]['item'][$applicationFolderCount]['item'][] = [
-                'identifierRef' => $elementId,
-            ];
-
-            // Add voorziening to elements (with SWC type / object id / extern pakket / omschrijving / bron props).
-            $data['body']['elements'][] = [
-                'identifier'         => $elementId,
-                'name'               => $voorziening['naam'],
-                'name-lang'          => 'nl',
-                'documentation'      => $voorziening['beschrijving'],
-                'documentation-lang' => 'nl',
-                'type'               => 'ApplicationComponent',
-                'properties'         => [
-                    [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_type_property', default: self::PROP_SWC_TYPE),
-                        'value'                 => 'Pakket',
-                    ],
-                    [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_object_id_property', default: self::PROP_OBJECT_ID),
-                        'value'                 => $voorziening['id'],
-                    ],
-                    [
-                        'propertyDefinitionRef' => 'propid-39',
-                        'value'                 => '',
-                    ],
-                    [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef(
-                            configKey: 'swc_extern_pakket_property',
-                            default: self::PROP_EXTERN_PAKKET
-                        ),
-                        'value'                 => 'n',
-                    ],
-                    [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef(
-                            configKey: 'swc_omschrijving_property',
-                            default: self::PROP_OMSCHRIJVING
-                        ),
-                        'value'                 => '',
-                    ],
-                    [
-                        'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_bron_property', default: self::BRON),
-                        'value'                 => 'Softwarecatalogus',
-                    ],
-                ],
-            ];
-
-            // Add new nodes and add relations between voorziening and referentiecomponent.
-            foreach ($voorziening['referentieComponenten'] as $referentieComponent) {
-                // Create relation between voorziening and referentieComponent.
-                $relationId = $this->createRelation(
-                    data: $data,
-                    sourceId: $elementId,
-                    targetId: $referentieComponent,
-                    relationType:'Specialization'
-                );
-                foreach ($views as &$view) {
-                    foreach ($view['connections'] as &$connection) {
-                        $connection['source']     = $connection['source'];
-                        $connection['target']     = $connection['target'];
-                        $connection['identifier'] = $connection['identifier'];
-                    }
-
-                    $connections = [];
-                    if (isset($view['nodes']) === true && is_array($view['nodes']) === true) {
-                        $this->processNodes(
-                            nodes: $view['nodes'],
-                            matchIdentificatie: $referentieComponent,
-                            newElementId: $elementId,
-                            totalNewChildren: ($newChildrenCount[$referentieComponent] ?? 0),
-                            data: $data,
-                            relationId: $relationId,
-                            connections: $connections
-                        );
-                    }
-
-                    if (isset($view['connections']) === false || empty($view['connections']) === true) {
-                        $view['connections'] = [];
-                    }
-
-                    $view['connections'] = array_merge($view['connections'], $connections);
-                }//end foreach
-            }//end foreach
-        }//end foreach
-
-        return $data;
-    }//end processVoorzieningenData()
 
     /**
      * Create an ArchiMate connection entry tying a relation/source/target triple together.
@@ -730,7 +222,7 @@ class RuleService
      *
      * @return array The connection array shape consumed by the catalogue exporter.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function createConnection(string $relationId, string $sourceId, string $targetId)
     {
@@ -774,7 +266,7 @@ class RuleService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processNodes(
         array &$nodes,
@@ -909,60 +401,6 @@ class RuleService
     }//end processNodes()
 
     /**
-     * Creates a relation between elements and adds it to the data structure
-     *
-     * @param array  $data         The data structure to update (passed by reference).
-     * @param string $sourceId     The source element ID.
-     * @param string $targetId     The target element ID.
-     * @param string $relationType The type of relation.
-     *
-     * @return string The relation ID.
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
-     */
-    private function createRelation(
-        array &$data,
-        string $sourceId,
-        string $targetId,
-        string $relationType
-    ): string {
-        // Create relation UUID.
-        $relationUuid = 'id-OutOfUniqueUUIDs-'.$this->currentRelationIdIndex;
-
-        // Use predefined relation ID if available.
-        if ($this->currentRelationIdIndex < count(self::RELATION_IDS)) {
-            $relationUuid = self::RELATION_IDS[$this->currentRelationIdIndex];
-        }
-
-        $this->currentRelationIdIndex++;
-
-        // Add relation to relationships array.
-        $relationId = "id-{$relationUuid}";
-        $data['body']['relationships'][] = [
-            'identifier' => $relationId,
-            'source'     => $sourceId,
-            'target'     => $targetId,
-            'type'       => $relationType,
-            'properties' => [
-                [
-                    // Object ID.
-                    'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_object_id_property', default: self::PROP_OBJECT_ID),
-                    'value'                 => $relationUuid,
-                ],
-                [
-                    'propertyDefinitionRef' => $this->resolvePropertyRef(configKey: 'swc_bron_property', default: self::BRON),
-                    'value'                 => 'Softwarecatalogus',
-                ],
-            ],
-        ];
-
-        // Store relation ID for later folder assignment.
-        $this->createdRelationIds[] = $relationId;
-
-        return $relationId;
-    }//end createRelation()
-
-    /**
      * Process the custom-connections rule by extending the catalogue model with the given model id.
      *
      * @param ObjectEntity $rule The rule being processed.
@@ -970,7 +408,7 @@ class RuleService
      *
      * @return array|JSONResponse A JSON-response with the outcome, or the data on no-op paths.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function processCustomConnectionsRule(ObjectEntity $rule, array $data): array|JSONResponse
     {
@@ -1004,7 +442,7 @@ class RuleService
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\SyntaxError
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     private function getExternalObject(string $url, array $configuration, string|int $schemaId): array
     {
@@ -1079,7 +517,7 @@ class RuleService
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      *
-     * @spec openspec/changes/retrofit-2026-05-25-rule-pipeline/tasks.md#task-5
+     * @spec openspec/specs/rule-pipeline/spec.md
      */
     public function extendExternalUrl(ObjectEntity $rule, array $data): array|JSONResponse
     {

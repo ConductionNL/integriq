@@ -27,6 +27,9 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\IwmoIjwProviderException;
 use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
+use OCA\OpenConnector\Service\Mtls\MtlsConfigResolver;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportOptionsBuilder;
+use OCA\OpenConnector\Service\Mtls\MtlsTransportService;
 use OCP\IL10N;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
@@ -108,7 +111,9 @@ class IStandaardenClientTest extends TestCase
             new Client(['handler' => $stack]),
             $this->crypto,
             $this->l,
-            $this->logger
+            $this->logger,
+            new MtlsConfigResolver($this->crypto),
+            new MtlsTransportService(new MtlsTransportOptionsBuilder(), $this->logger)
         );
 
     }//end buildClient()
@@ -153,7 +158,7 @@ class IStandaardenClientTest extends TestCase
      */
     public function testSendHonoursConfiguredAuthScheme(): void
     {
-        $configuration                             = $this->configuration;
+        $configuration = $this->configuration;
         $configuration['authentication']['scheme'] = 'Token';
 
         $client = $this->buildClient([new Response(200, [], 'IWMO-abc123')]);
@@ -292,4 +297,91 @@ class IStandaardenClientTest extends TestCase
         $client->send(['baseUrl' => 'https://example.nl'], 'Wmo303', '<Bericht/>');
 
     }//end testSendThrowsWhenTokenMissing()
+
+    /**
+     * send() routes through MtlsTransportService (not the plain Guzzle
+     * client) when `authentication.mode=mtls` is configured — proves the
+     * mTLS capability is actually invoked, not merely built (orphaned-
+     * capability rule).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-istandaardenclient-routes-through-the-mtls-transport-when-configured
+     */
+    public function testSendRoutesThroughMtlsTransportWhenConfigured(): void
+    {
+        $mtlsTransport = $this->createMock(MtlsTransportService::class);
+        $mtlsTransport->expects($this->once())
+            ->method('request')
+            ->with(
+                $this->anything(),
+                'POST',
+                'https://istandaarden.example.nl/api/v1/berichten',
+                $this->anything(),
+                $this->isInstanceOf(\OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle::class)
+            )
+            ->willReturn(new \GuzzleHttp\Psr7\Response(200, [], 'IWMO-mtls-ref'));
+
+        $mtlsConfigResolver = $this->createMock(MtlsConfigResolver::class);
+        $mtlsConfigResolver->method('isMtlsConfigured')->willReturn(true);
+        $mtlsConfigResolver->method('resolve')->willReturn(
+            new \OCA\OpenConnector\Service\Mtls\MtlsCertificateBundle(
+                certificatePem: 'CERT',
+                privateKeyPem: 'KEY'
+            )
+        );
+
+        $client = new IStandaardenClient(
+            new Client(),
+            $this->crypto,
+            $this->l,
+            $this->logger,
+            $mtlsConfigResolver,
+            $mtlsTransport
+        );
+
+        $ref = $client->send(
+            [
+                'baseUrl'        => 'https://istandaarden.example.nl/api/v1',
+                'authentication' => ['mode' => 'mtls', 'mtls' => []],
+            ],
+            'Wmo303',
+            '<Bericht/>'
+        );
+
+        $this->assertSame('IWMO-mtls-ref', $ref);
+
+    }//end testSendRoutesThroughMtlsTransportWhenConfigured()
+
+    /**
+     * send() never routes through MtlsTransportService when `mode=token`
+     * (the default) — proves token mode is unchanged, mirrors the
+     * orphaned-capability rule in the other direction.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/mtls-client-certificate-transport/spec.md#scenario-token-mode-is-unchanged-when-mtls-is-not-configured
+     */
+    public function testSendNeverRoutesThroughMtlsTransportInTokenMode(): void
+    {
+        $mtlsTransport = $this->createMock(MtlsTransportService::class);
+        $mtlsTransport->expects($this->never())->method('request');
+
+        $mock  = new MockHandler([new Response(200, [], 'IWMO-token-ref')]);
+        $stack = HandlerStack::create($mock);
+
+        $client = new IStandaardenClient(
+            new Client(['handler' => $stack]),
+            $this->crypto,
+            $this->l,
+            $this->logger,
+            new MtlsConfigResolver($this->crypto),
+            $mtlsTransport
+        );
+
+        $ref = $client->send($this->configuration, 'Wmo303', '<Bericht/>');
+
+        $this->assertSame('IWMO-token-ref', $ref);
+
+    }//end testSendNeverRoutesThroughMtlsTransportInTokenMode()
 }//end class

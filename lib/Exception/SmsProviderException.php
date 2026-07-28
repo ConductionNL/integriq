@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any SMS channel provider or configuration failure.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 class SmsProviderException extends Exception
 {

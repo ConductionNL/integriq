@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenConnector\Exception;
 /**
  * Thrown when the aggregator reports a revoked/unusable PSD2 consent.
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md#requirement-consent-lifecycle-cloudevents-for-consumer-state-transitions-req-005
  */
 class Psd2ConsentRevokedException extends Psd2ProviderException
 {

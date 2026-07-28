@@ -11,16 +11,16 @@
 		<label class="action-form__label">{{ t('openconnector', 'Lock action') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Lock action')"
-			:value="selectedAction"
+			:model-value="selectedAction"
 			:options="actionOptions"
 			:clearable="false"
 			@input="onActionPick" />
 		<NcTextField
 			:label="t('openconnector', 'Duration (seconds, default 3600)')"
 			type="number"
-			:value="value.duration != null ? String(value.duration) : ''"
+			:model-value="value.duration != null ? String(value.duration) : ''"
 			placeholder="3600"
-			@update:value="onDurationInput" />
+			@update:model-value="onDurationInput" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'Lock or unlock the object identified by the request. Duration only applies to lock; unlock ignores it.') }}
 		</span>
@@ -41,22 +41,22 @@ export default {
 	components: { NcSelect, NcTextField },
 	props: { ...valueProp },
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		actionOptions() {
 			return LOCK_ACTIONS.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedAction() {
 			return this.actionOptions.find((opt) => opt.id === this.value.action) || null
 		},
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onActionPick(option) {
 			this.patch('action', option?.id || '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onDurationInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

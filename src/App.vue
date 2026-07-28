@@ -5,6 +5,7 @@
 			:ai-companion="true"
 			:manifest="manifest"
 			:custom-components="customComponents"
+			:registry="registry"
 			:page-types="pageTypes"
 			app-id="openconnector"
 			:translate="translateForApp"
@@ -40,6 +41,16 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+		/**
+		 * V2 component registry (ADR-036) — map of registry-key →
+		 * `{ kind, component }`. Forwarded verbatim to CnAppRoot, which resolves
+		 * `type:"custom"` page components against the `kind:'page'` entries.
+		 * Replaces the deprecated `customComponents` string map for v2 manifests.
+		 */
+		registry: {
+			type: Object,
+			default: () => ({}),
+		},
 		pageTypes: {
 			type: Object,
 			default: () => ({}),
@@ -47,7 +58,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		permissions() {
 			const base = window.OC?.currentUser?.permissions ?? []
 			// CnAppNav's permission filter is an array-includes check; Nextcloud
@@ -69,7 +80,7 @@ export default {
 		 * @param {string} key Translation key.
 		 * @return {string} Translated string (or the key on miss).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-1
+		 * @spec openspec/specs/app-shell-and-logs-ui/spec.md
 		 */
 		translateForApp(key) {
 			return ncT('openconnector', key)

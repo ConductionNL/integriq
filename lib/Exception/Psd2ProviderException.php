@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Exception;
 /**
  * Thrown on any PSD2 AIS aggregator provider or configuration failure.
  *
- * @spec openspec/changes/psd2-ais-bank-feed-connector/specs/psd2-ais-bank-feed-connector/spec.md
+ * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
 class Psd2ProviderException extends Exception
 {

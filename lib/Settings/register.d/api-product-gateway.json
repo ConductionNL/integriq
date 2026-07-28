@@ -1,0 +1,372 @@
+{
+  "$comment": "ADR-037 register fragment (api-product-gateway). Declares the api_product and api_product_subscription schemas backing the API Products gateway layer (a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier), and deep-merges the fields needed to support them onto three pre-existing schemas: call_log (product/endpoint/responseTime — general-but-scoped inbound observability, endpoint-runtime REQ-EP-009) and approval_request (subscriptionId — the subscription-approval creation seam, api-product-gateway REQ-APG-004 / design.md Decision 4). See openspec/changes/archive/2026-07-15-api-product-gateway/design.md#database-changes and specs/api-product-gateway/spec.md.",
+  "components": {
+    "registers": {
+      "openconnector": {
+        "schemas": ["api_product", "api_product_subscription"]
+      }
+    },
+    "schemas": {
+      "api_product": {
+        "slug": "api_product",
+        "title": "API Product",
+        "icon": "PackageVariantClosed",
+        "version": "1.0.0",
+        "summary": "A named, versioned bundle of existing Endpoints a Consumer can discover and subscribe to at a rate-limit tier",
+        "description": "Groups existing Endpoint uuids into a discoverable, subscribable unit with named tiers, an optional approval gate per tier, and version-deprecation signalling (RFC 8594 Sunset/Deprecation headers). One row per (productSlug, version) pair — see design.md Decision 1. See openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001.",
+        "required": ["name", "productSlug"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable product name shown in the API Products UI",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Longer-form description of what this product offers",
+            "title": "Description"
+          },
+          "productSlug": {
+            "type": "string",
+            "description": "Stable slug grouping every version-row of the same logical product (design.md Decision 1) — e.g. 'woo-publications'",
+            "title": "Product Slug"
+          },
+          "version": {
+            "type": "string",
+            "default": "1.0.0",
+            "description": "Semver version of this product row",
+            "title": "Version"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["public", "private"],
+            "default": "public",
+            "description": "Discoverability of the product in the API Products listing",
+            "title": "Visibility"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "deprecated"],
+            "default": "active",
+            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594, REQ-APG-006)",
+            "title": "Status"
+          },
+          "sunsetDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Required when status is 'deprecated' — rendered as the RFC 8594 Sunset header (HTTP-date format) on every response served through this product's endpoints",
+            "title": "Sunset Date"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Uuids of existing Endpoints grouped by this product version. Creating/updating an api_product MUST NOT create, modify, or delete the Endpoints it references (REQ-APG-001).",
+            "title": "Endpoints"
+          },
+          "tiers": {
+            "type": "object",
+            "description": "Map of tierName -> {rateLimit:{requestsPerWindow,windowSeconds}, quota:{limit,period}, requiresApproval:boolean} — same rateLimit/quota shape as the consumer schema (REQ-APG-005). A tier with requiresApproval:true gates subscription via ApprovalService::suspendForSubscription() (REQ-APG-004).",
+            "title": "Tiers",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "rateLimit": {
+                  "type": "object",
+                  "description": "Optional inbound short-window burst limiter for this tier. Absent = unlimited.",
+                  "title": "Rate Limit",
+                  "properties": {
+                    "requestsPerWindow": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Maximum number of requests allowed within one window",
+                      "title": "Requests per window"
+                    },
+                    "windowSeconds": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Length of the rate-limit window in seconds",
+                      "title": "Window (seconds)"
+                    }
+                  }
+                },
+                "quota": {
+                  "type": "object",
+                  "description": "Optional inbound long-horizon fair-use cap for this tier. Absent = unlimited.",
+                  "title": "Quota",
+                  "properties": {
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Maximum number of requests allowed within one period",
+                      "title": "Quota limit"
+                    },
+                    "period": {
+                      "type": "string",
+                      "enum": ["hour", "day", "month"],
+                      "description": "Calendar period the quota resets on",
+                      "title": "Quota period"
+                    }
+                  }
+                },
+                "requiresApproval": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "When true, subscribing at this tier creates a pending_approval subscription gated by ApprovalService::suspendForSubscription() instead of activating immediately",
+                  "title": "Requires Approval"
+                },
+                "approverGroup": {
+                  "type": "string",
+                  "description": "NC group id notified when a subscription to this tier suspends pending approval (required when requiresApproval is true)",
+                  "title": "Approver Group"
+                }
+              }
+            }
+          },
+          "defaultTier": {
+            "type": "string",
+            "description": "The tier name new subscriptions default to when none is explicitly named",
+            "title": "Default Tier"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At (OR)"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "openconnector",
+              "schema": "api_product",
+              "slug": "api-product-woo-publications-v1"
+            },
+            "name": "WOO Publications API",
+            "description": "Publish and query WOO publication records — deprecated version, migrate to v2.0.0",
+            "productSlug": "woo-publications",
+            "version": "1.0.0",
+            "visibility": "public",
+            "status": "deprecated",
+            "sunsetDate": "2026-10-01T00:00:00+00:00",
+            "endpoints": ["@ref:endpoint:ping"],
+            "tiers": {
+              "free": { "rateLimit": { "requestsPerWindow": 60, "windowSeconds": 60 } },
+              "gold": { "rateLimit": { "requestsPerWindow": 600, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
+            },
+            "defaultTier": "free"
+          },
+          {
+            "@self": {
+              "register": "openconnector",
+              "schema": "api_product",
+              "slug": "api-product-woo-publications-v2"
+            },
+            "name": "WOO Publications API",
+            "description": "Publish and query WOO publication records",
+            "productSlug": "woo-publications",
+            "version": "2.0.0",
+            "visibility": "public",
+            "status": "active",
+            "endpoints": ["@ref:endpoint:echo"],
+            "tiers": {
+              "free": { "rateLimit": { "requestsPerWindow": 60, "windowSeconds": 60 } },
+              "gold": { "rateLimit": { "requestsPerWindow": 600, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
+            },
+            "defaultTier": "free"
+          },
+          {
+            "@self": {
+              "register": "openconnector",
+              "schema": "api_product",
+              "slug": "api-product-kvk-lookup-v1"
+            },
+            "name": "KVK Lookup API",
+            "description": "Look up organisation records by KVK number",
+            "productSlug": "kvk-lookup",
+            "version": "1.0.0",
+            "visibility": "private",
+            "status": "active",
+            "endpoints": ["@ref:endpoint:version"],
+            "tiers": {
+              "gold": { "rateLimit": { "requestsPerWindow": 1000, "windowSeconds": 60 }, "requiresApproval": true, "approverGroup": "gateway-approvers" }
+            },
+            "defaultTier": "gold"
+          }
+        ],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "api_product_subscription": {
+        "slug": "api_product_subscription",
+        "title": "API Product Subscription",
+        "icon": "AccountArrowRightOutline",
+        "version": "1.0.0",
+        "summary": "A Consumer's subscription to an API Product at a named tier",
+        "description": "Gates a Consumer's access to a product's endpoints at a named rate-limit tier, optionally behind a human-in-the-loop approval gate reusing ApprovalService's generic approval_request state machine. See openspec/specs/api-product-gateway/spec.md#requirement-consumer-subscribes-to-an-api-product-at-a-tier-req-apg-003.",
+        "required": ["product", "consumer", "tier"],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "product": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/api_product",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the subscribed api_product (UUID; many-to-one; onDelete=CASCADE — when the product is destroyed, its subscriptions cascade-delete with it)",
+            "title": "Product"
+          },
+          "consumer": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/consumer",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the subscribing Consumer (UUID; many-to-one; onDelete=CASCADE — when the Consumer is destroyed, its subscriptions cascade-delete with it)",
+            "title": "Consumer"
+          },
+          "tier": {
+            "type": "string",
+            "description": "The subscribed tier's name, referencing a key of the product's tiers map",
+            "title": "Tier"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending_approval", "active", "rejected", "revoked"],
+            "default": "pending_approval",
+            "description": "State machine: pending_approval -> active|rejected, or active -> revoked. A subscription that is not active does not receive its tier's rate-limit/quota policy (REQ-APG-005).",
+            "title": "Status"
+          },
+          "approvalRequestId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/approval_request",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the approval_request created by ApprovalService::suspendForSubscription() when the tier requires approval (UUID; many-to-one; onDelete=SET_NULL); null for a tier that activates immediately",
+            "title": "Approval Request"
+          },
+          "requesterUserId": {
+            "type": "string",
+            "description": "NC user id who created the subscription, or null for an unauthenticated/API-key caller",
+            "title": "Requester User ID"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the subscription was created",
+            "title": "Created At"
+          },
+          "activatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the subscription became active (immediately on creation for a no-approval tier, or on approval for a gated tier)",
+            "title": "Activated At"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp the subscription was revoked, when applicable",
+            "title": "Revoked At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At (OR)"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "@self": {
+              "register": "openconnector",
+              "schema": "api_product_subscription",
+              "slug": "sub-acme-woo-v2-free"
+            },
+            "product": "@ref:api_product:api-product-woo-publications-v2",
+            "consumer": "@ref:consumer:partner-portal",
+            "tier": "free",
+            "status": "active",
+            "requesterUserId": "admin",
+            "createdAt": "2026-07-10T09:00:00+00:00",
+            "activatedAt": "2026-07-10T09:00:00+00:00"
+          },
+          {
+            "@self": {
+              "register": "openconnector",
+              "schema": "api_product_subscription",
+              "slug": "sub-acme-kvk-gold-pending"
+            },
+            "product": "@ref:api_product:api-product-kvk-lookup-v1",
+            "consumer": "@ref:consumer:partner-portal",
+            "tier": "gold",
+            "status": "pending_approval",
+            "requesterUserId": "admin",
+            "createdAt": "2026-07-14T10:00:00+00:00"
+          }
+        ],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "call_log": {
+        "properties": {
+          "product": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/api_product",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the api_product an inbound request was dispatched through (UUID; many-to-one; onDelete=SET_NULL — when the product is destroyed, its call_log rows remain for audit but lose their product pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime REQ-EP-009).",
+            "title": "API Product"
+          },
+          "endpoint": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/endpoint",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the dispatched Endpoint (UUID; many-to-one; onDelete=SET_NULL — when the endpoint is destroyed, its call_log rows remain for audit but lose their endpoint pointer). Only set on inbound rows for product-attached endpoints (endpoint-runtime REQ-EP-009).",
+            "title": "Endpoint"
+          },
+          "responseTime": {
+            "type": "integer",
+            "description": "Wall-clock duration in milliseconds from dispatch start to response ready. Top-level (unlike the outbound path's nested response.responseTime) so it is directly aggregatable for the gateway analytics percentile queries (api-product-gateway REQ-APG-007, prometheus-metrics REQ-PROM-013).",
+            "title": "Response Time (ms)"
+          }
+        }
+      },
+      "approval_request": {
+        "properties": {
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/api_product_subscription",
+            "x-openregister-onDelete": "SET_NULL",
+            "description": "FK to the gated api_product_subscription (subscription-approval case; set instead of endpointId/ruleId/synchronizationId). See api-product-gateway REQ-APG-004, ApprovalService::suspendForSubscription().",
+            "title": "Subscription"
+          }
+        }
+      }
+    }
+  }
+}

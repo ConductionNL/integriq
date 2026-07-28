@@ -54,9 +54,9 @@
 			</div>
 			<NcTextField
 				:label="t('openconnector', 'Value for {column}', { column: column.title })"
-				:value="mappedValue(column.title)"
+				:model-value="mappedValue(column.title)"
 				:placeholder="t('openconnector', 'Source field or expression')"
-				@update:value="(value) => onMappingUpdate(column.title, value)" />
+				@update:model-value="(value) => onMappingUpdate(column.title, value)" />
 		</div>
 	</div>
 </template>

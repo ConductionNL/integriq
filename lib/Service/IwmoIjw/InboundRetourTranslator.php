@@ -16,10 +16,14 @@
  * fall back to an unrelated OR case (see design.md "Literal-leak guard").
  *
  * XXE hardening: the retour XML originates from an external party (a real
- * GGk/VECOZO delivery). Parsing uses `LIBXML_NONET` and never
- * `LIBXML_NOENT`/`LIBXML_DTDLOAD`, so external entity expansion stays
- * disabled (libxml's default posture since 2.9) — a malicious retour body
- * cannot read local files or make outbound requests via XML entities.
+ * GGk/VECOZO delivery). Parsing is delegated to the shared
+ * {@see \OCA\OpenConnector\Service\Stuf\StufXmlParser} (`LIBXML_NONET`
+ * only, never `LIBXML_NOENT`/`LIBXML_DTDLOAD` — external entity expansion
+ * stays disabled, libxml's default posture since 2.9) — extracted here as
+ * part of `stuf-zkn-bridge` so this class and the sibling StUF-ZKN
+ * translator share one XXE-hardening implementation instead of two that
+ * could silently drift. A malicious retour body cannot read local files or
+ * make outbound requests via XML entities.
  *
  * @category Service
  * @package  OCA\OpenConnector\Service\IwmoIjw
@@ -33,7 +37,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
 
 declare(strict_types=1);
@@ -41,16 +45,25 @@ declare(strict_types=1);
 namespace OCA\OpenConnector\Service\IwmoIjw;
 
 use OCA\OpenConnector\Exception\IwmoIjwTranslationException;
+use OCA\OpenConnector\Service\Stuf\StufXmlParser;
 use SimpleXMLElement;
-use Throwable;
 
 /**
  * Retour XML envelope -> OR case status update.
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
  */
 class InboundRetourTranslator
 {
+    /**
+     * Constructor.
+     *
+     * @param StufXmlParser $xmlParser Shared XXE-hardened XML parser.
+     */
+    public function __construct(private readonly StufXmlParser $xmlParser=new StufXmlParser())
+    {
+
+    }//end __construct()
 
     /**
      * Recognised retour berichttype numeric suffixes.
@@ -77,7 +90,7 @@ class InboundRetourTranslator
      * @throws IwmoIjwTranslationException When the XML is malformed, the `kenmerk` is missing/empty,
      *                                     or the berichtcode is not one of the recognised retour codes.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-a-wmo304-acceptance-retour-maps-to-status-accepted
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-a-wmo304-acceptance-retour-maps-to-status-accepted
      */
     public function translate(string $xml): array
     {
@@ -212,9 +225,8 @@ class InboundRetourTranslator
     }//end extractNumericCode()
 
     /**
-     * Safely parse the retour XML — `LIBXML_NONET` only, never
-     * `LIBXML_NOENT`/`LIBXML_DTDLOAD`, so external entity expansion stays
-     * disabled (XXE hardening; see class docblock).
+     * Safely parse the retour XML via the shared, XXE-hardened
+     * {@see StufXmlParser} (see class docblock).
      *
      * @param string $xml The raw retour envelope XML.
      *
@@ -228,22 +240,8 @@ class InboundRetourTranslator
             throw new IwmoIjwTranslationException(message: 'Retour envelope is empty.');
         }
 
-        $previous = libxml_use_internal_errors(true);
-        try {
-            $root = simplexml_load_string($xml, SimpleXMLElement::class, LIBXML_NONET);
-        } catch (Throwable $exception) {
-            libxml_clear_errors();
-            libxml_use_internal_errors($previous);
-            throw new IwmoIjwTranslationException(
-                message: 'Retour envelope could not be parsed as XML: '.$exception->getMessage()
-            );
-        }
-
-        $errors = libxml_get_errors();
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-
-        if ($root === false || $errors !== []) {
+        $root = $this->xmlParser->parse(xml: $xml);
+        if ($root === null) {
             throw new IwmoIjwTranslationException(message: 'Retour envelope is not well-formed XML.');
         }
 

@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md
+ * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  * NotAuthorizedException/Throwable in addition to the controller's normal HTTP/auth
  * collaborators (mirrors PeppolController's error-mapping breadth).
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md
+ * @spec openspec/specs/open-formulieren-intake/spec.md
  */
 class OpenFormulierenController extends Controller
 {
@@ -98,7 +98,7 @@ class OpenFormulierenController extends Controller
      *
      * @return JSONResponse The persisted `openformulieren_submission` record, or a 400/401 error envelope.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-signed-inbound-submission-webhook-req-001
      */
     #[NoCSRFRequired]
     #[PublicPage]
@@ -179,7 +179,7 @@ class OpenFormulierenController extends Controller
      *
      * @return JSONResponse The submission record, or a 401/404 error envelope.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-openformulieren_submission-lifecycle-with-per-submission-isolation-req-003
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-openformulieren-submission-lifecycle-with-per-submission-isolation-req-003
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -221,7 +221,7 @@ class OpenFormulierenController extends Controller
      *
      * @return JSONResponse The engine's execute() result, or a 400/401/403/404/409 error envelope.
      *
-     * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-004
+     * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-declared-ns-case-handoff-executed-by-a-real-authenticated-actor-req-004
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

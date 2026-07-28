@@ -50,7 +50,7 @@ use OCP\IRequest;
 /**
  * Public declarative health endpoint with an OpenRegister dependency guard.
  *
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md
+ * @spec openspec/specs/apphost-adoption/spec.md
  */
 class HealthController extends Controller
 {

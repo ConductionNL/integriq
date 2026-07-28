@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 ### Added
+- Read-only MCP tool surface (ADR-063): 8 schemas (endpoint, job, mapping,
+  synchronization, synchronization_contract, call_log, job_log,
+  synchronization_log) declare an `x-openregister-mcp` dialect exposing only
+  `search` and `get` verbs, so AI agents can query integration state via MCP.
+  Credential-bearing schemas (source, consumer) are deliberately excluded; no
+  write/destructive verbs are exposed.
 - LTI Tool-role governance layer: a `status` (`pending | approved | suspended`)
   trust gate on `lti_platform`/`lti_tool` — a registration cannot complete a
   login/launch/token-issuance flow until an admin-gated `approve()` action
@@ -51,6 +57,16 @@
   `klantcontacten`/`partijen`/`betrokkenen`/`digitaleadressen` and the
   composite `maak-klantcontact` onto pipelinq's canonical schema.org CRM
   schemas. (vng-klantinteracties-adapter)
+
+### Changed
+- i18n(schema): re-authored the 24 remaining Dutch-language schema property
+  titles to English across `event_subscription` (the `notificaties` action
+  block), `ris_sync_record`, `dso_verzoek`/`dso_message`,
+  `notificaties_abonnement`, `kiss_klantcontact`, `iwmo_ijw_message` and
+  `stuf_message` — titles are the canonical UI label source and must be
+  English-authored; Dutch display is now carried by `l10n/nl.json`/`nl.js`.
+  Property keys and all other schema fields are unchanged. Register
+  `info.version` bumped 1.1.0 → 1.1.1.
 
 ## 0.1.7 – 2024-09-19
 ### Added

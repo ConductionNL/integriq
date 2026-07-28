@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md
+ * @spec openspec/specs/live-payment-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Exception;
 /**
  * Thrown on any payment-provider or configuration failure.
  *
- * @spec openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md
+ * @spec openspec/specs/live-payment-providers/spec.md
  */
 class PaymentProviderException extends Exception
 {

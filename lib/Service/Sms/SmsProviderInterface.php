@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenConnector\Exception\SmsProviderException;
 /**
  * An SMS channel binding: send-by-template/body + delivery-status lookup.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 interface SmsProviderInterface
 {
@@ -46,7 +46,7 @@ interface SmsProviderInterface
      *
      * @return string The provider identifier.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
      */
     public function getProviderId(): string;
 
@@ -55,7 +55,7 @@ interface SmsProviderInterface
      *
      * @return string The provider display name.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
      */
     public function getProviderName(): string;
 
@@ -68,7 +68,7 @@ interface SmsProviderInterface
      *
      * @return array<string, mixed> A JSON Schema (object) fragment.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract-req-001
      */
     public function getConfigSchema(): array;
 
@@ -86,7 +86,7 @@ interface SmsProviderInterface
      *
      * @throws SmsProviderException When the provider is unreachable, rejects the request, or is misconfigured.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-generic-sms-provider-contract
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function send(array $sourceConfiguration, string $to, string $body, array $options=[]): DeliveryResult;
 
@@ -100,7 +100,7 @@ interface SmsProviderInterface
      *
      * @throws SmsProviderException When the provider is unreachable, the message id is unknown, or a config error occurs.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult;
 }//end interface

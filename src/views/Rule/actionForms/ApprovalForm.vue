@@ -17,7 +17,7 @@
 		<NcSelect
 			:input-id="'rule-action-approval-group-' + uid"
 			:input-label="t('openconnector', 'Approver group')"
-			:value="selectedGroup"
+			:model-value="selectedGroup"
 			:options="groupOptions"
 			:loading="loadingGroups"
 			:clearable="false"
@@ -27,9 +27,9 @@
 		<NcTextField
 			:label="t('openconnector', 'Time to live (seconds, default 86400)')"
 			type="number"
-			:value="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
+			:model-value="value.ttlSeconds != null ? String(value.ttlSeconds) : ''"
 			placeholder="86400"
-			@update:value="onTtlInput" />
+			@update:model-value="onTtlInput" />
 
 		<label class="action-form__label" :for="'rule-action-approval-reject-' + uid">
 			{{ t('openconnector', 'On reject') }}
@@ -37,7 +37,7 @@
 		<NcSelect
 			:input-id="'rule-action-approval-reject-' + uid"
 			:input-label="t('openconnector', 'On reject')"
-			:value="selectedOutcome('onReject')"
+			:model-value="selectedOutcome('onReject')"
 			:options="outcomeOptions"
 			:clearable="false"
 			@input="(opt) => onOutcomePick('onReject', opt)" />
@@ -48,7 +48,7 @@
 		<NcSelect
 			:input-id="'rule-action-approval-timeout-' + uid"
 			:input-label="t('openconnector', 'On timeout')"
-			:value="selectedOutcome('onTimeout')"
+			:model-value="selectedOutcome('onTimeout')"
 			:options="outcomeOptions"
 			:clearable="false"
 			@input="(opt) => onOutcomePick('onTimeout', opt)" />
@@ -85,17 +85,17 @@ export default {
 		}
 	},
 	computed: {
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		groupOptions() {
 			return this.groups.map((gid) => ({ id: gid, label: gid }))
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		selectedGroup() {
 			const gid = this.value.approverGroup
 			if (!gid) return null
 			return this.groupOptions.find((opt) => opt.id === gid) || { id: gid, label: gid }
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		outcomeOptions() {
 			return OUTCOMES.map((row) => ({ id: row.id, label: this.t('openconnector', row.label) }))
 		},
@@ -107,7 +107,7 @@ export default {
 		patch: patchMethod(),
 		/**
 		 * Load NC groups for the approver-group picker.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async loadGroups() {
 			this.loadingGroups = true
@@ -126,21 +126,21 @@ export default {
 		 * Resolve the currently-selected option for an outcome field.
 		 * @param {string} field onReject | onTimeout.
 		 * @return {object|null}
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		selectedOutcome(field) {
 			const id = this.value[field] || 'error'
 			return this.outcomeOptions.find((opt) => opt.id === id) || null
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		onGroupPick(option) {
 			this.patch('approverGroup', option?.id || '')
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		onOutcomePick(field, option) {
 			this.patch(field, option?.id || 'error')
 		},
-		/** @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui */
+		/** @spec openspec/specs/approval-workflow/spec.md */
 		onTtlInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

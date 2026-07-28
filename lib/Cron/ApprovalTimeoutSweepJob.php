@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  *
  * @psalm-api
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalTimeoutSweepJob extends TimedJob
 {
@@ -60,7 +60,7 @@ class ApprovalTimeoutSweepJob extends TimedJob
      * @param ApprovalService $approvalService The approval state-machine service.
      * @param LoggerInterface $logger          Logger for sweep outcomes.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -90,7 +90,7 @@ class ApprovalTimeoutSweepJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function run(mixed $argument): void
     {

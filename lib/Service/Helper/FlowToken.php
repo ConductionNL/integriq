@@ -96,7 +96,7 @@ class FlowToken
      * @param array       $syncOutputOriginal Original sync output snapshot.
      * @param string|null $path               Request path used when serialising a Request.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function __construct(
         IRequest|array $requestOriginal=[],
@@ -127,7 +127,7 @@ class FlowToken
      *
      * @return array Map of lowercase header name to value.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     private function getHeaders(array $server, bool $proxyHeaders=false): array
     {
@@ -167,7 +167,7 @@ class FlowToken
      *
      * @return string The raw content body for a http request.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     private function getRawContent(): string
     {
@@ -182,7 +182,7 @@ class FlowToken
      *
      * @return boolean True if content is valid XML.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     private function looksLikeXml(string $content): bool
     {
@@ -206,7 +206,7 @@ class FlowToken
      *
      * @return mixed Parsed data (array for JSON/XML) or original string.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     private function parseContent(IRequest $request): mixed
     {
@@ -259,7 +259,7 @@ class FlowToken
      *
      * @return array The stored array shape.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setRequestOriginal(array|IRequest $requestOriginal, ?string $path=null): array
     {
@@ -284,7 +284,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-1
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getRequestOriginal(): array
     {
@@ -299,7 +299,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setRequestAmended(array $requestAmended): array
     {
@@ -314,7 +314,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getRequestAmended(): array
     {
@@ -329,7 +329,7 @@ class FlowToken
      *
      * @return array The stored array shape.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-2
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setResponseOriginal(array|Response $responseOriginal): array
     {
@@ -359,7 +359,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-2
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getResponseOriginal(): array
     {
@@ -374,7 +374,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setResponseAmended(array $responseAmended): array
     {
@@ -389,7 +389,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getResponseAmended(): array
     {
@@ -404,7 +404,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setSyncInputOriginal(array $syncInputOriginal): array
     {
@@ -419,7 +419,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getSyncInputOriginal(): array
     {
@@ -434,7 +434,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setSyncInputAmended(array $syncInputAmended): array
     {
@@ -448,7 +448,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getSyncInputAmended(): array
     {
@@ -463,7 +463,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setSyncOutputOriginal(array $syncOutputOriginal): array
     {
@@ -477,7 +477,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-3
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getSyncOutputOriginal(): array
     {
@@ -492,7 +492,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function setSyncOutputAmended(array $syncOutputAmended): array
     {
@@ -506,7 +506,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-4
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function getSyncOutputAmended(): array
     {
@@ -519,7 +519,7 @@ class FlowToken
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-flow-token-helper/tasks.md#task-5
+     * @spec openspec/specs/flow-token-helper/spec.md
      */
     public function __serialize(): array
     {

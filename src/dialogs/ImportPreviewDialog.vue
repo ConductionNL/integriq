@@ -77,7 +77,7 @@
 							<code>{{ entry.type }}</code> {{ entry.slug }} → {{ entry.field }} = "{{ entry.value }}"
 						</li>
 					</ul>
-					<NcCheckboxRadioSwitch :checked.sync="unresolvedAcknowledged" data-testid="unresolved-ack">
+					<NcCheckboxRadioSwitch v-model="unresolvedAcknowledged" data-testid="unresolved-ack">
 						{{ t('openconnector', 'I understand these references will stay dangling and want to import anyway') }}
 					</NcCheckboxRadioSwitch>
 				</NcNoteCard>

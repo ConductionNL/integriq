@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 
 declare(strict_types=1);
@@ -39,6 +39,7 @@ use OCA\OpenConnector\Service\IwmoIjw\IStandaardenClient;
 use OCA\OpenConnector\Service\IwmoIjw\IwmoIjwProviderInterface;
 use OCA\OpenConnector\Service\IwmoIjw\LogIwmoIjwProvider;
 use OCA\OpenConnector\Service\IwmoIjw\OutboundBerichtTranslator;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\IL10N;
@@ -52,7 +53,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
  */
 class IwmoIjwSyncService
 {
@@ -95,6 +96,7 @@ class IwmoIjwSyncService
      * @param InboundRetourTranslator   $inboundTranslator  Translates a retour envelope into a status update.
      * @param IL10N                     $l                  The localization service.
      * @param LoggerInterface           $logger             Logger for non-fatal diagnostics.
+     * @param RawSourceResolver         $rawSourceResolver  Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -104,6 +106,7 @@ class IwmoIjwSyncService
         private readonly InboundRetourTranslator $inboundTranslator,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -123,7 +126,7 @@ class IwmoIjwSyncService
      * @throws IwmoIjwProviderException    When no active source is configured, or the transport fails
      *                                     (a `status: failed` `iwmo_ijw_message` IS persisted first).
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-per-message-audit-persistence-and-isolated-retry-req-005
      */
     public function sendBericht(array $input): array
     {
@@ -197,7 +200,7 @@ class IwmoIjwSyncService
      *
      * @return void
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-inbound-retour-translation-to-an-or-case-status-update-req-003
      */
     public function receiveRetour(string $rawXml): void
     {
@@ -272,7 +275,7 @@ class IwmoIjwSyncService
      *
      * @return integer The number of rows successfully retried.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#scenario-one-failing-retry-does-not-abort-the-sweep
      */
     public function retryFailed(): int
     {
@@ -373,7 +376,20 @@ class IwmoIjwSyncService
      */
     private function updateLinkedCase(string $caseReference, string $caseRegister, string $caseSchema, array $update): void
     {
-        $existing = $this->objectService->find($caseReference, $caseRegister, $caseSchema);
+        // NAMED arguments are mandatory. ObjectService::find()'s real signature is
+        // `find($id, ?array $_extend, bool $files, $register, $schema, ...)` — the
+        // 2nd/3rd positional slots are `_extend`/`files`, NOT register/schema. This
+        // call passed them positionally, which binds a register SLUG into `?array
+        // $_extend` and a schema slug into `bool $files` (a TypeError in
+        // production). It looked correct because `tests/stubs/.../ObjectService.php`
+        // declares a DRIFTED signature — `find($id, $register, $schema, ...)` — so
+        // the suite stayed green while the path was dead. Check the receiver's REAL
+        // class, not the stub.
+        $existing = $this->objectService->find(
+            id: $caseReference,
+            register: $caseRegister,
+            schema: $caseSchema
+        );
         if ($existing === null) {
             $this->logger->warning(
                 $this->l->t('iWMO/iJW retour linked case could not be found; skipped'),
@@ -404,11 +420,18 @@ class IwmoIjwSyncService
     /**
      * Resolve the single active iWMO/iJW source (`type=iwmo-ijw`, `isEnabled=true`).
      *
-     * @return ObjectEntity The resolved source.
+     * `findAll()` LOCATES the source but ALWAYS renders it — it has no `_render`
+     * parameter and calls `renderEntities()` unconditionally — so the credentials
+     * {@see IStandaardenClient} needs are stripped by the write-only boundary
+     * (ocon#242 / openregister#459). {@see RawSourceResolver::resolveRaw()} re-reads
+     * the located uuid with `_render: false`, the ONLY read that survives it.
+     * `_rbac: false` does NOT — the strip is schema-gated (the ocon#212/#226 lesson).
+     *
+     * @return ObjectEntity The resolved source, raw (credentials intact).
      *
      * @throws IwmoIjwProviderException When no active iWMO/iJW source is configured.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-push-endpoint-and-signed-inbound-retour-receiver-req-004
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -432,7 +455,7 @@ class IwmoIjwSyncService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 
@@ -443,7 +466,7 @@ class IwmoIjwSyncService
      *
      * @return IwmoIjwProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/iwmo-ijw-adapter/spec.md#requirement-iwmoijw-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function resolveProvider(array $configuration): IwmoIjwProviderInterface
     {

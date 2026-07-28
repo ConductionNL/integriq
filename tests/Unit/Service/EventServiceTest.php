@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Tests\Unit\Service;
 
+use OCA\OpenConnector\Service\CallService;
 use OCA\OpenConnector\Service\EventService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenConnector\Service\WebhookSignatureService;
@@ -62,6 +64,16 @@ class EventServiceTest extends TestCase
      */
     private $jobService;
 
+    /**
+     * @var CallService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $callService;
+
+    /**
+     * @var FlowRunnerService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $flowRunnerService;
+
 
     /**
      * Set up test fixtures.
@@ -77,6 +89,8 @@ class EventServiceTest extends TestCase
         $this->clientService          = $this->createMock(IClientService::class);
         $this->synchronizationService = $this->createMock(SynchronizationService::class);
         $this->jobService             = $this->createMock(JobService::class);
+        $this->callService            = $this->createMock(CallService::class);
+        $this->flowRunnerService      = $this->createMock(FlowRunnerService::class);
 
         $this->service = new EventService(
             $this->objectService,
@@ -85,6 +99,8 @@ class EventServiceTest extends TestCase
             new WebhookSignatureService($this->logger),
             $this->synchronizationService,
             $this->jobService,
+            $this->callService,
+            $this->flowRunnerService,
         );
     }//end setUp()
 
@@ -98,6 +114,72 @@ class EventServiceTest extends TestCase
     {
         $this->assertInstanceOf(EventService::class, $this->service);
     }//end testConstructorWiresDependencies()
+
+
+    /**
+     * `attemptDelivery()` dispatches `action.kind = 'flow'` to
+     * `FlowRunnerService::run(..., triggerSource: 'event')` and returns
+     * true when the resulting flow_run's status is not `failed`/`stopped`
+     * — flow-orchestration REQ-007c (event-triggered flow) / TC-16-adjacent
+     * coverage for the `event_subscription` `action.kind` extension point.
+     *
+     * @return void
+     */
+    public function testAttemptDeliveryDispatchesFlowActionOnSuccess(): void
+    {
+        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Event flow'], 'flow-1');
+        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'completed'], 'flow-run-1');
+
+        $this->flowRunnerService->method('findFlow')->with('flow-1')->willReturn($flow);
+        $this->flowRunnerService->expects($this->once())
+            ->method('run')
+            ->with($this->identicalTo($flow), [], 'event')
+            ->willReturn($flowRun);
+
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['payload' => []], 'message-1');
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['action' => ['kind' => 'flow', 'flowId' => 'flow-1']],
+            'sub-1'
+        );
+
+        $method = new \ReflectionMethod(EventService::class, 'attemptDelivery');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $message, $subscription);
+
+        $this->assertTrue($result);
+    }//end testAttemptDeliveryDispatchesFlowActionOnSuccess()
+
+
+    /**
+     * A `stopped` flow run is recorded as a delivery failure — subject to
+     * the same retry/dead-letter machinery as any other action kind.
+     *
+     * @return void
+     */
+    public function testAttemptDeliveryDispatchesFlowActionOnFailure(): void
+    {
+        $flow    = ObjectServiceMockBuilder::objectEntity($this, ['name' => 'Event flow'], 'flow-1');
+        $flowRun = ObjectServiceMockBuilder::objectEntity($this, ['status' => 'stopped'], 'flow-run-1');
+
+        $this->flowRunnerService->method('findFlow')->willReturn($flow);
+        $this->flowRunnerService->method('run')->willReturn($flowRun);
+
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['payload' => []], 'message-1');
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['action' => ['kind' => 'flow', 'flowId' => 'flow-1']],
+            'sub-1'
+        );
+
+        $method = new \ReflectionMethod(EventService::class, 'attemptDelivery');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->service, $message, $subscription);
+
+        $this->assertFalse($result);
+    }//end testAttemptDeliveryDispatchesFlowActionOnFailure()
 
 
     /**
@@ -284,6 +366,59 @@ class EventServiceTest extends TestCase
 
 
     /**
+     * ocon#147: deliverMessage MUST read its subscription in system context.
+     *
+     * `event_subscription.protocolSettings` is `writeOnly`, so OpenRegister's
+     * render boundary strips it from every `_rbac: true` read — signingSecret
+     * and headers included. The delivery engine is not a user reading a
+     * subscription; it is the engine signing an outbound push, so it must read
+     * with `_rbac: false` exactly as CallService reads a source's credential.
+     *
+     * Without this guard the regression is SILENT: dropping `_rbac: false`
+     * leaves every test above green (they stub find() regardless of arguments)
+     * while, on a real instance, the secret vanishes from the rendered read and
+     * every webhook goes out UNSIGNED. This asserts the argument, not the stub.
+     *
+     * @return void
+     */
+    public function testDeliverMessageReadsSubscriptionInSystemContext(): void
+    {
+        $message = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            'msg-uuid'
+        );
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['style' => 'pull'],
+            'sub-uuid'
+        );
+
+        // PHPUnit hands a willReturnCallback the arguments that were actually
+        // SUPPLIED, compacted into a positional list — the `name:` bindings of a
+        // named-argument call site are not preserved. So the call is asserted as
+        // the exact argument contract it is, rather than by parameter name.
+        $capturedArgs = null;
+        $this->objectService->method('find')->willReturnCallback(
+            function (...$args) use (&$capturedArgs, $subscription) {
+                $capturedArgs = $args;
+                return $subscription;
+            }
+        );
+
+        $this->service->deliverMessage($message);
+
+        $this->assertSame(
+            ['sub-uuid', 'openconnector', 'event_subscription', false, false, false],
+            $capturedArgs,
+            'deliverMessage must read the subscription RAW — the trailing false is _render: false. '
+            .'_rbac: false alone is NOT enough (ocon#215, openregister#389): the writeOnly strip is no '
+            .'longer rbac-gated, so a rendered read loses protocolSettings and every push goes out UNSIGNED.'
+        );
+    }//end testDeliverMessageReadsSubscriptionInSystemContext()
+
+
+    /**
      * REQ-WHS-001 fail-open guard: a signing failure MUST NOT result in an
      * unsigned delivery. `sign()` throwing (e.g. a future crypto failure)
      * must abort before the HTTP POST — the client is never invoked — and
@@ -329,6 +464,8 @@ class EventServiceTest extends TestCase
             $signatureService,
             $this->synchronizationService,
             $this->jobService,
+            $this->callService,
+            $this->flowRunnerService,
         );
 
         // The HTTP client must never be asked for — no unsigned bytes leave
@@ -613,12 +750,20 @@ class EventServiceTest extends TestCase
         $this->objectService->method('findAll')->willReturn(['results' => $entities, 'total' => count($entities)]);
         $this->objectService->method('find')->willReturn($subscription);
 
-        // Count how many times delivery (saveObject) is reached.
+        // Count writes by what they DO, not merely that saveObject was reached:
+        // the sweep now also writes when it dead-letters an exhausted message,
+        // and counting every write would conflate the two.
         $delivered = 0;
+        $abandoned = 0;
         $this->stubHttpResponse(200, 'ok');
         $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object) use (&$delivered, $entities) {
-                $delivered++;
+            function (array $object) use (&$delivered, &$abandoned, $entities) {
+                if (($object['status'] ?? '') === 'abandoned') {
+                    $abandoned++;
+                } else {
+                    $delivered++;
+                }
+
                 return $entities[0];
             }
         );
@@ -628,6 +773,12 @@ class EventServiceTest extends TestCase
         // Only the single due, under-cap, non-terminal failed message is delivered.
         $this->assertSame(1, $count);
         $this->assertSame(1, $delivered);
+
+        // The over-cap message is now DEAD-LETTERED rather than silently skipped.
+        // Skipping left it in `failed` for ever, re-selected and re-skipped by
+        // every subsequent pass, and never reaching a state an operator could
+        // filter on.
+        $this->assertSame(1, $abandoned, 'an exhausted message must reach a terminal state');
     }//end testProcessRetriesSelectionMatrix()
 
 

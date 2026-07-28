@@ -103,7 +103,7 @@ class RuleHandler implements ConfigurationHandlerInterface
      *
      * @return array The processed configuration with IDs converted to slugs.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function convertIdsToSlugs(array $config, array $mappings, array &$mappingIds=[]): array
     {
@@ -150,7 +150,7 @@ class RuleHandler implements ConfigurationHandlerInterface
      *
      * @return Entity The imported rule entity.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function import(array $data, array $mappings): Entity
     {
@@ -197,7 +197,7 @@ class RuleHandler implements ConfigurationHandlerInterface
      *
      * @return array The processed configuration with slugs converted to IDs.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     private function convertSlugsToIds(array $config, array $mappings): array
     {

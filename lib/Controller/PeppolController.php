@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md
+ * @spec openspec/specs/peppol-access-point-connector/spec.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class PeppolController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant--smp-lookup-endpoint-req-001
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -142,7 +142,7 @@ class PeppolController extends Controller
      *
      * @return JSONResponse `{received: true}` on success, 401 on signature failure.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-inbound-receive-webhook-that-republishes-ap-callbacks-as-events-req-005
      */
     #[NoCSRFRequired]
     #[PublicPage]

@@ -43,7 +43,7 @@
 				<NcSelect
 					:input-id="'cn-source-form-' + field.key"
 					:aria-label-combobox="field.label || t('openconnector', 'Type')"
-					:value="selectedTypeOption"
+					:model-value="selectedTypeOption"
 					:options="typeOptions"
 					:clearable="!field.required"
 					:placeholder="t('openconnector', 'Pick a source type')"
@@ -56,24 +56,24 @@
 			<NcTextField
 				v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
 				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 				:helper-text="errors[field.key] || field.description"
 				:error="!!errors[field.key]"
 				:type="textFieldType(field)"
 				:disabled="field.readOnly"
 				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value)" />
+				@update:model-value="(value) => updateField(field.key, value)" />
 
 			<NcTextField
 				v-else-if="field.widget === 'number'"
 				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 				:helper-text="errors[field.key] || field.description"
 				:error="!!errors[field.key]"
 				type="number"
 				:disabled="field.readOnly"
 				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+				@update:model-value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
 
 			<div v-else-if="field.widget === 'textarea'" class="cn-source-form-fields__textarea-wrapper">
 				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
@@ -94,10 +94,10 @@
 
 			<NcCheckboxRadioSwitch
 				v-else-if="field.widget === 'checkbox'"
-				:checked="!!formData[field.key]"
+				:model-value="!!formData[field.key]"
 				:disabled="field.readOnly"
 				type="switch"
-				@update:checked="(value) => updateField(field.key, value)">
+				@update:model-value="(value) => updateField(field.key, value)">
 				{{ field.label }}{{ field.required ? ' *' : '' }}
 			</NcCheckboxRadioSwitch>
 
@@ -121,20 +121,20 @@
 			<NcTextField
 				v-else
 				:label="field.label + (field.required ? ' *' : '')"
-				:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 				:helper-text="errors[field.key] || field.description"
 				:error="!!errors[field.key]"
 				:disabled="field.readOnly"
 				:placeholder="field.description"
-				@update:value="(value) => updateField(field.key, value)" />
+				@update:model-value="(value) => updateField(field.key, value)" />
 		</div>
 
 		<!-- Brokered-credential authoring block. -->
 		<div class="cn-source-form-fields__field cn-source-form-fields__broker">
 			<NcCheckboxRadioSwitch
-				:checked="brokeredEnabled"
+				:model-value="brokeredEnabled"
 				type="switch"
-				@update:checked="onToggleBrokered">
+				@update:model-value="onToggleBrokered">
 				{{ t('openconnector', 'Brokered credential (OpenRegister)') }}
 			</NcCheckboxRadioSwitch>
 			<span class="cn-source-form-fields__helper">
@@ -153,7 +153,7 @@
 						input-id="cn-source-form-credentialref"
 						:input-label="t('openconnector', 'Brokered credential')"
 						:aria-label-combobox="t('openconnector', 'Brokered credential')"
-						:value="selectedCredential"
+						:model-value="selectedCredential"
 						:options="credentialOptions"
 						:loading="credentialsLoading"
 						:clearable="true"
@@ -245,7 +245,7 @@ export default {
 		 * while brokered so the mutually-exclusive state can never be authored.
 		 *
 		 * @return {object[]} The visible field descriptors.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		visibleFields() {
 			if (!Array.isArray(this.fields)) return []
@@ -279,7 +279,7 @@ export default {
 		 * The credential option matching the written credentialId, if any.
 		 *
 		 * @return {object|null} The selected credential option.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		selectedCredential() {
 			const id = readCredentialId(this.formData)
@@ -305,7 +305,7 @@ export default {
 	 * the picker resolves its current selection to a labelled option.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+	 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 	 */
 	created() {
 		if (this.brokeredEnabled) {
@@ -346,7 +346,7 @@ export default {
 		 *
 		 * @param {boolean} value The new switch state.
 		 * @return {void}
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		onToggleBrokered(value) {
 			this.brokeredEnabled = value
@@ -365,7 +365,7 @@ export default {
 		 *
 		 * @param {object} option The picked credential option.
 		 * @return {void}
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
 		 */
 		onCredentialPick(option) {
 			if (option?.id) {
@@ -380,7 +380,7 @@ export default {
 		 * brokerUnavailable) on 404 / broker absence — never crashes the editor.
 		 *
 		 * @return {Promise<void>} Resolves once the options are loaded.
-		 * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+		 * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
 		 */
 		async fetchCredentials() {
 			this.credentialsLoading = true
@@ -431,19 +431,19 @@ export default {
 		 * @spec exclude json-editor input parsing — presentation only
 		 */
 		onJsonInput(field, raw) {
-			this.$set(this.jsonDrafts, field.key, raw)
+			this.jsonDrafts[field.key] = raw
 			const trimmed = raw.trim()
 			if (trimmed.length === 0) {
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, null)
 				return
 			}
 			try {
 				const parsed = JSON.parse(trimmed)
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
-				this.$set(this.jsonErrors, field.key, t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message }))
+				this.jsonErrors[field.key] = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
 	},

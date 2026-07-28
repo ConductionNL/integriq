@@ -114,47 +114,71 @@ class MaterializeCatalogItems implements IRepairStep
             return;
         }
 
-        $existingBySlug = $this->indexExistingBySlug(orObjectService: $orObjectService);
+        // OpenRegister RBAC denies object writes to an Anonymous principal — which
+        // is exactly the principal `occ maintenance:repair` / `occ upgrade` (and a
+        // fresh `occ app:enable`) run as, since no user session exists at repair
+        // time. Left unwrapped, every catalog_item upsert is rejected as
+        // "User 'Anonymous' does not have permission to 'create' objects in schema
+        // 'Catalog Item'" (the schema is created default-secure with RBAC on), so
+        // the catalog materialises 0 of N on EVERY install/upgrade.
+        //
+        // Run the whole materialisation as a scoped system operation — the same
+        // escape hatch OpenRegister's own ConfigurationService::importFromApp uses
+        // for its seed writes — so the read-back (for idempotent update-in-place)
+        // and the upserts are authorised as the CLI system principal. Guarded by
+        // class_exists so the app degrades gracefully if a future OR drops it
+        // (the IntegrationRegistry guard above already requires a compatible OR).
+        $materialise = function () use ($entries, $registryService, $orObjectService, $output): int {
+            $existingBySlug = $this->indexExistingBySlug(orObjectService: $orObjectService);
 
-        $upserted = 0;
-        foreach ($entries as $entry) {
-            $slug = (string) ($entry['slug'] ?? '');
-            if ($slug === '') {
-                continue;
-            }
+            $upserted = 0;
+            foreach ($entries as $entry) {
+                $slug = (string) ($entry['slug'] ?? '');
+                if ($slug === '') {
+                    continue;
+                }
 
-            $status = $registryService->resolveStatus(entry: $entry);
+                $status = $registryService->resolveStatus(entry: $entry);
 
-            $payload = [
-                'slug'               => $slug,
-                'name'               => (string) ($entry['name'] ?? $slug),
-                'description'        => (string) ($entry['description'] ?? ''),
-                'category'           => (string) ($entry['category'] ?? ''),
-                'kind'               => (string) ($entry['kind'] ?? 'adapter'),
-                'mechanism'          => (string) ($entry['mechanism'] ?? 'always-available'),
-                'flagKey'            => (string) ($entry['flagKey'] ?? ''),
-                'sourceTemplateSlug' => (string) ($entry['sourceTemplateSlug'] ?? ''),
-                'status'             => $status,
-                'standards'          => (array) ($entry['standards'] ?? []),
-                'icon'               => (string) ($entry['icon'] ?? ''),
-            ];
+                $payload = [
+                    'slug'               => $slug,
+                    'name'               => (string) ($entry['name'] ?? $slug),
+                    'description'        => (string) ($entry['description'] ?? ''),
+                    'category'           => (string) ($entry['category'] ?? ''),
+                    'kind'               => (string) ($entry['kind'] ?? 'adapter'),
+                    'mechanism'          => (string) ($entry['mechanism'] ?? 'always-available'),
+                    'flagKey'            => (string) ($entry['flagKey'] ?? ''),
+                    'sourceTemplateSlug' => (string) ($entry['sourceTemplateSlug'] ?? ''),
+                    'status'             => $status,
+                    'standards'          => (array) ($entry['standards'] ?? []),
+                    'icon'               => (string) ($entry['icon'] ?? ''),
+                ];
 
-            try {
-                $orObjectService->saveObject(
-                    object: $payload,
-                    register: 'openconnector',
-                    schema: 'catalog_item',
-                    uuid: ($existingBySlug[$slug] ?? null)
-                );
-                $upserted++;
-            } catch (\Throwable $e) {
-                $output->warning('OpenConnector: failed to upsert catalog_item "'.$slug.'": '.$e->getMessage());
-                $this->logger->error(
-                    'OpenConnector: catalog_item upsert failed',
-                    ['slug' => $slug, 'exception' => $e->getMessage()]
-                );
-            }
-        }//end foreach
+                try {
+                    $orObjectService->saveObject(
+                        object: $payload,
+                        register: 'openconnector',
+                        schema: 'catalog_item',
+                        uuid: ($existingBySlug[$slug] ?? null)
+                    );
+                    $upserted++;
+                } catch (\Throwable $e) {
+                    $output->warning('OpenConnector: failed to upsert catalog_item "'.$slug.'": '.$e->getMessage());
+                    $this->logger->error(
+                        'OpenConnector: catalog_item upsert failed',
+                        ['slug' => $slug, 'exception' => $e->getMessage()]
+                    );
+                }
+            }//end foreach
+
+            return $upserted;
+        };
+
+        if (class_exists('\\OCA\\OpenRegister\\Service\\SystemOperationContext') === true) {
+            $upserted = \OCA\OpenRegister\Service\SystemOperationContext::run($materialise);
+        } else {
+            $upserted = $materialise();
+        }
 
         $output->info('OpenConnector: materialized '.$upserted.' of '.count($entries).' catalog_item entries.');
 

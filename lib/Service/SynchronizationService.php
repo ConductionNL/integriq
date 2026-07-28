@@ -14,6 +14,9 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
@@ -28,8 +31,14 @@ use GuzzleHttp\Exception\GuzzleException;
 use JWadhams\JsonLogic;
 use OCA\OpenConnector\Event\SynchronizationDeletionGuardedEvent;
 use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
+use OCA\OpenConnector\Service\ExecutionTraceService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
+use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
+use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -66,6 +75,24 @@ use Twig\Error\SyntaxError;
  */
 class SynchronizationService
 {
+
+    /**
+     * The synchronizations currently on the chaining call stack.
+     *
+     * OpenConnector chains synchronizations two ways — a `synchronization` rule
+     * and a `followUps` entry — and both re-enter `synchronize()` on this same
+     * service. Neither had any cycle or depth guard, so A -> B -> A recursed
+     * until the process died. One shared stack guards both, because a cycle can
+     * be formed out of either kind of hop, or a mix of the two.
+     *
+     * Static because the recursion runs through the container's single shared
+     * instance, so a per-call variable would not see the outer frame. Entries
+     * are pushed before the nested run and popped in a `finally`, so a failed
+     * run does not leave the chain permanently blocked.
+     *
+     * @var array<int, string>
+     */
+    private static array $syncChainStack = [];
 
     /**
      * Retention period in milliseconds for error synchronization logs.
@@ -220,6 +247,7 @@ class SynchronizationService
      * @param IAppConfig                $appConfig                 The app configuration.
      * @param ApprovalService           $approvalService           HITL batch-approval gate (hitl-approval-rule-action).
      * @param TablesSyncAdapter         $tablesSyncAdapter         The `nextcloud-table` source/target adapter (tables-bridge).
+     * @param FormsSyncAdapter          $formsSyncAdapter          The `nextcloud-form` source adapter (nextcloud-forms-connector).
      */
     public function __construct(
         private readonly CallService $callService,
@@ -232,6 +260,7 @@ class SynchronizationService
         IAppConfig $appConfig,
         private readonly ApprovalService $approvalService,
         private readonly ?TablesSyncAdapter $tablesSyncAdapter=null,
+        private readonly ?FormsSyncAdapter $formsSyncAdapter=null,
     ) {
         $this->synchronizationLogService = $synchronizationLogService;
 
@@ -1322,6 +1351,7 @@ class SynchronizationService
      * @param string|null                             $mutationType    For single object sync: the mutation
      *                                                                 type, 'create', 'update' or 'delete'.
      *                                                                 Used for syncs to external sources.
+     * @param ExecutionTraceContext|null              $trace           The active execution trace context (execution-trace REQ-001).
      *
      * @return array|null Returns a synchronization contract, an array for test cases, or null when not met.
      */
@@ -1333,6 +1363,7 @@ class SynchronizationService
         ?bool $isTest=false,
         ?bool $force=false,
         ?string $mutationType=null,
+        ?ExecutionTraceContext $trace=null,
     ): array|null {
         $serializedObject = $object;
         if ($object instanceof \OCA\OpenRegister\Db\ObjectEntity === true) {
@@ -1463,7 +1494,8 @@ class SynchronizationService
             isTest: $isTest,
             force: $force,
             log: $log,
-            mutationType: $mutationType
+            mutationType: $mutationType,
+            trace: $trace
         );
 
         // The synchronizeContract call returns either an Exception or the
@@ -1490,22 +1522,24 @@ class SynchronizationService
      *
      * If a rate limit error occurs during the external request, a `TooManyRequestsHttpException` is thrown.
      *
-     * @param array                 $synchronization   The synchronization configuration and state.
-     * @param SynchronizationRunLog $log               The log object to record details and results.
-     * @param FlowToken             $flowToken         The flow token shared across the run.
-     * @param bool|null             $isTest            Optional flag to run in test mode (no deletions/persist).
-     * @param bool|null             $force             Optional flag to bypass change checks and force all.
-     * @param string|null           $source            The source to synchronize; defaults to the sync source.
-     * @param array|null            $data              The data to synchronize; defaults to the sync data.
-     * @param string|null           $mutationType      The current mutation type from this::VALID_MUTATION_TYPES.
-     * @param bool|null             $forceDeletion     Explicit override for the deletion-ratio guard
-     *                                                 (REQ-010); ignored when `$isTest === true`.
-     * @param string|null           $approvalRequestId Bypass token: the id of a specific approved
-     *                                                 `approval_request` to consume when
-     *                                                 `sourceConfig.requiresApproval` gates this run
-     *                                                 (synchronization-engine REQ-015). Optional — when
-     *                                                 omitted, any approved+unconsumed request for this
-     *                                                 synchronization satisfies the gate.
+     * @param array                      $synchronization   The synchronization configuration and state.
+     * @param SynchronizationRunLog      $log               The log object to record details and results.
+     * @param FlowToken                  $flowToken         The flow token shared across the run.
+     * @param bool|null                  $isTest            Optional flag to run in test mode (no deletions/persist).
+     * @param bool|null                  $force             Optional flag to bypass change checks and force all.
+     * @param string|null                $source            The source to synchronize; defaults to the sync source.
+     * @param array|null                 $data              The data to synchronize; defaults to the sync data.
+     * @param string|null                $mutationType      The current mutation type from this::VALID_MUTATION_TYPES.
+     * @param bool|null                  $forceDeletion     Explicit override for the deletion-ratio guard
+     *                                                      (REQ-010); ignored when `$isTest === true`.
+     * @param string|null                $approvalRequestId Bypass token: the id of a specific approved
+     *                                                      `approval_request` to consume when
+     *                                                      `sourceConfig.requiresApproval` gates this
+     *                                                      run (synchronization-engine REQ-015).
+     *                                                      Optional — when omitted, any
+     *                                                      approved+unconsumed request for this
+     *                                                      synchronization satisfies the gate.
+     * @param ExecutionTraceContext|null $trace             The active execution trace context (execution-trace REQ-001).
      *
      * @return SynchronizationRunLog Returns the updated synchronization log with processing results.
      *
@@ -1515,7 +1549,11 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-test-runs-make-no-writes-req-011
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
@@ -1533,7 +1571,8 @@ class SynchronizationService
         ?array $data=null,
         ?string $mutationType=null,
         ?bool $forceDeletion=false,
-        ?string $approvalRequestId=null
+        ?string $approvalRequestId=null,
+        ?ExecutionTraceContext $trace=null
     ): SynchronizationRunLog {
         // Start overall timing measurement.
         $overallStartTime   = microtime(true);
@@ -1583,7 +1622,8 @@ class SynchronizationService
                 force: $force,
                 log: $log,
                 flowToken: $flowToken,
-                mutationType: $mutationType
+                mutationType: $mutationType,
+                trace: $trace
             );
         } else {
             // Stage 2: Fetching objects from source.
@@ -1685,6 +1725,31 @@ class SynchronizationService
             $objectProcessingTimes = [];
 
             foreach ($objectList as $object) {
+                // Bare-scalar source item coercion (synchronization-engine
+                // spec REQ-002/REQ-008, change sync-engine-scalar-items):
+                // getOriginId() and processSynchronizationObject() are
+                // `array`-typed; PHP does not coerce a scalar across a
+                // strict type hint, so an uncoerced scalar (e.g. a source
+                // returning a bare array of strings) throws a TypeError at
+                // the call boundary before either method body — and before
+                // processSynchronizationObject()'s own defensive
+                // is_array() === false skip-check — ever runs. Wrap a bare
+                // scalar into a canonical ['value' => ...] shape here, the
+                // single earliest point common to every sourceType, so it
+                // flows through mapping/identity/write like any other item
+                // instead of dead-lettering with an opaque low-level type
+                // error. A synchronization whose source returns scalar
+                // items MUST set sourceConfig.idPosition to 'value' for
+                // getOriginId()'s default idPosition ('id') to be
+                // overridden and resolve identity on this coerced shape.
+                // Guarded by is_array() === false so every existing
+                // array-shaped item — the overwhelming common case — is
+                // returned completely untouched, with no behaviour change
+                // to identity-hash semantics for non-scalar sources.
+                if (is_array($object) === false) {
+                    $object = ['value' => $object];
+                }
+
                 $objectStartTime = microtime(true);
 
                 // Per-item isolation (synchronization-engine spec REQ-008,
@@ -1702,7 +1767,8 @@ class SynchronizationService
                         result: $result,
                         isTest: $isTest,
                         force: $force,
-                        log: $log
+                        log: $log,
+                        trace: $trace
                     );
                 } catch (\Throwable $itemException) {
                     $result['objects']['invalid']++;
@@ -1781,16 +1847,50 @@ class SynchronizationService
             if ($isTest === false) {
                 $fetchComplete = ($rateLimitException === null && ($fetchInfo['complete'] ?? true));
 
-                $deletedCount = $this->deleteInvalidObjects(
-                    synchronization: $synchronization,
-                    synchronizedTargetIds: $synchronizedTargetIds,
-                    deleteRestriction: $deleteRestriction,
-                    data: $deleteData,
-                    fetchComplete: $fetchComplete,
-                    forceDeletion: ($forceDeletion ?? false),
-                    guardInfo: $guardInfo
-                );
-            }
+                // [NEW] REQ-018 (change cdc-incremental-sync): incremental
+                // mode never runs the bulk source-diff cleanup — checked
+                // BEFORE the existing fetchComplete-gated call, so it
+                // short-circuits deletion for its own explicit reason
+                // ('incremental_mode') rather than reusing fetchComplete's
+                // 'fetch_incomplete' reason, which would be misleading (the
+                // fetch can be perfectly complete for what it asked for — it
+                // just didn't ask for everything). Unconditional: never
+                // bypassed by forceDeletion (design.md Decision 3).
+                $syncMode = (string) ($synchronization['syncMode'] ?? 'full');
+                if ($syncMode !== 'incremental') {
+                    $deletedCount = $this->deleteInvalidObjects(
+                        synchronization: $synchronization,
+                        synchronizedTargetIds: $synchronizedTargetIds,
+                        deleteRestriction: $deleteRestriction,
+                        data: $deleteData,
+                        fetchComplete: $fetchComplete,
+                        forceDeletion: ($forceDeletion ?? false),
+                        guardInfo: $guardInfo
+                    );
+                } else {
+                    $guardInfo = [
+                        'guarded'   => true,
+                        'reason'    => 'incremental_mode',
+                        'ratio'     => null,
+                        'threshold' => null,
+                    ];
+                }//end if
+
+                // [NEW] REQ-017: watermark advance — the same $fetchComplete
+                // boolean REQ-010 already computed above; a rate-limited or
+                // otherwise incomplete fetch (REQ-009) blocks the watermark
+                // exactly as it blocks deletion. A missing/empty
+                // sourceConfig.cursorField or an empty fetch yields a null
+                // computed watermark, which is deliberately left unpersisted
+                // (the prior watermark, if any, is retained rather than
+                // cleared).
+                if ($syncMode === 'incremental' && $fetchComplete === true) {
+                    $newWatermark = $this->computeCursorWatermark(synchronization: $synchronization, objectList: $objectList);
+                    if ($newWatermark !== null) {
+                        $synchronization['cursorWatermark'] = $newWatermark;
+                    }
+                }//end if
+            }//end if
 
             $result['objects']['deleted']       = $deletedCount;
             $result['objects']['deletionGuard'] = $guardInfo;
@@ -1810,18 +1910,50 @@ class SynchronizationService
         }
 
         // Stage 6: Follow-up synchronizations.
-        $stageStartTime = microtime(true);
-        $followUpCount  = 0;
-        foreach (($synchronization['followUps'] ?? []) as $followUp) {
-            $followUpSynchronization = $this->findSynchronization(id: $followUp);
-            $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
-            $followUpCount++;
+        //
+        // This is openconnector's oldest chaining mechanism and it had no cycle
+        // or depth guard: A listing B as a follow-up while B lists A recursed
+        // until the process died, taking the whole request with it. The shared
+        // chain stack bounds it — a follow-up already running higher up the
+        // stack is skipped and reported, not re-entered.
+        //
+        // Chaining like this is what the OpenRegister flow migration replaces:
+        // a flow states the order explicitly, the engine bounds the recursion,
+        // and each hop gets its own persisted, inspectable run.
+        $stageStartTime  = microtime(true);
+        $followUpCount   = 0;
+        $followUpSkipped = [];
+        $selfId          = (string) ($synchronization['id'] ?? ($synchronization['uuid'] ?? ''));
+        if ($selfId !== '') {
+            self::$syncChainStack[] = $selfId;
+        }
+
+        try {
+            foreach (($synchronization['followUps'] ?? []) as $followUp) {
+                if (in_array((string) $followUp, self::$syncChainStack, true) === true) {
+                    $followUpSkipped[] = (string) $followUp;
+                    $this->logger->warning(
+                        'Skipped follow-up synchronization "'.$followUp.'": it is already running on this chain '
+                        .'(cycle). Express the chain as an OpenRegister flow instead.'
+                    );
+                    continue;
+                }
+
+                $followUpSynchronization = $this->findSynchronization(id: $followUp);
+                $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
+                $followUpCount++;
+            }
+        } finally {
+            if ($selfId !== '') {
+                array_pop(self::$syncChainStack);
+            }
         }
 
         $result['timing']['stages']['follow_ups'] = [
             'duration_ms'         => round((microtime(true) - $stageStartTime) * 1000, 2),
             'description'         => 'Executing follow-up synchronizations',
             'follow_ups_executed' => $followUpCount,
+            'follow_ups_skipped'  => $followUpSkipped,
         ];
 
         // Calculate total timing.
@@ -1880,7 +2012,7 @@ class SynchronizationService
      *
      * @return ObjectEntity|null The approved, unconsumed request, or null when the run is still gated.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function resolveApprovalForSynchronization(string $synchronizationId, ?string $bypassApprovalId): ?ObjectEntity
     {
@@ -1918,7 +2050,7 @@ class SynchronizationService
      *
      * @return void
      *
-     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      */
     private function captureSyncItemFailure(array $synchronization, mixed $object, \Throwable $exception): void
     {
@@ -1971,14 +2103,24 @@ class SynchronizationService
      * new synchronization_log entry — a single, synchronous, immediate
      * re-attempt only.
      *
-     * @param array $synchronization The synchronization payload (as returned by getSynchronization()->jsonSerialize()).
-     * @param array $payload         The raw source object to re-process (the dead-lettered payload).
+     * @param array                      $synchronization The synchronization payload (as returned by getSynchronization()->jsonSerialize()).
+     * @param array                      $payload         The raw source object to re-process (the dead-lettered payload).
+     * @param boolean                    $isTest          False by default, preserving `dead-letter-replay` REQ-DLR-009's existing
+     *                                                    hardcoded-real-write behaviour for its own direct callers. When `true`
+     *                                                    (execution-trace REQ-005's dry-run sync-entryPoint replay branch,
+     *                                                    `ExecutionTraceService::replay()` always passes `isTest: !$force`), no
+     *                                                    target write occurs — reuses `synchronization-engine` REQ-011's
+     *                                                    existing no-write guarantee rather than inventing a second dry-run
+     *                                                    mechanism.
+     * @param ExecutionTraceContext|null $trace           Active execution trace context for the replay, when called from
+     *                                                    `ExecutionTraceService::replay()`.
      *
      * @return array{result: array, targetId: string|null} The processSynchronizationObject() outcome.
      *
      * @spec openspec/specs/dead-letter-replay/spec.md#requirement-audited-manual-replay-of-a-dead-lettered-sync-item-req-dlr-009
+     * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
      */
-    public function replaySynchronizationItem(array $synchronization, array $payload): array
+    public function replaySynchronizationItem(array $synchronization, array $payload, bool $isTest=false, ?ExecutionTraceContext $trace=null): array
     {
         $log       = new SynchronizationRunLog();
         $flowToken = new FlowToken();
@@ -2000,13 +2142,15 @@ class SynchronizationService
             synchronization: $synchronization,
             object: $payload,
             result: $result,
-            isTest: false,
+            isTest: $isTest,
             force: true,
             log: $log,
             flowToken: $flowToken,
+            trace: $trace,
         );
 
     }//end replaySynchronizationItem()
+
     /**
      * Synchronizes a given synchronization (or a complete source).
      *
@@ -2029,6 +2173,16 @@ class SynchronizationService
      *                                                                        when `sourceConfig.requiresApproval`
      *                                                                        gates this run (synchronization-engine
      *                                                                        REQ-015).
+     * @param ExecutionTraceContext|null                   $trace             The active execution trace context.
+     *                                                                        When null (a manual/cron-triggered
+     *                                                                        top-level run), a fresh
+     *                                                                        `sync`-entryPoint context is minted
+     *                                                                        and its persistence owned by this
+     *                                                                        method. When supplied (a
+     *                                                                        `synchronization` rule inside an
+     *                                                                        already-traced endpoint pipeline),
+     *                                                                        reused instead (execution-trace
+     *                                                                        REQ-001).
      *
      * @return array|array|null
      *
@@ -2043,13 +2197,15 @@ class SynchronizationService
      * @throws TooManyRequestsHttpException
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
+     * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) $approvalRequestId is an additive,
      * backward-compatible optional bypass token (hitl-approval-rule-action design.md
-     * Decision 6); all 9 preceding parameters pre-exist this change.
+     * Decision 6); all 9 preceding parameters pre-exist this change. $trace is likewise
+     * additive (execution-trace-observability design.md Decision 1).
      */
     public function synchronize(
         array|ObjectEntity $synchronization,
@@ -2062,6 +2218,7 @@ class SynchronizationService
         ?FlowToken &$flowToken=null,
         ?bool $forceDeletion=false,
         ?string $approvalRequestId=null,
+        ?ExecutionTraceContext $trace=null,
     ): array|null {
         // Controllers and cron jobs fetch the synchronization as an OpenRegister
         // object (register `openconnector`, schema `synchronization`); hydrate it
@@ -2070,6 +2227,24 @@ class SynchronizationService
 
         if ($flowToken === null) {
             $flowToken = new FlowToken();
+        }
+
+        // Execution-trace REQ-001: a manual synchronization run is one of the
+        // four traced entry points. When `synchronize()` is invoked directly
+        // (no active trace supplied — e.g. a manual run or JobService's own
+        // dispatch), mint a fresh `sync`-entryPoint context and own its
+        // persistence below. When `$trace` is already supplied (e.g. a
+        // `synchronization` rule inside an already-traced endpoint pipeline,
+        // EndpointService::processSyncRule()), reuse the SAME context so the
+        // sync's steps join the caller's single execution trace instead of
+        // starting a disconnected one.
+        $ownsTrace = ($trace === null);
+        if ($ownsTrace === true) {
+            $trace = new ExecutionTraceContext(
+                entryPoint: 'sync',
+                entryPointId: ($synchronization['uuid'] ?? null),
+                triggeredBy: 'manual'
+            );
         }
 
         if ($mutationType !== null && in_array($mutationType, $this::VALID_MUTATION_TYPES) === false) {
@@ -2119,13 +2294,18 @@ class SynchronizationService
                 flowToken: $flowToken,
                 force: $force,
                 mutationType: $mutationType,
+                trace: $trace,
             );
 
             // Write-once finalize of the (append-only) run-log for this branch.
             $this->synchronizationLogService->persist(log: $log);
 
+            if ($ownsTrace === true) {
+                $this->persistOwnedTrace(trace: $trace, status: 'success');
+            }
+
             return $contract;
-        }
+        }//end if
 
         $log['result']['type'] = 'externToIntern';
 
@@ -2144,13 +2324,18 @@ class SynchronizationService
             data: $data,
             mutationType: $mutationType,
             forceDeletion: $forceDeletion,
-            approvalRequestId: $approvalRequestId
+            approvalRequestId: $approvalRequestId,
+            trace: $trace
         );
 
         // A gated, not-yet-approved run already finalized its own log with a
         // `pending_approval` message and made no writes — do not overwrite it
         // with 'Success' (synchronization-engine REQ-015).
         if ($log->getMessage() === 'pending_approval') {
+            if ($ownsTrace === true) {
+                $this->persistOwnedTrace(trace: $trace, status: 'short_circuited');
+            }
+
             return $log->jsonSerialize();
         }
 
@@ -2161,11 +2346,54 @@ class SynchronizationService
         $log->setExpires($this->calculateExpires(...[$this->successRetention, $this->successRetention]));
         $log = $this->synchronizationLogService->update(log: $log);
 
+        if ($ownsTrace === true) {
+            $this->persistOwnedTrace(trace: $trace, status: 'success');
+        }
+
         return $log->jsonSerialize();
     }//end synchronize()
 
     /**
+     * Best-effort persist of a `sync`-entryPoint trace this method minted
+     * itself (design.md's "single create per entry point" rule, REQ-004). A
+     * persistence failure MUST NOT fail the synchronization run it is
+     * observing — mirrors the existing best-effort posture of
+     * `captureSyncItemFailure()` in this class.
+     *
+     * @param ExecutionTraceContext $trace  The self-minted trace context to persist.
+     * @param string                $status running|success|failed|short_circuited.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
+     */
+    private function persistOwnedTrace(ExecutionTraceContext $trace, string $status): void
+    {
+        try {
+            $this->containerInterface->get(ExecutionTraceService::class)->persist(trace: $trace, status: $status);
+        } catch (\Throwable $exception) {
+            $this->logger->warning(
+                'SynchronizationService: failed to persist execution_trace for a self-minted sync trace.',
+                [
+                    'traceId'   => $trace->getTraceId(),
+                    'exception' => $exception->getMessage(),
+                ]
+            );
+        }
+
+    }//end persistOwnedTrace()
+
+    /**
      * Gets id from object as is in the origin.
+     *
+     * A synchronization whose source returns bare-scalar items is coerced
+     * to a `['value' => <scalar>]` shape by the per-item loop in
+     * `synchronizeExternToIntern()` (change sync-engine-scalar-items)
+     * before this method is ever called. Such a synchronization MUST set
+     * `sourceConfig.idPosition` to `'value'` — the default `idPosition`
+     * (`'id'`) will not resolve on the coerced shape and, per the existing
+     * behaviour below, throws a clear `Exception` naming the missing key
+     * rather than silently failing.
      *
      * @param array $synchronization The synchronization containing the source config.
      * @param array $object          The object to extract the origin id from.
@@ -2207,6 +2435,95 @@ class SynchronizationService
         // Return the found ID value.
         return $originId;
     }//end getOriginId()
+
+    /**
+     * Compute the new cursor high-watermark from a run's fetched records
+     * (REQ-017, change cdc-incremental-sync) — the maximum value of the
+     * configured `sourceConfig.cursorField` across all fetched records,
+     * mirroring {@see getOriginId()}'s dotted-path-lookup-with-throw
+     * convention (REQ-003) so a record missing the configured field fails
+     * loudly instead of silently producing a too-low watermark that would
+     * permanently skip its siblings on every subsequent run.
+     *
+     * Taking the maximum across ALL fetched records (not the last one
+     * processed) means out-of-order pagination or concurrent per-page
+     * fetching (REQ-002's optimized parallel mode) cannot regress the
+     * watermark.
+     *
+     * @param array $synchronization The synchronization containing sourceConfig.cursorField.
+     * @param array $objectList      The records fetched during this run.
+     *
+     * @return string|null The new high-watermark, or null when there is nothing to
+     *                      compute from (no `cursorField` configured, or an empty
+     *                      fetch) — the caller leaves `cursorWatermark` unchanged
+     *                      in that case rather than persisting a null/empty value.
+     *
+     * @throws Exception When a fetched record has no value at the configured
+     *                    `cursorField` path.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
+     */
+    private function computeCursorWatermark(array $synchronization, array $objectList): ?string
+    {
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+        $cursorField  = ($sourceConfig['cursorField'] ?? null);
+
+        if (empty($cursorField) === true || empty($objectList) === true) {
+            return null;
+        }
+
+        $maxCursor = null;
+        foreach ($objectList as $object) {
+            if (is_array($object) === false) {
+                continue;
+            }
+
+            $objectDot   = new Dot($object);
+            $cursorValue = $objectDot->get($cursorField);
+
+            if ($cursorValue === null) {
+                throw new Exception('Could not find cursor field in object for key: '.$cursorField);
+            }
+
+            if (is_scalar($cursorValue) === true) {
+                $cursorValue = (string) $cursorValue;
+            }
+
+            if ($maxCursor === null || $cursorValue > $maxCursor) {
+                $maxCursor = $cursorValue;
+            }
+        }
+
+        return $maxCursor;
+    }//end computeCursorWatermark()
+
+    /**
+     * Clear a Synchronization's stored cursor watermark (REQ-019, change
+     * cdc-incremental-sync).
+     *
+     * Persists `cursorWatermark` as cleared (null/absent). Leaves `syncMode`
+     * and every other field untouched, and performs no target write/delete
+     * of its own — REQ-018's deletion block is keyed on `syncMode`, not on
+     * cursor state, so clearing the watermark alone never re-enables
+     * `deleteInvalidObjects()` for an incremental Synchronization (design.md
+     * Decision 3 / Risks). Following a reset, the Synchronization's next run
+     * resolves `{{ cursor }}` to an empty string (REQ-016's "no prior
+     * watermark" case).
+     *
+     * @param array|ObjectEntity $synchronization The synchronization whose watermark to clear.
+     *
+     * @return array The updated synchronization payload (for response/confirmation).
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+     */
+    public function resetCursor(array|ObjectEntity $synchronization): array
+    {
+        $synchronization = $this->toSynchronization(synchronization: $synchronization);
+        $synchronization['cursorWatermark'] = null;
+        $this->persistSynchronization(synchronization: $synchronization);
+
+        return $synchronization;
+    }//end resetCursor()
 
     /**
      * Fetch an object from a specific endpoint.
@@ -2508,6 +2825,7 @@ class SynchronizationService
      * @spec openspec/specs/tables-bridge/spec.md#requirement-source-deleted-rows-are-removed-only-under-the-shared-deletion-safety-guard-req-005
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Backward-compatible optional flags
      * (deleteRestriction pre-exists; fetchComplete/forceDeletion are mandated by
@@ -2528,6 +2846,34 @@ class SynchronizationService
 
         $synchronizationId = (($synchronization['id'] ?? null) ?? ($synchronization['uuid'] ?? null));
         $sourceConfig      = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+
+        // [NEW] REQ-018 (change cdc-incremental-sync): defense-in-depth —
+        // independently refuse to run against an incremental Synchronization
+        // regardless of caller, so a future caller that reaches this method
+        // directly (bypassing synchronizeExternToIntern()'s own gate) cannot
+        // accidentally delete against a partial incremental fetch. Checked
+        // ahead of the fetchComplete guard below (an incremental fetch can
+        // be perfectly "complete" for what it asked for — it just never
+        // asked for everything).
+        if ((string) ($synchronization['syncMode'] ?? 'full') === 'incremental') {
+            $guardInfo = [
+                'guarded'        => true,
+                'reason'         => 'incremental_mode',
+                'ratio'          => null,
+                'threshold'      => null,
+                'candidateCount' => null,
+                'totalContracts' => null,
+            ];
+            $this->logger->warning(
+                'deleteInvalidObjects: skipped — synchronization is in incremental sync mode',
+                ['synchronizationId' => $synchronizationId]
+            );
+            $this->dispatchDeletionGuardedEvent(
+                synchronizationId: (string) $synchronizationId,
+                reason: 'incremental_mode'
+            );
+            return 0;
+        }
 
         if ($fetchComplete === false) {
             $guardInfo = [
@@ -2883,6 +3229,8 @@ class SynchronizationService
      * @param string|null                $mutationType            For single object sync: the mutation type,
      *                                                            'create', 'update' or 'delete'. Used for
      *                                                            syncs to external sources.
+     * @param ExecutionTraceContext|null $trace                   The active execution trace context, threaded through
+     *                                                            to the outbound target dispatch (execution-trace REQ-001).
      *
      * @spec openspec/changes/archive/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
      *
@@ -2902,7 +3250,8 @@ class SynchronizationService
         ?bool $isTest=false,
         ?bool $force=false,
         ?SynchronizationRunLog $log=null,
-        ?string $mutationType=null
+        ?string $mutationType=null,
+        ?ExecutionTraceContext $trace=null
     ): array|Exception {
         $contractLog = null;
 
@@ -3077,7 +3426,8 @@ class SynchronizationService
         $synchronizationContract = $this->updateTarget(
             synchronizationContract: $synchronizationContract,
             targetObject: $object,
-            mutationType: $mutationType
+            mutationType: $mutationType,
+            trace: $trace
         );
 
         if (($synchronization['targetType'] ?? null) === 'register/schema') {
@@ -3557,13 +3907,16 @@ class SynchronizationService
     /**
      * Write the data to the target.
      *
-     * @param array       $synchronizationContract The contract payload array to write.
-     * @param array|null  $targetObject            The object data to write to the target.
-     * @param string|null $action                  Determines what needs to be done with the target object,
-     *                                             defaults to 'save'.
-     * @param string|null $mutationType            If dealing with single object synchronization, the type
-     *                                             of the mutation that will be handled, 'create', 'update'
-     *                                             or 'delete'. Used for syncs to external sources.
+     * @param array                      $synchronizationContract The contract payload array to write.
+     * @param array|null                 $targetObject            The object data to write to the target.
+     * @param string|null                $action                  Determines what needs to be done with the target object,
+     *                                                            defaults to 'save'.
+     * @param string|null                $mutationType            If dealing with single object synchronization, the type
+     *                                                            of the mutation that will be handled, 'create',
+     *                                                            'update' or 'delete'. Used for syncs to external
+     *                                                            sources.
+     * @param ExecutionTraceContext|null $trace                   The active execution trace context, threaded through to the
+     *                                                            outbound `api`-target dispatch (execution-trace REQ-001).
      *
      * @return array
      *
@@ -3577,9 +3930,15 @@ class SynchronizationService
      *
      * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
+     * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
      */
-    public function updateTarget(array $synchronizationContract, ?array &$targetObject=[], ?string $action='save', ?string $mutationType=null): array
-    {
+    public function updateTarget(
+        array $synchronizationContract,
+        ?array &$targetObject=[],
+        ?string $action='save',
+        ?string $mutationType=null,
+        ?ExecutionTraceContext $trace=null
+    ): array {
         // The function can be called standalone so resolve the synchronization from the contract.
         $synchronization = $this->findSynchronization(id: ((string) ($synchronizationContract['synchronizationId'] ?? '')));
 
@@ -3605,7 +3964,8 @@ class SynchronizationService
                     contract: $synchronizationContract,
                     endpoint: $targetConfig['endpoint'] ?? '',
                     targetObject: $targetObject,
-                    mutationType: $mutationType
+                    mutationType: $mutationType,
+                    trace: $trace
                 );
                 break;
             case 'database':
@@ -3659,7 +4019,7 @@ class SynchronizationService
         ?string $action='save'
     ): array {
         if ($this->tablesSyncAdapter === null) {
-            throw new TablesFeatureDisabledException('The Nextcloud Tables adapter is not available.');
+            throw new TablesFeatureDisabledException(message: 'The Nextcloud Tables adapter is not available.');
         }
 
         $this->tablesSyncAdapter->assertEnabled();
@@ -3747,6 +4107,8 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-020
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
      */
     public function getAllObjectsFromSource(
         array $synchronization,
@@ -3779,7 +4141,10 @@ class SynchronizationService
             case 'nextcloud-table':
                 $objects = $this->getAllObjectsFromTable(synchronization: $synchronization, isTest: $isTest);
                 break;
-        }
+            case 'nextcloud-form':
+                $objects = $this->getAllObjectsFromForm(synchronization: $synchronization, isTest: $isTest);
+                break;
+        }//end switch
 
         return $objects;
     }//end getAllObjectsFromSource()
@@ -3805,7 +4170,7 @@ class SynchronizationService
     public function getAllObjectsFromTable(array $synchronization, ?bool $isTest=false): array
     {
         if ($this->tablesSyncAdapter === null) {
-            throw new TablesFeatureDisabledException('The Nextcloud Tables adapter is not available.');
+            throw new TablesFeatureDisabledException(message: 'The Nextcloud Tables adapter is not available.');
         }
 
         $this->tablesSyncAdapter->assertEnabled();
@@ -3834,6 +4199,53 @@ class SynchronizationService
     }//end getAllObjectsFromTable()
 
     /**
+     * Fetches all submissions from a `nextcloud-form` source for a given synchronization.
+     *
+     * Delegates to {@see FormsSyncAdapter::fetchAllSubmissions()}; the Forms
+     * submission id (`Submission.id`) is exposed as the top-level `id` key of
+     * each returned array so the existing `getOriginId()` default
+     * `idPosition` ('id') resolves it with no adapter-specific override,
+     * exactly like the `nextcloud-table` branch above. No accompanying
+     * target/deletion branch exists for `nextcloud-form` — source-only
+     * (`nextcloud-forms-connector` REQ-002, `synchronization-engine` REQ-020).
+     *
+     * @param array     $synchronization The synchronization object containing source information.
+     * @param bool|null $isTest          If true, only a single submission is returned for testing purposes.
+     *
+     * @return array An array of submissions retrieved from the form.
+     *
+     * @throws FormsFeatureDisabledException When the Forms app is not enabled.
+     *
+     * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-nextcloud-form-as-a-synchronization-source-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-form-source-dispatch-req-020
+     */
+    public function getAllObjectsFromForm(array $synchronization, ?bool $isTest=false): array
+    {
+        if ($this->formsSyncAdapter === null) {
+            throw new FormsFeatureDisabledException(message: 'The Nextcloud Forms adapter is not available.');
+        }
+
+        $this->formsSyncAdapter->assertEnabled();
+
+        $sourceConfig = ($synchronization['sourceConfig'] ?? []);
+        $formId       = (int) ($sourceConfig['formId'] ?? 0);
+        if ($formId <= 0) {
+            throw new Exception('nextcloud-form source is missing a required sourceConfig.formId');
+        }
+
+        $source = $this->findSourceObject(id: ($synchronization['sourceId'] ?? null));
+
+        $submissions = $this->formsSyncAdapter->fetchAllSubmissions(source: $source, formId: $formId);
+
+        if ($isTest === true && count($submissions) > 1) {
+            $submissions = [$submissions[0]];
+        }
+
+        return $submissions;
+
+    }//end getAllObjectsFromForm()
+
+    /**
      * Fetches all objects from an API source for a given synchronization.
      *
      * @param array      $synchronization The synchronization object containing source information.
@@ -3856,6 +4268,7 @@ class SynchronizationService
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
      */
     public function getAllObjectsFromApi(
         array $synchronization,
@@ -3884,6 +4297,18 @@ class SynchronizationService
         // Check rate limit before proceeding.
         $this->checkRateLimit(source: $source);
 
+        // [NEW] REQ-016 (change cdc-incremental-sync): an incremental run
+        // makes its stored high-watermark cursor available as a `cursor` key
+        // in the same Twig context {{ data.* }} endpoint templating already
+        // uses, extended below to sourceConfig.query values too. A full-mode
+        // (or syncMode-absent) run gets no `cursor` key at all — the Twig
+        // context stays byte-identical to pre-existing behavior.
+        $syncMode    = (string) ($synchronization['syncMode'] ?? 'full');
+        $twigContext = [];
+        if ($syncMode === 'incremental') {
+            $twigContext['cursor'] = (string) ($synchronization['cursorWatermark'] ?? '');
+        }
+
         $endpoint = $sourceConfig['endpoint'] ?? '';
         if (is_string($endpoint) === true
             && str_contains($endpoint, '{{') === true
@@ -3896,14 +4321,37 @@ class SynchronizationService
 
             $endpoint = $this->mappingService->renderTemplateString(
                 template: $endpoint,
-                context: [
-                    'data' => $contextData,
-                ]
+                context: array_merge(['data' => $contextData], $twigContext)
             );
         }
 
-        $headers        = $sourceConfig['headers'] ?? [];
-        $query          = $sourceConfig['query'] ?? [];
+        $headers = $sourceConfig['headers'] ?? [];
+        $query   = $sourceConfig['query'] ?? [];
+
+        // [NEW] REQ-016: extend the identical {{/}}-detection-then-render
+        // treatment used for sourceConfig.endpoint to each scalar value in
+        // sourceConfig.query, incremental mode only — a full-mode run keeps
+        // sourceConfig.query passed through unrendered, unchanged from
+        // current behavior (regression scenario in REQ-016).
+        if ($syncMode === 'incremental' && is_array($query) === true && empty($query) === false) {
+            $queryContextData = $data ?? [];
+            if (isset($queryContextData['@self']['relations']) === true && is_array($queryContextData['@self']['relations']) === true) {
+                $queryContextData = array_merge($queryContextData['@self']['relations'], $queryContextData);
+            }
+
+            foreach ($query as $queryKey => $queryValue) {
+                if (is_string($queryValue) === true
+                    && str_contains($queryValue, '{{') === true
+                    && str_contains($queryValue, '}}') === true
+                ) {
+                    $query[$queryKey] = $this->mappingService->renderTemplateString(
+                        template: $queryValue,
+                        context: array_merge(['data' => $queryContextData], $twigContext)
+                    );
+                }
+            }
+        }
+
         $usesPagination = true;
         if (isset($sourceConfig['usesPagination']) === true) {
             $usesPagination = filter_var($sourceConfig['usesPagination'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
@@ -4296,8 +4744,8 @@ class SynchronizationService
      * @return array{objects: array, result: array, failed?: bool, statusCode?: int|null}
      * @throws TooManyRequestsHttpException When rate limit is exceeded
      *
-     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-fetch-completeness-tracking-during-source-pagination-req-009
      */
     private function fetchSinglePageData(array $source, string $endpoint, array $config, array $synchronization): array
@@ -4415,10 +4863,12 @@ class SynchronizationService
         // Try parsing the response body in different formats, starting with JSON.
         $result = json_decode($body, true);
 
-        // If JSON parsing failed, try XML.
+        // If JSON parsing failed, try XML. `$body` is the response of an
+        // arbitrary configured Source, so it is untrusted input and must go
+        // through SafeXmlParser (pinned null entity loader + LIBXML_NONET).
         if (empty($result) === true) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($body, "SimpleXMLElement", LIBXML_NOCDATA);
+            $xml = SafeXmlParser::parse($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
             if ($xml !== false) {
                 $result = $this->xmlToArray(xml: $xml);
@@ -4450,7 +4900,7 @@ class SynchronizationService
      *
      * @return bool True when the body is expected to be gzip-compressed.
      *
-     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      */
     private function isGzipPayload(array $source, string $endpoint, array $response): bool
     {
@@ -4556,7 +5006,7 @@ class SynchronizationService
      *
      * @return array<int, array> The decoded records, in file order.
      *
-     * @spec openspec/changes/bulk-gzip-jsonl-ingestion/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-bulk-gzipjsonl-source-ingestion-req-006
      */
     private function parseJsonLines(string $body): array
     {
@@ -4604,7 +5054,7 @@ class SynchronizationService
      * @return array<int, array{name: string, url: string, description: string, tags: array<int, string>}>
      *         The extracted records, in file order.
      *
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function parseMarkdownResponse(string $body): array
     {
@@ -4707,7 +5157,7 @@ class SynchronizationService
      * @return array<int, array<string, string|null>> The extracted records,
      *         in document order.
      *
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function parseHtmlResponse(string $body, array $configuration): array
     {
@@ -4766,7 +5216,7 @@ class SynchronizationService
      * @return string|null The extracted (trimmed) text or attribute value,
      *         or null when the selector matches nothing.
      *
-     * @spec openspec/changes/markdown-and-html-source-fetchers/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-markdown-and-html-source-extraction-req-007
      */
     private function extractHtmlField(Crawler $container, string $fieldSelector): ?string
     {
@@ -4848,18 +5298,24 @@ class SynchronizationService
      * location logic. This helper bridges the two by resolving the source's
      * OpenRegister object and delegating the call.
      *
-     * @param array  $source   The source value object to call with.
-     * @param string $endpoint The endpoint to call.
-     * @param string $method   The HTTP method.
-     * @param array  $config   The call configuration.
-     * @param bool   $read     Whether this is a single-object read call.
-     * @param mixed  $sink     Optional stream resource passed through to CallService::call() as its Guzzle
-     *                         `sink` option so the response body streams into it (stream-file-content #110);
-     *                         null = unchanged buffered behaviour.
+     * @param array                      $source   The source value object to call with.
+     * @param string                     $endpoint The endpoint to call.
+     * @param string                     $method   The HTTP method.
+     * @param array                      $config   The call configuration.
+     * @param bool                       $read     Whether this is a single-object read call.
+     * @param mixed                      $sink     Optional stream resource passed through to CallService::call() as its Guzzle
+     *                                             `sink` option so the response body streams into it (stream-file-content #110);
+     *                                             null = unchanged buffered behaviour.
+     * @param ExecutionTraceContext|null $trace    The active execution trace context, forwarded to
+     *                                             `CallService::call()` so the call is stamped
+     *                                             with `traceId` and captured as a `call` step
+     *                                             (execution-trace REQ-001/REQ-002,
+     *                                             http-call-engine REQ-011).
      *
      * @return ObjectEntity The resulting call log (an OpenRegister object).
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
      * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      */
     private function callSourceObject(
@@ -4868,7 +5324,8 @@ class SynchronizationService
         string $method='GET',
         array $config=[],
         bool $read=false,
-        mixed $sink=null
+        mixed $sink=null,
+        ?ExecutionTraceContext $trace=null
     ): ObjectEntity {
         // A transient, never-persisted ad-hoc source (REQ-012 — see
         // findOrCreateSourceByLocation()) has no OpenRegister object to
@@ -4879,7 +5336,7 @@ class SynchronizationService
             $sourceObject->setUuid((string) ($source['uuid'] ?? ''));
             $sourceObject->setObject($source);
 
-            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink);
+            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink, trace: $trace);
         }
 
         // Address the source by its OpenRegister uuid (the canonical identifier);
@@ -4891,7 +5348,7 @@ class SynchronizationService
 
         $sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
 
-        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink);
+        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink, trace: $trace);
     }//end callSourceObject()
 
     /**
@@ -4970,7 +5427,7 @@ class SynchronizationService
      *
      * @return array Updated configuration with pagination settings.
      *
-     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function getNextPage(array $config, array $sourceConfig, int $currentPage): array
     {
@@ -5097,13 +5554,17 @@ class SynchronizationService
     /**
      * Write an created, updated or deleted object to an external target.
      *
-     * @param array       $synchronization The synchronization to run.
-     * @param array       $contract        The contract to enforce.
-     * @param string      $endpoint        The endpoint to write the object to.
-     * @param array|null  $targetObject    Update referenced targetObject so we can return response here.
-     * @param string|null $mutationType    If dealing with single object synchronization, the type of the
-     *                                     mutation that will be handled, 'create', 'update' or 'delete'.
-     *                                     Used for syncs to extern sources.
+     * @param array                      $synchronization The synchronization to run.
+     * @param array                      $contract        The contract to enforce.
+     * @param string                     $endpoint        The endpoint to write the object to.
+     * @param array|null                 $targetObject    Update referenced targetObject so we can return response here.
+     * @param string|null                $mutationType    If dealing with single object synchronization, the type of the
+     *                                                    mutation that will be handled, 'create', 'update' or 'delete'.
+     *                                                    Used for syncs to extern sources.
+     * @param ExecutionTraceContext|null $trace           The active execution trace context, threaded through to
+     *                                                    `CallService::call()` so the outbound dispatch is
+     *                                                    captured as a `call` step (execution-trace
+     *                                                    REQ-001/REQ-002).
      *
      * @return array The updated contract payload array.
      *
@@ -5113,13 +5574,16 @@ class SynchronizationService
      * @throws NotFoundExceptionInterface
      * @throws SyntaxError
      * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
      */
     private function writeObjectToTarget(
         array $synchronization,
         array $contract,
         string $endpoint,
         ?array &$targetObject=null,
-        ?string $mutationType=null
+        ?string $mutationType=null,
+        ?ExecutionTraceContext $trace=null
     ): array {
         $targetId = ($contract['targetId'] ?? null);
         $target   = $this->findSource(id: ($synchronization['targetId'] ?? null));
@@ -5172,7 +5636,7 @@ class SynchronizationService
             }
 
             $response = $this->callLogResponse(
-                callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig)
+                callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace)
             );
 
             $contract['targetHash'] = md5(serialize($response['body']));
@@ -5191,7 +5655,7 @@ class SynchronizationService
 
             $this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
             $response = $this->callLogResponse(
-                callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig)
+                callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: 'POST', config: $targetConfig, trace: $trace)
             );
 
             $body = json_decode($response['body'], true);
@@ -5234,7 +5698,7 @@ class SynchronizationService
 
         $this->applyFileUploadToTargetConfig(targetConfig: $targetConfig, contract: $contract);
         $response = $this->callLogResponse(
-            callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig)
+            callLog: $this->callSourceObject(source: $target, endpoint: $endpoint, method: $method, config: $targetConfig, trace: $trace)
         );
 
         $decodedResponseBody = json_decode($response['body'] ?? '', true);
@@ -5341,7 +5805,7 @@ class SynchronizationService
      *
      * @return array The serialized saved object payload.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processSaveObjectRule(array $rule, array $data): array
     {
@@ -5383,7 +5847,7 @@ class SynchronizationService
      * @throws ContainerExceptionInterface When the container fails to resolve a service.
      * @throws NotFoundExceptionInterface  When a required service is not found.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processExtendInputRule(array $config, array $data): array
     {
@@ -6514,7 +6978,7 @@ class SynchronizationService
      *
      * @return JSONResponse Response containing error details and HTTP status code.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processErrorRule(array $rule): JSONResponse
     {
@@ -6541,7 +7005,7 @@ class SynchronizationService
      * @throws LoaderError                      When there is an error loading the mapping.
      * @throws SyntaxError                      When there is a syntax error in the mapping configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processMappingRule(array $rule, array $data): array
     {
@@ -6559,7 +7023,7 @@ class SynchronizationService
      *
      * @return array The mapped data.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processMapping(OrMapping|ObjectEntity|array $mapping, array $data): array
     {
@@ -6576,11 +7040,51 @@ class SynchronizationService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function processSyncRule(array $rule, array $data): array
     {
-        // $rule is reserved for future synchronization logic; return data unchanged.
+        $target = trim(
+                (string) (($rule['configuration']['synchronization']['synchronization'] ?? null) ?? ($rule['configuration']['synchronization'] ?? ''))
+                );
+
+        // A rule type that is offered in the editor and silently does nothing is
+        // worse than one that is absent: the author sees their rule listed, in
+        // order, apparently applied. Say so instead.
+        if ($target === '' || is_array($target) === true) {
+            throw new Exception(
+                'A "synchronization" rule must name the synchronization to run in '
+                .'configuration.synchronization.synchronization.'
+            );
+        }
+
+        // Guard the obvious loop. A synchronization whose own rule runs itself
+        // recurses until the process dies, and the same holds for any chain that
+        // comes back round — so every synchronization already entered on this
+        // call stack is off limits, not merely the immediate one.
+        if (in_array($target, self::$syncChainStack, true) === true) {
+            throw new Exception(
+                'A "synchronization" rule would re-enter synchronization "'.$target
+                .'", which is already running. Chain synchronizations with a flow '
+                .'instead: an OpenRegister flow expresses ordering explicitly and '
+                .'the engine bounds the recursion.'
+            );
+        }
+
+        self::$syncChainStack[] = $target;
+
+        try {
+            $this->synchronize(
+                synchronization: $this->getSynchronization(id: $target),
+                isTest: false,
+                force: filter_var((($rule['configuration']['synchronization']['force'] ?? false)), FILTER_VALIDATE_BOOLEAN)
+            );
+        } finally {
+            array_pop(self::$syncChainStack);
+        }
+
+        // A sync rule is a side effect, not a transform: the record travelling
+        // through the pipeline is unchanged by having triggered another sync.
         return $data;
     }//end processSyncRule()
 
@@ -6594,7 +7098,7 @@ class SynchronizationService
      *
      * @throws Exception When the JsonLogic evaluator throws.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function checkRuleConditions(array $rule, array $data): bool
     {
@@ -6615,7 +7119,7 @@ class SynchronizationService
      *
      * @return array The array with encoded array keys
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-3
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -6711,16 +7215,21 @@ class SynchronizationService
     /**
      * Process a single object during synchronization.
      *
-     * @param array                 $synchronization The synchronization being processed.
-     * @param array                 $object          The object to synchronize.
-     * @param array                 $result          The current result tracking data.
-     * @param bool                  $isTest          Whether this is a test run.
-     * @param bool                  $force           Whether to force synchronization regardless of changes.
-     * @param SynchronizationRunLog $log             The synchronization log.
-     * @param FlowToken             $flowToken       The flow token shared across the synchronization run.
-     * @param string|null           $mutationType    The type of object mutation.
+     * @param array                      $synchronization The synchronization being processed.
+     * @param array                      $object          The object to synchronize.
+     * @param array                      $result          The current result tracking data.
+     * @param bool                       $isTest          Whether this is a test run.
+     * @param bool                       $force           Whether to force synchronization regardless of changes.
+     * @param SynchronizationRunLog      $log             The synchronization log.
+     * @param FlowToken                  $flowToken       The flow token shared across the synchronization run.
+     * @param string|null                $mutationType    The type of object mutation.
+     * @param ExecutionTraceContext|null $trace           The active execution trace context, when this item is processed
+     *                                                    from within a traced execution (execution-trace
+     *                                                    REQ-001/REQ-002).
      *
      * @return array Contains updated result data and the targetId ['result' => array, 'targetId' => string|null].
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
      */
     private function processSynchronizationObject(
         array $synchronization,
@@ -6730,11 +7239,27 @@ class SynchronizationService
         bool $force,
         SynchronizationRunLog $log,
         FlowToken &$flowToken,
-        ?string $mutationType=null
+        ?string $mutationType=null,
+        ?ExecutionTraceContext $trace=null
     ): array {
+        // Execution-trace REQ-002: one ordered `synchronization` step per
+        // item processed, redacted per REQ-003 before it is buffered.
+        $itemStepStart = microtime(true);
+
         // We can only deal with arrays (based on the source empty values or string might be returned).
         if (is_array($object) === false) {
             $result['objects']['invalid']++;
+            if ($trace !== null) {
+                $trace->addStep(
+                    type: 'synchronization',
+                    name: ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
+                    timing: null,
+                    status: 'skipped',
+                    startedAtMicrotime: $itemStepStart,
+                    finishedAtMicrotime: microtime(true),
+                );
+            }
+
             return ['result' => $result, 'targetId' => null];
         }
 
@@ -6762,6 +7287,18 @@ class SynchronizationService
         ) {
             // Increment skipped count in log since object doesn't meet conditions.
             $result['objects']['skipped']++;
+            if ($trace !== null) {
+                $trace->addStep(
+                    type: 'synchronization',
+                    name: ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
+                    timing: null,
+                    status: 'skipped',
+                    input: (new SensitiveFieldRegistry())->redactArray(data: $object),
+                    startedAtMicrotime: $itemStepStart,
+                    finishedAtMicrotime: microtime(true),
+                );
+            }
+
             return ['result' => $result, 'targetId' => null];
         }
 
@@ -6812,7 +7349,8 @@ class SynchronizationService
                 object: $object,
                 isTest: $isTest,
                 force: $force,
-                mutationType: $mutationType
+                mutationType: $mutationType,
+                trace: $trace
             );
 
             $synchronizationContract = $synchronizationContractResult['contract'];
@@ -6843,7 +7381,8 @@ class SynchronizationService
                 isTest: $isTest,
                 force: $force,
                 log: $log,
-                mutationType: $mutationType
+                mutationType: $mutationType,
+                trace: $trace
             );
 
             $synchronizationContract = $synchronizationContractResult['contract'];
@@ -6882,6 +7421,29 @@ class SynchronizationService
         }
 
         $targetId = $synchronizationContract['targetId'] ?? null;
+
+        if ($trace !== null) {
+            $itemStepStatus = 'success';
+            if (($resultAction ?? null) === null) {
+                $itemStepStatus = 'skipped';
+            }
+
+            $itemStepOutputData = [];
+            if (is_array($synchronizationContract) === true) {
+                $itemStepOutputData = $synchronizationContract;
+            }
+
+            $trace->addStep(
+                type: 'synchronization',
+                name: ($synchronization['name'] ?? ($synchronization['uuid'] ?? 'synchronization')),
+                timing: null,
+                status: $itemStepStatus,
+                input: (new SensitiveFieldRegistry())->redactArray(data: $object),
+                output: (new SensitiveFieldRegistry())->redactArray(data: $itemStepOutputData),
+                startedAtMicrotime: $itemStepStart,
+                finishedAtMicrotime: microtime(true),
+            );
+        }//end if
 
         return ['result' => $result, 'targetId' => $targetId];
     }//end processSynchronizationObject()
@@ -6929,7 +7491,7 @@ class SynchronizationService
      * @psalm-param   array<float|int> $numbers
      * @phpstan-param array<float|int> $numbers
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function calculateMedian(array $numbers): float
     {
@@ -6967,7 +7529,7 @@ class SynchronizationService
      * @psalm-return   array{name: string, duration_ms: float, description: string}
      * @phpstan-return array{name: string, duration_ms: float, description: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function getSlowestStage(array $stages): array
     {
@@ -7012,7 +7574,7 @@ class SynchronizationService
      * @psalm-param   array<string, array{duration_ms: float}> $stages
      * @phpstan-param array<string, array{duration_ms: float}> $stages
      *
-     * @spec openspec/changes/retrofit-2026-05-25-synchronization-engine/tasks.md#task-5
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function calculateEfficiencyRatio(array $stages): float
     {

@@ -45,7 +45,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-notifynl-rest-provider-with-jwt-signed-requests
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -71,7 +71,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-notifynl-rest-provider-with-jwt-signed-requests
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 class RestNotifyNlProvider implements SmsProviderInterface
 {
@@ -134,7 +134,7 @@ class RestNotifyNlProvider implements SmsProviderInterface
      *
      * @return string The stable `notifynl` provider identifier.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
      */
     public function getProviderId(): string
     {
@@ -147,7 +147,7 @@ class RestNotifyNlProvider implements SmsProviderInterface
      *
      * @return string The provider display name.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
      */
     public function getProviderName(): string
     {
@@ -160,7 +160,7 @@ class RestNotifyNlProvider implements SmsProviderInterface
      *
      * @return array<string, mixed> The NotifyNL source configuration JSON Schema.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
+     * @spec openspec/specs/notifynl-sms-channel/spec.md#requirement-log-and-notifynl-rest-provider-bindings-req-002
      */
     public function getConfigSchema(): array
     {
@@ -210,7 +210,7 @@ class RestNotifyNlProvider implements SmsProviderInterface
      *
      * @return DeliveryResult The accepted `queued` result carrying NotifyNL's `id`.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-notifynl-rest-provider-with-jwt-signed-requests
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function send(array $sourceConfiguration, string $to, string $body, array $options=[]): DeliveryResult
     {
@@ -263,7 +263,7 @@ class RestNotifyNlProvider implements SmsProviderInterface
      *
      * @return DeliveryResult The current normalised status.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public function fetchStatus(array $sourceConfiguration, string $providerMessageId): DeliveryResult
     {

@@ -104,7 +104,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -150,7 +150,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/events-cloudevents/spec.md
      * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
      */
     #[NoAdminRequired]
@@ -203,7 +203,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/events-cloudevents/spec.md
      * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-non-admin-subscription-requests-for-nc-native-types-must-be-gated-via-the-existing-adr-023-action-matrix-req-005
      */
     #[NoAdminRequired]
@@ -256,7 +256,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -294,7 +294,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -346,7 +346,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-5
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -400,7 +400,7 @@ class EventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-events-cloudevents/tasks.md#task-3
+     * @spec openspec/specs/events-cloudevents/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

@@ -48,6 +48,8 @@
     "approval.reject": ["admin"],
     "catalog.instantiate": ["admin"],
     "configuration.export": ["admin"],
-    "configuration.import": ["admin"]
+    "configuration.import": ["admin"],
+    "environment.manage": ["admin"],
+    "environment.promote": ["admin"]
   }
 }

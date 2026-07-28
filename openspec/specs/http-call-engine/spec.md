@@ -561,3 +561,336 @@ endpoints MUST return `404` for an unknown source id and MUST NOT carry
 - **WHEN** they call either circuit-breaker endpoint
 - **THEN** the request SHALL be rejected by NC's admin requirement
 
+### Requirement: credentialRef source authentication contract (REQ-SBC-001)
+
+The engine MUST accept a `credentialRef` object under a Source's
+`configuration.authentication` in exactly one of two shapes:
+`{"credentialId": "<uuid>"}` (primary) or `{"credentialName": "<name>"}`
+(convenience). When `credentialRef` is
+present, the engine MUST reject the call as a hard config error (synthetic
+409 CallLog via `saveEarlyErrorLog()`) if any sibling field exists under
+`authentication` besides `credentialRef`, if both `credentialId` and
+`credentialName` are set, or if the set value is empty. Embedded secret
+fields MUST NOT be merged, rendered, or dispatched for a `credentialRef`
+source under any circumstance. A `credentialName` MUST be resolved at call
+time against the acting user's OR `brokeredcredential` metadata objects;
+exactly one match resolves to its `credentialId`; zero or multiple matches
+MUST be a hard config error naming the reference and the match count — never
+a guess.
+
+#### Scenario: a clean credentialId ref is accepted
+
+- **GIVEN** a source whose `configuration.authentication` is exactly
+  `{"credentialRef": {"credentialId": "00000000-0000-0000-0000-000000000000"}}`
+- **WHEN** `CallService::call(...)` runs
+- **THEN** the call SHALL proceed to brokered dispatch (REQ-SBC-002)
+- **AND** no `authentication` material SHALL appear in the outbound request config
+- @e2e exclude backend config validation — covered by PHPUnit
+
+#### Scenario: sibling embedded secret next to credentialRef is a hard config error
+
+- **GIVEN** `configuration.authentication = {"credentialRef": {"credentialId":
+  "00000000-0000-0000-0000-000000000000"}, "client_secret": "YOUR_API_KEY_HERE"}`
+- **WHEN** `call(...)` runs
+- **THEN** a synthetic 409 `call_log` SHALL be persisted with an actionable
+  message stating embedded secrets are forbidden alongside `credentialRef`
+- **AND** no outbound request SHALL be dispatched (neither brokered nor Guzzle)
+- @e2e exclude backend config validation — covered by PHPUnit
+
+#### Scenario: ambiguous credentialName is a hard config error, never a guess
+
+- **GIVEN** `credentialRef = {"credentialName": "doffin-subscription"}` AND the
+  acting user owns two `brokeredcredential` objects with that name
+- **WHEN** `call(...)` runs
+- **THEN** a synthetic 409 `call_log` SHALL be persisted naming the reference
+  and the match count (2)
+- **AND** no outbound request SHALL be dispatched
+- @e2e exclude backend config validation — covered by PHPUnit
+
+### Requirement: Brokered dispatch through CredentialBrokerService (REQ-SBC-002)
+
+`CallService::dispatchRequest()` MUST route a source whose merged
+configuration carries `authentication.credentialRef` IN-PROCESS through
+`CredentialBrokerService::request(credentialId, appId: 'openconnector',
+method, path, headers, body)` instead of the internal Guzzle client, after
+guarding availability via `class_exists` on the broker class AND
+`IAppManager::isEnabledForUser('openregister')`. The engine MUST derive
+`path` as the path + query-string portion of the composed URL (`location` +
+`endpoint`, with `config['query']` serialised into the query string) — the
+provider catalogue's host-lock is the sole authority for the target host.
+The broker's `array{status, headers, body}` return MUST be adapted to a
+PSR-7 response so `buildResponseData()`, `buildAndPersistCallLog()`, and
+`sourceRateLimit()` operate unchanged; an upstream non-2xx status returned by
+the broker is a completed call and MUST flow through as a normal CallLog with
+that status. Pagination, rate-limiting, and retry logic MUST remain in
+OpenConnector: each page fetched by
+`SynchronizationService::fetchSinglePageData()` is one brokered request. In
+v1 the engine MUST reject as a 409 config error: `credentialRef` on
+`type: soap` sources, `asynchronous=true` dispatch, and `cert`/`ssl_key`
+config alongside `credentialRef`.
+
+#### Scenario: a brokered call bypasses Guzzle and persists a normal CallLog
+
+- **GIVEN** a healthy source with a valid `credentialRef` AND the broker
+  reachable in-process AND an upstream 200 response
+- **WHEN** `call(...)` runs
+- **THEN** `CredentialBrokerService::request(...)` SHALL be invoked with
+  `appId = 'openconnector'` and the derived path + query
+- **AND** the internal Guzzle client SHALL NOT be invoked
+- **AND** a `call_log` SHALL be persisted with the same envelope shape as a
+  Guzzle-path call (statusCode 200, headers, body, responseTime, retention)
+- @e2e exclude backend dispatch plumbing — covered by PHPUnit
+
+#### Scenario: each synchronization page is one brokered request
+
+- **GIVEN** a synchronization against a brokered source whose upstream
+  paginates across 3 pages
+- **WHEN** the synchronization runs
+- **THEN** the broker SHALL be invoked exactly 3 times (one per page)
+- **AND** rate-limit headers returned by the broker SHALL feed the engine's
+  existing `sourceRateLimit()` tracking
+- @e2e exclude backend sync pagination — covered by PHPUnit
+
+#### Scenario: upstream 404 through the broker is a completed call
+
+- **GIVEN** a brokered source AND the provider upstream returns 404
+- **WHEN** `call(...)` runs
+- **THEN** a `call_log` SHALL be persisted with `statusCode = 404` (not a
+  broker refusal, not a config error)
+- @e2e exclude backend dispatch plumbing — covered by PHPUnit
+
+### Requirement: Acting user for sessionless brokered calls (REQ-SBC-003)
+
+Interactive brokered calls MUST rely on the broker's session-derived owner
+guard. Background executions (cron `JobTask` → synchronizations — no user
+session) MUST pass `actingUserId` = the referenced credential's owner via the
+broker's optional acting-user parameter for in-process trusted callers
+(cross-repo: specced in openregister change `credential-doriath-leaf`). The
+acting-user parameter substitutes only the session identity: allowedApps
+(which MUST include `openconnector`), provider allowRules, and host-lock
+remain enforced by the broker. When the deployed broker does not yet expose
+the acting-user parameter, a sessionless brokered call MUST soft-fail as a
+409 config error (feature-detected — never a PHP type error).
+
+#### Scenario: a background sync brokered call passes the credential owner
+
+- **GIVEN** a synchronization job running from cron with no user session AND a
+  source with a valid `credentialRef`
+- **WHEN** the job dispatches a page request
+- **THEN** the broker SHALL be invoked with `actingUserId` = the credential's
+  owner
+- **AND** the broker's allowedApps / allowRules / host-lock guards SHALL still
+  apply
+- @e2e exclude backend cron execution — covered by PHPUnit
+
+#### Scenario: older broker without acting-user support soft-fails sessionless calls
+
+- **GIVEN** a deployed OpenRegister whose `request()` has no acting-user
+  parameter AND a sessionless brokered call
+- **WHEN** the job dispatches
+- **THEN** a synthetic 409 `call_log` SHALL be persisted with an actionable
+  message about the OpenRegister version requirement
+- **AND** no fallback dispatch SHALL occur
+- @e2e exclude backend cron execution — covered by PHPUnit
+
+### Requirement: Secret hygiene and refusal logging for brokered calls (REQ-SBC-004)
+
+The brokered credential's secret value MUST NEVER appear in source
+configuration, synchronization logs, call logs, or error messages — with
+brokering the secret never enters the OpenConnector process. Broker refusals
+(`CredentialAccessDeniedException`) MUST be persisted as 403 CallLogs whose
+statusMessage carries the broker-surfaced guard name (e.g. `allowedApps`,
+with the actionable hint that the credential's allowedApps must include
+`openconnector`) and MUST NOT carry the request payload. Broker transport
+failures (`CredentialUpstreamException`) MUST be persisted as 502 CallLogs.
+When the broker classes are absent, the openregister app is disabled, or the
+referenced credential no longer exists, the call MUST fail with a clear 409
+config-error CallLog; the engine MUST NOT fall back to embedded secrets.
+
+#### Scenario: a broker 403 logs the guard name, not the payload
+
+- **GIVEN** a brokered source whose credential's allowedApps does not include
+  `openconnector`
+- **WHEN** `call(...)` runs
+- **THEN** a `call_log` SHALL be persisted with `statusCode = 403` and a
+  statusMessage naming the failing guard and the allowedApps remedy
+- **AND** neither the request payload nor any secret material SHALL appear in
+  the log or error message
+- @e2e exclude backend error mapping — covered by PHPUnit
+
+#### Scenario: broker absent soft-fails with a config error, no fallback
+
+- **GIVEN** a source with a `credentialRef` AND the openregister app disabled
+- **WHEN** `call(...)` runs
+- **THEN** a synthetic 409 `call_log` SHALL be persisted stating the credential
+  broker is unavailable
+- **AND** no outbound request SHALL be dispatched with embedded secrets
+- @e2e exclude backend error mapping — covered by PHPUnit
+
+#### Scenario: deleted credential soft-fails with a config error
+
+- **GIVEN** a source referencing `credentialId =
+  00000000-0000-0000-0000-000000000000` that no longer exists
+- **WHEN** `call(...)` runs
+- **THEN** a synthetic 409 `call_log` SHALL be persisted naming the missing
+  reference
+- **AND** no outbound request SHALL be dispatched
+- @e2e exclude backend error mapping — covered by PHPUnit
+
+### Requirement: POST body sources and body-based pagination (REQ-010)
+
+`CallService::call()` MUST resolve the effective HTTP method
+(`decideMethod()`) and strip the CRUD-override keys (`createMethod`/
+`updateMethod`/`destroyMethod`/`listMethod`/`readMethod`) AFTER merging the
+source's own `configuration` (`mergeSourceConfiguration()`), so that a
+Source-level method override takes effect for a call with no explicit
+call-time `method`/`config` override — matching how `SynchronizationService`
+invokes `call()` for every list/fetch call. A source's static
+`configuration.body` (a JSON string template) MUST be sent as the outbound
+request body unchanged. When `Synchronization.sourceConfig.paginationIn` is
+`"body"` (default: `"query"`, unchanged from the pre-existing behaviour),
+`CallService::normaliseRequestConfig()` MUST substitute the current page
+value into the request body at the `paginationQuery` dot-path instead of the
+query string: it MUST decode `config['body']` as JSON (starting from an
+empty object when the body is absent or not valid JSON, rather than
+dropping the page value), set the page value at that path, and re-encode.
+Because the source's static body template is re-merged fresh on every call
+(never accumulated across pages), this substitution MUST NOT compound
+across successive page fetches. A synchronization with no `paginationIn`
+MUST continue substituting the page value into the query string exactly as
+before.
+
+#### Scenario: a Source-level method override promotes a default-GET call to POST
+
+- **GIVEN** a Source whose `configuration.listMethod` is `"POST"`
+- **WHEN** `call(source, endpoint)` runs with no explicit `method`/`config`
+  override (the shape `SynchronizationService::callSourceObject()` always
+  uses)
+- **THEN** the dispatched method SHALL be `"POST"`
+- **AND** the persisted `call_log.request.method` SHALL be `"POST"`
+- **AND** `call_log.request` SHALL NOT carry a `listMethod` key (stripped
+  before persistence)
+
+#### Scenario: the source's static body template is sent as the request body
+
+- **GIVEN** the same POST-method Source, with `configuration.body` set to a
+  static JSON string template
+- **WHEN** `call(...)` runs
+- **THEN** the dispatched request body SHALL equal that JSON string
+  byte-for-byte
+
+#### Scenario: a source without a method override keeps dispatching its default method
+
+- **GIVEN** a Source with no `createMethod`/`updateMethod`/`destroyMethod`/
+  `listMethod`/`readMethod` in its `configuration`
+- **WHEN** `call(source, endpoint)` runs with no explicit `method` override
+- **THEN** the dispatched method SHALL be the caller's default (`"GET"` for
+  a list/fetch call), unchanged from pre-existing behaviour
+
+#### Scenario: body-based pagination substitutes the page value across successive pages
+
+- **GIVEN** a synchronization with `sourceConfig.paginationIn: "body"` and
+  `sourceConfig.paginationQuery: "page"`, and a Source whose
+  `configuration.body` is a static JSON template containing `"page": 1`
+  among other fields
+- **WHEN** three consecutive page fetches run (pages 1, 2, 3)
+- **THEN** each dispatched request body SHALL decode to the same template
+  with `page` set to that request's page number
+- **AND** every other field in the template SHALL be unchanged across all
+  three requests
+
+#### Scenario: body-based pagination without a static body template still sets the page key
+
+- **GIVEN** `sourceConfig.paginationIn: "body"` but the Source has no
+  `configuration.body`
+- **WHEN** a page fetch runs
+- **THEN** the dispatched request body SHALL decode to `{"page": N}` (N
+  being the current page), rather than silently dropping the pagination
+  directive
+
+#### Scenario: query-string pagination is unaffected when paginationIn is omitted
+
+- **GIVEN** a synchronization with no `sourceConfig.paginationIn`
+- **WHEN** a page fetch runs
+- **THEN** the page value SHALL be substituted into the query string at
+  `paginationQuery`, exactly as before this change
+- **AND** no `body` key SHALL be introduced by the pagination step
+- @e2e exclude backend regression — covered by PHPUnit
+
+**Notes:**
+
+- This closes a latent ordering bug, not just an additive feature:
+  `decideMethod()` previously ran BEFORE `mergeSourceConfiguration()` (see
+  REQ-001's documented Phase 2 vs Phase 7), so a Source's own method
+  override was invisible unless the CALLER separately passed a matching
+  `method`/`config` override at call time. `SynchronizationService` never
+  did that, so this override effectively never worked end-to-end for a
+  synchronization-driven fetch before this change.
+- The override-key `unset()` moved together with `decideMethod()`; this
+  also fixes a secondary latent leak where a source-only method override
+  was never stripped from the config before persistence.
+- `paginationIn` lives on `Synchronization.sourceConfig`, alongside the
+  pre-existing `paginationQuery`/`maxPages`/`resultsPosition` — a
+  per-synchronization pagination-strategy concern, not a Source-level
+  setting.
+- Applies identically on the brokered-credential dispatch path
+  (`source-broker-credentials`), since both changes run inside
+  `CallService::call()` before the Guzzle-vs-broker dispatch branch.
+- Methods touched: `CallService::call()` (phase reorder only, no signature
+  change), new `CallService::applyBodyPagination()`,
+  `SynchronizationService::getNextPage()` (adds `paginationIn` to the
+  `pagination` sub-array it already builds).
+
+### Requirement: Trace-scoped call correlation via call_log.sessionId (REQ-011)
+
+`CallService::buildAndPersistCallLog()` MUST set the persisted
+`call_log.sessionId` field to the active `ExecutionTraceContext`'s
+`traceId` (per `execution-trace` REQ-001) when a trace context is present
+for the call, and MUST leave `sessionId` unset — exactly as it is today,
+byte-for-byte — when no trace context is present. `CallService::call()`
+MUST hand the already-redacted `request`/`response` array produced by
+`buildResponseData()` (per REQ-006) to the active `ExecutionTraceContext`,
+when present, as the `call` step's snapshot, WITHOUT running a second,
+independent redaction pass over the same data — the trace layer MUST NOT
+re-derive redaction from the pre-redaction config.
+
+@e2e exclude backend dispatch plumbing — covered by PHPUnit
+
+#### Scenario: sessionId is populated for a call inside a traced execution
+
+- **GIVEN** a `CallService::call()` dispatch made from within a traced
+  endpoint execution (an active `ExecutionTraceContext` with `traceId =
+  'abc-123'`)
+- **WHEN** the call completes and the `call_log` is persisted
+- **THEN** `call_log.sessionId` equals `'abc-123'`
+
+#### Scenario: sessionId stays unset for an untraced call
+
+- **GIVEN** a `CallService::call()` dispatch with no active
+  `ExecutionTraceContext` (e.g. `SourcesController::test()`)
+- **WHEN** the call completes and the `call_log` is persisted
+- **THEN** `call_log.sessionId` is absent, unchanged from pre-existing
+  behaviour
+
+#### Scenario: the trace's call step reuses the persisted call_log's redacted data
+
+- **GIVEN** a traced call to a source configured with a `client_secret`
+  form parameter
+- **WHEN** the call completes
+- **THEN** the `execution_trace`'s `call` step `output` is the same
+  redacted `request`/`response` array persisted to `call_log` (per REQ-006)
+  — no second redaction implementation runs, and no plaintext secret exists
+  in either location
+
+#### Notes
+
+- This requirement changes only the previously-always-absent `sessionId`
+  field's value when a trace context exists; it does not alter REQ-001's
+  dispatch contract, REQ-002's certificate handling, REQ-006's redaction
+  rules, REQ-007's retry policy, or REQ-008/REQ-009's circuit-breaker
+  behaviour in any way.
+- `sessionId` was already declared on the `call_log` schema
+  ("Session token for correlating multi-call traces") but had zero write
+  sites before this change — see `design.md` Decision 5 for why this reuses
+  the existing field rather than adding a new column.
+

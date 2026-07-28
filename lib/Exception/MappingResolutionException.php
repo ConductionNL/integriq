@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+ * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Exception;
 /**
  * Thrown when a declared field mapping cannot resolve against submitted values.
  *
- * @spec openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
+ * @spec openspec/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002
  */
 class MappingResolutionException extends Exception
 {

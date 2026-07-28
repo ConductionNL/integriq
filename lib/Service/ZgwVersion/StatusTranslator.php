@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenConnector\Service\ZgwVersion;
 /**
  * Translates the `status` resource between `1.0` and `1.6`.
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
  */
 class StatusTranslator extends AbstractZgwResourceTranslator
 {
@@ -54,7 +54,7 @@ class StatusTranslator extends AbstractZgwResourceTranslator
      *
      * @return string The resource slug.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function getResource(): string
     {
@@ -69,7 +69,7 @@ class StatusTranslator extends AbstractZgwResourceTranslator
      *
      * @return array<string, mixed> The `1.6`-shaped payload.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function translateToV16(array $payload): array
     {
@@ -86,7 +86,7 @@ class StatusTranslator extends AbstractZgwResourceTranslator
      *
      * @return array<string, mixed> The `1.0`-shaped payload.
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function translateToV1x(array $payload): array
     {

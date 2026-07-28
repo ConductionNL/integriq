@@ -49,7 +49,9 @@ use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
+use OCA\OpenConnector\Flow\FlowConfigGuard;
 use OCA\OpenConnector\Service\AuthenticationService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Twig\AuthenticationExtension;
@@ -66,12 +68,13 @@ use Twig\Error\SyntaxError;
 use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
 use Twig\Sandbox\SecurityPolicy;
+use UnexpectedValueException;
 
 /**
  * Executes outbound API calls against configured Sources and persists CallLog entries.
  *
- * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
- * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ * @spec openspec/specs/http-call-engine/spec.md
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
 class CallService
 {
@@ -133,6 +136,19 @@ class CallService
     private Environment $twig;
 
     /**
+     * Twig environment used to render the Source-relative upstream PATH of a
+     * `targetType: api` endpoint (ocon#1069).
+     *
+     * Deliberately separate from {@see $twig}: strict on undefined variables,
+     * without the authentication runtime, and without autoescape (values are
+     * percent-encoded for URL-path context instead). See
+     * {@see renderEndpointPath()} for why each of those differs.
+     *
+     * @var Environment
+     */
+    private Environment $pathTwig;
+
+    /**
      * Cookie jar shared across calls in the same service instance.
      *
      * @var CookieJar
@@ -164,7 +180,7 @@ class CallService
      * @param BrokeredCallService    $brokeredCallService    Brokered (credentialRef) dispatch through the OpenRegister credential broker.
      * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection registry used for CallLog redaction (secret-hygiene).
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -190,6 +206,32 @@ class CallService
 
         $this->twig->addExtension(new AuthenticationExtension());
         $this->twig->addRuntimeLoader(new AuthenticationRuntimeLoader(authenticationService: $authenticationService));
+
+        // The upstream PATH renderer (ocon#1069). Same engine, same sandbox
+        // shape, but strict on undefined variables (an unsatisfied placeholder
+        // must fail, not silently produce an empty path segment), without the
+        // authentication runtime (a URL is logged verbatim, so a credential
+        // must not be reachable from a path template) and without autoescape
+        // (renderEndpointPath() percent-encodes for URL-path context, which
+        // HTML escaping would neither achieve nor be a no-op alongside).
+        $this->pathTwig = new Environment(
+            $loader,
+            [
+                'autoescape'       => false,
+                'strict_variables' => true,
+            ]
+        );
+        $this->pathTwig->addExtension(
+            new SandboxExtension(
+                policy: new SecurityPolicy(
+                    allowedTags: ['if', 'for', 'set'],
+                    allowedFilters: ['upper', 'lower', 'trim', 'default', 'replace'],
+                    allowedFunctions: [],
+                ),
+                sandboxed: true
+            )
+        );
+
         $this->cookieJar = new CookieJar();
 
         $this->errorRetention   = 2592000000;
@@ -219,7 +261,7 @@ class CallService
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -244,7 +286,7 @@ class CallService
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function renderValue(array|string $value, array $sourceData): array|string
     {
@@ -285,7 +327,7 @@ class CallService
      * @throws LoaderError If there is an error loading a Twig template.
      * @throws SyntaxError If there is a syntax error in a Twig template.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function renderConfiguration(array $configuration, array $sourceData): array
     {
@@ -303,6 +345,185 @@ class CallService
     }//end renderConfiguration()
 
     /**
+     * Render a Source-relative upstream path from an inbound request context,
+     * then refuse it if the RESULT escapes the Source (ocon#1069).
+     *
+     * THE DEFECT
+     * ----------
+     * `EndpointService::handleSourceRequest()` hands the endpoint's authored
+     * `endpoint` string straight to {@see call()}, which concatenates it onto
+     * `source.location` with no substitution at all — Twig runs over
+     * `configuration` (see {@see renderConfiguration()}) and never over the
+     * path. An endpoint whose path is `/repos/{owner}/{repo}/issues` therefore
+     * sent the braces literally upstream, so a `targetType: api` endpoint could
+     * not parameterise its upstream path from the inbound request at all.
+     *
+     * WHY A SEPARATE TWIG ENVIRONMENT
+     * -------------------------------
+     * The engine is the same; two properties deliberately are not.
+     *
+     *  - `strict_variables` is ON. A placeholder the inbound request does not
+     *    satisfy is a failure, not an empty string: silently collapsing
+     *    `/repos/{{owner}}/issues` to `/repos//issues` would dispatch a
+     *    DIFFERENT upstream request and report success.
+     *  - The authentication functions (`oauthToken`, `jwtToken`, …) and the
+     *    `source` context are NOT exposed. `configuration` may carry a secret
+     *    because it is redacted before it reaches a CallLog; a URL is persisted
+     *    to `call_log.request.url` verbatim, so a secret that reaches the path
+     *    is a secret written to the log.
+     *
+     * SSRF CONTAINMENT
+     * ----------------
+     * Two independent layers, because templating means the effective path is
+     * only knowable at execute time:
+     *
+     *  1. Every substituted value is `rawurlencode()`d BEFORE rendering, so an
+     *     inbound value cannot contribute a `/`, `?`, `#` or a control
+     *     character to the path — only the authored literal can.
+     *  2. The FINAL rendered value is put through
+     *     {@see FlowConfigGuard::endpointEscapeCode()} — the app's single
+     *     containment predicate, the same rules `SourceCallNode` applies to a
+     *     rendered flow endpoint — plus an empty-segment check. An absolute
+     *     URL, a scheme-relative `//host`, a `../` traversal or a control
+     *     character is refused before any request is made.
+     *
+     * @param string $endpoint The authored, Source-relative path template.
+     * @param array  $context  The template context (inbound path/query/body values).
+     *
+     * @return string The rendered, containment-checked path.
+     *
+     * @throws UnexpectedValueException When a placeholder is unsatisfied, when the template
+     *                                  is unparseable, or when the rendered path escapes the
+     *                                  Source location.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md
+     */
+    public function renderEndpointPath(string $endpoint, array $context): string
+    {
+        if ($endpoint === '') {
+            return '';
+        }
+
+        $template = $this->normalisePathPlaceholders(endpoint: $endpoint);
+
+        // Nothing to render, and therefore nothing new to check: an endpoint
+        // without placeholders keeps its pre-ocon#1069 behaviour byte for byte.
+        if (str_contains(haystack: $template, needle: '{{') === false) {
+            return $endpoint;
+        }
+
+        try {
+            $rendered = $this->pathTwig->createTemplate(template: $template, name: 'endpointPath')
+                ->render(context: $this->escapeForPathContext(value: $context));
+        } catch (\Throwable $exception) {
+            throw new UnexpectedValueException(
+                'The endpoint path "'.$endpoint.'" could not be rendered from the request: '
+                .$exception->getMessage()
+            );
+        }
+
+        $escapeCode = FlowConfigGuard::endpointEscapeCode(endpoint: $rendered);
+        if ($escapeCode !== null) {
+            throw new UnexpectedValueException(
+                'The rendered endpoint path "'.$rendered.'" is refused before any request is made: '
+                .'it must stay relative to the source location ('.$escapeCode.').'
+            );
+        }
+
+        // An empty path segment is what an unsatisfied placeholder used to look
+        // like, and `//` is a host separator one normalisation away. Refused
+        // rather than normalised, so a broken template is visible.
+        if (str_contains(haystack: $rendered, needle: '//') === true) {
+            throw new UnexpectedValueException(
+                'The rendered endpoint path "'.$rendered.'" is refused before any request is made: '
+                .'it contains an empty path segment.'
+            );
+        }
+
+        return $rendered;
+
+    }//end renderEndpointPath()
+
+    /**
+     * Rewrite whole-segment OpenAPI-style `{name}` placeholders into Twig.
+     *
+     * Anchored to a COMPLETE `/`-delimited segment holding nothing but a bare
+     * identifier, so a Twig segment (`{{ name }}`, which starts `{{`) can never
+     * match and no partial or expression-bearing text is touched. Both spellings
+     * are accepted because the app already uses `{{ }}` in `endpointArray`,
+     * while `{name}` is the spelling an OpenAPI-shaped upstream path is
+     * written in.
+     *
+     * @param string $endpoint The authored path template.
+     *
+     * @return string The template with single-brace placeholders normalised.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md
+     */
+    private function normalisePathPlaceholders(string $endpoint): string
+    {
+        return implode(
+            '/',
+            array_map(
+                static function (string $segment): string {
+                    $matches = [];
+                    if (preg_match('/^\{([A-Za-z_][A-Za-z0-9_]*)\}$/', $segment, $matches) === 1) {
+                        return '{{ '.$matches[1].' }}';
+                    }
+
+                    return $segment;
+                },
+                explode('/', $endpoint)
+            )
+        );
+
+    }//end normalisePathPlaceholders()
+
+    /**
+     * Percent-encode every scalar in the path template's context.
+     *
+     * Applied BEFORE rendering rather than as a Twig filter, so containment
+     * does not depend on the endpoint author remembering to write one. A value
+     * that has been `rawurlencode()`d cannot contribute a path separator, a
+     * query/fragment delimiter or a control character to the rendered path —
+     * only the authored literal can.
+     *
+     * @param mixed $value The context value.
+     *
+     * @return mixed The value with every scalar percent-encoded.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md
+     */
+    private function escapeForPathContext(mixed $value): mixed
+    {
+        if (is_array($value) === true) {
+            return array_map(
+                function ($item) {
+                    return $this->escapeForPathContext(value: $item);
+                },
+                $value
+            );
+        }
+
+        if (is_bool($value) === true) {
+            if ($value === true) {
+                return 'true';
+            }
+
+            return 'false';
+        }
+
+        if (is_scalar($value) === false) {
+            // Null and objects have no defensible path spelling; rendering one
+            // would produce an empty segment, which is refused downstream.
+            return '';
+        }
+
+        return rawurlencode((string) $value);
+
+    }//end escapeForPathContext()
+
+    /**
      * Decides method based on configuration and returns that configuration.
      *
      * @param string  $default       The default method, used if no override is set.
@@ -311,7 +532,7 @@ class CallService
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function decideMethod(string $default, array $configuration, bool $read=false): string
     {
@@ -354,7 +575,7 @@ class CallService
      *
      * @return string File location on disk.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function writeFile(string $baseFileName, string $contents): string
     {
@@ -393,7 +614,7 @@ class CallService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function removeFile($filename): void
     {
@@ -413,7 +634,7 @@ class CallService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function getCertificate(array &$config)
     {
@@ -450,7 +671,7 @@ class CallService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-2
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function removeFiles(array $config): void
     {
@@ -900,7 +1121,7 @@ class CallService
      *
      * @return array The config with `body` rewritten to carry the new page value.
      *
-     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
      */
     private function applyBodyPagination(array $config): array
     {
@@ -945,7 +1166,7 @@ class CallService
      *
      * @throws GuzzleException On HTTP transport failure.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      */
     private function dispatchRequest(
@@ -1409,16 +1630,19 @@ class CallService
      * Applies rate-limit header updates, builds the CallLog payload, persists it, and
      * stitches the full response body back onto the returned ObjectEntity.
      *
-     * @param ObjectEntity   $source         The source ObjectEntity.
-     * @param array          $sourceData     The mutable source data array.
-     * @param array          $data           The structured request/response data from buildResponseData().
-     * @param boolean        $logBody        Whether to include the body in the log for non-error responses.
-     * @param \DateTime|null $successExpires Expiry for successful log entries.
-     * @param \DateTime|null $errorExpires   Expiry for error log entries.
+     * @param ObjectEntity               $source         The source ObjectEntity.
+     * @param array                      $sourceData     The mutable source data array.
+     * @param array                      $data           The structured request/response data from buildResponseData().
+     * @param boolean                    $logBody        Whether to include the body in the log for non-error responses.
+     * @param \DateTime|null             $successExpires Expiry for successful log entries.
+     * @param \DateTime|null             $errorExpires   Expiry for error log entries.
+     * @param ExecutionTraceContext|null $trace          The active execution trace context, when present.
      *
      * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
      *
      * @throws \OCP\DB\Exception On persistence failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
      */
     private function buildAndPersistCallLog(
         ObjectEntity $source,
@@ -1427,6 +1651,7 @@ class CallService
         bool $logBody,
         ?\DateTime $successExpires,
         ?\DateTime $errorExpires,
+        ?ExecutionTraceContext $trace=null,
     ): ObjectEntity {
         // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
         $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
@@ -1456,6 +1681,15 @@ class CallService
             'created'       => (new \DateTime())->format('c'),
             'expires'       => $this->formatExpires(expires: $expiresChosen),
         ];
+
+        // Execution-trace REQ-011: repurpose the previously-dead
+        // call_log.sessionId field to carry the active trace's traceId, so
+        // any existing call_log consumer can join on sessionId = traceId
+        // without a migration (design.md Decision 5). Left unset — exactly
+        // as today — when no trace context is active.
+        if ($trace !== null) {
+            $callLogData['sessionId'] = $trace->getTraceId();
+        }
 
         $callLog = $this->objectService->saveObject(
             object: $callLogData,
@@ -1489,7 +1723,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function guardCallPreconditions(
         ObjectEntity $source,
@@ -1713,6 +1947,12 @@ class CallService
 
         $timeStart = microtime(true);
         $attempt   = 0;
+        // Pre-declared so static analysis can prove the post-loop read is
+        // always non-null: every loop iteration either assigns $response
+        // before falling through to `break`, or `continue`s/`throw`s without
+        // reaching the return below — the defensive guard after the loop is
+        // therefore unreachable at runtime, but makes that guarantee explicit.
+        $response = null;
         do {
             $attempt++;
 
@@ -1764,6 +2004,13 @@ class CallService
 
             break;
         } while (true);
+
+        if ($response === null) {
+            // Unreachable in practice (see the pre-loop comment) — a hard
+            // failure here is safer than silently returning a malformed
+            // dispatch result.
+            throw new \RuntimeException('dispatchWithRetry() exited its retry loop without a response.');
+        }
 
         $timeEnd = microtime(true);
 
@@ -1938,7 +2185,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function resolveBrokeredDispatch(
         ObjectEntity $source,
@@ -1987,7 +2234,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure of the synthetic CallLog.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function hydrateInjectedCredentials(
         ObjectEntity $source,
@@ -2012,21 +2259,188 @@ class CallService
     }//end hydrateInjectedCredentials()
 
     /**
+     * Phase 7b+7c combined: resolves brokered/injected credentials for one
+     * call, or produces the synthetic config-error CallLog the caller must
+     * return immediately.
+     *
+     * Consolidates {@see resolveBrokeredDispatch()} (proxy `credentialRef`)
+     * and {@see hydrateInjectedCredentials()} (app-side placeholder
+     * injection) behind a single call so `call()` carries only ONE
+     * short-circuit check for both phases instead of three nested branches —
+     * keeps `call()`'s cyclomatic/NPath complexity within budget without
+     * changing any behaviour (REQ-SBC-001/002/003/004).
+     *
+     * @param ObjectEntity   $source       The source ObjectEntity.
+     * @param array          $config       The merged call configuration (Phase 7 output).
+     * @param array          $sourceData   The raw source data array.
+     * @param boolean        $asynchronous Whether asynchronous dispatch was requested.
+     * @param \DateTime|null $errorExpires Expiry for error log entries.
+     *
+     * @return array{shortCircuit: ObjectEntity|null, brokeredCredential: array|null, sourceData: array}
+     *
+     * @throws \OCP\DB\Exception On persistence failure of a synthetic CallLog.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function resolveCallCredentials(
+        ObjectEntity $source,
+        array $config,
+        array $sourceData,
+        bool $asynchronous,
+        ?\DateTime $errorExpires,
+    ): array {
+        $brokeredCredential = $this->resolveBrokeredDispatch(
+            source: $source,
+            config: $config,
+            sourceData: $sourceData,
+            asynchronous: $asynchronous,
+            errorExpires: $errorExpires,
+        );
+        if ($brokeredCredential instanceof ObjectEntity) {
+            // A synthetic 409 config-error CallLog was persisted — hard stop.
+            return [
+                'shortCircuit'       => $brokeredCredential,
+                'brokeredCredential' => null,
+                'sourceData'         => $sourceData,
+            ];
+        }
+
+        if ($brokeredCredential === null) {
+            $injected = $this->hydrateInjectedCredentials(
+                source: $source,
+                sourceData: $sourceData,
+                errorExpires: $errorExpires,
+            );
+            if ($injected instanceof ObjectEntity) {
+                return [
+                    'shortCircuit'       => $injected,
+                    'brokeredCredential' => null,
+                    'sourceData'         => $sourceData,
+                ];
+            }
+
+            $sourceData = $injected;
+        }
+
+        return [
+            'shortCircuit'       => null,
+            'brokeredCredential' => $brokeredCredential,
+            'sourceData'         => $sourceData,
+        ];
+
+    }//end resolveCallCredentials()
+
+    /**
+     * Re-resolve the dispatch source RAW from storage so the engine's
+     * credentials are its OWN property, never the caller's read (ocon#215).
+     *
+     * THE DEFECT CLASS (ocon#215): since ocon#147 the `source` schema's
+     * plaintext credential fields (`apikey`/`secret`/`password`/`jwt`/
+     * `authenticationConfig`) are `writeOnly: true`. OpenRegister's render
+     * boundary strips every writeOnly property on ANY rendered read —
+     * openregister#389 computes `$doWriteOnly = $schema->hasWriteOnlyProperties()`,
+     * so the strip is SCHEMA-gated, NOT `_rbac`-gated: an admin read, an
+     * `_rbac: false` read and a SystemOperationContext read all lose the
+     * secret (openregister#389/#429). So ANY of the ~18 callers that resolved a
+     * Source with rendering ON and handed it to {@see call()} was handing the
+     * engine a credential-free Source — and the outbound call went out
+     * UNAUTHENTICATED. Two sites were patched per-caller in ocon#212/#226;
+     * this closes the class STRUCTURALLY instead: `call()` re-reads the source
+     * itself before it touches auth, so a rendered Source can never cause an
+     * unauthenticated dispatch regardless of how the caller read it.
+     *
+     * `_render: false` IS THE LOAD-BEARING ARGUMENT — the same lesson ocon#212
+     * learned the hard way when its first fix used `_rbac: false` and webhooks
+     * still went out unsigned until ocon#226. `_render: false` returns the raw
+     * entity BEFORE renderEntity() is ever reached, keeping the writeOnly
+     * secret AND the `configuration.authentication.credentialRef` (the ref
+     * lives in `configuration`, which is not writeOnly, so it already survives
+     * — re-reading raw simply keeps the whole source consistent).
+     *
+     * Fallbacks (never throw, never dispatch an empty source):
+     *  - `$overruleAuth === true`: the caller is DELIBERATELY supplying auth on
+     *    the passed entity (the param's documented meaning — "overrule the
+     *    source authentication"). Re-reading would clobber that intent, so the
+     *    entity is honoured exactly as given.
+     *  - no uuid: an unpersisted / in-memory source (a source built in a test,
+     *    a PingAction probe, a freshly constructed entity) has nothing to
+     *    re-read; return it as passed.
+     *  - raw read misses or errors: fall back to the passed entity — this is
+     *    the pre-ocon#215 status quo for that source, never a regression, and
+     *    the engine still dispatches rather than silently dropping the call.
+     *
+     * @param ObjectEntity $source       The source ObjectEntity as passed by the caller.
+     * @param boolean      $overruleAuth Whether the caller is deliberately supplying auth (skip re-resolve).
+     *
+     * @return ObjectEntity The raw source entity (secrets intact), or the passed entity on any fallback.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function resolveSourceForDispatch(ObjectEntity $source, bool $overruleAuth): ObjectEntity
+    {
+        // The caller deliberately overrides auth on the passed entity —
+        // re-reading from storage would clobber it.
+        if ($overruleAuth === true) {
+            return $source;
+        }
+
+        $uuid = $source->getUuid();
+
+        // Unpersisted / in-memory source: nothing to re-read.
+        if (empty($uuid) === true) {
+            return $source;
+        }
+
+        try {
+            $raw = $this->objectService->find(
+                id: $uuid,
+                register: 'openconnector',
+                schema: 'source',
+                _rbac: false,
+                _multitenancy: false,
+                _render: false
+            );
+        } catch (\Throwable $exception) {
+            // A raw re-read failure must never break an outbound call that
+            // worked before this engine-side hardening — fall back to the
+            // passed entity (pre-ocon#215 behaviour for this source).
+            $this->logger->warning(
+                'CallService could not re-resolve source raw for dispatch; using the passed entity. '.$exception->getMessage(),
+                ['exception' => $exception, 'sourceUuid' => $uuid]
+            );
+            return $source;
+        }
+
+        if ($raw === null) {
+            return $source;
+        }
+
+        return $raw;
+
+    }//end resolveSourceForDispatch()
+
+    /**
      * Calls a source according to given configuration.
      *
-     * @param ObjectEntity $source                The source ObjectEntity to call.
-     * @param string       $endpoint              The endpoint on the source to call.
-     * @param string       $method                The method on which to call the source.
-     * @param array        $config                The additional configuration to call the source.
-     * @param boolean      $asynchronous          Whether to call the source asynchronously.
-     * @param boolean      $createCertificates    Whether to create certificates for this source.
-     * @param boolean      $overruleAuth          Whether to overrule the source authentication.
-     * @param boolean      $read                  Whether this is a singular read (vs list) call.
-     * @param boolean      $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
-     * @param mixed        $sink                  Optional stream resource. When given, the response body is streamed
-     *                                            into it (Guzzle `sink` option) instead of buffered, and the CallLog
-     *                                            records an empty body (stream-file-content #110). Guzzle HTTP path
-     *                                            only. Default null = unchanged behaviour for every existing caller.
+     * @param ObjectEntity               $source                The source ObjectEntity to call.
+     * @param string                     $endpoint              The endpoint on the source to call.
+     * @param string                     $method                The method on which to call the source.
+     * @param array                      $config                The additional configuration to call the source.
+     * @param boolean                    $asynchronous          Whether to call the source asynchronously.
+     * @param boolean                    $createCertificates    Whether to create certificates for this source.
+     * @param boolean                    $overruleAuth          Whether to overrule the source authentication.
+     * @param boolean                    $read                  Whether this is a singular read (vs list) call.
+     * @param boolean                    $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+     * @param mixed                      $sink                  Optional stream resource. When given, the response body is streamed
+     *                                                          into it (Guzzle `sink` option) instead of buffered, and the CallLog
+     *                                                          records an empty body (stream-file-content #110). Guzzle HTTP path
+     *                                                          only. Default null = unchanged behaviour for every existing caller.
+     * @param ExecutionTraceContext|null $trace                 The active execution trace context, when this call is
+     *                                                          made from within a traced execution (execution-trace
+     *                                                          REQ-001). When present, `call_log.sessionId` is set to
+     *                                                          `$trace->getTraceId()` and a `call` step is appended
+     *                                                          to the trace using the already-redacted request/
+     *                                                          response data — no second redaction pass.
      *
      * @return ObjectEntity
      *
@@ -2035,12 +2449,13 @@ class CallService
      * @throws SyntaxError       On Twig syntax error.
      * @throws \OCP\DB\Exception On persistence failure.
      *
+     * @spec openspec/specs/http-call-engine/spec.md
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
      * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
-     * @spec openspec/changes/post-body-pagination/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-006
      * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
      * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
      */
     public function call(
         ObjectEntity $source,
@@ -2053,7 +2468,17 @@ class CallService
         bool $read=false,
         bool $runningSupportRequest=false,
         mixed $sink=null,
+        ?ExecutionTraceContext $trace=null,
     ): ObjectEntity {
+        // Ocon#215: re-resolve the Source RAW from storage BEFORE any auth is
+        // read, so the engine's credentials are its OWN property and can never
+        // be silenced by a rendered (writeOnly-stripped) read upstream. This
+        // reassigns $source to the raw entity so EVERY downstream use — the
+        // sourceData below, the SOAP path in dispatchRequest(), persisted
+        // source-state writes and the CallLog — operates on secrets-intact
+        // data. See {@see resolveSourceForDispatch()} for the full rationale
+        // and the `_render: false` / overruleAuth / unpersisted fallbacks.
+        $source     = $this->resolveSourceForDispatch(source: $source, overruleAuth: $overruleAuth);
         $sourceData = $source->getObject();
 
         // Phase 1: Compute expiry values for log retention.
@@ -2107,43 +2532,29 @@ class CallService
         $method = $this->decideMethod(default: $method, configuration: $config, read: $read);
         unset($config['createMethod'], $config['updateMethod'], $config['destroyMethod'], $config['listMethod'], $config['readMethod']);
 
-        // Phase 7b: Brokered-credential guards + resolution (REQ-SBC-001/002/003).
-        // Selection happens HERE, on the merged configuration, because Phase 9
-        // strips every `authentication` key before dispatch. Any config error is
-        // a hard synthetic 409 CallLog — embedded secrets are never merged,
-        // rendered, or dispatched for a credentialRef source, and there is NO
-        // fallback path (REQ-SBC-004).
-        $brokeredCredential = $this->resolveBrokeredDispatch(
+        // Phase 7b+7c: Brokered-credential guards/resolution (REQ-SBC-001/002/003)
+        // and app-side credential injection (generic/self-hosted sources),
+        // consolidated into one helper so this method keeps a single
+        // short-circuit check for both phases. Selection happens HERE, on the
+        // merged configuration, because Phase 9 strips every `authentication`
+        // key before dispatch. Any config error is a hard synthetic 409
+        // CallLog — embedded secrets are never merged, rendered, or
+        // dispatched for a credentialRef source, and there is NO fallback
+        // path (REQ-SBC-004).
+        $credentials = $this->resolveCallCredentials(
             source: $source,
             config: $config,
             sourceData: $sourceData,
             asynchronous: $asynchronous,
             errorExpires: $errorExpires,
         );
-        if ($brokeredCredential instanceof ObjectEntity) {
+        if ($credentials['shortCircuit'] !== null) {
             // A synthetic 409 config-error CallLog was persisted — hard stop.
-            return $brokeredCredential;
+            return $credentials['shortCircuit'];
         }
 
-        // Phase 7c: App-side credential injection (generic / self-hosted sources).
-        // When the call is NOT a host-locked proxy call, any credentialRef placeholder
-        // under configuration.authentication is resolved from Doriath through the broker
-        // and substituted in place, so the normal Twig auth render (Phase 9) injects a
-        // vault-resolved secret exactly as if it had been embedded — but the schema holds
-        // only the reference. A resolution failure is a hard synthetic 409 CallLog, with
-        // no fallback to an embedded secret (mirrors the proxy path).
-        if ($brokeredCredential === null) {
-            $injected = $this->hydrateInjectedCredentials(
-                source: $source,
-                sourceData: $sourceData,
-                errorExpires: $errorExpires,
-            );
-            if ($injected instanceof ObjectEntity) {
-                return $injected;
-            }
-
-            $sourceData = $injected;
-        }
+        $brokeredCredential = $credentials['brokeredCredential'];
+        $sourceData         = $credentials['sourceData'];
 
         // Phase 8: Handle preRequest hook; capture postRequest descriptor.
         $postRequest = $this->extractAndFirePreRequest(
@@ -2195,9 +2606,9 @@ class CallService
             retryPolicyOverride: $retryPolicyOverride,
             sink: $sink,
         );
-        $response  = $dispatched['response'];
-        $timeStart = $dispatched['timeStart'];
-        $timeEnd   = $dispatched['timeEnd'];
+        $response   = $dispatched['response'];
+        $timeStart  = $dispatched['timeStart'];
+        $timeEnd    = $dispatched['timeEnd'];
 
         // Phase 11: Decode response body and build the structured data array.
         $data = $this->buildResponseData(
@@ -2217,7 +2628,31 @@ class CallService
             logBody: $logBody,
             successExpires: $successExpires,
             errorExpires: $errorExpires,
+            trace: $trace,
         );
+
+        // Phase 12b: when this call was made from within a traced execution,
+        // append a `call` step reusing the exact already-redacted request/
+        // response array just persisted to `call_log` — never a second,
+        // independent redaction pass (execution-trace REQ-003 / http-call-engine
+        // REQ-011).
+        if ($trace !== null) {
+            $callStepStatus = 'success';
+            if ($data['response']['statusCode'] >= 400) {
+                $callStepStatus = 'error';
+            }
+
+            $trace->addStep(
+                type: 'call',
+                name: ($sourceData['name'] ?? $source->getUuid()),
+                timing: null,
+                status: $callStepStatus,
+                input: $data['request'],
+                output: $data['response'],
+                startedAtMicrotime: $timeStart,
+                finishedAtMicrotime: $timeEnd,
+            );
+        }
 
         // Phase 13: Fire postRequest hook if present.
         if (isset($postRequest) === true && $runningSupportRequest === false) {
@@ -2242,7 +2677,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-3
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function sourceRateLimit(ObjectEntity $source, array $sourceData, array $headers): array
     {
@@ -2348,7 +2783,7 @@ class CallService
      *
      * @return array The updated config array.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-1
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function applyConfigDot(array $config): array
     {

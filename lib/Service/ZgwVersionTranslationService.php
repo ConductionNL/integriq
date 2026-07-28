@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md
+ * @spec openspec/specs/zgw-version-translation/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.LongVariable)
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md
+ * @spec openspec/specs/zgw-version-translation/spec.md
  */
 class ZgwVersionTranslationService
 {
@@ -119,7 +119,7 @@ class ZgwVersionTranslationService
      *
      * @return string[]
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-per-resource-translator-seam-with-a-literal-leak-guard-req-001
      */
     public function getSupportedResources(): array
     {
@@ -141,7 +141,7 @@ class ZgwVersionTranslationService
      * @throws ZgwVersionTranslationException  When negotiation or translation fails
      *                                         (a `status: failed` log record IS persisted first).
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-persistence-and-observability-zgw_version_translation_log-req-004
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-persistence-and-observability-zgw-version-translation-log-req-004
      */
     public function translate(string $resource, string $fromVersion, string $toVersion, array $payload): array
     {
@@ -235,7 +235,7 @@ class ZgwVersionTranslationService
      *
      * @return void
      *
-     * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-persistence-and-observability-zgw_version_translation_log-req-004
+     * @spec openspec/specs/zgw-version-translation/spec.md#requirement-persistence-and-observability-zgw-version-translation-log-req-004
      */
     private function persistLog(string $resource, string $fromVersion, string $toVersion, string $status, ?string $error): void
     {

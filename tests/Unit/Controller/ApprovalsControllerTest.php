@@ -26,6 +26,7 @@ use OCA\OpenConnector\Exception\ApprovalStateException;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenConnector\Service\EndpointService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -67,6 +68,11 @@ class ApprovalsControllerTest extends TestCase
     private $synchronizationService;
 
     /**
+     * @var FlowRunnerService|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $flowRunnerService;
+
+    /**
      * @var OrObjectService|\PHPUnit\Framework\MockObject\MockObject
      */
     private $orObjectService;
@@ -99,6 +105,7 @@ class ApprovalsControllerTest extends TestCase
         $this->approvalService        = $this->createMock(ApprovalService::class);
         $this->endpointService        = $this->createMock(EndpointService::class);
         $this->synchronizationService = $this->createMock(SynchronizationService::class);
+        $this->flowRunnerService      = $this->createMock(FlowRunnerService::class);
         $this->orObjectService        = $this->createMock(OrObjectService::class);
         $this->actionAuth             = $this->createMock(ActionAuthService::class);
         $this->userSession            = $this->createMock(IUserSession::class);
@@ -115,6 +122,7 @@ class ApprovalsControllerTest extends TestCase
             $this->approvalService,
             $this->endpointService,
             $this->synchronizationService,
+            $this->flowRunnerService,
             $this->orObjectService,
             $this->actionAuth,
             $this->userSession,
@@ -248,6 +256,58 @@ class ApprovalsControllerTest extends TestCase
         $this->assertSame('approved', $data['_approval']['status']);
 
     }//end testApproveEndpointHappyPathResumesAndCompletes()
+
+    /**
+     * TC-10: approving a flow-sourced approval_request (flowRunId set)
+     * resumes via FlowRunnerService::resumeFromApproval() — flow-orchestration
+     * REQ-005.
+     *
+     * @return void
+     */
+    public function testApproveFlowHappyPathResumesAndCompletes(): void
+    {
+        $request = $this->entity(['status' => 'pending', 'approverGroup' => 'woo-approvers', 'flowRunId' => 'flow-run-1', 'resumeStepOrder' => 30, 'snapshot' => []]);
+        $this->approvalService->method('find')->willReturn($request);
+        $this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+
+        $flowRun = $this->entity(['status' => 'completed'], 'flow-run-1');
+        $this->flowRunnerService->expects($this->once())->method('resumeFromApproval')->willReturn($flowRun);
+
+        $this->approvalService->expects($this->once())->method('completeApproval')
+            ->willReturn($this->entity(['status' => 'approved', 'approvedAt' => 'now'], 'approval-1'));
+
+        $response = $this->controller->approve('approval-1');
+
+        $this->assertSame(200, $response->getStatus());
+        $data = $response->getData();
+        $this->assertSame('completed', $data['status']);
+        $this->assertSame('approved', $data['_approval']['status']);
+
+    }//end testApproveFlowHappyPathResumesAndCompletes()
+
+    /**
+     * TC-11: rejecting a flow-sourced approval_request stops the flow_run
+     * via FlowRunnerService::stopFromApprovalOutcome() — flow-orchestration
+     * REQ-005.
+     *
+     * @return void
+     */
+    public function testRejectFlowStopsFlowRun(): void
+    {
+        $request = $this->entity(['status' => 'pending', 'approverGroup' => 'woo-approvers', 'flowRunId' => 'flow-run-1']);
+        $this->approvalService->method('find')->willReturn($request);
+        $this->approvalService->method('isAuthorizedApprover')->willReturn(true);
+        $this->request->method('getParam')->willReturn('not-empty-comment');
+        $this->approvalService->method('reject')
+            ->willReturn($this->entity(['status' => 'rejected', 'flowRunId' => 'flow-run-1', 'rejectedAt' => 'now'], 'approval-1'));
+
+        $this->flowRunnerService->expects($this->once())->method('stopFromApprovalOutcome');
+
+        $response = $this->controller->reject('approval-1');
+
+        $this->assertSame(200, $response->getStatus());
+
+    }//end testRejectFlowStopsFlowRun()
 
     /**
      * TC-9: reject with an empty comment returns 400 and leaves the request

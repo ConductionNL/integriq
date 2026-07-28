@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -38,6 +38,7 @@ namespace OCA\OpenConnector\Service;
 use DateInterval;
 use DateTime;
 use OCA\OpenConnector\Exception\ApprovalStateException;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\Helper\FlowToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -57,7 +58,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalService
 {
@@ -95,12 +96,15 @@ class ApprovalService
     /**
      * Constructor.
      *
-     * @param ORObjectService      $objectService       OR object service for approval_request persistence.
-     * @param IUserSession         $userSession         Resolves the requesting/approving NC user.
-     * @param IGroupManager        $groupManager        Resolves approver-group membership.
-     * @param INotificationManager $notificationManager Dispatches the imperative actionable notification.
-     * @param IURLGenerator        $urlGenerator        Builds the Pending Approvals deep link.
-     * @param LoggerInterface      $logger              Logger for non-fatal diagnostics.
+     * @param ORObjectService            $objectService         OR object service for approval_request persistence.
+     * @param IUserSession               $userSession           Resolves the requesting/approving NC user.
+     * @param IGroupManager              $groupManager          Resolves approver-group membership.
+     * @param INotificationManager       $notificationManager   Dispatches the imperative actionable notification.
+     * @param IURLGenerator              $urlGenerator          Builds the Pending Approvals deep link.
+     * @param LoggerInterface            $logger                Logger for non-fatal diagnostics.
+     * @param ExecutionTraceService|null $executionTraceService Persists the traced run's execution_trace at
+     *                                                          suspension/resume (execution-trace REQ-004). Nullable + defaulted so
+     *                                                          pre-existing positional test instantiations keep working unmodified.
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -109,6 +113,7 @@ class ApprovalService
         private readonly INotificationManager $notificationManager,
         private readonly IURLGenerator $urlGenerator,
         private readonly LoggerInterface $logger,
+        private readonly ?ExecutionTraceService $executionTraceService=null,
     ) {
     }//end __construct()
 
@@ -118,15 +123,22 @@ class ApprovalService
      * carrying a sensitive-header-stripped FlowToken snapshot, and notify
      * the configured approver group.
      *
-     * @param ObjectEntity $endpoint  The endpoint whose pipeline suspended.
-     * @param ObjectEntity $rule      The `approval` rule that suspended it.
-     * @param FlowToken    $flowToken The in-flight FlowToken at suspension time.
+     * @param ObjectEntity               $endpoint  The endpoint whose pipeline suspended.
+     * @param ObjectEntity               $rule      The `approval` rule that suspended it.
+     * @param FlowToken                  $flowToken The in-flight FlowToken at suspension time.
+     * @param ExecutionTraceContext|null $trace     The active execution trace context at suspension time, when the
+     *                                              suspended run is traced (execution-trace REQ-004's
+     *                                              approval-resume continuation). Its `traceId` and `before`-phase
+     *                                              steps are carried in the persisted snapshot, alongside the
+     *                                              FlowToken serialization, so {@see rehydrateTraceContext()} can
+     *                                              reconstruct the SAME trace on resume.
      *
      * @return ObjectEntity The created, `pending` approval_request.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     * @spec openspec/specs/approval-workflow/spec.md
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
      */
-    public function suspend(ObjectEntity $endpoint, ObjectEntity $rule, FlowToken $flowToken): ObjectEntity
+    public function suspend(ObjectEntity $endpoint, ObjectEntity $rule, FlowToken $flowToken, ?ExecutionTraceContext $trace=null): ObjectEntity
     {
         $ruleData = $rule->getObject();
         $config   = ($ruleData['configuration']['approval'] ?? []);
@@ -141,6 +153,15 @@ class ApprovalService
 
         $requesterUserId = $this->userSession->getUser()?->getUID();
 
+        $snapshot = $this->stripSensitiveHeaders(snapshot: $flowToken->__serialize());
+        if ($trace !== null) {
+            // Execution-trace REQ-004: carry the traceId + before-phase steps
+            // alongside the FlowToken serialization so resume appends to the
+            // SAME trace instead of creating a disconnected one.
+            $snapshot['traceId']    = $trace->getTraceId();
+            $snapshot['traceSteps'] = $trace->getSteps();
+        }
+
         $record = $this->objectService->saveObject(
             object: [
                 'status'          => 'pending',
@@ -148,7 +169,7 @@ class ApprovalService
                 'ruleId'          => $rule->getUuid(),
                 'timing'          => 'before',
                 'resumeOrder'     => (int) ($ruleData['order'] ?? 0),
-                'snapshot'        => $this->stripSensitiveHeaders(snapshot: $flowToken->__serialize()),
+                'snapshot'        => $snapshot,
                 'requesterUserId' => $requesterUserId,
                 'approverGroup'   => $approverGroup,
                 'onReject'        => $onReject,
@@ -159,6 +180,20 @@ class ApprovalService
             register: self::REGISTER,
             schema: self::SCHEMA
         );
+
+        if ($trace !== null) {
+            // Execution-trace REQ-004: the suspended run's execution_trace is
+            // persisted here (status: 'running') so it is visible while
+            // pending, not only after resume.
+            try {
+                $this->executionTraceService?->persist(trace: $trace, status: 'running');
+            } catch (Throwable $exception) {
+                $this->logger->warning(
+                    'ApprovalService: failed to persist the running execution_trace at suspension time.',
+                    ['traceId' => $trace->getTraceId(), 'exception' => $exception->getMessage()]
+                );
+            }
+        }
 
         $this->notifyApprovers(approvalRequest: $record);
 
@@ -180,7 +215,7 @@ class ApprovalService
      *
      * @return ObjectEntity The created, `pending` approval_request.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function suspendForSynchronization(
         string $synchronizationId,
@@ -216,6 +251,115 @@ class ApprovalService
     }//end suspendForSynchronization()
 
     /**
+     * Suspend a `FlowRunnerService::run()` invocation on an `approval` flow
+     * step: persist a `pending` `approval_request` carrying `flowRunId`/
+     * `resumeStepOrder` and a sensitive-header-stripped `FlowToken`
+     * snapshot, and notify the configured approver group. Mirrors
+     * {@see suspend()}'s own persistence shape exactly (design.md Decision
+     * 4) — the only difference is which FK is set (`flowRunId` here vs.
+     * `endpointId`/`ruleId` there), since a flow step has no `rule` object
+     * of its own.
+     *
+     * @param ObjectEntity $flowRun         The in-flight flow_run being suspended.
+     * @param integer      $resumeStepOrder The step `order` to resume at once approved.
+     * @param array        $config          The approval step's `config` block (`approverGroup`/`onReject`/`onTimeout`/`ttlSeconds`).
+     * @param FlowToken    $flowToken       The in-flight FlowToken at suspension time.
+     *
+     * @return ObjectEntity The created, `pending` approval_request.
+     *
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
+     */
+    public function suspendForFlow(ObjectEntity $flowRun, int $resumeStepOrder, array $config, FlowToken $flowToken): ObjectEntity
+    {
+        $approverGroup = (string) ($config['approverGroup'] ?? '');
+        $ttlSeconds    = (int) ($config['ttlSeconds'] ?? self::DEFAULT_TTL_SECONDS);
+        $onReject      = (string) ($config['onReject'] ?? 'error');
+        $onTimeout     = (string) ($config['onTimeout'] ?? 'error');
+
+        $now       = new DateTime();
+        $expiresAt = (clone $now)->add(new DateInterval('PT'.max($ttlSeconds, 1).'S'));
+
+        $requesterUserId = $this->userSession->getUser()?->getUID();
+
+        $record = $this->objectService->saveObject(
+            object: [
+                'status'          => 'pending',
+                'flowRunId'       => $flowRun->getUuid(),
+                'resumeStepOrder' => $resumeStepOrder,
+                'timing'          => 'before',
+                'snapshot'        => $this->stripSensitiveHeaders(snapshot: $flowToken->__serialize()),
+                'requesterUserId' => $requesterUserId,
+                'approverGroup'   => $approverGroup,
+                'onReject'        => $onReject,
+                'onTimeout'       => $onTimeout,
+                'createdAt'       => $now->format('c'),
+                'expiresAt'       => $expiresAt->format('c'),
+            ],
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        $this->notifyApprovers(approvalRequest: $record);
+
+        return $record;
+
+    }//end suspendForFlow()
+
+    /**
+     * Create the `approval_request` gating an `api_product_subscription`
+     * whose chosen tier has `requiresApproval: true` (api-product-gateway
+     * REQ-APG-004). Structurally identical to
+     * {@see suspendForSynchronization()} — no FlowToken snapshot, no
+     * resumed pipeline; a *different* subject (`ProductSubscriptionsController`)
+     * resolves on `completeApproval()`/`reject()` and flips the
+     * subscription's own `status`, since that orchestration is not this
+     * service's concern (design.md Decision 4 — deliberately NOT a
+     * generalisation of `suspend()`, whose snapshot/resumeOrder fields are
+     * meaningless for a subscription).
+     *
+     * @param string  $subscriptionId The gated api_product_subscription's id.
+     * @param string  $approverGroup  The tier's configured approver group.
+     * @param string  $onReject       Outcome on reject.
+     * @param integer $ttlSeconds     TTL in seconds before expiry.
+     *
+     * @return ObjectEntity The created, `pending` approval_request.
+     *
+     * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
+     * @spec openspec/changes/archive/2026-07-15-api-product-gateway/design.md#decision-4-subscription-approval-reuses-approvalservices-generic-state-machine-via-one-new-creation-method-not-suspend
+     */
+    public function suspendForSubscription(
+        string $subscriptionId,
+        string $approverGroup,
+        string $onReject,
+        int $ttlSeconds
+    ): ObjectEntity {
+        $now       = new DateTime();
+        $expiresAt = (clone $now)->add(new DateInterval('PT'.max($ttlSeconds, 1).'S'));
+
+        $record = $this->objectService->saveObject(
+            object: [
+                'status'          => 'pending',
+                'subscriptionId'  => $subscriptionId,
+                'timing'          => 'before',
+                'snapshot'        => [],
+                'requesterUserId' => $this->userSession->getUser()?->getUID(),
+                'approverGroup'   => $approverGroup,
+                'onReject'        => $onReject,
+                'onTimeout'       => 'error',
+                'createdAt'       => $now->format('c'),
+                'expiresAt'       => $expiresAt->format('c'),
+            ],
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        $this->notifyApprovers(approvalRequest: $record);
+
+        return $record;
+
+    }//end suspendForSubscription()
+
+    /**
      * Find an approved, not-yet-consumed approval_request for a
      * synchronization (the batch-gate's "has this run already been
      * approved" check).
@@ -224,7 +368,7 @@ class ApprovalService
      *
      * @return ObjectEntity|null The approved, unconsumed request, or null.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function findApprovedUnconsumedForSynchronization(string $synchronizationId): ?ObjectEntity
     {
@@ -260,7 +404,7 @@ class ApprovalService
      *
      * @return void
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function markConsumed(ObjectEntity $approvalRequest): void
     {
@@ -285,7 +429,7 @@ class ApprovalService
      *
      * @return FlowToken The rehydrated token.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function rehydrateFlowToken(array $snapshot): FlowToken
     {
@@ -302,6 +446,37 @@ class ApprovalService
         return $flowToken;
 
     }//end rehydrateFlowToken()
+
+    /**
+     * Reconstruct the `ExecutionTraceContext` recorded alongside the
+     * FlowToken serialization at suspension time (design.md Decision 2 /
+     * {@see suspend()}), pre-loaded with the original `traceId` and
+     * `before`-phase steps so `resumeFromApproval()` appends the `after`-
+     * phase steps to the SAME trace instead of starting a new,
+     * disconnected one (execution-trace REQ-004's approval-resume
+     * continuation scenario).
+     *
+     * @param array $snapshot The persisted `approval_request.snapshot` array.
+     *
+     * @return ExecutionTraceContext|null The rehydrated context, or null when the suspended run was untraced
+     *                                    (no `traceId` recorded — e.g. a pre-existing approval_request created
+     *                                    before this change, or a request that predates the traced entry points).
+     *
+     * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution_trace-object-per-execution-req-004
+     */
+    public function rehydrateTraceContext(array $snapshot): ?ExecutionTraceContext
+    {
+        if (isset($snapshot['traceId']) === false || is_string($snapshot['traceId']) === false || $snapshot['traceId'] === '') {
+            return null;
+        }
+
+        return new ExecutionTraceContext(
+            entryPoint: 'endpoint',
+            traceId: $snapshot['traceId'],
+            priorSteps: ($snapshot['traceSteps'] ?? [])
+        );
+
+    }//end rehydrateTraceContext()
 
     /**
      * Find an approval_request by id.
@@ -336,7 +511,7 @@ class ApprovalService
      *
      * @return boolean
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-006-two-layer-authorization-for-approvereject
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function isAuthorizedApprover(ObjectEntity $approvalRequest, IUser $user): bool
     {
@@ -364,7 +539,7 @@ class ApprovalService
      *
      * @throws ApprovalStateException (409) When not pending or already expired.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function assertActionable(ObjectEntity $approvalRequest): void
     {
@@ -396,7 +571,7 @@ class ApprovalService
      *
      * @return ObjectEntity The updated approval_request.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function completeApproval(
         ObjectEntity $approvalRequest,
@@ -437,7 +612,7 @@ class ApprovalService
      *
      * @throws ApprovalStateException (400) When the comment is empty.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-004-rejection-with-mandatory-audit-comment
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function reject(ObjectEntity $approvalRequest, IUser $approver, string $comment): ObjectEntity
     {
@@ -474,7 +649,7 @@ class ApprovalService
      *
      * @return array{swept: integer, deadLettered: integer} Counts for the cron log.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-005-timeout-sweeping-and-fallback-outcomes
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function sweepExpired(): array
     {
@@ -536,7 +711,7 @@ class ApprovalService
      *
      * @return array<int, ObjectEntity>
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function listFor(IUser $user, ?string $statusFilter=null): array
     {
@@ -581,7 +756,7 @@ class ApprovalService
      *
      * @return void
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-002-approver-notification-on-suspension
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function notifyApprovers(ObjectEntity $approvalRequest): void
     {
@@ -643,7 +818,7 @@ class ApprovalService
      *
      * @return array The snapshot with sensitive request headers redacted.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-001-endpoint-rule-pipeline-suspension-on-approval-action
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function stripSensitiveHeaders(array $snapshot): array
     {

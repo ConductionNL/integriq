@@ -94,8 +94,8 @@
 						<NcSelect
 							:input-id="'sync-source-type'"
 							:aria-label-combobox="t('openconnector', 'Source type')"
-							:value="selectedSourceType"
-							:options="typeOptions"
+							:model-value="selectedSourceType"
+							:options="sourceTypeOptions"
 							:clearable="false"
 							@input="onSourceTypeChange" />
 					</div>
@@ -108,6 +108,63 @@
 						:config="draft.sourceConfig"
 						@update:sourceId="(value) => updateDraft('sourceId', value)"
 						@update:config="(value) => updateDraft('sourceConfig', value)" />
+
+					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
+					<div class="sync-detail__field">
+						<label :for="'sync-mode'" class="sync-detail__label">
+							{{ t('openconnector', 'Sync mode') }}
+						</label>
+						<NcSelect
+							:input-id="'sync-mode'"
+							:aria-label-combobox="t('openconnector', 'Sync mode')"
+							:model-value="selectedSyncMode"
+							:options="syncModeOptions"
+							:clearable="false"
+							@input="onSyncModeChange" />
+						<span class="sync-detail__helper">
+							{{ t('openconnector', 'Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.') }}
+						</span>
+					</div>
+
+					<template v-if="isIncremental">
+						<div class="sync-detail__field">
+							<NcTextField
+								:label="t('openconnector', 'Cursor field')"
+								:model-value="draft.sourceConfig.cursorField || ''"
+								:placeholder="t('openconnector', 'e.g. updatedAt')"
+								@update:model-value="(value) => updateSourceConfigField('cursorField', value)" />
+						</div>
+
+						<div class="sync-detail__field">
+							<label :for="'sync-cursor-comparator'" class="sync-detail__label">
+								{{ t('openconnector', 'Cursor comparator') }}
+							</label>
+							<NcSelect
+								:input-id="'sync-cursor-comparator'"
+								:aria-label-combobox="t('openconnector', 'Cursor comparator')"
+								:model-value="selectedCursorComparator"
+								:options="cursorComparatorOptions"
+								@input="onCursorComparatorChange" />
+						</div>
+
+						<div class="sync-detail__field">
+							<span class="sync-detail__label">{{ t('openconnector', 'Cursor watermark') }}</span>
+							<span class="sync-detail__helper">
+								{{ original && original.cursorWatermark ? original.cursorWatermark : t('openconnector', '(not set — the next run requests an unfiltered fetch)') }}
+							</span>
+							<NcButton
+								type="secondary"
+								:disabled="resettingCursor || !objectIdString || !(original && original.cursorWatermark)"
+								:title="t('openconnector', 'Clears the stored cursor only. Does not delete data and does not restore deletion detection — switch Sync mode to Full for that.')"
+								@click="resetCursor">
+								<template #icon>
+									<NcLoadingIcon v-if="resettingCursor" :size="20" />
+									<RestoreIcon v-else :size="20" />
+								</template>
+								{{ t('openconnector', 'Reset cursor') }}
+							</NcButton>
+						</div>
+					</template>
 				</section>
 
 				<section class="sync-detail__card sync-detail__general">
@@ -119,9 +176,9 @@
 					<div class="sync-detail__field">
 						<NcTextField
 							:label="t('openconnector', 'Name')"
-							:value="draft.name || ''"
+							:model-value="draft.name || ''"
 							required
-							@update:value="(value) => updateDraft('name', value)" />
+							@update:model-value="(value) => updateDraft('name', value)" />
 					</div>
 
 					<div class="sync-detail__field">
@@ -172,7 +229,7 @@
 						<NcSelect
 							:input-id="'sync-target-type'"
 							:aria-label-combobox="t('openconnector', 'Target type')"
-							:value="selectedTargetType"
+							:model-value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
 							@input="onTargetTypeChange" />
@@ -317,17 +374,20 @@ import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLef
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
+import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { showSuccess, showError } from '@nextcloud/dialogs'
 
 import RuleConditionGroup from '../Rule/RuleConditionGroup.vue'
 import SyncConfigWidget from './SyncConfigWidget.vue'
 import SyncMappingPicker from './SyncMappingPicker.vue'
 import SyncReferenceList from './SyncReferenceList.vue'
 import { NEXTCLOUD_TABLE_KIND } from './tablesBridge.js'
+import { NEXTCLOUD_FORM_KIND } from './formsBridge.js'
 
 const SCHEMA_SLUG = 'synchronization'
 const REGISTER_SLUG = 'openconnector'
@@ -359,6 +419,33 @@ const TYPE_OPTIONS = [
 const NEXTCLOUD_TABLE_OPTION = { id: NEXTCLOUD_TABLE_KIND, label: 'Nextcloud Table' }
 
 /**
+ * Option appended to the SOURCE-only type list when the backend reports the
+ * Forms app is enabled (nextcloud-forms-connector REQ-001 / sync-editor-ui
+ * REQ-SYNCUI-008). Never offered as a target option — nextcloud-form is a
+ * source-only type (nextcloud-forms-connector REQ-002).
+ */
+const NEXTCLOUD_FORM_OPTION = { id: NEXTCLOUD_FORM_KIND, label: 'Nextcloud Form' }
+
+/**
+ * `syncMode` options (REQ-016, change cdc-incremental-sync). Keep in sync
+ * with the `syncMode` enum in `lib/Settings/openconnector_register.json`.
+ */
+const SYNC_MODE_OPTIONS = [
+	{ id: 'full', label: 'Full' },
+	{ id: 'incremental', label: 'Incremental' },
+]
+
+/**
+ * `sourceConfig.cursorComparator` options (REQ-016). Informational only —
+ * the engine always takes the maximum observed `cursorField` value
+ * (computeCursorWatermark()), regardless of which comparator is selected.
+ */
+const CURSOR_COMPARATOR_OPTIONS = [
+	{ id: 'gt', label: 'Greater than (gt)' },
+	{ id: 'gte', label: 'Greater than or equal (gte)' },
+]
+
+/**
  * Build an empty draft for the create case. The legacy modal defaulted
  * sourceType:'api', targetType:'register/schema' — preserve that here so
  * a newly-routed-to record without a stored type still renders a sensible
@@ -373,6 +460,7 @@ function emptyDraft() {
 		sourceConfig: {},
 		sourceTargetMapping: '',
 		sourceHashMapping: '',
+		syncMode: 'full',
 		targetType: 'register/schema',
 		targetId: '',
 		targetConfig: {},
@@ -402,6 +490,7 @@ export default {
 		DatabaseArrowRightOutline,
 		FilterVariant,
 		PlayCircleOutline,
+		RestoreIcon,
 		SwapHorizontal,
 		UndoIcon,
 		RuleConditionGroup,
@@ -424,7 +513,7 @@ export default {
 		schema: { type: String, default: SCHEMA_SLUG },
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/sync-editor-ui/spec.md */
 	setup(props) {
 		const objectStore = useObjectStore()
 		// Register the type so objectStore.fetchObject/saveObject can resolve
@@ -451,35 +540,39 @@ export default {
 			rawConditionsError: '',
 			/** Whether the backend reports the Tables app is enabled (REQ-004). */
 			tablesEnabled: false,
+			/** Whether the backend reports the Forms app is enabled (nextcloud-forms-connector REQ-001). */
+			formsEnabled: false,
+			/** In-flight guard for the "Reset cursor" action (REQ-019). */
+			resettingCursor: false,
 		}
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		objectIdString() {
 			return this.id != null ? String(this.id) : ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		registerSlug() {
 			return this.register || REGISTER_SLUG
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		schemaSlug() {
 			return this.schema || SCHEMA_SLUG
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		title() {
 			if (this.draft?.name) return this.draft.name
 			return this.original?.name || t('openconnector', 'Synchronization')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		description() {
 			return this.original?.description || ''
 		},
 		hasError() {
 			return Boolean(this.loadError) && !this.draft
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		errorMessage() {
 			return this.loadError || t('openconnector', 'Failed to load synchronization')
 		},
@@ -500,15 +593,54 @@ export default {
 			}
 			return TYPE_OPTIONS
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
-		selectedSourceType() {
-			return this.typeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
+		/**
+		 * Kind options offered in the SOURCE selector only. `nextcloud-form`
+		 * is appended here (never to the shared `typeOptions` the target
+		 * selector uses) — nextcloud-forms-connector REQ-002 is source-only,
+		 * so `nextcloud-form` must never appear as a target-kind option,
+		 * regardless of whether the Forms app is enabled (sync-editor-ui
+		 * REQ-SYNCUI-008). Mirrors `typeOptions`' "keep an already-configured
+		 * type visible even if the app is later disabled" behaviour.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		sourceTypeOptions() {
+			const usesForm = this.draft?.sourceType === NEXTCLOUD_FORM_KIND
+			if (this.formsEnabled || usesForm) {
+				return [...this.typeOptions, NEXTCLOUD_FORM_OPTION]
+			}
+			return this.typeOptions
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		selectedSourceType() {
+			return this.sourceTypeOptions.find((opt) => opt.id === this.draft?.sourceType) || TYPE_OPTIONS[0]
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedTargetType() {
 			return this.typeOptions.find((opt) => opt.id === this.draft?.targetType) || TYPE_OPTIONS[1]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		syncModeOptions() {
+			return SYNC_MODE_OPTIONS
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		selectedSyncMode() {
+			return SYNC_MODE_OPTIONS.find((opt) => opt.id === this.draft?.syncMode) || SYNC_MODE_OPTIONS[0]
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		isIncremental() {
+			return this.draft?.syncMode === 'incremental'
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		cursorComparatorOptions() {
+			return CURSOR_COMPARATOR_OPTIONS
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		selectedCursorComparator() {
+			const value = this.draft?.sourceConfig?.cursorComparator
+			return CURSOR_COMPARATOR_OPTIONS.find((opt) => opt.id === value) || null
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		dirty() {
 			if (!this.draft || !this.original) return false
 			// `normalizeForDiff` shapes both sides identically (conditions
@@ -517,7 +649,7 @@ export default {
 			// stores conditions as `array<object>`.
 			return JSON.stringify(this.draft) !== JSON.stringify(this.normalizeForDiff(this.original))
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		canSave() {
 			return Boolean(this.draft?.name && this.draft.name.trim().length > 0)
 		},
@@ -528,7 +660,7 @@ export default {
 		 * (string, array, single leaf, group) end up as `{and:[...]}` /
 		 * `{or:[...]}`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		rootConditionGroup() {
 			return this.normaliseConditions(this.draft?.conditions)
@@ -538,12 +670,12 @@ export default {
 	watch: {
 		id: {
 			immediate: true,
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md */
 			handler() {
 				this.loadObject()
 			},
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		rawConditions(value) {
 			if (value) {
 				try {
@@ -558,6 +690,7 @@ export default {
 
 	mounted() {
 		this.fetchTablesStatus()
+		this.fetchFormsStatus()
 	},
 
 	methods: {
@@ -579,7 +712,26 @@ export default {
 				this.tablesEnabled = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/**
+		 * Ask the backend whether the Forms app is enabled for the acting
+		 * user; only then is `nextcloud-form` offered in the SOURCE kind
+		 * selector (nextcloud-forms-connector REQ-001, sync-editor-ui
+		 * REQ-SYNCUI-008). Soft-fails to "disabled" so a backend without the
+		 * endpoint simply never offers the type.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
+		async fetchFormsStatus() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openconnector/api/synchronizations/forms-bridge/status'),
+				)
+				this.formsEnabled = Boolean(response.data?.enabled)
+			} catch (_err) {
+				this.formsEnabled = false
+			}
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async loadObject() {
 			if (!this.objectIdString) {
 				// New-create surface — start with empty draft.
@@ -636,7 +788,7 @@ export default {
 		 * @param {object} obj Raw object from the store.
 		 * @return {object} Plain draft with all editable fields filled.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		normalizeForDiff(obj) {
 			const base = emptyDraft()
@@ -677,7 +829,7 @@ export default {
 		 * @param {*} raw Persisted conditions value.
 		 * @return {object} JsonLogic group node.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		normaliseConditions(raw) {
 			if (raw === null || raw === undefined || raw === '') {
@@ -713,7 +865,7 @@ export default {
 		 * @param {object} group JsonLogic group node from the builder.
 		 * @return {Array} Schema-conformant `array<object>` for persistence.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		serializeConditions(group) {
 			if (!group || typeof group !== 'object') return []
@@ -724,16 +876,16 @@ export default {
 			}
 			return [group]
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
-			this.$set(this.draft, 'conditions', node)
+			this.draft['conditions'] = node
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		toggleRawConditions() {
 			this.rawConditions = !this.rawConditions
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onRawConditionsInput(value) {
 			this.rawConditionsDraft = value
 			const trimmed = value.trim()
@@ -750,28 +902,82 @@ export default {
 				this.rawConditionsError = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		updateDraft(key, value) {
 			if (!this.draft) return
-			this.$set(this.draft, key, value)
+			this.draft[key] = value
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onSourceTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			// Type changed — clear the kind-specific blob + id so we don't
 			// carry stale `endpoint:'/foo'` over into a register/schema mode.
-			this.$set(this.draft, 'sourceType', option.id)
-			this.$set(this.draft, 'sourceId', '')
-			this.$set(this.draft, 'sourceConfig', {})
+			this.draft['sourceType'] = option.id
+			this.draft['sourceId'] = ''
+			this.draft['sourceConfig'] = {}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onTargetTypeChange(option) {
 			if (!option?.id || !this.draft) return
-			this.$set(this.draft, 'targetType', option.id)
-			this.$set(this.draft, 'targetId', '')
-			this.$set(this.draft, 'targetConfig', {})
+			this.draft['targetType'] = option.id
+			this.draft['targetId'] = ''
+			this.draft['targetConfig'] = {}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		onSyncModeChange(option) {
+			if (!option?.id || !this.draft) return
+			this.draft['syncMode'] = option.id
+		},
+		/**
+		 * Merge a single key into `draft.sourceConfig` without clobbering the
+		 * other keys SyncConfigWidget independently manages on the same
+		 * object — mirrors SyncConfigWidget's own read-current/spread/emit
+		 * pattern so both write paths stay non-destructive of each other.
+		 *
+		 * @param {string} key   The sourceConfig key to set.
+		 * @param {string} value The new value; an empty/null value removes the key.
+		 *
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+		 */
+		updateSourceConfigField(key, value) {
+			if (!this.draft) return
+			const next = { ...(this.draft.sourceConfig || {}) }
+			if (value === '' || value === null || value === undefined) {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.draft['sourceConfig'] = next
+		},
+		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		onCursorComparatorChange(option) {
+			this.updateSourceConfigField('cursorComparator', option?.id || '')
+		},
+		/**
+		 * Clear the stored cursor watermark via `POST .../reset-cursor`
+		 * (REQ-019). Clears the watermark only — does not change `syncMode`
+		 * and does not delete any data or re-enable deletion detection
+		 * (REQ-018 stays keyed on `syncMode`, unaffected by this action).
+		 *
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-reset-cursor-action-clears-the-stored-watermark-req-019
+		 */
+		async resetCursor() {
+			if (!this.objectIdString || this.resettingCursor) return
+			this.resettingCursor = true
+			try {
+				const response = await axios.post(
+					generateUrl(`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`),
+				)
+				const cleared = response.data?.cursorWatermark ?? ''
+				if (this.original) this.original['cursorWatermark'] = cleared
+				showSuccess(t('openconnector', 'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.'))
+			} catch (err) {
+				showError(err?.response?.data?.error || err?.message || t('openconnector', 'Failed to reset cursor'))
+			} finally {
+				this.resettingCursor = false
+			}
+		},
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		async save() {
 			if (!this.draft || this.saving) return
 			this.saving = true
@@ -798,7 +1004,7 @@ export default {
 				this.saving = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		resetEdits() {
 			if (!this.original) return
 			this.draft = this.normalizeForDiff(this.original)

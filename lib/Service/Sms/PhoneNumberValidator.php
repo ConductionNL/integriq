@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-e164-phone-validation-with-nl-default-region
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\OpenConnector\Service\Sms;
 /**
  * Normalises and validates SMS recipient numbers to E.164.
  *
- * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-e164-phone-validation-with-nl-default-region
+ * @spec openspec/specs/notifynl-sms-channel/spec.md
  */
 final class PhoneNumberValidator
 {
@@ -78,7 +78,7 @@ final class PhoneNumberValidator
      *
      * @return string|null The normalised E.164 number, or null when no valid E.164 number can be derived.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#scenario-a-national-format-nl-number-is-normalised-to-e164
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public static function toE164(string $rawNumber, string $callingCode=self::DEFAULT_CALLING_CODE): ?string
     {
@@ -104,7 +104,7 @@ final class PhoneNumberValidator
      *
      * @return boolean Whether the candidate matches E.164 shape.
      *
-     * @spec openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-e164-phone-validation-with-nl-default-region-req-005
+     * @spec openspec/specs/notifynl-sms-channel/spec.md
      */
     public static function isValidE164(string $candidate): bool
     {

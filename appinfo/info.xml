@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.2.21</version>
+	<version>0.3.2</version>
 	<licence>EUPL-1.2</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -53,16 +53,36 @@
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>
 		<job>OCA\OpenConnector\Cron\LtiKeyRetirementJob</job>
 		<job>OCA\OpenConnector\Cron\BankfeedSyncJob</job>
+		<job>OCA\OpenConnector\Cron\CardfeedSyncJob</job>
 		<job>OCA\OpenConnector\Cron\EudiStatusListRefreshJob</job>
 		<job>OCA\OpenConnector\Cron\KissPullJob</job>
 		<job>OCA\OpenConnector\Cron\ApprovalTimeoutSweepJob</job>
 		<job>OCA\OpenConnector\Cron\IwmoIjwRetryJob</job>
+		<job>OCA\OpenConnector\Cron\StufZknRetryJob</job>
 	</background-jobs>
 
 	<commands>
 		<!-- Chain B storage migration: operator entrypoint for the legacy → OpenRegister
 		     row migration (dry-run, per-entity retry, verify). -->
 		<command>OCA\OpenConnector\Command\MigrateToOpenRegister</command>
+		<!-- ocon#151 phase C / ADR-064: reports which sources still hold an inline
+		     secret and what each would become in the credential broker. The dry-run
+		     mode writes nothing and emits the "clean" gate phase D must check before
+		     it may remove the schema properties. A real run migrates inline secrets.
+		     (XML comments must not contain a double hyphen, so the dry-run flag is
+		     not written with its leading dashes here.) -->
+		<command>OCA\OpenConnector\Command\MigrateInlineSecrets</command>
+		<!-- ocon#232 (ocon#151 follow-up): audits the VESTIGIAL source
+		     authenticationConfig field. No code authenticates from it, so removal
+		     (not a credentialRef migration) is the correct treatment. The default
+		     action is a READ ONLY audit reporting key NAMES only, never values.
+		     Removal DELETES credential data and therefore happens only when a human
+		     passes the explicit opt in flag; it is registered here as a command and
+		     never as a repair step, so an upgrade or maintenance:repair can never
+		     reach the deleting path.
+		     (XML comments must not contain a double hyphen, so the flags are not
+		     written with their leading dashes here.) -->
+		<command>OCA\OpenConnector\Command\AuthenticationConfig</command>
 	</commands>
 
 	<repair-steps>
@@ -70,6 +90,20 @@
 			<step>OCA\OpenConnector\Repair\InitializeRegister</step>
 			<step>OCA\OpenConnector\Repair\InitializeActions</step>
 			<step>OCA\OpenConnector\Repair\FlagSourceSecretsWriteOnly</step>
+			<!-- ocon#151 phase C / ADR-064: RUNS the inline-secret migration (mint,
+			     verify, write credentialRef, null the inline value) now that
+			     organisation-scope resolution is unblocked (openregister#450/#440),
+			     then records whether any source still holds an inline secret into
+			     appconfig (the Phase D gate). Fail-closed and non-fatal; see the
+			     repair step's docblock. -->
+			<step>OCA\OpenConnector\Repair\RecordInlineSecretMigrationStatus</step>
+			<!-- ocon#151 phase D: IRREVERSIBLE. Removes the four auto-migratable
+			     secret fields (apikey, secret, password, jwt) from the LIVE source
+			     schema ONLY once every source is verifiably clean of inline values in
+			     them. Runs AFTER the migration above so the gate can be clean.
+			     authenticationConfig is excluded (manual review). The register JSON
+			     keeps all five fields on purpose (see the step's docblock). -->
+			<step>OCA\OpenConnector\Repair\RemoveMigratedSourceSecretFields</step>
 			<step>OCA\OpenConnector\Repair\MaterializeCatalogItems</step>
 		</post-migration>
 	</repair-steps>

@@ -80,6 +80,12 @@ class RegisterDescriptorTest extends TestCase
      * Was 32 — `dso_verzoek` and `dso_message` added by
      * openspec/changes/dso-connector-adapter, bringing the count to 34.
      *
+     * Was 34 — `notificaties_abonnement` added by
+     * openspec/changes/notificaties-api-subscriber, bringing the count to 35.
+     *
+     * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
+     * bringing the count to 36.
+     *
      * @var array<string, string>
      */
     private const SCHEMA_SLUGS = [
@@ -108,6 +114,9 @@ class RegisterDescriptorTest extends TestCase
         // change's proposal.md "Impact").
         'BankfeedConnection'         => 'bankfeed_connection',
         'BankfeedBatch'              => 'bankfeed_batch',
+        // Corporate card-feed connector — added by corporate-card-feed spec.
+        'CardfeedAccount'            => 'cardfeed_account',
+        'CardfeedBatch'              => 'cardfeed_batch',
         // LTI 1.3 / LTI Advantage adapter — added by lti-13-platform.
         'LtiPlatform'                => 'lti_platform',
         'LtiTool'                    => 'lti_tool',
@@ -133,6 +142,10 @@ class RegisterDescriptorTest extends TestCase
         // DSO (Digitaal Stelsel Omgevingswet) connector adapter — added by dso-connector-adapter spec.
         'DsoVerzoek'                 => 'dso_verzoek',
         'DsoMessage'                 => 'dso_message',
+        // ZGW Notificaties API subscriber/publisher — added by notificaties-api-subscriber spec.
+        'NotificatiesAbonnement'     => 'notificaties_abonnement',
+        // StUF-ZKN (StUF-ZKN 3.10) bridge — added by stuf-zkn-bridge spec.
+        'StufMessage'                => 'stuf_message',
     ];
 
     /**

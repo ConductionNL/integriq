@@ -526,6 +526,44 @@ class UiController extends Controller
     }//end approvalsId()
 
     /**
+     * Serves the SPA shell for the API Products list route.
+     *
+     * @return TemplateResponse The SPA index template.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
+     */
+    public function products(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end products()
+
+    /**
+     * Serves the SPA shell for the single api_product detail route.
+     *
+     * @param string $id The api_product identifier (passed through to the client router).
+     *
+     * @return TemplateResponse The SPA index template.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec exclude SPA-shell route handler — delegates to makeSpaResponse() returning the index template, no domain behavior (framework lifecycle).
+     */
+    public function productsId(string $id): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end productsId()
+
+    /**
      * Serves the SPA shell for the Catalog route (connector-catalog-ui).
      *
      * @return TemplateResponse The SPA index template.

@@ -55,26 +55,26 @@ export default {
 		}
 	},
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedRegister() {
 			const id = String(this.value?.register || '')
 			if (!id) return null
 			return this.registerOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSchema() {
 			const id = String(this.value?.schema || '')
 			if (!id) return null
 			return this.schemaOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedMapping() {
 			const id = String(this.value?.mapping || '')
 			if (!id) return null
 			return this.mappingOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		const [registers, schemas, mappings] = await Promise.all([

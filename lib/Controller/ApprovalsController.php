@@ -38,6 +38,7 @@ use OCA\OpenConnector\Exception\ApprovalStateException;
 use OCA\OpenConnector\Service\ActionAuthService;
 use OCA\OpenConnector\Service\ApprovalService;
 use OCA\OpenConnector\Service\EndpointService;
+use OCA\OpenConnector\Service\FlowRunnerService;
 use OCA\OpenConnector\Service\SynchronizationService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -62,7 +63,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  * @SuppressWarnings(PHPMD.LongVariable)
  *
- * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 class ApprovalsController extends Controller
 {
@@ -74,6 +75,7 @@ class ApprovalsController extends Controller
      * @param ApprovalService        $approvalService        The approval state-machine + authorization service.
      * @param EndpointService        $endpointService        Resumes a suspended endpoint rule-pipeline run.
      * @param SynchronizationService $synchronizationService Resumes a gated Synchronization batch run.
+     * @param FlowRunnerService      $flowRunnerService      Resumes (approve) or stops (reject) a flow-sourced suspension.
      * @param OrObjectService        $orObjectService        OpenRegister object service (loads the gated synchronization).
      * @param ActionAuthService      $actionAuth             ADR-023 action-matrix (coarse) authorization gate.
      * @param IUserSession           $userSession            The user session.
@@ -86,6 +88,7 @@ class ApprovalsController extends Controller
         private readonly ApprovalService $approvalService,
         private readonly EndpointService $endpointService,
         private readonly SynchronizationService $synchronizationService,
+        private readonly FlowRunnerService $flowRunnerService,
         private readonly OrObjectService $orObjectService,
         private readonly ActionAuthService $actionAuth,
         private readonly IUserSession $userSession,
@@ -101,7 +104,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     #[NoAdminRequired]
     public function index(): JSONResponse
@@ -165,8 +168,8 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse The resumed pipeline's final result, envelope-wrapped with `_approval`.
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-006-two-layer-authorization-for-approvereject
+     * @spec openspec/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     #[NoAdminRequired]
     public function approve(string $id): JSONResponse
@@ -212,7 +215,11 @@ class ApprovalsController extends Controller
             return $this->approveSynchronizationGate(approvalRequest: $approvalRequest, data: $data, user: $user, comment: $comment);
         }
 
-        $this->logger->error('ApprovalsController: approval_request has neither endpointId nor synchronizationId', ['id' => $id]);
+        if (empty($data['flowRunId']) === false) {
+            return $this->approveFlowSuspension(approvalRequest: $approvalRequest, user: $user, comment: $comment);
+        }
+
+        $this->logger->error('ApprovalsController: approval_request has neither endpointId, synchronizationId nor flowRunId', ['id' => $id]);
         return new JSONResponse(['error' => $this->l->t('Malformed approval request')], Http::STATUS_INTERNAL_SERVER_ERROR);
 
     }//end approve()
@@ -226,7 +233,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse `{ id, status, comment, rejectedAt }` (design.md).
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-004-rejection-with-mandatory-audit-comment
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     #[NoAdminRequired]
     public function reject(string $id): JSONResponse
@@ -268,6 +275,14 @@ class ApprovalsController extends Controller
 
         $data = $approvalRequest->getObject();
 
+        // Flow-sourced suspension (flowRunId set): stop the flow_run — no
+        // pipeline to re-invoke here (self-contained, per ApprovalService::reject()'s
+        // own docblock), but the flow_run's OWN status must still reflect the
+        // rejection (flow-orchestration REQ-005).
+        if (empty($data['flowRunId']) === false) {
+            $this->flowRunnerService->stopFromApprovalOutcome(approvalRequest: $approvalRequest);
+        }
+
         return new JSONResponse(
             [
                 'id'         => $approvalRequest->getUuid(),
@@ -290,7 +305,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-003-resume-on-approval
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function approveEndpointSuspension(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse
     {
@@ -301,13 +316,18 @@ class ApprovalsController extends Controller
 
         $flowToken = $this->approvalService->rehydrateFlowToken(($data['snapshot'] ?? []));
         $path      = (string) ($flowToken->getRequestAmended()['path'] ?? '');
+        // Execution-trace REQ-004: reconstruct the SAME trace this run was
+        // suspended under (null when the suspended run predates this change
+        // or was otherwise untraced) so resume appends rather than creates.
+        $trace = $this->approvalService->rehydrateTraceContext(($data['snapshot'] ?? []));
 
         $resumed = $this->endpointService->resumeFromApproval(
             endpoint: $endpoint,
             request: $this->request,
             flowToken: $flowToken,
             resumeAfterOrder: (int) ($data['resumeOrder'] ?? 0),
-            path: $path
+            path: $path,
+            trace: $trace
         );
 
         $resumeResult = 'error';
@@ -341,7 +361,7 @@ class ApprovalsController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/hitl-approval-rule-action/specs/synchronization-engine/spec.md#req-015-batch-level-approval-gate-before-target-writes
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     private function approveSynchronizationGate(ObjectEntity $approvalRequest, array $data, IUser $user, ?string $comment): JSONResponse
     {
@@ -398,6 +418,56 @@ class ApprovalsController extends Controller
     }//end approveSynchronizationGate()
 
     /**
+     * Resume a suspended flow run via `FlowRunnerService::resumeFromApproval()`
+     * and finalize the approval_request with the resumed run's outcome.
+     *
+     * @param ObjectEntity $approvalRequest The pending, authorized-to-act-on request.
+     * @param IUser        $user            The approving user.
+     * @param string|null  $comment         Optional approve comment.
+     *
+     * @return JSONResponse
+     *
+     * @spec openspec/specs/flow-orchestration/spec.md#requirement-approval-step-suspends-and-resumes-the-flow-run-req-005
+     */
+    private function approveFlowSuspension(ObjectEntity $approvalRequest, IUser $user, ?string $comment): JSONResponse
+    {
+        $resumeResult = 'success';
+        $statusCode   = Http::STATUS_OK;
+        $flowRunData  = [];
+
+        try {
+            $flowRun     = $this->flowRunnerService->resumeFromApproval(approvalRequest: $approvalRequest);
+            $flowRunData = $flowRun->getObject();
+            $flowRunErrorStatuses = ['stopped', 'dead_letter', 'failed'];
+            if (in_array(($flowRunData['status'] ?? ''), $flowRunErrorStatuses, true) === true) {
+                $resumeResult = 'error';
+            }
+        } catch (Throwable $e) {
+            $this->logger->error('ApprovalsController: resumed flow run failed: '.$e->getMessage(), ['exception' => $e]);
+            $resumeResult = 'error';
+            $statusCode   = Http::STATUS_INTERNAL_SERVER_ERROR;
+            $flowRunData  = ['error' => $e->getMessage()];
+        }
+
+        $approvalRequest = $this->approvalService->completeApproval(
+            approvalRequest: $approvalRequest,
+            approver: $user,
+            resumeResult: $resumeResult,
+            comment: $comment
+        );
+
+        $approvalRequestData      = $approvalRequest->getObject();
+        $flowRunData['_approval'] = [
+            'id'        => $approvalRequest->getUuid(),
+            'status'    => ($approvalRequestData['status'] ?? 'approved'),
+            'resumedAt' => ($approvalRequestData['approvedAt'] ?? null),
+        ];
+
+        return new JSONResponse($flowRunData, $statusCode);
+
+    }//end approveFlowSuspension()
+
+    /**
      * Build the `_approval`-enveloped response body for a resumed endpoint response.
      *
      * @param Response     $resumed         The resumed pipeline's final Response.
@@ -445,6 +515,7 @@ class ApprovalsController extends Controller
             'endpointId'        => ($data['endpointId'] ?? null),
             'ruleId'            => ($data['ruleId'] ?? null),
             'synchronizationId' => ($data['synchronizationId'] ?? null),
+            'flowRunId'         => ($data['flowRunId'] ?? null),
             'requester'         => ($data['requesterUserId'] ?? null),
             'approverGroup'     => ($data['approverGroup'] ?? null),
             'createdAt'         => ($data['createdAt'] ?? null),

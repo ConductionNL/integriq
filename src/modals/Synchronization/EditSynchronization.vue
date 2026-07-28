@@ -127,19 +127,19 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="subsection">
 							<h4>{{ t('openconnector', 'Source configuration') }}</h4>
 							<div class="form-group">
-								<NcTextField :value.sync="synchronizationItem.sourceConfig.idPosition"
+								<NcTextField v-model="synchronizationItem.sourceConfig.idPosition"
 									:label="t('openconnector', 'ID position')"
 									:placeholder="t('openconnector', 'Position of id in source object')" />
 
-								<NcTextField :value.sync="synchronizationItem.sourceConfig.resultsPosition"
+								<NcTextField v-model="synchronizationItem.sourceConfig.resultsPosition"
 									:label="t('openconnector', 'Results position')"
 									:placeholder="t('openconnector', 'Position of results in source object')" />
 
-								<NcTextField :value.sync="synchronizationItem.sourceConfig.endpoint"
+								<NcTextField v-model="synchronizationItem.sourceConfig.endpoint"
 									:label="t('openconnector', 'Endpoint')"
 									:placeholder="t('openconnector', 'Endpoint on which to fetch data')" />
 
-								<NcTextField :value.sync="synchronizationItem.sourceHashPosition"
+								<NcTextField v-model="synchronizationItem.sourceHashPosition"
 									:label="t('openconnector', 'Source hash position')"
 									:placeholder="t('openconnector', 'Position of hash in source object')" />
 							</div>
@@ -158,14 +158,14 @@ import { translate as t } from '@nextcloud/l10n'
 						<div class="section-content">
 							<form @submit.prevent="handleSubmit">
 								<div class="form-group">
-									<NcTextField :value.sync="synchronizationItem.name"
+									<NcTextField v-model="synchronizationItem.name"
 										:label="t('openconnector', 'Name')"
 										:placeholder="t('openconnector', 'Enter synchronization name')"
 										required />
 
 									<NcTextArea
 										resize="vertical"
-										:value.sync="synchronizationItem.description"
+										v-model="synchronizationItem.description"
 										:label="t('openconnector', 'Description')"
 										:placeholder="t('openconnector', 'Describe what this synchronization does')" />
 								</div>
@@ -201,7 +201,7 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="form-group">
 								<NcTextArea
 									resize="vertical"
-									:value.sync="synchronizationItem.conditions"
+									v-model="synchronizationItem.conditions"
 									:label="t('openconnector', 'Conditions (JSON logic)')"
 									:placeholder="t('openconnector', 'Enter JSON logic conditions')" />
 
@@ -466,18 +466,18 @@ export default {
 		}
 	},
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedRegisterSourceValueSchemas() {
 			return this.registerOptions?.sourceValue?.schemas?.options || []
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedRegisterValueSchemas() {
 			return this.registerOptions?.value?.schemas?.options || []
 		},
 	},
 	watch: {
 		'registerOptions.value': {
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md */
 			handler(newVal, oldVal) {
 				// Only clear schema if register ID actually changed
 				// Skip clearing during initialization (when oldVal is null in edit mode)
@@ -491,7 +491,7 @@ export default {
 			deep: true,
 		},
 		'registerOptions.sourceValue': {
-			/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/sync-editor-ui/spec.md */
 			handler(newVal, oldVal) {
 				// Only clear schema if register ID actually changed
 				// Skip clearing during initialization (when oldVal is null in edit mode)
@@ -505,7 +505,7 @@ export default {
 			deep: true,
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4 */
+	/** @spec openspec/specs/sync-editor-ui/spec.md */
 	mounted() {
 		if (this.IS_EDIT) {
 			// If there is a synchronization item in the store, use it
@@ -532,7 +532,7 @@ export default {
 		 * If a source is already selected, it sets it as the active source.
 		 * If the target type is 'api', it sets the active target source.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		getSources() {
 			this.sourcesLoading = true
@@ -574,7 +574,7 @@ export default {
 		 * Sets the loading state to true while fetching and updates the mapping options with the fetched data.
 		 * If a mapping is already selected, it sets it as the active source and target mapping.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		getSourceTargetMappings() {
 			this.sourceTargetMappingLoading = true
@@ -623,7 +623,7 @@ export default {
 		 * additionally it adds the schemas of a register to its options data,
 		 * which'll be used to populate the schema options when you select a register.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		getRegisterWithSchemas() {
 			this.registerLoading = true
@@ -731,7 +731,7 @@ export default {
 		 * If a rules is already selected, it sets it as the active rules.
 		 * If the target type is 'api', it sets the active target rules.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		getRules() {
 			this.rulesLoading = true
@@ -762,7 +762,7 @@ export default {
 		 * Updates the state based on the success or failure of the installation.
 		 * If the installation is successful, it fetches the register and schema options.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		async installOpenRegister() {
 			this.openRegisterLoading = true
@@ -826,7 +826,7 @@ export default {
 		/**
 		 * Closes the modal and clears the timeout function.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
@@ -835,7 +835,7 @@ export default {
 		/**
 		 * Tests the synchronization configuration by running a test sync
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-5
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		testSynchronization() {
 			// TODO: Implement test synchronization functionality
@@ -845,7 +845,7 @@ export default {
 		 * Sets the loading state to true while saving and updates the state based on the success or failure of the save operation.
 		 * If the save operation is successful, it closes the modal after a timeout.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-sync-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/sync-editor-ui/spec.md
 		 */
 		editSynchronization() {
 			this.loading = true

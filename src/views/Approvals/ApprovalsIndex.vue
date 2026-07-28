@@ -14,7 +14,7 @@
   `/api/approvals/{id}/approve|reject` routes — not the generic OR object CRUD
   a CnIndexPage drives. Mirrors the established EventDeliveriesPage precedent.
 
-  @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+  @spec openspec/specs/approval-workflow/spec.md
 -->
 <template>
 	<div class="approvals">
@@ -23,8 +23,8 @@
 			<div class="approvals__filters">
 				<NcSelect :input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					:value.sync="statusFilter"
-					@input="reload" />
+					v-model="statusFilter"
+					@update:model-value="reload" />
 			</div>
 		</div>
 
@@ -114,14 +114,14 @@ export default {
 		/**
 		 * Navigate to a request's detail page.
 		 * @param {object} row Approval request row.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		openDetail(row) {
 			this.$router.push(`/approvals/${row.id}`)
 		},
 		/**
 		 * Fetch the caller-visible approval requests from the two-layer-authorized endpoint.
-		 * @spec openspec/changes/hitl-approval-rule-action/specs/approval-workflow/spec.md#req-007-pending-approvals-ui
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async reload() {
 			this.loading = true

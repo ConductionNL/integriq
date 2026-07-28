@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenConnector\Exception;
 /**
  * Thrown when a declared ZGW version is not recognised at all.
  *
- * @spec openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
+ * @spec openspec/specs/zgw-version-translation/spec.md#requirement-version-negotiation-with-passthrough-default-req-002
  */
 class ZgwUnknownVersionException extends ZgwVersionTranslationException
 {

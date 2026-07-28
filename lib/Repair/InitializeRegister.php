@@ -88,7 +88,7 @@ class InitializeRegister implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-repair-and-app-boot/tasks.md#task-1
+     * @spec openspec/specs/repair-and-app-boot/spec.md
      */
     public function run(IOutput $output): void
     {

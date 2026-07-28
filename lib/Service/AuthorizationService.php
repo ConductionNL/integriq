@@ -601,6 +601,121 @@ class AuthorizationService
     }//end authorizeOAuth()
 
     /**
+     * Authorize the CURRENT Nextcloud session user (ocon#1068).
+     *
+     * WHY THIS TYPE EXISTS
+     * --------------------
+     * The endpoint dispatch route (`/apps/openconnector/api/endpoint/{_path}`)
+     * is `#[PublicPage] #[NoCSRFRequired]`, so NC's own middleware never
+     * consults the session. Every other authentication type this app supports
+     * reads an `Authorization` header, and {@see authorizeOAuth()} explicitly
+     * REFUSES a session cookie. The consequence was that no in-app frontend
+     * could ever call a protected endpoint: a manifest `api-call` button
+     * renders and then always 403s, and no widget can bind to one.
+     *
+     * WHY CSRF IS VERIFIED HERE AND NOT INHERITED
+     * -------------------------------------------
+     * Because the route carries `#[NoCSRFRequired]`, NC has ALREADY decided not
+     * to validate the request token by the time this runs. Accepting a bare
+     * session cookie at that point would make every `nc-session` endpoint
+     * cross-site forgeable from any page a logged-in user visits — a 403 turned
+     * into a confused-deputy write. So the check is made EXPLICITLY, by
+     * delegating to {@see IRequest::passesCSRFCheck()}: exactly the predicate
+     * NC's own `CSRFMiddleware` uses, so there is one definition of
+     * "CSRF-safe" in the stack rather than a second one maintained here.
+     *
+     * WHAT THAT PREDICATE ACTUALLY ACCEPTS (verified against NC 34's
+     * `OC\AppFramework\Http\Request::passesCSRFCheck()`, because the naive
+     * reading is wrong and the difference is load-bearing):
+     *
+     *  1. `passesStrictCookieCheck()` must pass FIRST. This requires the
+     *     `SameSite=Strict` session cookie, which a browser never attaches to a
+     *     cross-site request. THIS is the check that actually defeats forgery,
+     *     and nothing after it can re-open the door.
+     *  2. Then, a request carrying an `OCS-APIRequest` header is accepted
+     *     WITHOUT a request token at all — NC treats the header as proof of a
+     *     same-origin XHR, since setting it cross-origin forces a preflight.
+     *     This app's own preflight ({@see \OCA\OpenConnector\Controller\EndpointsController::preflightedCors()})
+     *     answers `Access-Control-Allow-Credentials: false`, so a cross-origin
+     *     caller cannot attach the victim's session cookie and lands on the
+     *     no-session refusal above.
+     *  3. Otherwise a `requesttoken` from GET, POST or the `REQUESTTOKEN`
+     *     header must validate against the session's CSRF token manager.
+     *
+     * A caller that authenticated with an app password or a Bearer token sends
+     * no session cookie, fails the strict-cookie check, and is refused. That is
+     * correct and intended: those callers have the `basic` / `oauth` / `jwt`
+     * types. This type is exclusively for a browser calling from inside a
+     * Nextcloud page.
+     *
+     * Every branch either throws or falls through to the ACL, so a missing
+     * session, a missing/stale request token and a disallowed user all fail
+     * closed.
+     *
+     * @param array $users  The users allowed to be authenticated according to the rule.
+     * @param array $groups The groups allowed to be authenticated according to the rule.
+     *
+     * @return void
+     *
+     * @throws AuthenticationException When there is no authenticated session user, when the
+     *                                 request carries no valid CSRF token, or when the session
+     *                                 user falls outside the rule's allow-list.
+     *
+     * @spec openspec/specs/authorization-jwt/spec.md
+     */
+    public function authorizeNcSession(array $users=[], array $groups=[]): void
+    {
+        if ($this->userSession->isLoggedIn() === false) {
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'This endpoint requires an authenticated Nextcloud session.']
+            );
+        }
+
+        $user = $this->userSession->getUser();
+
+        if ($user === null) {
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'This endpoint requires an authenticated Nextcloud session.']
+            );
+        }
+
+        // The dispatch route is #[NoCSRFRequired]: without this explicit check a
+        // session-authenticated endpoint would be forgeable from any origin.
+        // See the method docblock for what NC's predicate actually accepts.
+        if ($this->request->passesCSRFCheck() === false) {
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'A same-origin request with a valid CSRF request token is required for session authentication.']
+            );
+        }
+
+        // Enforce users/groups ACL when the rule has an explicit allow-list.
+        // Empty lists mean "any authenticated user is allowed" — the same
+        // config shape the `basic` and `oauth` rules already use.
+        if (empty($users) === false || empty($groups) === false) {
+            $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
+
+            $userGroups          = array_map(
+                static function (IGroup $group): string {
+                    return $group->getGID();
+                },
+                $this->groupManager->getUserGroups($user)
+            );
+            $userInAllowedGroups = (array_intersect($groups, $userGroups) !== []);
+
+            if ($userInAllowedUsers === false && $userInAllowedGroups === false) {
+                throw new AuthenticationException(
+                    message: 'Not authorized',
+                    details: ['reason' => 'The selected user is not allowed to login on this endpoint']
+                );
+            }
+        }
+
+    }//end authorizeNcSession()
+
+    /**
      * Add CORS headers to controller result.
      *
      * @param IRequest $request  The incoming request.
@@ -634,49 +749,144 @@ class AuthorizationService
     }//end corsAfterController()
 
     /**
-     * Authorize user based on API key.
+     * Authorize an incoming call based on an API key.
      *
-     * @param string $header The authorization header used.
-     * @param array  $keys   The array of keys configured on the rule.
+     * Two credential sources are checked, in order, and the first match wins:
+     *
+     *   1. Rule-inline keys — the `keys` map (`apiKeyValue => nextcloudUserId`)
+     *      configured directly on the endpoint's authentication rule. This is
+     *      the pre-existing behaviour and is preserved unchanged.
+     *   2. Consumer-backed keys — a `consumer` record whose
+     *      `authorizationType` is `apiKey` and whose
+     *      `authorizationConfiguration.apiKey` equals the presented key. This
+     *      is the enforcement for `REQ-CON-001` that was previously missing:
+     *      before this change a Consumer's configured apiKey was never read, so
+     *      `Consumer.authorizationType: apiKey` enforced nothing. When a
+     *      consumer matches it is recorded as the resolved consumer (so the
+     *      endpoint runtime can key inbound rate-limiting/quota on it, exactly
+     *      as the JWT issuer path does) and, when the consumer names a
+     *      `userId`, that Nextcloud user is set on the session.
+     *
+     * The method is fail-closed: when neither a rule-inline key nor a consumer
+     * apiKey matches the presented credential an {@see AuthenticationException}
+     * is thrown, which the endpoint runtime converts to HTTP 401. An empty
+     * presented key never matches. Comparisons use {@see hash_equals()} for
+     * constant-time behaviour to avoid leaking key material via timing.
+     *
+     * @param string $header The API key presented by the caller.
+     * @param array  $keys   The rule-inline keys map (may be empty).
      *
      * @return void
      *
-     * @throws AuthenticationException On invalid API keys.
+     * @throws AuthenticationException On an invalid/absent API key.
      *
-     * @spec openspec/specs/authorization-jwt/spec.md
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: Consumer authentication enforcement (REQ-CON-001)
      */
     public function authorizeApiKey(string $header, array $keys): void
     {
+        // 1) Rule-inline keys (pre-existing behaviour, backward compatible).
         // Use hash_equals for constant-time comparison to prevent timing attacks
         // when iterating over the configured API keys.
-        $matchedUserId = null;
         foreach ($keys as $key => $userId) {
             if (hash_equals((string) $key, $header) === true) {
-                $matchedUserId = $userId;
-                break;
+                $user = $this->userManager->get(uid: (string) $userId);
+
+                if ($user === null) {
+                    throw new AuthenticationException(message: 'Invalid API key', details: []);
+                }
+
+                $this->userSession->setUser(user: $user);
+                return;
             }
         }
 
-        if ($matchedUserId === null) {
+        // 2) Consumer-backed keys (REQ-CON-001). Resolve the consumer whose
+        // configured apiKey matches the presented credential. Fail closed when
+        // no consumer matches.
+        $consumer = $this->resolveConsumerByApiKey(presentedKey: $header);
+        if ($consumer === null) {
             throw new AuthenticationException(message: 'Invalid API key', details: []);
         }
 
-        $user = $this->userManager->get(uid: $matchedUserId);
+        // Record the resolved consumer so the endpoint runtime can enforce this
+        // consumer's inbound rate limit + quota after authentication passes,
+        // mirroring the JWT issuer path.
+        $this->resolvedConsumer = $consumer;
 
-        if ($user === null) {
-            throw new AuthenticationException(message: 'Invalid API key', details: []);
+        // When the consumer names a backing Nextcloud user, establish the
+        // session as that user (as the JWT path does). A consumer without a
+        // userId is still authenticated — the consumer itself is the identity.
+        $consumerData = $consumer->getObject();
+        $userId       = (string) ($consumerData['userId'] ?? '');
+        if ($userId !== '') {
+            $user = $this->userManager->get(uid: $userId);
+            if ($user !== null) {
+                $this->userSession->setUser(user: $user);
+            }
         }
 
-        $this->userSession->setUser(user: $user);
     }//end authorizeApiKey()
+
+    /**
+     * Resolve the `apiKey` consumer whose configured key matches the presented credential.
+     *
+     * Loads the `consumer` records for the openconnector register and returns
+     * the first whose `authorizationType` is `apiKey` (case-insensitive) and
+     * whose `authorizationConfiguration.apiKey` equals `$presentedKey` under a
+     * constant-time comparison. Returns null when the presented key is empty or
+     * no consumer matches — the caller then fails closed.
+     *
+     * @param string $presentedKey The API key presented by the caller.
+     *
+     * @return ObjectEntity|null The matching consumer, or null when none matches.
+     *
+     * @spec openspec/specs/consumer-management/spec.md — Requirement: Consumer authentication enforcement (REQ-CON-001)
+     */
+    private function resolveConsumerByApiKey(string $presentedKey): ?ObjectEntity
+    {
+        if ($presentedKey === '') {
+            return null;
+        }
+
+        $matches   = $this->orObjectService->findAll(
+            config: [
+                'filters' => [
+                    'register' => 'openconnector',
+                    'schema'   => 'consumer',
+                ],
+            ],
+            _rbac: false,
+            _multitenancy: false
+        );
+        $consumers = ($matches['results'] ?? $matches);
+
+        foreach ($consumers as $consumer) {
+            $data = $consumer->getObject();
+
+            if (strtolower((string) ($data['authorizationType'] ?? '')) !== 'apikey') {
+                continue;
+            }
+
+            $storedKey = ($data['authorizationConfiguration']['apiKey'] ?? '');
+            if (is_string($storedKey) === true
+                && $storedKey !== ''
+                && hash_equals($storedKey, $presentedKey) === true
+            ) {
+                return $consumer;
+            }
+        }
+
+        return null;
+    }//end resolveConsumerByApiKey()
 
     /**
      * Return the consumer resolved during authentication for this request.
      *
-     * Currently only the JWT authentication path resolves a `consumer` object
-     * (the token issuer). Other methods (apikey/basic/oauth) authenticate a
-     * Nextcloud user rather than a consumer and therefore return null — the
-     * endpoint runtime then keys inbound rate limiting on the client IP.
+     * Both the JWT issuer path and the consumer-backed apiKey path
+     * ({@see authorizeApiKey()}) resolve a `consumer` object. The remaining
+     * methods (rule-inline apikey/basic/oauth) authenticate a Nextcloud user
+     * rather than a consumer and therefore return null — the endpoint runtime
+     * then keys inbound rate limiting on the client IP.
      *
      * @return ObjectEntity|null The resolved consumer, or null when none was resolved.
      *

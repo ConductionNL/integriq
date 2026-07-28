@@ -127,6 +127,23 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OC/Hooks/Emitter.php';
         }
 
+        // flow-workflowengine-integration: OC\AppFramework\Http\Request stub.
+        // EndpointService::buildSyntheticRequest() constructs NC's REAL
+        // concrete IRequest implementation at runtime (design.md Decision 5);
+        // it is a private `\OC\` class, absent from the standalone
+        // `nextcloud/ocp` dev-dependency, so EndpointServiceTest needs this
+        // stand-in to exercise triggerFromFlow() without a live NC install.
+        if (class_exists('OC\\AppFramework\\Http\\Request') === false) {
+            require_once $stubsDir . '/OC/AppFramework/Http/Request.php';
+        }
+
+        // api-product-gateway: OC\AppFramework\Http stub (STATUS_* constants) —
+        // see tests/stubs/OC/AppFramework/Http.php docblock for why this was a
+        // pre-existing, previously-unsurfaced gap.
+        if (class_exists('OC\\AppFramework\\Http') === false) {
+            require_once $stubsDir . '/OC/AppFramework/Http.php';
+        }
+
         if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/OrganisationService.php';
         }
@@ -225,6 +242,43 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OCA/Forms/Db/Submission.php';
             require_once $stubsDir . '/OCA/Forms/Events/AbstractFormEvent.php';
             require_once $stubsDir . '/OCA/Forms/Events/FormSubmittedEvent.php';
+        }
+
+        // adopt-apphost: AppHost boilerplate stubs (peer app not in vendor).
+        // The leaf `OpenConnectorAdmin` (Settings + Sections) and
+        // `InitializeActions` classes extend these directly, so autoloading
+        // the subclass requires the parent to resolve.
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericAdminSettings.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericSettingsSection.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Service/GenericActionAuthService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Repair/GenericInitializeActions.php';
+        }
+
+        // Flow-engine stubs (openconnector-flow-nodes change). The two
+        // contributed node classes `implements IFlowNode`, so the interface
+        // must exist before they are parsed — exactly the compile-time
+        // reference the runtime `class_exists()` guard in Application.php
+        // exists to avoid resolving on an instance without a flow engine.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeRegistry.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/RegisterFlowNodesEvent.php';
         }
     }
 }

@@ -2,6 +2,7 @@
 import { ruleStore, navigationStore, mappingStore, synchronizationStore, sourceStore } from '../../store/store.js'
 import { getTheme } from '../../services/getTheme.js'
 import { Rule } from '../../entities/index.js'
+import { buildAuthenticationConfiguration } from './buildAuthenticationConfiguration.js'
 import { translate as t } from '@nextcloud/l10n'
 </script>
 
@@ -76,13 +77,13 @@ import { translate as t } from '@nextcloud/l10n'
 			<!--          Form          -->
 			<!-- ====================== -->
 			<form v-if="!success" @submit.prevent="handleSubmit">
-				<NcTextField :value.sync="ruleItem.name"
+				<NcTextField v-model="ruleItem.name"
 					:label="t('openconnector', 'Name')"
 					required />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="ruleItem.description"
+					v-model="ruleItem.description"
 					:label="t('openconnector', 'Description')" />
 
 				<div class="json-editor">
@@ -116,7 +117,7 @@ import { translate as t } from '@nextcloud/l10n'
 						:input-label="t('openconnector', 'Timing')" />
 				</div>
 
-				<NcTextField :value.sync="ruleItem.order"
+				<NcTextField v-model="ruleItem.order"
 					:label="t('openconnector', 'Order')"
 					type="number" />
 
@@ -152,7 +153,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Retain response')"
-						:checked.sync="ruleItem.configuration.synchronization.retainResponse">
+						v-model="ruleItem.configuration.synchronization.retainResponse">
 						{{ t('openconnector', 'Retain original response') }}
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -164,26 +165,26 @@ import { translate as t } from '@nextcloud/l10n'
 						:label="t('openconnector', 'Error Code')"
 						:min="100"
 						:max="999"
-						:value.sync="ruleItem.configuration.error.code"
+						v-model="ruleItem.configuration.error.code"
 						placeholder="500" />
 
 					<NcTextField
 						:label="t('openconnector', 'Error Title')"
 						maxlength="255"
-						:value.sync="ruleItem.configuration.error.name"
+						v-model="ruleItem.configuration.error.name"
 						:placeholder="t('openconnector', 'Something went wrong')" />
 
 					<NcTextArea
 						:label="t('openconnector', 'Error Message')"
 						resize="vertical"
 						maxlength="2550"
-						:value.sync="ruleItem.configuration.error.message"
+						v-model="ruleItem.configuration.error.message"
 						:placeholder="t('openconnector', 'We encountered an unexpected problem')" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Include JSON Logic results in errors array')"
-						:checked.sync="ruleItem.configuration.error.includeJsonLogicResult">
+						v-model="ruleItem.configuration.error.includeJsonLogicResult">
 						{{ t('openconnector', 'Include JSON Logic results in errors array') }}
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -193,7 +194,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextArea
 						resize="vertical"
 						:label="t('openconnector', 'JavaScript Code')"
-						:value.sync="ruleItem.configuration.javascript"
+						v-model="ruleItem.configuration.javascript"
 						class="code-editor"
 						:placeholder="t('openconnector', 'Enter your JavaScript code here...')"
 						rows="10" />
@@ -206,12 +207,15 @@ import { translate as t } from '@nextcloud/l10n'
 						:options="authenticationTypeOptions.options"
 						:input-label="t('openconnector', 'Authentication Type')" />
 					<template v-if="authenticationTypeOptions.value.value === 'api-key'">
+						<NcNoteCard type="warning">
+							{{ t('openconnector', 'For security, saved API keys are never displayed. Leave the fields below empty to keep the existing keys unchanged. Only enter keys here to REPLACE all existing keys — saving with keys entered overwrites the stored set.') }}
+						</NcNoteCard>
 						<VueDraggable v-model="apiKeys" easing="ease-in-out" draggable="div:not(:last-child)">
 							<div v-for="(item, index) in apiKeys" :key="index" class="draggable-item-container">
 								<div :class="`draggable-form-item ${getTheme()}`">
 									<Drag class="drag-handle" :size="40" />
 									<NcTextArea
-										:value.sync="item.apiKey"
+										v-model="item.apiKey"
 										:disabled="loading"
 										:label="t('openconnector', 'Api-key')"
 										resize="none"
@@ -257,7 +261,7 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Property (dot path)') }}</label>
 								<NcTextField
-									:value.sync="item.property"
+									v-model="item.property"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
@@ -293,7 +297,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Validate fetched object with schema')"
-						:checked.sync="ruleItem.configuration.extend_external_input.validate">
+						v-model="ruleItem.configuration.extend_external_input.validate">
 						{{ t('openconnector', 'Validate fetched object with schema') }}
 					</NcCheckboxRadioSwitch>
 
@@ -302,13 +306,13 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Property') }}</label>
 								<NcTextField
-									:value.sync="item.property"
+									v-model="item.property"
 									placeholder="path.to.url" />
 							</div>
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Schema ID') }}</label>
 								<NcTextField
-									:value.sync="item.schema"
+									v-model="item.schema"
 									placeholder="schemaId" />
 							</div>
 							<NcButton class="remove-action"
@@ -331,7 +335,7 @@ import { translate as t } from '@nextcloud/l10n'
 						label="File ID Position"
 						type="number"
 						:min="0"
-						:value.sync="ruleItem.configuration.download.fileIdPosition"
+						v-model="ruleItem.configuration.download.fileIdPosition"
 						placeholder="Position of file ID in URL path (e.g. 2)" />
 
 					<div class="info-text">
@@ -343,19 +347,19 @@ import { translate as t } from '@nextcloud/l10n'
 				<template v-if="typeOptions.value?.id === 'upload'">
 					<NcTextField
 						label="Upload Path"
-						:value.sync="ruleItem.configuration.upload.path"
+						v-model="ruleItem.configuration.upload.path"
 						placeholder="/path/to/upload/directory" />
 
 					<NcTextField
 						label="Allowed File Types"
-						:value.sync="ruleItem.configuration.upload.allowedTypes"
+						v-model="ruleItem.configuration.upload.allowedTypes"
 						placeholder="jpg,png,pdf" />
 
 					<NcInputField
 						type="number"
 						label="Max File Size (MB)"
 						:min="1"
-						:value.sync="ruleItem.configuration.upload.maxSize"
+						v-model="ruleItem.configuration.upload.maxSize"
 						placeholder="10" />
 
 					<div class="info-text">
@@ -377,7 +381,7 @@ import { translate as t } from '@nextcloud/l10n'
 						type="number"
 						label="Lock Timeout (minutes)"
 						:min="1"
-						:value.sync="ruleItem.configuration.locking.timeout"
+						v-model="ruleItem.configuration.locking.timeout"
 						placeholder="30" />
 
 					<div class="info-text">
@@ -410,23 +414,23 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="File Path"
-						:value.sync="ruleItem.configuration.fetch_file.filePath"
+						v-model="ruleItem.configuration.fetch_file.filePath"
 						placeholder="path.to.fetch.file" />
 
 					<NcTextField
 						label="File path in sub object(s) (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.subObjectFilepath"
+						v-model="ruleItem.configuration.fetch_file.subObjectFilepath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Object id path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.objectIdPath"
+						v-model="ruleItem.configuration.fetch_file.objectIdPath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						label="Auto Share"
-						:checked.sync="ruleItem.configuration.fetch_file.autoShare">
+						v-model="ruleItem.configuration.fetch_file.autoShare">
 						Auto share
 					</NcCheckboxRadioSwitch>
 
@@ -455,27 +459,27 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="Origin id path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.originIdPath"
+						v-model="ruleItem.configuration.fetch_file.originIdPath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Content path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.contentPath"
+						v-model="ruleItem.configuration.fetch_file.contentPath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Filename path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.filenamePath"
+						v-model="ruleItem.configuration.fetch_file.filenamePath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="File extension (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.fileExtension"
+						v-model="ruleItem.configuration.fetch_file.fileExtension"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Endpoint (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.endpoint"
+						v-model="ruleItem.configuration.fetch_file.endpoint"
 						placeholder="path.to.fetch.file.objects" />
 				</template>
 
@@ -484,12 +488,12 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextField
 						label="File Path"
 						required
-						:value.sync="ruleItem.configuration.write_file.filePath"
+						v-model="ruleItem.configuration.write_file.filePath"
 						placeholder="path.to.file.content" />
 					<NcTextField
 						label="File Name Path"
 						required
-						:value.sync="ruleItem.configuration.write_file.fileNamePath"
+						v-model="ruleItem.configuration.write_file.fileNamePath"
 						placeholder="path.to.file.name" />
 
 					<NcSelect v-model="ruleItem.configuration.write_file.tags"
@@ -504,7 +508,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						label="Auto Share"
-						:checked.sync="ruleItem.configuration.write_file.autoShare">
+						v-model="ruleItem.configuration.write_file.autoShare">
 						Auto share
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -514,7 +518,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextField
 						label="Size Location"
 						required
-						:value.sync="ruleItem.configuration.fileparts_create.sizeLocation"
+						v-model="ruleItem.configuration.fileparts_create.sizeLocation"
 						placeholder="path.to.size.location" />
 
 					<NcSelect v-bind="schemaOptions"
@@ -551,12 +555,12 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="Filename Location"
-						:value.sync="ruleItem.configuration.fileparts_create.filenameLocation"
+						v-model="ruleItem.configuration.fileparts_create.filenameLocation"
 						placeholder="path.to.filename.location" />
 
 					<NcTextField
 						label="Filepart Location"
-						:value.sync="ruleItem.configuration.fileparts_create.filePartLocation"
+						v-model="ruleItem.configuration.fileparts_create.filePartLocation"
 						placeholder="path.to.filepart.location" />
 
 					<NcSelect
@@ -580,13 +584,13 @@ import { translate as t } from '@nextcloud/l10n'
 				<template v-if="typeOptions.value?.id === 'save_object'">
 					<NcTextField
 						label="Register"
-						:value.sync="ruleItem.configuration.save_object.register"
+						v-model="ruleItem.configuration.save_object.register"
 						placeholder="id of register"
 						required />
 
 					<NcTextField
 						label="Schema"
-						:value.sync="ruleItem.configuration.save_object.schema"
+						v-model="ruleItem.configuration.save_object.schema"
 						placeholder="id of schema"
 						required />
 				</template>
@@ -835,7 +839,7 @@ export default {
 	},
 	watch: {
 		apiKeys: {
-			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				const currentApiKeysLength = newVal.length
 
@@ -855,7 +859,7 @@ export default {
 		},
 		// Auto-add empty extend_input item when last one is filled
 		'ruleItem.configuration.extend_input.items': {
-			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -878,7 +882,7 @@ export default {
 		},
 		// Auto-add empty extend_external_input property when last one is filled
 		'ruleItem.configuration.extend_external_input.properties': {
-			/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/rule-editor-ui/spec.md */
 			handler(newVal) {
 				if (!newVal || newVal.length === 0) return
 
@@ -903,7 +907,7 @@ export default {
 			deep: true,
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	mounted() {
 
 		if (this.IS_EDIT) {
@@ -1020,10 +1024,10 @@ export default {
 
 		// Initialize extend_input/extend_external_input structures for new items
 		if (!this.ruleItem.configuration.extend_external_input) {
-			this.$set?.(this.ruleItem.configuration, 'extend_external_input', {
+			this.ruleItem.configuration['extend_external_input'] = {
 				validate: true,
 				properties: [{ property: '', schema: '' }],
-			})
+			}
 		} else if (!this.ruleItem.configuration.extend_external_input.properties || this.ruleItem.configuration.extend_external_input.properties.length === 0) {
 			this.ruleItem.configuration.extend_external_input.properties = [{ property: '', schema: '' }]
 		}
@@ -1038,15 +1042,15 @@ export default {
 				this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
 			}
 		} else if (!this.ruleItem.configuration.extend_input) {
-			this.$set?.(this.ruleItem.configuration, 'extend_input', {
+			this.ruleItem.configuration['extend_input'] = {
 				items: [{ property: '', extends: [] }],
-			})
+			}
 		} else if (!this.ruleItem.configuration.extend_input.items || this.ruleItem.configuration.extend_input.items.length === 0) {
 			this.ruleItem.configuration.extend_input.items = [{ property: '', extends: [] }]
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getMappings() {
 			try {
 				this.mappingOptions.loading = true
@@ -1109,7 +1113,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		getSources() {
 			this.sourcesLoading = true
 
@@ -1137,7 +1141,7 @@ export default {
 					this.sourcesLoading = false
 				})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getSchemas() {
 			this.schemasLoading = true
 
@@ -1191,7 +1195,7 @@ export default {
 			this.schemasLoading = false
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getSynchronizations() {
 			try {
 				this.syncOptions.loading = true
@@ -1222,7 +1226,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getAllowedUsers() {
 			this.usersLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/users/details', {
@@ -1269,7 +1273,7 @@ export default {
 			this.usersLoading = false
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getApiKeysUsers() {
 			this.usersLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/users/details', {
@@ -1328,7 +1332,7 @@ export default {
 
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async getGroups() {
 			this.groupsLoading = true
 			const response = await fetch('/ocs/v1.php/cloud/groups/details', {
@@ -1370,7 +1374,7 @@ export default {
 			this.groupsLoading = false
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		setMethodOptions() {
 			const options = [
 				{ label: 'GET' },
@@ -1386,7 +1390,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		setActionOptions() {
 			const options = [
 				{ label: 'Post (Create)', id: 'post' },
@@ -1401,7 +1405,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		setTimingOptions() {
 			const options = [
 				{ label: 'Before', id: 'before' },
@@ -1414,38 +1418,38 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendExternalItem() {
 			if (!this.ruleItem.configuration.extend_external_input) {
 				this.ruleItem.configuration.extend_external_input = { validate: true, properties: [] }
 			}
 			this.ruleItem.configuration.extend_external_input.properties.push({ property: '', schema: '' })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendExternalItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_external_input.properties.splice(index, 1)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addExtendInputItem() {
 			if (!this.ruleItem.configuration.extend_input) {
 				this.ruleItem.configuration.extend_input = { items: [] }
 			}
 			this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeExtendInputItem(index) {
 			if (index === 0) return
 			this.ruleItem.configuration.extend_input.items.splice(index, 1)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeTimeoutFunc)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		isValidJson(str) {
 			if (!str) return true
 			try {
@@ -1456,7 +1460,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formatJSONCondictions() {
 			try {
 				if (this.ruleItem.conditions) {
@@ -1469,7 +1473,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		formatJSONSourceConfiguration() {
 			try {
 				if (this.ruleItem.configuration.fetch_file.sourceConfiguration) {
@@ -1481,7 +1485,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		async installOpenRegister() {
 			console.info('Installing Open Register')
 			const token = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
@@ -1513,7 +1517,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		editRule() {
 			this.loading = true
 
@@ -1543,17 +1547,17 @@ export default {
 				configuration.javascript = this.ruleItem.configuration.javascript
 				break
 			case 'authentication':
-				configuration.authentication = {
+				// SECURITY (ocon#147 / openregister#463): the inbound apiKey => userId map is
+				// write-only, so this editor never sees the stored keys and `apiKeys` seeds empty.
+				// buildAuthenticationConfiguration() OMITS `keys` when no complete new key was
+				// entered, so openregister#463 preserves the stored keys instead of the PUT-null-fill
+				// destroying them. Only a non-empty `keys` REPLACES the stored keys. See that module.
+				configuration.authentication = buildAuthenticationConfiguration({
 					type: this.authenticationTypeOptions.value.value,
 					users: this.ruleItem.configuration.authentication.users.map(user => user.id),
 					groups: this.ruleItem.configuration.authentication.groups.map(group => group.value),
-					keys: this.apiKeys
-						.filter(key => key.apiKey && key.user?.id) // Filter out incomplete entries
-						.map(key => ({
-							[key.apiKey]: key.user.id,
-						}))
-						.filter(Boolean),
-				}
+					apiKeys: this.apiKeys,
+				})
 				break
 			case 'download':
 				configuration.download = {

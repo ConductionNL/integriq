@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenConnector\Exception\PeppolProviderException;
 /**
  * A Peppol Access Point binding: SMP/directory lookup + document submission.
  *
- * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
+ * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-access-point-provider-abstraction-with-log-and-generic-rest-bindings-req-002
  */
 interface PeppolAccessPointProviderInterface
 {
@@ -50,7 +50,7 @@ interface PeppolAccessPointProviderInterface
      *
      * @throws PeppolProviderException When the Access Point is unreachable or errors.
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant--smp-lookup-endpoint-req-001
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-peppol-participant-smp-lookup-endpoint-req-001
      */
     public function lookupParticipant(array $sourceConfiguration, string $peppolId): array;
 
@@ -66,7 +66,7 @@ interface PeppolAccessPointProviderInterface
      *
      * @throws PeppolProviderException When the submission fails (unreachable AP, AP-side rejection, brokering failure).
      *
-     * @spec openspec/changes/peppol-access-point-connector/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
+     * @spec openspec/specs/peppol-access-point-connector/spec.md#requirement-event-driven-outbound-transmission-with-status-lifecycle-req-003
      */
     public function submitDocument(
         array $sourceConfiguration,

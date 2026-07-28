@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012
+ * @spec openspec/specs/lti-platform/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * it can never make a launch appear more trustworthy than
  * `LtiLaunchService::validateLaunch()` already determined.
  *
- * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012
+ * @spec openspec/specs/lti-platform/spec.md
  */
 class LtiIdentityLinkService
 {
@@ -101,7 +101,7 @@ class LtiIdentityLinkService
      *
      * @throws LtiValidationException When `$ltiPlatformId` does not resolve to a known `lti_platform`.
      *
-     * @spec openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012
+     * @spec openspec/specs/lti-platform/spec.md
      */
     public function resolveIdentity(string $ltiPlatformId, string $subject): array
     {

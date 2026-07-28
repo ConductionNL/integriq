@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md
+ * @spec openspec/specs/fsc-connectivity/spec.md
  */
 
 declare(strict_types=1);
@@ -37,6 +37,7 @@ use OCA\OpenConnector\Exception\FscDirectoryException;
 use OCA\OpenConnector\Service\Fsc\FscConnectivityProviderInterface;
 use OCA\OpenConnector\Service\Fsc\FscDirectoryClient;
 use OCA\OpenConnector\Service\Fsc\LogFscConnectivityProvider;
+use OCA\OpenConnector\Service\Security\RawSourceResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use Throwable;
@@ -46,7 +47,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md
+ * @spec openspec/specs/fsc-connectivity/spec.md
  */
 class FscCallService
 {
@@ -89,14 +90,16 @@ class FscCallService
     /**
      * Constructor.
      *
-     * @param ORObjectService            $objectService OR object service for source/cache/log persistence.
-     * @param LogFscConnectivityProvider $logProvider   The sandbox provider binding.
-     * @param FscDirectoryClient         $restProvider  The generic REST provider binding.
+     * @param ORObjectService            $objectService     OR object service for source/cache/log persistence.
+     * @param LogFscConnectivityProvider $logProvider       The sandbox provider binding.
+     * @param FscDirectoryClient         $restProvider      The generic REST provider binding.
+     * @param RawSourceResolver          $rawSourceResolver Re-resolves the located source raw (ocon#242).
      */
     public function __construct(
         private readonly ORObjectService $objectService,
         private readonly LogFscConnectivityProvider $logProvider,
         private readonly FscDirectoryClient $restProvider,
+        private readonly RawSourceResolver $rawSourceResolver,
     ) {
 
     }//end __construct()
@@ -115,7 +118,7 @@ class FscCallService
      * @throws FscDirectoryException    When the organisation/service cannot be resolved
      *                                   (no `fsc_call` record is persisted — nothing was attempted).
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-call-routing-through-the-provider-seam-req-003
      */
     public function callService(array $input): array
     {
@@ -194,7 +197,7 @@ class FscCallService
      *
      * @return array<int, array<string, mixed>> The cached resolutions.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-listing-services-when-unconfigured-returns-an-empty-list-not-an-error
+     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-listing-services-when-unconfigured-returns-an-empty-list-not-an-error
      */
     public function listResolvableServices(): array
     {
@@ -225,7 +228,7 @@ class FscCallService
      *
      * @throws FscConnectivityException When no active FSC source is configured.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-no-active-source-produces-a-clean-not-configured-failure
+     * @spec openspec/specs/fsc-connectivity/spec.md#scenario-no-active-source-produces-a-clean-not-configured-failure
      */
     public function resolveActiveSource(): ObjectEntity
     {
@@ -249,7 +252,7 @@ class FscCallService
             );
         }
 
-        return $results[0];
+        return $this->rawSourceResolver->resolveRaw(source: $results[0]);
 
     }//end resolveActiveSource()
 
@@ -260,7 +263,7 @@ class FscCallService
      *
      * @return FscConnectivityProviderInterface The resolved provider binding.
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
+     * @spec openspec/specs/fsc-connectivity/spec.md#requirement-fsc-provider-abstraction-with-log-and-rest-bindings-req-001
      */
     public function resolveProvider(array $configuration): FscConnectivityProviderInterface
     {
@@ -283,7 +286,7 @@ class FscCallService
      *
      * @return void
      *
-     * @spec openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md#scenario-repeated-resolution-of-the-same-organisationservice-updates-one-cache-row
+     * @spec openspec/specs/fsc-connectivity/spec.md
      */
     private function cacheResolution(array $resolution, FscConnectivityProviderInterface $provider): void
     {
