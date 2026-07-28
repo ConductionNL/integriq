@@ -602,10 +602,25 @@ class Application extends App implements IBootstrap
      */
     private function registerFlowNodes(IEventDispatcher $dispatcher): void
     {
-        if (class_exists('\\OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
-            return;
-        }
-
+        // Deliberately NOT guarded on the OR event class existing.
+        //
+        // The guard that used to stand here ran during register(), and at that
+        // point OpenRegister's classes are not autoloadable yet — apps are
+        // registered in an order that puts `openconnector` before
+        // `openregister`. So `class_exists()` answered FALSE on a perfectly
+        // healthy instance and this returned early: the nodes never registered,
+        // `source-call` and `synchronization-run` were absent from the palette,
+        // and a flow naming either failed only when it RAN. Verified on a clean
+        // install — the guard logged `class_exists at register(): false`, and
+        // removing it took the registry from 10 nodes to 12.
+        //
+        // Dropping it is safe, which is why the guard was never buying anything:
+        // `::class` resolves to a string and does not autoload, and
+        // addServiceListener() is lazy — FlowNodeListener is only constructed if
+        // the event actually fires, which can only happen when OpenRegister is
+        // present and dispatching it. On an instance whose OpenRegister predates
+        // the flow engine, nothing dispatches and this stays inert, which is
+        // exactly the resilience the guard was reaching for.
         $dispatcher->addServiceListener(
             eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
             className: \OCA\OpenConnector\Flow\FlowNodeListener::class
