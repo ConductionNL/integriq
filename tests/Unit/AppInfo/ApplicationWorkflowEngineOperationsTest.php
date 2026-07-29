@@ -102,25 +102,45 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
 
 
     /**
-     * Build an `IAppManager` mock exposing `isEnabledForAnyUser('workflowengine')`.
+     * Build an `IAppManager` mock answering the "is `workflowengine` enabled"
+     * question for {@see Application::isAppEnabled()}.
      *
-     * `isEnabledForAnyUser()` is real, current `OCP\App\IAppManager` API (used
-     * unconditionally by the pre-existing Tables/Forms gate in
-     * `registerNextcloudEventTriggers()`) but is absent from the
-     * `nextcloud/ocp:dev-stable29` dev-dependency's older interface snapshot,
-     * so `createMock()` cannot configure it directly — `addMethods()` adds it
-     * to the generated mock class.
+     * WHY THIS CHANGED (#1089). This helper previously did:
      *
-     * @param bool $enabled The value `isEnabledForAnyUser('workflowengine')` should return.
+     * ```php
+     * $this->getMockBuilder(IAppManager::class)
+     *     ->addMethods(['isEnabledForAnyUser'])
+     *     ->getMockForAbstractClass();
+     * ```
+     *
+     * with a docblock asserting that `isEnabledForAnyUser()` was "real, current
+     * `OCP\App\IAppManager` API" merely missing from the older
+     * `nextcloud/ocp:dev-stable29` interface snapshot. Both halves were wrong:
+     * the method is in NEITHER the vendored NC 29 interface NOR NC 35's, and
+     * `addMethods()` MANUFACTURED it on the generated mock. So the test asserted
+     * against an API that does not exist, passed, and the production call it was
+     * guarding raised `Call to undefined method` on every real server — silently,
+     * because the call site's `catch (\Throwable)` only logs a warning. The bug
+     * surfaced in an upgrade log, not in CI.
+     *
+     * The lesson encoded here: `addMethods()` on an interface mock is only ever
+     * legitimate for an API that genuinely exists on some supported server and is
+     * absent from the pinned stub — never as a way to make a call compile. Verify
+     * against the real interface before reaching for it.
+     *
+     * This mock now stubs `isInstalled()`, which IS on the vendored NC 29
+     * interface and is the branch `isAppEnabled()` takes when the server predates
+     * `isEnabledForAnyone()` (`@since 32.0.0`) — which is exactly the situation in
+     * this test environment, since the pinned stub has no such method.
+     *
+     * @param bool $enabled The value the app manager should report for `workflowengine`.
      *
      * @return IAppManager
      */
     private function makeAppManagerMock(bool $enabled): IAppManager
     {
-        $appManager = $this->getMockBuilder(IAppManager::class)
-            ->addMethods(['isEnabledForAnyUser'])
-            ->getMockForAbstractClass();
-        $appManager->method('isEnabledForAnyUser')->with('workflowengine')->willReturn($enabled);
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('isInstalled')->with('workflowengine')->willReturn($enabled);
 
         return $appManager;
 

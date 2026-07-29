@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * RowDeletedEvent}.php`, `lib/Model/Public/Row.php` — `main` branch, fetched
  * during this change's implementation) rather than a live installed
  * instance (neither this repo's nor the checked server checkout has the
- * `tables` app present) — see `discovery.md`. `IAppManager::isEnabledForAnyUser('tables')`
+ * `tables` app present) — see `discovery.md`. `Application::isAppEnabled($appManager, 'tables')`
  * gates registration in `Application.php::register()` (REQ-003); this
  * listener is never constructed on an instance without the app.
  *
