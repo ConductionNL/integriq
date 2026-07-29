@@ -51,7 +51,9 @@
 - **acceptance_criteria**:
   - GIVEN one object with several file endpoints WHEN `processMultipleFilesWithCleanup` runs THEN each file is requested via `callSourceObject(..., asynchronous: true)` (Task 0) with its own temp-file **path** as the sink, settled through a Guzzle `Pool`/`Utils::settle`
   - GIVEN a sink is passed WHEN the request is dispatched THEN it is a PATH and never a stream resource, so Guzzle owns and closes only its own handle (see the design corrections above)
-  - GIVEN more files than the cap WHEN they are settled THEN in-flight requests never exceed the configurable cap (default 5, hard maximum 10) and throttling is logged
+  - GIVEN more files than the cap WHEN they are settled THEN in-flight requests never exceed the per-source configurable cap (default 5, hard maximum 20) and throttling is logged
+  - GIVEN attachments large enough that N x size would be excessive WHEN they are settled THEN a total in-flight BYTE budget (default ~256 MB, from `Content-Length` where present) also gates admission, falling back to count-only when the source omits it
+  - GIVEN the cap is configured WHEN it is read THEN it comes from `source.configuration` (per-source politeness), not a global or a new top-level schema field
   - GIVEN async requests WHEN they run THEN CallService's auth, certificate, rate-limit, and call-logging behaviour is reused (no `react/http`, no reimplemented HTTP)
 - [ ] Implement
 - [ ] Test

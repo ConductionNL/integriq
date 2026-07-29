@@ -128,10 +128,18 @@ carry missing-file or double-sync risk.
 
 - **Performance:** Net wall-clock time to fetch and save one object's files MUST
   approach `max(fetch-window, Σ saves)` rather than `Σ fetch + Σ saves`, bounded
-  by the concurrency cap (default 5, maximum 10).
-- **Memory:** Peak additional memory MUST stay bounded by the concurrency cap
-  times the `php://temp` in-memory threshold (~2 MB each), independent of file
-  sizes, because each concurrent fetch streams to disk per `stream-file-content`.
+  by the concurrency cap (default 5, maximum 20) and the total in-flight byte
+  budget. Because saves remain serialized, the achievable gain is capped by
+  `Σ saves` — raising the concurrency cap beyond that point yields nothing.
+- **Memory:** Peak additional memory MUST be independent of BOTH the concurrency
+  cap and the file sizes. Each concurrent fetch streams to its own temp **file**
+  (per `stream-file-content`, which passes Guzzle a path rather than a handle), so
+  per-request cost is curl buffers and headers — tens of KB — not a `php://temp`
+  in-memory threshold. An earlier revision of this requirement budgeted
+  `cap × ~2 MB`; that no longer applies.
+- **Disk:** Peak additional disk MUST stay bounded by the total in-flight byte
+  budget (default ~256 MB), and every temp file MUST be removed whether its fetch
+  and save succeeded or failed.
 - **Internationalization:** No user-facing strings are introduced; Dutch and
   English support (hydra ADR-007) is unaffected.
 

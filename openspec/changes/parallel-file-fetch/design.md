@@ -25,7 +25,7 @@ AFTER (concurrent fetch, pipelined serialized saves)
   build one async request per file endpoint:
       callSourceObject(..., asynchronous: true)   → Guzzle Promise
       each with sink: its own temp-file PATH (tempnam)              (stream-file-content)
-  settle via Pool / windowed Utils::settle, concurrency cap = 5 (max 10)
+  settle via Pool / windowed Utils::settle, cap = 5 (max 20) + in-flight byte budget
       promise->then(fn => save(resolved download))   # save runs while siblings still download
       promise->otherwise(fn => log + skip)           # per-file error isolation
       finally         => fclose own handle + unlink the temp file   # per-file, always
@@ -207,8 +207,8 @@ md5 change-detection skip are unchanged — they live in OpenRegister's file
 handlers on the save path (per `stream-file-content`) and run identically whether
 the save is invoked sequentially or from a `then()` callback. Concurrency does
 not bypass any validation. Resource-exhaustion is the only new consideration and
-is mitigated by the concurrency cap (default 5, hard maximum 10) plus throttle
-logging. Per-file failures are isolated and logged, never silently swallowed.
+is mitigated by the concurrency cap (default 5, hard maximum 20) and the total
+in-flight byte budget, plus throttle logging. Per-file failures are isolated and logged, never silently swallowed.
 
 ## File Structure
 ```
@@ -216,7 +216,8 @@ lib/
   Service/
     SynchronizationService.php   # processMultipleFilesWithCleanup: build async
                                  #   requests with per-file php://temp sink, settle
-                                 #   via Pool/Utils::settle capped at 5 (max 10),
+                                 #   via Pool/Utils::settle capped at 5 (max 20)
+                                 #   plus an in-flight byte budget,
                                  #   pipeline saves in then(), isolate errors in otherwise().
                                  # fetchFile: split into fetch phase + save phase so the
                                  #   save can be attached to a resolved promise.
@@ -231,9 +232,41 @@ lib/
   satisfies the cap; the implementation picks whichever composes most cleanly
   with the existing `callSourceObject` promise return. Chosen: cap via a Guzzle
   primitive, exact primitive left to implementation.
-- **Default cap 5 vs 10.** 5 balances wall-clock gain against source politeness
-  (zaaksysteem); 10 is the hard ceiling. Higher risks file-descriptor exhaustion
-  and hammering the source. Chosen: configurable, default 5, maximum 10.
+- **Concurrency cap: default 5, hard maximum 20, plus a byte budget (revised).**
+  The original rationale ("higher risks file-descriptor exhaustion") does not
+  survive measurement, and the memory argument disappeared entirely when the sink
+  became a temp file rather than `php://temp`. Measured in the dev container:
+
+  | Constraint | Measured | Binding at N=20? |
+  |---|---|---|
+  | `memory_limit` | 512 M | No — per in-flight request is curl buffers + headers, tens of KB, not file size |
+  | File descriptors | `ulimit -n` 1024 | No — 2 FDs per fetch (socket + Guzzle's own temp handle) = 40 |
+  | Disk for temp files | 112 G free | No |
+  | `max_execution_time` | 0 (unlimited) | No — and concurrency *reduces* wall-clock |
+
+  Nothing about PHP constrains us at these numbers. The real limits are the
+  **upstream source** and the **serialized save side**. So:
+
+  - **Default 5** — a politeness default, not a memory one. The Woo sources include
+    a demo/proefsysteem zaaksysteem and government endpoints (TenderNed, Diavgeia,
+    KvK); 5 is reasonable against an unknown source.
+  - **Hard maximum 20**, raised from 10, since 40 FDs against 1024 does not justify
+    the lower ceiling and a fast internal source can use the headroom.
+  - **A total in-flight BYTE budget (default ~256 MB)** is the guard that actually
+    matters and the original design lacked. Count is the wrong unit on its own:
+    10 × 5 MB attachments is trivial, 10 × 2 GB exports is not. Where the source
+    sends `Content-Length`, admit no new request once in-flight bytes exceed the
+    budget; fall back to count-only when it is absent.
+  - **Configured per source, not globally** — in `source.configuration` (e.g.
+    `configuration.maxConcurrentFetches`), because politeness is a property of the
+    upstream. That reuses the working free-form config path rather than adding a
+    top-level schema field, avoiding another declared-but-never-read field.
+
+  **Measure before tuning.** Wall-clock is `max(fetch-window, Σ(save))` and the
+  saves stay serialized, so once N is high enough that `Σ(save)` dominates, raising
+  the cap buys nothing. A live sequential run took ~51 s for 5 objects × 5 files;
+  the fetch/save split should be measured before N is tuned at all, or the effort
+  goes into the half that is not the bottleneck.
 - **Pipelined serialized saves vs collect-then-save vs parallel saves.**
   Collect-then-save wastes the fetch window (saves would wait for the slowest
   download). Parallel saves are unsafe (single thread, one DB connection).
