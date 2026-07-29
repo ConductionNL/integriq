@@ -15,7 +15,7 @@ while saves are pipelined behind the fetch window and remain serialized. The goa
 is to cut synchronization wall-clock time for objects with many attachments
 without weakening error isolation, memory bounds, or write consistency. This
 capability depends on `stream-file-content`: each concurrent fetch streams into
-its own disk-backed `php://temp` handle.
+its own disk-backed temp **file**, addressed by path.
 
 ## ADDED Requirements
 
@@ -26,8 +26,10 @@ concurrently rather than one at a time, by issuing per-file asynchronous HTTP
 requests via `CallService::callSourceObject(..., asynchronous: true)` (which
 reuses the existing Guzzle async transport, auth, client-certificate handling,
 rate limiting, and call logging) and settling them together. Each concurrent
-fetch MUST stream into its own disk-backed `php://temp` handle (per
-`stream-file-content`) so concurrency does not multiply peak memory by file size.
+fetch MUST stream into its own disk-backed temp **file**, handed to the transport
+as a PATH and never as a stream handle (per `stream-file-content`: Guzzle closes a
+resource-typed sink when its PSR-7 wrapper is destructed, returning a closed handle
+to the caller), so concurrency multiplies neither peak memory nor file-size cost.
 The system MUST NOT reimplement the HTTP, auth, certificate, or logging behaviour
 already provided by `CallService`, and MUST NOT introduce `react/http`.
 
@@ -36,7 +38,7 @@ already provided by `CallService`, and MUST NOT introduce `react/http`.
 - WHEN the multi-file path fetches those files
 - THEN a per-file asynchronous request is issued via `callSourceObject(..., asynchronous: true)`
 - AND the requests are settled together through a Guzzle concurrency primitive rather than one blocking call after another
-- AND each request streams its response body into its own `php://temp` handle
+- AND each request streams its response body into its own temp file, passed to the transport as a path (never a stream handle)
 
 #### Scenario: Concurrent fetch reuses CallService behaviour
 - GIVEN the source requires authentication, a client certificate, or is rate-limited
@@ -47,10 +49,23 @@ already provided by `CallService`, and MUST NOT introduce `react/http`.
 ### Requirement: Concurrency SHALL be capped and configurable
 
 The system MUST cap the number of in-flight file fetches for one object at a
-configurable limit, defaulting to 5 and never exceeding a hard maximum of 10, so
-that file descriptors are not exhausted and the source is not overloaded. When
-requests are held back because the cap is reached, the system MUST log that
-throttling occurred.
+per-source configurable limit, defaulting to 5 and never exceeding a hard maximum
+of 20, so that the source is not overloaded. The cap MUST be read from
+`source.configuration`, because politeness is a property of the upstream rather
+than of OpenConnector.
+
+The system MUST additionally gate admission on a total in-flight BYTE budget
+(default ~256 MB), derived from `Content-Length` where the source provides it and
+falling back to count-only gating where it does not. A count alone is the wrong
+unit: ten 5 MB attachments are trivial where ten 2 GB exports are not.
+
+The cap is NOT a memory control. Per-request memory is curl buffers and headers —
+tens of KB — because each fetch streams to a temp file; and file-descriptor
+exhaustion is not the constraint either (2 descriptors per fetch, so 40 at the hard
+maximum, against a measured `ulimit -n` of 1024).
+
+When requests are held back because either limit is reached, the system MUST log
+that throttling occurred.
 
 #### Scenario: In-flight fetches never exceed the configured cap
 - GIVEN an object with more file endpoints than the configured concurrency cap
@@ -153,7 +168,7 @@ carry missing-file or double-sync risk.
 
 ## Notes
 
-- Depends on `stream-file-content` (per-file streaming into `php://temp`; widened
+- Depends on `stream-file-content` (per-file streaming to a temp file by path; widened
   `FileService` `string|resource` content type). No new cross-repo signature
   change is introduced here.
 - Transport is Guzzle async (`GuzzleHttp\Pool` / `Utils::settle`), not ReactPHP.

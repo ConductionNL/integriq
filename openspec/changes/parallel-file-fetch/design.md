@@ -215,7 +215,7 @@ in-flight byte budget, plus throttle logging. Per-file failures are isolated and
 lib/
   Service/
     SynchronizationService.php   # processMultipleFilesWithCleanup: build async
-                                 #   requests with per-file php://temp sink, settle
+                                 #   requests with per-file temp-file PATH sink, settle
                                  #   via Pool/Utils::settle capped at 5 (max 20)
                                  #   plus an in-flight byte budget,
                                  #   pipeline saves in then(), isolate errors in otherwise().

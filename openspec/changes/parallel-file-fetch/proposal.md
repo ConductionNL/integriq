@@ -15,7 +15,7 @@ capped concurrency window, and each resolved download is saved via the promise's
 downloading. Net wall-clock for one object's files drops from
 `Σ(fetch) + Σ(save)` toward `max(fetch-window, Σ(save))`. This builds directly
 on `stream-file-content`: each concurrent fetch streams into its own
-disk-backed `php://temp` handle, so N in-flight downloads do not multiply peak
+disk-backed temp file addressed by path, so N in-flight downloads do not multiply peak
 memory.
 
 ## Motivation
@@ -43,7 +43,7 @@ are both in place.
 ### In Scope
 - Parallelise the FETCH phase for the files of a single object: fire per-file
   `callSourceObject(..., asynchronous: true)` requests, each carrying its own
-  `sink => fopen('php://temp/maxmemory:2097152','r+')` streaming handle (per
+  `sink => <temp-file path>` (per
   `stream-file-content`).
 - Settle the requests concurrently with a configurable concurrency cap (Guzzle
   `Pool` or a windowed `Utils::settle`, e.g. 5–10 in flight) so file descriptors
@@ -76,7 +76,7 @@ are both in place.
 ## Approach
 Split `fetchFile` conceptually into a fetch step and a save step. In
 `processMultipleFilesWithCleanup`, build one async request per file endpoint via
-`callSourceObject(..., asynchronous: true)`, each with its own `php://temp` sink,
+`callSourceObject(..., asynchronous: true)`, each with its own temp-file path as sink,
 and settle them through a Guzzle concurrency primitive (`GuzzleHttp\Pool` or a
 windowed `Utils::settle`) capped at a configurable limit. Attach the save logic
 to each promise's `then()` so persistence is pipelined behind the fetch window;
@@ -108,7 +108,7 @@ and the existing `CallService` async path; per-file streaming comes from
 
 ## Cross-Project Dependencies
 Depends on `stream-file-content` (declared in frontmatter `depends_on`). Each
-concurrent fetch streams into its own disk-backed `php://temp`, which relies on
+concurrent fetch streams into its own disk-backed temp file, which relies on
 the per-file streaming and the widened `string|resource` `FileService` content
 type that `stream-file-content` establishes. No new cross-repo signature change
 is introduced here — the OpenRegister `FileService` contract is unchanged from
@@ -131,7 +131,7 @@ regress it.
 
 ### Risk 3: Concurrent streams multiplying memory
 **Severity:** Low — **Mitigation:** `stream-file-content` streams each fetch into
-its own `php://temp` (spilling to disk past ~2 MB), so N concurrent downloads
+its own temp file on disk, so N concurrent downloads
 cost roughly N × 2 MB of memory ceiling plus disk, not N × file-size in RAM. The
 concurrency cap bounds N.
 
