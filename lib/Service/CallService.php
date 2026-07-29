@@ -2574,25 +2574,26 @@ class CallService
         // Let's log the call.
         $sourceData['lastCall'] = (new \DateTime())->format('c');
         // @todo: save the source.
-        // Phase 10: Dispatch the HTTP request. Async dispatch is a single
-        // attempt (unchanged) — the retry loop below (REQ-007) only applies
-        // to the synchronous path, which is the only one that yields a
-        // status code to classify.
+        // Phase 10: Dispatch the HTTP request.
+        //
+        // ocon#111 Task 0: this method previously carried an
+        // `if ($asynchronous === true) { return $response; }` branch that returned a
+        // Guzzle Promise. Since `call()` is declared `): ObjectEntity`, reaching that
+        // branch was an unconditional TypeError — it could never have worked, and
+        // nothing exercised it (the only `asynchronous: true` in lib/ was this
+        // method's own hand-off to dispatchRequest). Rather than repair a dead
+        // branch and widen this method's return to a union — `call()` is the app's
+        // central HTTP surface with ~30 call sites, all relying on ObjectEntity —
+        // asynchronous dispatch is exposed as a sibling method. Fail loudly here so
+        // a caller passing the flag is told where to go instead of hitting a
+        // return-type fatal.
         if ($asynchronous === true) {
-            $timeStart = microtime(true);
-            $response  = $this->dispatchRequest(
-                source: $source,
-                method: $method,
-                url: $url,
-                endpoint: $endpoint,
-                config: $config,
-                asynchronous: true,
-                brokeredCredential: $brokeredCredential,
-                sink: $sink,
+            throw new \InvalidArgumentException(
+                'CallService::call() is synchronous and returns an ObjectEntity call log. '
+                .'For concurrent dispatch use the asynchronous sibling, which returns a '
+                .'GuzzleHttp promise; see openspec/changes/parallel-file-fetch/design.md '
+                .'("Sibling async methods, not union returns").'
             );
-
-            // Async path returns the Promise directly (same as original behaviour).
-            return $response;
         }
 
         $dispatched = $this->dispatchWithRetry(

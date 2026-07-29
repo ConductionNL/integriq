@@ -5394,6 +5394,33 @@ class SynchronizationService
         mixed $sink=null,
         ?ExecutionTraceContext $trace=null
     ): ObjectEntity {
+        return $this->callService->call(
+            source: $this->resolveSourceObjectForCall(source: $source),
+            endpoint: $endpoint,
+            method: $method,
+            config: $config,
+            read: $read,
+            sink: $sink,
+            trace: $trace
+        );
+    }//end callSourceObject()
+
+
+    /**
+     * Resolve a Source value object to the `ObjectEntity` CallService consumes.
+     *
+     * Extracted from {@see callSourceObject()} so the synchronous and asynchronous
+     * paths resolve the source identically — ocon#111 Task 0 requires that the
+     * async path cannot fork this behaviour.
+     *
+     * @param array $source The source value object.
+     *
+     * @return ObjectEntity The source as CallService expects it.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     */
+    private function resolveSourceObjectForCall(array $source): ObjectEntity
+    {
         // A transient, never-persisted ad-hoc source (REQ-012 — see
         // findOrCreateSourceByLocation()) has no OpenRegister object to
         // resolve; bridge it into the in-memory ObjectEntity shape CallService
@@ -5403,7 +5430,7 @@ class SynchronizationService
             $sourceObject->setUuid((string) ($source['uuid'] ?? ''));
             $sourceObject->setObject($source);
 
-            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink, trace: $trace);
+            return $sourceObject;
         }
 
         // Address the source by its OpenRegister uuid (the canonical identifier);
@@ -5413,10 +5440,8 @@ class SynchronizationService
             $sourceIdentifier = (string) ($source['id'] ?? '');
         }
 
-        $sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
-
-        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink, trace: $trace);
-    }//end callSourceObject()
+        return $this->findSourceObject(id: (string) $sourceIdentifier);
+    }//end resolveSourceObjectForCall()
 
     /**
      * Read the response payload from a CallService call-log object.
