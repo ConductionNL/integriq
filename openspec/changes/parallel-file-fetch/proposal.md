@@ -116,11 +116,19 @@ is introduced here — the OpenRegister `FileService` contract is unchanged from
 
 ## Risks
 
-### Risk 1: File-descriptor / source exhaustion from unbounded concurrency
-**Severity:** Medium — **Mitigation:** Concurrency is capped and configurable
-(Guzzle `Pool` concurrency or a windowed `Utils::settle`), defaulting to 5 with a
-hard maximum of 10 in flight. Throttling is logged so operators can observe when
-requests are queued.
+### Risk 1: Source overload from unbounded concurrency
+**Severity:** Medium — **Mitigation:** Concurrency is capped and configurable per
+source (Guzzle `Pool` concurrency or a windowed `Utils::settle`), defaulting to 5
+with a hard maximum of 20 in flight, plus a total in-flight byte budget
+(default ~256 MB) so that a few very large attachments cannot saturate disk under a
+count-only cap. Throttling is logged so operators can observe when requests are
+queued.
+
+Note that file-descriptor exhaustion — the original framing of this risk — is not
+the real constraint: each fetch costs 2 descriptors (socket plus the transport's own
+temp handle), so 40 at the hard maximum, against a measured `ulimit -n` of 1024.
+The binding constraints are upstream politeness and, because saves stay serialized,
+`Σ saves`.
 
 ### Risk 2: Regressing error isolation
 **Severity:** Medium — **Mitigation:** Compose with the existing
