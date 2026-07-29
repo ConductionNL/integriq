@@ -28,6 +28,7 @@ use Adbar\Dot;
 use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Promise\PromiseInterface;
 use JWadhams\JsonLogic;
 use OCA\OpenConnector\Event\SynchronizationDeletionGuardedEvent;
 use OCA\OpenConnector\Exception\TablesFeatureDisabledException;
@@ -5404,6 +5405,58 @@ class SynchronizationService
             trace: $trace
         );
     }//end callSourceObject()
+
+
+    /**
+     * Asynchronous sibling of {@see callSourceObject()}: dispatches one source
+     * call and returns a Guzzle promise resolving to the same call-log
+     * `ObjectEntity` the synchronous helper returns (ocon#111 Task 0).
+     *
+     * Source resolution is NOT duplicated here — it goes through the same
+     * {@see resolveSourceObjectForCall()} the synchronous helper uses, so the
+     * transient ad-hoc bridge (REQ-012) and the uuid-then-legacy-id addressing
+     * cannot drift between the two paths.
+     *
+     * The `$sink` MUST be a temp-file PATH. Passing a stream resource is the
+     * defect `stream-file-content` fixed, and asynchronous dispatch makes it
+     * strictly worse: Guzzle destructs the PSR-7 wrapper around a resource sink —
+     * closing the caller's handle — at a moment this caller does not control.
+     * {@see CallService::callAsync()} rejects a resource at the boundary.
+     *
+     * @param array                      $source   The source value object to call with.
+     * @param string                     $endpoint The endpoint to call.
+     * @param string                     $method   The HTTP method.
+     * @param array                      $config   The call configuration.
+     * @param bool                       $read     Whether this is a single-object read call.
+     * @param mixed                      $sink     Optional temp-file PATH the response body streams into; null =
+     *                                             buffered. Never a stream resource.
+     * @param ExecutionTraceContext|null $trace    The active execution trace context, forwarded so the call is
+     *                                             stamped with `traceId` and captured as a `call` step.
+     *
+     * @return PromiseInterface A promise resolving to the call-log ObjectEntity.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
+     */
+    private function callSourceObjectAsync(
+        array $source,
+        string $endpoint='',
+        string $method='GET',
+        array $config=[],
+        bool $read=false,
+        mixed $sink=null,
+        ?ExecutionTraceContext $trace=null
+    ): PromiseInterface {
+        return $this->callService->callAsync(
+            source: $this->resolveSourceObjectForCall(source: $source),
+            endpoint: $endpoint,
+            method: $method,
+            config: $config,
+            read: $read,
+            sink: $sink,
+            trace: $trace
+        );
+    }//end callSourceObjectAsync()
 
 
     /**

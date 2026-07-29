@@ -33,12 +33,18 @@
   - GIVEN `SynchronizationService::callSourceObjectAsync()` WHEN it is called THEN it resolves the source exactly as `callSourceObject()` does (shared extraction: transient bridge, uuid-then-id addressing, `findSourceObject`) and returns a `PromiseInterface`
   - GIVEN the promise resolves WHEN `then()` runs THEN it yields the same call-log `ObjectEntity` shape the synchronous path returns, so the save phase consumes one shape
   - GIVEN a caller still passes `asynchronous: true` to `call()` after this change WHEN it runs THEN it fails loudly (pointing at `callAsync()`) rather than fataling on a return-type mismatch
-- [~] Implement — **partially done in `eaa6c466`**, two pieces remain:
+- [x] Implement — started in `eaa6c466`, completed here:
   - [x] `SynchronizationService::resolveSourceObjectForCall()` extracted from `callSourceObject()` (transient ad-hoc bridge REQ-012, uuid-then-legacy-id addressing, `findSourceObject()`), so the async sibling cannot fork source resolution
   - [x] Dead `if ($asynchronous === true) { return $response; }` branch removed from `CallService::call()`; the flag now throws `InvalidArgumentException` naming the async sibling. Tracked separately as ocon#1088
-  - [ ] Extract `call()`'s pre-dispatch pipeline (early-error guard, circuit-breaker guard, credential resolution, source-config merge, method/URL resolution) into one shared implementation — roughly 110 lines of a ~200-line method, returning ~8 values
-  - [ ] Add `CallService::callAsync(): PromiseInterface` and `SynchronizationService::callSourceObjectAsync(): PromiseInterface` on top of that extraction
-- [ ] Test — no new tests yet. The extraction and branch removal were verified behaviour-preserving against the existing suite (2074 tests, 7480 assertions, only the two `CloudEventListenerTest` failures inherited from `development` via `60f2f14e`/#1086)
+  - [x] Extracted `call()`'s pre-dispatch pipeline into `CallService::prepareCall()` (ocon#215 raw re-resolve, expiry values, retry-policy pull-out, enabled/location/rate-limit guards, circuit-breaker guard, source-config merge, method resolution, brokered/injected credentials, preRequest hook, Twig+cert normalisation, URL assembly) returning 13 values plus `shortCircuit`
+  - [x] Extracted the post-dispatch pipeline into `CallService::finalizeCall()` (response decode, CallLog persistence per ADR-003, trace step, postRequest hook) — the async path could not otherwise honour ADR-003's "every outbound call produces a CallLog"
+  - [x] Added `CallService::callAsync(): PromiseInterface` and `SynchronizationService::callSourceObjectAsync(): PromiseInterface` on top of those extractions
+  - [x] Added `CallService::recordBreakerOutcome()` so async classifies breaker outcomes by the SAME retryable-status set `dispatchWithRetry()` uses — a non-retryable 4xx records neither success nor failure on either path
+- [x] Test — verified behaviour-preserving against the existing suite (2094 tests, 7613 assertions; the only 2 failures are the `CloudEventListenerTest` pair inherited from `development` via `60f2f14e`/#1086). New async-surface tests land with Task 4.
+
+**Two deliberate async/sync differences, both recorded in `callAsync()`'s docblock:**
+1. **No retry loop.** `dispatchWithRetry()` sleeps between attempts, which would stall the shared curl-multi loop and serialize exactly the requests this change exists to overlap. Async is single-attempt; breaker bookkeeping still happens.
+2. **A short-circuit resolves, it does not reject.** Guards already persist a synthetic CallLog carrying 409/429/503, so `callAsync()` fulfils with it — one consumed shape, and callers apply the same status check they already apply to `call()`. A rejection means a genuine transport failure.
 
 ### Task 1: Split `fetchFile` into a fetch phase and a save phase
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized`
