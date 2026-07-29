@@ -19,6 +19,7 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -26,18 +27,24 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Handler for exporting and importing job configurations.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class JobHandler implements ConfigurationHandlerInterface
 {
     /**
      * Constructor.
      *
-     * @param OrObjectService $orObjectService The OR object service.
+     * @param OrObjectService        $orObjectService        The OR object service.
+     * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
      */
     public function __construct(
-        private readonly OrObjectService $orObjectService
+        private readonly OrObjectService $orObjectService,
+        private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
     ) {
 
     }//end __construct()
@@ -51,7 +58,7 @@ class JobHandler implements ConfigurationHandlerInterface
      *
      * @return array The serialised job configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -68,35 +75,62 @@ class JobHandler implements ConfigurationHandlerInterface
             $jobArray['slug'] = $entity->getUuid();
         }
 
+        // Redact secret-shaped values from the nested configuration array
+        // (secret-hygiene). Distinct from `arguments` below, which is NOT
+        // walked here — no evidence was found that `arguments` structurally
+        // carries raw secret values, as opposed to entity id/slug references
+        // already governed by the id<->slug maps (see proposal Open Questions).
+        if (isset($jobArray['configuration']) === true && is_array($jobArray['configuration']) === true) {
+            $jobArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $jobArray['configuration']);
+        }
+
         // Replace IDs with slugs in arguments.
         if (isset($jobArray['arguments']) === true && is_array($jobArray['arguments']) === true) {
-            $arguments = $jobArray['arguments'];
-            // Convert synchronizationId from integer to string if it exists.
-            if (isset($arguments['synchronizationId']) === true) {
-                $synchronizationId = (string) $arguments['synchronizationId'];
-                if (isset($mappings['synchronization']['idToSlug'][$synchronizationId]) === true) {
-                    $arguments['synchronizationId'] = $mappings['synchronization']['idToSlug'][$synchronizationId];
-                }
-            }
-
-            if (isset($arguments['endpointId']) === true
-                && isset($mappings['endpoint']['idToSlug'][$arguments['endpointId']]) === true
-            ) {
-                $arguments['endpointId'] = $mappings['endpoint']['idToSlug'][$arguments['endpointId']];
-            }
-
-            if (isset($arguments['sourceId']) === true
-                && isset($mappings['source']['idToSlug'][$arguments['sourceId']]) === true
-            ) {
-                $arguments['sourceId'] = $mappings['source']['idToSlug'][$arguments['sourceId']];
-            }
-
-            $jobArray['arguments'] = $arguments;
-        }//end if
+            $jobArray['arguments'] = $this->convertArgumentIdsToSlugs(arguments: $jobArray['arguments'], mappings: $mappings);
+        }
 
         return $jobArray;
 
     }//end export()
+
+    /**
+     * Convert entity id references inside a job's arguments array to slugs.
+     *
+     * Extracted from export() (pure refactor, behaviour-preserving) to keep
+     * export()'s NPath complexity within the configured threshold.
+     *
+     * @param array                                                                            $arguments The job arguments array.
+     * @param array<string,array{idToSlug:array<string,string>,slugToId:array<string,string>}> $mappings  The global mappings for ID/slug conversion.
+     *
+     * @return array The arguments array with ids converted to slugs.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-004--translate-cross-entity-references-between-ids-and-slugs
+     */
+    private function convertArgumentIdsToSlugs(array $arguments, array $mappings): array
+    {
+        // Convert synchronizationId from integer to string if it exists.
+        if (isset($arguments['synchronizationId']) === true) {
+            $synchronizationId = (string) $arguments['synchronizationId'];
+            if (isset($mappings['synchronization']['idToSlug'][$synchronizationId]) === true) {
+                $arguments['synchronizationId'] = $mappings['synchronization']['idToSlug'][$synchronizationId];
+            }
+        }
+
+        if (isset($arguments['endpointId']) === true
+            && isset($mappings['endpoint']['idToSlug'][$arguments['endpointId']]) === true
+        ) {
+            $arguments['endpointId'] = $mappings['endpoint']['idToSlug'][$arguments['endpointId']];
+        }
+
+        if (isset($arguments['sourceId']) === true
+            && isset($mappings['source']['idToSlug'][$arguments['sourceId']]) === true
+        ) {
+            $arguments['sourceId'] = $mappings['source']['idToSlug'][$arguments['sourceId']];
+        }
+
+        return $arguments;
+
+    }//end convertArgumentIdsToSlugs()
 
     /**
      * Import a job configuration into a job entity.
@@ -106,7 +140,7 @@ class JobHandler implements ConfigurationHandlerInterface
      *
      * @return Entity The imported job entity.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function import(array $data, array $mappings): Entity
     {
@@ -162,6 +196,8 @@ class JobHandler implements ConfigurationHandlerInterface
      * Get the entity type this handler is responsible for.
      *
      * @return string The entity type identifier.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
      */
     public function getEntityType(): string
     {

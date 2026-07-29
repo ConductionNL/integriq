@@ -5,22 +5,30 @@ TBD - created by archiving change dso-omgevingsloket. Update Purpose after archi
 ## Requirements
 ### Requirement: STAM Koppelvlak Endpoint Registration (REQ-DSO-001)
 
-The adapter MUST register a STAM-compliant inbound REST endpoint in OpenConnector that receives vergunningaanvragen, meldingen, and informatieverzoeken pushed from DSO-LV. The endpoint accepts the DSO-verzoek payload (JSON or XML), validates the request signature, and enqueues it for processing. The endpoint path follows `/api/dso/stam/verzoeken` and returns an HTTP 202 Accepted with verzoekId confirmation.
+The adapter MUST register a STAM-compliant inbound REST endpoint in OpenConnector that receives vergunningaanvragen, meldingen, and informatieverzoeken pushed from DSO-LV. The endpoint accepts the DSO-verzoek payload (JSON or XML), **cryptographically verifies the request signature against the configured PKIoverheid certificate chain (or HMAC shared secret in pre-production mode) via `DSOSignatureVerifierService`**, and enqueues it for processing. The endpoint path follows `/api/dso/stam/verzoeken` and returns an HTTP 202 Accepted with verzoekId confirmation. A request whose signature does not verify against the configured trust chain MUST be rejected before any payload parsing occurs.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Valid vergunningaanvraag accepted and enqueued
 - **WHEN** the DSO adapter endpoint is registered in OpenConnector with valid PKIoverheid certificates and DSO-LV pushes a vergunningaanvraag payload to the STAM endpoint
-- **THEN** the adapter validates the webhook signature, returns HTTP 202, and enqueues the verzoek for asynchronous processing
+- **THEN** the adapter cryptographically verifies the webhook signature against the configured certificate chain, returns HTTP 202, and enqueues the verzoek for asynchronous processing
 
 #### Scenario: Invalid webhook signature rejected
-- **WHEN** a DSO-LV request arrives at the STAM endpoint and the webhook signature is invalid
-- **THEN** the adapter returns HTTP 401 Unauthorized with a descriptive error message and logs the failed attempt in the CallLog
+- **GIVEN** a request arrives at the STAM endpoint with an `X-DSO-Signature` header that does not verify against the configured PKIoverheid certificate chain (forged, expired certificate, or untrusted issuer)
+- **WHEN** the adapter validates the signature
+- **THEN** the adapter returns HTTP 401 Unauthorized with a descriptive error message, logs the failed attempt in the CallLog, and does NOT call `DSOParserService::parseVerzoek()`
+
+#### Scenario: Missing signature header rejected
+- **GIVEN** a request arrives at the STAM endpoint with no `X-DSO-Signature` header
+- **WHEN** the adapter validates the signature
+- **THEN** the adapter returns HTTP 401 Unauthorized without evaluating any payload content
 
 #### Scenario: Pre-production request tagged
-- **WHEN** the DSO adapter is configured for the pre-production environment and a request arrives from the DSO-LV test environment
+- **WHEN** the DSO adapter is configured for the pre-production environment (HMAC shared-secret mode) and a request arrives from the DSO-LV test environment with a valid HMAC signature
 - **THEN** it is accepted and processed identically to production requests but tagged with `environment: pre-productie` in the verzoek record
 
 #### Scenario: Malformed payload rejected
-- **WHEN** DSO-LV sends a malformed payload that does not conform to the STAM schema and schema validation fails
+- **WHEN** DSO-LV sends a payload with a valid signature that does not conform to the STAM schema and schema validation fails
 - **THEN** the adapter returns HTTP 400 Bad Request with field-level error details and does not create a verzoek record
 
 #### Scenario: Concurrent verzoeken enqueued independently
@@ -30,6 +38,8 @@ The adapter MUST register a STAM-compliant inbound REST endpoint in OpenConnecto
 ### Requirement: Melding Reception (REQ-DSO-002)
 
 The adapter MUST support receiving meldingen (notifications of activities not requiring a permit) from DSO-LV via the same STAM endpoint. Meldingen follow a simplified flow: they create a zaak in Procest with a "Melding" zaaktype but do not require a vergunningbesluit response.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Sloopactiviteit melding creates zaak
 - **WHEN** an initiatiefnemer submits a melding via het Omgevingsloket for a sloopactiviteit and DSO-LV pushes the melding to the STAM endpoint
@@ -47,6 +57,8 @@ The adapter MUST support receiving meldingen (notifications of activities not re
 
 The adapter MUST support receiving informatieverzoeken (requests for information about applicability of rules) and vooroverleg-aanvragen (pre-application consultations) from DSO-LV. These create lightweight zaak objects in Procest with distinct zaaktypen that do not follow the full vergunningbesluit workflow.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Vooroverleg-aanvraag creates simplified zaak
 - **WHEN** a burger submits a vooroverleg-aanvraag via the Omgevingsloket and DSO-LV pushes the vooroverleg to the STAM endpoint
 - **THEN** the adapter creates a zaak with zaaktype "Vooroverleg" with a simplified behandelproces (no formal besluit required)
@@ -62,6 +74,8 @@ The adapter MUST support receiving informatieverzoeken (requests for information
 ### Requirement: Verzoek Payload Parsing (REQ-DSO-004)
 
 The adapter MUST parse the DSO-verzoek XML/JSON payload into structured data including aanvrager (initiatiefnemer), locatie, activiteiten, bijlagen, and projectbeschrijving. Parsing uses configurable mapping rules stored as OpenRegister mapping objects so municipalities can adapt field extraction to their internal data model.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Aanvrager block mapped via BRP mapping
 - **WHEN** a DSO-verzoek payload contains an aanvrager with BSN, naam, adres, and contactgegevens and the parser extracts the aanvrager block
@@ -87,6 +101,8 @@ The adapter MUST parse the DSO-verzoek XML/JSON payload into structured data inc
 
 The adapter MUST download bijlagen (documenten, tekeningen, rapporten, berekeningen) referenced in the DSO-verzoek from DSO-LV and store them in Nextcloud Files. Each bijlage is stored in a zaak-specific folder structure following the pattern `/DSO-verzoeken/{year}/{verzoekId}/bijlagen/`.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Multiple bijlagen downloaded and linked
 - **WHEN** a verzoek references 5 bijlagen including PDFs, DWG drawings, and a structural calculation and the adapter processes the verzoek
 - **THEN** each bijlage is downloaded via the DSO-LV document API using mTLS, stored in the zaak folder, and linked to the zaak via Docudesk
@@ -103,6 +119,8 @@ The adapter MUST download bijlagen (documenten, tekeningen, rapporten, berekenin
 
 The adapter MUST validate the received verzoek against the DSO-LV STAM schema definition and reject malformed requests with descriptive HTTP 400 error responses. Validation includes required field checks, enum value validation, date format validation, and BSN/KVK check-digit verification.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Missing required activiteiten array rejected
 - **WHEN** a verzoek payload is missing the required `activiteiten` array and validation runs
 - **THEN** the adapter returns HTTP 400 with error `{"field": "activiteiten", "error": "required_field_missing", "message": "Activiteiten is verplicht"}`
@@ -118,6 +136,8 @@ The adapter MUST validate the received verzoek against the DSO-LV STAM schema de
 ### Requirement: Activiteiten-to-Zaaktype Mapping (REQ-DSO-010)
 
 The adapter MUST map DSO activiteiten (bouwen, milieu, kappen, uitrit, etc.) to Procest zaaktypen via a configurable mapping table stored as OpenRegister objects. The mapping supports one-to-one (one activiteit to one zaaktype) and one-to-many (one activiteit generates multiple zaaktypen for different behandelende afdelingen).
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: One-to-one activiteit mapping creates zaak
 - **WHEN** the mapping table maps DSO activiteitcode "bouwen-01" to zaaktype "Omgevingsvergunning Bouwen" and a verzoek contains activiteit "bouwen-01"
@@ -139,6 +159,8 @@ The adapter MUST map DSO activiteiten (bouwen, milieu, kappen, uitrit, etc.) to 
 
 The adapter MUST support samenloop: when one DSO-verzoek contains multiple activiteiten, the adapter creates either multiple deelzaken under one hoofdzaak or one combined zaak, based on the configured samenloop strategy per activiteitcombinatie.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Deelzaken strategy creates hoofdzaak plus deelzaken
 - **WHEN** a verzoek contains activiteiten "bouwen" and "kappen" and samenloop strategy is "deelzaken" and the adapter processes the verzoek
 - **THEN** one hoofdzaak is created plus two deelzaken, each following its own behandelproces while sharing aanvrager and locatie data
@@ -159,6 +181,8 @@ The adapter MUST support samenloop: when one DSO-verzoek contains multiple activ
 
 The adapter MUST handle unmapped activiteiten gracefully: creating a zaak with a generic "Onbekend DSO-activiteit" zaaktype, flagging it for manual triage, and notifying the configured VTH-behandelaar.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Unmapped activiteit creates triage zaak
 - **WHEN** a verzoek contains activiteitcode "experimenteel-gebruik-2025" which has no mapping and the adapter processes the verzoek
 - **THEN** a zaak is created with zaaktype "Onbekend DSO-activiteit", the activiteitcode is stored as zaak-eigenschap, and a Nextcloud notification is sent to the configured DSO-triage user
@@ -174,6 +198,8 @@ The adapter MUST handle unmapped activiteiten gracefully: creating a zaak with a
 ### Requirement: Automatic Zaak Creation (REQ-DSO-020)
 
 The adapter MUST automatically create a zaak in Procest for each received DSO-verzoek. The zaak includes all parsed data: aanvrager mapped to the zaak (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum set to DSO-verzoek indieningsdatum, linked bijlagen, and the original DSO-verzoek reference (verzoekId, bronorganisatie).
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Parsed vergunningaanvraag creates fully populated zaak
 - **WHEN** a valid vergunningaanvraag is received and parsed and the adapter creates the zaak in Procest
@@ -199,6 +225,8 @@ The adapter MUST automatically create a zaak in Procest for each received DSO-ve
 
 The adapter MUST support coordination with other bevoegde gezagen (provincies, waterschappen, omgevingsdiensten) via the DSO-SWF (SamenWerkingsFunctionaliteit). This includes sending adviesverzoeken to ketenpartners, receiving adviezen, and tracking samenwerking status per zaak.
 
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Adviesverzoek sent to waterschap
 - **WHEN** a vergunningaanvraag requires advies from the waterschap and the behandelaar marks the zaak for samenwerking
 - **THEN** the adapter sends an adviesverzoek to the waterschap via DSO-SWF with the relevant zaak-documenten and a termijn for response
@@ -214,6 +242,8 @@ The adapter MUST support coordination with other bevoegde gezagen (provincies, w
 ### Requirement: Status Push to DSO-LV (REQ-DSO-040)
 
 The adapter MUST push zaak status updates back to DSO-LV so that the aanvrager can track progress via the Omgevingsloket. Status mapping translates Procest zaak statussen to DSO-LV statuscodes. The vergunningbesluit (verleend, geweigerd, buiten behandeling) and the beschikking PDF are also pushed to DSO-LV.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: In-behandeling status pushed
 - **WHEN** a zaak originated from a DSO-verzoek and the zaak status changes to "In behandeling" in Procest and the status transition event fires
@@ -238,7 +268,6 @@ The adapter MUST push zaak status updates back to DSO-LV so that the aanvrager c
 ### Requirement: PKIoverheid Certificate Authentication (REQ-DSO-050)
 
 The adapter MUST authenticate with DSO-LV using PKIoverheid certificates for mutual TLS. It MUST validate incoming DSO-LV webhook signatures and support both pre-production and production certificate chains. Certificates are stored securely via Nextcloud's credential store.
-
 #### Scenario: Certificate used for outbound mTLS call
 - **WHEN** a PKIoverheid certificate and private key are uploaded via the OpenConnector admin UI and the adapter makes an outbound call to DSO-LV
 - **THEN** the certificate is written to a temporary file by CallService.getCertificate(), used for mTLS, and cleaned up after the request
@@ -254,6 +283,8 @@ The adapter MUST authenticate with DSO-LV using PKIoverheid certificates for mut
 ### Requirement: OpenConnector Source Registration (REQ-DSO-060)
 
 The adapter MUST be registered as an OpenConnector source type with DSO-LV-specific configuration fields. Connection settings include: DSO-LV API URL, PKIoverheid certificates, organisatie OIN, bevoegd-gezag code, and STAM API version. The source supports health checks validating connectivity and certificate validity.
+
+@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: DSO source created with configuration
 - **WHEN** an administrator creates a new source of type "dso" and fills in the DSO-LV API URL, uploads PKIoverheid certificates, and enters the organisatie OIN

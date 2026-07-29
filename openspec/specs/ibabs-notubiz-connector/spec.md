@@ -7,6 +7,8 @@ TBD - created by archiving change ibabs-notubiz-connector. Update Purpose after 
 
 The connector MUST establish authenticated connections to the iBabs REST API using API key authentication. The connection is configured as an OpenConnector Source entity of type `json` with auth method `apikey`. The source stores the iBabs API URL (typically `https://api.ibabs.eu`), API key, and organisatie-ID. All API calls are routed through CallService which logs each request in the CallLog for audit and debugging.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Persist iBabs source configuration
 - **WHEN** an administrator creates a new Source with type "json" and auth "apikey" for iBabs, enters the iBabs API URL, API key, and organisatie-ID in the configuration, and saves the source
 - **THEN** the Source entity is persisted with the iBabs-specific configuration in the `configuration` JSON field and the source is marked as enabled
@@ -26,6 +28,8 @@ The connector MUST establish authenticated connections to the iBabs REST API usi
 ### Requirement: Collegevoorstel Push to iBabs (REQ-RIS-002)
 
 The connector MUST push a collegevoorstel (advies document plus bijlagen) from Procest to iBabs as a vergaderstuk. The push extracts the voorstel document from Nextcloud Files, converts to PDF if needed via Docudesk, and uploads it to iBabs with metadata (onderwerp, portefeuillehouder, zaaktype).
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Push voorstel with metadata
 - **WHEN** a zaak "Bestemmingsplan Centrum" has a voorstel document in Nextcloud Files and the connector pushes the voorstel to iBabs
@@ -51,6 +55,8 @@ The connector MUST push a collegevoorstel (advies document plus bijlagen) from P
 
 The connector MUST create or update an agendapunt in iBabs linked to the uploaded collegevoorstel. The target vergadering is determined by configuration: either the next upcoming collegevergadering (auto-select), a specific vergadering selected by the behandelaar, or a default vergadering type configured in the source settings.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Auto-select next collegevergadering
 - **WHEN** a voorstel is pushed to iBabs, the source configuration specifies auto-select for the next collegevergadering, and the connector creates the agendapunt
 - **THEN** the iBabs API is queried for upcoming vergaderingen, the next one is selected, and the agendapunt is created with the voorstel linked
@@ -66,6 +72,8 @@ The connector MUST create or update an agendapunt in iBabs linked to the uploade
 ### Requirement: Besluit Retrieval from iBabs (REQ-RIS-004)
 
 The connector MUST retrieve besluiten from iBabs after vergaderbehandeling. Retrieval happens via polling (configurable interval, default 15 minutes) or webhook if available. The besluit status (aangenomen, verworpen, aangehouden, doorgeschoven) is mapped to a Procest zaak status update.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Retrieve aangenomen besluit
 - **WHEN** a voorstel was pushed to iBabs for zaak "Bestemmingsplan Centrum", the college has the voorstel aangenomen, and the inbound poll retrieves the besluit
@@ -87,6 +95,8 @@ The connector MUST retrieve besluiten from iBabs after vergaderbehandeling. Retr
 
 The connector MUST retrieve the besluitenlijst (PDF/document) from iBabs after vergaderbehandeling, store it in Nextcloud Files, and link it to the source zaak.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Download and link besluitenlijst
 - **WHEN** a collegevergadering has concluded and the connector polls for the besluitenlijst
 - **THEN** the besluitenlijst PDF is downloaded, stored in `/RIS-besluiten/{year}/{vergadering-datum}/`, and linked to all zaken that had voorstellen in that vergadering
@@ -102,6 +112,8 @@ The connector MUST retrieve the besluitenlijst (PDF/document) from iBabs after v
 ### Requirement: NotuBiz API Connection (REQ-RIS-020)
 
 The connector MUST connect to the NotuBiz API with OAuth2 or API key authentication. The connection is configured as an OpenConnector Source entity with NotuBiz-specific configuration including organisatie-ID and default vergadertype. Authentication supports both OAuth2 (via AuthenticationService's existing client_credentials flow) and API key methods.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Configure NotuBiz OAuth2 source
 - **WHEN** an administrator creates a NotuBiz source with OAuth2 authentication and configures the client_id, client_secret, and token endpoint
@@ -119,6 +131,8 @@ The connector MUST connect to the NotuBiz API with OAuth2 or API key authenticat
 
 The connector MUST push vergaderstukken (voorstel plus bijlagen) to NotuBiz for vergaderbehandeling. The push supports multiple event types: collegevergadering, raadsvergadering, and commissievergadering.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Push stukken for raadsbehandeling
 - **WHEN** a zaak requires raadsbehandeling after collegebesluit and the connector pushes stukken to NotuBiz
 - **THEN** vergaderstukken are uploaded with the correct vergadertype (raadsvergadering) and metadata
@@ -134,6 +148,8 @@ The connector MUST push vergaderstukken (voorstel plus bijlagen) to NotuBiz for 
 ### Requirement: Status-Based Outbound Sync (REQ-RIS-030)
 
 The connector MUST trigger outbound sync when a zaak reaches the configurable status "Ter besluitvorming" in Procest. The trigger is implemented via OpenConnector's EventService which listens for zaak status change events from Procest. Only zaken with completed parafering (all required parafen collected) are eligible for push.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Trigger push on Ter besluitvorming with complete parafering
 - **WHEN** a zaak "Subsidieregeling Cultuur" reaches status "Ter besluitvorming", all required paraferingen are completed, and the status change event fires
@@ -151,6 +167,8 @@ The connector MUST trigger outbound sync when a zaak reaches the configurable st
 
 The connector MUST poll or receive webhooks for besluit updates from the configured RIS and update the source zaak in Procest. Polling uses JobService background jobs at configurable intervals (default: 15 minutes). Each poll checks all sync records with status "synced" (outbound push completed) for besluit responses.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Poll finds aangenomen status
 - **WHEN** a voorstel was pushed to iBabs 3 hours ago and the background poll job runs
 - **THEN** it queries the iBabs API for the agendapunt status, finds "aangenomen", and updates the zaak status in Procest
@@ -166,6 +184,8 @@ The connector MUST poll or receive webhooks for besluit updates from the configu
 ### Requirement: Sync Audit Trail (REQ-RIS-033)
 
 The connector MUST log all sync operations as OpenRegister objects for a complete audit trail. Each sync record captures direction (push/pull), timestamp, status, document IDs, and error details. The audit trail enables compliance with the Archiefwet requirement for traceability of bestuurlijke besluitvorming.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Record outbound push to iBabs
 - **WHEN** a voorstel push to iBabs succeeds and the sync completes
@@ -183,6 +203,8 @@ The connector MUST log all sync operations as OpenRegister objects for a complet
 
 The connector MUST retry failed sync operations with configurable backoff intervals (default: 3 retries at 5, 15, and 60 minutes). Retries use the JobService to schedule future attempts. After all retries are exhausted, the sync record MUST be set to "failed" and a notification MUST be sent.
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: First retry after timeout
 - **WHEN** a voorstel push fails due to an iBabs API timeout and the first retry triggers after 5 minutes
 - **THEN** the push is reattempted with the same payload and credentials
@@ -198,6 +220,8 @@ The connector MUST retry failed sync operations with configurable backoff interv
 ### Requirement: Document Flow Management (REQ-RIS-040)
 
 The connector MUST manage bidirectional document flow: outbound documents are exported from Nextcloud Files, converted to PDF via Docudesk if needed, and pushed to the RIS. Inbound documents (besluit, besluitenlijst) are downloaded from the RIS, stored in Nextcloud Files, and linked to the zaak. Document metadata (onderwerp, datum, portefeuillehouder, zaaktype, geheimhouding) is mapped bidirectionally.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Export and convert outbound documents
 - **WHEN** a zaak has 5 documents in Nextcloud Files (voorstel, 3 bijlagen, conceptbesluit) and the outbound sync triggers
@@ -215,6 +239,8 @@ The connector MUST manage bidirectional document flow: outbound documents are ex
 
 The connector MUST track parafering status within Procest before allowing push to the RIS. The parafering route follows the standard municipal chain: steller, adviseur, parafeerder, portefeuillehouder, secretariaat. Only after all required paraferingen are completed is the push enabled. The parafering route is configurable per zaaktype (sequential, parallel, or mixed).
 
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Block push on incomplete sequential parafering
 - **WHEN** a zaak requires sequential parafering steller > adviseur > parafeerder > portefeuillehouder, and the steller and adviseur have parafen but the parafeerder has not
 - **THEN** the connector blocks outbound push and shows parafering progress (2/4 completed) in the sync status
@@ -230,6 +256,8 @@ The connector MUST track parafering status within Procest before allowing push t
 ### Requirement: OpenConnector Endpoint Registration (REQ-RIS-060)
 
 The connector MUST be registered as OpenConnector endpoint types with separate configurations for iBabs and NotuBiz. Connection settings include API URL, authentication credentials, organisatie-ID, and default vergadertype. Health checks validate API connectivity and authentication.
+
+@e2e exclude backend iBabs/NotuBiz RIS integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Configure separate iBabs and NotuBiz sources
 - **WHEN** an administrator wants to connect both iBabs and NotuBiz and creates two separate Source entities

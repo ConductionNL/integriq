@@ -11,7 +11,7 @@
     1. The modals live outside the manifest-rendered router-view tree, so
        a page swap mid-test cannot unmount the modal from under the user.
     2. Each handler stays a plain function with no Vue-instance context —
-       it just calls `modalBus.$emit('open-foo', { item })` and the host
+       it just calls `modalBus.emit('open-foo', { item })` and the host
        picks it up.
 
   Adding a new modal here is three lines: import the SFC, register an
@@ -32,6 +32,19 @@
 			:open="subscriptionSigning.open"
 			:subscription="subscriptionSigning.subscription"
 			@close="closeSubscriptionSigning" />
+		<CatalogItemDetailDialog
+			:open="catalogItemDetail.open"
+			:item="catalogItemDetail.item"
+			@close="closeCatalogItemDetail" />
+		<ImportPreviewDialog
+			:open="configurationImport.open"
+			@close="closeConfigurationImport" />
+		<ExportConfigurationDialog
+			:open="configurationExport.open"
+			@close="closeConfigurationExport" />
+		<PromotePreviewModal
+			:open="promotion.open"
+			@close="closePromotion" />
 	</div>
 </template>
 
@@ -39,11 +52,19 @@
 import TestMappingModal from './TestMappingModal.vue'
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
+import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
+import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
+import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.vue'
+import PromotePreviewModal from '../PromotePreviewModal.vue'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
+	EVENT_OPEN_CATALOG_ITEM_DETAIL,
+	EVENT_OPEN_CONFIGURATION_IMPORT,
+	EVENT_OPEN_CONFIGURATION_EXPORT,
+	EVENT_OPEN_PROMOTION,
 } from '../../handlers/modalBus.js'
 
 export default {
@@ -53,6 +74,10 @@ export default {
 		TestMappingModal,
 		AddEndpointRuleModal,
 		SubscriptionSigningModal,
+		CatalogItemDetailDialog,
+		ImportPreviewDialog,
+		ExportConfigurationDialog,
+		PromotePreviewModal,
 	},
 
 	data() {
@@ -60,37 +85,49 @@ export default {
 			testMapping: { open: false, mapping: null },
 			addEndpointRule: { open: false, endpoint: null },
 			subscriptionSigning: { open: false, subscription: null },
+			catalogItemDetail: { open: false, item: null },
+			configurationImport: { open: false },
+			configurationExport: { open: false },
+			promotion: { open: false },
 		}
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
-		modalBus.$on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
-		modalBus.$on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
-		modalBus.$on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
+		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
+		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
-	beforeDestroy() {
-		modalBus.$off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
-		modalBus.$off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
-		modalBus.$off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
+	beforeUnmount() {
+		modalBus.off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
+		modalBus.off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
+		modalBus.off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
+		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
+		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
+		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openTestMapping(payload) {
 			this.testMapping = { open: true, mapping: payload?.mapping ?? null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeTestMapping() {
 			this.testMapping = { open: false, mapping: null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openAddEndpointRule(payload) {
 			this.addEndpointRule = { open: true, endpoint: payload?.endpoint ?? null }
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-app-shell-and-logs-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeAddEndpointRule() {
 			this.addEndpointRule = { open: false, endpoint: null }
 		},
@@ -101,6 +138,38 @@ export default {
 		/** @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5 */
 		closeSubscriptionSigning() {
 			this.subscriptionSigning = { open: false, subscription: null }
+		},
+		/** @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002 */
+		openCatalogItemDetail(payload) {
+			this.catalogItemDetail = { open: true, item: payload?.item ?? null }
+		},
+		/** @spec openspec/specs/connector-catalog/spec.md#requirement-catalog-detail-modal-offers-an-authorized-enable-or-instantiate-action-req-002 */
+		closeCatalogItemDetail() {
+			this.catalogItemDetail = { open: false, item: null }
+		},
+		/** @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything */
+		openConfigurationImport() {
+			this.configurationImport = { open: true }
+		},
+		/** @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything */
+		closeConfigurationImport() {
+			this.configurationImport = { open: false }
+		},
+		/** @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui */
+		openConfigurationExport() {
+			this.configurationExport = { open: true }
+		},
+		/** @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui */
+		closeConfigurationExport() {
+			this.configurationExport = { open: false }
+		},
+		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
+		openPromotion() {
+			this.promotion = { open: true }
+		},
+		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
+		closePromotion() {
+			this.promotion = { open: false }
 		},
 	},
 }

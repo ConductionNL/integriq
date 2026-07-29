@@ -73,9 +73,9 @@
 					<dd>{{ mapping.description || '-' }}</dd>
 					<dt>{{ t('openconnector', 'Pass through') }}</dt>
 					<dd>
-						<NcCheckboxRadioSwitch :checked="!!mapping.passThrough"
+						<NcCheckboxRadioSwitch :model-value="!!mapping.passThrough"
 							:disabled="saving"
-							@update:checked="onTogglePassThrough">
+							@update:model-value="onTogglePassThrough">
 							{{ passThroughLabel }}
 						</NcCheckboxRadioSwitch>
 						<p class="cn-mapping-detail__hint">
@@ -155,7 +155,9 @@
 </template>
 
 <script>
-import { CnDetailPage, useObjectStore } from '@conduction/nextcloud-vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { useObjectStore } from '../../store/objectStore.js'
+import liveObjectSubscription from '../../mixins/liveObjectSubscription.js'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -235,6 +237,8 @@ export default {
 		RestoreIcon,
 	},
 
+	mixins: [liveObjectSubscription],
+
 	props: {
 		/**
 		 * Mapping ID from the URL (`/mappings/:id`). The route is declared
@@ -278,16 +282,16 @@ export default {
 		/**
 		 * Pinia store instance.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		store() {
 			return useObjectStore()
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		resolvedId() {
 			return this.id != null ? String(this.id) : ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mapping() {
 			if (!this.resolvedId) return {}
 			return this.store.getObject(this.objectType, this.resolvedId) || {}
@@ -295,36 +299,36 @@ export default {
 		hasMapping() {
 			return !!this.mapping && Object.keys(this.mapping).length > 0
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		loading() {
 			return !!this.store.loading?.[this.objectType] && !this.hasMapping
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		loadError() {
 			return this.store.errors?.[this.objectType] || null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		errorMessage() {
 			const err = this.loadError
 			if (!err) return ''
 			return err.message
 				|| this.t('openconnector', 'Failed to load mapping')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		title() {
 			return this.mapping?.name || this.t('openconnector', 'Mapping')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		description() {
 			return this.mapping?.description || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		passThroughLabel() {
 			return this.mapping?.passThrough
 				? this.t('openconnector', 'Pass through enabled')
 				: this.t('openconnector', 'Pass through disabled')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		sidebarConfig() {
 			return {
 				enabled: true,
@@ -334,23 +338,23 @@ export default {
 				showMetadata: true,
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingRules() {
 			return asObjectMap(this.mapping?.mapping)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castRules() {
 			return asObjectMap(this.mapping?.cast)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		unsetRules() {
 			return asUnsetList(this.mapping?.unset)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		samplePlaceholder() {
 			return '{\n  "name": "hello"\n}'
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		formattedPreview() {
 			try {
 				return JSON.stringify(this.previewOutput, null, 2)
@@ -363,7 +367,7 @@ export default {
 		 * forces the debounced preview to refire whenever the rule shape or
 		 * sample input changes.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		previewSignal() {
 			return JSON.stringify({
@@ -379,29 +383,35 @@ export default {
 	watch: {
 		previewSignal: {
 			immediate: false,
-			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+			/** @spec openspec/specs/mapping-editor-ui/spec.md */
 			handler() {
 				this.schedulePreview()
 			},
 		},
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	mounted() {
 		this.ensureRegistered()
 		const fetch = this.reload()
 		// Trigger the first preview render once data lands.
 		Promise.resolve(fetch).finally(() => this.schedulePreview())
+		// Live updates: or-object-{uuid} events refetch this mapping into the
+		// store cache; the `mapping` computed reads the cache directly, so no
+		// bridge callback is needed — reactivity re-renders the page.
+		if (this.resolvedId) {
+			this.syncLiveSubscription(this.objectType, this.resolvedId)
+		}
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	beforeDestroy() {
 		if (this.schedulePreview && this.schedulePreview.cancel) {
 			this.schedulePreview.cancel()
 		}
 	},
 
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	created() {
 		// Bind the debounced function on the instance so each component gets
 		// its own timer and `.cancel()` works on teardown.
@@ -415,7 +425,7 @@ export default {
 		 * same arguments is a no-op modulo Vue reactivity churn, but we
 		 * gate on `objectTypeRegistry` anyway.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		ensureRegistered() {
 			const registry = this.store.objectTypeRegistry || {}
@@ -435,7 +445,7 @@ export default {
 		/**
 		 * Force a server-side re-fetch of the current mapping.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		reload() {
 			if (!this.resolvedId) return Promise.resolve(null)
@@ -446,11 +456,11 @@ export default {
 		 * Emit the bus event picked up by ModalHost (`src/modals/v2/ModalHost.vue`)
 		 * to mount TestMappingModal with the current mapping pre-loaded.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		openTestModal() {
 			if (!this.hasMapping) return
-			modalBus.$emit(EVENT_OPEN_TEST_MAPPING, { mapping: this.mapping })
+			modalBus.emit(EVENT_OPEN_TEST_MAPPING, { mapping: this.mapping })
 		},
 
 		/**
@@ -460,7 +470,7 @@ export default {
 		 *
 		 * @param {object} patch Fields to merge over the current mapping.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		async persistPatch(patch) {
 			if (!this.hasMapping) return
@@ -480,19 +490,19 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onUpdateMapping(nextRules) {
 			return this.persistPatch({ mapping: nextRules })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onUpdateCast(nextRules) {
 			return this.persistPatch({ cast: nextRules })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onUpdateUnset(nextList) {
 			return this.persistPatch({ unset: nextList })
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onTogglePassThrough(value) {
 			return this.persistPatch({ passThrough: !!value })
 		},
@@ -502,7 +512,7 @@ export default {
 		 * inflight indicator is shown next to the Output label so it
 		 * doesn't block edits in the rules table on the left.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		async runPreview() {
 			if (!this.hasMapping) return
@@ -548,7 +558,7 @@ export default {
 		/**
 		 * Clear sample input + output and cancel any pending request.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
 		 */
 		resetPreview() {
 			if (this.schedulePreview && this.schedulePreview.cancel) {

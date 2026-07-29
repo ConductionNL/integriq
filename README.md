@@ -19,7 +19,7 @@
 
 OpenConnector brings enterprise service bus (ESB) capabilities natively into Nextcloud. Define external API connections as sources, expose your own API endpoints, transform data with flexible mappings, and keep systems in sync through scheduled or event-driven synchronizations — all from within your Nextcloud instance. It supports REST, SOAP, and XML APIs with OAuth, JWT, and API key authentication out of the box.
 
-OpenConnector is a fully standalone app. It does not require OpenRegister or any other Conduction app to function, though it integrates seamlessly with OpenRegister when both are installed.
+OpenConnector requires the [OpenRegister](https://github.com/ConductionNL/openregister) app as a runtime dependency. Every entity (source, endpoint, mapping, synchronization, consumer, job, event, call log) is persisted as an OpenRegister object, and the controllers inject OpenRegister's `ObjectService` as a required dependency — OpenConnector does not function without it. `src/manifest.json` declares `"dependencies": ["openregister"]` accordingly.
 
 ## Screenshots
 
@@ -105,12 +105,14 @@ graph TD
     B -->|Guzzle HTTP| D[External REST APIs]
     B -->|SOAP Client| E[External SOAP Services]
     B -->|Twig Mapping| F[Data Transformation Engine]
-    B <-->|Optional| G[OpenRegister]
+    B <-->|Required: object persistence| G[OpenRegister]
     B --> H[Nextcloud Cron]
     B --> I[CloudEvents Bus]
 ```
 
 ### Data Model
+
+Every entity below is persisted as an [OpenRegister](https://github.com/ConductionNL/openregister) object (there are no app-local database tables or ORM mappers); OpenRegister is a required runtime dependency.
 
 | Entity | Description | Purpose |
 |--------|-------------|---------|
@@ -135,7 +137,6 @@ openconnector/
 │   ├── Action/        # Action handlers
 │   ├── Controller/    # REST API controllers (sources, endpoints, mappings, etc.)
 │   ├── Cron/          # Background jobs (sync scheduling, log cleanup)
-│   ├── Db/            # ORM entities and mappers
 │   ├── EventListener/ # Nextcloud event listeners
 │   ├── Http/          # HTTP utilities
 │   ├── Migration/     # Database migrations
@@ -167,8 +168,9 @@ openconnector/
 | Nextcloud | 28 -- 33 |
 | PHP | 8.1+ |
 | Database | PostgreSQL, MySQL 8.0+, or SQLite |
+| **OpenRegister** | **Required** — object persistence layer; OpenConnector will not start without it |
 
-No additional Nextcloud apps are required. OpenConnector works as a standalone application.
+OpenConnector requires the [OpenRegister](https://github.com/ConductionNL/openregister) app to be installed and enabled. It is a hard runtime dependency: all entities are stored as OpenRegister objects. When OpenRegister is absent, OpenConnector reports the missing dependency via an admin notice and its `/api/health` endpoint returns HTTP 503, rather than failing with bare HTTP 500 errors.
 
 ## Installation
 
@@ -288,7 +290,7 @@ Full documentation is available at **[conductionnl.github.io/openconnector](http
 
 ## Related Apps
 
-- **[OpenRegister](https://github.com/ConductionNL/openregister)** -- Object storage layer (optional; used as sync target when installed)
+- **[OpenRegister](https://github.com/ConductionNL/openregister)** -- Object storage layer (**required** runtime dependency; all OpenConnector entities are stored as OpenRegister objects)
 - **[OpenCatalogi](https://github.com/ConductionNL/opencatalogi)** -- Publication and catalog management
 - **[DocuDesk](https://github.com/ConductionNL/docudesk)** -- Document generation
 - **[NL Design](https://github.com/ConductionNL/nldesign)** -- Design token theming for government compliance

@@ -19,7 +19,9 @@
 		{ "key": "webhookId", "value": "" },
 		{ "key": "eventId", "value": "" },
 		{ "key": "consumerId", "value": "" },
-		{ "key": "subRef", "value": "" }
+		{ "key": "subRef", "value": "" },
+		{ "key": "dsoHmacSecret", "value": "newman-dso-test-secret" },
+		{ "key": "dsoSignature", "value": "" }
 	],
 	"auth": { "type": "noauth" },
 	"item": [
@@ -436,6 +438,25 @@
 					}
 				},
 				{
+					"name": "synchronizations#run with forceDeletion param (plumbing: graceful 4xx, NOT 500)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"// sync-safety-guardrails (REQ-010) smoke check: the new, optional `forceDeletion`",
+						"// request parameter (explicit deletion-ratio-guard override) must plumb through",
+						"// request parsing/routing without a 500. The sync is source-less, so a graceful",
+						"// 400 is the expected outcome — the deep guard scenarios are covered by PHPUnit",
+						"// (SynchronizationServiceDeletionRatioGuardTest) against mocked sources.",
+						"pm.test('run with forceDeletion does NOT 500', () => pm.expect(pm.response.code).to.not.eql(500));",
+						"pm.test('run with forceDeletion returns graceful 2xx/4xx', () => pm.expect(pm.response.code).to.be.oneOf([200,400,409]));"
+					] } } ],
+					"request": {
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"method": "POST",
+						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\"forceDeletion\": true}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/synchronizations/{{syncId}}/run", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "synchronizations", "{{syncId}}", "run" ] }
+					}
+				},
+				{
 					"name": "synchronizations#run unknown id (error 404 not 500)",
 					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
 						"pm.test('unknown sync -> 404', () => pm.response.to.have.status(404));",
@@ -692,6 +713,88 @@
 					"name": "Delete consumer",
 					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('consumer deleted 2xx', () => pm.expect(pm.response.code).to.be.oneOf([200,204]));" ] } } ],
 					"request": { "auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] }, "method": "DELETE", "header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/consumer/{{consumerId}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "{{register}}", "consumer", "{{consumerId}}" ] } }
+				}
+			]
+		},
+		{
+			"name": "10. DSO STAM signature verification",
+			"item": [
+				{
+					"name": "Configure DSO PKI (HMAC pre-production)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('DSO PKI config saved (2xx)', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));", "const b = pm.response.json();", "pm.expect(b.mode).to.eql('hmac');" ] } } ],
+					"request": {
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"method": "PUT",
+						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\n  \"mode\": \"hmac\",\n  \"hmacSecret\": \"{{dsoHmacSecret}}\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/admin/dso-pki-config", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "admin", "dso-pki-config" ] }
+					}
+				},
+				{
+					"name": "DSO STAM - forged signature rejected (401)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('forged signature rejected 401', () => pm.expect(pm.response.code).to.eql(401));", "const b = pm.response.json();", "pm.expect(b.error).to.eql('invalid_signature');" ] } } ],
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }, { "key": "X-DSO-Signature", "value": "sha256=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" } ],
+						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-forged-1\",\"type\":\"aanvraag\"}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "dso", "stam", "verzoeken" ] }
+					}
+				},
+				{
+					"name": "DSO STAM - missing signature header rejected (401)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('missing signature rejected 401', () => pm.expect(pm.response.code).to.eql(401));" ] } } ],
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" } ],
+						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-nosig-1\",\"type\":\"aanvraag\"}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "dso", "stam", "verzoeken" ] }
+					}
+				},
+				{
+					"name": "DSO STAM - valid HMAC signature accepted (202)",
+					"event": [
+						{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [ "const secret = pm.collectionVariables.get('dsoHmacSecret');", "const body = '{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\"}';", "const hash = CryptoJS.HmacSHA256(body, secret).toString(CryptoJS.enc.Hex);", "pm.collectionVariables.set('dsoSignature', 'sha256=' + hash);" ] } },
+						{ "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('valid signature accepted 202', () => pm.expect(pm.response.code).to.eql(202));", "const b = pm.response.json();", "pm.expect(b.status).to.eql('ontvangen');" ] } }
+					],
+					"request": {
+						"method": "POST",
+						"header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }, { "key": "X-DSO-Signature", "value": "{{dsoSignature}}" } ],
+						"body": { "mode": "raw", "raw": "{\"verzoekId\":\"newman-valid-1\",\"type\":\"aanvraag\"}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/dso/stam/verzoeken", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "dso", "stam", "verzoeken" ] }
+					}
+				}
+			]
+		},
+		{
+			"name": "11. Observability (AppHost health/metrics)",
+			"item": [
+				{
+					"name": "health#index anonymous (public, 200 ok)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('health 200', () => pm.response.to.have.status(200));", "const b = pm.response.json();", "pm.test('status ok', () => pm.expect(b.status).to.eql('ok'));", "pm.test('checks.database ok', () => pm.expect(b.checks.database).to.eql('ok'));", "pm.test('checks.openregister ok', () => pm.expect(b.checks.openregister).to.eql('ok'));", "pm.test('app + version present', () => { pm.expect(b.app).to.be.a('string'); pm.expect(b.version).to.be.a('string'); });" ] } } ],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "application/json" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/health", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "health" ] }
+					}
+				},
+				{
+					"name": "metrics#index admin (200, exposition format, all 11 metric names)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('metrics 200', () => pm.response.to.have.status(200));", "const body = pm.response.text();", "['openconnector_info','openconnector_up','openconnector_sources_total','openconnector_calls_total','openconnector_synchronizations_total','openconnector_synchronization_runs_total','openconnector_endpoints_total','openconnector_jobs_total','openconnector_job_runs_total','openconnector_mappings_total','openconnector_rules_total'].forEach((n) => pm.test('metrics contains ' + n, () => pm.expect(body).to.include(n)));" ] } } ],
+					"request": {
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"method": "GET",
+						"header": [ { "key": "OCS-APIRequest", "value": "true" }, { "key": "Accept", "value": "text/plain" } ],
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openconnector/api/metrics", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openconnector", "api", "metrics" ] }
+					}
+				},
+				{
+					"name": "metrics#index no-auth (admin-only, 401)",
+					"event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "pm.test('metrics no-auth -> 401', () => pm.response.to.have.status(401));" ] } } ],
+					"request": {
+						"method": "GET",
+						"header": [ { "key": "Accept", "value": "text/plain" } ],
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/openconnector/api/metrics", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openconnector", "api", "metrics" ] }
+					}
 				}
 			]
 		}

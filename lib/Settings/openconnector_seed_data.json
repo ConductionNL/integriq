@@ -1,5 +1,5 @@
 {
-  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt, authenticationConfig) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
+  "$comment": "Seed data for the openconnector register, applied at app install/upgrade via ConfigurationService::importFromApp(). Per REQ-A-007 (openspec/changes/openconnector-register-schema-declaration), this file ships 3-5 seed objects per mutable config schema; log schemas (call_log, job_log, synchronization_log, synchronization_contract_log) are append-only at runtime and MUST NOT appear here. All secret-bearing fields (apikey, password, secret, jwt) use safe placeholders (\"YOUR_API_KEY_HERE\", \"<placeholder>\", or the all-zero UUID). The top-level `authenticationConfig` field is NOT seeded at all: ocon#232 established it is vestigial (nothing reads it), so seeding it would plant dead data on every install and teach the wrong pattern — credentials belong under `configuration.authentication`. Operators replace the placeholders via the OpenConnector admin UI or via Configuration export/import (ADR-015). Chain B's storage migration translates any pre-existing rows in oc_openconnector_* legacy tables into OR objects; that migration is NOT driven by this seed file.",
   "source": [
     {
       "@self": { "register": "openconnector", "schema": "source", "slug": "example-rest-api" },
@@ -29,11 +29,22 @@
     {
       "@self": { "register": "openconnector", "schema": "source", "slug": "example-oauth2" },
       "name": "Example OAuth2 Source",
-      "description": "Placeholder source using OAuth2 client credentials. Replace authenticationConfig before enabling.",
+      "description": "Placeholder source using OAuth2 client credentials. Replace configuration.authentication before enabling.",
       "type": "api",
       "location": "https://oauth.example.com",
       "auth": "oauth",
-      "authenticationConfig": { "client_id": "<placeholder>", "client_secret": "<placeholder>", "token_url": "https://oauth.example.com/token" },
+      "$comment": "ocon#232: the OAuth parameters live under `configuration.authentication` because that is what AuthenticationRuntime::oauthToken() actually reads (`new Dot($source['configuration'])` -> `authentication`). This seed previously used the top-level `authenticationConfig` field, which NOTHING reads — it seeded dead data into every install and modelled a pattern that silently produces unauthenticated calls.",
+      "configuration": {
+        "headers": { "Authorization": "Bearer {{ oauthToken(source) }}" },
+        "authentication": {
+          "grant_type": "client_credentials",
+          "authentication": "body",
+          "tokenUrl": "https://oauth.example.com/token",
+          "scope": "api",
+          "client_id": "<placeholder>",
+          "client_secret": "<placeholder>"
+        }
+      },
       "isEnabled": false,
       "test": true,
       "version": "1.0.0"
@@ -50,6 +61,70 @@
       "isEnabled": false,
       "test": true,
       "version": "1.0.0"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "peppol-sandbox" },
+      "name": "Peppol Sandbox Access Point",
+      "description": "Sandbox Peppol Access Point (log/mock provider). Demonstrates participant lookup and document transmission with no real AP or credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` for production.",
+      "type": "peppol",
+      "location": "https://ap.example/peppol",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "baseUrl": "https://ap.example/peppol",
+        "mockParticipants": ["0106:00000000", "0106:11111111"]
+      }
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "bank-aggregator-sandbox" },
+      "name": "Bank Aggregator Sandbox (PSD2 AIS)",
+      "description": "Sandbox PSD2 AIS aggregator (log/mock provider). Demonstrates the full connect -> callback -> discovery -> sync -> synced-event path with no real aggregator and no credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` (GoCardless Bank-Account-Data-style API) for production.",
+      "type": "psd2",
+      "location": "https://aggregator.example/psd2",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "baseUrl": "https://aggregator.example/psd2",
+        "aggregator": "sandbox",
+        "expiryWarningDays": 14
+      }
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "card-provider-sandbox" },
+      "name": "Card Provider Sandbox (Corporate Card Feed)",
+      "description": "Sandbox corporate-card program source (log/mock provider). Demonstrates the full enroll -> discovery -> sync -> synced-event path (idempotent on transaction id) with no real card provider and no credential. Switch `configuration.provider` to `rest`, set `configuration.baseUrl`, and add `configuration.authentication.credentialRef` (e.g. a Stripe Issuing-style API) for production.",
+      "type": "cardfeed",
+      "location": "https://api.card-program.example/v1",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "baseUrl": "https://api.card-program.example/v1",
+        "cardProvider": "sandbox"
+      }
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "source", "slug": "payment-sandbox" },
+      "name": "Payment Sandbox (Live Payment Providers)",
+      "description": "Sandbox payment source (log/mock provider). Demonstrates the full create -> checkout -> webhook -> status-mapping -> event path with no real Mollie account and no credential. Switch `configuration.provider` to `mollie`, set `configuration.baseUrl` (defaults to https://api.mollie.com/v2), and add `configuration.authentication.credentialRef` for production.",
+      "type": "payment",
+      "location": "https://sandbox.payment.example",
+      "isEnabled": true,
+      "test": true,
+      "version": "1.0.0",
+      "configuration": {
+        "provider": "log",
+        "mockStatuses": {
+          "MOCK-PAY-1": "paid",
+          "MOCK-PAY-2": "open",
+          "MOCK-PAY-3": "authorized"
+        }
+      }
     }
   ],
   "consumer": [
@@ -144,6 +219,27 @@
     {
       "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "mobile-app-subscription" },
       "description": "Example subscription wiring the Mobile App consumer to object-deleted events."
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "seed-nc-file-tagged-sync" },
+      "description": "nextcloud-event-hub example: a file tagged 'invoice' drives a synchronization instead of a webhook (action.kind=synchronization). Replace the synchronizationId placeholder with a real synchronization UUID before enabling (see synchronization[example-rest-to-or] for the placeholder-reference convention this seed follows).",
+      "types": ["com.nextcloud.files.node.tagged"],
+      "filters": [{ "jsonlogic": { "in": ["invoice", { "var": "data.attributes.tags" }] } }],
+      "action": { "kind": "synchronization", "synchronizationId": "<placeholder>" },
+      "style": "push",
+      "status": "paused"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "event_subscription", "slug": "seed-nc-calendar-webhook" },
+      "description": "nextcloud-event-hub example: a created calendar object drives a signed outbound webhook with a custom (faster, fewer-retries) backoff schedule via retryPolicy. Replace the placeholder sink before enabling.",
+      "types": ["com.nextcloud.calendar.object.created"],
+      "filters": [],
+      "action": { "kind": "webhook" },
+      "sink": "https://example.org/hooks/calendar",
+      "protocol": "HTTP",
+      "style": "push",
+      "status": "paused",
+      "retryPolicy": { "baseSeconds": 30, "factor": 2, "capSeconds": 1800, "maxRetries": 3 }
     }
   ],
   "job": [
@@ -262,6 +358,219 @@
       "originId": "<placeholder>",
       "targetId": "<placeholder>",
       "version": "1.0.0"
+    }
+  ],
+  "peppol_transmission": [
+    {
+      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-invoice-gemeente-nijmegen" },
+      "objectUri": "/objects/ar-invoice/00000000-0000-0000-0000-000000000000",
+      "sourceApp": "shillinq",
+      "recipientPeppolId": "0106:00000000",
+      "documentType": "ubl-invoice-2.1",
+      "transmissionId": "MOCK-PEPPOL-1",
+      "status": "delivered",
+      "detail": "Accepted by receiver AP"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-invoice-consultancy" },
+      "objectUri": "/objects/ar-invoice/00000000-0000-0000-0000-000000000000",
+      "sourceApp": "shillinq",
+      "recipientPeppolId": "0106:11111111",
+      "documentType": "ubl-invoice-2.1",
+      "transmissionId": "MOCK-PEPPOL-2",
+      "status": "sent",
+      "detail": "Awaiting delivery receipt"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "peppol_transmission", "slug": "tx-order-travel" },
+      "objectUri": "/objects/order/00000000-0000-0000-0000-000000000000",
+      "sourceApp": "shillinq",
+      "recipientPeppolId": "0106:22222222",
+      "documentType": "ubl-order-3.0",
+      "transmissionId": null,
+      "status": "queued",
+      "detail": "Queued"
+    }
+  ],
+  "bankfeed_connection": [
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-gemeente-nijmegen" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "aggregatorSourceSlug": "bank-aggregator-sandbox",
+      "aggregator": "sandbox",
+      "consentReference": "REQ-SANDBOX-1",
+      "consentGrantedAt": "2026-07-12T00:00:00+00:00",
+      "consentExpiresAt": "2026-10-10T00:00:00+00:00",
+      "redirectUrl": "https://nc.example/apps/shillinq/psd2/return",
+      "accounts": [
+        { "iban": "NL00BANK0000000001", "bic": "BANKNL2A", "currency": "EUR", "aggregatorAccountId": "SANDBOX-ACC-1" }
+      ],
+      "lastSyncAt": "2026-07-01T06:00:00+00:00",
+      "lifecycleState": "active"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-consultancy-bv" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "aggregatorSourceSlug": "bank-aggregator-sandbox",
+      "aggregator": "sandbox",
+      "consentReference": "REQ-SANDBOX-2",
+      "consentGrantedAt": "2026-04-21T00:00:00+00:00",
+      "consentExpiresAt": "2026-07-20T00:00:00+00:00",
+      "redirectUrl": "https://nc.example/apps/shillinq/psd2/return",
+      "accounts": [
+        { "iban": "NL00BANK0000000002", "bic": "BANKNL2A", "currency": "EUR", "aggregatorAccountId": "SANDBOX-ACC-2" }
+      ],
+      "lastSyncAt": "2026-07-01T06:00:00+00:00",
+      "expiryWarnedAt": "2026-07-06T06:00:00+00:00",
+      "lifecycleState": "expiring"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_connection", "slug": "conn-travel-agency" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "aggregatorSourceSlug": "bank-aggregator-sandbox",
+      "aggregator": "sandbox",
+      "consentReference": "REQ-SANDBOX-3",
+      "consentGrantedAt": "2026-08-02T00:00:00+00:00",
+      "consentExpiresAt": "2026-10-31T00:00:00+00:00",
+      "redirectUrl": "https://nc.example/apps/shillinq/psd2/return",
+      "accounts": [
+        { "iban": "NL00BANK0000000003", "bic": "BANKNL2A", "currency": "EUR", "aggregatorAccountId": "SANDBOX-ACC-3" }
+      ],
+      "lastSyncAt": null,
+      "lifecycleState": "active"
+    }
+  ],
+  "bankfeed_batch": [
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_batch", "slug": "batch-nijmegen-2026-07-01" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "accountIban": "NL00BANK0000000001",
+      "since": "2026-06-30T06:00:00+00:00",
+      "until": "2026-07-01T06:00:00+00:00",
+      "transactionCount": 12,
+      "transactions": [
+        {
+          "transactionId": "SANDBOX-TX-SEED-1",
+          "bookingDate": "2026-06-30",
+          "valueDate": "2026-06-30",
+          "transactionAmount": { "amount": "1250.00", "currency": "EUR" },
+          "debtorName": "Gemeente Nijmegen",
+          "remittanceInformation": "Invoice 2026-0042"
+        }
+      ]
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "bankfeed_batch", "slug": "batch-consultancy-2026-07-01" },
+      "connectionId": "00000000-0000-0000-0000-000000000000",
+      "accountIban": "NL00BANK0000000002",
+      "since": "2026-06-30T06:00:00+00:00",
+      "until": "2026-07-01T06:00:00+00:00",
+      "transactionCount": 3,
+      "transactions": [
+        {
+          "transactionId": "SANDBOX-TX-SEED-2",
+          "bookingDate": "2026-06-30",
+          "valueDate": "2026-06-30",
+          "transactionAmount": { "amount": "-89.99", "currency": "EUR" },
+          "creditorName": "Example SaaS B.V.",
+          "remittanceInformation": "Subscription July"
+        }
+      ]
+    }
+  ],
+  "cardfeed_account": [
+    {
+      "@self": { "register": "openconnector", "schema": "cardfeed_account", "slug": "acct-conduction-cards" },
+      "accountId": "00000000-0000-0000-0000-000000000000",
+      "cardfeedSourceSlug": "card-provider-sandbox",
+      "provider": "sandbox",
+      "cards": [
+        { "cardId": "SANDBOX-CARD-1", "last4": "4242", "cardholderName": "A. Example", "currency": "EUR" }
+      ],
+      "seenTransactionIds": [ "SANDBOX-CTX-SANDBOX-CARD-1-SEED" ],
+      "lastSyncAt": "2026-07-01T06:00:00+00:00",
+      "lifecycleState": "active"
+    }
+  ],
+  "cardfeed_batch": [
+    {
+      "@self": { "register": "openconnector", "schema": "cardfeed_batch", "slug": "batch-conduction-cards-2026-07-01" },
+      "accountId": "00000000-0000-0000-0000-000000000000",
+      "cardId": "SANDBOX-CARD-1",
+      "since": "2026-06-30T06:00:00+00:00",
+      "until": "2026-07-01T06:00:00+00:00",
+      "transactionCount": 2,
+      "transactions": [
+        {
+          "transactionId": "SANDBOX-CTX-SANDBOX-CARD-1-SEED",
+          "bookingDate": "2026-06-30",
+          "transactionAmount": { "amount": "-89.99", "currency": "EUR" },
+          "merchantName": "Example SaaS B.V.",
+          "merchantCategoryCode": "5734",
+          "remittanceInformation": "Subscription July"
+        },
+        {
+          "transactionId": "SANDBOX-CTX-SANDBOX-CARD-1-SEED-2",
+          "bookingDate": "2026-06-30",
+          "transactionAmount": { "amount": "-12.50", "currency": "EUR" },
+          "merchantName": "Example Coffee",
+          "merchantCategoryCode": "5814",
+          "remittanceInformation": "Team offsite"
+        }
+      ]
+    }
+  ],
+  "payment_intent": [
+    {
+      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-invoice-gemeente-nijmegen" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-1",
+      "amountValue": "245.00",
+      "amountCurrency": "EUR",
+      "description": "Invoice INV-2026-0042",
+      "method": "ideal",
+      "redirectUrl": "https://shillinq.example/payments/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-1",
+      "metadata": { "invoiceId": "00000000-0000-0000-0000-000000000000" },
+      "paymentStatus": "paid",
+      "lastOutcome": "captured",
+      "createdAt": "2026-07-10T09:00:00+00:00",
+      "updatedAt": "2026-07-10T09:05:00+00:00"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-invoice-consultancy" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-2",
+      "amountValue": "89.50",
+      "amountCurrency": "EUR",
+      "description": "Invoice INV-2026-0058",
+      "method": "ideal",
+      "redirectUrl": "https://shillinq.example/payments/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-2",
+      "metadata": { "invoiceId": "00000000-0000-0000-0000-000000000000" },
+      "paymentStatus": "open",
+      "lastOutcome": null,
+      "createdAt": "2026-07-12T14:00:00+00:00",
+      "updatedAt": "2026-07-12T14:00:00+00:00"
+    },
+    {
+      "@self": { "register": "openconnector", "schema": "payment_intent", "slug": "pi-deposit-travel-booking" },
+      "sourceSlug": "payment-sandbox",
+      "provider": "log",
+      "providerPaymentId": "MOCK-PAY-3",
+      "amountValue": "150.00",
+      "amountCurrency": "EUR",
+      "description": "Booking deposit BK-2026-0011",
+      "method": "ideal",
+      "redirectUrl": "https://shillinq.example/payments/return",
+      "checkoutUrl": "https://sandbox.payment.example/checkout/MOCK-PAY-3",
+      "metadata": { "depositPaymentId": "00000000-0000-0000-0000-000000000000" },
+      "paymentStatus": "authorized",
+      "lastOutcome": "authorized",
+      "createdAt": "2026-07-13T08:00:00+00:00",
+      "updatedAt": "2026-07-13T08:02:00+00:00"
     }
   ]
 }

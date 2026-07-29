@@ -83,7 +83,7 @@ class JobTask extends TimedJob
      * @psalm-param   array{jobId?: int, forceRun?: bool} $argument
      * @phpstan-param mixed $argument
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-3
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     public function run(mixed $argument): void
     {

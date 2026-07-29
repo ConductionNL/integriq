@@ -3,9 +3,12 @@
 <!--
   AuthenticationForm — drives EndpointService::processAuthenticationRule.
   The `type` discriminator selects between apikey / jwt / jwt-zgw /
-  basic / oauth, each of which reads different sub-fields. We expose
-  the common header override + a per-type panel for the most-used
-  shapes; the rest stay as raw arrays (comma-separated input).
+  basic / oauth / nc-session, each of which reads different sub-fields.
+  We expose the common header override + a per-type panel for the
+  most-used shapes; the rest stay as raw arrays (comma-separated input).
+  `nc-session` reads no header at all — it authorises the current
+  Nextcloud session user (ocon#1068) — so the header override is hidden
+  for it and it shares the users/groups allow-list panel.
 -->
 <template>
 	<div class="action-form">
@@ -17,6 +20,7 @@
 			:clearable="false"
 			@input="onTypePick" />
 		<NcTextField
+			v-if="value.type !== 'nc-session'"
 			:label="t('openconnector', 'Header (default: Authorization)')"
 			:value="value.header || ''"
 			placeholder="Authorization"
@@ -28,7 +32,7 @@
 				placeholder="key-one,key-two"
 				@update:value="(next) => patch('keys', toArray(next))" />
 		</template>
-		<template v-else-if="value.type === 'basic' || value.type === 'oauth'">
+		<template v-else-if="usesAllowLists">
 			<NcTextField
 				:label="t('openconnector', 'Allowed users (comma-separated UIDs)')"
 				:value="csv(value.users)"
@@ -40,7 +44,10 @@
 				placeholder="admin,users"
 				@update:value="(next) => patch('groups', toArray(next))" />
 		</template>
-		<span class="action-form__helper">
+		<span v-if="value.type === 'nc-session'" class="action-form__helper">
+			{{ t('openconnector', 'Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.') }}
+		</span>
+		<span v-else class="action-form__helper">
 			{{ t('openconnector', 'For JWT / JWT-ZGW the rule only checks the signed bearer; no extra fields are required.') }}
 		</span>
 	</div>
@@ -56,7 +63,10 @@ const AUTH_TYPES = [
 	{ id: 'jwt-zgw', label: 'JWT (ZGW)' },
 	{ id: 'basic', label: 'Basic (users/groups)' },
 	{ id: 'oauth', label: 'OAuth (users/groups)' },
+	{ id: 'nc-session', label: 'Nextcloud session (users/groups)' },
 ]
+
+const ALLOW_LIST_TYPES = ['basic', 'oauth', 'nc-session']
 
 export default {
 	name: 'AuthenticationForm',
@@ -70,6 +80,10 @@ export default {
 		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
 		selectedTypeOption() {
 			return this.typeOptions.find((opt) => opt.id === this.value.type) || null
+		},
+		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		usesAllowLists() {
+			return ALLOW_LIST_TYPES.includes(this.value.type)
 		},
 	},
 	methods: {

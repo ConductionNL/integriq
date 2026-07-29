@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Pašalinti savybę",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Sukonfigūruokite, kaip gaunami DSO-LV STAM webhook užklausos yra kriptografiškai patvirtinamos. HMAC naudoja bendrą paslaptį (ikigamybinė aplinka); PKIoverheid naudoja sertifikatų grandinę (gamybinė aplinka).",
+        "Configured (leave blank to keep unchanged)": "Sukonfigūruota (palikite tuščią, kad nekeistumėte)",
+        "DSO signature configuration saved.": "DSO parašo konfigūracija išsaugota.",
+        "DSO STAM webhook signature verification": "DSO STAM webhook parašo patvirtinimas",
+        "Failed to load the DSO signature configuration.": "Nepavyko įkelti DSO parašo konfigūracijos.",
+        "Failed to save the DSO signature configuration.": "Nepavyko išsaugoti DSO parašo konfigūracijos.",
+        "HMAC shared secret": "Bendra HMAC paslaptis",
+        "HMAC shared secret (pre-production)": "Bendra HMAC paslaptis (ikigamybinė aplinka)",
+        "Intermediate certificate chain (PEM, optional)": "Tarpinių sertifikatų grandinė (PEM, neprivaloma)",
+        "Loading DSO signature configuration…": "Įkeliama DSO parašo konfigūracija…",
+        "Not configured": "Nesukonfigūruota",
+        "PKIoverheid certificate chain (production)": "PKIoverheid sertifikatų grandinė (gamybinė aplinka)",
+        "Save DSO signature configuration": "Išsaugoti DSO parašo konfigūraciją",
+        "Signing certificate (PEM)": "Pasirašymo sertifikatas (PEM)",
+        "Signing mode": "Pasirašymo režimas",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Patikimas šakninis CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

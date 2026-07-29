@@ -76,7 +76,7 @@ class StUFFieldMapper
      *
      * @return array Array of StUF field name to value pairs.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function mapPersonToStUF(array $person, ?array $mapping=null): array
     {
@@ -113,7 +113,7 @@ class StUFFieldMapper
      *
      * @return array Array of OpenRegister property name to value pairs.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-002
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function mapStUFToPerson(array $stufData, ?array $mapping=null): array
     {
@@ -146,7 +146,7 @@ class StUFFieldMapper
      *
      * @return array Array of StUF address field name to value pairs.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-004
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function mapAddressToStUF(array $address, ?array $mapping=null): array
     {
@@ -170,7 +170,7 @@ class StUFFieldMapper
      *
      * @return string The StUF date string (e.g., "19900515").
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-053
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function isoDateToStUF(string $isoDate): string
     {
@@ -190,7 +190,7 @@ class StUFFieldMapper
      *
      * @return string The ISO 8601 date string (e.g., "1990-05-15").
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-053
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function stufDateToISO(string $stufDate): string
     {

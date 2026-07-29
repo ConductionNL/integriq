@@ -3,13 +3,13 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.0"
+    "version": "1.1.1"
   },
   "x-openregister": {
     "type": "application",
     "app": "openconnector",
     "openregister": "^v0.2.10",
-    "description": "OpenConnector data model — thin client on OpenRegister; 15 schemas (11 mutable config + 4 append-only log). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
+    "description": "OpenConnector data model — thin client on OpenRegister; 22 schemas (14 mutable config + 4 append-only log + 4 registered-but-previously-uncounted: peppol_transmission, bankfeed_connection, and bankfeed_batch were declared in components.schemas but missing from the register's schemas list — fixed alongside the notifynl-sms-channel addition, which also adds sms_message) + payment_intent (live-payment-providers connector) + kiss_klantcontact (kiss-kcc-bridge connector — pulled/pushed KISS klantcontacten, mapped to a case/zaak reference via onderwerpobjecten) + openformulieren_form_mapping/openformulieren_submission (open-formulieren-intake connector — the latter declares x-openregister-handoff targeting ns#Case) + iwmo_ijw_message (iwmo-ijw-adapter connector — outbound Wmo/Jw toewijzing/declaratie bericht sends and inbound retour audit records, correlated by ref/kenmerk) + fsc_service/fsc_call (fsc-connectivity connector — FSC directory resolution cache and per-call audit log, correlated by organisation+service) + dso_verzoek/dso_message (dso-connector-adapter — completes the pre-existing DSO STAM koppelvlak, which validated+parsed a Verzoek but never persisted it; dso_verzoek is the inbound Verzoek lifecycle record declaring x-openregister-handoff targeting ns#Case, dso_message is the outbound status/besluit audit log, correlated by verzoekUuid) + stuf_message (stuf-zkn-bridge connector — audit record for one inbound zakLk01/edcLk01 kennisgeving or one outbound zakLk01 kennisgeving send, StUF-ZKN 3.10 SOAP bridge letting a municipality adopt procest without first migrating off its legacy StUF estate, correlated by referentienummer with idempotent redelivery). Replaces the 15 hand-rolled lib/Db/<Entity>Mapper.php classes shipped pre-chain-B."
   },
   "components": {
     "registers": {
@@ -17,25 +17,47 @@
         "slug": "openconnector",
         "title": "OpenConnector",
         "version": "1.0.0",
-        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations + 4 log schemas.",
+        "description": "Integration platform register — Sources, Endpoints, Consumers, Events, Jobs, Mappings, Rules, Synchronizations, Peppol Transmission, Payment Intent, Bankfeed Connection/Batch (PSD2 AIS), Cardfeed Account/Batch (corporate card feed), LTI 1.3 (Platform/Tool/Deployment), KISS Klantcontact, iWMO/iJW Message, FSC Service/Call + 4 log schemas.",
         "published": "2026-05-20T00:00:00+00:00",
         "schemas": [
-          "source",
+          "bankfeed_batch",
+          "bankfeed_connection",
+          "call_log",
+          "cardfeed_account",
+          "cardfeed_batch",
           "consumer",
+          "dso_message",
+          "dso_verzoek",
           "endpoint",
           "event",
           "event_message",
           "event_subscription",
+          "fsc_call",
+          "fsc_service",
+          "iwmo_ijw_message",
           "job",
+          "job_log",
+          "kiss_klantcontact",
+          "lti_deployment",
+          "lti_identity_link",
+          "lti_platform",
+          "lti_tool",
           "mapping",
+          "notificaties_abonnement",
+          "openformulieren_form_mapping",
+          "openformulieren_submission",
+          "payment_intent",
+          "peppol_transmission",
+          "ris_sync_record",
           "rule",
+          "sms_message",
+          "source",
+          "stuf_message",
           "synchronization",
           "synchronization_contract",
-          "call_log",
-          "job_log",
-          "synchronization_log",
           "synchronization_contract_log",
-          "ris_sync_record"
+          "synchronization_log",
+          "zgw_version_translation_log"
         ],
         "tablePrefix": "",
         "folder": "Open Registers/OpenConnector"
@@ -43,10 +65,11 @@
     },
     "schemas": {
       "source": {
+        "_comment": "ocon#151 PHASE D — DO NOT REMOVE apikey/secret/password/jwt/authenticationConfig from this schema descriptor. These five inline-secret fields MUST stay declared here even though the RemoveMigratedSourceSecretFields repair step deletes the first four from the LIVE schema per-instance. WHY: OpenRegister's Schema::hydrate() applies `properties` via setProperties() — a WHOLESALE REPLACE — so a version-bumping register import (ImportHandler::handleSchema -> updateFromArray, verified at OR origin/development) PRUNES any property ABSENT from this JSON, UNGATED by an instance's migration state. Removing a field here would therefore drop it fleet-wide on the next upgrade that bumps the source schema version, orphaning every un-migrated inline secret. Removal happens ONLY in the repair step, per-instance, gated on a verified-clean raw scan. Permanently deleting these four from this JSON is a FUTURE change, valid only once the whole fleet has converged (tracked in ocon#232, the ocon#151 follow-up). ocon#232 UPDATE — authenticationConfig: it is now established that authenticationConfig is VESTIGIAL (no code authenticates from it; AuthenticationRuntime moved to configuration.authentication.* in b6470597, 2024-11-19). It is therefore NOT migrated to a credentialRef — a minted ref would never be resolved by anything — but REMOVED. That removal is per-instance and human-gated behind `occ openconnector:authentication-config --remove-authentication-config`, and deliberately NOT part of any repair step: the four fields above were migrated (their values survive in the broker) so an unattended on-upgrade drop loses nothing, whereas clearing authenticationConfig DELETES the only copy and must require human intent every time. authenticationConfig MUST STAY DECLARED HERE for exactly the same setProperties() prune reason as the four — an instance that never opted in must not have the property pruned from under it by a version-bumping import.",
         "slug": "source",
         "title": "Source",
         "icon": "Cloud",
-        "version": "1.0.0",
+        "version": "1.2.0",
         "summary": "An outbound integration target (HTTP API, database, or service)",
         "description": "A Source is the integration counterpart for inbound or outbound data exchange. It defines the connection (location, auth, headers) and operational state (rate limits, retention, last-call timestamps). One half of the Source/Synchronization/Contract triad — see local ADR-005.",
         "required": [
@@ -95,11 +118,19 @@
           },
           "type": {
             "type": "string",
-            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet via DSOAdapterService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
+            "description": "Source kind dispatched at runtime by CallService. Recognised types: 'api' (default HTTP), 'database' (DB query), 'file' (filesystem), 'soap' (SOAPService dispatch), 'dso' (Digitaal Stelsel Omgevingswet outbound status/besluit — log/sandbox or generic REST, dispatched directly by DsoIngestService via the DsoConnectorProviderInterface seam — not via CallService; inbound Verzoek receipt is a signed webhook, DSOController::receiveVerzoek(), independent of this source's configuration), 'peppol' (Peppol Access Point, dispatched directly by PeppolTransmissionService — not via CallService), 'psd2' (PSD2 AIS aggregator, dispatched directly by BankfeedSyncService — not via CallService), 'sms' (SMS channel — NotifyNL or sandbox, dispatched directly by SmsDispatchService — not via CallService), 'payment' (live payment provider — log/sandbox or Mollie — dispatched directly by PaymentIntentService, not via CallService), 'kiss' (KISS / VNG Klantinteracties API — log/sandbox or generic REST, dispatched directly by KissSyncService — not via CallService), 'open-formulieren' (Open Formulieren inbound webhook signature config, verified directly by OpenFormulierenController::inbound() — not via CallService), 'iwmo-ijw' (iWMO/iJW StUF iStandaarden Wmo/Jeugdwet bridge — log/sandbox or generic REST, dispatched directly by IwmoIjwSyncService — not via CallService), 'fsc' (FSC / Federatieve Service Connectiviteit directory + call routing — log/sandbox or generic REST, dispatched directly by FscCallService — not via CallService). Free-form to keep custom adapter types unblocked; CallService falls back to HTTP for unrecognised values.",
             "examples": [
               "api",
               "database",
               "file",
+              "fsc",
+              "iwmo-ijw",
+              "kiss",
+              "open-formulieren",
+              "payment",
+              "peppol",
+              "psd2",
+              "sms",
               "soap",
               "dso"
             ],
@@ -117,8 +148,8 @@
           },
           "authenticationConfig": {
             "type": "object",
-            "description": "Provider-specific auth configuration (object). Credential strings here are stored plaintext per local ADR-007 until EncryptionService ships (local ADR-016).",
-            "title": "Authentication Configuration"
+            "description": "DEPRECATED / VESTIGIAL (ocon#232) — NOTHING READS THIS FIELD. Use `configuration.authentication` instead (or, better, `configuration.authentication.credentialRef`). AuthenticationRuntime stopped reading `authenticationConfig` in commit b6470597 (2024-11-19) when it moved to `configuration.authentication.*`; the data was never migrated and the docs were never updated, so any credential written here is INERT and the call goes out unauthenticated. It remains declared (and `writeOnly: true`, see register.d/99-source-secrets-writeonly.json) purely so pre-existing values are not silently pruned — removal is per-instance and human-gated via `occ openconnector:authentication-config`. Stored unencrypted at rest until field encryption ships (local ADR-016).",
+            "title": "Authentication Configuration (deprecated, unused)"
           },
           "authorizationPassthroughMethod": {
             "type": "string",
@@ -137,7 +168,7 @@
           },
           "jwt": {
             "type": "string",
-            "description": "JWT bearer token (plaintext per ADR-007)",
+            "description": "JWT bearer token. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "JWT Token"
           },
           "jwtId": {
@@ -147,22 +178,22 @@
           },
           "secret": {
             "type": "string",
-            "description": "OAuth client secret (plaintext per ADR-007)",
+            "description": "OAuth client secret. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "Client Secret"
           },
           "username": {
             "type": "string",
-            "description": "Basic-auth username (plaintext per ADR-007)",
+            "description": "Basic-auth username. Deliberately NOT write-only: a username is an identifier, not a credential, and the UI needs to render it to show which account a source authenticates as — the paired `password` is what carries the secret and what is stripped on read.",
             "title": "Username"
           },
           "password": {
             "type": "string",
-            "description": "Basic-auth password (plaintext per ADR-007)",
+            "description": "Basic-auth password. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "Password"
           },
           "apikey": {
             "type": "string",
-            "description": "API key value (plaintext per ADR-007)",
+            "description": "API key value. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-source-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships; prefer `configuration.authentication.credentialRef` so no secret is embedded on the source at all.",
             "title": "API Key"
           },
           "documentation": {
@@ -197,8 +228,39 @@
           },
           "configuration": {
             "type": "object",
-            "description": "Free-form structured config (provider-specific)",
-            "title": "Configuration"
+            "description": "Free-form structured config (provider-specific). `configuration.authentication` MAY carry a `credentialRef` object — `{\"credentialId\": \"<uuid>\"}` (primary) or `{\"credentialName\": \"<name>\"}` (convenience) — to dispatch this source's calls in-process through the OpenRegister credential broker instead of embedding secrets. When `credentialRef` is present: any sibling field under `authentication` is a hard 409 config error at call time (embedded secrets are FORBIDDEN, never merged); setting both `credentialId` and `credentialName`, or an empty value, is a 409; an ambiguous `credentialName` (0 or >1 owned matches) is a 409; SOAP sources, asynchronous dispatch, and `cert`/`ssl_key` config are rejected in v1. The provider catalogue's host-lock is the sole authority for the target host — `location` remains configuration documentation. See http-call-engine spec REQ-SBC-001/002 (change source-broker-credentials). `configuration.decompress: \"gzip\"` (oc#97) hints that the fetched body is a gzip-compressed file (also auto-detected from a `.gz`-suffixed endpoint or an `application/gzip` response Content-Type) — gunzipped before the existing JSON/XML/JSONL parse attempts; `.tar.gz`/`.tar` archives are detected but NOT supported (logged + skipped, see synchronization-engine spec REQ-006, change bulk-gzip-jsonl-ingestion). `configuration.listMethod`/`configuration.body` (pre-existing, see decideMethod/mergeSourceConfiguration) let a source declare a static POST body template — see `sourceConfig.paginationIn` below for advancing it across pages (change post-body-pagination).",
+            "title": "Configuration",
+            "properties": {
+              "authentication": {
+                "type": "object",
+                "title": "Authentication",
+                "description": "The source's outbound authentication block. Two brokered shapes are recognised, and they never collide: (1) PROXY — `authentication.credentialRef` at the top level, which dispatches the whole call through OpenRegister's credential broker (BrokeredCallService::hasCredentialRef); any sibling key under `authentication` is then a hard 409 (BrokeredCallService::validateCredentialRef). (2) APP-SIDE INJECTION — any leaf under `authentication` may itself be `{\"credentialRef\": {...}}`, whose sole key MUST be `credentialRef` (BrokeredCallService::isPlaceholder); the secret is resolved from Doriath and substituted in place at call time. Undeclared keys remain allowed: this block is deliberately open so every pre-existing auth mechanism keeps validating.",
+                "properties": {
+                  "credentialRef": {
+                    "type": "object",
+                    "title": "Credential Reference",
+                    "description": "A reference to a credential held by OpenRegister's broker, so the secret is never stored on this source. EXACTLY ONE of `credentialId` (primary) or `credentialName` (convenience) — setting both, neither, an empty/non-string value, or any other key is a hard 409 config error at call time (BrokeredCallService::validateInnerRef + extractSingleRefValue). A `credentialName` resolving to 0 or >1 owned credentials is likewise a 409.",
+                    "properties": {
+                      "credentialId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Credential ID",
+                        "description": "UUID of the broker credential to use. The primary, unambiguous form."
+                      },
+                      "credentialName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Credential Name",
+                        "description": "Name of the broker credential to use. Convenience form; resolved to a credentialId at call time and a 409 when it is ambiguous (0 or >1 owned matches)."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "maxProperties": 1
+                  }
+                }
+              }
+            }
           },
           "endpointsConfig": {
             "type": "object",
@@ -287,6 +349,49 @@
             "type": "string",
             "description": "Machine-readable identifier for cross-environment portability (local ADR-015)",
             "title": "Slug"
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "Retry policy applied by CallService around outbound dispatch. Fields: maxAttempts (integer, default 1 — 1 means today's single-attempt behavior, strictly opt-in per Source), backoffStrategy ('fixed'|'exponential', default 'fixed'), baseDelayMs (integer, default 500), maxDelayMs (integer, default 30000), jitter (boolean, default false — adds +/-10% uniform jitter), retryableStatusCodes (integer[], default [429, 502, 503, 504]), retryOnTimeout (boolean, default false — retry on a transport-level exception too). A Synchronization may widen/override this per-key via `synchronization.retryPolicyOverride`, merged in by the caller as `$config['retryPolicy']`. See http-call-engine spec REQ-007 (change retry-and-circuit-breaker-policies).",
+            "title": "Retry Policy"
+          },
+          "circuitBreakerState": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "open"
+            ],
+            "default": "closed",
+            "description": "Persisted circuit breaker state for this Source. 'half-open' is never persisted — it is a derived read when 'open' AND circuitBreakerCooldownSeconds have elapsed since circuitBreakerOpenedAt (see PdokConnector::circuitState() for the reference state machine). See http-call-engine spec REQ-008 (change retry-and-circuit-breaker-policies).",
+            "title": "Circuit Breaker State"
+          },
+          "circuitBreakerFailureCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "Consecutive retryable-failure count since the breaker last closed. Reaching circuitBreakerThreshold opens the breaker.",
+            "title": "Circuit Breaker Failure Count"
+          },
+          "circuitBreakerOpenedAt": {
+            "type": "integer",
+            "description": "Unix timestamp when the breaker last opened (null when closed).",
+            "title": "Circuit Breaker Opened At"
+          },
+          "circuitBreakerLastProbeAt": {
+            "type": "integer",
+            "description": "Unix timestamp of the most recent half-open probe attempt (null when never probed). Best-effort guard only — concurrent requests during the cooldown window may each treat themselves as the probe (accepted limitation, see design.md Trade-offs).",
+            "title": "Circuit Breaker Last Probe At"
+          },
+          "circuitBreakerThreshold": {
+            "type": "integer",
+            "default": 5,
+            "description": "Consecutive retryable failures required to open the breaker. Mirrors PdokConnector::BREAKER_THRESHOLD.",
+            "title": "Circuit Breaker Threshold"
+          },
+          "circuitBreakerCooldownSeconds": {
+            "type": "integer",
+            "default": 30,
+            "description": "Seconds an open breaker stays open before the next dispatch is treated as a half-open probe. Mirrors PdokConnector::BREAKER_OPEN_SECONDS.",
+            "title": "Circuit Breaker Cooldown Seconds"
           }
         },
         "x-openregister-seed": [],
@@ -297,7 +402,7 @@
         "slug": "consumer",
         "title": "Consumer",
         "icon": "AccountGroup",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "summary": "An outbound event-bus subscriber identity",
         "description": "A Consumer is an event-bus subscriber (webhook target, AMQP queue, etc.). Paired with EventSubscription (filter) and EventMessage (delivery record). See local ADR-013 for the event-bus model.",
         "required": [
@@ -326,7 +431,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Allowed source domains (CIDR-style or hostname patterns)",
+            "description": "Allowed source domains as hostname patterns: exact (api.example.com) or suffix wildcard (*.example.com, which also matches the apex example.com). Matched against the forward-confirmed reverse DNS (FCrDNS) of the caller's IP — never against Origin/Referer/Host, which callers control and can spoof. A source with no confirmed matching hostname is rejected with HTTP 403. Absent = unrestricted; an empty list matches nothing and therefore rejects every request. Combined with 'ips' as a union: the caller is allowed if it matches an entry in either list.",
             "title": "Allowed Domains"
           },
           "ips": {
@@ -334,7 +439,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Allowed source IP addresses",
+            "description": "Allowed source IP addresses: exact IPv4/IPv6 (203.0.113.4, 2001:db8::1) or CIDR ranges (10.0.0.0/8, 2001:db8::/32). Matched against the client IP as Nextcloud derives it, which honours a forwarded header only from a proxy listed in the instance's trusted_proxies config — behind an untrusted-proxy setup this is the proxy's own address, so list that. A caller outside the list is rejected with HTTP 403. Absent = unrestricted; an empty list matches nothing and therefore rejects every request. Combined with 'domains' as a union: the caller is allowed if it matches an entry in either list.",
             "title": "Allowed IPs"
           },
           "authorizationType": {
@@ -344,7 +449,7 @@
           },
           "authorizationConfiguration": {
             "type": "object",
-            "description": "Provider-specific auth config (plaintext per ADR-007)",
+            "description": "Provider-specific auth config for this consumer's INBOUND authentication — `apiKey` (matched against the presented key by AuthorizationService::resolveConsumerByApiKey), or `publicKey`/`algorithm` for the JWT issuer path. WRITE-ONLY: accepted on write, never returned by any API read (`writeOnly: true`, see register.d/99-consumer-secrets-writeonly.json). Stored unencrypted at rest until field encryption ships. Unlike a `source`, this is a credential OpenConnector VERIFIES rather than one it sends, so the credential broker (`credentialRef`) does not apply here.",
             "title": "Authorization Configuration"
           },
           "created": {
@@ -363,6 +468,48 @@
             "type": "string",
             "description": "Nextcloud user id that created the consumer (null for system-created)",
             "title": "User ID"
+          },
+          "rateLimit": {
+            "type": "object",
+            "description": "Optional inbound short-window burst limiter. Absent = unlimited. When set, requests from this consumer are counted per window and receive HTTP 429 (with Retry-After) once requestsPerWindow is exceeded within windowSeconds.",
+            "title": "Rate Limit",
+            "properties": {
+              "requestsPerWindow": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of requests allowed within one window",
+                "title": "Requests per window"
+              },
+              "windowSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Length of the rate-limit window in seconds",
+                "title": "Window (seconds)"
+              }
+            }
+          },
+          "quota": {
+            "type": "object",
+            "description": "Optional inbound long-horizon fair-use cap. Absent = unlimited. When set, requests are counted per calendar period and receive HTTP 429 once limit is exceeded until the period rolls over.",
+            "title": "Quota",
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Maximum number of requests allowed within one period",
+                "title": "Quota limit"
+              },
+              "period": {
+                "type": "string",
+                "enum": [
+                  "hour",
+                  "day",
+                  "month"
+                ],
+                "description": "Calendar period the quota resets on",
+                "title": "Quota period"
+              }
+            }
           }
         },
         "x-openregister-seed": [],
@@ -492,6 +639,34 @@
             "type": "string",
             "description": "Machine-readable identifier (local ADR-015)",
             "title": "Slug"
+          },
+          "putPatchSemantics": {
+            "type": "boolean",
+            "description": "When true, PUT requests to this endpoint MUST supply every mandatory field of the target schema (rejected with HTTP 400 otherwise) while PATCH remains a partial update. Opt-in per endpoint; existing endpoints default to false (pre-change behaviour unchanged). Added by the vng-klantinteracties-adapter change (REQ-EP-007).",
+            "default": false,
+            "title": "Enforce PUT/PATCH Semantics"
+          },
+          "vngFilterTranslation": {
+            "type": "boolean",
+            "description": "When true, GET requests to this endpoint translate VNG double-underscore lookup operators (field__icontains, field__gte, partijIdentificator__codeSoortObjectId/__objectId) onto OpenRegister search filters, and an `expand=` query parameter embeds named relations inline (bounded depth). Opt-in per endpoint; existing endpoints default to false. Added by the vng-klantinteracties-adapter change (REQ-006/REQ-007).",
+            "default": false,
+            "title": "Enable VNG Filter/Expand Translation"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's inbound API endpoints — the surface this instance exposes to external callers. Use to discover what routes exist, which method/target they map to, or to find the endpoint behind a given slug. This is the inbound-surface inventory; it holds no credential.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "method", "targetType", "targetId", "slug"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Endpoint by id — its route, HTTP method, polymorphic target (register/schema, api, job, or synchronization), and its input/output mapping and rule pipeline. Use when investigating exactly what a specific inbound route does.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
@@ -781,7 +956,7 @@
         "slug": "event_subscription",
         "title": "EventSubscription",
         "icon": "BellOutline",
-        "version": "1.0.0",
+        "version": "1.2.0",
         "summary": "A Consumer × event-type filter binding",
         "description": "An EventSubscription pairs a Consumer with an event-type filter (CloudEvents Subscription API). When a matching Event occurs, an EventMessage is generated. See local ADR-013.",
         "required": [],
@@ -850,6 +1025,94 @@
             "type": "string",
             "description": "Subscription status (active, paused, expired)",
             "title": "Status"
+          },
+          "action": {
+            "type": "object",
+            "description": "Delivery action dispatch (nextcloud-event-hub REQ-008, extended by notificaties-api-subscriber REQ-010). {kind: 'webhook'|'synchronization'|'job'|'notificaties', sink?, synchronizationId?, jobId?, sourceId?, kanaal?, hoofdObjectField?, resourceField?, actieMap?, kenmerken?}. Absent defaults to kind='webhook' using the top-level `sink` field — 100% backward compatible with subscriptions created before this field existed.",
+            "title": "Delivery Action",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["webhook", "synchronization", "job", "notificaties"],
+                "description": "Which delivery mechanism a matched event drives",
+                "title": "Action Kind"
+              },
+              "sink": {
+                "type": "string",
+                "description": "Override sink URL for kind=webhook (falls back to the top-level `sink` when absent)",
+                "title": "Action Sink"
+              },
+              "synchronizationId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target synchronization UUID for kind=synchronization",
+                "title": "Synchronization ID"
+              },
+              "jobId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target job UUID for kind=job",
+                "title": "Job ID"
+              },
+              "sourceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Target Source UUID for kind=notificaties — the Notificaties API to POST /notificaties to",
+                "title": "Notificaties Source ID"
+              },
+              "kanaal": {
+                "type": "string",
+                "description": "Required for kind=notificaties — the ZGW kanaal name published to. Absent/empty is a configuration error (REQ-006), not a transient failure.",
+                "title": "Notificaties Channel"
+              },
+              "hoofdObjectField": {
+                "type": "string",
+                "description": "For kind=notificaties — dot-path into event.data used to derive the notification's hoofdObject. Absent falls back to event.subject.",
+                "title": "Main Object Field"
+              },
+              "resourceField": {
+                "type": "string",
+                "description": "For kind=notificaties — dot-path into event.data used to derive the notification's resource. Absent falls back to the trailing dot-segment of event.type.",
+                "title": "Resource Field"
+              },
+              "actieMap": {
+                "type": "object",
+                "description": "For kind=notificaties — overrides the default {created:'create', updated:'update', deleted:'destroy'} event.type-suffix-to-actie mapping",
+                "title": "Action Map"
+              },
+              "kenmerken": {
+                "type": "object",
+                "description": "For kind=notificaties — static kenmerken shallow-merged with event.data.kenmerken (event-supplied values win on key collision)",
+                "title": "Characteristics"
+              }
+            }
+          },
+          "retryPolicy": {
+            "type": "object",
+            "description": "Per-subscription retry/backoff override (nextcloud-event-hub REQ-009). {baseSeconds?, factor?, capSeconds?, maxRetries?} — each key independently overrides the corresponding class default (60s / x4 / 6h cap / 5 retries) used by EventService::deliverMessage/recordFailure when absent.",
+            "title": "Retry Policy",
+            "properties": {
+              "baseSeconds": {
+                "type": "integer",
+                "description": "Base backoff interval in seconds for the first retry (default 60)",
+                "title": "Base Seconds"
+              },
+              "factor": {
+                "type": "integer",
+                "description": "Exponential growth factor between retries (default 4)",
+                "title": "Factor"
+              },
+              "capSeconds": {
+                "type": "integer",
+                "description": "Maximum backoff interval in seconds (default 21600 — 6 hours)",
+                "title": "Cap Seconds"
+              },
+              "maxRetries": {
+                "type": "integer",
+                "description": "Maximum delivery attempts before the message reaches terminal `abandoned` (default 5)",
+                "title": "Max Retries"
+              }
+            }
           },
           "userId": {
             "type": "string",
@@ -1063,6 +1326,22 @@
             "title": "Slug"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's scheduled Jobs by name, enabled state, status, job class, or slug. Use to check whether a given background task is turned on.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "isEnabled", "status", "jobClass", "slug"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Job's schedule and state — isEnabled, interval, lastRun, nextRun. Use to check whether the nightly sync job is even turned on before digging into its logs.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -1155,6 +1434,22 @@
             "title": "Slug"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's transformation Mappings by name, slug, or cross-environment reference. Use to find the mapping responsible for a given transformation.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "slug", "reference"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Mapping's transformation rules (Twig/property-path). Use to explain exactly what a mapping does to data in transit — the single most-asked 'explain this' question in integration debugging. Holds no credential.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -1163,7 +1458,7 @@
         "slug": "rule",
         "title": "Rule",
         "icon": "Filter",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "A conditional pipeline step applied to an Endpoint or Synchronization",
         "description": "A Rule encodes a conditional action applied at a specific timing point in an Endpoint or Synchronization pipeline. See local ADR-011 for the FlowToken context that rules read/write.",
         "required": [
@@ -1324,7 +1619,7 @@
           },
           "sourceConfig": {
             "type": "object",
-            "description": "Source-specific configuration overrides",
+            "description": "Source-specific configuration overrides. Notable recognised keys: `resultsPosition` (dot-path to the objects array in the response, or `_root`/`_object`); `format: \"jsonl\"` (oc#97) — the fetched (and, if gzip, decompressed) body is parsed as line-delimited JSON, one record per line, instead of whole-document JSON/XML — pair with `resultsPosition: \"_root\"` since the parsed line array IS the records list; `paginationQuery` (field name/dot-path to bump per page, default `page`); `paginationIn: \"body\"` (oc#94, default `\"query\"`) — substitutes the next page value into the source's static `configuration.body` JSON template at the `paginationQuery` dot-path instead of the query string, for POST-body sources (e.g. TED's v3 search) whose pagination cursor lives in the request body. See synchronization-engine spec REQ-006 (change bulk-gzip-jsonl-ingestion) and http-call-engine spec REQ-010 (change post-body-pagination); `deletionRatioThreshold` (float 0.0-1.0, default 0.10) — the maximum share of this synchronization's existing contracts that one cleanup pass may garbage-collect before the deletion-ratio guard aborts the pass (warning logged + SynchronizationDeletionGuardedEvent dispatched); override per synchronization for legitimately volatile sources, or supply the explicit `forceDeletion` run parameter for a one-off override. See synchronization-engine spec REQ-010 (change sync-safety-guardrails); `cursorField` (dot-path to the comparable cursor value on a fetched record, e.g. `updatedAt` — same dotted-path-lookup-with-throw convention as `idPosition`/`getOriginId()`) and `cursorComparator` (`gt`|`gte`, informational — the engine always takes the maximum observed value) — read only when the synchronization's top-level `syncMode` is `incremental`, to compute the persisted `cursorWatermark` after each complete fetch. See synchronization-engine spec REQ-016/REQ-017 (change cdc-incremental-sync).",
             "title": "Source Configuration"
           },
           "sourceLastChanged": {
@@ -1350,6 +1645,18 @@
             "description": "Pagination cursor for in-flight sync passes",
             "default": 1,
             "title": "Current Page"
+          },
+          "syncMode": {
+            "type": "string",
+            "enum": ["full", "incremental"],
+            "default": "full",
+            "description": "Fetch strategy for an extern→intern run. `full` (default, unchanged behavior) fetches the entire source result set every run and hash-diffs it against stored SynchronizationContracts, including garbage-collecting target objects no longer present in the source (`deleteInvalidObjects()`). `incremental` injects the stored `cursorWatermark` into the source request (via `{{ cursor }}` Twig templating on `sourceConfig.endpoint`/`sourceConfig.query`) so only records changed since the watermark are fetched, advances the watermark only after a complete, successful fetch, and NEVER runs `deleteInvalidObjects()` — an incremental fetch is a filtered subset of the source, so a target's absence from one run is not evidence of source deletion. An absent value is treated as `full` — no migration needed for existing Synchronizations. See synchronization-engine spec REQ-016/REQ-017/REQ-018 (change cdc-incremental-sync).",
+            "title": "Sync Mode"
+          },
+          "cursorWatermark": {
+            "type": "string",
+            "description": "Stored high-watermark cursor for `syncMode: incremental` (e.g. an ISO-8601 timestamp or a monotonically comparable id/token from `sourceConfig.cursorField`). Advances only after a complete, successful, non-test incremental run; left unchanged after an incomplete/rate-limited fetch so the next run retries from the same value. Clear via `POST /api/synchronizations/{id}/reset-cursor` to force the next run back to an unfiltered (empty-cursor) fetch — this does NOT change `syncMode` or re-enable deletion. See synchronization-engine spec REQ-017/REQ-019 (change cdc-incremental-sync).",
+            "title": "Cursor Watermark"
           },
           "targetId": {
             "type": "string",
@@ -1447,6 +1754,27 @@
             "type": "string",
             "description": "Machine-readable identifier (local ADR-015)",
             "title": "Slug"
+          },
+          "retryPolicyOverride": {
+            "type": "object",
+            "description": "Optional per-Synchronization override of the dispatching Source's `retryPolicy` (all keys optional; same shape — maxAttempts, backoffStrategy, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes, retryOnTimeout). Copied by SynchronizationService into `$config['retryPolicy']` before calling CallService::call(), so it overrides the Source's own retryPolicy per-key ONLY for calls made in this synchronization's context; a direct (non-synchronization) call against the same Source is unaffected. See http-call-engine spec REQ-007 (change retry-and-circuit-breaker-policies).",
+            "title": "Retry Policy Override"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector Synchronizations by name, source/target id, source/target type, or status. Use to check whether a sync is configured and what it points at.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["name", "sourceId", "targetId", "sourceType", "targetType", "status"]
+            },
+            "get": {
+              "description": "Fetch one openconnector Synchronization's definition plus its last-changed/checked/synced timestamps. Use to answer 'is this sync configured, and when did it last run?' Authentication lives on the Source, not here — sourceConfig/targetConfig are data-shaping keys only (e.g. resultsPosition, format), not credentials.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
@@ -1570,6 +1898,22 @@
             "title": "Source Hash"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector SynchronizationContracts — per-object sync state — by synchronization id, origin id, or target id. Use to drill into why one specific record is or isn't syncing.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["synchronizationId", "originId", "targetId"]
+            },
+            "get": {
+              "description": "Fetch one openconnector SynchronizationContract — the per-object identity mapping (origin id, target id) and last-changed/checked/synced state for a single synchronized record. The drill-down from a Synchronization, and the only place origin-target identity is recorded.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
@@ -1631,6 +1975,15 @@
             "type": "string",
             "description": "Reason phrase or short error description",
             "title": "Status Message"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "inbound",
+              "outbound"
+            ],
+            "description": "Call direction: 'outbound' for OpenConnector calls to upstream sources (default), 'inbound' for calls served by OpenConnector endpoints (e.g. a consumer rate-limit 429).",
+            "title": "Direction"
           },
           "request": {
             "type": "object",
@@ -1699,6 +2052,22 @@
             "type": "integer",
             "description": "Combined request+response byte size for storage accounting",
             "title": "Size (Bytes)"
+          }
+        },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector's outbound CallLog by source, status code, direction, or synchronization id. The first stop when a source is failing — see which calls errored and when.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["sourceId", "statusCode", "direction", "synchronizationId"]
+            },
+            "get": {
+              "description": "Fetch one openconnector CallLog entry — status code, status message, direction, and the captured request/response. Secrets (Authorization headers, basic-auth, query-string secrets) are redacted before the entry is ever stored, so this is safe to read; the response body may still contain upstream business data. Use to see exactly what an upstream system returned.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
           }
         },
         "x-openregister-seed": [],
@@ -1857,6 +2226,22 @@
             "title": "Size (Bytes)"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector JobLog entries by job id, level, or job class. Use to find which jobs are erroring, and with what.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["jobId", "level", "jobClass"]
+            },
+            "get": {
+              "description": "Fetch one openconnector JobLog entry — level, message, and stack trace for a single job execution. Use to see exactly why a job run failed.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
@@ -1987,6 +2372,22 @@
             "title": "Size (Bytes)"
           }
         },
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Search openconnector SynchronizationLog entries by synchronization id or user id. Use to see the run-level history of a synchronization.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": ["synchronizationId", "userId"]
+            },
+            "get": {
+              "description": "Fetch one openconnector SynchronizationLog entry — the outcome message and result summary for a single synchronization run. The run-level companion to a SynchronizationContract lookup.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-openregister-seed": [],
         "x-openregister-archival": {
           "retention": {
@@ -2050,6 +2451,9 @@
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_contract",
             "x-openregister-onDelete": "CASCADE",
+            "x-relation-filter": {
+              "synchronization": "@object.synchronization"
+            },
             "description": "FK to per-object contract (UUID; many-to-one; onDelete=CASCADE — when a Contract is destroyed, all its log rows cascade-delete)",
             "title": "Synchronization Contract"
           },
@@ -2062,6 +2466,9 @@
             "type": "string",
             "format": "uuid",
             "$ref": "#/components/schemas/synchronization_log",
+            "x-relation-filter": {
+              "synchronization": "@object.synchronization"
+            },
             "description": "FK to parent synchronization_log entry (UUID; many-to-one)",
             "title": "Synchronization Log"
           },
@@ -2141,6 +2548,135 @@
         "appendOnly": true,
         "immutable": true
       },
+      "sync_item_dead_letter": {
+        "slug": "sync_item_dead_letter",
+        "title": "SyncItemDeadLetter",
+        "icon": "EmailAlertOutline",
+        "version": "1.0.0",
+        "summary": "A captured per-object synchronization failure, isolated from the rest of the pass",
+        "description": "A SyncItemDeadLetter is created when a single object throws during SynchronizationService::synchronizeExternToIntern()'s per-object processing loop. It isolates that one item's failure (the rest of the pass continues) and captures enough context (payload, error, phase) for an operator to inspect and manually replay or discard it. Mirrors `event_message`'s dead-letter shape (see local ADR-013) adapted for manual-only replay (no automatic retry sweep — see synchronization-engine spec REQ-008, change retry-and-circuit-breaker-policies).",
+        "required": [],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "synchronization": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the Synchronization whose pass produced this failure (UUID; many-to-one; onDelete=CASCADE — when the Synchronization is destroyed, its dead-lettered items cascade-delete with it)",
+            "title": "Synchronization"
+          },
+          "synchronizationContract": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/synchronization_contract",
+            "x-openregister-onDelete": "SET NULL",
+            "description": "FK to the per-object contract, when one was resolved before the failure (UUID; many-to-one; onDelete=SET NULL — the dead-letter entry remains for audit even after the contract is gone)",
+            "title": "Synchronization Contract"
+          },
+          "originId": {
+            "type": "string",
+            "description": "Best-effort origin id of the failed source object, when resolvable before the failure occurred",
+            "title": "Origin ID"
+          },
+          "phase": {
+            "type": "string",
+            "default": "item-processing",
+            "description": "Free-form phase marker (not a locked enum) — fixed to 'item-processing' in v1 since processSynchronizationObject() has no internal phase boundaries exposed to a caller today; a follow-up change may populate fetch/mapping/write more precisely without a schema migration.",
+            "title": "Phase"
+          },
+          "payload": {
+            "type": "object",
+            "description": "The raw source object at the moment of failure",
+            "title": "Payload"
+          },
+          "error": {
+            "type": "string",
+            "description": "The exception message captured at failure time",
+            "title": "Error"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "replayed",
+              "discarded"
+            ],
+            "default": "failed",
+            "description": "Lifecycle state. An operator may replay a failed entry (re-invokes processSynchronizationObject(); success -> replayed, renewed failure stays failed with an appended attempt) or discard it (-> discarded, terminal, never swept, never hard-deleted).",
+            "title": "Status"
+          },
+          "retryCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "Number of manual replay attempts made (NOT automatic attempts — there is no automatic retry sweep for this schema)",
+            "title": "Retry Count"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-attempt audit trail — the initial capture plus every manual replay attempt",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Error message recorded for this attempt, or null on a successful replay",
+                  "title": "Error Message"
+                }
+              }
+            },
+            "title": "Attempts"
+          },
+          "replayedBy": {
+            "type": "string",
+            "description": "UID of the operator who last replayed this item out of failed",
+            "title": "Replayed By"
+          },
+          "replayedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last operator replay",
+            "title": "Replayed At"
+          },
+          "discardedBy": {
+            "type": "string",
+            "description": "UID of the operator who discarded this item",
+            "title": "Discarded By"
+          },
+          "discardedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the operator discard (terminal)",
+            "title": "Discarded At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
       "ris_sync_record": {
         "slug": "ris_sync_record",
         "title": "RIS Sync Record",
@@ -2160,7 +2696,7 @@
             "type": "string",
             "format": "uuid",
             "description": "Source zaak UUID in Procest",
-            "title": "Zaak ID"
+            "title": "Case ID"
           },
           "risType": {
             "type": "string",
@@ -2179,7 +2715,7 @@
           "risVergaderingId": {
             "type": "string",
             "description": "Vergadering ID in the RIS",
-            "title": "RIS Vergadering ID"
+            "title": "RIS Meeting ID"
           },
           "direction": {
             "type": "string",
@@ -2241,16 +2777,17 @@
               "doorgeschoven"
             ],
             "description": "Besluit result from the RIS",
-            "title": "Besluit Status"
+            "title": "Decision Status"
           },
           "paraferingStatus": {
             "type": "object",
             "description": "Current parafering progress (completed/total, current step)",
-            "title": "Parafering Status"
+            "title": "Initialing Status"
           },
           "sourceId": {
             "type": "string",
             "format": "uuid",
+            "$ref": "#/components/schemas/source",
             "description": "UUID of the Source entity used for this sync",
             "title": "Source ID"
           },
@@ -2342,6 +2879,2333 @@
             "besluitStatus": "aangehouden"
           }
         ],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "peppol_transmission": {
+        "slug": "peppol_transmission",
+        "title": "Peppol Transmission",
+        "icon": "SendOutline",
+        "version": "1.0.0",
+        "summary": "Audit + lifecycle record for one UBL document transmitted over the Peppol network",
+        "description": "A Peppol Transmission tracks one outbound UBL document (e.g. a Peppol BIS Billing 3.0 invoice) submitted through a configured Peppol Access Point (AP), from `queued` through the AP hand-off and any inbound delivery callback. See openspec/specs/peppol-access-point-connector/spec.md#req-003-event-driven-outbound-transmission-with-status-lifecycle.",
+        "required": [
+          "objectUri",
+          "recipientPeppolId",
+          "documentType",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "objectUri": {
+            "type": "string",
+            "description": "Source object being transmitted, as referenced in the nl.conduction.peppol.outbound.requested event",
+            "title": "Object URI"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the producing app (e.g. shillinq)",
+            "title": "Source App"
+          },
+          "recipientPeppolId": {
+            "type": "string",
+            "description": "Recipient Peppol participant identifier, `scheme:identifier` (e.g. 0192:1234567890)",
+            "title": "Recipient Peppol ID"
+          },
+          "documentType": {
+            "type": "string",
+            "description": "UBL document type slug (e.g. ubl-invoice-2.1, ubl-order-3.0)",
+            "title": "Document Type"
+          },
+          "payloadFileUri": {
+            "type": "string",
+            "description": "Reference to the UBL payload supplied by the producing app",
+            "title": "Payload File URI"
+          },
+          "transmissionId": {
+            "type": "string",
+            "description": "AP-assigned transmission id, null until the AP accepts the hand-off (MOCK-PEPPOL-<n> for the log/sandbox provider)",
+            "title": "Transmission ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "rejected",
+              "failed"
+            ],
+            "description": "Lifecycle state: queued (created) -> sent (AP accepted the hand-off) -> delivered|rejected (AP delivery callback) | failed (submission exception or exhausted retry budget)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Last status detail (AP reason text, exception message, or callback detail)",
+            "title": "Detail"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-submission-attempt audit trail (the dead-letter surface for this transmission once status=failed and the retry budget is exhausted)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Transport/provider error message, or null on a successful attempt",
+                  "title": "Error Message"
+                }
+              }
+            },
+            "title": "Attempts"
+          }
+        },
+        "x-openregister-notifications": {
+          "transmission-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "status",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Peppol-verzending mislukt: {{recipientPeppolId}} ({{documentType}})",
+              "en": "Peppol transmission failed: {{recipientPeppolId}} ({{documentType}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "payment_intent": {
+        "slug": "payment_intent",
+        "title": "Payment Intent",
+        "icon": "CreditCardOutline",
+        "version": "1.0.0",
+        "summary": "Audit + status-lifecycle record for one payment created through a live payment provider (e.g. Mollie)",
+        "description": "A Payment Intent tracks one payment created via POST /api/payments, from its provider-native status through webhook-verified outcome changes. See openspec/changes/live-payment-providers/specs/live-payment-providers/spec.md#requirement-payment-creation-endpoint-accepting-shillinqs-payload-contract-req-lpp-001.",
+        "required": [
+          "sourceSlug",
+          "provider",
+          "providerPaymentId",
+          "amountValue",
+          "amountCurrency",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceSlug": {
+            "type": "string",
+            "description": "Slug of the openconnector Source used to create this payment",
+            "title": "Source Slug"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "log",
+              "mollie"
+            ],
+            "description": "Provider binding used to create this payment (log = sandbox, mollie = live Mollie Payments API v2)",
+            "title": "Provider"
+          },
+          "providerPaymentId": {
+            "type": "string",
+            "description": "Provider-assigned payment id (e.g. Mollie tr_xxx, or MOCK-PAY-<n> for the log/sandbox provider) — the idempotency + webhook lookup key",
+            "title": "Provider Payment ID"
+          },
+          "amountValue": {
+            "type": "string",
+            "description": "Decimal amount as a string, e.g. \"10.00\"",
+            "title": "Amount Value"
+          },
+          "amountCurrency": {
+            "type": "string",
+            "description": "ISO 4217 currency code, e.g. EUR",
+            "title": "Amount Currency"
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description shown to the payer",
+            "title": "Description"
+          },
+          "method": {
+            "type": "string",
+            "description": "Requested payment method (ideal is the default/primary NL method; creditcard, bancontact, sepadirectdebit are also accepted passthrough)",
+            "title": "Method"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "description": "Where the payer returns to after checkout",
+            "title": "Redirect URL"
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Hosted checkout URL returned to the caller by the provider",
+            "title": "Checkout URL"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Opaque passthrough metadata supplied by the caller (e.g. invoiceId/depositPaymentId, administrationId, correlationId)",
+            "title": "Metadata"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "open",
+              "pending",
+              "authorized",
+              "paid",
+              "failed",
+              "canceled",
+              "expired",
+              "refunded",
+              "chargeback"
+            ],
+            "description": "Last provider-native status returned by fetchPaymentStatus()",
+            "title": "Payment Status"
+          },
+          "lastOutcome": {
+            "type": "string",
+            "enum": [
+              "authorized",
+              "captured",
+              "failed",
+              "voided"
+            ],
+            "description": "Last outcome actually emitted as a nl.conduction.payment.status CloudEvent (shillinq's PaymentReconciliationService vocabulary) — the webhook idempotency guard (REQ-LPP-005)",
+            "title": "Last Outcome"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this payment intent was created",
+            "title": "Created At"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this payment intent was last updated (creation or webhook processing)",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-notifications": {
+          "payment-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "lastOutcome",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Betaling mislukt: {{providerPaymentId}} ({{description}})",
+              "en": "Payment failed: {{providerPaymentId}} ({{description}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "bankfeed_connection": {
+        "slug": "bankfeed_connection",
+        "title": "Bankfeed Connection",
+        "icon": "Bank",
+        "version": "1.0.0",
+        "summary": "One PSD2 AIS consent linking an aggregator source to a set of authorised bank accounts",
+        "description": "A Bankfeed Connection tracks one PSD2 Account Information Service (AIS) consent from the redirect-based SCA flow (`pending`) through `active` sync to `expired`/`revoked`. It carries the non-credential `consentReference` only — consent tokens and aggregator API keys live behind the OpenRegister credential broker (`authentication.credentialRef`), never here (ADR-007). The `expiring` enum value exists for consumer-side (shillinq BankConnection) parity; the connector keeps syncing an expiring-but-valid consent and stamps `expiryWarnedAt` when the single `nl.conduction.bankfeed.consent.expiring` event has been emitted. See openspec/specs/psd2-ais-bank-feed-connector/spec.md.",
+        "required": [
+          "connectionId",
+          "aggregatorSourceSlug",
+          "consentReference",
+          "lifecycleState"
+        ],
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string",
+            "description": "Stable connection identifier referenced by the synced/consent events and by the consuming app's BankConnection record",
+            "title": "Connection ID"
+          },
+          "aggregatorSourceSlug": {
+            "type": "string",
+            "description": "Slug of the openconnector Source (type 'psd2') this consent was created through",
+            "title": "Aggregator Source Slug"
+          },
+          "aggregator": {
+            "type": "string",
+            "enum": [
+              "gocardless",
+              "tink",
+              "klarna-kosma",
+              "yapily",
+              "sandbox"
+            ],
+            "description": "Aggregator vendor label ('sandbox' for the log provider)",
+            "title": "Aggregator"
+          },
+          "consentReference": {
+            "type": "string",
+            "description": "Aggregator consent/requisition id — a non-credential reference; the consent token itself is broker-held (never stored here)",
+            "title": "Consent Reference"
+          },
+          "consentGrantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the consent was granted (successful SCA callback)",
+            "title": "Consent Granted At"
+          },
+          "consentExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "PSD2 90-day SCA renewal deadline; the sync job skips the connection once passed",
+            "title": "Consent Expires At"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "description": "Return URL registered at connect time; the SCA callback only ever redirects here (open-redirect defence)",
+            "title": "Redirect URL"
+          },
+          "accounts": {
+            "type": "array",
+            "description": "Authorised accounts discovered for this consent (re-discovery replaces in place, keyed by aggregator account id)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "iban": {
+                  "type": "string",
+                  "description": "Account IBAN",
+                  "title": "IBAN"
+                },
+                "bic": {
+                  "type": "string",
+                  "description": "Account BIC",
+                  "title": "BIC"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Account currency (ISO 4217)",
+                  "title": "Currency"
+                },
+                "aggregatorAccountId": {
+                  "type": "string",
+                  "description": "Aggregator-side account identifier used for transaction pulls",
+                  "title": "Aggregator Account ID"
+                }
+              }
+            },
+            "title": "Accounts"
+          },
+          "lastSyncAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Watermark of the last successful transaction pull; advanced only on success so a failed pull re-attempts the same window",
+            "title": "Last Sync At"
+          },
+          "expiryWarnedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Set when the single consent.expiring event was emitted (prevents re-emitting every sweep)",
+            "title": "Expiry Warned At"
+          },
+          "lifecycleState": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "expiring",
+              "expired",
+              "revoked"
+            ],
+            "description": "Consent lifecycle: pending (requisition created) -> active (callback finalised) -> expired (deadline passed) | revoked (aggregator/operator revoked). 'expiring' is reserved for consumer-side parity.",
+            "title": "Lifecycle State"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "bankfeed_batch": {
+        "slug": "bankfeed_batch",
+        "title": "Bankfeed Batch",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "One pulled window of bank transactions for one account of a bankfeed connection",
+        "description": "A Bankfeed Batch is the persisted result of one scheduled PSD2 AIS transaction pull for one account: the `[since, until]` window, the aggregator-normalised transaction rows, and their count. Its URI is carried as `batchUri` on the `nl.conduction.bankfeed.transactions.synced` CloudEvent so a consuming app (shillinq) can materialise CAMT.053/BankStatement records from it. See openspec/specs/psd2-ais-bank-feed-connector/spec.md#req-004-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri.",
+        "required": [
+          "connectionId",
+          "accountIban",
+          "since",
+          "until",
+          "transactionCount"
+        ],
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string",
+            "description": "The owning bankfeed_connection's connectionId",
+            "title": "Connection ID"
+          },
+          "accountIban": {
+            "type": "string",
+            "description": "IBAN of the account this batch covers",
+            "title": "Account IBAN"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start of the pulled window (inclusive; the previous watermark)",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End of the pulled window (becomes the new watermark on success)",
+            "title": "Until"
+          },
+          "transactionCount": {
+            "type": "integer",
+            "description": "Number of transaction rows in this batch",
+            "title": "Transaction Count"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Aggregator-normalised transaction rows (GoCardless Bank-Account-Data booked-transaction shape)",
+            "items": {
+              "type": "object"
+            },
+            "title": "Transactions"
+          }
+        },
+        "x-openregister-notifications": {
+          "batch-synced": {
+            "trigger": {
+              "type": "created"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Banktransacties gesynchroniseerd: {{accountIban}} ({{transactionCount}})",
+              "en": "Bank transactions synced: {{accountIban}} ({{transactionCount}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "cardfeed_account": {
+        "slug": "cardfeed_account",
+        "title": "Cardfeed Account",
+        "icon": "CreditCardOutline",
+        "version": "1.0.0",
+        "summary": "One corporate-card program enrollment linking a cardfeed source to a set of cards",
+        "description": "A Cardfeed Account records the enrollment of one corporate/credit-card program (an openconnector Source of type 'cardfeed') and the set of cards discovered for it. It carries no secret — the program API key lives behind the OpenRegister credential broker (`authentication.credentialRef`), never here (ADR-007). `seenTransactionIds` is the idempotency set: the scheduled sync records every transaction id it has emitted so a replayed sync (the provider returning the same transactions) persists no batch and emits no event; the set is trimmed to a fixed maximum. Structurally mirrors bankfeed_connection. See openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md.",
+        "required": [
+          "accountId",
+          "cardfeedSourceSlug",
+          "lifecycleState"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "Stable account identifier referenced by the synced event and by the consuming app's reconciliation record",
+            "title": "Account ID"
+          },
+          "cardfeedSourceSlug": {
+            "type": "string",
+            "description": "Slug of the openconnector Source (type 'cardfeed') this account was enrolled through",
+            "title": "Cardfeed Source Slug"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe-issuing",
+              "adyen",
+              "ramp",
+              "moss",
+              "sandbox"
+            ],
+            "description": "Card-provider vendor label ('sandbox' for the log provider)",
+            "title": "Provider"
+          },
+          "cards": {
+            "type": "array",
+            "description": "Cards discovered for this program (re-enrollment replaces in place, keyed by cardId)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cardId": {
+                  "type": "string",
+                  "description": "Provider-side card identifier used for transaction pulls",
+                  "title": "Card ID"
+                },
+                "last4": {
+                  "type": "string",
+                  "description": "Last four digits of the card (non-sensitive)",
+                  "title": "Last 4"
+                },
+                "cardholderName": {
+                  "type": "string",
+                  "description": "Cardholder name",
+                  "title": "Cardholder Name"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Card currency (ISO 4217)",
+                  "title": "Currency"
+                }
+              }
+            },
+            "title": "Cards"
+          },
+          "lastSyncAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Watermark of the last successful transaction pull; advanced only on success so a failed pull re-attempts the same window",
+            "title": "Last Sync At"
+          },
+          "seenTransactionIds": {
+            "type": "array",
+            "description": "Transaction ids already emitted — the idempotency set a replayed sync dedupes against (trimmed to a fixed maximum)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Seen Transaction IDs"
+          },
+          "lifecycleState": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "disabled"
+            ],
+            "description": "Account lifecycle: pending (source added, not yet card-discovered) -> active (enrolled and syncing) -> disabled (operator paused). The sync job skips any non-active account.",
+            "title": "Lifecycle State"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "cardfeed_batch": {
+        "slug": "cardfeed_batch",
+        "title": "Cardfeed Batch",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "One pulled window of new card transactions for one card of a cardfeed account",
+        "description": "A Cardfeed Batch is the persisted result of one scheduled card transaction pull for one card: the `[since, until]` window, the provider-normalised NEW transaction rows (already deduped against the account's seenTransactionIds), and their count. Its URI is carried as `batchUri` on the `nl.conduction.cardfeed.transactions.synced` CloudEvent so a consuming app (shillinq bookkeeping-card-reconciliation, a separate follow-up) can match card transactions to expenses/GL entries. See openspec/changes/corporate-card-feed/specs/corporate-card-feed/spec.md#requirement-scheduled-transaction-sync-emitting-a-synced-event-with-a-batch-uri-req-003.",
+        "required": [
+          "accountId",
+          "cardId",
+          "since",
+          "until",
+          "transactionCount"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "description": "The owning cardfeed_account's accountId",
+            "title": "Account ID"
+          },
+          "cardId": {
+            "type": "string",
+            "description": "Provider-side id of the card this batch covers",
+            "title": "Card ID"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start of the pulled window (inclusive; the previous watermark)",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End of the pulled window (becomes the new watermark on success)",
+            "title": "Until"
+          },
+          "transactionCount": {
+            "type": "integer",
+            "description": "Number of new transaction rows in this batch",
+            "title": "Transaction Count"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Provider-normalised new transaction rows (each carrying a transactionId)",
+            "items": {
+              "type": "object"
+            },
+            "title": "Transactions"
+          }
+        },
+        "x-openregister-notifications": {
+          "batch-synced": {
+            "trigger": {
+              "type": "created"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "Kaarttransacties gesynchroniseerd: {{cardId}} ({{transactionCount}})",
+              "en": "Card transactions synced: {{cardId}} ({{transactionCount}})"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "sms_message": {
+        "slug": "sms_message",
+        "title": "SMS Message",
+        "icon": "MessageTextOutline",
+        "version": "1.0.0",
+        "summary": "Audit + lifecycle record for one outbound SMS sent through a configured SMS channel source",
+        "description": "An SMS Message tracks one outbound message submitted through a configured SMS channel source (NotifyNL, or the log/sandbox provider), from queued through provider acceptance and any delivery-status poll or inbound callback. See openspec/changes/notifynl-sms-channel/specs/notifynl-sms-channel/spec.md#requirement-delivery-status-polling-and-callback.",
+        "required": [
+          "recipientMsisdn",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "objectUri": {
+            "type": "string",
+            "description": "Source object being notified, as referenced by the sending app (optional)",
+            "title": "Object URI"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the producing app (e.g. procest)",
+            "title": "Source App"
+          },
+          "recipientMsisdn": {
+            "type": "string",
+            "description": "Recipient phone number, normalised to E.164 (e.g. +31612345678) before dispatch",
+            "title": "Recipient MSISDN"
+          },
+          "templateId": {
+            "type": "string",
+            "description": "The provider templateId (or logical template name resolved via templateMapping) used for this message",
+            "title": "Template ID"
+          },
+          "provider": {
+            "type": "string",
+            "description": "The provider binding that handled this message (log|notifynl)",
+            "title": "Provider"
+          },
+          "providerMessageId": {
+            "type": "string",
+            "description": "Provider-assigned message id, null until the provider accepts the send (MOCK-SMS-<n> for the log/sandbox provider)",
+            "title": "Provider Message ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "failed"
+            ],
+            "description": "Lifecycle state: queued (created) -> sent (provider accepted the send) -> delivered (status poll or inbound callback) | failed (send exception or provider-reported failure)",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Last status detail (provider status text, exception message, or callback detail)",
+            "title": "Detail"
+          },
+          "attempts": {
+            "type": "array",
+            "description": "Per-send-attempt audit trail",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of the attempt",
+                  "title": "Attempt Timestamp"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Transport/provider error message, or null on a successful attempt",
+                  "title": "Error Message"
+                }
+              }
+            },
+            "title": "Attempts"
+          }
+        },
+        "x-openregister-notifications": {
+          "message-failed": {
+            "trigger": {
+              "type": "updated",
+              "condition": {
+                "field": "status",
+                "operator": "equals",
+                "value": "failed"
+              }
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "groups",
+                "groups": [
+                  "openconnector-ops"
+                ]
+              }
+            ],
+            "subject": {
+              "nl": "SMS-verzending mislukt: {{recipientMsisdn}}",
+              "en": "SMS delivery failed: {{recipientMsisdn}}"
+            }
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "dso_verzoek": {
+        "slug": "dso_verzoek",
+        "title": "DSO Verzoek",
+        "icon": "HomeCityOutline",
+        "version": "1.0.0",
+        "summary": "Lifecycle + audit record for one DSO (Digitaal Stelsel Omgevingswet) Verzoek, from receipt through mapping to a ns#Case handoff",
+        "description": "One record per DSO Verzoek received on the STAM koppelvlak (dso-connector-adapter). status tracks received -> mapped -> handed_off | failed, isolated per verzoek. Declares the verzoek-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/dso/verzoeken/{id}/handoff -- OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time (mirrors open-formulieren-intake). See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "required": [
+          "verzoekId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "verzoekId": {
+            "type": "string",
+            "description": "The DSO Verzoek identifier (verzoeknummer/OLO-nummer) — the correlation reference for the outbound status/besluit leg",
+            "title": "Request ID"
+          },
+          "bronorganisatie": {
+            "type": "string",
+            "description": "The submitting bevoegd gezag's OIN/bronorganisatie code, as received on the STAM payload",
+            "title": "Source Organisation"
+          },
+          "type": {
+            "type": "string",
+            "description": "The Verzoek type (aanvraag, melding, informatieverzoek, vooroverleg)",
+            "title": "Type"
+          },
+          "indieningsdatum": {
+            "type": "string",
+            "description": "ISO 8601 submission date as reported by DSO-LV",
+            "title": "Submission Date"
+          },
+          "rawVerzoek": {
+            "type": "object",
+            "description": "The full parsed Verzoek (DSOParserService::parseVerzoek() output) as received -- audit only, never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields",
+            "title": "Raw Request"
+          },
+          "requester": {
+            "type": "object",
+            "description": "The aanvrager's {bsn, kvkNummer} auth context. Never logged.",
+            "title": "Requester"
+          },
+          "mappedTitle": {
+            "type": "string",
+            "description": "Normalised ns#Case title, resolved by DsoVerzoekTranslator",
+            "title": "Mapped Title"
+          },
+          "mappedSummary": {
+            "type": "string",
+            "description": "Normalised ns#Case summary, resolved by DsoVerzoekTranslator",
+            "title": "Mapped Summary"
+          },
+          "mappedChannel": {
+            "type": "string",
+            "description": "Normalised ns#Case channel -- always \"omgevingsloket\" for this bridge",
+            "title": "Mapped Channel"
+          },
+          "mappedPriority": {
+            "type": "string",
+            "description": "Normalised ns#Case priority (hoog for aanvraag, normaal otherwise), resolved by DsoVerzoekTranslator",
+            "title": "Mapped Priority"
+          },
+          "status": {
+            "type": "string",
+            "description": "received -> mapped -> handed_off | failed",
+            "default": "received",
+            "title": "Status"
+          },
+          "errorDetail": {
+            "type": "string",
+            "description": "Translation or handoff failure detail, set only when status=failed",
+            "title": "Error Detail"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "The handoff engine's correlation id, set on successful handoff",
+            "title": "Correlation ID"
+          },
+          "targetCase": {
+            "type": "object",
+            "description": "The handoff engine's {register, schema, uuid} target pointer, set on successful handoff",
+            "title": "Target Case"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp this verzoek was received on the STAM koppelvlak",
+            "title": "Received At"
+          }
+        },
+        "x-openregister-handoff": [
+          {
+            "id": "verzoek-to-case",
+            "targetSemanticType": "https://openregister.app/ns#Case",
+            "trigger": "manual",
+            "mapping": {
+              "title": {
+                "from": "mappedTitle"
+              },
+              "summary": {
+                "from": "mappedSummary"
+              },
+              "channel": {
+                "from": "mappedChannel"
+              },
+              "source": {
+                "provenance": true
+              },
+              "priority": {
+                "from": "mappedPriority"
+              }
+            },
+            "whenUnavailable": "queue",
+            "onSuccess": {
+              "set": {
+                "status": "handed_off"
+              }
+            }
+          }
+        ],
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "dso_message": {
+        "slug": "dso_message",
+        "title": "DSO Message",
+        "icon": "SendOutline",
+        "version": "1.0.0",
+        "summary": "Per-attempt audit record for one outbound DSO status (voortgangsinformatie) or besluit post",
+        "description": "One record per outbound status/besluit dispatch attempt (dso-connector-adapter). Never merged/updated -- a retry (if implemented by a future revision) creates a new row, mirroring iwmo_ijw_message's append-style per-attempt convention. Correlated to its dso_verzoek by verzoekUuid. See openspec/changes/dso-connector-adapter/specs/dso-connector-adapter/spec.md.",
+        "required": [
+          "ref",
+          "type",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "The transport-assigned (or locally-derived) reference for this message",
+            "title": "Ref"
+          },
+          "type": {
+            "type": "string",
+            "description": "The message kind: status or besluit",
+            "title": "Type"
+          },
+          "status": {
+            "type": "string",
+            "description": "sent | failed",
+            "title": "Status"
+          },
+          "payload": {
+            "type": "object",
+            "description": "The exact payload dispatched (audit)",
+            "title": "Payload"
+          },
+          "verzoekUuid": {
+            "type": "string",
+            "description": "The correlated dso_verzoek's OpenRegister uuid",
+            "title": "Request UUID"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail, null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp this dispatch attempt was made",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "notificaties_abonnement": {
+        "slug": "notificaties_abonnement",
+        "title": "Notificaties Abonnement",
+        "icon": "BellRingOutline",
+        "version": "1.0.0",
+        "summary": "A subscriber-side abonnement registered against a remote ZGW Notificaties API kanaal",
+        "description": "A Notificaties Abonnement tracks one subscriber-side registration against a remote ZGW Notificaties API (Logius/VNG API Notificatiestandaard voor ZGW APIs): the kanalen subscribed to, the callback this app exposes for inbound delivery, and the companion consumer used to authenticate those deliveries. Lifecycle: pending (persisted before the remote registration call completes) -> active (remote API accepted the registration) -> error (registration/update/delete call failed; lastError retains the reason) -> deleted (soft-deleted after a successful remote DELETE, kept for audit). See openspec/specs/notificaties-api-connector/spec.md.",
+        "required": [
+          "name",
+          "sourceId",
+          "kanalen"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable label for this abonnement (also seeds the companion consumer's name)",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the openconnector Source describing the remote Notificaties API (location, auth)",
+            "title": "Source ID"
+          },
+          "kanalen": {
+            "type": "array",
+            "description": "The kanalen this abonnement subscribes to, each with an optional filters map",
+            "title": "Channels",
+            "items": {
+              "type": "object",
+              "properties": {
+                "naam": {
+                  "type": "string",
+                  "description": "The kanaal name (e.g. 'zaken', 'documenten', 'besluiten')",
+                  "title": "Name"
+                },
+                "filters": {
+                  "type": "object",
+                  "description": "Kanaal-specific filter map (e.g. bronorganisatie)",
+                  "title": "Filters"
+                }
+              }
+            }
+          },
+          "callbackUrl": {
+            "type": "string",
+            "description": "This app's own absolute callback URL for this abonnement (/api/notificaties/callback/{abonnementId}), resolved after the object is first persisted with a generated UUID and sent to the remote API at registration time",
+            "title": "Callback URL"
+          },
+          "url": {
+            "type": "string",
+            "description": "The remote-assigned abonnement resource URL returned by the Notificaties API on successful registration (distinct from callbackUrl)",
+            "title": "Remote Subscription URL"
+          },
+          "consumerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the companion consumer OR-object generated at creation time; its authorizationConfiguration.apiKey is sent to the remote API as the abonnement's auth value and matched on every inbound callback delivery (REQ-002). Cascade-deleted when the abonnement is deleted (REQ-004).",
+            "title": "Consumer ID"
+          },
+          "authHeaderName": {
+            "type": "string",
+            "default": "Authorization",
+            "description": "The HTTP header name the remote Notificaties Routeer Component (NRC) is expected to echo the abonnement.auth value back on for every delivered notification (design.md Decision 4 — an explicit assumption; configurable per abonnement rather than hardcoded since some NRC implementations may differ from the VNG-Realisatie default).",
+            "title": "Auth Header Name"
+          },
+          "authScheme": {
+            "type": "string",
+            "default": "",
+            "description": "Optional scheme prefix stripped from the presented authHeaderName value before apiKey comparison (e.g. 'Bearer '). Empty means the header value is compared as a bare token (the VNG-Realisatie default assumption, design.md Decision 4).",
+            "title": "Auth Scheme"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "error",
+              "deleted"
+            ],
+            "description": "Abonnement lifecycle: pending (persisted before the remote call completes) -> active | error (settled) -> deleted (soft-deleted after successful remote DELETE)",
+            "title": "Status"
+          },
+          "lastError": {
+            "type": "string",
+            "description": "Descriptive failure reason from the most recent registration/update/delete call, when status='error'",
+            "title": "Last Error"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [
+          {
+            "slug": "zaken-kanaal-abonnement",
+            "name": "Zaken kanaal abonnement",
+            "sourceId": "<zgw-notificaties-source>",
+            "kanalen": [{"naam": "zaken", "filters": {"bronorganisatie": "123443210"}}],
+            "status": "active"
+          },
+          {
+            "slug": "documenten-kanaal-abonnement",
+            "name": "Documenten kanaal abonnement",
+            "sourceId": "<zgw-notificaties-source>",
+            "kanalen": [{"naam": "documenten", "filters": {}}],
+            "status": "active"
+          },
+          {
+            "slug": "besluiten-kanaal-abonnement-error",
+            "name": "Besluiten kanaal abonnement (error)",
+            "sourceId": "<zgw-notificaties-source>",
+            "kanalen": [{"naam": "besluiten", "filters": {}}],
+            "status": "error",
+            "lastError": "Remote API returned 503 during registration"
+          }
+        ],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "openformulieren_form_mapping": {
+        "slug": "openformulieren_form_mapping",
+        "title": "Open Formulieren Form Mapping",
+        "icon": "FormSelect",
+        "version": "1.0.0",
+        "summary": "Per-form mapping config: an Open Formulieren form slug's raw submitted values onto the ns#Case handoff contract fields",
+        "description": "One record per Open Formulieren form, resolved by FormFieldMapper (open-formulieren-intake). fieldMapping keys are limited to title/summary/channel (mandatory) and priority (optional) -- source is engine-filled by OpenRegister's own handoff dialect and requester is unsupported in v1 (no OR-managed party register to resolve a BSN/KvK auth context against). See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md#requirement-per-form-mapping-onto-ns-case-contract-fields-req-002.",
+        "required": [
+          "formSlug",
+          "fieldMapping"
+        ],
+        "type": "object",
+        "properties": {
+          "formSlug": {
+            "type": "string",
+            "description": "The Open Formulieren form slug this mapping applies to (unique lookup key)",
+            "title": "Form Slug"
+          },
+          "formUuid": {
+            "type": "string",
+            "description": "The Open Formulieren form uuid, if known (informational; formSlug is the lookup key)",
+            "title": "Form UUID"
+          },
+          "description": {
+            "type": "string",
+            "description": "Admin-facing note describing this form's mapping",
+            "title": "Description"
+          },
+          "fieldMapping": {
+            "type": "object",
+            "description": "Contract field name (title|summary|channel|priority) -> {type: from|const|template, value: string}. Every mandatory field (title/summary/channel) MUST be a key. A declared from/template entry whose referenced key is absent at submission time errors (MappingResolutionException) rather than leaking the literal expression -- see design.md.",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "from",
+                    "const",
+                    "template"
+                  ]
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "title": "Field Mapping"
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this mapping is active. A submission for a formSlug with no enabled mapping fails closed (status=failed).",
+            "title": "Enabled"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "openformulieren_submission": {
+        "slug": "openformulieren_submission",
+        "title": "Open Formulieren Submission",
+        "icon": "FileDocumentOutline",
+        "version": "1.0.0",
+        "summary": "Lifecycle + audit record for one Open Formulieren submission, from receipt through mapping to a ns#Case handoff",
+        "description": "One record per inbound, signature-verified Open Formulieren submission (open-formulieren-intake). status tracks received -> mapped -> handed_off | failed, isolated per submission. Declares the submission-to-case handoff (x-openregister-handoff) targeting https://openregister.app/ns#Case, executed only by an authenticated caller via POST /api/open-formulieren/submissions/{id}/handoff -- OpenRegister's HandoffService v1 has no system-user privilege lane, so this is never triggered automatically at webhook-receipt time. See openspec/changes/open-formulieren-intake/specs/open-formulieren-intake/spec.md.",
+        "required": [
+          "formSlug",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "formSlug": {
+            "type": "string",
+            "description": "The Open Formulieren form slug",
+            "title": "Form Slug"
+          },
+          "formUuid": {
+            "type": "string",
+            "description": "The Open Formulieren form uuid, if present",
+            "title": "Form UUID"
+          },
+          "submissionUuid": {
+            "type": "string",
+            "description": "Open Formulieren's own submission uuid (idempotency/audit reference)",
+            "title": "Submission UUID"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 submission timestamp as reported by Open Formulieren",
+            "title": "Submitted At"
+          },
+          "rawValues": {
+            "type": "object",
+            "description": "The raw submitted field values as received (audit only -- never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields)",
+            "title": "Raw Values"
+          },
+          "authContext": {
+            "type": "object",
+            "description": "Optional {plugin, bsn, kvk} DigiD/eHerkenning auth context. Never logged. requester is not mapped in v1 (see design.md).",
+            "title": "Auth Context"
+          },
+          "mappedTitle": {
+            "type": "string",
+            "description": "Normalised ns#Case title, resolved by FormFieldMapper",
+            "title": "Mapped Title"
+          },
+          "mappedSummary": {
+            "type": "string",
+            "description": "Normalised ns#Case summary, resolved by FormFieldMapper",
+            "title": "Mapped Summary"
+          },
+          "mappedChannel": {
+            "type": "string",
+            "description": "Normalised ns#Case channel, resolved by FormFieldMapper",
+            "title": "Mapped Channel"
+          },
+          "mappedPriority": {
+            "type": "string",
+            "description": "Normalised ns#Case priority, resolved by FormFieldMapper when the form mapping declares it (optional contract field)",
+            "title": "Mapped Priority"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "Per-attachment fetch/store outcome: {key, filename, status: fetched|failed, fileId?, error?, copiedToCase?}",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "fetched",
+                    "failed"
+                  ]
+                },
+                "fileId": {
+                  "type": "integer"
+                },
+                "error": {
+                  "type": "string"
+                },
+                "copiedToCase": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "title": "Attachments"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "mapped",
+              "handed_off",
+              "failed"
+            ],
+            "description": "Lifecycle state: received (persisted, unmapped) -> mapped (FormFieldMapper succeeded) -> handed_off (authenticated handoff trigger succeeded, set by OpenRegister's own onSuccess.set) | failed (mapping or handoff error, isolated to this submission)",
+            "title": "Status"
+          },
+          "errorDetail": {
+            "type": "string",
+            "description": "Failure detail when status=failed (secret-free, no raw BSN/KvK)",
+            "title": "Error Detail"
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "The handoff engine's correlation id, set after a successful handoff",
+            "title": "Correlation ID"
+          },
+          "targetCase": {
+            "type": "object",
+            "description": "{register, schema, uuid} of the created Case, set after a successful handoff",
+            "properties": {
+              "register": {
+                "type": "string"
+              },
+              "schema": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              }
+            },
+            "title": "Target Case"
+          }
+        },
+        "x-openregister-handoff": [
+          {
+            "id": "submission-to-case",
+            "targetSemanticType": "https://openregister.app/ns#Case",
+            "trigger": "manual",
+            "mapping": {
+              "title": {
+                "from": "mappedTitle"
+              },
+              "summary": {
+                "from": "mappedSummary"
+              },
+              "channel": {
+                "from": "mappedChannel"
+              },
+              "source": {
+                "provenance": true
+              },
+              "priority": {
+                "from": "mappedPriority"
+              }
+            },
+            "whenUnavailable": "queue",
+            "onSuccess": {
+              "set": {
+                "status": "handed_off"
+              }
+            }
+          }
+        ],
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "kiss_klantcontact": {
+        "slug": "kiss_klantcontact",
+        "title": "KISS Klantcontact",
+        "icon": "AccountVoice",
+        "version": "1.0.0",
+        "summary": "A klantcontact pulled from, or pushed to, a KISS (Klantinteractie Servicesysteem) instance",
+        "description": "A KISS Klantcontact mirrors one klantcontact from a KISS deployment's VNG Klantinteracties API — either pulled in on a scheduled sweep (direction=pulled) or created here and mirrored after a sibling app's push (direction=pushed). onderwerpobjecten are mapped to caseReference/caseObjectType when they identify a case/zaak. See openspec/changes/kiss-kcc-bridge/specs/kiss-kcc-bridge/spec.md.",
+        "required": [
+          "kissId",
+          "direction"
+        ],
+        "type": "object",
+        "properties": {
+          "kissId": {
+            "type": "string",
+            "description": "The KISS-assigned klantcontact id (uuid) — the idempotency key for pull upserts",
+            "title": "KISS ID"
+          },
+          "nummer": {
+            "type": "string",
+            "description": "KISS klantcontactnummer",
+            "title": "Number"
+          },
+          "kanaal": {
+            "type": "string",
+            "description": "Contact channel (e.g. telefoon, e-mail, balie)",
+            "title": "Channel"
+          },
+          "onderwerp": {
+            "type": "string",
+            "description": "Klantcontact subject",
+            "title": "Subject"
+          },
+          "tekst": {
+            "type": "string",
+            "description": "Klantcontact content/body (VNG field name `tekst`)",
+            "title": "Text"
+          },
+          "indicatieContactGelukt": {
+            "type": "boolean",
+            "description": "Whether the contact attempt succeeded",
+            "default": true,
+            "title": "Contact Succeeded"
+          },
+          "taal": {
+            "type": "string",
+            "description": "Contact language (ISO 639)",
+            "title": "Language"
+          },
+          "plaatsgevondenOp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the contact took place",
+            "title": "Occurred At"
+          },
+          "registratiedatum": {
+            "type": "string",
+            "format": "date-time",
+            "description": "KISS registration timestamp — the pull cursor field",
+            "title": "Registration Date"
+          },
+          "betrokkenen": {
+            "type": "array",
+            "description": "Expanded betrokkenen (parties involved). Any partijIdentificator with codeSoortObjectId=bsn is SHA-256-hashed before storage — never a raw BSN (consistent with this app's AvgBsnPolicyRule).",
+            "items": {
+              "type": "object"
+            },
+            "title": "Involved Parties"
+          },
+          "onderwerpobjecten": {
+            "type": "array",
+            "description": "Expanded onderwerpobjecten (raw, as returned by KISS)",
+            "items": {
+              "type": "object"
+            },
+            "title": "Subject Objects"
+          },
+          "caseReference": {
+            "type": "string",
+            "description": "Case/zaak identifier (bare UUID or zaak identificatie) extracted from onderwerpobjecten whose codeObjecttype matches the case/zaak marker; null when absent or foreign",
+            "title": "Case Reference"
+          },
+          "caseObjectType": {
+            "type": "string",
+            "description": "The onderwerpobjectidentificator codeObjecttype that produced caseReference (e.g. zaak); null when caseReference is null",
+            "title": "Case Object Type"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "pulled",
+              "pushed"
+            ],
+            "description": "Whether this record originated from a KISS pull sweep or from a local push mirrored after KissController::createKlantcontact()",
+            "title": "Direction"
+          },
+          "sourceApp": {
+            "type": "string",
+            "description": "Slug of the producing sibling app (e.g. procest) — push direction only",
+            "title": "Source App"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the last local upsert (pull or push)",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "iwmo_ijw_message": {
+        "slug": "iwmo_ijw_message",
+        "title": "iWMO/iJW Message",
+        "icon": "HospitalBoxOutline",
+        "version": "1.0.0",
+        "summary": "Audit record for one outbound iWMO/iJW bericht send or one inbound retour, produced by the iwmo-ijw-adapter connector",
+        "description": "An iWMO/iJW Message tracks either one outbound Wmo/Jw berichttype dispatch (a toewijzing or declaratie translated and sent) or one inbound retour (acceptance/rejection, start/stop-zorg, declaratie processing) received back — never merged into a single mutable row. See openspec/changes/iwmo-ijw-adapter/specs/iwmo-ijw-adapter/spec.md.",
+        "required": [
+          "direction",
+          "berichttype",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound bericht send or an inbound retour",
+            "title": "Direction"
+          },
+          "berichttype": {
+            "type": "string",
+            "description": "The berichtcode (e.g. Wmo303, Jw321, Wmo304)",
+            "title": "Message Type"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "wmo",
+              "jw"
+            ],
+            "description": "Wmo (Wet maatschappelijke ondersteuning) or Jw (Jeugdwet)",
+            "title": "Domain"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed",
+              "accepted",
+              "rejected",
+              "care_started",
+              "care_start_confirmed",
+              "care_stopped",
+              "care_stop_confirmed",
+              "invoice_processed",
+              "invoice_rejected"
+            ],
+            "description": "Outbound: sent|failed. Inbound: derived from the retour berichttype — see design.md's inbound retour field table",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The stuurgegevens.referentienummer this OUTBOUND message carries — the correlation key a retour's kenmerk echoes back; null on inbound records",
+            "title": "Reference"
+          },
+          "kenmerk": {
+            "type": "string",
+            "description": "The stuurgegevens.kenmerk an INBOUND retour echoed back — resolved against a prior outbound record's ref; null on outbound records",
+            "title": "Reference Code"
+          },
+          "caseReference": {
+            "type": "string",
+            "description": "The linked OR case object's uuid, supplied by the pushing sibling app",
+            "title": "Case Reference"
+          },
+          "caseRegister": {
+            "type": "string",
+            "description": "The linked OR case object's register slug — required (with caseSchema) to write back a retour outcome",
+            "title": "Case Register"
+          },
+          "caseSchema": {
+            "type": "string",
+            "description": "The linked OR case object's schema slug — required (with caseRegister) to write back a retour outcome",
+            "title": "Case Schema"
+          },
+          "bsnHash": {
+            "type": "string",
+            "description": "SHA-256 hash of the client BSN sent on the wire for a toewijzing — the raw BSN is NEVER persisted here (AVG hygiene, consistent with AvgBsnPolicyRule)",
+            "title": "BSN Hash"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail (outbound) or unresolved-kenmerk detail (inbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "stuf_message": {
+        "slug": "stuf_message",
+        "title": "StUF-ZKN Message",
+        "icon": "FileXmlBox",
+        "version": "1.0.0",
+        "summary": "Audit record for one inbound zakLk01/edcLk01 kennisgeving or one outbound zakLk01 kennisgeving send, produced by the stuf-zkn-bridge connector",
+        "description": "A StUF-ZKN Message tracks either one inbound zakLk01/edcLk01 kennisgeving (a municipality's legacy StUF estate pushing a zaak/document create/update/vervallen) or one outbound zakLk01 kennisgeving (an OR/ZGW zaak change translated and sent to a subscribed StUF consumer) — never merged into a single mutable row, except that a redelivered inbound message with the same referentienummer updates its own row in place (idempotency), never creating a duplicate. See openspec/changes/stuf-zkn-bridge/specs/stuf-zkn-bridge/spec.md.",
+        "required": [
+          "direction",
+          "berichttype",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "inbound"
+            ],
+            "description": "Whether this record is an outbound kennisgeving send or an inbound kennisgeving receipt",
+            "title": "Direction"
+          },
+          "berichttype": {
+            "type": "string",
+            "enum": [
+              "zakLk01",
+              "edcLk01",
+              "unknown"
+            ],
+            "description": "The StUF-ZKN berichttype tag; \"unknown\" when an inbound envelope could not even be identified",
+            "title": "Message Type"
+          },
+          "referentienummer": {
+            "type": "string",
+            "description": "The stuurgegevens.referentienummer this message carries — the idempotency/correlation key for redelivery detection and the Bv03/Fo03 crossRefnummer",
+            "title": "Reference Number"
+          },
+          "verwerkingssoort": {
+            "type": "string",
+            "enum": [
+              "T",
+              "W",
+              "I",
+              "V"
+            ],
+            "description": "StUF 3.01 core verwerkingssoort: T=toevoeging, W=wijziging, I=wijziging van een identificerend gegeven, V=vervallen; null when unknown (translation failed before it could be read)",
+            "title": "Processing Type"
+          },
+          "entiteittype": {
+            "type": "string",
+            "enum": [
+              "ZAK",
+              "EDC"
+            ],
+            "description": "StUF entiteittype: ZAK (zaak) or EDC (document); null when unknown",
+            "title": "Entity Type"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "processed",
+              "sent",
+              "failed"
+            ],
+            "description": "Inbound: processed|failed (the OR upsert outcome). Outbound: sent|failed (the transport dispatch outcome)",
+            "title": "Status"
+          },
+          "error": {
+            "type": "string",
+            "description": "Translation/OR-upsert failure detail (inbound) or transport/provider failure detail (outbound); null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's last write",
+            "title": "Synced At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "fsc_service": {
+        "slug": "fsc_service",
+        "title": "FSC Service",
+        "icon": "LanConnect",
+        "version": "1.0.0",
+        "summary": "Cached FSC directory resolution for one organisation+service pair, produced by the fsc-connectivity connector",
+        "description": "An FSC Service row caches the most recent FSC (Federatieve Service Connectiviteit) directory resolution for one (organisation, service) pair — upserted, never duplicated, so repeated resolves update the same row. See openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md.",
+        "required": [
+          "organisation",
+          "service",
+          "endpoint"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "organisation": {
+            "type": "string",
+            "description": "The resolved organisation identifier (e.g. an OIN) — opaque, not format-validated",
+            "title": "Organisation"
+          },
+          "service": {
+            "type": "string",
+            "description": "The resolved service identifier, scoped to its owning organisation",
+            "title": "Service"
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "The routable endpoint the directory advertised for this organisation+service",
+            "title": "Endpoint"
+          },
+          "grantRequired": {
+            "type": "boolean",
+            "description": "Whether the directory reports that a grant is required to call this service — read-only, not verified or provisioned by this connector",
+            "default": false,
+            "title": "Grant Required"
+          },
+          "resolvedVia": {
+            "type": "string",
+            "enum": [
+              "log",
+              "rest"
+            ],
+            "description": "The provider binding that produced this resolution",
+            "title": "Resolved Via"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this cache row's last resolution",
+            "title": "Resolved At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "fsc_call": {
+        "slug": "fsc_call",
+        "title": "FSC Call",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for one FSC call attempt, produced by the fsc-connectivity connector",
+        "description": "An FSC Call row records one FscCallService::callService() attempt — never merged into a single mutable row across attempts. See openspec/changes/fsc-connectivity/specs/fsc-connectivity/spec.md.",
+        "required": [
+          "organisation",
+          "service",
+          "method",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "organisation": {
+            "type": "string",
+            "description": "The target organisation identifier for this call attempt",
+            "title": "Organisation"
+          },
+          "service": {
+            "type": "string",
+            "description": "The target service identifier for this call attempt",
+            "title": "Service"
+          },
+          "method": {
+            "type": "string",
+            "description": "The HTTP-style method invoked (GET, POST, ...)",
+            "title": "Method"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "failed"
+            ],
+            "description": "The outcome of this call attempt",
+            "title": "Status"
+          },
+          "ref": {
+            "type": "string",
+            "description": "The transport-returned or generated correlation reference; null on failure",
+            "title": "Reference"
+          },
+          "error": {
+            "type": "string",
+            "description": "Transport/provider failure detail; null on success",
+            "title": "Error"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's write",
+            "title": "Synced At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "zgw_version_translation_log": {
+        "slug": "zgw_version_translation_log",
+        "title": "ZGW Version Translation Log",
+        "icon": "SwapHorizontal",
+        "version": "1.0.0",
+        "summary": "Audit record for one ZGW version-translation attempt, produced by the zgw-version-translation shim",
+        "description": "A ZGW Version Translation Log row records one ZgwVersionTranslationService::translate() attempt — success, passthrough, or failed — never merged into a single mutable row across attempts. See openspec/changes/zgw-version-translation/specs/zgw-version-translation/spec.md.",
+        "required": [
+          "resource",
+          "fromVersion",
+          "toVersion",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID assigned by OpenRegister",
+            "title": "UUID"
+          },
+          "resource": {
+            "type": "string",
+            "description": "The ZGW resource slug translated (zaak, zaaktype, enkelvoudiginformatieobject, besluit, rol, status, resultaat)",
+            "title": "Resource"
+          },
+          "fromVersion": {
+            "type": "string",
+            "description": "The source ZGW version (1.0, 1.6, or 2.0)",
+            "title": "From Version"
+          },
+          "toVersion": {
+            "type": "string",
+            "description": "The target ZGW version (1.0, 1.6, or 2.0)",
+            "title": "To Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "passthrough",
+              "failed"
+            ],
+            "description": "The outcome of this translation attempt",
+            "title": "Status"
+          },
+          "error": {
+            "type": "string",
+            "description": "Translation failure detail; null on success or passthrough",
+            "title": "Error"
+          },
+          "translatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of this record's write",
+            "title": "Translated At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_platform": {
+        "slug": "lti_platform",
+        "title": "LTI Platform",
+        "icon": "SchoolOutline",
+        "version": "1.1.0",
+        "summary": "An external LTI 1.3 Platform (LMS) that may launch into this instance — this instance acts as Tool",
+        "description": "An lti_platform row describes an external Platform (e.g. a Moodle-based state platform) that launches a signed id_token INTO this instance via OIDC third-party-initiated login. This instance acts as Tool for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
+        "required": [
+          "issuer",
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable registration name shown in the Beheer > Authenticatie registration list",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "title": "Description"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "The platform's OIDC issuer (`iss` claim value); matched on login-initiation and launch",
+            "title": "Issuer"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "This instance's client_id as assigned BY the platform (matched against the launch `aud`/`azp` claims)",
+            "title": "Client ID"
+          },
+          "authLoginUrl": {
+            "type": "string",
+            "description": "The platform's OIDC authorization endpoint the login-initiation redirect targets",
+            "title": "Auth Login URL"
+          },
+          "authTokenUrl": {
+            "type": "string",
+            "description": "The platform's OAuth2 token endpoint used for outbound AGS/NRPS service-token requests (RFC 7523 JWT-bearer client-credentials)",
+            "title": "Auth Token URL"
+          },
+          "jwksUri": {
+            "type": "string",
+            "description": "The platform's published JWKS URI, resolved by LtiJwksResolverService to verify inbound launch id_token signatures",
+            "title": "JWKS URI"
+          },
+          "signingKeys": {
+            "type": "array",
+            "description": "This instance's own rotating signing keypair(s) for this registration (RFC 7523 client-assertion signing). Scoped per-registration, never instance-wide — see design.md D3/D8. Custody: plaintext-pending-encryption per ADR-007 (same as every other Source secret field).",
+            "title": "Signing Keys",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kid": {
+                  "type": "string",
+                  "description": "Key ID published in the JWKS document and the JWS header",
+                  "title": "Key ID"
+                },
+                "algorithm": {
+                  "type": "string",
+                  "enum": [
+                    "RS256",
+                    "PS256"
+                  ],
+                  "description": "Signing algorithm for this key",
+                  "title": "Algorithm"
+                },
+                "publicJwk": {
+                  "type": "object",
+                  "description": "Public JWK (RFC 7517), published verbatim on the /.well-known/lti/.../jwks.json endpoint for active/previous keys",
+                  "title": "Public JWK"
+                },
+                "privateKeySecret": {
+                  "type": "string",
+                  "description": "Private key material (plaintext-pending-encryption, ADR-007 status quo — never logged, never returned on a read surface)",
+                  "title": "Private Key Secret"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "previous",
+                    "retired"
+                  ],
+                  "description": "Key lifecycle state. Exactly one key SHOULD be active; previous keys remain published for the rotation grace window; retired keys are dropped from the published set",
+                  "title": "Status"
+                },
+                "rotatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp this key was superseded by rotation (unset while active)",
+                  "title": "Rotated At"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "suspended"
+            ],
+            "default": "pending",
+            "description": "Registration trust gate (REQ-LTI-011). Only an `approved` registration may complete login initiation, launch validation, Platform-role launch initiation, Deep Linking response signing, or service-token issuance — a `pending`/`suspended` registration is rejected identically to an unregistered issuer/client_id by LtiRegistrationResolverService. Transitioned only via the admin-gated approve()/suspend() actions.",
+            "title": "Status"
+          },
+          "identityPolicy": {
+            "type": "string",
+            "enum": [
+              "manualLinkOnly",
+              "autoProvisionAsRole"
+            ],
+            "default": "manualLinkOnly",
+            "description": "Governs how LtiIdentityLinkService resolves a validated launch's sub claim to a Nextcloud user (REQ-LTI-012). manualLinkOnly (default, conservative) never creates a Nextcloud user or matches by email/name — an unlinked sub is reported as such. autoProvisionAsRole is an explicit per-platform opt-in that provisions a first-seen sub into defaultProvisionGroup. Never consulted as part of, or able to relax, validateLaunch()'s own cryptographic trust decision.",
+            "title": "Identity Policy"
+          },
+          "defaultProvisionGroup": {
+            "type": "string",
+            "description": "Nextcloud group id a first-seen sub is provisioned into under identityPolicy: autoProvisionAsRole. Required whenever identityPolicy is autoProvisionAsRole (see the schema-level if/then); a misconfigured autoProvisionAsRole with no group fails closed to unlinked rather than provisioning with unbounded/ambient privilege.",
+            "title": "Default Provision Group"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "if": {
+          "properties": {
+            "identityPolicy": {
+              "const": "autoProvisionAsRole"
+            }
+          },
+          "required": [
+            "identityPolicy"
+          ]
+        },
+        "then": {
+          "required": [
+            "defaultProvisionGroup"
+          ]
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_tool": {
+        "slug": "lti_tool",
+        "title": "LTI Tool",
+        "icon": "ApplicationOutline",
+        "version": "1.1.0",
+        "summary": "An external LTI 1.3 Tool this instance may launch — this instance acts as Platform",
+        "description": "An lti_tool row describes an external Tool (e.g. a content tool) that this instance launches via a signed id_token. This instance acts as Platform for every launch under this registration. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-001.",
+        "required": [
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable registration name shown in the Beheer > Authenticatie registration list",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "title": "Description"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "The client_id this instance assigns to the tool (matched against the tool's outbound service-token assertion `sub`)",
+            "title": "Client ID"
+          },
+          "oidcLoginUrl": {
+            "type": "string",
+            "description": "The tool's OIDC third-party-initiated login endpoint",
+            "title": "OIDC Login URL"
+          },
+          "launchUrl": {
+            "type": "string",
+            "description": "The tool's launch endpoint the signed id_token is POSTed to",
+            "title": "Launch URL"
+          },
+          "jwksUri": {
+            "type": "string",
+            "description": "The tool's published JWKS URI, resolved by LtiJwksResolverService to verify inbound service-token assertion signatures",
+            "title": "JWKS URI"
+          },
+          "signingKeys": {
+            "type": "array",
+            "description": "This instance's own rotating signing keypair(s) for this registration, used to sign id_token launches to this tool. Scoped per-registration, never instance-wide — see design.md D3/D8. Custody: plaintext-pending-encryption per ADR-007 (same as every other Source secret field).",
+            "title": "Signing Keys",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kid": {
+                  "type": "string",
+                  "description": "Key ID published in the JWKS document and the JWS header",
+                  "title": "Key ID"
+                },
+                "algorithm": {
+                  "type": "string",
+                  "enum": [
+                    "RS256",
+                    "PS256"
+                  ],
+                  "description": "Signing algorithm for this key",
+                  "title": "Algorithm"
+                },
+                "publicJwk": {
+                  "type": "object",
+                  "description": "Public JWK (RFC 7517), published verbatim on the /.well-known/lti/.../jwks.json endpoint for active/previous keys",
+                  "title": "Public JWK"
+                },
+                "privateKeySecret": {
+                  "type": "string",
+                  "description": "Private key material (plaintext-pending-encryption, ADR-007 status quo — never logged, never returned on a read surface)",
+                  "title": "Private Key Secret"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "previous",
+                    "retired"
+                  ],
+                  "description": "Key lifecycle state. Exactly one key SHOULD be active; previous keys remain published for the rotation grace window; retired keys are dropped from the published set",
+                  "title": "Status"
+                },
+                "rotatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp this key was superseded by rotation (unset while active)",
+                  "title": "Rotated At"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "suspended"
+            ],
+            "default": "pending",
+            "description": "Registration trust gate (REQ-LTI-011). Only an `approved` registration may complete OIDC login initiation, launch validation, or service-token issuance/verification — a `pending`/`suspended` registration is rejected identically to an unregistered client_id by LtiRegistrationResolverService::findToolByClientId(). Transitioned only via the admin-gated approve()/suspend() actions. Trust and identity are role-symmetric concerns (design.md D1) even though lti_tool registrations don't get identity-linked end-users the way lti_platform launches do.",
+            "title": "Status"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_deployment": {
+        "slug": "lti_deployment",
+        "title": "LTI Deployment",
+        "icon": "LinkVariant",
+        "version": "1.0.0",
+        "summary": "Links exactly one lti_platform OR one lti_tool registration to a consuming-app placement",
+        "description": "An lti_deployment is the complete, self-describing placement contract a consuming app registers to place an external tool or expose its own content: the LTI deployment_id claim value, where a validated launch redirects, and where AGS/NRPS data is read from/published to. See openspec/changes/lti-13-platform/specs/lti-platform/spec.md#req-lti-010.",
+        "required": [
+          "deploymentId"
+        ],
+        "oneOf": [
+          {
+            "required": [
+              "ltiPlatformId"
+            ],
+            "not": {
+              "required": [
+                "ltiToolId"
+              ]
+            }
+          },
+          {
+            "required": [
+              "ltiToolId"
+            ],
+            "not": {
+              "required": [
+                "ltiPlatformId"
+              ]
+            }
+          }
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable placement name",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description",
+            "title": "Description"
+          },
+          "deploymentId": {
+            "type": "string",
+            "description": "The LTI `deployment_id` claim value this deployment matches at launch/service-token time",
+            "title": "Deployment ID"
+          },
+          "ltiPlatformId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_platform",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_platform this deployment belongs to (mutually exclusive with ltiToolId — REQ-LTI-001 scenario 2; onDelete=CASCADE)",
+            "title": "LTI Platform"
+          },
+          "ltiToolId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_tool",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_tool this deployment belongs to (mutually exclusive with ltiPlatformId — REQ-LTI-001 scenario 2; onDelete=CASCADE)",
+            "title": "LTI Tool"
+          },
+          "launchTargetUrl": {
+            "type": "string",
+            "description": "Where a validated launch redirects the browser (Tool role), carrying a single-use launch reference",
+            "title": "Launch Target URL"
+          },
+          "gradeSink": {
+            "type": "object",
+            "description": "ADR-008 targetType/targetId pair naming the register/schema the consuming app expects AGS-derived scores to eventually land in via its OWN event_subscription to nl.conduction.lti.ags.score.received. The adapter never writes here directly (REQ-LTI-007).",
+            "title": "Grade Sink",
+            "properties": {
+              "targetType": {
+                "type": "string",
+                "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                "title": "Target Type"
+              },
+              "targetId": {
+                "type": "string",
+                "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                "title": "Target ID"
+              }
+            }
+          },
+          "rosterSource": {
+            "type": "object",
+            "description": "ADR-008 targetType/targetId pair the adapter reads from directly to serve NRPS roster requests synchronously (REQ-LTI-009)",
+            "title": "Roster Source",
+            "properties": {
+              "targetType": {
+                "type": "string",
+                "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                "title": "Target Type"
+              },
+              "targetId": {
+                "type": "string",
+                "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                "title": "Target ID"
+              }
+            }
+          },
+          "mappingId": {
+            "type": "string",
+            "description": "Mapping slug applied to both the AGS event payload and the NRPS response shape",
+            "title": "Mapping"
+          },
+          "resourceLinkMappings": {
+            "type": "array",
+            "description": "REQ-LTI-013 resource-link-to-consuming-app-object mapping seam. Each entry is an ADR-008 {resourceLinkId, targetType, targetId} tuple, mirroring gradeSink/rosterSource's shape. resourceLinkId MAY be empty to denote a deployment-default entry. Only meaningful when ltiPlatformId is set (an inbound resource_link claim only appears on a launch this instance receives as Tool); a deployment referencing ltiToolId never populates it. Resolved (never read/written) by LtiLaunchService::resolveResourceMapping() — the adapter only tells a consuming app which target a resource_link.id maps to, it never performs the register/schema read/write itself.",
+            "title": "Resource Link Mappings",
+            "items": {
+              "type": "object",
+              "properties": {
+                "resourceLinkId": {
+                  "type": "string",
+                  "description": "The LTI resource_link.id claim value this entry matches exactly; empty denotes the deployment-default fallback entry",
+                  "title": "Resource Link ID"
+                },
+                "targetType": {
+                  "type": "string",
+                  "description": "ADR-008 polymorphic target kind (`register/schema`)",
+                  "title": "Target Type"
+                },
+                "targetId": {
+                  "type": "string",
+                  "description": "ADR-008 target identifier, `<register>/<schema>` id pair",
+                  "title": "Target ID"
+                }
+              }
+            }
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
+        "appendOnly": false,
+        "immutable": false
+      },
+      "lti_identity_link": {
+        "slug": "lti_identity_link",
+        "title": "LTI Identity Link",
+        "icon": "AccountLinkOutline",
+        "version": "1.0.0",
+        "summary": "A (ltiPlatformId, subject) to Nextcloud userId mapping resolved after a launch is already cryptographically validated",
+        "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId (REQ-LTI-012). Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
+        "required": [
+          "ltiPlatformId",
+          "subject",
+          "userId",
+          "provisioningMethod"
+        ],
+        "configuration": {
+          "unique": [
+            "ltiPlatformId",
+            "subject"
+          ]
+        },
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "description": "Canonical UUID",
+            "title": "UUID"
+          },
+          "ltiPlatformId": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "#/components/schemas/lti_platform",
+            "x-openregister-onDelete": "CASCADE",
+            "description": "FK to the lti_platform whose verified id_token issued this subject (scopes the subject value — the same sub from two different platforms MUST NOT collide; onDelete=CASCADE)",
+            "title": "LTI Platform"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The verified id_token's sub claim value, scoped to ltiPlatformId",
+            "title": "Subject"
+          },
+          "userId": {
+            "type": "string",
+            "description": "The Nextcloud userId this (ltiPlatformId, subject) pair resolves to",
+            "title": "Nextcloud User ID"
+          },
+          "provisioningMethod": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "auto"
+            ],
+            "description": "How this link was created: manual (an admin linked an existing account, e.g. via OR's generic object API) or auto (provisioned under identityPolicy: autoProvisionAsRole)",
+            "title": "Provisioning Method"
+          },
+          "linkedByUserId": {
+            "type": "string",
+            "description": "The admin's Nextcloud userId that created this link; set only for provisioningMethod: manual",
+            "title": "Linked By User ID"
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp this link was created (manual linking) or the subject was first provisioned (auto)",
+            "title": "Linked At"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed creation timestamp",
+            "title": "Created At"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "OR-managed update timestamp",
+            "title": "Updated At"
+          }
+        },
+        "x-openregister-seed": [],
         "appendOnly": false,
         "immutable": false
       }

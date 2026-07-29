@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-description: Get started with OpenConnector, the integration layer for Nextcloud. Connect REST, SOAP, GraphQL, files, and queues to typed OpenRegister stores.
+description: Get started with OpenConnector, the integration layer for Nextcloud. Connect REST and SOAP sources — including Dutch government-standard adapters (PDOK, StUF, DSO, Berichtenbox) — to typed OpenRegister stores.
 ---
 
 # Introduction to OpenConnector
@@ -22,10 +22,8 @@ Get an overview of all your synchronization activities and system status.
 
 ### 🔌 Sources
 Configure and manage your data sources:
-- API endpoints
-- File systems
-- Databases
-- External services
+- REST (JSON/XML) and SOAP endpoints
+- Dutch government-standard connectors: PDOK Locatieserver, StUF-ZKN/BG, DSO/Omgevingsloket, Berichtenbox
 
 ### 🎯 Endpoints
 Define and manage API endpoints for data exchange.
@@ -65,9 +63,9 @@ Configure global settings for OpenConnector.
 
 To get started with OpenConnector, check out our [Getting Started Guide](getting-started) or dive into our [Tutorial](tutorial/installation).
 
-# Open Register Documentation
+# OpenConnector Documentation
 
-This directory contains the documentation website for Open Register, built with [Docusaurus 2](https://docusaurus.io/).
+This directory contains the documentation website for OpenConnector, built with [Docusaurus 2](https://docusaurus.io/).
 
 ## Installation
 

@@ -188,7 +188,7 @@ class AuthenticationService
      *
      * @return array|array[] The call options for OAuth with Client Credentials.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function createClientCredentialConfig(array $configuration): array
     {
@@ -240,7 +240,7 @@ class AuthenticationService
      *
      * @return array|array[] The call options for OAuth with Password Credentials
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function createPasswordConfig(array $configuration): array
     {
@@ -281,7 +281,7 @@ class AuthenticationService
      * @throws \GuzzleHttp\Exception\GuzzleException Thrown if the token endpoint does not respond with an access token.
      * @todo   Convert GuzzleException to another error.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-1
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function fetchOAuthTokens(array $configuration): string
     {
@@ -330,7 +330,7 @@ class AuthenticationService
      * @throws BadRequestException                    When the tokenUrl is unsafe (C4: SSRF guard).
      * @throws \GuzzleHttp\Exception\GuzzleException
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-3
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function fetchDecosToken(array $configuration): string
     {
@@ -362,7 +362,7 @@ class AuthenticationService
      *
      * @return JWK|null The resulting JWK key, or null when the secret cannot be parsed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function getRSJWK(array $configuration): ?JWK
     {
@@ -411,7 +411,7 @@ class AuthenticationService
      *
      * @return JWK|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function getHSJWK(array $configuration): ?JWK
     {
@@ -435,7 +435,7 @@ class AuthenticationService
      * @throws \Twig\Error\LoaderError When the template cannot be loaded.
      * @throws \Twig\Error\SyntaxError When the template has invalid syntax.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function getJWTPayload(array $configuration): array
     {
@@ -451,7 +451,7 @@ class AuthenticationService
      *
      * @return JWK|null The resulting JWK key.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function getJWK(array $configuration): ?JWK
     {
@@ -479,7 +479,7 @@ class AuthenticationService
      *                             Returning the error message as a Bearer token would send the raw
      *                             exception text to a third-party endpoint (C1).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
     {
@@ -526,7 +526,7 @@ class AuthenticationService
      * @throws BadRequestException When required parameters are missing or the JWK cannot be formed.
      * @throws Exception           When JWS signing fails (propagated from generateJWT — C1 fix).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-authentication-twig/tasks.md#task-2
+     * @spec openspec/specs/authentication-twig/spec.md
      */
     public function fetchJWTToken(array $configuration): string
     {
@@ -569,7 +569,7 @@ class AuthenticationService
      *
      * @throws BadRequestException When required username or password is missing.
      *
-     * @spec openspec/changes/stuf-adapter/specs/stuf-adapter/spec.md#REQ-STUF-012
+     * @spec openspec/specs/stuf-adapter/spec.md
      */
     public function buildWsSecurityHeader(array $configuration): string
     {

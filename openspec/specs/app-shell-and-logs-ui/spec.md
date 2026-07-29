@@ -42,24 +42,39 @@ to bus events, carrying the event payload (mapping / endpoint) into the modal st
 
 Notes: `ModalHost.vue` (6).
 
-### Requirement: Log index viewer (REQ-SHELLUI-003)
+### Requirement: Log pages render via the shared declarative logs-page component (REQ-SHELLUI-003)
 
-The log index page SHALL select a per-log-type configuration (call/endpoint/job/sync),
-expose title/description, render rows + total from the configured fetcher, paginate
-(page/size), refresh on mount and on filter changes, define the log table columns, and
-open a per-row detail modal.
+Every log route MUST be declared in the manifest as a `"type": "logs"` page resolved by the shared `CnLogsPage` component.
 
-#### Scenario: Loading logs for a type
-- WHEN the page mounts for a given `logType`
-- THEN `config` resolves the type's fetcher and `refresh` loads `rows`/`total`
+Specifically, `SourceLogs`, `EndpointLogs`, `JobLogs`, `SynchronizationLogs`,
+and `CloudEventLogs` MUST each be declared in the manifest
+(`src/manifest.json` / `src/manifest.d/*.json`) with a `{ register, schema }`
+config, resolved by `@conduction/nextcloud-vue`'s shared `CnLogsPage`
+component. OpenConnector MUST NOT ship its own bespoke log-index Vue component
+or per-`logType` pinia store wiring for this purpose — that responsibility
+belongs to the shared nc-vue component per ADR-036.
 
-#### Scenario: Pagination
-- WHEN the user changes page or page size
-- THEN `onPageChanged` / `onPageSizeChanged` update state and re-fetch via `refresh`
+#### Scenario: All five log routes resolve through the manifest, not a bespoke wrapper
 
-#### Scenario: Row detail
-- WHEN the user opens a log row
-- THEN `openDetail` stores the row and opens the configured detail modal
+- **GIVEN** the manifest declares `SourceLogs`, `EndpointLogs`, `JobLogs`,
+  `SynchronizationLogs`, and `CloudEventLogs` as `"type": "logs"` pages
+- **WHEN** a user navigates to any of these five routes
+- **THEN** the page renders via `CnLogsPage` reading directly from the
+  declared OR `{register, schema}` — no openconnector-owned wrapper component
+  is in the render path
 
-Notes: `LogIndex.vue` (12).
+#### Scenario: No dead per-logType wrapper code ships in the repo
+
+- **GIVEN** the fleet's dead/stub-code review (`hydra-gate-stub-scan`)
+- **WHEN** it scans `src/views/` for components not referenced by any manifest
+  entry
+- **THEN** it finds no orphaned log-index wrapper component
+
+Notes: `src/views/wrappers/LogIndex.vue` was deleted (confirmed orphaned — zero
+manifest `"component": "LogIndex"` references, zero importers outside its own
+file, and its two referenced store members (`sourceStore.refreshSourceLogs` /
+`sourceStore.sourceLogs`) were never actually defined in `src/store/store.js`
+— the wrapper referenced undefined store members and would have thrown at
+runtime had it ever been reachable). No store cleanup was needed since those
+members never existed.
 

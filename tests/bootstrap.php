@@ -62,6 +62,26 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
         }
 
+        // OCA\OpenRegister AppHost stubs — peer app not in vendor. Used by the
+        // openconnector HealthController delegation path (licence-and-or-
+        // requirement-honesty change).
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Controller/GenericHealthController.php';
+        }
+
+        // OCA\OpenRegister AppHost observability stubs — peer app not in
+        // vendor. OpenConnectorMetricsProvider implements IMetricsProvider
+        // and returns MetricSample instances (retry-and-circuit-breaker-policies,
+        // REQ-PROM-011); MetricSample must load before IMetricsProvider's
+        // docblock @return type is referenced.
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Observability\\MetricSample') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Observability/MetricSample.php';
+        }
+
+        if (interface_exists('OCA\\OpenRegister\\AppHost\\IMetricsProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/IMetricsProvider.php';
+        }
+
         // OCA\OpenRegister stubs — peer app not in vendor.
         if (class_exists('OCA\\OpenRegister\\Db\\ObjectEntity') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Db/ObjectEntity.php';
@@ -73,6 +93,17 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 
         if (class_exists('OCA\\OpenRegister\\Service\\Integration\\AbstractIntegrationProvider') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/AbstractIntegrationProvider.php';
+        }
+
+        // connector-catalog-ui: CatalogRegistryService reads OR's
+        // IntegrationRegistry — stub both the interface and the registry
+        // class so unit tests can mock them without a live OR install.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationProvider.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Integration/IntegrationRegistry.php';
         }
 
         if (class_exists('OCA\\OpenRegister\\Db\\RegisterMapper') === false) {
@@ -96,12 +127,158 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
             require_once $stubsDir . '/OC/Hooks/Emitter.php';
         }
 
+        // flow-workflowengine-integration: OC\AppFramework\Http\Request stub.
+        // EndpointService::buildSyntheticRequest() constructs NC's REAL
+        // concrete IRequest implementation at runtime (design.md Decision 5);
+        // it is a private `\OC\` class, absent from the standalone
+        // `nextcloud/ocp` dev-dependency, so EndpointServiceTest needs this
+        // stand-in to exercise triggerFromFlow() without a live NC install.
+        if (class_exists('OC\\AppFramework\\Http\\Request') === false) {
+            require_once $stubsDir . '/OC/AppFramework/Http/Request.php';
+        }
+
+        // api-product-gateway: OC\AppFramework\Http stub (STATUS_* constants) —
+        // see tests/stubs/OC/AppFramework/Http.php docblock for why this was a
+        // pre-existing, previously-unsurfaced gap.
+        if (class_exists('OC\\AppFramework\\Http') === false) {
+            require_once $stubsDir . '/OC/AppFramework/Http.php';
+        }
+
         if (class_exists('OCA\\OpenRegister\\Service\\OrganisationService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/OrganisationService.php';
         }
 
         if (class_exists('OCA\\OpenRegister\\Service\\RegisterResolverService') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/Service/RegisterResolverService.php';
+        }
+
+        // Credential-broker stubs (source-broker-credentials change). The
+        // broker stub mirrors the OR origin/development request() signature
+        // WITHOUT the acting-user parameter, so the reflection-based
+        // feature-detection path is exercised realistically in tests.
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialBrokerService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialAccessDeniedException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialAccessDeniedException.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Credential\\CredentialUpstreamException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Credential/CredentialUpstreamException.php';
+        }
+
+        // Handoff engine stubs (open-formulieren-intake change). HandoffService
+        // is the real cross-app DI target OpenFormulierenIntakeService injects
+        // (same pattern as ObjectService); HandoffException/NotAuthorizedException
+        // are the typed failures it propagates.
+        if (class_exists('OCA\\OpenRegister\\Service\\Handoff\\HandoffService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Handoff/HandoffService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Exception\\HandoffException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Exception/HandoffException.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Exception\\NotAuthorizedException') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Exception/NotAuthorizedException.php';
+        }
+
+        // OCA\OpenRegister\Event\Object{Created,Updated,Deleted}Event stubs —
+        // peer app not in vendor. Used by outbound-webhooks-activation's
+        // CloudEventListenerTest to construct real event instances (PHPUnit
+        // cannot mock these: they are constructor-only DTOs in the real app,
+        // and mocking them would not exercise the
+        // getObject()/getNewObject()/getOldObject() shape this listener
+        // depends on).
+        if (class_exists('OCA\\OpenRegister\\Event\\ObjectCreatedEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectCreatedEvent.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Event\\ObjectUpdatedEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectUpdatedEvent.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Event\\ObjectDeletedEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Event/ObjectDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCP\Calendar\Events\* stubs. Real OCP API but
+        // `@since 32.0.0` — newer than the pinned `nextcloud/ocp: dev-stable29`
+        // dev dependency, so absent from vendor/nextcloud/ocp. Order matters:
+        // the Abstract* parent must load before its children.
+        if (class_exists('OCP\\Calendar\\Events\\AbstractCalendarObjectEvent') === false) {
+            require_once $stubsDir . '/OCP/Calendar/Events/AbstractCalendarObjectEvent.php';
+            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectCreatedEvent.php';
+            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectUpdatedEvent.php';
+            require_once $stubsDir . '/OCP/Calendar/Events/CalendarObjectDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCA\DAV\Events\Cached* stubs — `dav` is an NC
+        // core app not present in the standalone composer dev-environment.
+        if (class_exists('OCA\\DAV\\Events\\CachedCalendarObjectCreatedEvent') === false) {
+            require_once $stubsDir . '/OCA/DAV/Events/CachedCalendarObjectCreatedEvent.php';
+            require_once $stubsDir . '/OCA/DAV/Events/CachedCalendarObjectUpdatedEvent.php';
+            require_once $stubsDir . '/OCA/DAV/Events/CachedCalendarObjectDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCA\Tables\* stubs — optional App Store app,
+        // not present in this environment (verified against public source —
+        // see discovery.md). Model must load before the events that type-hint it.
+        if (class_exists('OCA\\Tables\\Model\\Public\\Row') === false) {
+            require_once $stubsDir . '/OCA/Tables/Model/Public/Row.php';
+            require_once $stubsDir . '/OCA/Tables/Event/AbstractRowEvent.php';
+            require_once $stubsDir . '/OCA/Tables/Event/RowAddedEvent.php';
+            require_once $stubsDir . '/OCA/Tables/Event/RowUpdatedEvent.php';
+            require_once $stubsDir . '/OCA/Tables/Event/RowDeletedEvent.php';
+        }
+
+        // nextcloud-event-hub: OCA\Forms\* stubs — optional App Store app,
+        // not present in this environment (verified against public source —
+        // see discovery.md). Db entities must load before the events that
+        // type-hint them.
+        if (class_exists('OCA\\Forms\\Db\\Form') === false) {
+            require_once $stubsDir . '/OCA/Forms/Db/Form.php';
+            require_once $stubsDir . '/OCA/Forms/Db/Submission.php';
+            require_once $stubsDir . '/OCA/Forms/Events/AbstractFormEvent.php';
+            require_once $stubsDir . '/OCA/Forms/Events/FormSubmittedEvent.php';
+        }
+
+        // adopt-apphost: AppHost boilerplate stubs (peer app not in vendor).
+        // The leaf `OpenConnectorAdmin` (Settings + Sections) and
+        // `InitializeActions` classes extend these directly, so autoloading
+        // the subclass requires the parent to resolve.
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericAdminSettings.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Settings/GenericSettingsSection.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Service/GenericActionAuthService.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/AppHost/Repair/GenericInitializeActions.php';
+        }
+
+        // Flow-engine stubs (openconnector-flow-nodes change). The two
+        // contributed node classes `implements IFlowNode`, so the interface
+        // must exist before they are parsed — exactly the compile-time
+        // reference the runtime `class_exists()` guard in Application.php
+        // exists to avoid resolving on an instance without a flow engine.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeRegistry.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/RegisterFlowNodesEvent.php';
         }
     }
 }

@@ -75,6 +75,8 @@ use Exception;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ *
+ * @spec openspec/specs/mapping-and-search/spec.md
  */
 class MappingService
 {
@@ -140,7 +142,7 @@ class MappingService
      *
      * @return array The array with encoded array keys
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-1
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -168,6 +170,8 @@ class MappingService
      *
      * @return string The rendered template result.
      * @throws LoaderError|SyntaxError Twig exceptions
+     *
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function renderTemplateString(string $template, array $context=[]): string
     {
@@ -279,7 +283,7 @@ class MappingService
      *
      * @throws LoaderError|SyntaxError Twig Exceptions.
      *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
+     * @spec openspec/specs/openconnector-direct-or-usage/spec.md
      */
     public function executeMapping(OrMapping|ObjectEntity|array|string|int $mapping, array $input, bool $list=false): array
     {
@@ -409,7 +413,7 @@ class MappingService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     private function handleCast(Dot $dotArray, string $key, string $cast)
     {
@@ -585,7 +589,7 @@ class MappingService
      *
      * @return bool True if array keys are null else false.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     private function areAllArrayKeysNull(array $array): bool
     {
@@ -614,7 +618,7 @@ class MappingService
      *
      * @return array An array of coordinates.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-2
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function coordinateStringToArray(string $coordinates): array
     {
@@ -653,7 +657,7 @@ class MappingService
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If mapping is not found.
      *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
+     * @spec openspec/specs/openconnector-direct-or-usage/spec.md
      */
     public function getMapping(string $mappingId): OrMapping
     {
@@ -680,7 +684,7 @@ class MappingService
      *
      * @return array<OrMapping> An array containing all hydrated mapping value objects.
      *
-     * @spec openspec/changes/openconnector-services-direct-or-usage/specs/openconnector-direct-or-usage/spec.md#requirement-every-service-must-be-rewritten-to-inject-objectservice-directly
+     * @spec openspec/specs/openconnector-direct-or-usage/spec.md
      */
     public function getMappings(): array
     {
@@ -709,4 +713,198 @@ class MappingService
         );
 
     }//end getMappings()
+
+    /**
+     * VNG double-underscore lookup operators supported by {@see translateVngFilterOperators()}.
+     *
+     * @var array<int, string>
+     */
+    private const VNG_FILTER_OPERATORS = ['icontains', 'gte', 'lte', 'gt', 'lt', 'in'];
+
+    /**
+     * Translate VNG list-filter query semantics onto OpenRegister search filters.
+     *
+     * Dialect-agnostic search-compiler mechanic (REQ-006). Double-underscore
+     * lookup keys (`field__icontains`, `field__gte`, ...) are translated to a
+     * nested `[field => [operator => value]]` OpenRegister filter fragment; a
+     * bare key with no `__` suffix is passed through as an equality filter.
+     * The VNG `partijIdentificator__codeSoortObjectId` /
+     * `partijIdentificator__objectId` pair is folded into a single identity
+     * filter via {@see translatePartijIdentificatorFilter()} so a `bsn`-typed
+     * lookup always resolves against the stored hash, never a raw value.
+     *
+     * @param array<string, mixed> $filters Raw request filters (already query-string-parsed).
+     *
+     * @return array<string, mixed> OpenRegister-shaped search filters.
+     *
+     * @throws Exception When a lookup key uses an operator this compiler does not recognise.
+     *
+     * @spec openspec/specs/mapping-and-search/spec.md
+     */
+    public function translateVngFilterOperators(array $filters): array
+    {
+        $codeSoortByField = [];
+        foreach ($filters as $key => $value) {
+            if (str_ends_with($key, '__codeSoortObjectId') === true) {
+                $codeSoortByField[substr($key, 0, -strlen('__codeSoortObjectId'))] = $value;
+            }
+        }
+
+        $translated = [];
+
+        foreach ($filters as $key => $value) {
+            if (str_contains($key, '__') === false) {
+                $translated[$key] = $value;
+                continue;
+            }
+
+            [$field, $operator] = explode('__', $key, 2);
+
+            if ($operator === 'codeSoortObjectId') {
+                // Folded into the paired *__objectId filter below; emit standalone
+                // only when there is no paired identity-value filter to fold with.
+                if (isset($filters[$field.'__objectId']) === false) {
+                    $translated[$field]['codeSoortObjectId'] = $value;
+                }
+
+                continue;
+            }
+
+            if ($operator === 'objectId' && isset($codeSoortByField[$field]) === true) {
+                $translated[$field] = $this->translatePartijIdentificatorFilter(
+                    codeSoort: (string) $codeSoortByField[$field],
+                    objectId: (string) $value
+                );
+                continue;
+            }
+
+            if (in_array($operator, self::VNG_FILTER_OPERATORS, true) === false) {
+                throw new Exception(sprintf('Unsupported VNG filter operator "%s" on field "%s".', $operator, $field));
+            }
+
+            $translated[$field][$operator] = $value;
+        }//end foreach
+
+        return $translated;
+    }//end translateVngFilterOperators()
+
+    /**
+     * Fold a `partijIdentificator` codeSoort + objectId pair into one identity filter.
+     *
+     * When the identity type is `bsn`, the supplied objectId (expected to be a
+     * raw BSN from the caller's perspective) is SHA-256-hashed before being
+     * placed in the filter, matching the AVG BSN policy's storage shape (only
+     * the hash is ever persisted — see {@see \OCA\OpenConnector\Rule\AvgBsnPolicyRule}).
+     * Non-BSN identity types pass through unchanged.
+     *
+     * @param string $codeSoort The VNG identity type code (e.g. `bsn`, `rsin`, `vestigingsnummer`).
+     * @param string $objectId  The identity value as supplied by the caller.
+     *
+     * @return array{codeSoortObjectId: string, objectId: string} The folded identity filter.
+     *
+     * @spec openspec/specs/mapping-and-search/spec.md
+     */
+    public function translatePartijIdentificatorFilter(string $codeSoort, string $objectId): array
+    {
+        if (strtolower($codeSoort) !== 'bsn') {
+            return ['codeSoortObjectId' => $codeSoort, 'objectId' => $objectId];
+        }
+
+        return [
+            'codeSoortObjectId' => $codeSoort,
+            'objectId'          => hash('sha256', $objectId),
+        ];
+    }//end translatePartijIdentificatorFilter()
+
+    /**
+     * Embed named relations inline (VNG `expand=` semantics), bounded by depth.
+     *
+     * Dialect-agnostic search-compiler mechanic (REQ-007). Each entry in
+     * `$expand` is a dot-path (e.g. `digitaleAdressen` or
+     * `betrokkene.digitaleAdressen`); the first segment names a key already
+     * present on `$data` (holding a UUID, or a list of UUIDs) which is
+     * resolved to the full related object via OpenRegister. Nesting deeper
+     * than `$maxDepth` stops expanding and the response documents the
+     * truncation under `_truncatedExpand` rather than fanning out
+     * unboundedly.
+     *
+     * @param array<string, mixed> $data     The result (single item) to expand relations on.
+     * @param array<int, string>   $expand   Dot-path relation keys requested via `expand=`.
+     * @param int                  $maxDepth Maximum expansion depth (default per orchestrator ruling: 2).
+     *
+     * @return array<string, mixed> $data with the requested relations embedded inline.
+     *
+     * @spec openspec/specs/mapping-and-search/spec.md
+     */
+    public function expandRelations(array $data, array $expand, int $maxDepth=2): array
+    {
+        if ($expand === []) {
+            return $data;
+        }
+
+        if ($maxDepth <= 0) {
+            $data['_truncatedExpand'] = $expand;
+            return $data;
+        }
+
+        foreach ($expand as $expandPath) {
+            $segments = explode('.', $expandPath, 2);
+            $key      = $segments[0];
+            $nested   = $segments[1] ?? null;
+
+            if (isset($data[$key]) === false) {
+                continue;
+            }
+
+            $data[$key] = $this->resolveExpandValue(value: $data[$key], nestedExpand: $nested, depthRemaining: $maxDepth);
+        }
+
+        return $data;
+    }//end expandRelations()
+
+    /**
+     * Resolve a single expand target (a UUID, or a list of UUIDs) to the full related object(s).
+     *
+     * @param mixed       $value          The raw relation value (UUID string, list of UUIDs, or already-embedded data).
+     * @param string|null $nestedExpand   Remaining dot-path to expand on the resolved object, if any.
+     * @param int         $depthRemaining Expansion levels left, including this one.
+     *
+     * @return mixed The resolved object (or list of objects); the original value when it cannot be resolved.
+     *
+     * @spec openspec/specs/mapping-and-search/spec.md
+     */
+    private function resolveExpandValue(mixed $value, ?string $nestedExpand, int $depthRemaining): mixed
+    {
+        if (is_array($value) === true && array_is_list($value) === true) {
+            return array_map(
+                fn ($item) => $this->resolveExpandValue(value: $item, nestedExpand: $nestedExpand, depthRemaining: $depthRemaining),
+                $value
+            );
+        }
+
+        if (is_string($value) === false || $value === '') {
+            return $value;
+        }
+
+        $resolved = $this->orObjectService->find(id: $value);
+        if ($resolved === null) {
+            return $value;
+        }
+
+        $resolvedArray = (array) $resolved;
+        if ($resolved instanceof ObjectEntity) {
+            $resolvedArray = $resolved->getObject();
+        }
+
+        if ($nestedExpand === null) {
+            return $resolvedArray;
+        }
+
+        if ($depthRemaining > 1) {
+            return $this->expandRelations(data: $resolvedArray, expand: [$nestedExpand], maxDepth: ($depthRemaining - 1));
+        }
+
+        $resolvedArray['_truncatedExpand'] = [$nestedExpand];
+        return $resolvedArray;
+    }//end resolveExpandValue()
 }//end class

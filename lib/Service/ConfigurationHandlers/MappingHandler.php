@@ -19,6 +19,7 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -26,18 +27,23 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Handler for exporting and importing mapping configurations.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class MappingHandler implements ConfigurationHandlerInterface
 {
     /**
      * Constructor.
      *
-     * @param OrObjectService $orObjectService The OR object service.
+     * @param OrObjectService        $orObjectService        The OR object service.
+     * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
      */
     public function __construct(
-        private readonly OrObjectService $orObjectService
+        private readonly OrObjectService $orObjectService,
+        private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
     ) {
 
     }//end __construct()
@@ -51,7 +57,7 @@ class MappingHandler implements ConfigurationHandlerInterface
      *
      * @return array The serialised mapping configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -62,6 +68,9 @@ class MappingHandler implements ConfigurationHandlerInterface
         }
 
         unset($mappingArray['id'], $mappingArray['uuid']);
+
+        // Redact secret-shaped values from the nested configuration array (secret-hygiene).
+        $mappingArray = $this->redactConfiguration(entityArray: $mappingArray);
 
         // Ensure slug is set.
         if (empty($mappingArray['slug']) === true && $entity instanceof ObjectEntity) {
@@ -118,6 +127,29 @@ class MappingHandler implements ConfigurationHandlerInterface
     }//end export()
 
     /**
+     * Redact secret-shaped values from an entity array's nested `configuration`
+     * sub-array via the shared registry, when present.
+     *
+     * Extracted as a helper to keep export()'s NPath complexity within the
+     * configured threshold.
+     *
+     * @param array $entityArray The serialised entity array.
+     *
+     * @return array The entity array with its configuration redacted.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+     */
+    private function redactConfiguration(array $entityArray): array
+    {
+        if (isset($entityArray['configuration']) === true && is_array($entityArray['configuration']) === true) {
+            $entityArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $entityArray['configuration']);
+        }
+
+        return $entityArray;
+
+    }//end redactConfiguration()
+
+    /**
      * Import a mapping configuration into a mapping entity.
      *
      * @param array                                                                            $data     The serialised mapping configuration.
@@ -125,7 +157,7 @@ class MappingHandler implements ConfigurationHandlerInterface
      *
      * @return Entity The imported mapping entity.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function import(array $data, array $mappings): Entity
     {
@@ -163,6 +195,8 @@ class MappingHandler implements ConfigurationHandlerInterface
      * Get the entity type this handler is responsible for.
      *
      * @return string The entity type identifier.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
      */
     public function getEntityType(): string
     {

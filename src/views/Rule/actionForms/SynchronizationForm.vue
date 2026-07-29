@@ -15,7 +15,7 @@
 		<NcSelect
 			data-testid="action-form-sync"
 			:aria-label-combobox="t('openconnector', 'Synchronization')"
-			:value="selectedSync"
+			:model-value="selectedSync"
 			:options="syncOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a synchronization')"
@@ -26,8 +26,8 @@
 
 		<NcCheckboxRadioSwitch
 			type="switch"
-			:checked="!!value.retainResponse"
-			@update:checked="(next) => patch('retainResponse', !!next)">
+			:model-value="!!value.retainResponse"
+			@update:model-value="(next) => patch('retainResponse', !!next)">
 			{{ t('openconnector', 'Retain original response') }}
 		</NcCheckboxRadioSwitch>
 		<span class="action-form__helper">
@@ -36,23 +36,23 @@
 
 		<NcTextField
 			:label="t('openconnector', 'Object ID path (optional)')"
-			:value="value.objectIdPath || ''"
+			:model-value="value.objectIdPath || ''"
 			placeholder="body.id"
-			@update:value="(next) => patch('objectIdPath', next)" />
+			@update:model-value="(next) => patch('objectIdPath', next)" />
 
 		<div class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Pre-delay (seconds)')"
 				type="number"
-				:value="value.preDelay != null ? String(value.preDelay) : ''"
+				:model-value="value.preDelay != null ? String(value.preDelay) : ''"
 				placeholder="0"
-				@update:value="(next) => patchNumber('preDelay', next)" />
+				@update:model-value="(next) => patchNumber('preDelay', next)" />
 			<NcTextField
 				:label="t('openconnector', 'Post-delay (seconds)')"
 				type="number"
-				:value="value.postDelay != null ? String(value.postDelay) : ''"
+				:model-value="value.postDelay != null ? String(value.postDelay) : ''"
 				placeholder="0"
-				@update:value="(next) => patchNumber('postDelay', next)" />
+				@update:model-value="(next) => patchNumber('postDelay', next)" />
 		</div>
 	</div>
 </template>
@@ -71,18 +71,18 @@ export default {
 	computed: {
 		// Both shapes round-trip — legacy `synchronization` was sometimes
 		// a bare id, sometimes nested under `synchronization.synchronization`.
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		syncId() {
 			return this.value?.synchronization || ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		selectedSync() {
 			const id = String(this.syncId)
 			if (!id) return null
 			return this.syncOptions.find((opt) => opt.id === id) ?? { id, label: id }
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+	/** @spec openspec/specs/rule-editor-ui/spec.md */
 	async mounted() {
 		this.loading = true
 		this.syncOptions = await fetchOpenRegisterCollection('synchronization')
@@ -90,7 +90,7 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		patchNumber(key, raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
@@ -102,7 +102,7 @@ export default {
 			if (Number.isNaN(num)) return
 			this.patch(key, num)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onSyncPick(option) {
 			const next = { ...(this.value || {}) }
 			if (option?.id) {

@@ -18,46 +18,20 @@ with slug `openconnector` and a non-empty `schemas` array referencing every
 schema defined in `components.schemas`.
 
 #### Scenario: Descriptor file present at canonical path
-- GIVEN a fresh checkout of the openconnector repo
-- WHEN inspecting `openconnector/lib/Settings/`
-- THEN `openconnector_register.json` MUST exist
-- AND it MUST parse as valid JSON
-- AND its top-level keys MUST be exactly `openapi`, `info`, `x-openregister`,
+
+- **GIVEN** a fresh checkout of the openconnector repo
+- **WHEN** inspecting `openconnector/lib/Settings/`
+- **THEN** `openconnector_register.json` MUST exist
+- **AND** it MUST parse as valid JSON
+- **AND** its top-level keys MUST be exactly `openapi`, `info`, `x-openregister`,
   `components`
 
 #### Scenario: Register slug is openconnector
-- GIVEN the descriptor file is loaded
-- WHEN inspecting `components.registers`
-- THEN exactly one register entry MUST exist with slug `openconnector`
-- AND its `schemas` array MUST list all 15 schema slugs
 
-### Requirement: All 15 schemas MUST be declared (REQ-A-002)
-
-The system MUST declare 15 schemas in `components.schemas`. The mutable config
-schemas are: `source`, `consumer`, `endpoint`, `event`, `event_message`,
-`event_subscription`, `job`, `mapping`, `rule`, `synchronization`,
-`synchronization_contract`. The append-only log schemas are: `call_log`,
-`job_log`, `synchronization_log`, `synchronization_contract_log`.
-
-Each schema MUST declare `slug`, `title`, `version`, and `properties` at
-minimum. Each schema's `properties` MUST cover every protected field declared on
-the matching `lib/Db/<EntityName>.php` entity (excluding internally-derived
-fields like `id` which OR manages automatically).
-
-#### Scenario: All 15 schemas present
-- GIVEN the descriptor file is parsed
-- WHEN inspecting `components.schemas`
-- THEN exactly 15 schema entries MUST exist
-- AND their slugs MUST be the union of the 11 mutable config and 4 log slugs
-
-#### Scenario: Schema field coverage matches entity definition
-- GIVEN the `Source` entity defined in `lib/Db/Source.php` with 39 protected fields
-- WHEN comparing against the `source` schema's `properties`
-- THEN every entity protected field MUST appear as a property on the schema
-- AND the property `type` MUST map per the conversion: PHP `string` → JSON
-  `string`, PHP `integer` → JSON `integer`, PHP `boolean` → JSON `boolean`,
-  PHP `array` (json column) → JSON `array` or `object`, PHP `DateTime` → JSON
-  `string` with `format: "date-time"`
+- **GIVEN** the descriptor file is loaded
+- **WHEN** inspecting `components.registers`
+- **THEN** exactly one register entry MUST exist with slug `openconnector`
+- **AND** its `schemas` array MUST list all 21 schema slugs
 
 ### Requirement: Log schemas MUST be declared append-only and immutable (REQ-A-003)
 
@@ -191,4 +165,77 @@ matching ADDED/REMOVED entry in a future change.
 - WHEN inspecting both the relation field and the legacy `*Id` field
 - THEN both MUST be present in `properties`
 - AND both fields MUST NOT appear in the schema's `required` array (they are optional during the transition)
+
+### Requirement: All 21 schemas MUST be declared (REQ-A-002)
+
+The system MUST declare at least 21 schemas in `components.schemas`. The
+mutable config schemas this requirement enumerates are: `source`, `consumer`,
+`endpoint`, `event`, `event_message`, `event_subscription`, `job`, `mapping`,
+`rule`, `synchronization`, `synchronization_contract`, `ris_sync_record`,
+`peppol_transmission`, `lti_platform`, `lti_tool`, `lti_deployment`,
+`lti_identity_link` (17 total; `ris_sync_record` and `peppol_transmission`
+predate the `lti-13-platform` change and were previously uncounted here —
+reconciled while adding the three LTI schemas; `lti_identity_link` is new in
+this change, REQ-LTI-012). The append-only log schemas are: `call_log`,
+`job_log`, `synchronization_log`, `synchronization_contract_log` (4 total,
+unchanged by this change).
+
+Note: the live descriptor at HEAD carries additional mutable schemas beyond
+this list (e.g. `bankfeed_batch`, `dso_message`, `fsc_call`,
+`iwmo_ijw_message`, `kiss_klantcontact`, `openformulieren_submission`,
+`payment_intent`, `sms_message`, `zgw_version_translation_log` and others) —
+each added by its own, separate change. Reconciling this requirement's
+enumerated list against every such change is out of scope for
+`lti-tool-provider-role`; this requirement is phrased as a lower bound ("at
+least") for that reason, and each schema-adding change remains responsible
+for reconciling its own additions into this list at archive time, per the
+precedent this requirement's own text already established for
+`ris_sync_record`/`peppol_transmission`.
+
+`lti_platform` and `lti_tool` are mutable registration schemas (an external
+Platform or Tool this instance has a trust relationship with — see the
+`lti-platform` capability's REQ-LTI-001/002 for their field shape, including
+the per-registration `signingKeys[]` array, and REQ-LTI-011 for the `status`
+trust-gate field added by this change). `lti_deployment` is a mutable join
+schema linking exactly one `lti_platform` or `lti_tool` to a consuming-app
+placement (REQ-LTI-010), extended by this change with `resourceLinkMappings[]`
+(REQ-LTI-013). `lti_identity_link` is a new mutable schema recording a
+`(ltiPlatformId, subject)` → Nextcloud `userId` mapping (REQ-LTI-012). None of
+the four is a log schema: none is append-only, and none carries the
+`x-openregister-archival` annotation (REQ-A-004 continues to apply only to
+the 4 existing log schemas).
+
+Each schema MUST declare `slug`, `title`, `version`, and `properties` at
+minimum. Each schema's `properties` MUST cover every protected field declared on
+the matching `lib/Db/<EntityName>.php` entity (excluding internally-derived
+fields like `id` which OR manages automatically).
+
+#### Scenario: All 21 schemas present
+
+- **GIVEN** the descriptor file is parsed
+- **WHEN** inspecting `components.schemas`
+- **THEN** at least 21 schema entries MUST exist, including all 21 named in
+  this requirement
+- **AND** their slugs MUST be the union of the 16 mutable config and 4 log
+  slugs
+
+#### Scenario: Schema field coverage matches entity definition
+
+- **GIVEN** the `Source` entity defined in `lib/Db/Source.php` with 39 protected fields
+- **WHEN** comparing against the `source` schema's `properties`
+- **THEN** every entity protected field MUST appear as a property on the schema
+- **AND** the property `type` MUST map per the conversion: PHP `string` → JSON
+  `string`, PHP `integer` → JSON `integer`, PHP `boolean` → JSON `boolean`,
+  PHP `array` (json column) → JSON `array` or `object`, PHP `DateTime` → JSON
+  `string` with `format: "date-time"`
+
+#### Scenario: lti_platform, lti_tool, and lti_deployment are mutable, not append-only
+
+- **GIVEN** the descriptor file is parsed
+- **WHEN** inspecting the `lti_platform`, `lti_tool`, and `lti_deployment`
+  schema entries
+- **THEN** none SHALL carry `immutable: true` or an
+  `x-openregister-archival` annotation
+- **AND** all three SHALL remain in the mutable config group counted by this
+  requirement
 

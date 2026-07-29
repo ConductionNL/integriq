@@ -11,15 +11,15 @@
 	<div class="action-form">
 		<NcTextField
 			:label="t('openconnector', 'Filename position (dotted path on object)')"
-			:value="value.filenamePosition || ''"
+			:model-value="value.filenamePosition || ''"
 			placeholder="attachments.0.filename"
-			@update:value="(next) => patch('filenamePosition', next)" />
+			@update:model-value="(next) => patch('filenamePosition', next)" />
 		<NcTextField
 			:label="t('openconnector', 'File ID position in URL path (legacy)')"
 			type="number"
-			:value="value.fileIdPosition != null ? String(value.fileIdPosition) : ''"
+			:model-value="value.fileIdPosition != null ? String(value.fileIdPosition) : ''"
 			placeholder="2"
-			@update:value="onFileIdInput" />
+			@update:model-value="onFileIdInput" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'The endpoint checks if the authenticated user is allowed to read the resolved file before sending bytes back.') }}
 		</span>
@@ -36,7 +36,7 @@ export default {
 	props: { ...valueProp },
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onFileIdInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

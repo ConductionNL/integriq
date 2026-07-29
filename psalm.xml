@@ -70,10 +70,16 @@
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialBrokerService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException"/>
+                <referencedClass name="OCA\OpenRegister\Service\Credential\CredentialUpstreamException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
                 <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
+                <referencedClass name="OCA\OpenRegister\Service\Handoff\HandoffService"/>
+                <referencedClass name="OCA\OpenRegister\Exception\HandoffException"/>
+                <referencedClass name="OCA\OpenRegister\Exception\NotAuthorizedException"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
@@ -87,6 +93,12 @@
                 <referencedClass name="OC"/>
                 <referencedClass name="OC\AppFramework\Middleware\Security\Exceptions\SecurityException"/>
                 <referencedClass name="OC\Files\Node\File"/>
+                <!-- flow-workflowengine-integration: NC's concrete IRequest implementation,
+                     synthesized by EndpointService::buildSyntheticRequest() (design.md Decision 5) -->
+                <referencedClass name="OC\AppFramework\Http\Request"/>
+                <!-- flow-workflowengine-integration: NC core's only bundled WorkflowEngine IEntity,
+                     referenced only as a compile-time ::class string by the three operation classes -->
+                <referencedClass name="OCA\WorkflowEngine\Entity\File"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
@@ -94,13 +106,21 @@
                 <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericHealthController"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericMetricsController"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericPreferencesController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\IMetricsProvider"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Observability\ManifestLoader"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Observability\MetricsEngine"/>
+                <!-- OR AppHost boilerplate (adopt-apphost: Settings/Section + InitializeActions) -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Repair\GenericInitializeActions"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Service\GenericActionAuthService"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
                 <!-- Service classes from OpenRegister used via OR integration layer -->
                 <referencedClass name="OCA\OpenRegister\Service\OrganisationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterResolverService"/>
                 <referencedClass name="OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationRegistry"/>
+                <referencedClass name="OCA\OpenRegister\Service\Integration\IntegrationProvider"/>
                 <referencedClass name="OCA\OpenRegister\Db\Mapping"/>
                 <!-- Symfony (loaded at runtime via Nextcloud or composer require) -->
                 <referencedClass name="Symfony\Component\ExpressionLanguage\ExpressionLanguage"/>
@@ -118,6 +138,27 @@
                 <referencedClass name="SoapFault"/>
                 <!-- Legacy OpenConnector Rule type (deleted entity; survives only as FQCN in one method) -->
                 <referencedClass name="OCA\OpenConnector\Service\Rule"/>
+                <!-- nextcloud-event-hub: NC-core / bundled-app / optional-app event
+                     classes referenced only via `::class` (compile-time string) and
+                     instanceof (safe when the class is absent). OCP\Calendar\Events\*
+                     is real OCP but `@since 32.0.0`, newer than the pinned
+                     nextcloud/ocp: dev-stable29 dev dependency; OCA\DAV\* is an NC
+                     core app; OCA\Tables\* / OCA\Forms\* are optional App Store apps —
+                     none is present in the standalone vendor tree. See design.md
+                     Decision 1 and each listener's class docblock. -->
+                <referencedClass name="OCP\Calendar\Events\CalendarObjectCreatedEvent"/>
+                <referencedClass name="OCP\Calendar\Events\CalendarObjectUpdatedEvent"/>
+                <referencedClass name="OCP\Calendar\Events\CalendarObjectDeletedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectCreatedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectUpdatedEvent"/>
+                <referencedClass name="OCA\DAV\Events\CachedCalendarObjectDeletedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowAddedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowUpdatedEvent"/>
+                <referencedClass name="OCA\Tables\Event\RowDeletedEvent"/>
+                <referencedClass name="OCA\Forms\Events\FormSubmittedEvent"/>
+                <!-- OCP\SystemTag\MapperEvent is present in stable29 stubs; listed for
+                     documentation completeness of the file-tag producer. -->
+                <referencedClass name="OCP\SystemTag\MapperEvent"/>
             </errorLevel>
         </UndefinedClass>
         <!-- UndefinedMethod: suppress known false positives from interface types (OCP\IRequest::server,

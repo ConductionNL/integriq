@@ -1,0 +1,15 @@
+{
+	"_comment": "ADR-037 register fragment — rule-secret-lockdown (ocon#147 phase C). SECURITY FIX. The `rule` schema had NO `authorization` block, so it fell back to OpenRegister's default: readable by ANY authenticated user. An `authentication`-type rule stores its inbound API keys at `configuration.authentication.keys` — a map of apiKey => nextcloud userId (see src/modals/Rule/EditRule.vue, keys built at editRule() and read back at getApiKeysUsers()). A caller presenting one of those keys is authenticated AS that mapped user, so the map is a set of live impersonation credentials. Because OpenConnector's whole management UI is served by an `@NoAdminRequired` UiController with an unrestricted navigation entry, and rules were readable by default, `GET /apps/openregister/api/objects/openconnector/rule` (and every MCP tool over this schema) handed every account on the instance the exact keys needed to impersonate other users against OpenConnector endpoints. WHY LOCKDOWN AND NOT writeOnly: the secret lives NESTED at `configuration.authentication.keys`, inside the untyped `configuration` object. OpenRegister resolves `writeOnly` from TOP-LEVEL schema properties only (RenderObject::getWriteOnlyProperties iterates $schema->getProperties()), so a marker nested under `configuration.authentication.keys` would strip nothing — a silent no-op. Blanket `writeOnly` on the whole `configuration` object is not viable either: the rule editor reads the ENTIRE configuration back to populate every action form (EditRule.vue reads configuration.<type> for error/mapping/synchronization/javascript/authentication/download/... on open), so blanket-stripping it would break rule editing for every rule type. That leaves lockdown: rules are admin-owned security configuration — an operator writes them and the endpoint engine, not the end user, consumes them. The engine is unaffected: EndpointService reads a rule via find(..., schema: 'rule', _rbac: false) (EndpointService.php ~L2769) and RuleService's own lookups pass _rbac: false, so rule execution for anonymous/consumer callers keeps working untouched — it is the engine, not the user, that needs the rule. Every verb is admin-only, mirroring 99-source-lockdown.json / 99-consumer-lockdown.json. RESIDUAL: an admin can still read the keys via the generic OR API — the nested secret cannot be writeOnly-stripped without breaking the editor — so this closes the disclosure to NON-admins (the #147 condition) but does not reach the 'even an admin cannot read it' bar that source/consumer/event_subscription got. Promoting the key map to its own top-level writeOnly property (a data migration + editor rework) or moving it to the Doriath broker is the follow-up.",
+	"components": {
+		"schemas": {
+			"rule": {
+				"authorization": {
+					"create": ["admin"],
+					"read": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				}
+			}
+		}
+	}
+}

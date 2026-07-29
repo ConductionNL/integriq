@@ -1,0 +1,93 @@
+{
+  "$comment": "Phase-2 W3-revival OpenConnector ingestion config for the Digital Public Goods Registry, the 'revive-trivial' verdict from README.md's W3 audit table. concurrentie-analyse/scripts/sync/sync_dpg_registry.py points at API_URL = 'https://api.digitalpublicgoods.net/dpgs', which is genuinely dead - confirmed live 2026-07-06 by a direct TCP connection test against the resolved IP (99.79.107.115) on both port 443 and port 80: both time out after 5s, while the DPG Alliance's own main site (digitalpublicgoods.net, www.digitalpublicgoods.net) and github.com resolved and responded normally in the same test window, ruling out a general network/sandbox issue and confirming the api.* subdomain itself is decommissioned. The revival path given in the audit - the DPG Alliance's own GitHub-hosted data file at https://raw.githubusercontent.com/DPGAlliance/dpg-api/main/docs/dpgs/index.json - is real and live: fetched 2026-07-06, HTTP 200, a bare JSON array (no envelope) of 165 DPGs, ~475KB, served with Content-Type: text/plain (raw.githubusercontent.com's standard behaviour for .json files under docs/) - irrelevant to ingestion since SynchronizationService::fetchSinglePageData() calls json_decode() directly on the raw response body regardless of the declared Content-Type header (confirmed by reading the method). No auth, no pagination (the whole registry is one file), matching the same 'whole catalog in one call' shape as nextcloud_marketplace.json. Per-field presence checked across all 165 real records: id/name/description/type/license/organizations/stage present 165/165 (id values are already clean kebab-case slugs, e.g. 'aam-digital', 'african-storybook', confirmed unique across all 165); website present 163/165; repositories present 160/165; sectors (DPG's own SDG-linked sector taxonomy, e.g. 'Health' x43, 'Climate' x14, 'Education' x13) present on only 92/165 - 73 DPGs carry no sector classification at all. Some records carry more than one organization (up to 4), license (14/165), or repository (29/165) entry - only the first of each is taken via Twig's `first` filter, the same class of documented simplification as nextcloud_marketplace.json's `releases[0]`-newest-first assumption (MappingService's Twig engine has no loop/sort primitive, see IMPORT.md). SCHEMA-FIT NOTE (the 'map faithfully, note mismatches' instruction this file was built under): the DPG registry is NOT software-only - `type` values across the 165 records are software (137), content (23), data (14), aimodel (7), standard (4), i.e. 28/165 (~17%) are open educational content, open datasets, open standards, or open AI models, not `SoftwareApplication`-shaped things at all, which stretches spectr's `marketplaceApp` schema (`x-schema-org: SoftwareApplication`) for those 28. A better-fitting home was considered and rejected: sync_dpg_registry.py's actual write target, the Specter `feature_evidence` table (this repo's `featureEvidence` schema), requires a `featureRef` (a UUID of one specific `canonicalFeature`) per row - the Python script computes this via a free-text KEYWORD_MAP search across each DPG's name+description+type that can match ZERO, ONE, or MANY category/feature slugs per DPG (an N:M classification fan-out), which is structurally impossible to replicate through MappingService: Twig's render() always returns a single string (see IMPORT.md's 'Twig values can never be arrays' gotcha) and there is no per-DPG deterministic single featureRef to write - a bare dot-path mapping has nothing correct to point at. `marketplaceApp` was chosen instead as the closest genuine 1:1-per-record home in the current register (every DPG becomes exactly one object, same as an NC App Store entry), consistent with germany_bund.json's precedent of shipping an honestly-imperfect structural fit rather than forcing a schema whose relationship model doesn't hold. `category` falls back `sectors|first` -> `type|first` -> '' (Twig's `first` filter returns '' on an empty sequence, which the `default()` filter then treats as needing the next fallback - confirmed this chain reads correctly against real records missing `sectors`). `author` takes the first organization's `name` (organizations present 165/165, so no fallback needed there). `downloads`/`rating`/`lastRelease`/`lastReleaseDate`/`isFeatured`/`createdAt`/`updatedAt` have no DPG registry equivalent at all (no install stats, no release versions, no timestamps) and are left genuinely unmapped rather than forced - unlike nextcloud_marketplace.json, which has real values for all of these except `downloads`. No sourceHashMapping - no spurious daily-changing field was found in this source, so the default whole-object hash is fine.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "dpg-registry"
+        },
+        "name": "Digital Public Goods Registry",
+        "description": "The DPG Alliance's registry of vetted Digital Public Goods (open-source software, content, data, standards, and AI models meeting the DPG Standard). Public, unauthenticated, whole-registry JSON file on GitHub - the old api.digitalpublicgoods.net/dpgs API is dead (confirmed live 2026-07-06, see this file's $comment). Feeds the spectr `marketplaceApp` register/schema via the dpg-registry-to-spectr-marketplaceapp synchronization.",
+        "type": "api",
+        "location": "https://raw.githubusercontent.com/DPGAlliance/dpg-api/main/docs/dpgs",
+        "auth": "none",
+        "documentation": "https://digitalpublicgoods.net/registry",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "mapping",
+          "slug": "dpg-registry-to-marketplaceapp"
+        },
+        "name": "DPG Registry to Spectr Marketplace App",
+        "description": "Maps a raw DPG registry entry onto the spectr `marketplaceApp` schema. Field shapes confirmed live 2026-07-06 against the real 165-entry index.json - see this file's $comment for per-field presence rates, the sectors/type category fallback, and the schema-fit caveat (28/165 entries are not software).",
+        "mapping": {
+          "sourceRef": "id",
+          "appId": "id",
+          "name": "name",
+          "displayName": "{{ name|default('Untitled DPG')|slice(0, 250) }}",
+          "summary": "{{ description|default('')|slice(0, 500) }}",
+          "description": "{{ description|default('') }}",
+          "category": "{{ (sectors|default([])|first)|default((type|default([])|first))|default('') }}",
+          "author": "{{ (organizations|default([])|first).name|default('') }}",
+          "website": "{{ website|default('') }}",
+          "repository": "{{ (repositories|default([])|first).url|default('') }}",
+          "license": "{{ (license|default([])|first).spdx|default('') }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "synchronization",
+          "slug": "dpg-registry-to-spectr-marketplaceapp"
+        },
+        "name": "DPG Registry to Spectr Marketplace App",
+        "description": "W3-revival ingestion sync: DPG Alliance's GitHub-hosted registry file (whole registry, single call) -> spectr register, marketplaceApp schema. `resultsPosition: '_root'` because the file is a bare JSON array, no envelope (confirmed live). `usesPagination: false` - there is exactly one file, no page concept.",
+        "sourceId": "dpg-registry",
+        "sourceType": "api",
+        "sourceTargetMapping": "dpg-registry-to-marketplaceapp",
+        "sourceConfig": {
+          "endpoint": "/index.json",
+          "idPosition": "id",
+          "resultsPosition": "_root",
+          "usesPagination": false
+        },
+        "targetId": "spectr/marketplaceApp",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "job",
+          "slug": "dpg-registry-weekly-sync"
+        },
+        "name": "DPG Registry Weekly Sync",
+        "description": "Runs the dpg-registry-to-spectr-marketplaceapp synchronization weekly, matching the wave-1 default cadence - the DPG registry itself changes slowly (new DPGs are vetted periodically by the DPG Alliance, not published on a daily cadence).",
+        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "dpg-registry-to-spectr-marketplaceapp"
+        },
+        "interval": 604800,
+        "isEnabled": true,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

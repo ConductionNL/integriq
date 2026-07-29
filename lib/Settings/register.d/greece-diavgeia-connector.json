@@ -1,0 +1,97 @@
+{
+  "$comment": "Phase-2 wave-2 OpenConnector ingestion config for Greece (Diavgeia, the government transparency portal, diavgeia.gov.gr/luminapi/opendata). Mirrors concurrentie-analyse/scripts/sync/sync_greece_diavgeia.py's /search endpoint + field selection. Public, unauthenticated JSON API (keyless - confirmed by reading the script: no os.environ key, docstring states 'no authentication required'). Engine path: plain JSON (json_decode). Response envelope `{\"decisions\": [...], \"info\": {\"total\": N}}` -> resultsPosition: 'decisions'. The `type` query param selects the decision family; this connector ships type `Δ.2.1` (tender/procurement-notice decisions), the same value the script iterates first. Diavgeia genuinely supports page-number pagination (`page`/`size`), unlike the offset-only CKAN/ODS sources - but this ships `usesPagination: false` with `size: 50` (single page, ~50 records) as a conservative default, since OpenConnector's currentPage counter omits the page param on the first call (landing on Diavgeia's page 0) and a multi-page crawl of a national transparency archive should be enabled deliberately, not by default (raise size / flip usesPagination for a wider pull). Faithful-mapping caveats vs the Python script (documented, not forced): (1) `organisation` maps the raw `organizationId` string (e.g. an org GUID) - the script resolves it to a human name via a SEPARATE /organizations/{id} call per decision, which a declarative single-pass sync cannot do (no per-object secondary fetch); the id is honest and reconciliable, the display name is a downstream enrichment concern. (2) `cpvCodes` and `estimatedValue` live inside `extraFieldValues[]`, an array-of-dicts the script scans by key name (find the entry whose key is 'cpv' / 'estimatedAmount') - a declarative dot-path/Twig mapping has no iterate-and-match-by-key primitive (IMPORT.md), and the array index is not stable, so both are left unmapped (`cpvCodes` static []) rather than guessed at a fragile fixed index. (3) `closingDate` has no direct field in this source (the script's own comment says so) - left unmapped. `publicationDate` converts the epoch-milliseconds `issueDate` to Y-m-d via Twig (divide by 1000 -> Unix seconds -> date filter). `tenderUrl` url_encode's the `ada` because a Diavgeia ADA contains Greek letters (e.g. '91Υ6ΟΚΩ0-ΨΑΦ') and the spectr `tender.tenderUrl` field has format:uri, which rejects raw non-ASCII in the URL - caught live 2026-07-07 on the first import attempt (validation error, 0 objects written), fixed with |url_encode. The script's own CPV IT-prefix filter is a DB-side layer, not an API constraint - this connector ingests the full decisions feed for the notice type. LIVE-VERIFIED 2026-07-07 on the isolated spectr-spike instance (NC 34, OR 0.2.17-unstable.13, OC 0.2.16+#105, spectr register id=8) - see connectors/README.md's W2 table and IMPORT.md for run evidence (rows, field spot-check incl. the epoch->date conversion, dedup re-run).",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "greece-diavgeia"
+        },
+        "name": "Diavgeia (Greek government transparency portal)",
+        "description": "Greece's government transparency portal open-data search API (diavgeia.gov.gr/luminapi/opendata). Public, unauthenticated JSON. Feeds the spectr `tender` register/schema via the greece-diavgeia-to-spectr-tender synchronization, filtered to procurement-notice decision type Δ.2.1.",
+        "type": "api",
+        "location": "https://diavgeia.gov.gr/luminapi/opendata",
+        "auth": "none",
+        "documentation": "https://diavgeia.gov.gr",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "mapping",
+          "slug": "greece-diavgeia-to-tender"
+        },
+        "name": "Diavgeia to Spectr Tender",
+        "description": "Maps a raw Diavgeia decision onto the spectr `tender` schema. Mirrors sync_greece_diavgeia.py's upsert_tender() - see file $comment for the organizationId-not-name, extraFieldValues (cpv/value) and closingDate gaps this mapping honestly leaves rather than guesses.",
+        "mapping": {
+          "sourceRef": "ada",
+          "publicatieId": "ada",
+          "source": "greece-diavgeia",
+          "title": "{{ subject|default('Greek procurement ' ~ ada) }}",
+          "displayName": "{{ (subject|default('Greek procurement ' ~ ada))|slice(0, 250) }}",
+          "organisation": "{{ organizationId|default('') }}",
+          "country": "GR",
+          "publicationDate": "{{ ((issueDate|default(0)) / 1000)|round(0, 'floor')|date('Y-m-d') }}",
+          "status": "new",
+          "tenderUrl": "{{ 'https://diavgeia.gov.gr/decision/view/' ~ (ada|url_encode) }}",
+          "cpvCodes": []
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.1.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "synchronization",
+          "slug": "greece-diavgeia-to-spectr-tender"
+        },
+        "name": "Diavgeia to Spectr Tender",
+        "description": "Wave-2 ingestion sync: Diavgeia /search for decision type Δ.2.1 (procurement notices) -> spectr register, tender schema. `resultsPosition: 'decisions'`. `usesPagination: false`, `size: 50` (single page) - see $comment for why page-number paging (which this source genuinely supports) is left off by default.",
+        "sourceId": "greece-diavgeia",
+        "sourceType": "api",
+        "sourceTargetMapping": "greece-diavgeia-to-tender",
+        "sourceConfig": {
+          "endpoint": "/search",
+          "query": {
+            "type": "Δ.2.1",
+            "size": 50
+          },
+          "idPosition": "ada",
+          "resultsPosition": "decisions",
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "job",
+          "slug": "greece-diavgeia-weekly-sync"
+        },
+        "name": "Diavgeia Greece Weekly Sync",
+        "description": "Runs the greece-diavgeia-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
+        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "greece-diavgeia-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": true,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

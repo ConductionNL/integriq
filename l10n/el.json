@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Κατάργηση ιδιότητας",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Ρυθμίστε πώς επαληθεύονται κρυπτογραφικά τα εισερχόμενα αιτήματα webhook DSO-LV STAM. Το HMAC χρησιμοποιεί κοινό μυστικό (προπαραγωγή)· το PKIoverheid χρησιμοποιεί αλυσίδα πιστοποιητικών (παραγωγή).",
+        "Configured (leave blank to keep unchanged)": "Ρυθμισμένο (αφήστε κενό για να παραμείνει αμετάβλητο)",
+        "DSO signature configuration saved.": "Η διαμόρφωση υπογραφής DSO αποθηκεύτηκε.",
+        "DSO STAM webhook signature verification": "Επαλήθευση υπογραφής webhook DSO STAM",
+        "Failed to load the DSO signature configuration.": "Αποτυχία φόρτωσης της διαμόρφωσης υπογραφής DSO.",
+        "Failed to save the DSO signature configuration.": "Αποτυχία αποθήκευσης της διαμόρφωσης υπογραφής DSO.",
+        "HMAC shared secret": "Κοινό μυστικό HMAC",
+        "HMAC shared secret (pre-production)": "Κοινό μυστικό HMAC (προπαραγωγή)",
+        "Intermediate certificate chain (PEM, optional)": "Αλυσίδα ενδιάμεσων πιστοποιητικών (PEM, προαιρετικό)",
+        "Loading DSO signature configuration…": "Φόρτωση διαμόρφωσης υπογραφής DSO…",
+        "Not configured": "Δεν έχει ρυθμιστεί",
+        "PKIoverheid certificate chain (production)": "Αλυσίδα πιστοποιητικών PKIoverheid (παραγωγή)",
+        "Save DSO signature configuration": "Αποθήκευση διαμόρφωσης υπογραφής DSO",
+        "Signing certificate (PEM)": "Πιστοποιητικό υπογραφής (PEM)",
+        "Signing mode": "Λειτουργία υπογραφής",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Αξιόπιστη ριζική CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

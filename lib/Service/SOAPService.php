@@ -60,7 +60,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
  *
- * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-4
+ * @spec openspec/specs/http-call-engine/spec.md
  */
 class SOAPService
 {
@@ -91,7 +91,7 @@ class SOAPService
      *
      * @throws BadRequestHttpException When an unsupported numeric soap version is supplied.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-4
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function getSoapVersion(string|int|null $soapVersion): int
     {
@@ -135,7 +135,7 @@ class SOAPService
      *
      * @throws \SoapFault When the SOAP client cannot be created.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-4
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function setupEngine(ObjectEntity $source, array $passedConfig): Engine
     {
@@ -202,7 +202,7 @@ class SOAPService
      *
      * @return \SimpleXMLElement|null The resulting XML element, or null when no document element is present.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-5
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     private function parseDynamicXsd(string $xmlString): ?\SimpleXMLElement
     {
@@ -257,7 +257,7 @@ class SOAPService
      *
      * @throws \SoapFault When the SOAP engine cannot satisfy the request.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-http-call-engine/tasks.md#task-4
+     * @spec openspec/specs/http-call-engine/spec.md
      */
     public function callSoapSource(ObjectEntity $source, string $soapAction, array $config): Response
     {

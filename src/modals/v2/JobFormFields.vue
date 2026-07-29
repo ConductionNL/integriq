@@ -40,7 +40,7 @@
 				<NcSelect
 					:input-id="'cn-job-form-' + field.key"
 					:aria-label-combobox="t('openconnector', 'Synchronization')"
-					:value="selectedSynchronization"
+					:model-value="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="!field.required"
@@ -68,7 +68,7 @@
 					<NcSelect
 						:input-id="'cn-job-form-' + field.key"
 						:aria-label-combobox="field.label || t('openconnector', 'Action class')"
-						:value="selectedJobClassOption"
+						:model-value="selectedJobClassOption"
 						:options="jobClassOptions"
 						:clearable="!field.required"
 						:placeholder="t('openconnector', 'Pick an action class')"
@@ -81,24 +81,24 @@
 				<NcTextField
 					v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
 					:label="field.label + (field.required ? ' *' : '')"
-					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
 					:error="!!errors[field.key]"
 					:type="textFieldType(field)"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:value="(value) => updateField(field.key, value)" />
+					@update:model-value="(value) => updateField(field.key, value)" />
 
 				<NcTextField
 					v-else-if="field.widget === 'number'"
 					:label="field.label + (field.required ? ' *' : '')"
-					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
 					:error="!!errors[field.key]"
 					type="number"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+					@update:model-value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
 
 				<div v-else-if="field.widget === 'textarea'" class="cn-job-form-fields__textarea-wrapper">
 					<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
@@ -119,10 +119,10 @@
 
 				<NcCheckboxRadioSwitch
 					v-else-if="field.widget === 'checkbox'"
-					:checked="!!formData[field.key]"
+					:model-value="!!formData[field.key]"
 					:disabled="field.readOnly"
 					type="switch"
-					@update:checked="(value) => updateField(field.key, value)">
+					@update:model-value="(value) => updateField(field.key, value)">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</NcCheckboxRadioSwitch>
 
@@ -148,12 +148,12 @@
 				<NcTextField
 					v-else
 					:label="field.label + (field.required ? ' *' : '')"
-					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:value="(value) => updateField(field.key, value)" />
+					@update:model-value="(value) => updateField(field.key, value)" />
 			</template>
 		</div>
 
@@ -171,7 +171,7 @@
 			<NcSelect
 				input-id="cn-job-form-arguments"
 				:aria-label-combobox="t('openconnector', 'Synchronization')"
-				:value="selectedSynchronization"
+				:model-value="selectedSynchronization"
 				:options="synchronizationOptions"
 				:loading="synchronizationsLoading"
 				:clearable="false"
@@ -263,7 +263,7 @@ export default {
 		isSynchronizationJob() {
 			return this.formData?.jobClass === SYNCHRONIZATION_ACTION_CLASS
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		hasArgumentsField() {
 			// True when the schema-derived field list includes an `arguments`
 			// field — drives whether the Synchronization picker renders
@@ -271,11 +271,11 @@ export default {
 			// block after the loop. See template for the wire-up.
 			return Array.isArray(this.fields) && this.fields.some((f) => f.key === 'arguments')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		jobClassOptions() {
 			return JOB_CLASS_OPTIONS
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		selectedJobClassOption() {
 			const current = this.formData?.jobClass
 			if (!current) return null
@@ -284,7 +284,7 @@ export default {
 				label: current,
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		selectedSynchronization() {
 			const args = this.formData?.arguments
 			const id = args && typeof args === 'object' ? args.synchronizationId : null
@@ -299,7 +299,7 @@ export default {
 	watch: {
 		isSynchronizationJob: {
 			immediate: true,
-			/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+			/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 			handler(value) {
 				if (value && this.synchronizationOptions.length === 0) {
 					this.fetchSynchronizations()
@@ -309,7 +309,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		textFieldType(field) {
 			if (field.widget === 'email') return 'email'
 			if (field.widget === 'url') return 'url'
@@ -318,12 +318,12 @@ export default {
 			return 'text'
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		onJobClassPick(option) {
 			this.updateField('jobClass', option?.id ?? null)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		onSynchronizationPick(option) {
 			const current = this.formData?.arguments
 			const next = (current && typeof current === 'object' && !Array.isArray(current))
@@ -337,7 +337,7 @@ export default {
 			this.updateField('arguments', next)
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async fetchSynchronizations() {
 			this.synchronizationsLoading = true
 			try {
@@ -367,7 +367,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		jsonStringFor(field) {
 			if (this.jsonDrafts[field.key] !== undefined) {
 				return this.jsonDrafts[field.key]
@@ -382,21 +382,21 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-2 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		onJsonInput(field, raw) {
-			this.$set(this.jsonDrafts, field.key, raw)
+			this.jsonDrafts[field.key] = raw
 			const trimmed = raw.trim()
 			if (trimmed.length === 0) {
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, null)
 				return
 			}
 			try {
 				const parsed = JSON.parse(trimmed)
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
-				this.$set(this.jsonErrors, field.key, t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message }))
+				this.jsonErrors[field.key] = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
 	},

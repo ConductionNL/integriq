@@ -1,187 +1,339 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Source",
-    "type": "object",
-    "properties": {
-        "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The UUID identifier of this resource."
-        },
-        "name": {
-            "type": "string",
-            "maxLength": 255,
-            "description": "The Name of the Gateway which is used in the commonGround service."
-        },
-        "description": {
-            "type": ["string", "null"],
-            "description": "The description of the Gateway which is used in the commonGround service."
-        },
-        "reference": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The reference of this Source."
-        },
-        "version": {
-            "type": "string",
-            "default": "0.0.0",
-            "description": "The version of this Source."
-        },
-        "location": {
-            "type": "string",
-            "maxLength": 255,
-            "description": "The location where the Gateway needs to be accessed."
-        },
-        "isEnabled": {
-            "type": "boolean",
-            "default": true,
-            "description": "True if this Source is enabled and can be used."
-        },
-        "type": {
-            "type": "string",
-            "enum": ["json", "xml", "soap", "ftp", "sftp"],
-            "default": "json",
-            "description": "The type of this gateway."
-        },
-        "authorizationHeader": {
-            "type": "string",
-            "maxLength": 255,
-            "default": "Authorization",
-            "description": "The header used for api key authorizations."
-        },
-        "auth": {
-            "type": "string",
-            "enum": ["apikey", "jwt", "username-password", "none", "jwt-HS256", "vrijbrp-jwt", "pink-jwt", "oauth"],
-            "default": "none",
-            "description": "The method used for authentication to the Gateway."
-        },
-        "authenticationConfig": {
-            "type": ["object", "null"],
-            "description": "The configuration for certain types of authentication methods."
-        },
-        "authorizationPassthroughMethod": {
-            "type": "string",
-            "enum": ["header", "query", "form_params", "json", "base_auth"],
-            "default": "header",
-            "description": "The method used for authentication to the Gateway."
-        },
-        "locale": {
-            "type": ["string", "null"],
-            "maxLength": 10,
-            "description": "The Locale of the Gateway."
-        },
-        "accept": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The accept header used for the Gateway."
-        },
-        "jwt": {
-            "type": ["string", "null"],
-            "description": "The JWT used for authentication to the Gateway."
-        },
-        "jwtId": {
-            "type": ["string", "null"],
-            "description": "The JWT ID used for authentication to the Gateway."
-        },
-        "secret": {
-            "type": ["string", "null"],
-            "description": "The JWT secret used for authentication to the Gateway."
-        },
-        "username": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The username used for authentication to the Gateway."
-        },
-        "password": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The password used for authentication to the Gateway."
-        },
-        "apikey": {
-            "type": ["string", "null"],
-            "maxLength": 255,
-            "description": "The api key used for authentication to the Gateway."
-        },
-        "documentation": {
-            "type": ["string", "null"],
-            "format": "uri",
-            "description": "The documentation url for this gateway."
-        },
-        "loggingConfig": {
-            "type": "object",
-            "properties": {
-                "callMethod": {"type": "boolean"},
-                "callUrl": {"type": "boolean"},
-                "callQuery": {"type": "boolean"},
-                "callContentType": {"type": "boolean"},
-                "callBody": {"type": "boolean"},
-                "responseStatusCode": {"type": "boolean"},
-                "responseContentType": {"type": "boolean"},
-                "responseBody": {"type": "boolean"},
-                "maxCharCountBody": {"type": "integer"},
-                "maxCharCountErrorBody": {"type": "integer"}
-            },
-            "description": "Configuration for logging."
-        },
-        "oas": {
-            "type": ["array", "null"],
-            "description": "OpenAPI Specification."
-        },
-        "paths": {
-            "type": ["array", "null"],
-            "description": "Paths configuration."
-        },
-        "headers": {
-            "type": ["array", "null"],
-            "description": "Headers that are required to be added for every request."
-        },
-        "translationConfig": {
-            "type": "array",
-            "description": "Config to translate specific calls to a different method or endpoint."
-        },
-        "configuration": {
-            "type": ["object", "null"],
-            "description": "The guzzle configuration of the source."
-        },
-        "endpointsConfig": {
-            "type": ["object", "null"],
-            "description": "The configuration for endpoints on this source, mostly mapping for now."
-        },
-        "status": {
-            "type": "string",
-            "default": "No calls have been made yet to this source",
-            "description": "The status from the last call made to this source."
-        },
-        "lastCall": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The datetime from the last request made to this source."
-        },
-        "lastSync": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The datetime from the last synchronization made to this source."
-        },
-        "objectCount": {
-            "type": "integer",
-            "default": 0,
-            "description": "The count of total sync objects from this source."
-        },
-        "dateCreated": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment this resource was created."
-        },
-        "dateModified": {
-            "type": ["string", "null"],
-            "format": "date-time",
-            "description": "The moment this resource was last Modified."
-        },
-        "test": {
-            "type": "boolean",
-            "default": false,
-            "description": "Whether the source is in test mode."
-        }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Source",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The UUID identifier of this resource."
     },
-    "required": ["id", "name", "location", "type", "auth"]
+    "name": {
+      "type": "string",
+      "maxLength": 255,
+      "description": "The Name of the Gateway which is used in the commonGround service."
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The description of the Gateway which is used in the commonGround service."
+    },
+    "reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The reference of this Source."
+    },
+    "version": {
+      "type": "string",
+      "default": "0.0.0",
+      "description": "The version of this Source."
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 255,
+      "description": "The location where the Gateway needs to be accessed."
+    },
+    "isEnabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "True if this Source is enabled and can be used."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "json",
+        "xml",
+        "soap",
+        "ftp",
+        "sftp"
+      ],
+      "default": "json",
+      "description": "The type of this gateway."
+    },
+    "authorizationHeader": {
+      "type": "string",
+      "maxLength": 255,
+      "default": "Authorization",
+      "description": "The header used for api key authorizations."
+    },
+    "auth": {
+      "type": "string",
+      "enum": [
+        "apikey",
+        "jwt",
+        "username-password",
+        "none",
+        "jwt-HS256",
+        "vrijbrp-jwt",
+        "pink-jwt",
+        "oauth"
+      ],
+      "default": "none",
+      "description": "The method used for authentication to the Gateway."
+    },
+    "authenticationConfig": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The configuration for certain types of authentication methods."
+    },
+    "authorizationPassthroughMethod": {
+      "type": "string",
+      "enum": [
+        "header",
+        "query",
+        "form_params",
+        "json",
+        "base_auth"
+      ],
+      "default": "header",
+      "description": "The method used for authentication to the Gateway."
+    },
+    "locale": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 10,
+      "description": "The Locale of the Gateway."
+    },
+    "accept": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The accept header used for the Gateway."
+    },
+    "jwt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The JWT used for authentication to the Gateway."
+    },
+    "jwtId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The JWT ID used for authentication to the Gateway."
+    },
+    "secret": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The JWT secret used for authentication to the Gateway."
+    },
+    "username": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The username used for authentication to the Gateway."
+    },
+    "password": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The password used for authentication to the Gateway."
+    },
+    "apikey": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "description": "The api key used for authentication to the Gateway."
+    },
+    "documentation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "description": "The documentation url for this gateway."
+    },
+    "loggingConfig": {
+      "type": "object",
+      "properties": {
+        "callMethod": {
+          "type": "boolean"
+        },
+        "callUrl": {
+          "type": "boolean"
+        },
+        "callQuery": {
+          "type": "boolean"
+        },
+        "callContentType": {
+          "type": "boolean"
+        },
+        "callBody": {
+          "type": "boolean"
+        },
+        "responseStatusCode": {
+          "type": "boolean"
+        },
+        "responseContentType": {
+          "type": "boolean"
+        },
+        "responseBody": {
+          "type": "boolean"
+        },
+        "maxCharCountBody": {
+          "type": "integer"
+        },
+        "maxCharCountErrorBody": {
+          "type": "integer"
+        }
+      },
+      "description": "Configuration for logging."
+    },
+    "oas": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "OpenAPI Specification."
+    },
+    "paths": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "Paths configuration."
+    },
+    "headers": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "Headers that are required to be added for every request."
+    },
+    "translationConfig": {
+      "type": "array",
+      "description": "Config to translate specific calls to a different method or endpoint."
+    },
+    "configuration": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The guzzle configuration of the source."
+    },
+    "endpointsConfig": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The configuration for endpoints on this source, mostly mapping for now."
+    },
+    "status": {
+      "type": "string",
+      "default": "No calls have been made yet to this source",
+      "description": "The status from the last call made to this source."
+    },
+    "lastCall": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The datetime from the last request made to this source."
+    },
+    "lastSync": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The datetime from the last synchronization made to this source."
+    },
+    "objectCount": {
+      "type": "integer",
+      "default": 0,
+      "description": "The count of total sync objects from this source."
+    },
+    "dateCreated": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment this resource was created."
+    },
+    "dateModified": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "The moment this resource was last Modified."
+    },
+    "test": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the source is in test mode."
+    },
+    "retryPolicy": {
+      "type": "object",
+      "description": "Retry policy applied by CallService around outbound dispatch (maxAttempts default 1 = today's single-attempt behaviour, backoffStrategy fixed|exponential, baseDelayMs, maxDelayMs, jitter, retryableStatusCodes default [429,502,503,504], retryOnTimeout). A Synchronization may override this per-key via retryPolicyOverride."
+    },
+    "circuitBreakerState": {
+      "type": "string",
+      "enum": [
+        "closed",
+        "open"
+      ],
+      "default": "closed",
+      "description": "Persisted circuit breaker state for this source. half-open is derived (open + cooldown elapsed), never persisted."
+    },
+    "circuitBreakerFailureCount": {
+      "type": "integer",
+      "default": 0,
+      "description": "Consecutive retryable-failure count since the breaker last closed."
+    },
+    "circuitBreakerOpenedAt": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Unix timestamp when the breaker last opened (null when closed)."
+    },
+    "circuitBreakerLastProbeAt": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Unix timestamp of the most recent half-open probe attempt (best-effort guard)."
+    },
+    "circuitBreakerThreshold": {
+      "type": "integer",
+      "default": 5,
+      "description": "Consecutive retryable failures required to open the breaker."
+    },
+    "circuitBreakerCooldownSeconds": {
+      "type": "integer",
+      "default": 30,
+      "description": "Seconds an open breaker stays open before the next dispatch is treated as a half-open probe."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "location",
+    "type",
+    "auth"
+  ]
 }

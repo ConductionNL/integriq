@@ -24,6 +24,7 @@ use OCA\OpenConnector\Service\MappingService;
 use OCA\OpenConnector\Service\ObjectService;
 use OCA\OpenConnector\Service\SynchronizationLogService;
 use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
@@ -89,6 +90,7 @@ class SynchronizationServiceCleanupTest extends TestCase
         $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
         $appConfig                 = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
+        $tablesSyncAdapter = $this->createMock(TablesSyncAdapter::class);
 
         // Partial-mock `updateTarget` so we can assert whether the delete path
         // is reached without exercising the deep OR delete chain underneath.
@@ -103,6 +105,8 @@ class SynchronizationServiceCleanupTest extends TestCase
                     $this->logger,
                     $synchronizationLogService,
                     $appConfig,
+                    $this->createMock(\OCA\OpenConnector\Service\ApprovalService::class),
+                    $tablesSyncAdapter,
                 ]
             )
             ->onlyMethods(['updateTarget'])
