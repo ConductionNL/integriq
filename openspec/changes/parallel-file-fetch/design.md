@@ -2,8 +2,8 @@
 
 ## Architecture Overview
 
-Today `SynchronizationService::processMultipleFilesWithCleanup` (~line 5588)
-loops a single object's file endpoints and calls `fetchFile(...)` (~line 4134)
+Today `SynchronizationService::processMultipleFilesWithCleanup` (~line 7813)
+loops a single object's file endpoints and calls `fetchFile(...)` (~line 6090)
 one at a time. `fetchFile` currently does fetch **and** save in one method, and
 each iteration blocks on a full HTTP round-trip before the next begins:
 
@@ -24,17 +24,62 @@ save behind its own resolved fetch:
 AFTER (concurrent fetch, pipelined serialized saves)
   build one async request per file endpoint:
       callSourceObject(..., asynchronous: true)   → Guzzle Promise
-      each with sink: fopen('php://temp/maxmemory:2097152','r+')   (stream-file-content)
+      each with sink: its own temp-file PATH (tempnam)              (stream-file-content)
   settle via Pool / windowed Utils::settle, concurrency cap = 5 (max 10)
       promise->then(fn => save(resolved download))   # save runs while siblings still download
       promise->otherwise(fn => log + skip)           # per-file error isolation
+      finally         => fclose own handle + unlink the temp file   # per-file, always
   wall-clock ≈ max(fetch-window, Σ(save))
 ```
 
 Scope is strictly the files **within one object**; object-level iteration is
-unchanged. This builds on `stream-file-content`: each concurrent fetch streams
-into its own disk-backed `php://temp`, so N in-flight downloads cost roughly
-N × 2 MB of memory ceiling plus disk, not N × file-size in RAM.
+unchanged. This builds on `stream-file-content`: each concurrent fetch streams to
+its own temp file on disk, so N in-flight downloads cost N × file-size on disk and
+effectively nothing in RAM — not N × file-size in memory.
+
+### The sink is a PATH, never a handle (revised)
+
+An earlier revision of this design specified `fopen('php://temp/maxmemory:2097152','r+')`
+per fetch and passed that **handle** to Guzzle. That is now known to be unsafe and
+was corrected in `stream-file-content`: Guzzle wraps a resource-typed `sink` in a
+PSR-7 `Stream` and **closes the underlying resource** when that stream is
+destructed. The caller is then holding a closed handle — `is_resource()` reports
+false while `str_starts_with()` still rejects it as `resource given`, so the write
+side silently took its string branch and threw a `TypeError`. Every synced object
+was tallied `invalid`, no file was written, and (before REQ-021) no contract was
+persisted, so re-runs duplicated objects.
+
+Passing a path keeps ownership unambiguous: **Guzzle opens and closes its own
+handle; we open ours for the save.** This matters more here than in the sequential
+case, not less — with `requestAsync()` the response and its body stream are
+destructed at a point the caller does not control, so N shared handles would be a
+strictly worse version of the same defect. The path-based sink is therefore a
+**prerequisite** of this change, not an incidental detail.
+
+### Temp-file ownership across the promise boundary
+
+Splitting fetch from save moves the release out of `fetchFile`'s `finally`, so
+cleanup must be restated explicitly. For each file endpoint:
+
+- the **fetch phase** allocates the temp path and owns it until the promise settles;
+- the **save phase** (`then()`) opens its own read handle on that path, hands it to
+  `FileService`, and closes it;
+- **both** the `then()` and `otherwise()` legs — and any early rejection, including
+  requests that never start because the pool was still throttling — must release
+  the handle and `unlink` the path.
+
+N concurrent fetches with partial failures is precisely the case where a missing
+release leaks: the sequential path could rely on one `finally` per call, this one
+cannot. Cleanup is per-file and unconditional.
+
+### Interaction with REQ-021 (contract written before the after-rules)
+
+File fetching runs inside the `after`-timed rules, and `synchronization-engine`
+REQ-021 now persists the `originId` → `targetId` contract **before** those rules
+run. A failure in any of N parallel fetches therefore cannot lose the mapping, so
+parallelisation cannot reintroduce the duplicate-object class that ocon#109
+describes. This change may rely on that ordering; it must not move the contract
+write back behind the rules.
 
 ### Why Guzzle async, not ReactPHP
 
@@ -47,11 +92,43 @@ already exposes this: `dispatchRequest(..., asynchronous: true)` (~line 862)
 calls `$this->client->requestAsync(...)` and returns a Guzzle promise; the
 promise's then/otherwise carry cert-cleanup and logging/rate-limit hygiene, so
 async calls keep **all** of `CallService`'s behaviour.
-`callSourceObject(..., asynchronous: true)` (~line 1356) exposes it. This change
-reuses that surface — it does NOT reimplement HTTP/auth/cert/logging and does NOT
-add `react/http`. The pre-existing ReactPHP-based async docs
+This change reuses that surface — it does NOT reimplement HTTP/auth/cert/logging
+and does NOT add `react/http`. The pre-existing ReactPHP-based async docs
 (`docs/async-file-fetching.md`) describe a fire-and-forget model that is
 superseded by this capped, pipelined Guzzle model for the within-object path.
+
+### `callSourceObject` must be widened first (revised)
+
+An earlier revision of this design asserted that
+`callSourceObject(..., asynchronous: true)` already existed and could simply be
+called. It does not. Its current signature is:
+
+```php
+private function callSourceObject(
+    array $source, string $endpoint='', string $method='GET',
+    array $config=[], bool $read=false, mixed $sink=null,
+    ?ExecutionTraceContext $trace=null
+): ObjectEntity
+```
+
+There is no `asynchronous` parameter, and the return type is `ObjectEntity` (the
+call log) — not a promise. The async capability exists one layer down, on
+`CallService::call(..., bool $asynchronous, ...)`, which returns a Guzzle promise
+when that flag is set.
+
+So this change must **widen `callSourceObject`** before it can fan out:
+
+- add `bool $asynchronous=false`, threaded to `CallService::call`;
+- widen the return to `ObjectEntity|PromiseInterface` — `ObjectEntity` when
+  synchronous (byte-for-byte unchanged for every existing caller), a promise when
+  asynchronous;
+- resolve the promise to the same call-log `ObjectEntity` in `then()`, so the save
+  phase consumes exactly the shape the sequential path does today.
+
+This is the same shape of gap that `stream-file-content` hit: its design assumed
+the OpenConnector side was "only `SynchronizationService`", and the CallService
+`sink` option turned out to be a prerequisite. Recording it here so the work is not
+planned as pure refactoring inside one method.
 
 ### Why saves stay serialized
 
@@ -77,10 +154,13 @@ None. No tables, columns, migrations, or OpenRegister schemas change.
 
 No cross-repo signature change is introduced. This change consumes the
 `FileService` `string|resource` content contract already specified by
-`stream-file-content` (see that change's `contract.md`); the per-file `php://temp`
-sink resource is passed to the same widened `saveFile`/`addFile` surface. Because
-nothing crosses the app boundary anew, a separate `contract.md` for this change
-is intentionally omitted.
+`stream-file-content` (see that change's `contract.md`); the save phase opens its
+own read handle on the per-file temp path and passes that resource to the same
+widened `saveFile`/`addFile` surface. Because nothing crosses the app boundary
+anew, a separate `contract.md` for this change is intentionally omitted.
+
+The in-app signature change to `callSourceObject` (see "must be widened first"
+above) is private to `SynchronizationService` and crosses no app boundary.
 
 ## Nextcloud Integration
 - Controllers: none.
