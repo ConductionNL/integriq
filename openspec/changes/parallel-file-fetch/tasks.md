@@ -33,8 +33,12 @@
   - GIVEN `SynchronizationService::callSourceObjectAsync()` WHEN it is called THEN it resolves the source exactly as `callSourceObject()` does (shared extraction: transient bridge, uuid-then-id addressing, `findSourceObject`) and returns a `PromiseInterface`
   - GIVEN the promise resolves WHEN `then()` runs THEN it yields the same call-log `ObjectEntity` shape the synchronous path returns, so the save phase consumes one shape
   - GIVEN a caller still passes `asynchronous: true` to `call()` after this change WHEN it runs THEN it fails loudly (pointing at `callAsync()`) rather than fataling on a return-type mismatch
-- [ ] Implement
-- [ ] Test
+- [~] Implement — **partially done in `eaa6c466`**, two pieces remain:
+  - [x] `SynchronizationService::resolveSourceObjectForCall()` extracted from `callSourceObject()` (transient ad-hoc bridge REQ-012, uuid-then-legacy-id addressing, `findSourceObject()`), so the async sibling cannot fork source resolution
+  - [x] Dead `if ($asynchronous === true) { return $response; }` branch removed from `CallService::call()`; the flag now throws `InvalidArgumentException` naming the async sibling. Tracked separately as ocon#1088
+  - [ ] Extract `call()`'s pre-dispatch pipeline (early-error guard, circuit-breaker guard, credential resolution, source-config merge, method/URL resolution) into one shared implementation — roughly 110 lines of a ~200-line method, returning ~8 values
+  - [ ] Add `CallService::callAsync(): PromiseInterface` and `SynchronizationService::callSourceObjectAsync(): PromiseInterface` on top of that extraction
+- [ ] Test — no new tests yet. The extraction and branch removal were verified behaviour-preserving against the existing suite (2074 tests, 7480 assertions, only the two `CloudEventListenerTest` failures inherited from `development` via `60f2f14e`/#1086)
 
 ### Task 1: Split `fetchFile` into a fetch phase and a save phase
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized`
