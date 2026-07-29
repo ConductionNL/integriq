@@ -418,20 +418,63 @@ class Application extends App implements IBootstrap
     }//end register()
 
     /**
+     * Answer "is this optional app enabled on this instance" across every
+     * Nextcloud version this app targets.
+     *
+     * THE DEFECT (#1089): the three feature-detection sites below called
+     * `IAppManager::isEnabledForAnyUser()`, which is not a method on
+     * `OCP\App\IAppManager`. On Nextcloud 35 it raises
+     * `Error: Call to undefined method OC\App\AppManager::isEnabledForAnyUser()`.
+     * Because each call site sits inside a `try/catch (\Throwable)` whose only
+     * action is a warning-level log, the failure was SILENT in the way that
+     * matters: the Tables, Forms and WorkflowEngine listeners were simply never
+     * registered, so those integrations did not exist and nothing surfaced
+     * beyond a line in `nextcloud.log`. It was found in the upgrade log of a
+     * failed NC 35 upgrade, not by anything failing loudly.
+     *
+     * THE VERSION SPREAD is why this is a helper rather than a rename.
+     * `isEnabledForAnyone()` — the method that actually expresses this check —
+     * is `@since 32.0.0`, while `appinfo/info.xml` declares
+     * `min-version="28"`. Renaming outright would trade a break on 35 for a
+     * break on 28-31. So: use `isEnabledForAnyone()` where the server has it,
+     * and fall back to `isInstalled()` (`@since 8.0.0`) where it does not.
+     * Those two are the same question — NC's own `@deprecated 32.0.0` note on
+     * `isInstalled()` points callers at `isEnabledForAnyone()` as its
+     * replacement — so the semantics do not shift across the boundary.
+     *
+     * @param \OCP\App\IAppManager $appManager The resolved app manager.
+     * @param string               $appId      The optional app to test.
+     *
+     * @return boolean True when the app is enabled on this instance.
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
+     */
+    private function isAppEnabled(\OCP\App\IAppManager $appManager, string $appId): bool
+    {
+        if (method_exists($appManager, 'isEnabledForAnyone') === true) {
+            return $appManager->isEnabledForAnyone($appId);
+        }
+
+        return (bool) $appManager->isInstalled($appId);
+
+    }//end isAppEnabled()
+
+    /**
      * Register the `nextcloud-event-triggers` capability's `IEventListener`s.
      *
      * Files and calendar registrations are unconditional (Decision 1):
      * `OCP\Files\Events\Node\*` and `OCP\SystemTag\MapperEvent` are stable
      * public `OCP` API present on every NC version this app targets (NC
-     * 28-34); `dav` (source of the OCA-internal `Cached*` calendar events)
+     * 28-35); `dav` (source of the OCA-internal `Cached*` calendar events)
      * ships bundled with every instance, and `OCP\Calendar\Events\*`
      * (`@since 32.0.0`) is referenced only via `::class` (a compile-time
      * string — safe even where the class does not exist on NC < 32; see
      * class docblocks on the listener classes and design.md Decision 1).
      *
      * Tables and Forms registrations are feature-detected via
-     * `IAppManager::isEnabledForAnyUser()` — both are optional Nextcloud App
-     * Store apps. `IAppManager::isEnabledForAnyUser('tables'|'forms')`
+     * {@see isAppEnabled()} — both are optional Nextcloud App
+     * Store apps. `isAppEnabled($appManager, 'tables'|'forms')`
      * returning false means the listener is never registered and no event
      * of that family can ever be observed (REQ-003/REQ-004); this is not
      * required for SAFETY (the `::class` reference is inert either way) but
@@ -471,14 +514,14 @@ class Application extends App implements IBootstrap
         // Tables (REQ-003) — feature-detected.
         try {
             $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
-            if ($appManager->isEnabledForAnyUser('tables') === true) {
+            if ($this->isAppEnabled(appManager: $appManager, appId: 'tables') === true) {
                 $dispatcher->addServiceListener(eventName: RowAddedEvent::class, className: NextcloudTablesEventListener::class);
                 $dispatcher->addServiceListener(eventName: RowUpdatedEvent::class, className: NextcloudTablesEventListener::class);
                 $dispatcher->addServiceListener(eventName: RowDeletedEvent::class, className: NextcloudTablesEventListener::class);
             }
 
             // Forms (REQ-004) — feature-detected.
-            if ($appManager->isEnabledForAnyUser('forms') === true) {
+            if ($this->isAppEnabled(appManager: $appManager, appId: 'forms') === true) {
                 $dispatcher->addServiceListener(eventName: FormSubmittedEvent::class, className: NextcloudFormsEventListener::class);
             }
         } catch (\Throwable $e) {
@@ -511,7 +554,7 @@ class Application extends App implements IBootstrap
      * registration, so calling `IManager::registerOperation()` directly here
      * would not survive across requests.
      *
-     * Feature-detected via `IAppManager::isEnabledForAnyUser('workflowengine')`,
+     * Feature-detected via {@see isAppEnabled()} with `workflowengine`,
      * mirroring the Tables/Forms gate in {@see registerNextcloudEventTriggers()}:
      * when disabled, no registration occurs and nothing is logged (a disabled
      * `workflowengine` app is a normal state, not a fault). The `IAppManager`
@@ -532,7 +575,7 @@ class Application extends App implements IBootstrap
     {
         try {
             $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
-            if ($appManager->isEnabledForAnyUser('workflowengine') === true) {
+            if ($this->isAppEnabled(appManager: $appManager, appId: 'workflowengine') === true) {
                 $dispatcher->addServiceListener(
                     eventName: RegisterOperationsEvent::class,
                     className: RegisterOperationsListener::class
