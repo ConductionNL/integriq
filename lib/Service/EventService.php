@@ -456,7 +456,16 @@ class EventService
 
         return $this->objectService->saveObject(
             object: [
-                'eventId'        => $event->getUuid(),
+                // 🔴 `event` (string, format uuid) is the real FK. `eventId` is the
+                // LEGACY INTEGER FK kept only during the transition (see the
+                // schema's own description; cleanup tracked at #821). Writing a
+                // UUID into `eventId` fails validation with "Property 'eventId'
+                // should be type 'integer or null' but is 'string'",
+                // so EVERY event message was rejected — two logged exceptions on
+                // every OpenRegister object write, fleet-wide, for a row that was
+                // never created. Omit the legacy key entirely rather than sending
+                // null, so the property simply stays unset.
+                'event'          => $event->getUuid(),
                 'consumerId'     => ($subscriptionData['consumerId'] ?? null),
                 'subscriptionId' => $subscription->getUuid(),
                 'status'         => 'pending',
@@ -1400,7 +1409,12 @@ class EventService
         }
 
         $messageData = $message->getObject();
-        $event       = $this->findNotificatiesEvent(eventId: ($messageData['eventId'] ?? null));
+        // Read the UUID FK `event`; `eventId` is the legacy integer column and is
+        // no longer written (see createEventMessage()). Falls back to it so any
+        // pre-existing row still resolves.
+        $event = $this->findNotificatiesEvent(
+            eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
+        );
         if ($event === null) {
             $this->recordFailure(
                 message: $message,
@@ -1598,7 +1612,12 @@ class EventService
         }
 
         $messageData = $message->getObject();
-        $event       = $this->findNotificatiesEvent(eventId: ($messageData['eventId'] ?? null));
+        // Read the UUID FK `event`; `eventId` is the legacy integer column and is
+        // no longer written (see createEventMessage()). Falls back to it so any
+        // pre-existing row still resolves.
+        $event = $this->findNotificatiesEvent(
+            eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
+        );
         if ($event === null) {
             $this->recordFailure(
                 message: $message,
