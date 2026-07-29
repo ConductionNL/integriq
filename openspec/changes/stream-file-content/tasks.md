@@ -62,7 +62,7 @@
   - GIVEN the binary path AND `config['write'] === false` WHEN `fetchFile` returns THEN the streamed content is base64-encoded from the temp handle (non-persist dry-run path preserved)
   - GIVEN the file content on the binary path WHEN streaming THEN it is never assigned to a PHP string variable except the bounded `write===false` dry-run case
 - [x] Implement — `fetchFile` chooses sink vs string up front, streams into `php://temp`, passes the resource to `saveFile`/`addFile`, and `fclose`s in a `finally`
-- [~] Test — no regressions (123/124 SynchronizationService tests pass locally; the 1 error is a pre-existing missing `DomCrawler` optional dep, unrelated). A dedicated unit test of the private `fetchFile` branch selection was **not** added — it needs the container (`FileService`/`ObjectService`) + `callService` mocked and reflection into a ~160-line private method; branch selection is instead exercised by the manual large-file Docker verification (below). Flagged for review.
+- [x] Test — `SynchronizationServiceTest::testFetchFileStreamsRawBinaryDownloadIntoASinkResource` and `::testFetchFileKeepsBase64InJsonResponsesOffTheStreamingPath` assert the private branch selection directly (reflection + `callService` mock). The container is not needed: `$source['_transient'] => true` bypasses source resolution and `config['write'] === false` returns before `FileService` is touched. Mutation-checked — forcing `$useSink = false` fails the streaming test. Full unit suite green: 2074 tests, 0 failures/errors (2 pre-existing warnings in `EventServiceTest.php:619/:711`, unrelated). The earlier `DomCrawler` error no longer occurs.
 
 ### Task 6: Tests for streaming, dual-type acceptance, and preserved behaviour
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path`
@@ -75,7 +75,7 @@
   - An unchanged file re-synced on the resource path performs no write (md5 skip) — *covered (done)*
   - The base64-in-JSON path persists content identically to pre-change behaviour
 - [x] Implement — CallService sink tests (openconnector) + Create/UpdateFileHandler resource tests (openregister, 8 green)
-- [~] Test — transport (`sink` option) and write side (resource stream, exec-block, md5-skip, dual-type) are unit-covered. The `fetchFile` end-to-end branch selection is covered by the passing Synchronization suite + the manual Docker verification, not a dedicated private-method test (see Task 5).
+- [x] Test — transport (`sink` option), branch selection (both `fetchFile` tests, see Task 5) and write side (resource stream, exec-block, md5-skip, dual-type) are all unit-covered across the two repos.
 
 ## Verification
 - All tasks checked off

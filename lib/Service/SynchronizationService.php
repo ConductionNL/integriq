@@ -1772,6 +1772,25 @@ class SynchronizationService
                     );
                 } catch (\Throwable $itemException) {
                     $result['objects']['invalid']++;
+
+                    // Log the reason as well as dead-lettering it. Without this the
+                    // run log carries only a bare `invalid: N` count and the cause
+                    // is reachable ONLY by querying sync_item_dead_letter objects —
+                    // so a whole sync failing looks indistinguishable from the
+                    // target rejecting the objects on schema validation. Note that
+                    // `invalid` conflates three unrelated conditions (this throw, a
+                    // non-array source item, and an unrecognised resultAction), so
+                    // the message states which one this is.
+                    $this->logger->warning(
+                        'Synchronization item counted as invalid: item processing threw',
+                        [
+                            'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                            'exception'       => $itemException->getMessage(),
+                            'exceptionClass'  => get_class($itemException),
+                            'file'            => $itemException->getFile().':'.$itemException->getLine(),
+                        ]
+                    );
+
                     $this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
 
                     $objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
@@ -6093,18 +6112,30 @@ class SynchronizationService
 
         // Choose the transport up front (stream-file-content #110): a raw binary
         // download — no contentPath/filenamePath addressing a JSON envelope —
-        // streams straight into a disk-backed php://temp handle via CallService's
-        // sink option, so the file is never buffered in a PHP string. A JSON
-        // envelope response stays on the existing in-memory string path (its body
-        // must be parsed to extract contentPath/filenamePath).
+        // streams straight to a disk-backed temp FILE via CallService's sink
+        // option, so the file is never buffered in a PHP string. A JSON envelope
+        // response stays on the existing in-memory string path (its body must be
+        // parsed to extract contentPath/filenamePath).
+        //
+        // A PATH is handed to Guzzle, never our own handle. Guzzle wraps a
+        // resource-typed `sink` in a PSR-7 Stream and CLOSES that resource when the
+        // stream is destructed — so a shared handle came back to us already closed.
+        // `is_resource()` then reported false, the write side took its string
+        // branch, and `str_starts_with()` threw "must be of type string, resource
+        // given"; the per-item catch tallied every object as `invalid`, no file was
+        // written and no contract was persisted (which is why re-runs re-created
+        // objects instead of updating them). Passing a path keeps ownership clean:
+        // Guzzle opens and closes its own handle, we open ours for the write.
         $useSink = (empty($config['contentPath']) === true && empty($config['filenamePath']) === true);
 
-        $sink = null;
+        $sink     = null;
+        $sinkPath = null;
         if ($useSink === true) {
-            $sink = fopen('php://temp/maxmemory:2097152', 'r+');
-            if ($sink === false) {
-                // The php://temp handle could not be opened; fall back to the buffered path.
-                $sink    = null;
+            $sinkPath = tempnam(sys_get_temp_dir(), 'oc-stream-');
+            if ($sinkPath === false) {
+                // The temp file could not be created; fall back to the buffered path.
+                $sinkPath = null;
+                $sink     = null;
                 $useSink = false;
             }
         }
@@ -6115,9 +6146,18 @@ class SynchronizationService
                 endpoint: $endpoint,
                 method: $config['method'] ?? 'GET',
                 config: $config['sourceConfiguration'] ?? [],
-                sink: $sink
+                sink: $sinkPath
             );
             $response = $this->callLogResponse(callLog: $result);
+
+            // Open OUR OWN read handle on the downloaded temp file. Guzzle has by
+            // now closed the handle it opened for the path, so nothing is shared.
+            if ($useSink === true) {
+                $sink = fopen($sinkPath, 'r');
+                if ($sink === false) {
+                    throw new Exception("Could not reopen streamed download for {$originalEndpoint}");
+                }
+            }
 
             // Check if response is valid (status/headers are recorded even when the
             // body streamed to the sink).
@@ -6260,8 +6300,25 @@ class SynchronizationService
             return $originalEndpoint;
         } finally {
             // Always release the disk-backed temp handle on the streamed path.
-            if ($sink !== null) {
+            //
+            // Guard on is_resource(), NOT on `!== null`: once the handle has been
+            // handed to FileService::saveFile()/addFile() the write side streams
+            // it via OCP\Files\File::putContent(), which CLOSES the source stream
+            // itself. `$sink` is then a still-non-null but already-closed handle,
+            // so the old `!== null` guard called fclose() a second time and threw
+            // "fclose(): supplied resource is not a valid stream resource" — a
+            // TypeError on PHP 8, which propagated out of fetchFile, was caught by
+            // the per-item \Throwable handler in synchronizeExternToIntern() and
+            // silently tallied EVERY streamed item as `invalid`. is_resource()
+            // returns false for a closed handle, making this release idempotent
+            // regardless of whether the write side already consumed it.
+            if (is_resource($sink) === true) {
                 fclose($sink);
+            }
+
+            // The temp file is ours to remove: Guzzle only wrote to the path.
+            if ($sinkPath !== null && file_exists($sinkPath) === true) {
+                unlink($sinkPath);
             }
         }//end try
     }//end fetchFile()
@@ -7248,7 +7305,19 @@ class SynchronizationService
 
         // We can only deal with arrays (based on the source empty values or string might be returned).
         if (is_array($object) === false) {
+            // Second silent "invalid" path: the source item was not an array at
+            // all. Log the received type + a bounded preview so the run log's
+            // `invalid: N` can be traced back to malformed source data rather
+            // than to target-side rejection.
             $result['objects']['invalid']++;
+            $this->logger->warning(
+                'Synchronization item counted as invalid: source item is not an array',
+                [
+                    'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                    'receivedType'    => get_debug_type($object),
+                    'preview'         => mb_substr(((string) (is_scalar($object) === true ? $object : '')), 0, 200),
+                ]
+            );
             if ($trace !== null) {
                 $trace->addStep(
                     type: 'synchronization',
@@ -7416,7 +7485,25 @@ class SynchronizationService
                 $result['objects']['skipped']++;
                 break;
             default:
+                // An unrecognised (or null) resultAction is tallied as "invalid",
+                // which historically produced a bare `invalid: N` count in the run
+                // log with no way to tell WHY — the reason was discarded here. Log
+                // the actual action plus the contract-result shape so an operator
+                // can distinguish "the target rejected the object" from "the write
+                // path returned an action this switch does not know about".
                 $result['objects']['invalid']++;
+                $this->logger->warning(
+                    'Synchronization item counted as invalid: unrecognised resultAction',
+                    [
+                        'synchronization'      => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                        'resultAction'         => $resultAction,
+                        'contractResultKeys'   => array_keys(($synchronizationContractResult ?? [])),
+                        'contractError'        => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
+                        'contractUuid'         => ($contractUuid ?? null),
+                        'targetId'             => ($synchronizationContract['targetId'] ?? null),
+                        'originId'             => ($synchronizationContract['originId'] ?? null),
+                    ]
+                );
                 break;
         }
 
