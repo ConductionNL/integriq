@@ -28,6 +28,8 @@ use Adbar\Dot;
 use DateTime;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Promise\Each;
+use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
 use JWadhams\JsonLogic;
 use OCA\OpenConnector\Event\SynchronizationDeletionGuardedEvent;
@@ -158,6 +160,49 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-is-gated-on-fetch-completeness-and-a-configurable-deletion-ratio-guard-req-010
      */
     const MIN_CONTRACTS_FOR_DELETION_RATIO_GUARD = 3;
+
+    /**
+     * Default number of a single object's file downloads allowed in flight at once.
+     *
+     * A POLITENESS default, not a memory one. Nothing about PHP binds at this
+     * number: each fetch streams to a temp file, so its memory cost is curl
+     * buffers and headers (tens of KB against a 512 M limit), and it costs 2 file
+     * descriptors (against a measured `ulimit -n` of 1024). The constraint is the
+     * upstream — the Woo sources include a demo zaaksysteem plus government
+     * endpoints (TenderNed, Diavgeia, KvK) — and, because saves stay serialized,
+     * the sum of the saves.
+     *
+     * Overridable per source via `configuration.maxConcurrentFetches`.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private const FETCH_CONCURRENCY_DEFAULT = 5;
+
+    /**
+     * Hard ceiling on the per-source file-fetch concurrency.
+     *
+     * A source asking for more than this is clamped and the clamp is logged, so a
+     * misconfiguration cannot turn one object's attachments into an unbounded
+     * burst against an upstream.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private const FETCH_CONCURRENCY_MAX = 20;
+
+    /**
+     * Default total in-flight byte budget for one object's concurrent downloads
+     * (~256 MB).
+     *
+     * A count cap alone is the wrong unit: ten 5 MB attachments are trivial where
+     * ten 2 GB exports are not. Derived from `Content-Length` where the source
+     * sends it; a source that omits the header is gated by count alone.
+     *
+     * Overridable per source via `configuration.maxInFlightFetchBytes`; 0
+     * disables the budget and leaves count-only gating.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private const FETCH_BYTE_BUDGET_DEFAULT = 268435456;
 
     /**
      * The OpenRegister-backed synchronization run-log write service.
@@ -5423,15 +5468,18 @@ class SynchronizationService
      * closing the caller's handle — at a moment this caller does not control.
      * {@see CallService::callAsync()} rejects a resource at the boundary.
      *
-     * @param array                      $source   The source value object to call with.
-     * @param string                     $endpoint The endpoint to call.
-     * @param string                     $method   The HTTP method.
-     * @param array                      $config   The call configuration.
-     * @param bool                       $read     Whether this is a single-object read call.
-     * @param mixed                      $sink     Optional temp-file PATH the response body streams into; null =
-     *                                             buffered. Never a stream resource.
-     * @param ExecutionTraceContext|null $trace    The active execution trace context, forwarded so the call is
-     *                                             stamped with `traceId` and captured as a `call` step.
+     * @param array                      $source    The source value object to call with.
+     * @param string                     $endpoint  The endpoint to call.
+     * @param string                     $method    The HTTP method.
+     * @param array                      $config    The call configuration.
+     * @param bool                       $read      Whether this is a single-object read call.
+     * @param mixed                      $sink      Optional temp-file PATH the response body streams into; null =
+     *                                              buffered. Never a stream resource.
+     * @param ExecutionTraceContext|null $trace     The active execution trace context, forwarded so the call is
+     *                                              stamped with `traceId` and captured as a `call` step.
+     * @param callable|null              $onHeaders Optional callback invoked with the PSR-7 response once its headers
+     *                                              have arrived and before the body downloads, used to read
+     *                                              `Content-Length` for the in-flight byte budget.
      *
      * @return PromiseInterface A promise resolving to the call-log ObjectEntity.
      *
@@ -5445,7 +5493,8 @@ class SynchronizationService
         array $config=[],
         bool $read=false,
         mixed $sink=null,
-        ?ExecutionTraceContext $trace=null
+        ?ExecutionTraceContext $trace=null,
+        ?callable $onHeaders=null
     ): PromiseInterface {
         return $this->callService->callAsync(
             source: $this->resolveSourceObjectForCall(source: $source),
@@ -5454,7 +5503,8 @@ class SynchronizationService
             config: $config,
             read: $read,
             sink: $sink,
-            trace: $trace
+            trace: $trace,
+            onHeaders: $onHeaders
         );
     }//end callSourceObjectAsync()
 
@@ -6215,6 +6265,52 @@ class SynchronizationService
         ?string $published=null,
         int|string|null $registerId=null
     ): string {
+        $prepared = $this->prepareFileFetch(source: $source, endpoint: $endpoint, config: $config);
+
+        try {
+            $callLog = $this->callSourceObject(
+                source: $source,
+                endpoint: $prepared['endpoint'],
+                method: $prepared['config']['method'] ?? 'GET',
+                config: $prepared['config']['sourceConfiguration'] ?? [],
+                sink: $prepared['sinkPath']
+            );
+
+            return $this->saveFetchedFile(
+                prepared: $prepared,
+                callLog: $callLog,
+                objectId: $objectId,
+                tags: $tags,
+                filename: $filename,
+                published: $published,
+                registerId: $registerId
+            );
+        } finally {
+            $this->releaseFileFetch(prepared: $prepared);
+        }//end try
+    }//end fetchFile()
+
+    /**
+     * Fetch phase of {@see fetchFile()}: everything that must happen BEFORE the
+     * HTTP request, producing the descriptor the save phase consumes.
+     *
+     * Split out for ocon#111 so a download can be dispatched asynchronously and
+     * saved later, from a promise callback, without re-deriving the endpoint,
+     * re-rendering the source configuration, or re-deciding the transport. The
+     * returned array is the unit of per-file state the concurrent path carries
+     * across the promise boundary — including the temp path whose release
+     * {@see releaseFileFetch()} owns.
+     *
+     * @param array  $source   The source to fetch the file from.
+     * @param string $endpoint The endpoint for the file.
+     * @param array  $config   The configuration of the action.
+     *
+     * @return array{originalEndpoint: string, endpoint: string, config: array, useSink: boolean, sinkPath: string|null}
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+     */
+    private function prepareFileFetch(array $source, string $endpoint, array $config): array
+    {
         $originalEndpoint = $endpoint;
         $sourceLocation   = (string) ($source['location'] ?? '');
         if (str_contains(haystack: $endpoint, needle: $sourceLocation) === true) {
@@ -6252,30 +6348,108 @@ class SynchronizationService
         // written and no contract was persisted (which is why re-runs re-created
         // objects instead of updating them). Passing a path keeps ownership clean:
         // Guzzle opens and closes its own handle, we open ours for the write.
+        //
+        // Concurrency makes this a prerequisite rather than a detail: under
+        // requestAsync() the response body stream is destructed at a moment the
+        // caller does not control, so N shared handles would be a strictly worse
+        // version of the same defect.
         $useSink = (empty($config['contentPath']) === true && empty($config['filenamePath']) === true);
 
-        $sink     = null;
         $sinkPath = null;
         if ($useSink === true) {
             $sinkPath = tempnam(sys_get_temp_dir(), 'oc-stream-');
             if ($sinkPath === false) {
                 // The temp file could not be created; fall back to the buffered path.
                 $sinkPath = null;
-                $sink     = null;
-                $useSink = false;
+                $useSink  = false;
             }
         }
 
-        try {
-            $result   = $this->callSourceObject(
-                source: $source,
-                endpoint: $endpoint,
-                method: $config['method'] ?? 'GET',
-                config: $config['sourceConfiguration'] ?? [],
-                sink: $sinkPath
-            );
-            $response = $this->callLogResponse(callLog: $result);
+        return [
+            'originalEndpoint' => $originalEndpoint,
+            'endpoint'         => $endpoint,
+            'config'           => $config,
+            'useSink'          => $useSink,
+            'sinkPath'         => $sinkPath,
+        ];
+    }//end prepareFileFetch()
 
+    /**
+     * Release the temp file a {@see prepareFileFetch()} descriptor owns.
+     *
+     * The temp file is ours to remove: Guzzle only ever wrote to the path, and
+     * closed its own handle. Idempotent, so it is safe to call from a `finally`,
+     * from a promise's `then()` AND from its `otherwise()` — which is exactly what
+     * the concurrent path needs, since splitting fetch from save moved the release
+     * out of one `finally` per call and N partial failures otherwise leak a temp
+     * file each.
+     *
+     * @param array $prepared The prepareFileFetch() descriptor.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    private function releaseFileFetch(array $prepared): void
+    {
+        $sinkPath = ($prepared['sinkPath'] ?? null);
+        if ($sinkPath !== null && file_exists($sinkPath) === true) {
+            unlink($sinkPath);
+        }
+    }//end releaseFileFetch()
+
+    /**
+     * Save phase of {@see fetchFile()}: turns an already-resolved download into a
+     * stored OpenRegister file.
+     *
+     * Split out for ocon#111 so this can run from a fetch promise's `then()` while
+     * sibling downloads are still in flight. It re-fetches nothing — the download
+     * is already on disk at `$prepared['sinkPath']` (streamed path) or already in
+     * the call log's body (JSON-envelope path).
+     *
+     * This phase owns the READ handle only: it opens its own handle on the temp
+     * file and closes it, while the temp file itself is released by
+     * {@see releaseFileFetch()}. Saves are invoked one at a time even when
+     * fetches overlap — PHP is single-threaded and Nextcloud uses one shared
+     * database connection, so concurrent OpenRegister writes are not safe.
+     *
+     * @param array           $prepared   The prepareFileFetch() descriptor for this file.
+     * @param ObjectEntity    $callLog    The call log returned by the (synchronous or asynchronous) dispatch.
+     * @param string          $objectId   The id of the object the file belongs to.
+     * @param array|null      $tags       Tags to assign to the file.
+     * @param string|null     $filename   Filename to assign to the file; resolved here when null.
+     * @param string|null     $published  The published status to determine if the file should be published.
+     * @param int|string|null $registerId The id of the register the object belongs to.
+     *
+     * @return string If write is enabled: the url of the file, if write is disabled: the base64 encoded file.
+     *
+     * @throws ContainerExceptionInterface
+     * @throws GenericFileException
+     * @throws LockedException
+     * @throws NotFoundExceptionInterface
+     * @throws \OCP\DB\Exception
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+     */
+    private function saveFetchedFile(
+        array $prepared,
+        ObjectEntity $callLog,
+        string $objectId,
+        ?array $tags=[],
+        ?string &$filename=null,
+        ?string $published=null,
+        int|string|null $registerId=null
+    ): string {
+        $originalEndpoint = $prepared['originalEndpoint'];
+        $config           = $prepared['config'];
+        $useSink          = $prepared['useSink'];
+        $sinkPath         = $prepared['sinkPath'];
+
+        $result   = $callLog;
+        $response = $this->callLogResponse(callLog: $callLog);
+        $sink     = null;
+
+        try {
             // Open OUR OWN read handle on the downloaded temp file. Guzzle has by
             // now closed the handle it opened for the path, so nothing is shared.
             if ($useSink === true) {
@@ -6438,16 +6612,16 @@ class SynchronizationService
             // silently tallied EVERY streamed item as `invalid`. is_resource()
             // returns false for a closed handle, making this release idempotent
             // regardless of whether the write side already consumed it.
+            //
+            // The temp FILE is released by releaseFileFetch() rather than here:
+            // the concurrent path calls this save phase from a promise callback
+            // and must unlink on the rejected leg too, where this method never
+            // runs at all.
             if (is_resource($sink) === true) {
                 fclose($sink);
             }
-
-            // The temp file is ours to remove: Guzzle only wrote to the path.
-            if ($sinkPath !== null && file_exists($sinkPath) === true) {
-                unlink($sinkPath);
-            }
         }//end try
-    }//end fetchFile()
+    }//end saveFetchedFile()
 
     /**
      * Convert a JSON target payload to multipart/form-data when fileUpload is configured.
@@ -7890,20 +8064,60 @@ class SynchronizationService
      */
     private function processMultipleFilesWithCleanup(array $source, array $config, array $endpoints, ?string $objectId=null): void
     {
-        $newFileNames = [];
-
         if ($endpoints === [] && $objectId !== null) {
             $targetObjectId = $objectId;
         } else if ($endpoints === []) {
             return;
         }
 
-        // Process all files first and collect their filenames.
+        // Resolve every endpoint into a work item FIRST, so the concurrency
+        // window can be opened over the complete set. This is also why the
+        // behaviour carries no missing-file or double-sync risk and does not
+        // depend on any source-side ordering: the file list is fully known
+        // before a single request is dispatched, and no internal paging splits
+        // the source load.
+        $resolved = $this->resolveMultiFileWorkItems(config: $config, endpoints: $endpoints, objectId: $objectId);
+        $items    = $resolved['items'];
+
+        // The sequential loop this replaced assigned $targetObjectId on EVERY
+        // iteration — including endpoints that resolved to null and were never
+        // fetched — and cleaned up against the LAST one. Preserved deliberately;
+        // changing it would silently repoint file cleanup.
+        $targetObjectId = $resolved['lastObjectId'];
+
+        $newFileNames = $this->fetchFilesConcurrently(source: $source, config: $config, items: $items);
+
+        // Always run cleanup, even if newFileNames is empty.
+        // This handles the case where all files should be removed from an object.
+        $this->cleanupOrphanedFiles(objectId: $targetObjectId, newFileNames: $newFileNames);
+    }//end processMultipleFilesWithCleanup()
+
+    /**
+     * Resolve a multi-file endpoint list into per-file work items.
+     *
+     * Extracted from {@see processMultipleFilesWithCleanup()} for ocon#111: the
+     * concurrent fetcher needs the whole set of per-file contexts (filename,
+     * tags, target object, register, published state) up front, before any
+     * request is dispatched.
+     *
+     * @param array       $config    The fetch_file rule configuration.
+     * @param array       $endpoints Array of endpoints/file data to process.
+     * @param string|null $objectId  The UUID of the object to attach files to.
+     *
+     * @return array{items: array<int, array{endpoint: string, objectId: string|null, filename: string|null,
+     *               tags: array, published: mixed, registerId: mixed}>, lastObjectId: string|null}
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-not-depend-on-source-ordering-or-split-source-load
+     */
+    private function resolveMultiFileWorkItems(array $config, array $endpoints, ?string $objectId=null): array
+    {
+        $items        = [];
+        $lastObjectId = $objectId;
+
         foreach ($endpoints as $endpoint) {
             $filename        = null;
             $tags            = [];
             $contextObjectId = null;
-            $actualEndpoint  = null;
             $registerId      = null;
             $published       = null;
 
@@ -7925,52 +8139,511 @@ class SynchronizationService
             }
 
             // Use context object ID if specified, otherwise fall back to the original object ID.
-            $targetObjectId = $contextObjectId ?? $objectId;
+            $lastObjectId = ($contextObjectId ?? $objectId);
 
-            if ($actualEndpoint !== null) {
-                // Determine filename for tracking BEFORE attempting fetch.
-                try {
-                    // Fetch the file.
-                    $this->fetchFile(
-                        source: $source,
-                        endpoint: $actualEndpoint,
-                        config: $config,
-                        objectId: $targetObjectId,
-                        tags: $tags,
-                        filename: $filename,
-                        published: $published,
-                        registerId: $registerId
-                    );
-                } catch (Exception $e) {
-                    $this->logger->error("Failed to fetch file from endpoint {$actualEndpoint}: ".$e->getMessage(), ['exception' => $e]);
-                    // Note: We still keep the filename in tracking array even if fetch fails.
-                    // This prevents cleanup from deleting files that should exist.
-                }
+            if ($actualEndpoint === null) {
+                continue;
+            }
 
-                $trackingFilename = $filename;
-
-                if ($trackingFilename === null) {
-                    // Try to extract filename from endpoint URL.
-                    $pathParts        = explode('/', $actualEndpoint);
-                    $trackingFilename = end($pathParts);
-
-                    // If still no clear filename, generate a fallback.
-                    if (empty($trackingFilename) === true || strpos($trackingFilename, '?') !== false) {
-                        $trackingFilename = 'file_'.md5($actualEndpoint);
-                    }
-                }
-
-                // Add to tracking array BEFORE attempting fetch (so failures don't affect cleanup).
-                if (empty($trackingFilename) === false) {
-                    $newFileNames[] = $trackingFilename;
-                }
-            }//end if
+            $items[] = [
+                'endpoint'   => $actualEndpoint,
+                'objectId'   => $lastObjectId,
+                'filename'   => $filename,
+                'tags'       => $tags,
+                'published'  => $published,
+                'registerId' => $registerId,
+            ];
         }//end foreach
 
-        // Always run cleanup, even if newFileNames is empty.
-        // This handles the case where all files should be removed from an object.
-        $this->cleanupOrphanedFiles(objectId: $targetObjectId, newFileNames: $newFileNames);
-    }//end processMultipleFilesWithCleanup()
+        return [
+            'items'        => $items,
+            'lastObjectId' => $lastObjectId,
+        ];
+    }//end resolveMultiFileWorkItems()
+
+    /**
+     * Resolve the per-source concurrency cap and in-flight byte budget.
+     *
+     * Both live in `source.configuration` rather than in a global setting or a
+     * new top-level source field, because politeness towards an upstream is a
+     * property of THAT upstream — and because the free-form `configuration` path
+     * already works, where a new declared-but-never-read schema field would just
+     * add to the pile of dead source fields.
+     *
+     * The count cap is NOT a memory control. Measured in the dev container:
+     * `memory_limit` 512 M against a per-request cost of curl buffers and headers
+     * (tens of KB, because each fetch streams to a temp file); `ulimit -n` 1024
+     * against 2 descriptors per fetch, so 40 at the hard maximum. Nothing about
+     * PHP binds at these numbers. The real constraints are the upstream source
+     * and — since saves stay serialized — the sum of the saves.
+     *
+     * The byte budget is the guard that actually matters, because count is the
+     * wrong unit on its own: ten 5 MB attachments are trivial where ten 2 GB
+     * exports are not.
+     *
+     * @param array $source The source value object.
+     *
+     * @return array{concurrency: int, byteBudget: int} The clamped cap and the byte budget (0 = count-only).
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private function resolveFetchConcurrency(array $source): array
+    {
+        $sourceConfiguration = ($source['configuration'] ?? []);
+        if (is_array($sourceConfiguration) === false) {
+            $sourceConfiguration = [];
+        }
+
+        $concurrency = (int) ($sourceConfiguration['maxConcurrentFetches'] ?? self::FETCH_CONCURRENCY_DEFAULT);
+        if ($concurrency < 1) {
+            $concurrency = 1;
+        }
+
+        if ($concurrency > self::FETCH_CONCURRENCY_MAX) {
+            $this->logger->warning(
+                'Source requested a file-fetch concurrency of '.$concurrency
+                .', which exceeds the hard maximum of '.self::FETCH_CONCURRENCY_MAX.'; clamping.'
+            );
+            $concurrency = self::FETCH_CONCURRENCY_MAX;
+        }
+
+        $byteBudget = (int) ($sourceConfiguration['maxInFlightFetchBytes'] ?? self::FETCH_BYTE_BUDGET_DEFAULT);
+        if ($byteBudget < 0) {
+            $byteBudget = 0;
+        }
+
+        return [
+            'concurrency' => $concurrency,
+            'byteBudget'  => $byteBudget,
+        ];
+    }//end resolveFetchConcurrency()
+
+    /**
+     * Fetch one object's files concurrently, pipelining each save behind its own
+     * resolved download.
+     *
+     * Net wall-clock moves from `Σ fetch + Σ saves` towards
+     * `max(fetch-window, Σ saves)`: the fetches overlap inside a bounded window,
+     * and each save runs from its own promise's `then()` as soon as that download
+     * resolves, rather than waiting for the slowest sibling.
+     *
+     * Saves are NOT parallel and must not become so. They run from promise
+     * callbacks on Guzzle's task queue, which is single-threaded, so exactly one
+     * OpenRegister write is ever in progress — PHP is single-threaded and
+     * Nextcloud uses one shared database connection. That also means the
+     * achievable gain is capped by `Σ saves`; raising the concurrency cap past
+     * the point where the saves dominate buys nothing.
+     *
+     * Per-file failures are isolated: a rejected fetch or a throwing save is
+     * logged and skipped, its temp file released, and the siblings and the object
+     * continue. The tracking filename is recorded either way, exactly as the
+     * sequential path did — cleanup must not delete a file whose fetch merely
+     * failed this run.
+     *
+     * @param array $source The source to fetch files from.
+     * @param array $config The fetch_file rule configuration.
+     * @param array $items  The work items from {@see resolveMultiFileWorkItems()}.
+     *
+     * @return array The tracking filenames for cleanup. Order follows settle order rather
+     *               than endpoint order; cleanup only membership-tests it.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    private function fetchFilesConcurrently(array $source, array $config, array $items): array
+    {
+        if ($items === []) {
+            return [];
+        }
+
+        $limits = $this->resolveFetchConcurrency(source: $source);
+
+        // Shared mutable run state. Passed by reference into the generator and
+        // every promise callback: the byte tally has to be readable by the
+        // admission gate and writable by both settle legs.
+        $state = [
+            'fileNames'     => [],
+            'inFlightBytes' => 0,
+            'inFlightSize'  => [],
+            'throttled'     => false,
+            'released'      => [],
+            // Monotonic, never derived from count($state['released']) — slots are
+            // unset as they settle, so a count-based index would collide with a
+            // live slot the moment one file finishes before another starts.
+            'nextSlot'      => 0,
+        ];
+
+        try {
+            $this->settleFileFetches(source: $source, config: $config, items: $items, limits: $limits, state: $state);
+        } catch (\Throwable $exception) {
+            // The per-file legs already isolate their own failures, so reaching
+            // here means the WINDOW itself failed (an aggregate rejection, a
+            // cancelled wait). The object must still continue and — critically —
+            // still reach its file cleanup, exactly as it did when this was a
+            // sequential loop with a per-file catch.
+            $this->logger->error(
+                'Concurrent file fetching for this object failed: '.$exception->getMessage(),
+                ['exception' => $exception]
+            );
+        } finally {
+            // An abort mid-settle (a cancelled wait, a throw escaping the task
+            // queue) leaves the temp files of items that never settled — and of
+            // items the pool was still holding back — on disk. Sweep every
+            // allocated path that has not already been released.
+            $this->releaseUnsettledFileFetches(state: $state);
+        }//end try
+
+        if ($state['throttled'] === true) {
+            $this->logger->info(
+                'File fetches for this object were throttled: concurrency cap '.$limits['concurrency']
+                .', in-flight byte budget '.$limits['byteBudget'].' bytes.'
+            );
+        }
+
+        return $state['fileNames'];
+    }//end fetchFilesConcurrently()
+
+    /**
+     * Drive the bounded concurrency window over one object's file fetches.
+     *
+     * The generator is what makes the window lazy: `Each::ofLimit()` pulls the
+     * next promise only when it has room, so dispatch happens at admission time
+     * rather than all at once. `ofLimit()` — not `ofLimitAll()` — because the
+     * aggregate must NOT reject when one file fails.
+     *
+     * @param array $source The source to fetch files from.
+     * @param array $config The fetch_file rule configuration.
+     * @param array $items  The per-file work items.
+     * @param array $limits The resolved concurrency cap and byte budget.
+     * @param array $state  Shared run state, mutated in place.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private function settleFileFetches(array $source, array $config, array $items, array $limits, array &$state): void
+    {
+        $promises = (function () use ($source, $config, $items, &$state) {
+            foreach ($items as $index => $item) {
+                yield $index => $this->fetchFileAsync(source: $source, config: $config, item: $item, state: $state);
+            }
+        })();
+
+        Each::ofLimit(
+            $promises,
+            $this->buildFetchAdmissionGate(limits: $limits, state: $state),
+            null,
+            null
+        )->wait();
+    }//end settleFileFetches()
+
+    /**
+     * Build the admission gate handed to `Each::ofLimit()` as its concurrency
+     * argument.
+     *
+     * Guzzle calls this with the number of currently pending promises and expects
+     * the total it may have in flight. Returning the pending count admits
+     * nothing more this round; the gate is consulted again as each promise
+     * settles, so a held-back request starts as soon as there is room.
+     *
+     * Two gates, in order:
+     *  1. **Count** — never exceed the per-source cap.
+     *  2. **Bytes** — once the `Content-Length` of the requests currently in
+     *     flight exceeds the budget, admit nothing more. Sizes only become known
+     *     when each response's headers arrive (via the `on_headers` hook), so
+     *     this gates on KNOWN in-flight bytes and degrades to count-only against
+     *     a source that omits `Content-Length` — which is exactly the documented
+     *     fallback.
+     *
+     * At least one request is always admitted when nothing is pending. Without
+     * that floor a single attachment larger than the whole budget would never be
+     * fetched, and — worse — the pool would deadlock: with no promise pending,
+     * nothing would ever settle to re-consult this gate.
+     *
+     * @param array $limits The resolved concurrency cap and byte budget.
+     * @param array $state  Shared run state, read for the byte tally and marked when throttling.
+     *
+     * @return callable The concurrency callable.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private function buildFetchAdmissionGate(array $limits, array &$state): callable
+    {
+        return function (int $pending) use ($limits, &$state): int {
+            // Note the contract: this returns the TOTAL allowed in flight, not a
+            // number to add. EachPromise subtracts the pending count itself, so
+            // returning the cap is what fills the window — returning 1 here would
+            // silently degenerate the pool to sequential dispatch.
+            if ($pending >= $limits['concurrency']) {
+                $state['throttled'] = true;
+            }
+
+            // Byte gate. Only applied while something is already in flight: with
+            // nothing pending there is nothing to wait for, so refusing here
+            // would both deadlock the pool (no promise left to settle and
+            // re-consult this gate) and make a single attachment larger than the
+            // whole budget permanently unfetchable.
+            if ($pending > 0
+                && $limits['byteBudget'] > 0
+                && $state['inFlightBytes'] >= $limits['byteBudget']
+            ) {
+                $state['throttled'] = true;
+
+                return $pending;
+            }
+
+            return $limits['concurrency'];
+        };
+    }//end buildFetchAdmissionGate()
+
+    /**
+     * Dispatch one file's fetch asynchronously and attach its save and its
+     * cleanup to the resulting promise.
+     *
+     * The sink is the work item's own temp-file PATH. It is never a stream
+     * handle: Guzzle wraps a resource-typed sink in a PSR-7 Stream and closes
+     * that resource on destruct, and under asynchronous dispatch the destruct
+     * happens at a moment this caller does not control — so N shared handles
+     * would be a strictly worse version of the defect stream-file-content fixed.
+     *
+     * Every leg releases. `then()` saves and releases; `otherwise()` logs and
+     * releases. Splitting fetch from save moved the release out of one `finally`
+     * per call, and N concurrent fetches with partial failures is precisely the
+     * shape where a missing release leaks a descriptor and a temp file per
+     * failure.
+     *
+     * @param array $source The source to fetch the file from.
+     * @param array $config The fetch_file rule configuration.
+     * @param array $item   One work item from {@see resolveMultiFileWorkItems()}.
+     * @param array $state  Shared run state, mutated in place.
+     *
+     * @return PromiseInterface A promise that settles once this file has been saved or isolated.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    private function fetchFileAsync(array $source, array $config, array $item, array &$state): PromiseInterface
+    {
+        $slot = null;
+
+        try {
+            $prepared = $this->prepareFileFetch(source: $source, endpoint: $item['endpoint'], config: $config);
+
+            $slot = $state['nextSlot'];
+            $state['nextSlot']++;
+            $state['released'][$slot]     = $prepared;
+            $state['inFlightSize'][$slot] = 0;
+
+            $promise = $this->callSourceObjectAsync(
+                source: $source,
+                endpoint: $prepared['endpoint'],
+                method: $prepared['config']['method'] ?? 'GET',
+                config: $prepared['config']['sourceConfiguration'] ?? [],
+                sink: $prepared['sinkPath'],
+                onHeaders: $this->buildInFlightSizeRecorder(slot: $slot, state: $state)
+            );
+        } catch (\Throwable $exception) {
+            // A SYNCHRONOUS throw before dispatch — an unresolvable source, a Twig
+            // error in the source configuration, a guard that raises rather than
+            // short-circuits. This must not escape: the generator feeding
+            // Each::ofLimit() is advanced inside EachPromise::advanceIterator(),
+            // which rejects the AGGREGATE on a throw and would abort every file
+            // that had not started yet. Isolate it here and hand back a settled
+            // promise so the pool simply moves on.
+            $this->logger->error(
+                'Failed to dispatch file fetch for endpoint '.$item['endpoint'].': '.$exception->getMessage(),
+                ['exception' => $exception]
+            );
+
+            $this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+
+            if ($slot !== null) {
+                $this->releaseFetchSlot(slot: $slot, state: $state);
+            }
+
+            return new FulfilledPromise(null);
+        }//end try
+
+        return $promise->then(
+            function ($callLog) use ($prepared, $item, $slot, &$state) {
+                try {
+                    // Runs on the single-threaded promise task queue, so this
+                    // OpenRegister write is serialized against every sibling
+                    // save even though the fetches overlapped.
+                    $filename = $item['filename'];
+                    $this->saveFetchedFile(
+                        prepared: $prepared,
+                        callLog: $callLog,
+                        objectId: $item['objectId'],
+                        tags: $item['tags'],
+                        filename: $filename,
+                        published: $item['published'],
+                        registerId: $item['registerId']
+                    );
+
+                    $this->trackFetchedFilename(item: $item, filename: $filename, state: $state);
+                } catch (\Throwable $exception) {
+                    // A failed SAVE is isolated exactly like a failed fetch: the
+                    // remaining files and the object continue.
+                    $this->logger->error(
+                        'Failed to save file from endpoint '.$item['endpoint'].': '.$exception->getMessage(),
+                        ['exception' => $exception]
+                    );
+
+                    // The filename is still tracked: cleanup must not delete a
+                    // file whose save merely failed this run.
+                    $this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+                } finally {
+                    $this->releaseFetchSlot(slot: $slot, state: $state);
+                }//end try
+            },
+            function ($reason) use ($item, $slot, &$state) {
+                $message   = $reason;
+                $exception = null;
+                if ($reason instanceof \Throwable === true) {
+                    $message   = $reason->getMessage();
+                    $exception = $reason;
+                }
+
+                $this->logger->error(
+                    'Failed to fetch file from endpoint '.$item['endpoint'].': '.$message,
+                    ['exception' => $exception]
+                );
+
+                // Note: we still keep the filename in the tracking array even if
+                // the fetch fails. This prevents cleanup from deleting files that
+                // should exist.
+                $this->trackFetchedFilename(item: $item, filename: $item['filename'], state: $state);
+
+                $this->releaseFetchSlot(slot: $slot, state: $state);
+            }
+        );
+    }//end fetchFileAsync()
+
+    /**
+     * Build the `on_headers` callback that records one in-flight download's
+     * declared size for the byte budget.
+     *
+     * Guzzle invokes this once the response headers have arrived and BEFORE the
+     * body is downloaded, which is the only point where a size is both known and
+     * still useful for admission control. A source that omits `Content-Length`
+     * records nothing, and that request is then gated by count alone.
+     *
+     * This must never throw: an exception raised from `on_headers` rejects the
+     * request, which would turn a missing header into a failed file.
+     *
+     * @param int   $slot  The per-file slot index in the run state.
+     * @param array $state Shared run state, mutated in place.
+     *
+     * @return callable The on_headers callback.
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private function buildInFlightSizeRecorder(int $slot, array &$state): callable
+    {
+        return function ($response) use ($slot, &$state): void {
+            $declared = 0;
+            if (is_object($response) === true && method_exists($response, 'getHeaderLine') === true) {
+                $declared = (int) $response->getHeaderLine('Content-Length');
+            }
+
+            if ($declared <= 0) {
+                return;
+            }
+
+            $state['inFlightSize'][$slot] = $declared;
+            $state['inFlightBytes']      += $declared;
+        };
+    }//end buildInFlightSizeRecorder()
+
+    /**
+     * Release one file's slot: drop its share of the in-flight byte tally and
+     * remove its temp file.
+     *
+     * Idempotent, because it is reachable from both promise legs and again from
+     * {@see releaseUnsettledFileFetches()} when a run unwinds early.
+     *
+     * @param int   $slot  The per-file slot index in the run state.
+     * @param array $state Shared run state, mutated in place.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    private function releaseFetchSlot(int $slot, array &$state): void
+    {
+        if (isset($state['inFlightSize'][$slot]) === true) {
+            $state['inFlightBytes'] -= $state['inFlightSize'][$slot];
+            unset($state['inFlightSize'][$slot]);
+        }
+
+        if ($state['inFlightBytes'] < 0) {
+            $state['inFlightBytes'] = 0;
+        }
+
+        if (isset($state['released'][$slot]) === false) {
+            return;
+        }
+
+        $this->releaseFileFetch(prepared: $state['released'][$slot]);
+        unset($state['released'][$slot]);
+    }//end releaseFetchSlot()
+
+    /**
+     * Sweep the temp files of every fetch that was allocated but never settled.
+     *
+     * Reached when a run unwinds before the pool drained — a cancelled wait, a
+     * throw escaping the task queue, or requests the admission gate was still
+     * holding back when the object aborted. Slots that settled normally have
+     * already removed themselves, so this is a backstop rather than the primary
+     * release path.
+     *
+     * @param array $state Shared run state, mutated in place.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    private function releaseUnsettledFileFetches(array &$state): void
+    {
+        foreach (array_keys($state['released']) as $slot) {
+            $this->releaseFetchSlot(slot: $slot, state: $state);
+        }
+    }//end releaseUnsettledFileFetches()
+
+    /**
+     * Record the tracking filename for one processed file.
+     *
+     * Carries over the sequential path's rules verbatim: prefer the filename the
+     * fetch resolved, fall back to the last endpoint path segment, and fall back
+     * again to a hash when that segment is empty or query-string-bearing.
+     *
+     * @param array       $item     The work item.
+     * @param string|null $filename The filename resolved by the save phase, when any.
+     * @param array       $state    Shared run state, mutated in place.
+     *
+     * @return void
+     */
+    private function trackFetchedFilename(array $item, ?string $filename, array &$state): void
+    {
+        $trackingFilename = $filename;
+
+        if ($trackingFilename === null) {
+            // Try to extract filename from endpoint URL.
+            $pathParts        = explode('/', $item['endpoint']);
+            $trackingFilename = end($pathParts);
+
+            // If still no clear filename, generate a fallback.
+            if (empty($trackingFilename) === true || strpos($trackingFilename, '?') !== false) {
+                $trackingFilename = 'file_'.md5($item['endpoint']);
+            }
+        }
+
+        if (empty($trackingFilename) === false) {
+            $state['fileNames'][] = $trackingFilename;
+        }
+    }//end trackFetchedFilename()
 
     /**
      * Cleans up files for an object based on the current attachments array.

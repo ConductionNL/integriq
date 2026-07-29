@@ -46,9 +46,10 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ServerException;
-use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Flow\FlowConfigGuard;
@@ -1150,19 +1151,25 @@ class CallService
      * (same behaviour as the original inline code — the caller returns it immediately).
      * Removes TLS certificate files from disk after the request completes or fails.
      *
-     * @param ObjectEntity $source             The source ObjectEntity.
-     * @param string       $method             The HTTP method to use.
-     * @param string       $url                The full URL to request (used for Guzzle; SOAP uses $endpoint as the action).
-     * @param string       $endpoint           The raw endpoint path (used as the SOAPAction for SOAP sources).
-     * @param array        $config             The Guzzle request configuration (passed by reference so cert files can be cleaned up).
-     * @param boolean      $asynchronous       Whether to dispatch asynchronously.
-     * @param array|null   $brokeredCredential Resolved brokered identity ({credentialId, actingUserId}) from
-     *                                         BrokeredCallService::prepare(), or null for the legacy Guzzle/SOAP path.
-     * @param mixed        $sink               Optional stream resource. When given, it is passed to Guzzle as the
-     *                                         `sink` request option so the response body streams into it instead of
-     *                                         being buffered. Kept OUT of $config so it is never logged/persisted
-     *                                         (a resource is not JSON-persistable). Guzzle HTTP path only; ignored
-     *                                         by the SOAP and brokered branches. Null = unchanged behaviour.
+     * @param ObjectEntity  $source             The source ObjectEntity.
+     * @param string        $method             The HTTP method to use.
+     * @param string        $url                The full URL to request (used for Guzzle; SOAP uses $endpoint as the action).
+     * @param string        $endpoint           The raw endpoint path (used as the SOAPAction for SOAP sources).
+     * @param array         $config             The Guzzle request configuration (passed by reference so cert files can be cleaned up).
+     * @param boolean       $asynchronous       Whether to dispatch asynchronously.
+     * @param array|null    $brokeredCredential Resolved brokered identity ({credentialId, actingUserId}) from
+     *                                          BrokeredCallService::prepare(), or null for the legacy Guzzle/SOAP path.
+     * @param mixed         $sink               Optional stream resource. When given, it is passed to Guzzle as the
+     *                                          `sink` request option so the response body streams into it instead of
+     *                                          being buffered. Kept OUT of $config so it is never logged/persisted
+     *                                          (a resource is not JSON-persistable). Guzzle HTTP path only; ignored
+     *                                          by the SOAP and brokered branches. Null = unchanged behaviour.
+     * @param callable|null $onHeaders          Optional callback invoked with the PSR-7 response once its headers have
+     *                                          arrived and before the body is downloaded (Guzzle `on_headers` option).
+     *                                          Kept OUT of $config for the same reason as $sink — a closure is not
+     *                                          JSON-persistable and must not reach Twig rendering or redaction. Used by
+     *                                          the concurrent file fetcher to gate admission on in-flight
+     *                                          `Content-Length` (ocon#111). Guzzle HTTP path only.
      *
      * @return mixed A Guzzle Response (sync), a Guzzle Promise (async), or a Response from SOAPService.
      *
@@ -1180,6 +1187,7 @@ class CallService
         bool $asynchronous,
         ?array $brokeredCredential=null,
         mixed $sink=null,
+        ?callable $onHeaders=null,
     ): mixed {
         // Brokered branch (REQ-SBC-002): a credentialRef source dispatches
         // IN-PROCESS through the OpenRegister credential broker — the internal
@@ -1211,10 +1219,7 @@ class CallService
             // one is supplied (stream-file-content #110). The sink is added only to the
             // options handed to Guzzle — never to $config, which is logged/redacted/
             // persisted and cannot carry a resource.
-            $requestOptions = $config;
-            if ($sink !== null) {
-                $requestOptions['sink'] = $sink;
-            }
+            $requestOptions = $this->buildRequestOptions(config: $config, sink: $sink, onHeaders: $onHeaders);
 
             try {
                 if ($asynchronous === false) {
@@ -1263,6 +1268,43 @@ class CallService
         return $response;
 
     }//end dispatchRequest()
+
+    /**
+     * Assemble the options handed to Guzzle from the persisted request config
+     * plus the two transport-only extras.
+     *
+     * `sink` and `on_headers` are added HERE and never merged into `$config`.
+     * `$config` is Twig-rendered, secret-redacted and persisted into
+     * `call_log.request`, and neither a stream/path sink nor a closure belongs in
+     * a JSON payload — a closure cannot even be encoded. Keeping the split in one
+     * small helper also keeps {@see dispatchRequest()} under its complexity
+     * budget as transport-only options accumulate.
+     *
+     * @param array         $config    The Guzzle request configuration (logged and persisted).
+     * @param mixed         $sink      Optional sink (a temp-file PATH for the streaming download path), or null.
+     * @param callable|null $onHeaders Optional response-headers callback, or null.
+     *
+     * @return array The request options to hand to the Guzzle client.
+     *
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    private function buildRequestOptions(array $config, mixed $sink, ?callable $onHeaders): array
+    {
+        if ($sink !== null) {
+            $config['sink'] = $sink;
+        }
+
+        // Guzzle invokes this once the response headers have arrived and before
+        // the body is downloaded — which is what lets the concurrent file fetcher
+        // gate admission on in-flight `Content-Length` (ocon#111).
+        if ($onHeaders !== null) {
+            $config['on_headers'] = $onHeaders;
+        }
+
+        return $config;
+
+    }//end buildRequestOptions()
 
     /**
      * Snapshot the cert/key/verify file paths from a Guzzle config so a later
@@ -2868,6 +2910,10 @@ class CallService
      *                                                          in a PSR-7 Stream and closes it on destruct, handing the
      *                                                          caller back a closed handle (stream-file-content #110).
      * @param ExecutionTraceContext|null $trace                 The active execution trace context, when any.
+     * @param callable|null              $onHeaders             Optional callback invoked with the PSR-7 response once its
+     *                                                          headers have arrived and before the body downloads. The
+     *                                                          concurrent file fetcher uses it to read `Content-Length`
+     *                                                          for its in-flight byte budget (ocon#111).
      *
      * @return PromiseInterface A promise resolving to the persisted CallLog ObjectEntity.
      *
@@ -2888,6 +2934,7 @@ class CallService
         bool $runningSupportRequest=false,
         mixed $sink=null,
         ?ExecutionTraceContext $trace=null,
+        ?callable $onHeaders=null,
     ): PromiseInterface {
         // A resource sink is the exact defect stream-file-content shipped a fix
         // for, and it is strictly worse here: with requestAsync() the response
@@ -2917,7 +2964,7 @@ class CallService
         if ($prepared['shortCircuit'] !== null) {
             // The guard already persisted a synthetic CallLog. Resolve with it so
             // the caller consumes ONE shape whichever way it dispatched.
-            return Create::promiseFor($prepared['shortCircuit']);
+            return new FulfilledPromise($prepared['shortCircuit']);
         }
 
         $dispatchConfig = $prepared['config'];
@@ -2944,6 +2991,7 @@ class CallService
             asynchronous: true,
             brokeredCredential: $prepared['brokeredCredential'],
             sink: $sink,
+            onHeaders: $onHeaders,
         );
 
         return $promise->then(
@@ -2990,7 +3038,7 @@ class CallService
                     // file.
                     $this->recordBreakerFailure(source: $prepared['source'], sourceData: $sourceData);
 
-                    return Create::rejectionFor($reason);
+                    return new RejectedPromise($reason);
                 }
 
                 $this->recordBreakerOutcome(

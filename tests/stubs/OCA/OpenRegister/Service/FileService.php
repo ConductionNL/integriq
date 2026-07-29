@@ -34,10 +34,10 @@ class FileService
     /**
      * Add a new file to an object's folder.
      *
-     * @param  ObjectEntity|string $objectEntity
-     * @param  string              $fileName
-     * @param  string              $content
-     * @param  bool                $share
+     * @param  ObjectEntity|string  $objectEntity
+     * @param  string               $fileName
+     * @param  string|resource|null $content
+     * @param  bool                 $share
      * @param  array               $tags
      * @param  mixed               $_schema
      * @param  mixed               $_register
@@ -47,7 +47,7 @@ class FileService
     public function addFile(
         $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share = false,
         array $tags = [],
         $_schema = null,
@@ -60,17 +60,26 @@ class FileService
     /**
      * Save (create or update) a file in an object's folder.
      *
-     * @param  ObjectEntity $objectEntity
-     * @param  string       $fileName
-     * @param  string       $content
-     * @param  bool         $share
-     * @param  array        $tags
+     * The `$content` type is `mixed`, mirroring the real OpenRegister signature
+     * rather than narrowing it: `stream-file-content` (#110) widened this
+     * parameter to accept a stream RESOURCE as well as a string, so a binary
+     * download can be handed straight to the write side without being buffered
+     * into a PHP string. A stub declaring `string` here would reject exactly the
+     * value production accepts, failing any streamed-save test for the wrong
+     * reason. PHP has no `resource` type keyword, so the contract lives in the
+     * docblock — same as in `OCA\OpenRegister\Service\FileService`.
+     *
+     * @param  ObjectEntity         $objectEntity
+     * @param  string               $fileName
+     * @param  string|resource|null $content
+     * @param  bool                 $share
+     * @param  array                $tags
      * @return File
      */
     public function saveFile(
         ObjectEntity $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share = false,
         array $tags = []
     ): File {

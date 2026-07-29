@@ -52,8 +52,8 @@
 - **acceptance_criteria**:
   - GIVEN `fetchFile` currently does fetch + save in one method WHEN it is refactored THEN a separable save step (FileService save + filename/tags/publish) can be invoked on an already-resolved download without re-fetching
   - GIVEN the sequential single-file path WHEN the split lands THEN its externally observable behaviour (saved filename, tags, publish state) is unchanged
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `fetchFile()` is now prepare + dispatch + save: `prepareFileFetch()` (endpoint trim, source-config render, transport choice, temp-path allocation), `saveFetchedFile()` (read handle, body decode, filename resolution, FileService save/addFile, publish), `releaseFileFetch()` (temp-file unlink, idempotent). The save phase owns only the READ handle; the temp file's release moved out so a promise's rejected leg can unlink it too.
+- [x] Test — the two existing `fetchFile` transport-selection tests pass unchanged, which is the sequential path's behaviour-preservation check
 
 ### Task 2: Fire capped-concurrency async fetches with per-file temp-file sinks
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently`
@@ -65,8 +65,12 @@
   - GIVEN attachments large enough that N x size would be excessive WHEN they are settled THEN a total in-flight BYTE budget (default ~256 MB, from `Content-Length` where present) also gates admission, falling back to count-only when the source omits it
   - GIVEN the cap is configured WHEN it is read THEN it comes from `source.configuration` (per-source politeness), not a global or a new top-level schema field
   - GIVEN async requests WHEN they run THEN CallService's auth, certificate, rate-limit, and call-logging behaviour is reused (no `react/http`, no reimplemented HTTP)
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `resolveMultiFileWorkItems()` resolves the complete file list first; `fetchFilesConcurrently()` → `settleFileFetches()` drives a lazy generator through `Each::ofLimit()`; `fetchFileAsync()` dispatches each file via `callSourceObjectAsync()` with its own temp-file PATH sink. Cap and byte budget come from `source.configuration` (`maxConcurrentFetches`, `maxInFlightFetchBytes`) via `resolveFetchConcurrency()`, clamped by `FETCH_CONCURRENCY_MAX`.
+- [x] Test — `testMultipleFilesForOneObjectAreFetchedConcurrently` (4/4 in flight; a sequential loop peaks at 1), `testInFlightFetchesNeverExceedTheConfiguredCap`, `testConcurrencyIsClampedToTheHardMaximum`, `testEveryConcurrentSinkIsAPathAndEveryTempFileIsRemoved`
+
+**Byte budget — how `Content-Length` is actually obtained.** A size is only knowable once the response headers arrive, which is too late if admission reads it from the settled call log. So `onHeaders` was plumbed through `callAsync()` → `dispatchRequest()` into Guzzle's `on_headers` request option — kept out of `$config` for exactly the reason `sink` is, since `$config` is Twig-rendered, redacted and persisted and cannot carry a closure. `buildInFlightSizeRecorder()` tallies each declared size; `buildFetchAdmissionGate()` stops admitting once the tally exceeds the budget, and degrades to count-only against a source that omits the header.
+
+**One correction worth recording:** the admission gate's first version special-cased `pending === 0` by returning `1`. `EachPromise` treats the return as the TOTAL allowed in flight and subtracts the pending count itself, so that floor capped the initial fill at one request and silently degenerated the pool to sequential dispatch — caught by `testMultipleFilesForOneObjectAreFetchedConcurrently` measuring a high-water mark of 1 instead of 4. The byte gate now applies only while something is already pending, which keeps both the deadlock and the larger-than-budget-attachment cases safe without touching the count fill.
 
 ### Task 2b: Release every per-file handle and temp file, on every leg
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object`
@@ -76,8 +80,10 @@
   - GIVEN a file's fetch or save rejects WHEN `otherwise()` runs THEN the same release happens, so a partial failure leaks neither a descriptor nor a temp file
   - GIVEN requests that never start because the pool was still throttling, or an object aborts mid-settle, WHEN the run unwinds THEN every allocated temp path is still unlinked
   - GIVEN N files are processed WHEN the object finishes THEN no `oc-stream-*` temp files remain for that object
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `releaseFetchSlot()` (idempotent: drops the slot's share of the byte tally, then unlinks via `releaseFileFetch()`) is called from the `then()` leg's `finally`, from the `otherwise()` leg, and from the pre-dispatch catch. `releaseUnsettledFileFetches()` sweeps every still-allocated slot from `fetchFilesConcurrently()`'s own `finally`, covering an abort mid-settle and requests the gate was still holding back.
+- [x] Test — temp-file absence is asserted after a fully successful run, after a rejected fetch, and after a throwing save
+
+Slot indexes are taken from a monotonic `nextSlot` counter, never from `count($state['released'])` — slots are unset as they settle, so a count-derived index would collide with a live slot as soon as one file finished before another started.
 
 ### Task 3: Pipeline serialized saves via `then()` and isolate per-file failures via `otherwise()`
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object`
@@ -86,8 +92,8 @@
   - GIVEN a fetch resolves while siblings still download WHEN its promise settles THEN the save from Task 1 runs in `then()`, and saves execute one at a time (never concurrently)
   - GIVEN one file's fetch or save fails WHEN it is settled THEN the error is isolated and logged via `otherwise()`/`fetchFileSafely`, and the other files and the object continue
   - GIVEN an unchanged file (md5 match) WHEN it is saved THEN no write occurs (stream-file-content skip preserved)
-- [ ] Implement
-- [ ] Test
+- [x] Implement — the save runs in `then()`, so it starts as soon as its own download resolves. Serialization is structural rather than enforced: promise callbacks run on Guzzle's single-threaded task queue, so exactly one OpenRegister write is ever in progress. Failures are isolated on three levels — a rejected fetch (`otherwise()`), a throwing save (`try/catch` inside `then()`), and a synchronous throw before dispatch (which would otherwise reject the AGGREGATE inside `EachPromise::advanceIterator()` and abort every file not yet started). The md5 skip is untouched; it lives on OpenRegister's write side.
+- [x] Test — `testResolvedFetchIsSavedBeforeTheLastSiblingIsDispatched` (a `save:` event precedes the last `dispatch:` event in the recorded timeline), `testSavesAreNeverRunConcurrently` (re-entrancy probe), `testOneFailedFetchDoesNotStopTheOthers`, `testOneFailedSaveDoesNotStopTheOthers`
 
 ### Task 4: Unit tests for concurrency, pipelining, cap, and failure isolation
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable`
@@ -100,8 +106,12 @@
   - The sink handed to `CallService::call` is a PATH, never a resource — assert on the argument type, mirroring `testFetchFileStreamsRawBinaryDownloadIntoASinkResource`
   - Every temp file is unlinked after both a successful and a failed leg (Task 2b)
   - `callSourceObject` without `asynchronous` still returns an `ObjectEntity` (Task 0 back-compat)
-- [ ] Implement
-- [ ] Test
+- [x] Implement — 10 new tests: 5 in `CallServiceTest` (async flag rejected by name, `callAsync` resolves to a CallLog, resource sink refused, `on_headers` reaches Guzzle but never the CallLog, short-circuit fulfils rather than rejects) and 5 in `SynchronizationServiceTest` (concurrency, cap, clamp, pipelining, serialization) plus the isolation, temp-file and back-compat cases above.
+- [x] Test — 2108 tests / 7664 assertions; the only 2 failures are the `CloudEventListenerTest` pair inherited from `development` (#1086)
+
+The async transport is doubled by a Guzzle promise whose WAIT function performs the simulated download, so `EachPromise`'s own settle order drives the test — the recorded timeline is the real interleaving, not a scripted one.
+
+**Test-fidelity fix required along the way:** `tests/stubs/OCA/OpenRegister/Service/FileService.php` still declared `string $content` on `saveFile()`/`addFile()` where the real OpenRegister methods take `mixed`. `stream-file-content` widened that parameter precisely so a stream resource could be handed to the write side, so the stub rejected exactly the value production accepts and failed every streamed-save test for the wrong reason. Corrected to `mixed` with the `string|resource|null` contract in the docblock, matching the real service.
 
 ## Verification
 - All tasks checked off

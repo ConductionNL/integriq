@@ -60,6 +60,11 @@ class SynchronizationServiceTest extends TestCase
     private $tablesSyncAdapter;
 
     /**
+     * @var ContainerInterface|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $container;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
@@ -72,9 +77,10 @@ class SynchronizationServiceTest extends TestCase
         $this->logger          = $this->createMock(LoggerInterface::class);
         $this->callService     = $this->createMock(CallService::class);
 
-        $mappingService = $this->createMock(MappingService::class);
-        $container      = $this->createMock(ContainerInterface::class);
-        $objectService  = $this->createMock(ObjectService::class);
+        $mappingService  = $this->createMock(MappingService::class);
+        $container       = $this->createMock(ContainerInterface::class);
+        $this->container = $container;
+        $objectService   = $this->createMock(ObjectService::class);
         $synchronizationLogService = $this->createMock(SynchronizationLogService::class);
         $appConfig = $this->createMock(IAppConfig::class);
         $appConfig->method('hasKey')->willReturn(false);
@@ -1669,4 +1675,471 @@ HTML;
         );
 
     }//end testFetchFileKeepsBase64InJsonResponsesOffTheStreamingPath()
+
+
+    /**
+     * Shared observation record for the concurrent-fetch tests.
+     *
+     * @var array
+     */
+    private array $fetchRun = [];
+
+
+    /**
+     * Wire `callService::callAsync()` up as a controllable async transport and
+     * record what the concurrent fetcher does with it.
+     *
+     * Each dispatch returns a Guzzle promise whose WAIT function performs the
+     * simulated download. That is what makes these tests deterministic without a
+     * real socket: `EachPromise`'s aggregate waits its pending promises one at a
+     * time, so a promise settles exactly when the pool gets around to it, and the
+     * recorded timeline shows the real interleaving of dispatches, settles and
+     * saves.
+     *
+     * Recorded in `$this->fetchRun`:
+     *  - `timeline`    ordered `dispatch:N` / `settle:N` / `save:<filename>` events
+     *  - `maxInFlight` high-water mark of dispatched-but-unsettled requests
+     *  - `sinks`       every sink argument handed to `callAsync()`
+     *  - `sinkPaths`   the subset of those that were existing file paths
+     *  - `saved`       filenames passed to `FileService::saveFile()`
+     *
+     * @param array         $rejectIndexes Zero-based dispatch indexes whose promise must reject.
+     * @param callable|null $onSave        Optional extra hook invoked when a save happens.
+     *
+     * @return void
+     */
+    private function arrangeAsyncFetchTransport(array $rejectIndexes=[], ?callable $onSave=null): void
+    {
+        $this->fetchRun = [
+            'timeline'    => [],
+            'inFlight'    => 0,
+            'maxInFlight' => 0,
+            'sinks'       => [],
+            'sinkPaths'   => [],
+            'saved'       => [],
+            'dispatched'  => 0,
+        ];
+
+        // FileService double: records each save and reports no existing files, so
+        // the post-run orphan cleanup is a no-op rather than a TypeError.
+        $fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+        $fileService->method('getFiles')->willReturn([]);
+        $fileService->method('saveFile')->willReturnCallback(
+            function (...$args) use ($onSave) {
+                $fileName = null;
+                foreach ($args as $arg) {
+                    if (is_string($arg) === true && $arg !== '') {
+                        $fileName = $arg;
+                        break;
+                    }
+                }
+
+                $this->fetchRun['saved'][]   = $fileName;
+                $this->fetchRun['timeline'][] = 'save:'.$fileName;
+
+                if ($onSave !== null) {
+                    $onSave($fileName);
+                }
+
+                return $this->createMock(\OCP\Files\File::class);
+            }
+        );
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('11111111-2222-3333-4444-555555555555');
+
+        $orObjectService = $this->createMock(ORObjectService::class);
+        $orObjectService->method('find')->willReturn($objectEntity);
+
+        $this->container->method('get')->willReturnCallback(
+            function (string $id) use ($fileService, $orObjectService) {
+                if ($id === 'OCA\OpenRegister\Service\FileService') {
+                    return $fileService;
+                }
+
+                return $orObjectService;
+            }
+        );
+
+        $this->callService->method('callAsync')->willReturnCallback(
+            function (...$args) use ($rejectIndexes) {
+                $index = $this->fetchRun['dispatched'];
+                $this->fetchRun['dispatched']++;
+
+                // Locate the sink path and the on_headers hook positionally-agnostically,
+                // so this double does not break if the signature grows a parameter.
+                $sinkPath  = null;
+                $onHeaders = null;
+                foreach ($args as $arg) {
+                    if (is_string($arg) === true && $arg !== '' && is_file($arg) === true) {
+                        $sinkPath = $arg;
+                    }
+
+                    if (is_callable($arg) === true && is_string($arg) === false) {
+                        $onHeaders = $arg;
+                    }
+                }
+
+                $this->fetchRun['sinks'][] = $sinkPath;
+                if ($sinkPath !== null) {
+                    $this->fetchRun['sinkPaths'][] = $sinkPath;
+                }
+
+                $this->fetchRun['inFlight']++;
+                $this->fetchRun['maxInFlight'] = max($this->fetchRun['maxInFlight'], $this->fetchRun['inFlight']);
+                $this->fetchRun['timeline'][]  = 'dispatch:'.$index;
+
+                $bytes   = 'bytes-for-file-'.$index;
+                $promise = null;
+                $promise = new \GuzzleHttp\Promise\Promise(
+                    function () use (&$promise, $index, $sinkPath, $onHeaders, $bytes, $rejectIndexes) {
+                        $this->fetchRun['inFlight']--;
+                        $this->fetchRun['timeline'][] = 'settle:'.$index;
+
+                        if (in_array($index, $rejectIndexes, true) === true) {
+                            $promise->reject(new \RuntimeException('simulated transport failure '.$index));
+
+                            return;
+                        }
+
+                        // Emulate Guzzle: headers first (so the byte budget can
+                        // observe Content-Length), then the body into the PATH.
+                        if ($onHeaders !== null) {
+                            $onHeaders(new \GuzzleHttp\Psr7\Response(200, ['Content-Length' => (string) strlen($bytes)]));
+                        }
+
+                        if ($sinkPath !== null) {
+                            file_put_contents($sinkPath, $bytes);
+                        }
+
+                        $callLog = new \OCA\OpenRegister\Db\ObjectEntity();
+                        $callLog->setObject(
+                            [
+                                'response' => [
+                                    'body'    => '',
+                                    'headers' => ['Content-Disposition' => 'attachment; filename="doc-'.$index.'.pdf"'],
+                                ],
+                            ]
+                        );
+
+                        $promise->resolve($callLog);
+                    }
+                );
+
+                return $promise;
+            }
+        );
+    }//end arrangeAsyncFetchTransport()
+
+
+    /**
+     * Invoke the concurrent multi-file path for N endpoints.
+     *
+     * @param int   $count               How many file endpoints the object has.
+     * @param array $sourceConfiguration The per-source `configuration` block (cap / byte budget).
+     *
+     * @return void
+     */
+    private function runMultiFileFetch(int $count, array $sourceConfiguration=[]): void
+    {
+        $endpoints = [];
+        for ($index = 0; $index < $count; $index++) {
+            $endpoints[] = '/attachment/'.$index;
+        }
+
+        $source = [
+            '_transient'    => true,
+            'uuid'          => 'source-uuid',
+            'location'      => '',
+            'configuration' => $sourceConfiguration,
+        ];
+
+        $method = new \ReflectionMethod(SynchronizationService::class, 'processMultipleFilesWithCleanup');
+        $method->setAccessible(true);
+        $method->invoke(
+            $this->service,
+            $source,
+            ['sourceConfiguration' => []],
+            $endpoints,
+            '11111111-2222-3333-4444-555555555555'
+        );
+    }//end runMultiFileFetch()
+
+
+    /**
+     * ocon#111: one object's several files are fetched CONCURRENTLY — dispatched
+     * into a shared in-flight window rather than one blocking call after another.
+     *
+     * The proof is the high-water mark: with 4 endpoints under the default cap of
+     * 5, all 4 are in flight at once. A sequential loop could never exceed 1.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testMultipleFilesForOneObjectAreFetchedConcurrently(): void
+    {
+        $this->arrangeAsyncFetchTransport();
+        $this->runMultiFileFetch(count: 4);
+
+        $this->assertSame(4, $this->fetchRun['dispatched'], 'every file must be dispatched');
+        $this->assertSame(
+            4,
+            $this->fetchRun['maxInFlight'],
+            'all 4 fetches must be in flight together under the default cap of 5; a sequential loop peaks at 1'
+        );
+        $this->assertCount(4, $this->fetchRun['saved'], 'every fetched file must be saved');
+    }//end testMultipleFilesForOneObjectAreFetchedConcurrently()
+
+
+    /**
+     * ocon#111: the sink handed to the async transport is a PATH, never a stream
+     * resource — and every temp file is gone once the object finishes.
+     *
+     * Guzzle closes a resource-typed sink when its PSR-7 wrapper is destructed,
+     * which under asynchronous dispatch happens outside the caller's control.
+     * This asserts on the argument TYPE, mirroring the sequential-path assertion
+     * in testFetchFileStreamsRawBinaryDownloadIntoASinkResource().
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testEveryConcurrentSinkIsAPathAndEveryTempFileIsRemoved(): void
+    {
+        $this->arrangeAsyncFetchTransport();
+        $this->runMultiFileFetch(count: 3);
+
+        $this->assertCount(3, $this->fetchRun['sinkPaths'], 'each concurrent fetch must receive its own temp-file path');
+
+        foreach ($this->fetchRun['sinks'] as $sink) {
+            $this->assertIsNotResource($sink, 'a stream resource must never be handed to the async transport');
+        }
+
+        $this->assertSame(
+            3,
+            count(array_unique($this->fetchRun['sinkPaths'])),
+            'concurrent fetches must not share a temp file'
+        );
+
+        foreach ($this->fetchRun['sinkPaths'] as $path) {
+            $this->assertFileDoesNotExist($path, 'no oc-stream-* temp file may remain for the object');
+        }
+    }//end testEveryConcurrentSinkIsAPathAndEveryTempFileIsRemoved()
+
+
+    /**
+     * ocon#111: in-flight fetches never exceed the per-source configured cap, and
+     * the held-back files still all run — started as in-flight requests complete.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    public function testInFlightFetchesNeverExceedTheConfiguredCap(): void
+    {
+        $this->arrangeAsyncFetchTransport();
+        $this->runMultiFileFetch(count: 6, sourceConfiguration: ['maxConcurrentFetches' => 2]);
+
+        $this->assertSame(6, $this->fetchRun['dispatched'], 'every file must eventually be dispatched');
+        $this->assertSame(
+            2,
+            $this->fetchRun['maxInFlight'],
+            'the configured cap of 2 must never be exceeded'
+        );
+        $this->assertCount(6, $this->fetchRun['saved'], 'throttled files must still be fetched and saved');
+    }//end testInFlightFetchesNeverExceedTheConfiguredCap()
+
+
+    /**
+     * ocon#111: a source asking for more concurrency than the hard maximum is
+     * clamped rather than obeyed, so a misconfiguration cannot turn one object's
+     * attachments into an unbounded burst against an upstream.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    public function testConcurrencyIsClampedToTheHardMaximum(): void
+    {
+        $this->arrangeAsyncFetchTransport();
+        $this->runMultiFileFetch(count: 25, sourceConfiguration: ['maxConcurrentFetches' => 500]);
+
+        $this->assertSame(25, $this->fetchRun['dispatched']);
+        $this->assertLessThanOrEqual(
+            20,
+            $this->fetchRun['maxInFlight'],
+            'the hard maximum of 20 must hold regardless of what the source configures'
+        );
+    }//end testConcurrencyIsClampedToTheHardMaximum()
+
+
+    /**
+     * ocon#111: a resolved download is SAVED from its promise's `then()` while
+     * sibling downloads are still to come — the pipelining that turns
+     * `Σ fetch + Σ saves` into `max(fetch-window, Σ saves)`.
+     *
+     * The assertion is positional in the recorded timeline: with a cap of 2 over 4
+     * files, at least one `save:` event must appear before the LAST `dispatch:`
+     * event. A collect-then-save implementation would emit all four dispatches
+     * first.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+     */
+    public function testResolvedFetchIsSavedBeforeTheLastSiblingIsDispatched(): void
+    {
+        $this->arrangeAsyncFetchTransport();
+        $this->runMultiFileFetch(count: 4, sourceConfiguration: ['maxConcurrentFetches' => 2]);
+
+        $timeline = $this->fetchRun['timeline'];
+
+        $lastDispatch = null;
+        $firstSave    = null;
+        foreach ($timeline as $position => $event) {
+            if (str_starts_with($event, 'dispatch:') === true) {
+                $lastDispatch = $position;
+            }
+
+            if ($firstSave === null && str_starts_with($event, 'save:') === true) {
+                $firstSave = $position;
+            }
+        }
+
+        $this->assertNotNull($firstSave, 'at least one file must have been saved');
+        $this->assertNotNull($lastDispatch);
+        $this->assertLessThan(
+            $lastDispatch,
+            $firstSave,
+            'a save must run while siblings are still being dispatched: '.implode(' ', $timeline)
+        );
+    }//end testResolvedFetchIsSavedBeforeTheLastSiblingIsDispatched()
+
+
+    /**
+     * ocon#111: saves are pipelined but NOT parallel. PHP is single-threaded and
+     * Nextcloud uses one shared database connection, so two OpenRegister writes
+     * must never overlap.
+     *
+     * Proven by re-entrancy: the save hook records whether another save was
+     * already in progress when it was entered.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-saves-shall-be-pipelined-behind-the-fetch-window-and-remain-serialized
+     */
+    public function testSavesAreNeverRunConcurrently(): void
+    {
+        $saveDepth    = 0;
+        $overlapSeen  = false;
+
+        $this->arrangeAsyncFetchTransport(
+            rejectIndexes: [],
+            onSave: function () use (&$saveDepth, &$overlapSeen): void {
+                $saveDepth++;
+                if ($saveDepth > 1) {
+                    $overlapSeen = true;
+                }
+
+                $saveDepth--;
+            }
+        );
+
+        $this->runMultiFileFetch(count: 5);
+
+        $this->assertFalse($overlapSeen, 'OpenRegister writes must be executed one at a time');
+        $this->assertCount(5, $this->fetchRun['saved']);
+    }//end testSavesAreNeverRunConcurrently()
+
+
+    /**
+     * ocon#111: one file's fetch failure is isolated — logged and skipped — while
+     * the other files are still fetched and saved and the object continues.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    public function testOneFailedFetchDoesNotStopTheOthers(): void
+    {
+        $this->arrangeAsyncFetchTransport(rejectIndexes: [1]);
+        $this->runMultiFileFetch(count: 4);
+
+        $this->assertSame(4, $this->fetchRun['dispatched'], 'a failure must not abort the remaining dispatches');
+        $this->assertCount(
+            3,
+            $this->fetchRun['saved'],
+            'the three healthy files must still be saved'
+        );
+
+        foreach ($this->fetchRun['sinkPaths'] as $path) {
+            $this->assertFileDoesNotExist(
+                $path,
+                'a failed leg must release its temp file just as a successful one does'
+            );
+        }
+    }//end testOneFailedFetchDoesNotStopTheOthers()
+
+
+    /**
+     * ocon#111: a failed SAVE is isolated the same way a failed fetch is — the
+     * remaining files are still saved and the object continues.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    public function testOneFailedSaveDoesNotStopTheOthers(): void
+    {
+        $attempts = 0;
+
+        $this->arrangeAsyncFetchTransport(
+            rejectIndexes: [],
+            onSave: function () use (&$attempts): void {
+                $attempts++;
+                if ($attempts === 2) {
+                    throw new \RuntimeException('simulated save failure');
+                }
+            }
+        );
+
+        $this->runMultiFileFetch(count: 4);
+
+        $this->assertSame(4, $attempts, 'every file must still reach its save attempt');
+
+        foreach ($this->fetchRun['sinkPaths'] as $path) {
+            $this->assertFileDoesNotExist($path, 'a throwing save must still release its temp file');
+        }
+    }//end testOneFailedSaveDoesNotStopTheOthers()
+
+
+    /**
+     * ocon#111 Task 0 back-compatibility: `callSourceObject()` without any
+     * asynchronous flag still goes through the synchronous `CallService::call()`
+     * and still returns an `ObjectEntity`. The async capability is a sibling, not
+     * a widened return, precisely so this contract is untouched at ~30 call sites.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallSourceObjectStillReturnsAnObjectEntitySynchronously(): void
+    {
+        $callLog = new \OCA\OpenRegister\Db\ObjectEntity();
+        $callLog->setObject(['response' => ['body' => '{}', 'headers' => []]]);
+
+        $this->callService->expects($this->once())->method('call')->willReturn($callLog);
+        $this->callService->expects($this->never())->method('callAsync');
+
+        $method = new \ReflectionMethod(SynchronizationService::class, 'callSourceObject');
+        $method->setAccessible(true);
+        $result = $method->invoke(
+            $this->service,
+            ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+            '/things'
+        );
+
+        $this->assertInstanceOf(\OCA\OpenRegister\Db\ObjectEntity::class, $result);
+    }//end testCallSourceObjectStillReturnsAnObjectEntitySynchronously()
 }//end class
