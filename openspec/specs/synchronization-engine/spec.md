@@ -716,6 +716,48 @@ source object finds more than one `SynchronizationContract` for the same
 - THEN no duplicate-contract warning is logged
 - AND behaviour is identical to before this change
 
+### Requirement: The contract is persisted before the after-rules run (REQ-021)
+
+The system SHALL persist the `SynchronizationContract` as soon as the target write
+has established a `targetId`, BEFORE the `after`-timed rules (which fetch files)
+run, and SHALL then update that same contract row — matched on its `uuid`, so no
+second row is created — with the rule outcomes and log references once those rules
+complete.
+
+A contract records ONLY that source object X maps to target object A, so that a
+re-run writes X's changes to A instead of creating a second A. It is NOT a record
+that everything downstream of the target write succeeded.
+
+This tightens REQ-013, which only requires duplicates to be *detected* after the
+fact. Persisting the mapping first makes the duplicate class structurally
+impossible rather than merely reportable.
+
+#### Scenario: a failure in the after-rules does not lose the mapping
+
+- GIVEN a synchronization whose `after` rules fetch a file for each object
+- AND the file fetch throws for a given source object (a missing filename, an
+  unresolvable object id, an upstream 404 or timeout, or a failed save)
+- WHEN the run processes that object
+- THEN the target object has been written
+- AND its contract exists, carrying the `originId` -> `targetId` mapping
+- AND the item is reported as `invalid` with the reason logged
+- AND a subsequent run matches that contract and UPDATES the same target object
+- AND no second target object is created for that `originId`
+
+#### Scenario: the happy path still writes exactly one contract row
+
+- GIVEN a synchronization whose `after` rules complete without error
+- WHEN a run creates a new target object
+- THEN the contract is written once before the rules and updated once after them
+- AND exactly one contract row exists for that `(synchronizationId, originId)`
+
+#### Scenario: an unchanged object still skips without writing a contract
+
+- GIVEN a source object whose hash matches its existing contract
+- WHEN a run processes it
+- THEN the run returns `skip` before the target write
+- AND no contract write occurs
+
 ### Requirement: Batch-level approval gate before target writes (REQ-015)
 
 The orchestrator (REQ-001) MUST, when a Synchronization's

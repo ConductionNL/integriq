@@ -3449,6 +3449,54 @@ class SynchronizationService
             trace: $trace
         );
 
+        // ocon#109: persist the identity mapping BEFORE the `after` rules run.
+        //
+        // @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
+        //
+        // A contract records only that source object X maps to target object A, so
+        // that a re-run writes X's changes to A instead of creating a second A. It
+        // is NOT a record that everything downstream succeeded.
+        //
+        // The `after` rules below fetch files, and any throw there (missing
+        // filename, unresolvable object id, upstream 404/timeout, a failed save)
+        // abandons the item at the per-item `catch (\Throwable)` in
+        // synchronizeExternToIntern() — which used to happen BEFORE the only
+        // persistContract() call at the end of this method. The object was written
+        // but the mapping was not, so the next run found no contract for this
+        // originId, treated the row as new, and created a duplicate. Every re-run
+        // added another copy.
+        //
+        // Writing the mapping here makes that class of duplicate structurally
+        // impossible: a file failure now degrades to "object synced, mapping
+        // recorded, file missing" — recoverable, and re-syncable onto the same
+        // target. The persistContract() call at the end of this method still runs
+        // and updates the same row with the rule outcomes and log references.
+        if (($synchronizationContract['targetId'] ?? null) !== null) {
+            if (($synchronizationContract['uuid'] ?? null) === null) {
+                $synchronizationContract['uuid'] = (string) Uuid::v4();
+            }
+
+            try {
+                $synchronizationContract = $this->persistContract(
+                    contract: $synchronizationContract,
+                    ensureUuid: true
+                );
+            } catch (\Throwable $contractException) {
+                // Never let recording the mapping break a sync that would otherwise
+                // succeed — the end-of-method persist remains the fallback.
+                $this->logger->warning(
+                    'Could not persist the synchronization contract before the after-rules; '
+                    .'a failure in those rules may now re-create this object on the next run.',
+                    [
+                        'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                        'originId'        => ($synchronizationContract['originId'] ?? null),
+                        'targetId'        => ($synchronizationContract['targetId'] ?? null),
+                        'exception'       => $contractException->getMessage(),
+                    ]
+                );
+            }
+        }//end if
+
         if (($synchronization['targetType'] ?? null) === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: (string) ($synchronization['targetId'] ?? ''));
             $this->processRules(
