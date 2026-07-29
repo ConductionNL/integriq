@@ -97,7 +97,7 @@ and does NOT add `react/http`. The pre-existing ReactPHP-based async docs
 (`docs/async-file-fetching.md`) describe a fire-and-forget model that is
 superseded by this capped, pipelined Guzzle model for the within-object path.
 
-### `callSourceObject` must be widened first (revised)
+### Sibling async methods, not union returns (revised twice)
 
 An earlier revision of this design asserted that
 `callSourceObject(..., asynchronous: true)` already existed and could simply be
@@ -116,14 +116,41 @@ call log) — not a promise. The async capability exists one layer down, on
 `CallService::call(..., bool $asynchronous, ...)`, which returns a Guzzle promise
 when that flag is set.
 
-So this change must **widen `callSourceObject`** before it can fan out:
+And the layer below is not merely missing — it is **broken**. `CallService::call()`
+is declared `): ObjectEntity`, yet:
 
-- add `bool $asynchronous=false`, threaded to `CallService::call`;
-- widen the return to `ObjectEntity|PromiseInterface` — `ObjectEntity` when
-  synchronous (byte-for-byte unchanged for every existing caller), a promise when
-  asynchronous;
-- resolve the promise to the same call-log `ObjectEntity` in `then()`, so the save
-  phase consumes exactly the shape the sequential path does today.
+```php
+if ($asynchronous === true) {
+    // Async path returns the Promise directly (same as original behaviour).
+    return $response;   // a GuzzleHttp Promise
+}
+```
+
+Returning a promise from a method declared `): ObjectEntity` is an unconditional
+`TypeError`. Nothing exercises it — the only `asynchronous: true` in `lib/` is
+`call()`'s own hand-off to `dispatchRequest` — so the branch has never run. The
+comment's "same as original behaviour" refers to a pre-cutover world where the
+return type was presumably undeclared.
+
+**Chosen approach: sibling async methods, not union returns.**
+
+- `CallService::callAsync(): PromiseInterface` alongside `call(): ObjectEntity`;
+- `SynchronizationService::callSourceObjectAsync(): PromiseInterface` alongside
+  `callSourceObject(): ObjectEntity`;
+- the shared pre-dispatch pipeline (guards, credential resolution, source-config
+  merge, method/URL resolution) and the shared source resolution are **extracted
+  once** and used by both, so the async path cannot fork auth, certificate,
+  rate-limit or call-logging behaviour;
+- the dead `$asynchronous === true` branch in `call()` is deleted rather than
+  repaired, and passing that flag now fails loudly pointing at `callAsync()`.
+
+Rejected: widening both returns to `ObjectEntity|PromiseInterface`. `call()` is the
+app's central HTTP surface with ~30+ call sites (`SourceCallNode`, `PingAction`,
+`NotuBizConnectorService`, `IBabsConnectorService`, `EventService`,
+`PromotionService`, `SynchronizationService`, …), all of which rely on
+`ObjectEntity`; a union return ripples through static analysis at every one, for no
+behavioural gain. Siblings keep the blast radius inside this feature and remove a
+latent fatal instead of preserving it.
 
 This is the same shape of gap that `stream-file-content` hit: its design assumed
 the OpenConnector side was "only `SynchronizationService`", and the CallService

@@ -8,22 +8,31 @@
 >    fail; see `design.md` → "The sink is a PATH, never a handle". Async makes it
 >    worse, not better, because the response stream's lifetime is outside the
 >    caller's control.
-> 2. **`callSourceObject` has no `asynchronous` parameter.** The original design
->    assumed it did. It must be widened first (new Task 0) — the async capability
->    lives on `CallService::call`, one layer down.
+> 2. **There is no working async surface at all.** The original design assumed
+>    `callSourceObject(..., asynchronous: true)` existed. It does not — and the layer
+>    below is worse than missing, it is broken: `CallService::call()` is declared
+>    `): ObjectEntity` yet its `if ($asynchronous === true)` branch returns a Guzzle
+>    Promise, which is an unconditional `TypeError`. Nothing exercises it (the only
+>    `asynchronous: true` in `lib/` is `call()`'s own hand-off to
+>    `dispatchRequest`), so the branch has never run. New Task 0 adds **sibling
+>    async methods** rather than widening the synchronous ones — see the design's
+>    "Sibling async methods, not union returns".
 > 3. **Temp-file cleanup must be restated per file.** Splitting fetch from save
 >    moves the release out of `fetchFile`'s `finally`; with N concurrent fetches and
 >    partial failures, every leg must release its handle and unlink its path.
 
 ## Implementation Tasks
 
-### Task 0: Widen `callSourceObject` to expose the async path
+### Task 0: Add sibling async methods and delete the dead async branch
 - **spec_ref**: `openspec/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently`
-- **files**: `lib/Service/SynchronizationService.php`
+- **files**: `lib/Service/CallService.php`, `lib/Service/SynchronizationService.php`
 - **acceptance_criteria**:
-  - GIVEN `callSourceObject` currently has no `asynchronous` parameter and returns `ObjectEntity` WHEN it is widened THEN it accepts `bool $asynchronous=false`, threads it to `CallService::call`, and returns `ObjectEntity|PromiseInterface`
-  - GIVEN any existing synchronous caller WHEN it calls `callSourceObject` without the new argument THEN behaviour is byte-for-byte unchanged and the return is still an `ObjectEntity`
-  - GIVEN `asynchronous: true` WHEN the promise resolves THEN it yields the same call-log `ObjectEntity` shape the synchronous path returns, so the save phase consumes one shape
+  - GIVEN `CallService::call()` is declared `): ObjectEntity` and its `$asynchronous === true` branch returns a Guzzle Promise WHEN that branch is reached THEN it is an unconditional `TypeError` — so the branch is removed and a sibling `callAsync(): PromiseInterface` is added instead
+  - GIVEN the pre-dispatch pipeline (early-error guard, circuit-breaker guard, credential resolution, source-config merge, method/URL resolution) WHEN both `call()` and `callAsync()` run THEN they share ONE extracted implementation — the async path must not fork auth, certificate, rate-limit or call-logging behaviour
+  - GIVEN every existing caller of `call()` WHEN this lands THEN no signature they use changes and the return is still `ObjectEntity` — no union return, no narrowing required at ~30 call sites
+  - GIVEN `SynchronizationService::callSourceObjectAsync()` WHEN it is called THEN it resolves the source exactly as `callSourceObject()` does (shared extraction: transient bridge, uuid-then-id addressing, `findSourceObject`) and returns a `PromiseInterface`
+  - GIVEN the promise resolves WHEN `then()` runs THEN it yields the same call-log `ObjectEntity` shape the synchronous path returns, so the save phase consumes one shape
+  - GIVEN a caller still passes `asynchronous: true` to `call()` after this change WHEN it runs THEN it fails loudly (pointing at `callAsync()`) rather than fataling on a return-type mismatch
 - [ ] Implement
 - [ ] Test
 
