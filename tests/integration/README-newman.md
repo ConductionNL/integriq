@@ -33,8 +33,12 @@ id 65), and the schema slugs used are: `source`, `mapping`, `rule`, `endpoint`,
 | 7. Webhook (EventSubscription) | `GET/POST/DELETE /api/events/subscriptions`, `.../pull` | list 200, subscribe 200, unsubscribe 2xx | empty subscribe -> 4xx, unknown pull -> 404 | subscriptions 401 |
 | 8. CloudEvent + Consumer | OR read/update for webhook + consumer | read 200, consumer update 2xx | — | (OR reads not gated) |
 | 9. Teardown | OR CRUD delete for all 8 schemas | idempotent cleanup | — | — |
+| 10. DSO STAM signature verification | `PUT /api/admin/dso-pki-config`; `POST /api/dso/stam/verzoeken` | valid HMAC signature -> 202 | forged/missing signature -> 401 | — |
+| 11. Observability (AppHost health/metrics) | `GET /api/health`; `GET /api/metrics` | health anonymous 200 (`status/checks.database/checks.openregister/app/version`); metrics admin 200 (exposition format, all 11 `openconnector_*` metric names) | — | metrics no-auth 401 |
 
-**Total: 50 requests, 60 assertions — all green.**
+**Total: 58 requests, 79 assertions — all green.**
+
+Folder 11 covers `adopt-apphost`'s Requirement: Declarative Metrics Parity / Declarative Health per ADR-006 (`openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md`) — the two scenarios each `@e2e exclude`s to this Newman suite as the API-contract source of truth. The 503-on-critical-failure health scenario is not exercised here (it requires deliberately breaking the DB connection, which this suite does not do); it is covered by the AppHost observability engine's own contract collection and unit tests.
 
 The collection is **self-contained and idempotent**: setup creates one object per
 schema (capturing the id into a collection variable) and teardown deletes them all.

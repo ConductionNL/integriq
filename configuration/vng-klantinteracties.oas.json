@@ -1,0 +1,331 @@
+{
+  "components": {
+    "mappings": {
+      "vng-klantcontact-in": {
+        "name": "VNG klantcontact naar canonical ticket",
+        "description": "Maps a VNG Klantinteracties klantcontact payload onto pipelinq's canonical ticket schema (ticketType=contactmoment).",
+        "slug": "vng-klantcontact-in",
+        "mapping": {
+          "title": "onderwerp",
+          "description": "tekst",
+          "channel": "kanaal",
+          "occurredAt": "plaatsgevondenOp",
+          "ticketType": "contactmoment"
+        },
+        "unset": ["onderwerp", "tekst", "kanaal", "plaatsgevondenOp"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-klantcontact-out": {
+        "name": "Canonical ticket naar VNG klantcontact",
+        "description": "Inverse of vng-klantcontact-in — renders a canonical ticket back onto the VNG klantcontact shape.",
+        "slug": "vng-klantcontact-out",
+        "mapping": {
+          "onderwerp": "title",
+          "tekst": "description",
+          "kanaal": "channel",
+          "plaatsgevondenOp": "occurredAt"
+        },
+        "unset": ["title", "description", "channel", "occurredAt", "ticketType"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-partij-in": {
+        "name": "VNG partij naar canonical client",
+        "description": "Maps a VNG partij payload onto pipelinq's canonical client schema. partijIdentificator is left untouched here — the vng-avg-bsn-policy rule hashes it before this mapping runs (rules execute in the before-timing phase, ahead of the endpoint's input mapping).",
+        "slug": "vng-partij-in",
+        "mapping": {
+          "type": "soortPartij"
+        },
+        "unset": ["soortPartij"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-partij-out": {
+        "name": "Canonical client naar VNG partij",
+        "description": "Inverse of vng-partij-in.",
+        "slug": "vng-partij-out",
+        "mapping": {
+          "soortPartij": "type"
+        },
+        "unset": ["type"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-betrokkene-in": {
+        "name": "VNG betrokkene naar canonical contact",
+        "description": "Maps a VNG betrokkene payload onto pipelinq's canonical contact schema.",
+        "slug": "vng-betrokkene-in",
+        "mapping": {
+          "role": "rol"
+        },
+        "unset": ["rol"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-betrokkene-out": {
+        "name": "Canonical contact naar VNG betrokkene",
+        "description": "Inverse of vng-betrokkene-in.",
+        "slug": "vng-betrokkene-out",
+        "mapping": {
+          "rol": "role"
+        },
+        "unset": ["role"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-digitaaladres-in": {
+        "name": "VNG digitaalAdres naar canonical contactPoint",
+        "description": "Maps a VNG digitaalAdres payload onto a canonical contactPoint shape (schema.org ContactPoint).",
+        "slug": "vng-digitaaladres-in",
+        "mapping": {
+          "value": "adres",
+          "contactType": "soortDigitaalAdres"
+        },
+        "unset": ["adres", "soortDigitaalAdres"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-digitaaladres-out": {
+        "name": "Canonical contactPoint naar VNG digitaalAdres",
+        "description": "Inverse of vng-digitaaladres-in.",
+        "slug": "vng-digitaaladres-out",
+        "mapping": {
+          "adres": "value",
+          "soortDigitaalAdres": "contactType"
+        },
+        "unset": ["value", "contactType"],
+        "passThrough": true,
+        "configurations": ["vng-klantinteracties"]
+      }
+    },
+    "rules": {
+      "vng-maak-klantcontact-composite": {
+        "name": "VNG maak-klantcontact composite fan-out",
+        "description": "Transactional fan-out: creates the klantcontact (ticket) plus its betrokkene (contact) and digitaalAdres (contactPoint) as one logical write, rolling back on any failure. See CompositeFanoutRule.",
+        "slug": "vng-maak-klantcontact-composite",
+        "action": "compositeFanout",
+        "type": "composite_fanout",
+        "timing": "before",
+        "order": 20,
+        "configuration": {
+          "compositeFanout": {
+            "parent": {"bodyKey": "klantcontact", "register": "pipelinq", "schema": "ticket"},
+            "children": [
+              {"bodyKey": "betrokkene", "register": "pipelinq", "schema": "contact", "parentField": "ticket", "required": false},
+              {"bodyKey": "digitaalAdres", "register": "pipelinq", "schema": "contactPoint", "parentField": "contact", "parentRef": "betrokkene", "required": false}
+            ]
+          }
+        },
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-avg-bsn-policy": {
+        "name": "VNG AVG BSN policy (inbound hash)",
+        "description": "Validates (11-proef) and SHA-256-hashes an inbound partijIdentificator BSN before storage. See AvgBsnPolicyRule.",
+        "slug": "vng-avg-bsn-policy",
+        "action": "hashBsn",
+        "type": "avg_bsn_policy",
+        "timing": "before",
+        "order": 10,
+        "configuration": {
+          "avgBsnPolicy": {
+            "path": "body.partijIdentificator",
+            "codeSoortField": "codeSoortObjectId",
+            "valueField": "objectId"
+          }
+        },
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-avg-bsn-policy-outbound-guard": {
+        "name": "VNG AVG BSN policy (outbound guard)",
+        "description": "Defence-in-depth: strips any raw, checksum-valid BSN that survived to the outbound representation rather than rendering it. Same rule mechanic as vng-avg-bsn-policy, run in the after-timing slot — the real `rule` schema carries a single `timing` field, so the two directions are two Rule objects sharing one handler. Not in design.md's frozen Seed Data table (which only listed the inbound direction); added here to satisfy REQ-003 scenario 3.",
+        "slug": "vng-avg-bsn-policy-outbound-guard",
+        "action": "guardBsn",
+        "type": "avg_bsn_policy",
+        "timing": "after",
+        "order": 90,
+        "configuration": {
+          "avgBsnPolicy": {
+            "path": "body.partijIdentificator",
+            "codeSoortField": "codeSoortObjectId",
+            "valueField": "objectId"
+          }
+        },
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-selfurl-hal": {
+        "name": "VNG self-URL / HAL links",
+        "description": "Stamps an absolute url self-link and HAL _links on the emitted resource. See EndpointService::renderSelfUrlAndHal.",
+        "slug": "vng-selfurl-hal",
+        "action": "renderSelfUrl",
+        "type": "selfurl_hal",
+        "timing": "after",
+        "order": 80,
+        "configuration": {},
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-referentienummer": {
+        "name": "VNG referentienummer",
+        "description": "Stamps a UUIDv4 referentienummer on the emitted resource. See ReferentienummerRule.",
+        "slug": "vng-referentienummer",
+        "action": "generateReferentienummer",
+        "type": "referentienummer",
+        "timing": "after",
+        "order": 85,
+        "configuration": {
+          "referentienummer": {
+            "targetField": "referentienummer"
+          }
+        },
+        "configurations": ["vng-klantinteracties"]
+      }
+    },
+    "endpoints": {
+      "vng-klantcontacten-list": {
+        "name": "Klantcontacten (list/detail)",
+        "description": "GET klantinteracties/klantcontacten and klantinteracties/klantcontacten/{id}.",
+        "slug": "vng-klantcontacten-list",
+        "endpoint": "klantinteracties/klantcontacten",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/ticket",
+        "outputMapping": "vng-klantcontact-out",
+        "vngFilterTranslation": true,
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-klantcontacten-create": {
+        "name": "Klantcontacten (create)",
+        "description": "POST klantinteracties/klantcontacten.",
+        "slug": "vng-klantcontacten-create",
+        "endpoint": "klantinteracties/klantcontacten",
+        "method": "POST",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/ticket",
+        "inputMapping": "vng-klantcontact-in",
+        "outputMapping": "vng-klantcontact-out",
+        "rules": ["vng-selfurl-hal", "vng-referentienummer"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-klantcontacten-update": {
+        "name": "Klantcontacten (update)",
+        "description": "PUT klantinteracties/klantcontacten/{id} — all mandatory fields required.",
+        "slug": "vng-klantcontacten-update",
+        "endpoint": "klantinteracties/klantcontacten",
+        "method": "PUT",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/ticket",
+        "inputMapping": "vng-klantcontact-in",
+        "outputMapping": "vng-klantcontact-out",
+        "putPatchSemantics": true,
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-klantcontacten-patch": {
+        "name": "Klantcontacten (partial update)",
+        "description": "PATCH klantinteracties/klantcontacten/{id} — partial update.",
+        "slug": "vng-klantcontacten-patch",
+        "endpoint": "klantinteracties/klantcontacten",
+        "method": "PATCH",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/ticket",
+        "inputMapping": "vng-klantcontact-in",
+        "outputMapping": "vng-klantcontact-out",
+        "putPatchSemantics": true,
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-partijen-list": {
+        "name": "Partijen (list/detail)",
+        "description": "GET klantinteracties/partijen and klantinteracties/partijen/{id}, supports partijIdentificator__* filters and expand=.",
+        "slug": "vng-partijen-list",
+        "endpoint": "klantinteracties/partijen",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/client",
+        "outputMapping": "vng-partij-out",
+        "vngFilterTranslation": true,
+        "rules": ["vng-avg-bsn-policy-outbound-guard", "vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-partijen-create": {
+        "name": "Partijen (create)",
+        "description": "POST klantinteracties/partijen — inbound BSN is validated + hashed before storage.",
+        "slug": "vng-partijen-create",
+        "endpoint": "klantinteracties/partijen",
+        "method": "POST",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/client",
+        "inputMapping": "vng-partij-in",
+        "outputMapping": "vng-partij-out",
+        "rules": ["vng-avg-bsn-policy", "vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-betrokkenen-list": {
+        "name": "Betrokkenen (list/detail)",
+        "description": "GET klantinteracties/betrokkenen and klantinteracties/betrokkenen/{id}.",
+        "slug": "vng-betrokkenen-list",
+        "endpoint": "klantinteracties/betrokkenen",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/contact",
+        "outputMapping": "vng-betrokkene-out",
+        "vngFilterTranslation": true,
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-betrokkenen-create": {
+        "name": "Betrokkenen (create)",
+        "description": "POST klantinteracties/betrokkenen.",
+        "slug": "vng-betrokkenen-create",
+        "endpoint": "klantinteracties/betrokkenen",
+        "method": "POST",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/contact",
+        "inputMapping": "vng-betrokkene-in",
+        "outputMapping": "vng-betrokkene-out",
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-digitaleadressen-list": {
+        "name": "Digitale adressen (list/detail)",
+        "description": "GET klantinteracties/digitaleadressen and klantinteracties/digitaleadressen/{id}.",
+        "slug": "vng-digitaleadressen-list",
+        "endpoint": "klantinteracties/digitaleadressen",
+        "method": "GET",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/contactPoint",
+        "outputMapping": "vng-digitaaladres-out",
+        "vngFilterTranslation": true,
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-digitaleadressen-create": {
+        "name": "Digitale adressen (create)",
+        "description": "POST klantinteracties/digitaleadressen.",
+        "slug": "vng-digitaleadressen-create",
+        "endpoint": "klantinteracties/digitaleadressen",
+        "method": "POST",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/contactPoint",
+        "inputMapping": "vng-digitaaladres-in",
+        "outputMapping": "vng-digitaaladres-out",
+        "rules": ["vng-selfurl-hal"],
+        "configurations": ["vng-klantinteracties"]
+      },
+      "vng-maak-klantcontact": {
+        "name": "Maak klantcontact (composite)",
+        "description": "POST klantinteracties/maak-klantcontact — transactional fan-out creating a klantcontact plus its betrokkene and digitaalAdres. See Deviations in tasks.md for the before-rule/dispatch ordering note.",
+        "slug": "vng-maak-klantcontact",
+        "endpoint": "klantinteracties/maak-klantcontact",
+        "method": "POST",
+        "targetType": "register/schema",
+        "targetId": "pipelinq/ticket",
+        "inputMapping": "vng-klantcontact-in",
+        "outputMapping": "vng-klantcontact-out",
+        "rules": ["vng-avg-bsn-policy", "vng-maak-klantcontact-composite", "vng-selfurl-hal", "vng-referentienummer"],
+        "configurations": ["vng-klantinteracties"]
+      }
+    }
+  }
+}

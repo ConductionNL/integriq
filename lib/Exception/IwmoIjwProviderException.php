@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * OpenConnector iWMO/iJW Provider Exception.
+ *
+ * Raised when an iWMO/iJW (StUF iStandaarden Wmo 3.0 / Jeugdwet 3.0)
+ * transport operation cannot proceed: no active iWMO/iJW source configured,
+ * an unreachable/erroring GGk/VECOZO endpoint, a malformed response, or a
+ * provider configuration error. Messages MUST stay secret-free — they may
+ * name configuration keys and references, never token material (mirrors
+ * KissProviderException / PeppolProviderException / SmsProviderException).
+ *
+ * @category Exception
+ * @package  OCA\OpenConnector\Exception
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://www.OpenConnector.nl
+ *
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenConnector\Exception;
+
+use Exception;
+
+/**
+ * Thrown on any iWMO/iJW provider/transport or configuration failure.
+ *
+ * @spec openspec/specs/iwmo-ijw-adapter/spec.md
+ */
+class IwmoIjwProviderException extends Exception
+{
+}//end class

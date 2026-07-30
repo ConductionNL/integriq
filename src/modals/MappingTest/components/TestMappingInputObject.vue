@@ -6,7 +6,7 @@ import { translate as t } from '@nextcloud/l10n'
 	<div class="input-object-container">
 		<h4>{{ t('openconnector', 'Input object') }}</h4>
 
-		<NcTextArea :value.sync="inputObject"
+		<NcTextArea v-model="inputObject"
 			resize="vertical"
 			class="textarea"
 			:error="!validJson(inputObject)"
@@ -34,7 +34,7 @@ export default {
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		emitInputObjectChanged(event) {
 			const data = {
 				value: event.target.value,
@@ -42,7 +42,7 @@ export default {
 			}
 			this.$emit('input-object-changed', data)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		validJson(object) {
 			try {
 				JSON.parse(object)

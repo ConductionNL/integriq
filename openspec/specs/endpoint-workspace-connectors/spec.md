@@ -1,7 +1,27 @@
 # endpoint-workspace-connectors Specification
 
 ## Purpose
-TBD - created by archiving change add-openconnector-connector-categories. Update Purpose after archive.
+
+Endpoint/workspace vendors (Citrix, VMware/Omnissa Horizon, AWS WorkSpaces, AVD,
+Windows 365, Intune, Jamf, etc.) register as `IntegrationProvider`s under
+`lib/Service/Adapter/EndpointWorkspace/`, each extending the shared
+`AbstractCategoryAdapterProvider` (`lib/Service/Adapter/AbstractCategoryAdapterProvider.php`)
+so capability-vocabulary declaration, health-check surfacing, and credential
+resolution (via OR's `CredentialBrokerService`, `project_credential-broker`)
+are consistent across every category adapter. `AzureVirtualDesktopAdapter`
+(`lib/Service/Adapter/EndpointWorkspace/AzureVirtualDesktopAdapter.php`) is
+the reference implementation, proving the pattern against the ARM
+`userSessions` API for `session-enumeration`, `user-mapping`, and
+`audit-event-ingestion`. To add the next vendor: create a new class in this
+directory extending `AbstractCategoryAdapterProvider`, implement its
+`getId`/`getLabel`/`getIcon`/`getCapabilities` plus the vendor-specific read
+methods, call `brokeredRequest()` for every outbound call (never hold the
+vendor secret directly), and register it in
+`Application::registerIntegrationProviders()`. The remaining ~36 named
+vendors in this spec stay explicit backlog — this change proves the
+scaffolding, not a full vendor rollout (see
+`openspec/changes/connector-category-adapter-scaffolding`).
+
 ## Requirements
 ### Requirement: Endpoint and virtual-desktop / workspace connectors SHALL register through the integration registry per ADR-019 (REQ-EWC-001)
 
@@ -15,7 +35,7 @@ Recast, Microsoft Intune, Jamf Pro, VMware Workspace ONE UEM —
 MUST be implemented as an `IntegrationProvider` registered
 through OR's integration registry per ADR-019. Adapter classes
 MUST live under `lib/Service/Adapter/EndpointWorkspace/` and
-MUST NOT be embedded in any sibling app (mydash, etc.).
+MUST NOT be embedded in any sibling app (launchpad, etc.).
 
 #### Scenario: Reviewer confirms no per-app workspace SDK in sibling apps
 
@@ -123,7 +143,7 @@ CloudEvents (per ADR-022 §"Events + webhooks") with type
 (e.g. `com.conduction.endpoint-workspace.virtual-desktop.session-started`)
 and dispatched through NC's existing event dispatcher.
 
-Sibling apps that need to react (e.g. mydash audit widget,
+Sibling apps that need to react (e.g. launchpad audit widget,
 decidesk security board) MUST subscribe through the standard
 CloudEvent contract. Openconnector MUST NOT author a new
 event table specific to EWC events — every event lands in
@@ -133,14 +153,14 @@ of the normalised event for long-term retention is the sibling
 app's choice and MUST go through OR's audit-trail-immutable
 or docudesk per ADR-022.
 
-#### Scenario: A Citrix session-started event reaches mydash via CloudEvent
+#### Scenario: A Citrix session-started event reaches launchpad via CloudEvent
 
 - **GIVEN** a Citrix source declaring `audit-event-stream`
 - **WHEN** Citrix POSTs a session-started webhook
 - **THEN** openconnector MUST normalise it to a CloudEvent of
   type `com.conduction.endpoint-workspace.virtual-desktop.session-started`,
   enrich with the resolved NC user via REQ-EWC-003, and dispatch;
-  mydash (subscribed by event type) MUST receive it and render
+  launchpad (subscribed by event type) MUST receive it and render
   on its security widget — no openconnector-local event table
   created.
 

@@ -306,7 +306,14 @@ class IBabsConnectorService
      *
      * @return array{success: bool, message: string, agendapuntId: string|null} Creation result.
      *
-     * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-3
+     * The inbound RISPollJob path (pollBesluiten) is live, but the outbound
+     * Zaak -> voorstel -> PDF -> iBabs-upload -> createAgendapunt pipeline that
+     * triggers this write is not yet built. This method is spec-required
+     * (REQ-RIS-003) and tested, so it is kept — not deleted and not fake-wired —
+     * pending that outbound pipeline, tracked as a follow-up issue.
+     *
+     * @spec                      openspec/changes/ibabs-notubiz-connector/tasks.md#task-3
+     * @orphaned-write-capability exclude Outbound-push entry point (REQ-RIS-003); its Zaak->iBabs pipeline is unbuilt.
      */
     public function createAgendapunt(
         ObjectEntity $source,

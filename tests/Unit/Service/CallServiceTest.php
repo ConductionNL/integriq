@@ -19,7 +19,9 @@ use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\BrokeredCallService;
 use OCA\OpenConnector\Service\CallService;
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Tests\Helpers\ObjectServiceMockBuilder;
+use OCA\OpenConnector\Tests\Helpers\RenderBoundarySimulatingObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -80,6 +82,7 @@ class CallServiceTest extends TestCase
             $appConfig,
             $logger,
             $brokered,
+            new SensitiveFieldRegistry(),
         );
     }//end setUp()
 
@@ -130,6 +133,7 @@ class CallServiceTest extends TestCase
             $appConfig,
             $this->createMock(LoggerInterface::class),
             $brokered,
+            new SensitiveFieldRegistry(),
         );
     }//end buildBrokeredCallService()
 
@@ -248,6 +252,49 @@ class CallServiceTest extends TestCase
 
 
     /**
+     * persistLog:false (the interactive "Test connection" path) returns the live
+     * response WITHOUT writing a CallLog.
+     *
+     * The expensive OpenRegister object save is skipped entirely, yet the returned
+     * entity still carries the full request/response envelope so the UI can render it.
+     *
+     * @return void
+     */
+    public function testTransientCallSkipsCallLogPersistence(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->method('dispatch')->willReturn(
+            new Response(200, ['Content-Type' => ['application/json']], '{"ok":true}')
+        );
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $callLog = $service->call(
+            source: $this->makeBrokeredSource(),
+            endpoint: '/v1/items',
+            persistLog: false
+        );
+
+        // No CallLog was written — the whole point of the transient path.
+        $this->assertCount(0, $this->savedCallLogs(), 'persistLog:false must not save a call_log');
+
+        // …but the response envelope is still returned for the UI to display.
+        $this->assertInstanceOf(ObjectEntity::class, $callLog);
+        $result = $callLog->getObject();
+        $this->assertArrayHasKey('response', $result);
+        $this->assertSame(200, $result['response']['statusCode']);
+        $this->assertSame('source-uuid-1', $result['source']);
+        $this->assertSame('GET', $result['request']['method']);
+    }//end testTransientCallSkipsCallLogPersistence()
+
+
+    /**
      * A brokered config error persists a synthetic 409 CallLog; dispatch never runs.
      *
      * REQ-SBC-001: sibling embedded secrets are a hard config error — no
@@ -348,6 +395,414 @@ class CallServiceTest extends TestCase
         $this->assertStringContainsString('***REDACTED***', $log['response']['body']);
         $this->assertStringNotContainsString('sekret-value-123', json_encode($log));
     }//end testBrokeredCallLogRedactsSecretsLikeGuzzlePath()
+
+
+    /**
+     * TC-9 / secret-hygiene Task 2 — the non-brokered Guzzle-dispatch path
+     * redacts an authenticated call's CallLog identically to the brokered
+     * path, AND the real outbound Guzzle request still carried the genuine,
+     * unredacted Authorization header (redaction applies only to the
+     * persisted copy, never to the live request).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    public function testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        // Swap in a mock Guzzle client so the "outbound call" is captured
+        // in-process instead of hitting the network — the mock is invoked
+        // with the SAME (unredacted) $config the engine would otherwise send
+        // to a real upstream.
+        $capturedConfig = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->once())
+            ->method('request')
+            ->willReturnCallback(
+                function (string $method, string $url, array $config) use (&$capturedConfig) {
+                    $capturedConfig = $config;
+
+                    return new Response(200, [], '{"ok":true}');
+                }
+            );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $configuration = [
+            'headers' => ['Authorization' => 'Bearer live-secret-token-123'],
+        ];
+
+        $service->call(source: $this->makeBrokeredSource(configuration: $configuration), endpoint: '/v1/items');
+
+        // The real outbound request carried the genuine, unredacted header.
+        $this->assertSame('Bearer live-secret-token-123', $capturedConfig['headers']['Authorization']);
+
+        // The persisted CallLog is redacted and carries no plaintext secret anywhere.
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertSame('***REDACTED***', $log['request']['headers']['Authorization']);
+        $this->assertStringNotContainsString('live-secret-token-123', json_encode($log));
+    }//end testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest()
+
+
+    /**
+     * TC-10 — a secret submitted as a form parameter and echoed back verbatim
+     * in an upstream error response body is scrubbed before the CallLog is
+     * persisted, on the non-brokered Guzzle path.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    public function testGuzzlePathScrubsSecretEchoedInResponseBody(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturn(
+            new Response(500, [], 'upstream error echoing super-secret-value back')
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $configuration = [
+            'form_params' => ['client_secret' => 'super-secret-value'],
+        ];
+
+        $service->call(
+            source: $this->makeBrokeredSource(configuration: $configuration),
+            endpoint: '/v1/items',
+            config: ['logBody' => true],
+        );
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertSame('***REDACTED***', $log['request']['form_params']['client_secret']);
+        $this->assertStringNotContainsString('super-secret-value', $log['response']['body']);
+        $this->assertStringContainsString('***REDACTED***', $log['response']['body']);
+    }//end testGuzzlePathScrubsSecretEchoedInResponseBody()
+
+
+    /**
+     * REQ-006 scenario "a secret-bearing query-string parameter is redacted
+     * from the persisted URL": `api_key` in the request URL is masked in
+     * `call_log.request.url` while the non-secret `page` parameter is
+     * retained unmodified.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    public function testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturn(new Response(200, [], '[]'));
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-url');
+        $source->setObject(
+            [
+                'name'          => 'url-secret-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/things?api_key=live_abc123&page=2');
+
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $log = $logs[0]['object'];
+        $this->assertStringNotContainsString('live_abc123', $log['request']['url']);
+        // http_build_query() percent-encodes the asterisks of the placeholder.
+        $this->assertStringContainsString('api_key=***REDACTED***', urldecode($log['request']['url']));
+        $this->assertStringContainsString('page=2', $log['request']['url']);
+        $this->assertStringNotContainsString('live_abc123', json_encode($log));
+    }//end testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl()
+
+
+    /**
+     * Build a CallService whose ObjectService is the render-boundary double.
+     *
+     * The double reproduces OpenRegister's writeOnly render boundary: a
+     * `_render: true` read strips the source's credential fields; `_render: false`
+     * returns them intact. A mock Guzzle client captures the outbound `$config`
+     * in-process so a test can assert what the engine would send upstream.
+     *
+     * @param RenderBoundarySimulatingObjectService $double         The render-boundary object service.
+     * @param array|null                            &$capturedConfig By-ref sink for the outbound Guzzle config.
+     * @param Response|null                         $response       Response the mock client returns (default 200).
+     *
+     * @return CallService
+     */
+    private function buildRenderBoundaryService(
+        RenderBoundarySimulatingObjectService $double,
+        ?array &$capturedConfig,
+        ?Response $response=null
+    ): CallService {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('hasKey')->willReturn(false);
+
+        $service = new CallService(
+            $double,
+            new ArrayLoader([]),
+            $this->createMock(AuthenticationService::class),
+            $appConfig,
+            $this->createMock(LoggerInterface::class),
+            $brokered,
+            new SensitiveFieldRegistry(),
+        );
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturnCallback(
+            function (string $method, string $url, array $config) use (&$capturedConfig, $response) {
+                $capturedConfig = $config;
+                return ($response ?? new Response(200, [], '{"ok":true}'));
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        return $service;
+    }//end buildRenderBoundaryService()
+
+
+    /**
+     * ocon#215 — call() re-resolves the source RAW with `_render: false`.
+     *
+     * The engine is handed a RENDERED source (its writeOnly credential already
+     * stripped, exactly as any of the ~18 callers would after a normal read).
+     * call() MUST re-read the source itself, and the load-bearing argument of
+     * that read is `_render: false` — NOT `_rbac: false`, which the earlier
+     * ocon#212 fix mistakenly relied on before ocon#226 corrected it. This
+     * asserts the CONTRACT (the arguments of the read), not the double's return.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testCallReResolvesSourceWithRenderFalse(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+        $double->stored['src-uuid-215'] = [
+            'name'      => 'secret-source',
+            'isEnabled' => true,
+            'location'  => 'https://api.example.invalid',
+            'apikey'    => 'live-secret-key',
+        ];
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // Pass a RENDERED source — apikey already stripped by the render boundary.
+        $rendered = new ObjectEntity();
+        $rendered->setUuid('src-uuid-215');
+        $rendered->setObject(
+            [
+                'name'      => 'secret-source',
+                'isEnabled' => true,
+                'location'  => 'https://api.example.invalid',
+            ]
+        );
+
+        $service->call(source: $rendered, endpoint: '/v1/items');
+
+        // Exactly one raw re-resolve of the source, and it used `_render: false`.
+        $sourceReads = array_values(
+            array_filter(
+                $double->reads,
+                function (array $read): bool {
+                    return $read['uuid'] === 'src-uuid-215';
+                }
+            )
+        );
+        $this->assertNotEmpty($sourceReads, 'call() must re-resolve the source from storage.');
+        $this->assertFalse(
+            $sourceReads[0]['_render'],
+            'The re-resolve MUST use _render:false — the load-bearing arg (ocon#215/#226).'
+        );
+    }//end testCallReResolvesSourceWithRenderFalse()
+
+
+    /**
+     * ocon#215 — a rendered (secret-stripped) source still dispatches WITH its
+     * credential after the engine-side re-resolve. THIS IS THE MUTATION GUARD.
+     *
+     * The raw stored source carries a top-level writeOnly `apikey` and an
+     * auth header template `Bearer {{ source.apikey }}`. The caller passes the
+     * RENDERED source (no apikey). If call() dispatched with the source as
+     * given, the header would render to a credential-free `Bearer ` and the
+     * outbound call would go out UNAUTHENTICATED (the #215 defect). Because
+     * call() re-resolves raw, the outbound request carries the real secret.
+     *
+     * Revert the `resolveSourceForDispatch()` re-resolve (use the passed source
+     * as-is) and this assertion fails — the mutation guard the class lacked.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testRenderedSourceStillDispatchesWithCredential(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+        $double->stored['src-uuid-cred'] = [
+            'name'          => 'auth-source',
+            'isEnabled'     => true,
+            'location'      => 'https://api.example.invalid',
+            'apikey'        => 'live-secret-key',
+            'configuration' => [
+                'headers' => ['Authorization' => 'Bearer {{ source.apikey }}'],
+            ],
+        ];
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // The render boundary already stripped apikey from what the caller holds.
+        $rendered = new ObjectEntity();
+        $rendered->setUuid('src-uuid-cred');
+        $rendered->setObject(
+            [
+                'name'          => 'auth-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'headers' => ['Authorization' => 'Bearer {{ source.apikey }}'],
+                ],
+            ]
+        );
+
+        $service->call(source: $rendered, endpoint: '/v1/items');
+
+        $this->assertNotNull($capturedConfig, 'The outbound Guzzle request must have been dispatched.');
+        $this->assertSame(
+            'Bearer live-secret-key',
+            $capturedConfig['headers']['Authorization'],
+            'Re-resolved credential MUST reach the outbound request — else the call goes out unauthenticated (#215).'
+        );
+    }//end testRenderedSourceStillDispatchesWithCredential()
+
+
+    /**
+     * ocon#215 — an unpersisted / in-memory source (no uuid) falls back to the
+     * passed entity and NEVER throws or dispatches an empty source.
+     *
+     * A source built in-process (a test, a PingAction probe, a freshly
+     * constructed entity) has no uuid to re-read. call() must dispatch using
+     * the passed entity's own data, and must not attempt a raw find.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testUnpersistedSourceFallsBackWithoutReResolve(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // No uuid — an in-memory source with its credential header present.
+        $inMemory = new ObjectEntity();
+        $inMemory->setObject(
+            [
+                'name'          => 'in-memory-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'headers' => ['Authorization' => 'Bearer in-memory-token'],
+                ],
+            ]
+        );
+
+        // Must not throw.
+        $service->call(source: $inMemory, endpoint: '/v1/items');
+
+        $this->assertSame([], $double->reads, 'A source with no uuid must NOT trigger a raw find.');
+        $this->assertNotNull($capturedConfig, 'The in-memory source must still be dispatched.');
+        $this->assertSame('Bearer in-memory-token', $capturedConfig['headers']['Authorization']);
+    }//end testUnpersistedSourceFallsBackWithoutReResolve()
+
+
+    /**
+     * ocon#215 — `overruleAuth` is respected: a caller deliberately supplying
+     * auth on the passed entity is NOT clobbered by a raw re-read.
+     *
+     * The stored raw source carries a DIFFERENT credential from the one the
+     * caller injected on the passed entity. With `overruleAuth: true` the
+     * engine must dispatch with the CALLER's value and never re-resolve.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function testOverruleAuthSkipsReResolveAndKeepsCallerAuth(): void
+    {
+        $double = new RenderBoundarySimulatingObjectService();
+        $double->stored['src-uuid-overrule'] = [
+            'name'          => 'stored-source',
+            'isEnabled'     => true,
+            'location'      => 'https://api.example.invalid',
+            'configuration' => [
+                'headers' => ['Authorization' => 'Bearer STORED-should-not-be-used'],
+            ],
+        ];
+
+        $capturedConfig = null;
+        $service        = $this->buildRenderBoundaryService($double, $capturedConfig);
+
+        // Caller injected its own auth on the entity it hands to call().
+        $injected = new ObjectEntity();
+        $injected->setUuid('src-uuid-overrule');
+        $injected->setObject(
+            [
+                'name'          => 'stored-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [
+                    'headers' => ['Authorization' => 'Bearer CALLER-injected'],
+                ],
+            ]
+        );
+
+        $service->call(source: $injected, endpoint: '/v1/items', overruleAuth: true);
+
+        $this->assertSame([], $double->reads, 'overruleAuth:true must skip the raw re-resolve.');
+        $this->assertSame(
+            'Bearer CALLER-injected',
+            $capturedConfig['headers']['Authorization'],
+            'overruleAuth must keep the caller-supplied auth — never clobber it with the stored value.'
+        );
+    }//end testOverruleAuthSkipsReResolveAndKeepsCallerAuth()
 
 
     /**
@@ -763,5 +1218,1023 @@ class CallServiceTest extends TestCase
         $this->assertArrayNotHasKey('body', $dispatched[0]);
     }//end testQueryPaginationUnaffectedWhenPaginationInOmitted()
 
+
+    /**
+     * REQ-STUF-011 scenario "Client certificate used for mTLS request": a
+     * string PEM certificate configured on a StUF (or any mTLS) Source is
+     * written to a temp file by `getCertificate()`, the config is rewritten
+     * to point at that file (so Guzzle's `cert` option receives a path, not
+     * PEM content), and the file is real / readable on disk.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateWritesCertToTempFile(): void
+    {
+        // Arrange
+        $pem    = "-----BEGIN CERTIFICATE-----\nMIIBAjCB...fixture...\n-----END CERTIFICATE-----";
+        $config = ['cert' => $pem];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert: config now holds a filesystem path, not the raw PEM.
+        $this->assertIsString($config['cert']);
+        $this->assertNotSame($pem, $config['cert']);
+        $this->assertFileExists($config['cert']);
+        $this->assertSame($pem, file_get_contents($config['cert']));
+
+        // Cleanup via the service's own removal path (also exercises it).
+        $this->service->removeFiles($config);
+        $this->assertFileDoesNotExist($config['cert']);
+    }//end testGetCertificateWritesCertToTempFile()
+
+
+    /**
+     * REQ-STUF-011 scenario "Client certificate used for mTLS request",
+     * SSL-key variant: `ssl_key` is written to disk exactly like `cert`.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateWritesSslKeyToTempFile(): void
+    {
+        // Arrange
+        $key    = "-----BEGIN PRIVATE KEY-----\nMIIEvQ...fixture...\n-----END PRIVATE KEY-----";
+        $config = ['ssl_key' => $key];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert
+        $this->assertFileExists($config['ssl_key']);
+        $this->assertSame($key, file_get_contents($config['ssl_key']));
+
+        $this->service->removeFiles($config);
+        $this->assertFileDoesNotExist($config['ssl_key']);
+    }//end testGetCertificateWritesSslKeyToTempFile()
+
+
+    /**
+     * REQ-STUF-011 scenario "Escaped newlines in PEM converted correctly":
+     * a PEM stored with literal `\n` escape sequences (as it would arrive
+     * from a JSON-encoded Source configuration) is converted to real
+     * newline bytes on write, asserted byte-for-byte.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateConvertsEscapedNewlines(): void
+    {
+        // Arrange: literal backslash-n sequences, as stored in a JSON field.
+        $escaped  = '-----BEGIN CERTIFICATE-----\nMIIBAjCB...fixture...\n-----END CERTIFICATE-----';
+        $expected = "-----BEGIN CERTIFICATE-----\nMIIBAjCB...fixture...\n-----END CERTIFICATE-----";
+        $config   = ['cert' => $escaped];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert byte-for-byte: no stray literal backslash-n left in the file.
+        $written = file_get_contents($config['cert']);
+        $this->assertSame($expected, $written);
+        $this->assertStringNotContainsString('\\n', $written);
+
+        $this->service->removeFiles($config);
+    }//end testGetCertificateConvertsEscapedNewlines()
+
+
+    /**
+     * REQ-STUF-011: `cert` supplied as a `[pem, password]` array (Guzzle's
+     * client-cert-with-passphrase shape) writes only the PEM element
+     * (index 0) to disk and preserves the password element untouched.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testGetCertificateWritesArrayFormCertPreservingPassword(): void
+    {
+        // Arrange
+        $pem    = "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----";
+        $config = ['cert' => [$pem, 'super-secret-passphrase']];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert
+        $this->assertFileExists($config['cert'][0]);
+        $this->assertSame($pem, file_get_contents($config['cert'][0]));
+        $this->assertSame('super-secret-passphrase', $config['cert'][1]);
+
+        $this->service->removeFiles($config);
+        $this->assertFileDoesNotExist($config['cert'][0]);
+    }//end testGetCertificateWritesArrayFormCertPreservingPassword()
+
+
+    /**
+     * REQ-STUF-011: `removeFiles()` cleans up cert + ssl_key + verify
+     * together in a single call, mirroring the real teardown path in
+     * `CallService::call()` after both the success and exception branches.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/connector-adapter-e2e-traceability/tasks.md#task-4
+     */
+    public function testRemoveFilesCleansUpCertSslKeyAndVerifyTogether(): void
+    {
+        // Arrange
+        $config = [
+            'cert'    => "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----",
+            'ssl_key' => "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            'verify'  => "-----BEGIN CERTIFICATE-----\nca-fixture\n-----END CERTIFICATE-----",
+        ];
+        $this->service->getCertificate($config);
+        $certPath   = $config['cert'];
+        $keyPath    = $config['ssl_key'];
+        $verifyPath = $config['verify'];
+
+        $this->assertFileExists($certPath);
+        $this->assertFileExists($keyPath);
+        $this->assertFileExists($verifyPath);
+
+        // Act
+        $this->service->removeFiles($config);
+
+        // Assert: every temp file is gone (exception-path cleanup is
+        // identical — `removeFiles()` is called the same way from both the
+        // success and `finally`/catch branches in `call()`).
+        $this->assertFileDoesNotExist($certPath);
+        $this->assertFileDoesNotExist($keyPath);
+        $this->assertFileDoesNotExist($verifyPath);
+    }//end testRemoveFilesCleansUpCertSslKeyAndVerifyTogether()
+
+
+    /**
+     * TC-12 / secret-hygiene Task 8 — cert/ssl_key/verify temp files are
+     * created with 0600 permissions (regression pin for commit `b0a5ef8a` /
+     * #1012).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-certificate-materialisation-and-cleanup-req-002
+     */
+    public function testGetCertificateWritesFilesWithMode0600(): void
+    {
+        // Arrange
+        $config = [
+            'cert'    => "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----",
+            'ssl_key' => "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            'verify'  => "-----BEGIN CERTIFICATE-----\nca-fixture\n-----END CERTIFICATE-----",
+        ];
+
+        // Act
+        $this->service->getCertificate($config);
+
+        // Assert: owner read/write only — no group or world access.
+        $this->assertSame(0600, (fileperms($config['cert']) & 0777));
+        $this->assertSame(0600, (fileperms($config['ssl_key']) & 0777));
+        $this->assertSame(0600, (fileperms($config['verify']) & 0777));
+
+        $this->service->removeFiles($config);
+    }//end testGetCertificateWritesFilesWithMode0600()
+
+
+    /**
+     * TC-13 / secret-hygiene Task 8 — `removeFiles()` cleans up the remaining
+     * files without emitting a PHP warning or throwing when one of the three
+     * paths was already deleted by an earlier cleanup pass (regression pin
+     * for commit `b0a5ef8a` / #1012's existence-check fix).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-certificate-materialisation-and-cleanup-req-002
+     */
+    public function testRemoveFilesNoWarningOnPartialCleanup(): void
+    {
+        // Arrange
+        $config = [
+            'cert'    => "-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----",
+            'ssl_key' => "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            'verify'  => "-----BEGIN CERTIFICATE-----\nca-fixture\n-----END CERTIFICATE-----",
+        ];
+        $this->service->getCertificate($config);
+
+        // Simulate a prior cleanup pass already having removed the cert file.
+        unlink($config['cert']);
+        $this->assertFileDoesNotExist($config['cert']);
+        $this->assertFileExists($config['ssl_key']);
+        $this->assertFileExists($config['verify']);
+
+        // Act: capture any PHP warning/notice raised during removeFiles().
+        $capturedErrors = [];
+        set_error_handler(
+            function (int $errno, string $errstr) use (&$capturedErrors) {
+                $capturedErrors[] = $errstr;
+
+                return true;
+            }
+        );
+
+        try {
+            $this->service->removeFiles($config);
+        } finally {
+            restore_error_handler();
+        }
+
+        // Assert: no warning captured, and the two remaining files are gone.
+        $this->assertSame([], $capturedErrors);
+        $this->assertFileDoesNotExist($config['ssl_key']);
+        $this->assertFileDoesNotExist($config['verify']);
+    }//end testRemoveFilesNoWarningOnPartialCleanup()
+
+
+    /**
+     * Build a plain (non-brokered) source ObjectEntity, optionally seeded
+     * with retryPolicy / circuit-breaker fields.
+     *
+     * @param array $extra Extra fields merged onto the base source object.
+     *
+     * @return ObjectEntity
+     */
+    private function makePlainSource(array $extra=[]): ObjectEntity
+    {
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-retry');
+        $source->setObject(
+            array_merge(
+                [
+                    'name'          => 'retry-source',
+                    'isEnabled'     => true,
+                    'location'      => 'https://api.example.invalid',
+                    'configuration' => [],
+                ],
+                $extra
+            )
+        );
+
+        return $source;
+    }//end makePlainSource()
+
+
+    /**
+     * Swap in a mock Guzzle client returning the given responses in
+     * sequence (one per consecutive `request()` call) and return the array
+     * of captured configs used for each dispatched request.
+     *
+     * @param CallService                               $service   The service under test.
+     * @param \GuzzleHttp\Psr7\Response[]|\Throwable[] $responses Responses/exceptions to return in order.
+     *
+     * @return \stdClass Object handle whose `->calls` property is updated (by reference
+     *                    semantics, since PHP objects are handles) as requests land — an
+     *                    array copy taken at setup time would freeze at 0 before any call runs.
+     */
+    private function mockGuzzleSequence(CallService $service, array $responses): \stdClass
+    {
+        $callCounter        = new \stdClass();
+        $callCounter->calls = 0;
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->exactly(count($responses)))
+            ->method('request')
+            ->willReturnCallback(
+                function (string $method, string $url, array $config) use ($callCounter, $responses) {
+                    $index = $callCounter->calls;
+                    $callCounter->calls++;
+                    $outcome = $responses[$index];
+                    if ($outcome instanceof \Throwable) {
+                        throw $outcome;
+                    }
+
+                    return $outcome;
+                }
+            );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        return $callCounter;
+    }//end mockGuzzleSequence()
+
+
+    /**
+     * TC-1 / REQ-007 — a Source with no `retryPolicy` dispatches exactly one
+     * request even against a persistently-failing (503) upstream, and the
+     * persisted CallLog reflects that single attempt.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testDefaultRetryPolicyDispatchesExactlyOnceAgainstFailingUpstream(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence($service, [new Response(503, [], 'unavailable')]);
+
+        $source = $this->makePlainSource();
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(1, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(503, $logs[0]['object']['statusCode']);
+    }//end testDefaultRetryPolicyDispatchesExactlyOnceAgainstFailingUpstream()
+
+
+    /**
+     * TC-2 / REQ-007 — a Source with `retryPolicy.maxAttempts = 3` and a
+     * retryable status code retries up to maxAttempts; only the FINAL
+     * attempt's CallLog is persisted.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testRetryPolicyRetriesUpToMaxAttemptsAndPersistsOnlyFinalCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence(
+            $service,
+            [
+                new Response(503, [], 'unavailable'),
+                new Response(503, [], 'unavailable'),
+                new Response(200, [], '{"ok":true}'),
+            ]
+        );
+
+        $source = $this->makePlainSource(
+            [
+                'retryPolicy' => [
+                    'maxAttempts'          => 3,
+                    'backoffStrategy'      => 'fixed',
+                    'baseDelayMs'          => 1,
+                    'retryableStatusCodes' => [503],
+                ],
+            ]
+        );
+
+        $callLog = $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(3, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(200, $logs[0]['object']['statusCode']);
+        $this->assertSame(200, $callLog->getObject()['statusCode']);
+    }//end testRetryPolicyRetriesUpToMaxAttemptsAndPersistsOnlyFinalCallLog()
+
+
+    /**
+     * TC-3 / REQ-007 — a non-retryable status code (404, not in the
+     * configured `retryableStatusCodes`) short-circuits after exactly one
+     * attempt even though `maxAttempts` allows more.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testNonRetryableStatusCodeDispatchesOnlyOnce(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence($service, [new Response(404, [], 'not found')]);
+
+        $source = $this->makePlainSource(
+            [
+                'retryPolicy' => [
+                    'maxAttempts'          => 3,
+                    'retryableStatusCodes' => [429, 503],
+                ],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(1, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertSame(404, $logs[0]['object']['statusCode']);
+    }//end testNonRetryableStatusCodeDispatchesOnlyOnce()
+
+
+    /**
+     * TC-4 / REQ-007 — `$config['retryPolicy']` (the per-call override
+     * SynchronizationService populates from `Synchronization.retryPolicyOverride`)
+     * overrides the Source's own policy per-key for that call only.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
+     */
+    public function testCallerSuppliedRetryPolicyOverridesSourcePolicy(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $counter = $this->mockGuzzleSequence(
+            $service,
+            [
+                new Response(500, [], 'error'),
+                new Response(200, [], '{"ok":true}'),
+            ]
+        );
+
+        // Source itself only allows a single attempt.
+        $source = $this->makePlainSource(['retryPolicy' => ['maxAttempts' => 1]]);
+
+        $service->call(
+            source: $source,
+            endpoint: '/v1/items',
+            config: [
+                'retryPolicy' => [
+                    'maxAttempts'          => 2,
+                    'retryableStatusCodes' => [500],
+                    'baseDelayMs'          => 1,
+                ],
+            ],
+        );
+
+        $this->assertSame(2, $counter->calls);
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertSame(200, $logs[0]['object']['statusCode']);
+
+        // The retryPolicy directive never leaks into the persisted request envelope.
+        $this->assertArrayNotHasKey('retryPolicy', $logs[0]['object']['request']);
+    }//end testCallerSuppliedRetryPolicyOverridesSourcePolicy()
+
+
+    /**
+     * TC-5 / REQ-008 — five consecutive retryable failures open the circuit
+     * breaker, using the DEFAULT threshold (no explicit breaker config on
+     * the Source).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testFiveConsecutiveFailuresOpenTheBreakerWithDefaultThreshold(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $this->mockGuzzleSequence(
+            $service,
+            [
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+                new Response(503, [], ''),
+            ]
+        );
+
+        $source = $this->makePlainSource();
+
+        // Each iteration mirrors a real caller re-fetching the Source (whose
+        // circuitBreakerFailureCount was just persisted) before the next call
+        // — a single CallService::call() only mutates its own local copy of
+        // sourceData; the SOURCE ENTITY handed in across five SEPARATE calls
+        // must be re-hydrated from the last save to see the running count.
+        for ($i = 0; $i < 5; $i++) {
+            $service->call(source: $source, endpoint: '/v1/items');
+
+            $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+            if (empty($sourceSaves) === false) {
+                $source->setObject(end($sourceSaves)['object']);
+            }
+        }
+
+        $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+        $this->assertNotEmpty($sourceSaves);
+        $last = end($sourceSaves)['object'];
+        $this->assertSame('open', $last['circuitBreakerState']);
+        $this->assertNotNull($last['circuitBreakerOpenedAt']);
+        $this->assertSame(5, $last['circuitBreakerFailureCount']);
+    }//end testFiveConsecutiveFailuresOpenTheBreakerWithDefaultThreshold()
+
+
+    /**
+     * TC-6 / REQ-008 — an open breaker within its cooldown window
+     * short-circuits with a synthetic 503 CallLog; no HTTP request is
+     * dispatched.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testOpenBreakerWithinCooldownShortCircuitsWithoutDispatching(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('request');
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = $this->makePlainSource(
+            [
+                'circuitBreakerState'    => 'open',
+                'circuitBreakerOpenedAt' => (time() - 10),
+            ]
+        );
+
+        $callLog = $service->call(source: $source, endpoint: '/v1/items');
+
+        $this->assertSame(503, $callLog->getObject()['statusCode']);
+        $this->assertSame('Circuit breaker is open for this source', $callLog->getObject()['statusMessage']);
+    }//end testOpenBreakerWithinCooldownShortCircuitsWithoutDispatching()
+
+
+    /**
+     * TC-7a / REQ-008 — a successful half-open probe (breaker open, cooldown
+     * elapsed) closes the breaker and resets the failure count.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testSuccessfulHalfOpenProbeClosesTheBreaker(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $this->mockGuzzleSequence($service, [new Response(200, [], '{"ok":true}')]);
+
+        $source = $this->makePlainSource(
+            [
+                'circuitBreakerState'        => 'open',
+                'circuitBreakerOpenedAt'     => (time() - 35),
+                'circuitBreakerFailureCount' => 5,
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+        $last        = end($sourceSaves)['object'];
+        $this->assertSame('closed', $last['circuitBreakerState']);
+        $this->assertSame(0, $last['circuitBreakerFailureCount']);
+    }//end testSuccessfulHalfOpenProbeClosesTheBreaker()
+
+
+    /**
+     * TC-7b / REQ-008 — a failed half-open probe reopens the breaker
+     * immediately with a fresh `circuitBreakerOpenedAt`.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
+     */
+    public function testFailedHalfOpenProbeReopensTheBreakerImmediately(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $this->mockGuzzleSequence($service, [new Response(503, [], '')]);
+
+        $openedAt = (time() - 35);
+        $source   = $this->makePlainSource(
+            [
+                'circuitBreakerState'        => 'open',
+                'circuitBreakerOpenedAt'     => $openedAt,
+                'circuitBreakerFailureCount' => 5,
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/v1/items');
+
+        $sourceSaves = array_values(array_filter($this->saved, static fn($row) => $row['schema'] === 'source'));
+        $last        = end($sourceSaves)['object'];
+        $this->assertSame('open', $last['circuitBreakerState']);
+        $this->assertGreaterThan($openedAt, $last['circuitBreakerOpenedAt']);
+    }//end testFailedHalfOpenProbeReopensTheBreakerImmediately()
+
+
+    /**
+     * REQ-009 — `tripCircuitBreaker()` forces the breaker open immediately,
+     * regardless of prior state/failure count.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    public function testTripCircuitBreakerForcesOpenRegardlessOfPriorState(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $source = $this->makePlainSource();
+        $saved  = $service->tripCircuitBreaker(source: $source);
+
+        $data = $saved->getObject();
+        $this->assertSame('open', $data['circuitBreakerState']);
+        $this->assertNotNull($data['circuitBreakerOpenedAt']);
+        $this->assertSame(5, $data['circuitBreakerFailureCount']);
+    }//end testTripCircuitBreakerForcesOpenRegardlessOfPriorState()
+
+
+    /**
+     * REQ-009 — `resetCircuitBreaker()` restores the breaker to closed with
+     * a zero failure count.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    public function testResetCircuitBreakerRestoresClosedState(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $source = $this->makePlainSource(
+            [
+                'circuitBreakerState'        => 'open',
+                'circuitBreakerOpenedAt'     => time(),
+                'circuitBreakerFailureCount' => 7,
+            ]
+        );
+        $saved = $service->resetCircuitBreaker(source: $source);
+
+        $data = $saved->getObject();
+        $this->assertSame('closed', $data['circuitBreakerState']);
+        $this->assertSame(0, $data['circuitBreakerFailureCount']);
+        $this->assertNull($data['circuitBreakerOpenedAt']);
+    }//end testResetCircuitBreakerRestoresClosedState()
+
+    /**
+     * stream-file-content #110: a `$sink` resource passed to call() is handed to
+     * Guzzle as its `sink` request option (so the body streams into it), and the
+     * resource is kept OUT of the persisted CallLog request config.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+     */
+    public function testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $capturedOptions = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturnCallback(
+            function ($method, $url, $options) use (&$capturedOptions) {
+                $capturedOptions = $options;
+
+                return new Response(200, [], 'binary-bytes');
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-sink');
+        $source->setObject(
+            [
+                'name'          => 'sink-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $sink = fopen('php://temp', 'r+');
+
+        $service->call(source: $source, endpoint: '/download', sink: $sink);
+
+        // The sink was handed to Guzzle as its `sink` request option.
+        $this->assertIsArray($capturedOptions);
+        $this->assertArrayHasKey('sink', $capturedOptions);
+        $this->assertSame($sink, $capturedOptions['sink']);
+
+        // The resource is never persisted into the CallLog request config.
+        $logs = $this->savedCallLogs();
+        $this->assertCount(1, $logs);
+        $this->assertArrayNotHasKey('sink', $logs[0]['object']['request']);
+
+        fclose($sink);
+    }//end testCallPassesSinkToGuzzleAndKeepsItOutOfTheCallLog()
+
+
+    /**
+     * Regression: with no `$sink` argument, call() passes no `sink` option to
+     * Guzzle — existing callers are byte-for-byte unchanged.
+     *
+     * @return void
+     */
+    public function testCallWithoutSinkPassesNoSinkOptionToGuzzle(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $capturedOptions = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('request')->willReturnCallback(
+            function ($method, $url, $options) use (&$capturedOptions) {
+                $capturedOptions = $options;
+
+                return new Response(200, [], '[]');
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-nosink');
+        $source->setObject(
+            [
+                'name'          => 'nosink-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $service->call(source: $source, endpoint: '/things');
+
+        $this->assertIsArray($capturedOptions);
+        $this->assertArrayNotHasKey('sink', $capturedOptions);
+    }//end testCallWithoutSinkPassesNoSinkOptionToGuzzle()
+
+    /**
+     * ocon#111 Task 0: `call()` is synchronous and declared `): ObjectEntity`.
+     * Its old `$asynchronous === true` branch returned a Guzzle promise, which
+     * was an unconditional TypeError. The flag must now fail loudly and name the
+     * sibling rather than fatal on a return-type mismatch.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallRejectsTheAsynchronousFlagAndNamesTheSibling(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        // Nothing may be dispatched: the guard must trip before any HTTP happens.
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('request');
+        $mockClient->expects($this->never())->method('requestAsync');
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-flag');
+        $source->setObject(
+            [
+                'name'          => 'async-flag-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/callAsync/');
+
+        $service->call(source: $source, endpoint: '/things', asynchronous: true);
+    }//end testCallRejectsTheAsynchronousFlagAndNamesTheSibling()
+
+    /**
+     * ocon#111 Task 0: `callAsync()` dispatches through `requestAsync()` and
+     * resolves to the same `CallLog` ObjectEntity the synchronous path returns —
+     * one consumed shape, so the save phase does not branch on dispatch mode.
+     * ADR-003 also requires an asynchronous call to produce a CallLog.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallAsyncResolvesToACallLogEntity(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('request');
+        $mockClient->expects($this->once())
+            ->method('requestAsync')
+            ->willReturn(\GuzzleHttp\Promise\Create::promiseFor(new Response(200, [], '{"ok":true}')));
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-ok');
+        $source->setObject(
+            [
+                'name'          => 'async-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $promise = $service->callAsync(source: $source, endpoint: '/things');
+
+        $this->assertInstanceOf(\GuzzleHttp\Promise\PromiseInterface::class, $promise);
+
+        $callLog = $promise->wait();
+
+        $this->assertInstanceOf(
+            ObjectEntity::class,
+            $callLog,
+            'callAsync() must resolve to the same CallLog shape call() returns'
+        );
+        $this->assertSame(200, ($callLog->getObject()['response']['statusCode'] ?? null));
+    }//end testCallAsyncResolvesToACallLogEntity()
+
+    /**
+     * ocon#111: `callAsync()` must refuse a stream-resource sink at the boundary.
+     *
+     * This is the exact defect stream-file-content shipped a fix for — Guzzle
+     * wraps a resource-typed sink in a PSR-7 Stream and closes the resource when
+     * that stream is destructed — and asynchronous dispatch makes it strictly
+     * worse, because the destruct happens at a moment the caller does not
+     * control. A path is the only safe form.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallAsyncRefusesAResourceSink(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('requestAsync');
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-resource');
+        $source->setObject(
+            [
+                'name'          => 'async-resource-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $handle = fopen('php://temp', 'r+');
+
+        try {
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessageMatches('/PATH/');
+
+            $service->callAsync(source: $source, endpoint: '/file', sink: $handle);
+        } finally {
+            if (is_resource($handle) === true) {
+                fclose($handle);
+            }
+        }
+    }//end testCallAsyncRefusesAResourceSink()
+
+    /**
+     * ocon#111: the `on_headers` callback reaches Guzzle's request options and is
+     * kept OUT of the persisted CallLog request config — the same treatment
+     * `sink` gets, and for the same reason: a closure is not JSON-persistable and
+     * must never reach Twig rendering or secret redaction.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    public function testCallAsyncPassesOnHeadersToGuzzleAndKeepsItOutOfTheCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $capturedOptions = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('requestAsync')->willReturnCallback(
+            function ($method, $url, $options) use (&$capturedOptions) {
+                $capturedOptions = $options;
+
+                return \GuzzleHttp\Promise\Create::promiseFor(new Response(200, ['Content-Length' => '1234'], 'x'));
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-headers');
+        $source->setObject(
+            [
+                'name'          => 'async-headers-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $callLog = $service->callAsync(
+            source: $source,
+            endpoint: '/file',
+            onHeaders: function ($response): void {
+                // Intentionally empty: presence in the Guzzle options is the assertion.
+            }
+        )->wait();
+
+        $this->assertIsArray($capturedOptions);
+        $this->assertArrayHasKey('on_headers', $capturedOptions);
+        $this->assertIsCallable($capturedOptions['on_headers']);
+
+        $persistedRequest = ($callLog->getObject()['request'] ?? []);
+        $this->assertArrayNotHasKey(
+            'on_headers',
+            $persistedRequest,
+            'a closure must never reach the persisted CallLog request config'
+        );
+    }//end testCallAsyncPassesOnHeadersToGuzzleAndKeepsItOutOfTheCallLog()
+
+    /**
+     * ocon#111: a source that is disabled (or rate-limited, or breaker-open)
+     * short-circuits with a synthetic CallLog on the synchronous path. The
+     * asynchronous sibling must FULFIL with that same CallLog rather than reject,
+     * so callers consume one shape and a rejection unambiguously means a
+     * transport failure.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    public function testCallAsyncFulfilsWithTheShortCircuitCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('requestAsync');
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-disabled');
+        $source->setObject(
+            [
+                'name'          => 'disabled-source',
+                'isEnabled'     => false,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $callLog = $service->callAsync(source: $source, endpoint: '/things')->wait();
+
+        $this->assertInstanceOf(
+            ObjectEntity::class,
+            $callLog,
+            'a guard short-circuit must fulfil with its synthetic CallLog, not reject'
+        );
+    }//end testCallAsyncFulfilsWithTheShortCircuitCallLog()
 
 }//end class

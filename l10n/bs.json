@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Ukloni svojstvo",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Konfigurišite kako se dolazni zahtjevi DSO-LV STAM webhooka kriptografski provjeravaju. HMAC koristi zajedničku tajnu (predprodukcija); PKIoverheid koristi lanac certifikata (produkcija).",
+        "Configured (leave blank to keep unchanged)": "Konfigurisano (ostavite prazno da se ne mijenja)",
+        "DSO signature configuration saved.": "Konfiguracija DSO potpisa sačuvana.",
+        "DSO STAM webhook signature verification": "Provjera potpisa DSO STAM webhooka",
+        "Failed to load the DSO signature configuration.": "Učitavanje konfiguracije DSO potpisa nije uspjelo.",
+        "Failed to save the DSO signature configuration.": "Čuvanje konfiguracije DSO potpisa nije uspjelo.",
+        "HMAC shared secret": "Zajednička HMAC tajna",
+        "HMAC shared secret (pre-production)": "Zajednička HMAC tajna (predprodukcija)",
+        "Intermediate certificate chain (PEM, optional)": "Lanac posrednih certifikata (PEM, opcionalno)",
+        "Loading DSO signature configuration…": "Učitavanje konfiguracije DSO potpisa…",
+        "Not configured": "Nije konfigurisano",
+        "PKIoverheid certificate chain (production)": "Lanac certifikata PKIoverheid (produkcija)",
+        "Save DSO signature configuration": "Sačuvaj konfiguraciju DSO potpisa",
+        "Signing certificate (PEM)": "Certifikat za potpisivanje (PEM)",
+        "Signing mode": "Način potpisivanja",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Pouzdani korijenski CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

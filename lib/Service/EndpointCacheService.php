@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenConnector.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+ * @spec openspec/specs/endpoint-runtime/spec.md
  */
 
 namespace OCA\OpenConnector\Service;
@@ -103,7 +103,7 @@ class EndpointCacheService
      *
      * @throws \Exception When multiple endpoints match (ambiguous routing).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     public function findByPathRegex(string $path, string $method, bool $isRetry=false): ?ObjectEntity
     {
@@ -199,7 +199,7 @@ class EndpointCacheService
      *
      * @return array Array of ObjectEntity instances (for faster filtering).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     public function getAllEndpoints(): array
     {
@@ -244,7 +244,7 @@ class EndpointCacheService
      *
      * @return array Array of ObjectEntity instances.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function fetchEndpointsFromOr(): array
     {
@@ -267,7 +267,7 @@ class EndpointCacheService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     public function refreshCache(): void
     {
@@ -311,7 +311,7 @@ class EndpointCacheService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     public function clearCache(): void
     {
@@ -340,7 +340,7 @@ class EndpointCacheService
      *
      * @return string The regex pattern for matching.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     private function createEndpointRegex(string $endpoint): string
     {
@@ -374,7 +374,7 @@ class EndpointCacheService
      *
      * @return array Cache statistics.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-endpoint-runtime/tasks.md#task-4
+     * @spec openspec/specs/endpoint-runtime/spec.md
      */
     public function getCacheStats(): array
     {

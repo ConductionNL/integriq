@@ -25,29 +25,29 @@ import { translate as t } from '@nextcloud/l10n'
 				<div class="form-group">
 					<NcTextField
 						:label="t('openconnector', 'Name') + '*'"
-						:value.sync="endpointItem.name" />
+						v-model="endpointItem.name" />
 
 					<NcTextArea
 						resize="vertical"
 						:label="t('openconnector', 'Description')"
-						:value.sync="endpointItem.description" />
+						v-model="endpointItem.description" />
 
 					<NcTextField
 						:label="t('openconnector', 'Endpoint')"
-						:value.sync="endpointItem.endpoint" />
+						v-model="endpointItem.endpoint" />
 
 					<NcTextArea
 						resize="vertical"
 						:label="t('openconnector', 'Endpoint array (split on ,)')"
-						:value.sync="endpointItem.endpointArray" />
+						v-model="endpointItem.endpointArray" />
 
 					<NcTextField
 						:label="t('openconnector', 'Endpoint regex')"
-						:value.sync="endpointItem.endpointRegex" />
+						v-model="endpointItem.endpointRegex" />
 
 					<NcTextField
 						:label="t('openconnector', 'Slug')"
-						:value.sync="endpointItem.slug" />
+						v-model="endpointItem.slug" />
 
 					<div>
 						<NcSelect v-bind="methodOptions"
@@ -119,7 +119,6 @@ import {
 	NcTextArea,
 } from '@nextcloud/vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import _ from 'lodash'
 import CancelIcon from 'vue-material-design-icons/Cancel.vue'
 
 export default {
@@ -202,14 +201,14 @@ export default {
 			this.setSchemaOptions(newVal)
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 	mounted() {
 		this.initializeEndpointItem()
 		this.fetchRegisters()
 		this.fetchSchemas()
 		this.fetchConfigurations()
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+	/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 	updated() {
 		if (navigationStore.modal === 'editEndpoint' && !this.hasUpdated) {
 			this.initializeEndpointItem()
@@ -218,7 +217,7 @@ export default {
 		}
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		initializeEndpointItem() {
 			if (endpointStore.endpointItem?.id) {
 				this.endpointItem = {
@@ -250,7 +249,7 @@ export default {
 				}
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeTimeoutFunc)
@@ -274,7 +273,7 @@ export default {
 			this.targetTypeOptions.value = { label: 'register/schema' }
 			this.initialSchemaSet = false
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async fetchRegisters() {
 			this.registersLoading = true
 
@@ -308,7 +307,7 @@ export default {
 
 			const registerId = endpointStore.endpointItem?.targetId?.split('/')[0]
 
-			const selectedRegister = responseData.find(register => _.toString(register.id) === registerId)
+			const selectedRegister = responseData.find(register => String(register.id) === registerId)
 
 			this.registerOptions = {
 				options: responseData.map((register) => ({
@@ -327,7 +326,7 @@ export default {
 
 			this.registersLoading = false
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async fetchSchemas() {
 			this.schemasLoading = true
 
@@ -363,7 +362,7 @@ export default {
 
 			this.schemasLoading = false
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async fetchConfigurations() {
 			this.configurationsLoading = true
 
@@ -407,11 +406,11 @@ export default {
 				this.configurationsLoading = false
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		setSchemaOptions(register) {
 			const schemaId = endpointStore.endpointItem?.targetId.split('/')[1]
 
-			const selectedSchema = this.schemas.find(schema => _.toString(schema.id) === schemaId)
+			const selectedSchema = this.schemas.find(schema => String(schema.id) === schemaId)
 
 			const selectableSchemas = this.schemas.filter(schema => register?.schemas?.includes(schema.id))
 
@@ -433,7 +432,7 @@ export default {
 			this.initialSchemaSet = true
 
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-endpoint-job-editor-ui/tasks.md#task-1 */
+		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		async editEndpoint() {
 			this.loading = true
 

@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Видалити властивість",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Налаштуйте, як вхідні запити вебхука DSO-LV STAM криптографічно перевіряються. HMAC використовує спільний секрет (передпродакшн); PKIoverheid використовує ланцюжок сертифікатів (продакшн).",
+        "Configured (leave blank to keep unchanged)": "Налаштовано (залиште порожнім, щоб не змінювати)",
+        "DSO signature configuration saved.": "Конфігурацію підпису DSO збережено.",
+        "DSO STAM webhook signature verification": "Перевірка підпису вебхука DSO STAM",
+        "Failed to load the DSO signature configuration.": "Не вдалося завантажити конфігурацію підпису DSO.",
+        "Failed to save the DSO signature configuration.": "Не вдалося зберегти конфігурацію підпису DSO.",
+        "HMAC shared secret": "Спільний секрет HMAC",
+        "HMAC shared secret (pre-production)": "Спільний секрет HMAC (передпродакшн)",
+        "Intermediate certificate chain (PEM, optional)": "Ланцюжок проміжних сертифікатів (PEM, необов'язково)",
+        "Loading DSO signature configuration…": "Завантаження конфігурації підпису DSO…",
+        "Not configured": "Не налаштовано",
+        "PKIoverheid certificate chain (production)": "Ланцюжок сертифікатів PKIoverheid (продакшн)",
+        "Save DSO signature configuration": "Зберегти конфігурацію підпису DSO",
+        "Signing certificate (PEM)": "Сертифікат підпису (PEM)",
+        "Signing mode": "Режим підпису",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Довірений кореневий ЦС (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

@@ -60,12 +60,17 @@ use Throwable;
  * The class-complexity suppression mirrors CallService: the guard chain is a
  * deliberately exhaustive set of small, single-purpose validators (every
  * violation is its own actionable 409) — splitting them across classes would
- * fragment the one brokered write path without reducing real complexity.
+ * fragment the one brokered write path without reducing real complexity. The
+ * app-side INJECTION path (hydrate* / resolveInjectableSecret) reuses the very
+ * same resolution infrastructure (broker resolution, credentialName→id, owner
+ * pinning) as the proxy path; keeping both here is what keeps that shared logic
+ * DRY — at the cost of the class length, which is why it too is suppressed.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  *
- * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
  */
 class BrokeredCallService
 {
@@ -154,7 +159,7 @@ class BrokeredCallService
      *
      * @return boolean Whether the call must be dispatched through the broker.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     public function hasCredentialRef(array $config): bool
     {
@@ -164,6 +169,258 @@ class BrokeredCallService
             && array_key_exists('credentialRef', $authentication) === true);
 
     }//end hasCredentialRef()
+
+    /**
+     * Whether a source's authentication config carries app-inject credential placeholders.
+     *
+     * The APP-SIDE INJECTION path is the counterpart to the host-locked proxy above, for
+     * arbitrary / self-hosted Sources that cannot be host-locked from OpenRegister's immutable
+     * provider catalogue (ocon#147). Instead of proxying the whole call, ANY leaf value under
+     * `configuration.authentication` may be a placeholder of the shape
+     * `{"credentialRef": {"credentialId": "<uuid>"}}` (or `credentialName`). At call time the
+     * secret is resolved from Doriath through the broker and substituted in place, so every
+     * existing auth mechanism (apikey header, HTTP Basic, OAuth token exchange, JWT signing)
+     * runs unchanged against a hydrated config — the schema stores only the reference, never
+     * the secret.
+     *
+     * This is deliberately DISTINCT from {@see hasCredentialRef()}: that detects the TOP-LEVEL
+     * proxy trigger (`authentication.credentialRef`), whereas a placeholder is NESTED at a
+     * secret's own position (`authentication.<field> = {credentialRef: …}`). The two never
+     * collide, and the engine only ever hydrates when the call is NOT a proxy call.
+     *
+     * @param array $sourceData The raw source data array.
+     *
+     * @return boolean Whether the source carries at least one injectable credential placeholder.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function hasInjectableCredentials(array $sourceData): bool
+    {
+        $authentication = ($sourceData['configuration']['authentication'] ?? null);
+        if (is_array($authentication) === false) {
+            return false;
+        }
+
+        return $this->containsPlaceholder(node: $authentication);
+
+    }//end hasInjectableCredentials()
+
+    /**
+     * Resolves every credential placeholder under `configuration.authentication` to its plaintext.
+     *
+     * Walks the authentication subtree and replaces each `{credentialRef: {...}}` placeholder
+     * with the raw secret resolved from Doriath through the broker's
+     * {@see CredentialBrokerService::resolveInjectable()} (owner + allowedApps guards; the
+     * host-lock and allow-rules do not apply to an app-injected secret). The returned source
+     * data is byte-for-byte the input except that the placeholders are now literal secrets,
+     * ready for the engine's normal Twig auth rendering.
+     *
+     * Every failure — an unavailable/older broker, an unknown or ambiguous credential, a
+     * broker refusal, or a credential that is actually a host-locked PROXY credential (not
+     * app-injectable) — throws {@see BrokeredCallConfigurationException} with a secret-free,
+     * actionable message, exactly like the proxy path, so the engine records a synthetic 409
+     * config-error CallLog. There is NO fallback to an embedded secret.
+     *
+     * @param array $sourceData The raw source data array (with placeholders under authentication).
+     *
+     * @return array The source data with authentication placeholders replaced by their secrets.
+     *
+     * @throws BrokeredCallConfigurationException On any resolution failure (mapped to a 409 CallLog).
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    public function hydrateInjectableCredentials(array $sourceData): array
+    {
+        $this->assertBrokerAvailable();
+        $this->resolveBroker();
+
+        $authentication = ($sourceData['configuration']['authentication'] ?? []);
+        if (is_array($authentication) === false) {
+            return $sourceData;
+        }
+
+        $sourceData['configuration']['authentication'] = $this->hydrateNode(node: $authentication);
+
+        return $sourceData;
+
+    }//end hydrateInjectableCredentials()
+
+    /**
+     * Whether any leaf under the given node is a credential placeholder (recursive).
+     *
+     * @param array $node The authentication subtree (or a nested array within it).
+     *
+     * @return boolean Whether a `{credentialRef: {...}}` placeholder is present.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function containsPlaceholder(array $node): bool
+    {
+        foreach ($node as $value) {
+            if ($this->isPlaceholder(value: $value) === true) {
+                return true;
+            }
+
+            if (is_array($value) === true && $this->containsPlaceholder(node: $value) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end containsPlaceholder()
+
+    /**
+     * Whether a value is a credential placeholder (`{credentialRef: {...}}`, that key only).
+     *
+     * The single-key check keeps a NESTED placeholder distinct from a TOP-LEVEL proxy
+     * `authentication` block (which is handled by {@see hasCredentialRef()} before hydration
+     * ever runs) and from an ordinary object that merely happens to carry a credentialRef
+     * alongside other data.
+     *
+     * @param mixed $value The candidate value.
+     *
+     * @return boolean Whether the value is a credential placeholder.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function isPlaceholder(mixed $value): bool
+    {
+        return (is_array($value) === true
+            && array_keys($value) === ['credentialRef']
+            && is_array($value['credentialRef']) === true);
+
+    }//end isPlaceholder()
+
+    /**
+     * Recursively replaces placeholders under a node with their resolved secrets.
+     *
+     * @param array $node The authentication subtree (or a nested array within it).
+     *
+     * @return array The node with every placeholder replaced by its plaintext secret.
+     *
+     * @throws BrokeredCallConfigurationException On any resolution failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function hydrateNode(array $node): array
+    {
+        $hydrated = [];
+        foreach ($node as $key => $value) {
+            if ($this->isPlaceholder(value: $value) === true) {
+                $hydrated[$key] = $this->resolveInjectableSecret(ref: $value['credentialRef']);
+                continue;
+            }
+
+            if (is_array($value) === true) {
+                $hydrated[$key] = $this->hydrateNode(node: $value);
+                continue;
+            }
+
+            $hydrated[$key] = $value;
+        }//end foreach
+
+        return $hydrated;
+
+    }//end hydrateNode()
+
+    /**
+     * Resolves one placeholder reference to its raw secret via the broker.
+     *
+     * Reuses the proxy path's credential resolution (name → id, existence, owner-pinned acting
+     * user) and then reads the plaintext through the broker's inject-only resolver. A null
+     * return means the credential is NOT inject-only — i.e. a host-locked proxy credential,
+     * whose secret must never leave OpenRegister; that is a hard config error (the source must
+     * either reference a generic inject-only credential here, or use a top-level credentialRef
+     * proxy instead).
+     *
+     * @param array $ref The inner reference (`{credentialId|credentialName}`).
+     *
+     * @return string The resolved plaintext secret.
+     *
+     * @throws BrokeredCallConfigurationException On validation, resolution, or refusal failure.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function resolveInjectableSecret(array $ref): string
+    {
+        $validated    = $this->validateInnerRef(ref: $ref);
+        $credentialId = $this->resolveCredentialId(ref: $validated);
+        $credential   = $this->loadCredential(credentialId: $credentialId, ref: $validated);
+        $actingUserId = $this->resolveActingUser(credential: $credential, credentialId: $credentialId);
+
+        $broker = $this->resolveBroker();
+        if (method_exists($broker, 'resolveInjectable') === false) {
+            throw new BrokeredCallConfigurationException(
+                message: 'This source uses an app-injected credential (a credentialRef placeholder under '
+                    .'authentication), but the installed OpenRegister credential broker does not support '
+                    .'app-side injection yet. Upgrade OpenRegister to a version whose CredentialBrokerService '
+                    .'provides resolveInjectable(), or embed the secret via the broker proxy instead.'
+            );
+        }
+
+        // Positional (not named) arguments: $broker is only known to be an object with a
+        // resolveInjectable() method, so its parameter names cannot be verified statically.
+        $arguments = [$credentialId, self::APP_ID];
+        if ($actingUserId !== null) {
+            $arguments[] = $actingUserId;
+        }
+
+        try {
+            $secret = $broker->resolveInjectable(...$arguments);
+        } catch (CredentialAccessDeniedException $exception) {
+            $this->logger->warning(
+                '[BrokeredCallService] credential broker refused an app-side injection',
+                [
+                    'credentialId' => $credentialId,
+                    'sessionless'  => ($actingUserId !== null),
+                    'reason'       => $exception->getMessage(),
+                ]
+            );
+            throw new BrokeredCallConfigurationException(
+                message: 'The credential broker refused to resolve the app-injected credential ('
+                    .$exception->getMessage().'). Add "openconnector" to the credential\'s allowedApps and '
+                    .'ensure the acting user owns it.'
+            );
+        }//end try
+
+        if ($secret === null) {
+            throw new BrokeredCallConfigurationException(
+                message: 'The referenced credential is a host-locked proxy credential and cannot be injected '
+                    .'app-side — its secret never leaves OpenRegister. Reference a generic (inject-only) '
+                    .'credential for app-side injection, or dispatch the whole call through the broker with a '
+                    .'top-level authentication.credentialRef instead.'
+            );
+        }
+
+        return $secret;
+
+    }//end resolveInjectableSecret()
+
+    /**
+     * Validates an inner credential reference (`{credentialId|credentialName}`) shape.
+     *
+     * @param array $ref The inner reference object.
+     *
+     * @return array{credentialId: string|null, credentialName: string|null} The validated reference.
+     *
+     * @throws BrokeredCallConfigurationException On any shape violation.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     */
+    private function validateInnerRef(array $ref): array
+    {
+        $unknownKeys = array_diff(array_keys($ref), ['credentialId', 'credentialName']);
+        if (empty($unknownKeys) === false) {
+            throw new BrokeredCallConfigurationException(
+                message: 'A credentialRef placeholder only accepts credentialId or credentialName '
+                    .'(found: '.implode(', ', array_map('strval', $unknownKeys)).').'
+            );
+        }
+
+        return $this->extractSingleRefValue(ref: $ref);
+
+    }//end validateInnerRef()
 
     /**
      * Validates a brokered call's configuration and resolves its credential.
@@ -185,7 +442,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException On any hard config error (mapped to a 409 CallLog).
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     public function prepare(array $config, array $sourceData, bool $asynchronous): array
     {
@@ -238,7 +495,7 @@ class BrokeredCallService
      *
      * @return Response The PSR-7 response for the engine's CallLog pipeline.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     public function dispatch(
         string $credentialId,
@@ -327,7 +584,7 @@ class BrokeredCallService
      *
      * @return string The actionable, secret-free refusal message.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
      */
     private function buildRefusalMessage(string $brokerReason, string $method, bool $sessionless): string
     {
@@ -399,7 +656,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException On any shape violation.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function validateCredentialRef(array $authentication): array
     {
@@ -442,7 +699,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException When both/neither keys are set or the value is empty.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function extractSingleRefValue(array $ref): array
     {
@@ -493,7 +750,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException On any v1 scope violation.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function assertScopeGuards(array $config, array $sourceData, bool $asynchronous): void
     {
@@ -527,7 +784,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException When the broker is unavailable (NO fallback to embedded secrets).
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
      */
     private function assertBrokerAvailable(): void
     {
@@ -559,7 +816,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException On zero or multiple name matches.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      */
     private function resolveCredentialId(array $ref): string
     {
@@ -641,7 +898,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException When the referenced credential no longer exists.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
      */
     private function loadCredential(string $credentialId, array $ref): ObjectEntity
     {
@@ -697,7 +954,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException When sessionless dispatch is impossible.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
      */
     private function resolveActingUser(ObjectEntity $credential, string $credentialId): ?string
     {
@@ -743,7 +1000,7 @@ class BrokeredCallService
      *
      * @throws BrokeredCallConfigurationException When the owner is empty, gone, or disabled.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
      */
     private function resolveOwner(ObjectEntity $credential, string $credentialId): string
     {
@@ -788,7 +1045,7 @@ class BrokeredCallService
      *
      * @return void
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-secret-hygiene-and-refusal-logging-for-brokered-calls-req-sbc-004
      */
     private function logOwnerRefusal(string $guard, string $owner, string $credentialId): void
     {
@@ -810,7 +1067,7 @@ class BrokeredCallService
      *
      * @return boolean Whether `request()` accepts the acting-user parameter.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-acting-user-for-sessionless-brokered-calls-req-sbc-003
      */
     private function brokerSupportsActingUser(object $broker): bool
     {
@@ -844,7 +1101,7 @@ class BrokeredCallService
      *
      * @return string The path (+ optional query string), always slash-rooted.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function derivePathAndQuery(string $url, array $config): string
     {
@@ -879,7 +1136,7 @@ class BrokeredCallService
      *
      * @return array<int, string> The query-string segments, in order.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function collectQuerySegments(array $parts, array $config): array
     {
@@ -912,7 +1169,7 @@ class BrokeredCallService
      *
      * @return array<string, string> The header map for the broker.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function deriveHeaders(array $config): array
     {
@@ -958,7 +1215,7 @@ class BrokeredCallService
      *
      * @return string|null The raw body, or null when the request has none.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function deriveBody(array $config, array &$headers): ?string
     {
@@ -1000,7 +1257,7 @@ class BrokeredCallService
      *
      * @return Response The PSR-7 response.
      *
-     * @spec openspec/changes/source-broker-credentials/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
      */
     private function adaptBrokerResponse(array $result): Response
     {

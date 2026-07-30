@@ -60,7 +60,7 @@ import { translate as t } from '@nextcloud/l10n'
 					:clearable="false"
 					:loading="mappingsLoading || mappingTest.loading"
 					required
-					@input="emitMappingSelected">
+					@update:model-value="emitMappingSelected">
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">
@@ -95,7 +95,7 @@ import { translate as t } from '@nextcloud/l10n'
 					:loading="schemasLoading"
 					:disabled="!openRegister.isInstalled"
 					required
-					@input="emitSchemaSelected">
+					@update:model-value="emitSchemaSelected">
 					<!-- eslint-disable-next-line vue/no-unused-vars vue/no-template-shadow  -->
 					<template #no-options="{ search, searching, loading }">
 						<p v-if="loading">
@@ -128,31 +128,31 @@ import { translate as t } from '@nextcloud/l10n'
 			<div class="edit-mapping">
 				<h4>{{ t('openconnector', 'Edit mapping') }}</h4>
 
-				<NcTextField :value.sync="mappingItem.name"
+				<NcTextField v-model="mappingItem.name"
 					:label="t('openconnector', 'Name')" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.description"
+					v-model="mappingItem.description"
 					:label="t('openconnector', 'Description')" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.mapping"
+					v-model="mappingItem.mapping"
 					:label="t('openconnector', 'Mapping')"
 					:error="!validJson(mappingItem.mapping)"
 					:helper-text="!validJson(mappingItem.mapping) ? t('openconnector', 'Invalid JSON') : ''" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.cast"
+					v-model="mappingItem.cast"
 					:label="t('openconnector', 'Cast')"
 					:error="!validJson(mappingItem.cast, true)"
 					:helper-text="!validJson(mappingItem.cast, true) ? t('openconnector', 'Invalid JSON') : ''" />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="mappingItem.unset"
+					v-model="mappingItem.unset"
 					:label="t('openconnector', 'Unset')"
 					:helper-text="t('openconnector', 'Enter a comma-separated list of keys.')" />
 
@@ -280,7 +280,7 @@ export default {
 		},
 		// watch data and emit
 		mappingTest: {
-			/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+			/** @spec openspec/specs/mapping-editor-ui/spec.md */
 			handler(newVal) {
 				this.$emit('mapping-test', {
 					...newVal,
@@ -288,42 +288,42 @@ export default {
 			},
 			deep: true,
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		mappingsLoading(newVal) {
 			this.$emit('mapping-selected', {
 				loading: newVal,
 			})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		schemasLoading(newVal) {
 			this.$emit('schema-selected', {
 				loading: newVal,
 			})
 		},
 	},
-	/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+	/** @spec openspec/specs/mapping-editor-ui/spec.md */
 	mounted() {
 		this.fetchMappings()
 		this.fetchSchemas()
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		closeModal() {
 			this.$emit('close-modal')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		emitMappingSelected(event) {
 			this.$emit('mapping-selected', {
 				selected: event,
 			})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		emitSchemaSelected(event) {
 			this.$emit('schema-selected', {
 				selected: event,
 			})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		setupEditFields(id) {
 			if (id === this.uniqueMappingId) { // "No mapping" option selected (Symbol comparisons can only return true if its the same symbol from the same variable)
 				this.mappingItem = {
@@ -341,7 +341,7 @@ export default {
 				this.mappingItem.unset = this.mappings.value.fullMapping.unset.join(', ') // turn the array into a string
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		async fetchMappings(currentMappingItem = null) {
 			this.mappingsLoading = true
 
@@ -396,7 +396,7 @@ export default {
 					this.mappingsLoading = false
 				})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		async fetchSchemas() {
 			this.schemasLoading = true
 
@@ -445,7 +445,7 @@ export default {
 
 			this.schemasLoading = false
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		async testMapping() {
 			this.mappingTest.loading = true
 			this.mappingTest.error = false
@@ -475,7 +475,7 @@ export default {
 					this.mappingTest.loading = false
 				})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		saveMappingChanges() {
 			this.savingMapping = true
 
@@ -504,7 +504,7 @@ export default {
 					this.savingMapping = false
 				})
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		async installOpenRegister() {
 			console.info('Installing Open Register')
 			const token = document.querySelector('head[data-requesttoken]').getAttribute('data-requesttoken')
@@ -535,7 +535,7 @@ export default {
 				this.fetchSchemas()
 			}
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-4 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		validJson(object, optional = false) {
 			if (optional && !object) {
 				return true

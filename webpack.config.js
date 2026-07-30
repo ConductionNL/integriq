@@ -6,7 +6,12 @@ const { VueLoaderPlugin } = require('vue-loader')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
-webpackConfig.devtool = isDev ? 'cheap-source-map' : 'source-map'
+// Production must not ship a full 'source-map' devtool: it emits a separate
+// .js.map exposing original unminified source alongside the publicly-served
+// bundle, and — with `optimization.sideEffects = false` retaining the entire
+// library module graph — a full source-map balloons the build's memory to an
+// OOM. Use the non-source-exposing, lighter variant.
+webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
 webpackConfig.stats = {
 	colors: true,
@@ -46,18 +51,41 @@ webpackConfig.entry = {
 
 // Use local source when available (monorepo dev), otherwise fall back to npm package
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = fs.existsSync(localLib)
+const useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
+	// nc-vue's chunked ESM bundles @nextcloud/dialogs chunks that import
+	// Node's `path`; webpack 5 ships no core-module polyfills, so a CLEAN
+	// npm ci + build fails with "Can't resolve 'path'" without this
+	// fallback. Same fix openbuild carries (openbuild#147) — pre-existing
+	// breakage surfaced (not introduced) by connector-catalog-ui's clean
+	// install; path-browserify is already a transitive dependency.
+	fallback: { path: require.resolve('path-browserify') },
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-		'vue$': path.resolve(__dirname, 'node_modules/vue'),
+		//
+		// PURE VUE 3 (ADR-066): the app source is now compat-construct-free
+		// (.sync → v-model:arg, $set/$delete → assignment, no filters/$on), so the
+		// build runs on the REAL Vue 3 runtime — NOT @vue/compat. @vue/compat
+		// globally wraps every library component's compiled `render` as a Vue-2
+		// RENDER_FUNCTION, which breaks the pure-Vue-3 @conduction/nextcloud-vue@2
+		// + @nextcloud/vue@9 components at runtime (`this.$slots.default is not a
+		// function`, `Cannot destructure 'href'`). One ABSOLUTE file so the app +
+		// any aliased lib source share ONE Vue copy (dual-copy = two
+		// currentRenderingInstance states → CnAppRoot null crash).
+		'vue$': path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
 		'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
-		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
+		// Dedupe vue-router to ONE copy (absolute file): a per-importer resolve
+		// gives @nextcloud/vue's RouterLink a different router instance than
+		// app.use(router) provided → NcAppNavigationItem's <router-link> crash.
+		'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.mjs'),
+		// v9 is ESM-only: exports maps '.' -> ./dist/index.mjs with no main/module,
+		// so a directory alias can't resolve it. Point at the explicit entry file.
+		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
 		// Force @nextcloud/dialogs and @nextcloud/axios to resolve from this
 		// app's node_modules, preventing the nextcloud-vue submodule's nested
 		// deps from leaking in.
@@ -69,6 +97,9 @@ webpackConfig.resolve = {
 webpackConfig.module = {
 	rules: [
 		{
+			// PURE VUE 3 (ADR-066): the @vue/compat MODE-2 compiler shim is gone
+			// — the source is compat-construct-free, so vue-loader compiles the
+			// SFC templates as native Vue 3.
 			test: /\.vue$/,
 			loader: 'vue-loader',
 		},
@@ -102,6 +133,46 @@ webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
 	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
+	// Vue 3 (ADR-066): the app has ~70 script-context bare `t(...)` / `n(...)`
+	// calls (computeds, methods, data — NOT `this.t`, NOT imported). Under Vue 2
+	// these free identifiers resolved to Nextcloud's global `window.t` / `window.n`
+	// because babel emitted non-strict code; the strict ESM Vue-3 bundle makes
+	// them a `ReferenceError` (crashes e.g. the Catalog card/detail, Rule action
+	// forms, Synchronization editors). ProvidePlugin auto-imports @nextcloud/l10n's
+	// `translate`/`translatePlural` for every FREE `t`/`n` identifier only —
+	// locally-declared `t`/`n`, `this.t`, and compiled template `_ctx.t` are
+	// untouched. This is the idiomatic NC fix (the old vue2 mixin's job).
+	new webpack.ProvidePlugin({
+		t: ['@nextcloud/l10n', 'translate'],
+		n: ['@nextcloud/l10n', 'translatePlural'],
+	}),
+	// Vue 3 build feature flags (ADR-066): silence the "feature flag not
+	// explicitly defined" runtime warnings and tree-shake the Options-API /
+	// devtools / hydration-mismatch paths. Options API stays ON — the app +
+	// nc-vue components are Options-API SFCs.
+	new webpack.DefinePlugin({
+		__VUE_OPTIONS_API__: JSON.stringify(true),
+		__VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+		__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+	}),
 ]
+
+// Published-dist tree-shaking guard (ADR-066): @conduction/nextcloud-vue@2
+// (and @nextcloud/vue@9) attach each dual-Vue component's compiled Vue-3
+// render via a side-effect-only `.vue.js` dispatcher import in the barrel
+// (`import './CnAppRoot.vue.js'` does `script.render = render`). The published
+// package's `sideEffects` allowlist covers only **/*.vue + **/*.css, NOT those
+// compiled `.vue.js` dispatchers, so an isolated/CI build that resolves the
+// PUBLISHED dist (not the src sibling) tree-shakes the dispatcher away and the
+// render never attaches -> every library component (CnAppRoot, CnPageRenderer,
+// CnAppNav, ...) renders a silent empty comment and the whole shell is blank.
+// Disabling sideEffects pruning keeps those render-attach imports. A targeted
+// per-module rule for .vue.js does NOT work; only turning the optimization off
+// does (confirmed on the decidesk sister migration). Costs a modest bundle-size
+// increase.
+webpackConfig.optimization = {
+	...(webpackConfig.optimization || {}),
+	sideEffects: false,
+}
 
 module.exports = webpackConfig

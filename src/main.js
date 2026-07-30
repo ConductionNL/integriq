@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Copyright (C) 2026 Conduction B.V.
 
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import { PiniaVuePlugin } from 'pinia'
+// Must run before any other import so webpack's publicPath is set before the
+// first lazy chunk loads (fixes chunk 404s on non-/apps install paths).
+import './publicpath.js'
+
+import { createApp, h } from 'vue'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -17,7 +20,7 @@ import pinia from './pinia.js'
 import App from './App.vue'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
-import customComponents from './registry.js'
+import customComponents, { registry } from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 import { createMappingAndOpen } from './handlers/actionHandlers.js'
 
@@ -37,13 +40,18 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
 import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
+import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
@@ -52,9 +60,9 @@ import '@conduction/nextcloud-vue/css/index.css'
 // Global (unscoped) app styles
 import './assets/app.css'
 
-Vue.mixin({ methods: { t, n } })
-Vue.use(PiniaVuePlugin)
-Vue.use(VueRouter)
+// Vue 3 (ADR-066): global t/n install via app.config.globalProperties after
+// createApp (below), not Vue.mixin. pinia + router install via app.use. There
+// is no PiniaVuePlugin in Vue 3.
 
 // Register library-side icon set + lib translations once at bootstrap.
 registerIcons({
@@ -64,13 +72,18 @@ registerIcons({
 	CloudUploadOutline,
 	Cog,
 	DatabaseArrowLeftOutline,
+	Download,
 	EyeOutline,
+	FileCogOutline,
 	Pencil,
+	PowerPlugOutline,
 	ScaleBalance,
 	SitemapOutline,
 	TextBoxOutline,
 	Update,
+	Upload,
 	VectorPolylinePlus,
+	ViewGridOutline,
 	Webhook,
 })
 try {
@@ -114,8 +127,12 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // keep the default form-dialog create.
 const MappingsPageRenderer = {
 	name: 'MappingsPageRenderer',
-	render(h) {
-		return h(RoutePageRenderer, { on: { add: createMappingAndOpen } })
+	// Vue 3 (ADR-066): native h() — the Vue-2 `{ on: { add } }` data object
+	// became a flat `onAdd` listener prop. CnPageRenderer forwards fall-through
+	// attrs (incl. onAdd) down to CnIndexPage, so `@add` still reaches the
+	// primary Add button.
+	render() {
+		return h(RoutePageRenderer, { onAdd: createMappingAndOpen })
 	},
 }
 
@@ -144,14 +161,14 @@ function routesFromManifest(manifest) {
 	}))
 	// Legacy redirect: /cloud-events → /cloud-events/events (preserves bookmarks)
 	routes.push({ path: '/cloud-events', redirect: '/cloud-events/events' })
-	// Catch-all redirect to dashboard
-	routes.push({ path: '*', redirect: '/' })
+	// Catch-all redirect to dashboard. vue-router 4: the bare '*' catch-all
+	// became a named param matcher.
+	routes.push({ path: '/:pathMatch(.*)*', redirect: '/' })
 	return routes
 }
 
-const router = new VueRouter({
-	mode: 'hash',
-	base: generateUrl('/apps/openconnector'),
+const router = createRouter({
+	history: createWebHashHistory(generateUrl('/apps/openconnector')),
 	routes: routesFromManifest(mergedManifest),
 })
 
@@ -174,15 +191,27 @@ tryLoadTranslations()
 // the values the lib resolves at render time.
 const pageTypesProp = { ...defaultPageTypes }
 const customComponentsProp = { ...customComponents }
+// V2 component registry (ADR-036): kind-tagged custom-page map CnAppRoot uses to
+// resolve `type:"custom"` page components under nc-vue@2. Shallow-cloned for the
+// same extensibility reason as the maps above.
+const registryProp = { ...registry }
 
-new Vue({
-	pinia,
-	router,
-	render: (h) => h(App, {
-		props: {
-			manifest: mergedManifest,
-			customComponents: customComponentsProp,
-			pageTypes: pageTypesProp,
-		},
+const app = createApp({
+	// Pure Vue 3 (ADR-066): native render() with `h` from 'vue'. Props pass
+	// FLAT (no `props:` wrapper in the data object).
+	render: () => h(App, {
+		manifest: mergedManifest,
+		customComponents: customComponentsProp,
+		registry: registryProp,
+		pageTypes: pageTypesProp,
 	}),
-}).$mount('#content')
+})
+
+// Vue 3 global install contract (ADR-066): t/n move from Vue.mixin /
+// Vue.prototype to app.config.globalProperties.
+app.config.globalProperties.t = t
+app.config.globalProperties.n = n
+
+app.use(pinia)
+app.use(router)
+app.mount('#content')

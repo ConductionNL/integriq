@@ -9,7 +9,7 @@ on:
 
 jobs:
   quality:
-    uses: Conduction/.github/.github/workflows/quality.yml@main
+    uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openconnector
       # composer.json `config.platform.php` is pinned to 8.3, so phpcs/phpmd/etc
@@ -30,4 +30,4 @@ jobs:
       newman-environment-path: "tests/postman/openconnector.postman_environment.json"
       enable-playwright: true
       playwright-test-path: "tests/e2e/regression"
-      additional-apps: '[{"repo":"Conduction/openregister","app":"openregister","ref":"development"}]'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'

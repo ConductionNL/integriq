@@ -31,7 +31,7 @@
 			<form class="cn-rule-dialog__form" @submit.prevent="onSubmit">
 				<label class="cn-rule-dialog__field">
 					<span class="cn-rule-dialog__label">{{ propertyLabel }}</span>
-					<NcTextField :value.sync="propertyDraft"
+					<NcTextField v-model="propertyDraft"
 						:placeholder="propertyPlaceholder"
 						:error="!!propertyError"
 						:helper-text="propertyError"
@@ -56,12 +56,12 @@
 					<span class="cn-rule-dialog__label">
 						{{ t('openconnector', 'Cast type') }}
 					</span>
-					<NcSelect :value="castSelectValue"
+					<NcSelect :model-value="castSelectValue"
 						:options="castTypeOptions"
 						:clearable="false"
 						:aria-label-combobox="t('openconnector', 'Cast type')"
 						input-id="cn-rule-dialog-cast-type"
-						@input="onCastTypeInput" />
+						@update:model-value="onCastTypeInput" />
 				</label>
 
 				<div class="cn-rule-dialog__actions">
@@ -160,11 +160,11 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castTypeOptions() {
 			return CAST_TYPE_OPTIONS
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		templatePlaceholder() {
 			// Built outside the template so the embedded `{{ … }}` Twig
 			// markers don't collide with Vue's mustache parser.
@@ -172,7 +172,7 @@ export default {
 			const closeBrace = '}}'
 			return `${openBrace} originalProperty ${closeBrace} or ${openBrace} source.field|default('-') ${closeBrace}`
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		templateHelp() {
 			// See `templatePlaceholder`: avoid embedding `{{` directly in
 			// the template literal that becomes Vue parser input.
@@ -184,7 +184,7 @@ export default {
 				{ open: openBrace, close: closeBrace },
 			)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		castSelectValue() {
 			return this.castTypeOptions.find((option) => option.id === this.valueDraft)
 				|| this.castTypeOptions[0]
@@ -192,7 +192,7 @@ export default {
 		isNew() {
 			return this.property == null
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		dialogTitle() {
 			if (this.kind === 'mapping') {
 				return this.isNew
@@ -208,25 +208,25 @@ export default {
 				? this.t('openconnector', 'Add unset rule')
 				: this.t('openconnector', 'Edit unset rule')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		submitLabel() {
 			return this.isNew
 				? this.t('openconnector', 'Add rule')
 				: this.t('openconnector', 'Save rule')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyLabel() {
 			if (this.kind === 'mapping') return this.t('openconnector', 'Target property')
 			return this.t('openconnector', 'Property')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyPlaceholder() {
 			if (this.kind === 'mapping') {
 				return this.t('openconnector', 'e.g. firstName')
 			}
 			return this.t('openconnector', 'JSON path or property name')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		propertyError() {
 			const trimmed = this.propertyDraft.trim()
 			if (!trimmed) return ''
@@ -235,7 +235,7 @@ export default {
 			}
 			return ''
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		canSubmit() {
 			const property = this.propertyDraft.trim()
 			if (!property || this.propertyError) return false
@@ -250,12 +250,12 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onCastTypeInput(selected) {
 			if (!selected) return
 			this.valueDraft = selected.id
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-mapping-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/mapping-editor-ui/spec.md */
 		onSubmit() {
 			if (!this.canSubmit) return
 			const property = this.propertyDraft.trim()

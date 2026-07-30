@@ -17,14 +17,14 @@
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:value="row.property"
+				:model-value="row.property"
 				placeholder="a.b"
-				@update:value="(next) => onPropertyInput(index, next)" />
+				@update:model-value="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="t('openconnector', 'Extends (comma-separated paths, optional)')"
-				:value="(row.extends || []).join(',')"
+				:model-value="(row.extends || []).join(',')"
 				placeholder="x.y,z"
-				@update:value="(next) => onExtendsInput(index, next)" />
+				@update:model-value="(next) => onExtendsInput(index, next)" />
 			<NcButton
 				type="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"
@@ -54,7 +54,7 @@ export default {
 	components: { NcButton, NcTextField, Close, Plus },
 	props: { ...valueProp },
 	computed: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		rows() {
 			const props = Array.isArray(this.value?.properties) ? this.value.properties : []
 			const extendsMap = (this.value?.extends && typeof this.value.extends === 'object') ? this.value.extends : {}
@@ -65,7 +65,7 @@ export default {
 		},
 	},
 	methods: {
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		emitRows(rows) {
 			const properties = rows.map((row) => row.property).filter(Boolean)
 			const extendsMap = {}
@@ -82,13 +82,13 @@ export default {
 			}
 			this.$emit('update:value', next)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onPropertyInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onExtendsInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = {
@@ -97,13 +97,13 @@ export default {
 			}
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		addRow() {
 			const rows = this.rows.slice()
 			rows.push({ property: '', extends: [] })
 			this.emitRows(rows)
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		removeRow(index) {
 			const rows = this.rows.slice()
 			rows.splice(index, 1)

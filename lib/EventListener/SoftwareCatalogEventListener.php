@@ -100,7 +100,7 @@ class SoftwareCatalogEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function handleObjectCreated(ObjectCreatedEvent $event): void
     {
@@ -150,7 +150,7 @@ class SoftwareCatalogEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function handleObjectUpdated(ObjectUpdatedEvent $event): void
     {
@@ -183,7 +183,7 @@ class SoftwareCatalogEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-software-catalogus-events/tasks.md#task-4
+     * @spec openspec/specs/software-catalogus-events/spec.md
      */
     private function handleObjectDeleted(ObjectDeletedEvent $event): void
     {

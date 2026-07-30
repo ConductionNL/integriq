@@ -7,6 +7,8 @@ TBD - created by archiving change stuf-adapter. Update Purpose after archive.
 
 The adapter MUST expose a SOAP endpoint that accepts StUF-BG 3.10 `npsLv01` (persoon opvragen) requests and returns `npsLa01` (persoon antwoord) responses with correctly formed StUF-BG XML. The endpoint is registered as an OpenConnector Endpoint entity of type "source" with targetType pointing to a SOAP handler. Incoming SOAP XML is parsed by a raw POST handler that extracts the SOAP action and delegates to the appropriate StUF message handler.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Person query by BSN returns npsLa01
 - **WHEN** the StUF-BG endpoint is registered in OpenConnector and a legacy application sends a `npsLv01` SOAP request with BSN `999993653`
 - **THEN** the adapter extracts the BSN from the StUF-BG XML, queries OpenRegister for the matching person object (using the BRP schema), and returns a `npsLa01` SOAP response with the person's geslachtsnaam, voorvoegsel, voornamen, geboortedatum, and verblijfsadres
@@ -31,6 +33,8 @@ The adapter MUST expose a SOAP endpoint that accepts StUF-BG 3.10 `npsLv01` (per
 
 The adapter MUST map StUF-BG person fields to OpenRegister object properties using configurable mapping objects. The default mapping covers the core BRP fields: `bsn` -> `burgerservicenummer`, `geslachtsnaam`, `voorvoegsel`, `voornamen`, `geboortedatum`, `verblijfsadres` (with sub-fields straatnaam, huisnummer, postcode, woonplaats). Mappings are stored as OpenRegister objects in a dedicated "stuf-mappings" schema.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Default mapping produces correct StUF-BG XML
 - **WHEN** the default BRP field mapping is loaded and an OpenRegister person object has `{"burgerservicenummer": "999993653", "geslachtsnaam": "Moulin", "voornamen": "Suzanne"}` and the adapter builds a `npsLa01` response
 - **THEN** the XML contains `<inp.bsn>999993653</inp.bsn>`, `<geslachtsnaam>Moulin</geslachtsnaam>`, and `<voornamen>Suzanne</voornamen>` in the correct StUF-BG namespace
@@ -51,6 +55,8 @@ The adapter MUST map StUF-BG person fields to OpenRegister object properties usi
 
 The adapter MUST expose `adrLv01` (adres opvragen) and `adrLa01` (adres antwoord) for BAG-adressen. Address queries search the BAG register in OpenRegister and return nummeraanduiding data in StUF-BG format.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Address query by postcode and huisnummer
 - **WHEN** a legacy application queries an address by postcode "1234AB" and huisnummer "10" and the adapter receives the `adrLv01` request
 - **THEN** it queries the BAG schema in OpenRegister and returns an `adrLa01` response with the matching nummeraanduiding(en)
@@ -66,6 +72,8 @@ The adapter MUST expose `adrLv01` (adres opvragen) and `adrLa01` (adres antwoord
 ### Requirement: StUF-BG Outbound Query (OpenConnector Queries Legacy Source) (REQ-STUF-010)
 
 The adapter MUST support querying external StUF-BG services via SOAP and mapping the responses to OpenRegister objects. Outbound queries use the existing SOAPService (`lib/Service/SOAPService.php`) to send `npsLv01` SOAP requests and parse `npsLa01` responses into JSON objects. The parsed data is stored in OpenRegister via the SynchronizationService.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Outbound person query routes through SOAPService
 - **WHEN** a StUF-BG source is configured in OpenConnector with WSDL URL and endpoint and a workflow requests person data by BSN
@@ -87,6 +95,8 @@ The adapter MUST support querying external StUF-BG services via SOAP and mapping
 
 The adapter MUST support certificate-based mutual TLS authentication for StUF endpoints. This leverages the existing CallService certificate handling: `getCertificate()` writes client certificates and SSL keys to temporary files, the SOAP/HTTP request uses them for mTLS, and `removeFiles()` cleans up after the request.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Client certificate used for mTLS request
 - **WHEN** a StUF source is configured with a PKIoverheid client certificate and private key and the adapter makes a SOAP request
 - **THEN** CallService writes the certificate to a temporary file, passes it to the Guzzle/SOAPService client for mTLS, and removes the file after the response
@@ -103,6 +113,8 @@ The adapter MUST support certificate-based mutual TLS authentication for StUF en
 
 The adapter MUST support WS-Security UsernameToken authentication for StUF endpoints. This adds a SOAP header with username and password (optionally with nonce and timestamp) to outbound SOAP requests. The authentication method is configured as a new auth type in AuthenticationService.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: UsernameToken header added to SOAP request
 - **WHEN** a StUF source is configured with WS-Security authentication (username + password) and the adapter sends a SOAP request
 - **THEN** the SOAP envelope includes a `wsse:Security` header with `wsse:UsernameToken`, `wsse:Username`, and `wsse:Password` elements
@@ -118,6 +130,8 @@ The adapter MUST support WS-Security UsernameToken authentication for StUF endpo
 ### Requirement: StUF-ZKN Inbound Zaak Management (zakLk01/zakLv01) (REQ-STUF-020)
 
 The adapter MUST expose SOAP endpoints for StUF-ZKN 3.10 zaak operations: `zakLk01` (zaak aanmaken/bijwerken) for creating or updating zaken, and `zakLv01`/`zakLa01` (zaak opvragen) for retrieving zaak data including related documenten and statussen. The adapter maps StUF-ZKN zaak fields to Procest zaak objects in OpenRegister.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Create zaak from zakLk01 returns Bv03
 - **WHEN** a legacy formulierensysteem sends a StUF-ZKN `zakLk01` message to create a new zaak and the adapter receives the SOAP request
@@ -143,6 +157,8 @@ The adapter MUST expose SOAP endpoints for StUF-ZKN 3.10 zaak operations: `zakLk
 
 The adapter MUST support `edcLk01` (document koppelen aan zaak) messages for document management via StUF-ZKN. This builds on the existing edcLk01 handling in SOAPService which already detects `body['edcLk01']['object']['inhoud']` and base64-decodes document content.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Base64 document decoded and stored
 - **WHEN** a legacy DMS sends an `edcLk01` message with a base64-encoded PDF document and the adapter processes the message
 - **THEN** the document content is base64-decoded (using the existing SOAPService logic at lines 224-232), stored in Nextcloud Files, and linked to the referenced zaak
@@ -158,6 +174,8 @@ The adapter MUST support `edcLk01` (document koppelen aan zaak) messages for doc
 ### Requirement: StUF-ZKN Outbound Zaak Query (REQ-STUF-030)
 
 The adapter MUST support querying external StUF-ZKN services for zaak data and mapping responses to OpenRegister objects. This enables data import from legacy zaaksystemen during migration. The adapter sends `zakLv01` SOAP requests and parses `zakLa01` responses.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Migration query by zaaktype maps to objects
 - **WHEN** a legacy zaaksysteem is configured as a StUF-ZKN source and a migration workflow queries for all zaken of type "Omgevingsvergunning"
@@ -175,6 +193,8 @@ The adapter MUST support querying external StUF-ZKN services for zaak data and m
 
 The adapter MUST bundle WSDL files for StUF-BG 3.10 and StUF-ZKN 3.10 with the app. The WSDL files are used both for outbound SOAP client setup (SOAPService engine configuration) and for inbound request validation. The XSD schemas are used for XML validation of outbound messages.
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: WSDL files present in app directory
 - **WHEN** the adapter is installed and a developer inspects the app directory
 - **THEN** WSDL files are present at `lib/StUF/wsdl/stuf-bg-3.10.wsdl` and `lib/StUF/wsdl/stuf-zkn-3.10.wsdl` along with their XSD dependencies
@@ -190,6 +210,8 @@ The adapter MUST bundle WSDL files for StUF-BG 3.10 and StUF-ZKN 3.10 with the a
 ### Requirement: XML Namespace Handling (REQ-STUF-041)
 
 The adapter MUST correctly handle XML namespaces for `StUF`, `BG`, `ZKN`, `xsi`, and `gml` in all generated SOAP messages. Namespace prefixes and URIs must match the StUF-BG and StUF-ZKN schema definitions exactly, as legacy systems are strict about namespace validation.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Correct namespace declarations in npsLa01
 - **WHEN** the adapter generates a `npsLa01` response and the XML is built
@@ -207,6 +229,8 @@ The adapter MUST correctly handle XML namespaces for `StUF`, `BG`, `ZKN`, `xsi`,
 
 The adapter MUST correctly populate StUF `stuurgegevens` on all outbound messages. Stuurgegevens include: `zender` (with organisatie code and applicatie naam), `ontvanger` (from the configured target), `referentienummer` (unique message ID), `tijdstipBericht` (timestamp), and `crossRefnummer` (referencing the inbound message for responses).
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Response stuurgegevens reference inbound request
 - **WHEN** the adapter sends a `npsLa01` response to an inbound `npsLv01` request and stuurgegevens are populated
 - **THEN** `zender` contains the adapter's OIN and application name, `ontvanger` contains the requesting system's code (from the request's zender), `referentienummer` is a unique UUID, `tijdstipBericht` is the current datetime in StUF format, and `crossRefnummer` is the request's referentienummer
@@ -222,6 +246,8 @@ The adapter MUST correctly populate StUF `stuurgegevens` on all outbound message
 ### Requirement: noValue Attribute Handling (REQ-STUF-043)
 
 The adapter MUST handle StUF `noValue` attribute semantics correctly. The StUF standard defines four noValue indicators: `geenWaarde` (empty by design), `nietOndersteund` (field not supported), `waardeOnbekend` (value unknown), and `vastgesteldOnbekend` (officially determined as unknown). These are represented as `StUF:noValue` attributes on XML elements.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Explicit null mapped to geenWaarde
 - **WHEN** an OpenRegister person object has an explicit null value for `voorvoegsel` (not applicable for this person) and the adapter generates StUF-BG XML
@@ -242,6 +268,8 @@ The adapter MUST handle StUF `noValue` attribute semantics correctly. The StUF s
 ### Requirement: Configurable Field Mapping (REQ-STUF-050)
 
 The adapter MUST provide configurable field mappings between StUF XML paths and OpenRegister object properties, stored as mapping objects in OpenRegister. Default mappings for BRP-personen (StUF-BG) and ZGW-zaken (StUF-ZKN) are pre-seeded. Custom mappings can be added for municipality-specific StUF extensions.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Default mapping entries inspectable
 - **WHEN** the default StUF-BG person mapping is loaded and a developer inspects the mapping in OpenRegister
@@ -267,6 +295,8 @@ The adapter MUST provide configurable field mappings between StUF XML paths and 
 
 The adapter MUST support value transformations in field mappings: date format conversion (StUF `YYYYMMDD` to ISO 8601), code list lookups (e.g., geslachtsaanduiding "M"/"V"/"O" to full text), and string concatenation (combining voorvoegsel + geslachtsnaam).
 
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
+
 #### Scenario: Date transformation to ISO 8601
 - **WHEN** a date transformation is configured for geboortedatum and the adapter maps StUF "19900515" to OpenRegister
 - **THEN** the stored value is "1990-05-15T00:00:00Z" in ISO 8601 format
@@ -282,6 +312,8 @@ The adapter MUST support value transformations in field mappings: date format co
 ### Requirement: OpenConnector Source Registration (REQ-STUF-060)
 
 The adapter MUST be registered as an OpenConnector source type, configurable via the connector UI. Connection settings include endpoint URL, authentication method (mTLS or WS-Security), certificates, and zender/ontvanger codes. The source supports health checks validating connectivity and authentication against the StUF endpoint.
+
+@e2e exclude backend StUF-BG/StUF-ZKN integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Create StUF source with SOAP type
 - **WHEN** an administrator creates a new StUF source and selects type "soap" and configures WSDL URL, mTLS certificate, and stuurgegevens codes

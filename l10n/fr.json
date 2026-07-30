@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Supprimer la propriété",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Configurez la manière dont les requêtes webhook DSO-LV STAM entrantes sont vérifiées cryptographiquement. HMAC utilise un secret partagé (pré-production) ; PKIoverheid utilise une chaîne de certificats (production).",
+        "Configured (leave blank to keep unchanged)": "Configuré (laisser vide pour ne pas modifier)",
+        "DSO signature configuration saved.": "Configuration de signature DSO enregistrée.",
+        "DSO STAM webhook signature verification": "Vérification de la signature du webhook DSO STAM",
+        "Failed to load the DSO signature configuration.": "Échec du chargement de la configuration de signature DSO.",
+        "Failed to save the DSO signature configuration.": "Échec de l'enregistrement de la configuration de signature DSO.",
+        "HMAC shared secret": "Secret partagé HMAC",
+        "HMAC shared secret (pre-production)": "Secret partagé HMAC (pré-production)",
+        "Intermediate certificate chain (PEM, optional)": "Chaîne de certificats intermédiaires (PEM, facultatif)",
+        "Loading DSO signature configuration…": "Chargement de la configuration de signature DSO…",
+        "Not configured": "Non configuré",
+        "PKIoverheid certificate chain (production)": "Chaîne de certificats PKIoverheid (production)",
+        "Save DSO signature configuration": "Enregistrer la configuration de signature DSO",
+        "Signing certificate (PEM)": "Certificat de signature (PEM)",
+        "Signing mode": "Mode de signature",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Autorité de certification racine de confiance (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

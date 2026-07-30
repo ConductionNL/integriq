@@ -1,0 +1,98 @@
+{
+  "$comment": "Phase-2 wave-1 OpenConnector ingestion config for Germany. concurrentie-analyse/scripts/sync/sync_germany_bund.py actually runs TWO structurally different sources - (1) service.bund.de RSS/Atom XML feeds (general + 8 keyword-specific feeds), and (2) govdata.de's CKAN `package_search` JSON API - and this file deliberately ports only the second. Reason, confirmed by reading the code (not assumed): OpenConnector's SynchronizationService decodes every fetched response body with `json_decode($response['body'], true)` (getAllObjectsFromArray/fetchSinglePage/etc. - checked across the service, no XML/RSS parsing path exists anywhere in it) - an RSS/Atom XML body would simply fail to decode, so `resultsPosition`/pagination/idPosition extraction could never work against service.bund.de's feed. This is a structural engine limitation, not a mapping gap, so it isn't worked around - it would need a genuinely different ingestion mechanism (e.g. a Rule/custom action with its own XML parser) to ever be reachable declaratively. IMPORTANT DATA-QUALITY FINDING from live-checking the GovData half before writing this file: govdata.de is Germany's GENERAL open-data catalog (transport, environment, statistics, etc.), not a procurement-notice-specific platform, so most keyword queries against it return topically irrelevant results even when they textually match. Confirmed live 2026-07-05: the script's own 4 phrase-quoted search terms ('vergabe software', 'ausschreibung informationstechnologie', 'öffentliche beschaffung IT', 'vergabe IT-Dienstleistungen'), run individually exactly as the script issues them, ALL returned `count: 0` against the live API (CKAN's default query parser appears to AND the individual words in an unquoted phrase, and none of these specific word combinations currently match any cataloged dataset) - the script's own search, as written, would currently harvest nothing from GovData. Broadening to standalone words with an explicit OR ('Ausschreibung OR Vergabe OR Informationstechnologie') was tried live instead and returns `count: 5`, of which the top hits are genuinely procurement-relevant: 'Ausschreibungen Vergabemarktplatz NRW' (a state tender-listing portal dataset), 'Bekanntmachungen öffentlicher Auftraggeber aus Bund, Ländern und Kommunen' (the federal BeschA notice-index), 'Vergabearten'/'Vergabeverfahren' (Saxony procurement-type statistics). This is the query baked into the Source below. Worth being explicit about what this actually yields: GovData is a dataset CATALOG, so records are portals/indexes/statistics ABOUT tenders, not individual per-notice tender records the way TenderNed/TED/BOAMP/IUB are - an imperfect structural fit into the spectr `tender` schema, shipped as the best available JSON-native proxy for Germany in wave-1 given the genuine per-notice feed is XML and unreachable (see above). Field mapping confirmed live against the real 5-result response (fields: id, name, title, notes, organization.title, url, metadata_created, metadata_modified, license_title, extras[], tags, groups, resources) - `tenderUrl` mirrors the Python script's own URL construction (`f\"https://www.govdata.de/web/guest/-/{dataset_name}\"`) rather than the record's own (frequently empty/None) `url` field. Two fields are deliberately left unmapped rather than forced: `nutsCode` (the script extracts it via a regex search over a variable-shaped `extras` array looking for a `spatial` key - MappingService's dot-notation/Twig engine has no iterate-and-pattern-match primitive, see IMPORT.md) and `cpvCodes` (the script's `extract_cpv_from_text()` regex-mines 8-digit 48/72-prefixed codes out of free-text title+notes into a Python list - same 'no iteration, no regex-into-array' limitation, and Twig cannot return a computed array at all regardless, see IMPORT.md's cast-to-array gotcha, which doesn't help here since there's no single scalar field to wrap). `closingDate` is also unmapped - a cataloged dataset has no submission-deadline concept. No sourceHashMapping - `metadata_modified` changing when a dataset genuinely changes is a real signal, not spurious noise, so the default whole-object hash is fine. KNOWN LIMITATION (pagination): CKAN's `package_search` paginates via a `start` row-offset param, not a page NUMBER - OpenConnector's page-increment mechanism (`SynchronizationService::getNextPage()`) only ever sends a literal, incrementing integer under a configurable *parameter name* (`sourceConfig.paginationQuery`, default 'page'); there is no way to make it compute `start = (page-1) * rows`. Sending a raw page counter as `start` would refetch almost the same rows shifted by 1-2 positions each call rather than cleanly advancing - worse than TenderNed's own documented page-offset-by-one quirk. `usesPagination` is therefore `false` here, matching the same `rows`-only, single-call shape already used for ted_eu.json (which has an analogous static-page-1-only limitation for a different underlying reason). LIVE-VERIFIED 2026-07-05 on the isolated spectr-spike instance: imported clean (4 objects, no skipped entries), ran via POST /apps/openconnector/api/synchronizations/germany-bund-to-spectr-tender/run - `found: 5, created: 5`, matching the 5 real datasets independently confirmed live beforehand. Spot-checked 2 of the 5 target objects field-by-field against the raw GovData response (id/title/organization.title/notes/metadata_created/tenderUrl all correct, including the exact `.../web/guest/-/<name>` URL construction). Re-ran: `found: 5, updated: 5, created: 0` - same 5 target uuids reused, no duplicates. This live test also surfaced (and helped fix) a pre-existing schema drift in the spike instance unrelated to this file - see latvia_iub.json's $comment for the displayName/objectNameField fix that both this file and boamp_france.json's live-verification also depended on.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "source",
+          "slug": "germany-bund"
+        },
+        "name": "GovData.de (German Open Data Portal)",
+        "description": "German open-data catalog (govdata.de), CKAN `package_search` action API v3. Public, unauthenticated. Feeds the spectr `tender` register/schema via the germany-bund-to-spectr-tender synchronization with a procurement-keyword search - see this file's $comment for why this yields procurement-related DATASETS (portals, indexes, statistics) rather than individual per-notice records, and why the genuine per-notice source (service.bund.de RSS/XML) is out of scope for this native JSON-only connector.",
+        "type": "api",
+        "location": "https://ckan.govdata.de/api/3/action",
+        "auth": "none",
+        "documentation": "https://www.govdata.de",
+        "configuration": {
+          "headers": {
+            "Accept": "application/json"
+          }
+        },
+        "isEnabled": true,
+        "test": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "mapping",
+          "slug": "germany-bund-to-tender"
+        },
+        "name": "GovData.de to Spectr Tender",
+        "description": "Maps a raw GovData.de CKAN package_search result onto the spectr `tender` schema. Field shapes confirmed live 2026-07-05 against a real 5-result response for this file's baked-in query - see this file's $comment for the nutsCode/cpvCodes fields deliberately left unmapped and why.",
+        "mapping": {
+          "sourceRef": "id",
+          "publicatieId": "id",
+          "source": "germany-bund",
+          "title": "title",
+          "displayName": "{{ title|default(name)|slice(0, 250) }}",
+          "organisation": "{{ organization.title|default('') }}",
+          "country": "DE",
+          "description": "{{ notes|default('') }}",
+          "publicationDate": "{{ (metadata_created|default(''))|slice(0, 10) }}",
+          "status": "new",
+          "tenderUrl": "{{ 'https://www.govdata.de/web/guest/-/' ~ name }}"
+        },
+        "unset": [],
+        "cast": {},
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "synchronization",
+          "slug": "germany-bund-to-spectr-tender"
+        },
+        "name": "GovData.de to Spectr Tender",
+        "description": "Wave-1 ingestion sync: GovData.de package_search, static procurement-keyword query (see Source $comment for why this exact OR-of-words query was chosen over the Python script's own 4 phrase-quoted terms, which currently match nothing live) -> spectr register, tender schema. `usesPagination: false` - CKAN's offset-based paging is incompatible with OpenConnector's page-increment mechanism (see $comment); `rows: 50` is a generous ceiling for a query that currently yields 5 real results.",
+        "sourceId": "germany-bund",
+        "sourceType": "api",
+        "sourceTargetMapping": "germany-bund-to-tender",
+        "sourceConfig": {
+          "endpoint": "/package_search",
+          "query": {
+            "q": "Ausschreibung OR Vergabe OR Informationstechnologie",
+            "rows": 50,
+            "sort": "metadata_modified desc"
+          },
+          "idPosition": "id",
+          "resultsPosition": "result.results",
+          "usesPagination": false
+        },
+        "targetId": "spectr/tender",
+        "targetType": "register/schema",
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "openconnector",
+          "schema": "job",
+          "slug": "germany-bund-weekly-sync"
+        },
+        "name": "Germany Bund Weekly Sync",
+        "description": "Runs the germany-bund-to-spectr-tender synchronization weekly, matching Specter's own tendril cadence.",
+        "jobClass": "OCA\\OpenConnector\\Action\\SynchronizationAction",
+        "arguments": {
+          "synchronizationId": "germany-bund-to-spectr-tender"
+        },
+        "interval": 604800,
+        "isEnabled": true,
+        "singleRun": false,
+        "allowParallelRuns": false,
+        "version": "1.0.0"
+      }
+    ]
+  }
+}

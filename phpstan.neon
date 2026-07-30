@@ -25,6 +25,26 @@ parameters:
         # errors — exclusion is required (same pattern as SynchronizationContractProvider).
         - lib/Controller/HealthController.php
         - lib/Controller/MetricsController.php
+        # adopt-apphost: Settings/OpenConnectorAdmin, Sections/OpenConnectorAdmin
+        # and Repair/InitializeActions extend OCA\OpenRegister\AppHost generics
+        # (GenericAdminSettings / GenericSettingsSection / GenericInitializeActions)
+        # which are only available at runtime. Same "extends unknown class"
+        # PHPStan limitation as HealthController/MetricsController above.
+        - lib/Settings/OpenConnectorAdmin.php
+        - lib/Sections/OpenConnectorAdmin.php
+        - lib/Repair/InitializeActions.php
+        # The contributed flow nodes and their registration listener implement /
+        # reference OCA\OpenRegister\Service\Flow\* (IFlowNode,
+        # RegisterFlowNodesEvent), which exists only at runtime and only on an
+        # OpenRegister that ships the flow engine — that is precisely what the
+        # class_exists() guard in Application::registerFlowNodes() is for.
+        # "implements unknown interface" cannot be baselined, so exclusion is
+        # required (same pattern as SynchronizationContractProvider above). The
+        # flow helpers that do NOT touch OpenRegister types (FlowConfigGuard,
+        # FlowNodeSupport, FlowOwner, FlowTemplate) stay analysed.
+        - lib/Flow/FlowNodeListener.php
+        - lib/Flow/SourceCallNode.php
+        - lib/Flow/SynchronizationRunNode.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
@@ -37,9 +57,30 @@ parameters:
         - '#Caught class OC\\#'
         - '#unknown class OC_App#'
         - '#Class OC_App not found#'
+        # flow-workflowengine-integration: NC's concrete IRequest implementation
+        # (\OC\AppFramework\Http\Request), synthesized by
+        # EndpointService::buildSyntheticRequest() (design.md Decision 5) — a
+        # real, present-at-runtime NC core class not stubbed in nextcloud/ocp.
+        - '#Instantiated class OC\\AppFramework\\Http\\Request not found#'
+        - '#should return OCP\\IRequest but returns OC\\AppFramework\\Http\\Request#'
+        # flow-workflowengine-integration: NC core's only bundled WorkflowEngine
+        # IEntity, referenced only as a compile-time ::class string by the three
+        # operation classes' getEntityId() (no autoload triggered).
+        - '#Class OCA\\WorkflowEngine\\Entity\\File not found#'
         # OCA\DAV is server-internal and not in nextcloud/ocp stubs
         - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
+        # nextcloud-event-hub: optional/bundled-app + newer-OCP event classes
+        # referenced only via ::class / instanceof (safe when absent). OCA\Tables\
+        # + OCA\Forms\ are optional App Store apps; OCP\Calendar\Events\ is real OCP
+        # but @since 32.0.0, newer than the pinned nextcloud/ocp: dev-stable29 stub.
+        - '#unknown class OCA\\Tables\\#'
+        - '#Class OCA\\Tables\\#'
+        - '#unknown class OCA\\Forms\\#'
+        - '#Class OCA\\Forms\\#'
+        - '#on an unknown class OCA\\Forms\\#'
+        - '#unknown class OCP\\Calendar\\Events\\#'
+        - '#Class OCP\\Calendar\\Events\\#'
         # OCA classes from other apps (OpenRegister) not available during static analysis
         - '#unknown class OCA\\OpenRegister\\#'
         - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
@@ -73,3 +114,8 @@ parameters:
         # is a downstream effect of the excludePaths exclusion.
         - '#Class OCA\\OpenConnector\\Controller\\HealthController does not have a constructor#'
         - '#Class OCA\\OpenConnector\\Controller\\MetricsController does not have a constructor#'
+        # adopt-apphost: same downstream effect for Settings/OpenConnectorAdmin,
+        # Sections/OpenConnectorAdmin and Repair/InitializeActions (see excludePaths above).
+        - '#Class OCA\\OpenConnector\\Settings\\OpenConnectorAdmin does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Sections\\OpenConnectorAdmin does not have a constructor#'
+        - '#Class OCA\\OpenConnector\\Repair\\InitializeActions does not have a constructor#'

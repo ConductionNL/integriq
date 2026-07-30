@@ -19,6 +19,7 @@
 
 namespace OCA\OpenConnector\Service\ConfigurationHandlers;
 
+use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Db\Entity;
@@ -26,19 +27,25 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Handler for exporting and importing endpoint configurations.
  *
+ * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
+ *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.MissingImport)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class EndpointHandler implements ConfigurationHandlerInterface
 {
     /**
      * Constructor.
      *
-     * @param OrObjectService $orObjectService The OR object service.
+     * @param OrObjectService        $orObjectService        The OR object service.
+     * @param SensitiveFieldRegistry $sensitiveFieldRegistry Shared secret-name detection/redaction registry (secret-hygiene).
      */
     public function __construct(
-        private readonly OrObjectService $orObjectService
+        private readonly OrObjectService $orObjectService,
+        private readonly SensitiveFieldRegistry $sensitiveFieldRegistry,
     ) {
 
     }//end __construct()
@@ -52,7 +59,7 @@ class EndpointHandler implements ConfigurationHandlerInterface
      *
      * @return array The serialised endpoint configuration.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-4
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-005--redact-source-credentials-from-exported-configurations
      */
     public function export(Entity $entity, array $mappings, array &$mappingIds=[]): array
     {
@@ -63,6 +70,12 @@ class EndpointHandler implements ConfigurationHandlerInterface
         }
 
         unset($endpointArray['id'], $endpointArray['uuid']);
+
+        // Redact secret-shaped values from the nested configuration array
+        // (secret-hygiene) — e.g. an inline per-endpoint auth-override header.
+        if (isset($endpointArray['configuration']) === true && is_array($endpointArray['configuration']) === true) {
+            $endpointArray['configuration'] = $this->sensitiveFieldRegistry->redactArray(data: $endpointArray['configuration']);
+        }
 
         // Ensure slug is set.
         if (empty($endpointArray['slug']) === true && $entity instanceof ObjectEntity) {
@@ -142,7 +155,7 @@ class EndpointHandler implements ConfigurationHandlerInterface
      *
      * @return Entity The imported endpoint entity.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-configuration-export-import/tasks.md#task-3
+     * @spec openspec/specs/configuration-export-import/spec.md
      */
     public function import(array $data, array $mappings): Entity
     {
@@ -227,6 +240,8 @@ class EndpointHandler implements ConfigurationHandlerInterface
      * Get the entity type this handler is responsible for.
      *
      * @return string The entity type identifier.
+     *
+     * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-003--import-an-oas-document-in-dependency-order
      */
     public function getEntityType(): string
     {

@@ -392,3 +392,14 @@ parameters:
 			count: 1
 			path: lib/Service/SynchronizationService.php
 
+		# False positive, same shape as the SynchronizationService entry above:
+		# $this->rateLimitHeaders is populated as a side effect of
+		# doHandleRequest() (line 516, via InboundRateLimitService::toHeaders())
+		# called immediately before the foreach; PHPStan cannot track the
+		# inter-method side-effect on the property. Pre-existing, observed
+		# while implementing vng-klantinteracties-adapter.
+		-
+			message: "#^Empty array passed to foreach\\.$#"
+			count: 1
+			path: lib/Service/EndpointService.php
+

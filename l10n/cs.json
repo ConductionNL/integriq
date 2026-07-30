@@ -853,7 +853,24 @@
         "Could not create mapping": "Could not create mapping",
         "Could not open the new mapping": "Could not open the new mapping",
         "Mapping created but could not be opened": "Mapping created but could not be opened",
-        "New mapping": "New mapping"
+        "New mapping": "New mapping",
+        "Remove property": "Odebrat vlastnost",
+        "Configure how inbound DSO-LV STAM webhook requests are cryptographically verified. HMAC uses a shared secret (pre-production); PKIoverheid uses a certificate chain (production).": "Nastavte, jak jsou příchozí požadavky webhooku DSO-LV STAM kryptograficky ověřovány. HMAC používá sdílené tajemství (předprodukce); PKIoverheid používá řetězec certifikátů (produkce).",
+        "Configured (leave blank to keep unchanged)": "Nakonfigurováno (ponechte prázdné, pokud nechcete měnit)",
+        "DSO signature configuration saved.": "Konfigurace podpisu DSO byla uložena.",
+        "DSO STAM webhook signature verification": "Ověření podpisu webhooku DSO STAM",
+        "Failed to load the DSO signature configuration.": "Načtení konfigurace podpisu DSO se nezdařilo.",
+        "Failed to save the DSO signature configuration.": "Uložení konfigurace podpisu DSO se nezdařilo.",
+        "HMAC shared secret": "Sdílené tajemství HMAC",
+        "HMAC shared secret (pre-production)": "Sdílené tajemství HMAC (předprodukce)",
+        "Intermediate certificate chain (PEM, optional)": "Řetězec mezilehlých certifikátů (PEM, volitelné)",
+        "Loading DSO signature configuration…": "Načítání konfigurace podpisu DSO…",
+        "Not configured": "Nenakonfigurováno",
+        "PKIoverheid certificate chain (production)": "Řetězec certifikátů PKIoverheid (produkce)",
+        "Save DSO signature configuration": "Uložit konfiguraci podpisu DSO",
+        "Signing certificate (PEM)": "Podpisový certifikát (PEM)",
+        "Signing mode": "Režim podepisování",
+        "Trusted root CA (PKIoverheid Private Root CA, PEM)": "Důvěryhodná kořenová CA (PKIoverheid Private Root CA, PEM)"
     },
     "plurals": {}
 }

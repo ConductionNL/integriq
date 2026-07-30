@@ -29,8 +29,8 @@ use PHPUnit\Framework\TestCase;
  * Validates the openconnector_register.json descriptor structure.
  *
  * Checks:
- * - All 15 schema slugs are declared in the register
- * - All 15 schemas are defined in components.schemas
+ * - All schema slugs in SCHEMA_SLUGS are declared in the register
+ * - All schemas in SCHEMA_SLUGS are defined in components.schemas
  * - Log schemas carry appendOnly/immutable/archival markers
  * - Mutable schemas do NOT carry appendOnly/immutable
  * - FK relations carry $ref and x-openregister-onDelete
@@ -45,8 +45,46 @@ class RegisterDescriptorTest extends TestCase
 {
 
     /**
-     * The 16 schema slugs that MUST be declared in the register.
+     * The 25 schema slugs that MUST be declared in the register.
      * Keys are the former entity FQCN (kept for diagnostic messages); values are schema slugs.
+     *
+     * Was 16 (verified stale — `peppol_transmission` had been added to
+     * `components.schemas` since, but never to this list, a pre-existing
+     * drift bug fixed alongside lti-13-platform, see
+     * openspec/changes/lti-13-platform/proposal.md's "Impact" section and
+     * lib/Settings/openconnector_register.json's `x-openregister.description`).
+     *
+     * Was 20 — `lti_identity_link` added by
+     * openspec/changes/lti-tool-provider-role (REQ-LTI-012); count
+     * re-verified at HEAD per that change's tasks.md §1.6.
+     *
+     * Was 24 — `payment_intent` added by openspec/changes/live-payment-providers.
+     *
+     * Was 25 — `kiss_klantcontact` added by openspec/changes/kiss-kcc-bridge.
+     *
+     * Was 26 — `openformulieren_form_mapping` and `openformulieren_submission`
+     * added by openspec/changes/open-formulieren-intake.
+     *
+     * Was 28 — `iwmo_ijw_message` added by openspec/changes/iwmo-ijw-adapter.
+     *
+     * Was 29 — `fsc_service` and `fsc_call` added by
+     * openspec/changes/fsc-connectivity.
+     *
+     * Was 31 (count re-verified at HEAD, prior "30" annotations in this
+     * history had drifted from the true count — a pre-existing, harmless
+     * comment inaccuracy fixed alongside this entry, not a structural bug:
+     * the assertions below always iterate SCHEMA_SLUGS itself, never a
+     * hardcoded literal) — `zgw_version_translation_log` added by
+     * openspec/changes/zgw-version-translation, bringing the count to 32.
+     *
+     * Was 32 — `dso_verzoek` and `dso_message` added by
+     * openspec/changes/dso-connector-adapter, bringing the count to 34.
+     *
+     * Was 34 — `notificaties_abonnement` added by
+     * openspec/changes/notificaties-api-subscriber, bringing the count to 35.
+     *
+     * Was 35 — `stuf_message` added by openspec/changes/stuf-zkn-bridge,
+     * bringing the count to 36.
      *
      * @var array<string, string>
      */
@@ -68,6 +106,46 @@ class RegisterDescriptorTest extends TestCase
         'SynchronizationContractLog' => 'synchronization_contract_log',
         // RIS connector sync record — added by ibabs-notubiz-connector spec.
         'RISSyncRecord'              => 'ris_sync_record',
+        // Peppol Access Point connector — added by peppol-access-point-connector spec.
+        'PeppolTransmission'         => 'peppol_transmission',
+        // PSD2 AIS bank-feed connector — added by psd2-ais-bank-feed-connector spec.
+        // Was declared in components.schemas but missing from the register's
+        // schemas list until fixed alongside notifynl-sms-channel (see that
+        // change's proposal.md "Impact").
+        'BankfeedConnection'         => 'bankfeed_connection',
+        'BankfeedBatch'              => 'bankfeed_batch',
+        // Corporate card-feed connector — added by corporate-card-feed spec.
+        'CardfeedAccount'            => 'cardfeed_account',
+        'CardfeedBatch'              => 'cardfeed_batch',
+        // LTI 1.3 / LTI Advantage adapter — added by lti-13-platform.
+        'LtiPlatform'                => 'lti_platform',
+        'LtiTool'                    => 'lti_tool',
+        'LtiDeployment'              => 'lti_deployment',
+        // Identity-linking primitive — added by lti-tool-provider-role.
+        'LtiIdentityLink'            => 'lti_identity_link',
+        // NotifyNL SMS channel connector — added by notifynl-sms-channel spec.
+        'SmsMessage'                 => 'sms_message',
+        // Live payment providers connector — added by live-payment-providers spec.
+        'PaymentIntent'              => 'payment_intent',
+        // KISS (Klantinteractie Servicesysteem) KCC bridge — added by kiss-kcc-bridge spec.
+        'KissKlantcontact'           => 'kiss_klantcontact',
+        // Open Formulieren intake bridge — added by open-formulieren-intake spec.
+        'OpenFormulierenFormMapping' => 'openformulieren_form_mapping',
+        'OpenFormulierenSubmission'  => 'openformulieren_submission',
+        // iWMO/iJW (StUF iStandaarden Wmo/Jeugdwet) bridge — added by iwmo-ijw-adapter spec.
+        'IwmoIjwMessage'             => 'iwmo_ijw_message',
+        // FSC (Federatieve Service Connectiviteit) connectivity — added by fsc-connectivity spec.
+        'FscService'                 => 'fsc_service',
+        'FscCall'                    => 'fsc_call',
+        // ZGW version-translation shim — added by zgw-version-translation spec.
+        'ZgwVersionTranslationLog'   => 'zgw_version_translation_log',
+        // DSO (Digitaal Stelsel Omgevingswet) connector adapter — added by dso-connector-adapter spec.
+        'DsoVerzoek'                 => 'dso_verzoek',
+        'DsoMessage'                 => 'dso_message',
+        // ZGW Notificaties API subscriber/publisher — added by notificaties-api-subscriber spec.
+        'NotificatiesAbonnement'     => 'notificaties_abonnement',
+        // StUF-ZKN (StUF-ZKN 3.10) bridge — added by stuf-zkn-bridge spec.
+        'StufMessage'                => 'stuf_message',
     ];
 
     /**

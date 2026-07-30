@@ -20,6 +20,8 @@
 
 namespace OCA\OpenConnector\Service;
 
+use OCA\OpenConnector\Service\ExecutionTraceService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 use OCP\BackgroundJob\IJobList;
@@ -53,6 +55,9 @@ use OCP\BackgroundJob\IJob;
  * @SuppressWarnings(PHPMD.MissingImport)
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.CamelCaseVariableName)
+ *
+ * @spec openspec/specs/job-scheduling/spec.md
+ * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
  */
 class JobService
 {
@@ -134,7 +139,7 @@ class JobService
      *
      * @TODO: At a later point in time this should be changed to using the most specific source for expiration
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     private function calculateExpires(...$retentions): ?\DateTime
     {
@@ -166,7 +171,7 @@ class JobService
      * @phpstan-param  int $maxLength
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     private function truncateMessage(string $message, int $maxLength=10000): string
     {
@@ -198,7 +203,7 @@ class JobService
      * @phpstan-param  ObjectEntity $job
      * @phpstan-return ObjectEntity
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     public function scheduleJob(ObjectEntity $job): ObjectEntity
     {
@@ -275,7 +280,7 @@ class JobService
      * @phpstan-param  class-string<IJob>|IJob $job
      * @phpstan-return int|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     public function getJobListId(IJob|string $job): int|null
     {
@@ -313,8 +318,14 @@ class JobService
      * - Result processing and logging
      * - Next run scheduling
      *
-     * @param ObjectEntity $job      The job ObjectEntity to be executed
-     * @param bool         $forceRun Optional flag to force run the job
+     * @param ObjectEntity               $job      The job ObjectEntity to be executed
+     * @param bool                       $forceRun Optional flag to force run the job
+     * @param ExecutionTraceContext|null $trace    The active execution trace context. When null (the common
+     *                                             cron/manual-run case), a fresh `job`-entryPoint context
+     *                                             is minted here and its persistence owned by this method
+     *                                             (execution-trace REQ-001/REQ-004). When supplied
+     *                                             (`ExecutionTraceService::replay()`'s job-entryPoint
+     *                                             dispatch), reused instead.
      *
      * @return ObjectEntity|null The job log entry created for this execution
      *
@@ -327,9 +338,10 @@ class JobService
      * @phpstan-param  ObjectEntity $job
      * @phpstan-return ObjectEntity|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
+     * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
      */
-    public function executeJob(ObjectEntity $job, bool $forceRun=false): ?ObjectEntity
+    public function executeJob(ObjectEntity $job, bool $forceRun=false, ?ExecutionTraceContext $trace=null): ?ObjectEntity
     {
         $jobData = $job->getObject();
 
@@ -390,6 +402,29 @@ class JobService
             $sessionUserOverridden = true;
         }//end if
 
+        // Execution-trace REQ-001: a cron-triggered or manual job run is one
+        // of the four traced entry points. Minted here — once the job is
+        // confirmed enabled/due (or force-run) — not at the top of the
+        // method, so a cron tick that finds nothing due to run produces no
+        // trace noise. When invoked directly (no active trace supplied —
+        // the common cron/manual-run case), mint a fresh `job`-entryPoint
+        // context and own its persistence below. When `$trace` is already
+        // supplied (`ExecutionTraceService::replay()`'s job-entryPoint
+        // dry-run/forced dispatch), reuse it instead.
+        $ownsJobTrace = ($trace === null);
+        if ($ownsJobTrace === true) {
+            $jobTraceTriggeredBy = 'cron';
+            if ($forceRun === true) {
+                $jobTraceTriggeredBy = 'manual';
+            }
+
+            $trace = new ExecutionTraceContext(
+                entryPoint: 'job',
+                entryPointId: $job->getUuid(),
+                triggeredBy: $jobTraceTriggeredBy
+            );
+        }
+
         // Record execution start time for performance tracking.
         $timeStart = microtime(true);
 
@@ -399,6 +434,12 @@ class JobService
         if (is_array($arguments) === false) {
             $arguments = [];
         }
+
+        // Thread the active trace context to job actions that know how to
+        // consume it (currently `SynchronizationAction`; other action
+        // classes ignore the extra key unchanged). Never persisted as part
+        // of the job's own `arguments` field.
+        $arguments['_executionTrace'] = $trace;
 
         // H3: wrap execution in a catch so executeJob writes a job_log on any
         // thrown exception, not just when called from run().  Without this, a
@@ -557,6 +598,39 @@ class JobService
             uuid: $job->getUuid()
         );
 
+        // Execution-trace REQ-004: a self-minted `job`-entryPoint trace is
+        // persisted here, exactly once, when the run completes. Best-effort
+        // — a persistence failure MUST NOT fail the job run it is observing.
+        if ($ownsJobTrace === true && $trace !== null) {
+            $jobTraceStatus = 'success';
+            if ($executionThrew === true) {
+                $jobTraceStatus = 'failed';
+            }
+
+            $jobTraceError = null;
+            if ($executionThrew === true && $thrownException !== null) {
+                $jobTraceError = [
+                    'message'  => $thrownException->getMessage(),
+                    'ruleType' => null,
+                    'ruleName' => null,
+                ];
+            }
+
+            try {
+                $this->containerInterface->get(ExecutionTraceService::class)->persist(
+                    trace: $trace,
+                    status: $jobTraceStatus,
+                    error: $jobTraceError
+                );
+            } catch (\Throwable $exception) {
+                // Best-effort: execution_trace persistence failure MUST NOT
+                // fail the job run it is observing. JobService has no
+                // injected logger; the job_log entry above already captures
+                // the run's own outcome.
+                unset($exception);
+            }
+        }//end if
+
         return $logEntry;
     }//end executeJob()
 
@@ -570,7 +644,7 @@ class JobService
      * @return ObjectEntity The saved job_log ObjectEntity.
      * @throws \OCP\DB\Exception
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     private function saveJobLog(ObjectEntity $job, array $jobData, array $logData): ObjectEntity
     {
@@ -633,7 +707,7 @@ class JobService
      * @psalm-return   array<ObjectEntity>
      * @phpstan-return ObjectEntity[]
      *
-     * @spec openspec/changes/retrofit-2026-05-24-job-scheduling/tasks.md#task-4
+     * @spec openspec/specs/job-scheduling/spec.md
      */
     public function run(): array
     {

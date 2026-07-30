@@ -33,6 +33,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for source-test and call-log endpoints.
@@ -44,6 +45,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CamelCaseVariableName)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ *
+ * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
  */
 class SourcesController extends Controller
 {
@@ -56,6 +59,7 @@ class SourcesController extends Controller
      * @param IL10N             $l               The localization service.
      * @param IUserSession      $userSession     The user session.
      * @param ActionAuthService $actionAuth      The action authorization service.
+     * @param LoggerInterface   $logger          Logger for source-test failures.
      *
      * @return void
      */
@@ -66,6 +70,7 @@ class SourcesController extends Controller
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -79,7 +84,7 @@ class SourcesController extends Controller
      *
      * @return JSONResponse A JSON response containing the filtered call logs and pagination.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
     public function logs(SearchService $searchService): JSONResponse
@@ -239,7 +244,7 @@ class SourcesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-logs-and-statistics/tasks.md#task-3
+     * @spec openspec/specs/logs-and-statistics/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -302,9 +307,115 @@ class SourcesController extends Controller
             }
         }
 
-        // Fire the call.
-        $callLog = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
+        // Fire the call with persistLog:false — an interactive connection test returns the
+        // live response but must NOT write a CallLog: persisting one runs a full OpenRegister
+        // object save plus a source-rate-limit mutation (test noise + latency). And any engine
+        // failure must surface as clean JSON, never an empty 200 the UI cannot interpret, so
+        // the whole call is wrapped: the Test-connection modal always gets a readable result.
+        try {
+            $callLog = $callService->call(
+                source: $source,
+                endpoint: $endpoint,
+                method: $method,
+                config: $config,
+                persistLog: false
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'Source test failed: '.$e->getMessage(),
+                ['app' => 'openconnector', 'sourceId' => $id, 'exception' => $e]
+            );
+            return new JSONResponse(
+                data: ['error' => $this->l->t('The source test could not be completed: %s', [$e->getMessage()])],
+                statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
+            );
+        }
 
-        return new JSONResponse($callLog->getObject());
+        $result = $callLog->getObject();
+        if (is_array($result) === false || isset($result['response']) === false) {
+            // The engine returned without a usable response (e.g. an early-exit CallLog).
+            // Give the UI an explicit error rather than an empty/opaque body.
+            return new JSONResponse(
+                data: ['error' => $this->l->t('The source test returned no response data.')],
+                statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
+            );
+        }
+
+        return new JSONResponse($result);
     }//end test()
+
+    /**
+     * Manually trips the circuit breaker for a Source (REQ-009).
+     *
+     * Admin-only, CSRF-protected — deliberately NOT `@NoAdminRequired`
+     * (Decision 6, retry-and-circuit-breaker-policies design.md): tripping a
+     * breaker is an operationally sensitive action that can black-hole
+     * traffic to an upstream, so it follows the `dead-letter-replay`
+     * admin-only posture rather than this app's older IDOR-prone convention.
+     *
+     * @param CallService $callService The CallService used to trip the breaker.
+     * @param string      $id          The UUID of the source to trip.
+     *
+     * @return JSONResponse The updated breaker state, or 404 when the source is unknown.
+     *
+     * @no-admin-idor-exempt Admin-only via #[AuthorizedAdminSetting]; not a
+     * #[NoAdminRequired] endpoint. The IDOR gate misattributes the preceding
+     * test() method's @NoAdminRequired across the method boundary.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function tripCircuitBreaker(CallService $callService, string $id): JSONResponse
+    {
+        try {
+            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
+        }
+
+        $saved = $callService->tripCircuitBreaker(source: $source);
+        $data  = $saved->getObject();
+
+        return new JSONResponse(
+            [
+                'uuid'                   => $saved->getUuid(),
+                'circuitBreakerState'    => $data['circuitBreakerState'],
+                'circuitBreakerOpenedAt' => $data['circuitBreakerOpenedAt'],
+            ]
+        );
+    }//end tripCircuitBreaker()
+
+    /**
+     * Manually resets the circuit breaker for a Source (REQ-009).
+     *
+     * Admin-only, CSRF-protected — see {@see tripCircuitBreaker()} for the
+     * rationale.
+     *
+     * @param CallService $callService The CallService used to reset the breaker.
+     * @param string      $id          The UUID of the source to reset.
+     *
+     * @return JSONResponse The updated breaker state, or 404 when the source is unknown.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-manual-circuit-breaker-trip-and-reset-req-009
+     */
+    #[AuthorizedAdminSetting(OpenConnectorAdmin::class)]
+    public function resetCircuitBreaker(CallService $callService, string $id): JSONResponse
+    {
+        try {
+            $source = $this->orObjectService->find(id: $id, register: 'openconnector', schema: 'source', _rbac: false, _multitenancy: false);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
+        }
+
+        $saved = $callService->resetCircuitBreaker(source: $source);
+        $data  = $saved->getObject();
+
+        return new JSONResponse(
+            [
+                'uuid'                       => $saved->getUuid(),
+                'circuitBreakerState'        => $data['circuitBreakerState'],
+                'circuitBreakerFailureCount' => $data['circuitBreakerFailureCount'],
+            ]
+        );
+    }//end resetCircuitBreaker()
 }//end class

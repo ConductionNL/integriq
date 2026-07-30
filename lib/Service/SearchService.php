@@ -2,8 +2,8 @@
 /**
  * OpenConnector SearchService.
  *
- * Federated/aggregated search helper for catalog data, with Elasticsearch and
- * MongoDB-style filter helpers plus MySQL adapters for sort/limit/filter.
+ * Federated/aggregated search helper for catalog data, backed by Elasticsearch
+ * and directory fan-out across remote catalog endpoints.
  *
  * @category Service
  * @package  OCA\OpenConnector\Service
@@ -73,7 +73,7 @@ class SearchService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function mergeFacets(array $existingAggregation, array $newAggregation): array
     {
@@ -112,7 +112,7 @@ class SearchService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     private function mergeAggregations(?array $existingAggregations, ?array $newAggregations): array
     {
@@ -141,7 +141,7 @@ class SearchService
      *
      * @return integer
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function sortResultArray(array $a, array $b): int
     {
@@ -159,7 +159,7 @@ class SearchService
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function search(array $parameters, array $elasticConfig, array $dbConfig, array $catalogi=[]): array
     {
@@ -286,7 +286,7 @@ class SearchService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     private function recursiveRequestQueryKey(array &$vars, string $name, string $nameKey, string $value): void
     {
@@ -315,75 +315,13 @@ class SearchService
     }//end recursiveRequestQueryKey()
 
     /**
-     * This function creates a mongodb filter array.
-     *
-     * Also unsets _search in filters !
-     *
-     * @param array $filters        Query parameters from request.
-     * @param array $fieldsToSearch Database field names to filter/search on.
-     *
-     * @return array $filters
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
-     */
-    public function createMongoDBSearchFilter(array $filters, array $fieldsToSearch): array
-    {
-        if (isset($filters['_search']) === true) {
-            $searchRegex    = ['$regex' => $filters['_search'], '$options' => 'i'];
-            $filters['$or'] = [];
-
-            foreach ($fieldsToSearch as $field) {
-                $filters['$or'][] = [$field => $searchRegex];
-            }
-
-            unset($filters['_search']);
-        }
-
-        foreach ($filters as $field => $value) {
-            if ($value === 'IS NOT NULL') {
-                $filters[$field] = ['$ne' => null];
-            }
-
-            if ($value === 'IS NULL') {
-                $filters[$field] = ['$eq' => null];
-            }
-        }
-
-        return $filters;
-
-    }//end createMongoDBSearchFilter()
-
-    /**
-     * This function creates mysql search conditions based on given filters from request.
-     *
-     * @param array $filters        Query parameters from request.
-     * @param array $fieldsToSearch Fields to search on in sql.
-     *
-     * @return array $searchConditions
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
-     */
-    public function createMySQLSearchConditions(array $filters, array $fieldsToSearch): array
-    {
-        $searchConditions = [];
-        if (isset($filters['_search']) === true) {
-            foreach ($fieldsToSearch as $field) {
-                $searchConditions[] = "LOWER($field) LIKE :search";
-            }
-        }
-
-        return $searchConditions;
-
-    }//end createMySQLSearchConditions()
-
-    /**
      * This function unsets all keys starting with _ from filters.
      *
      * @param array $filters Query parameters from request.
      *
      * @return array $filters
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function unsetSpecialQueryParams(array $filters): array
     {
@@ -398,89 +336,13 @@ class SearchService
     }//end unsetSpecialQueryParams()
 
     /**
-     * This function creates mysql search parameters based on given filters from request.
-     *
-     * @param array $filters Query parameters from request.
-     *
-     * @return array $searchParams
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
-     */
-    public function createMySQLSearchParams(array $filters): array
-    {
-        $searchParams = [];
-        if (isset($filters['_search']) === true) {
-            $searchParams['search'] = ('%'.strtolower($filters['_search']).'%');
-        }
-
-        return $searchParams;
-
-    }//end createMySQLSearchParams()
-
-    /**
-     * This function creates an sort array based on given order param from request.
-     *
-     * @param array $filters Query parameters from request.
-     *
-     * @return array $sort
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
-     */
-    public function createSortForMySQL(array $filters): array
-    {
-        $sort = [];
-        if (isset($filters['_order']) === true && is_array($filters['_order']) === true) {
-            foreach ($filters['_order'] as $field => $direction) {
-                if (strtoupper($direction) === 'DESC') {
-                    $direction = 'DESC';
-                } else {
-                    $direction = 'ASC';
-                }
-
-                $sort[$field] = $direction;
-            }
-        }
-
-        return $sort;
-
-    }//end createSortForMySQL()
-
-    /**
-     * This function creates an sort array based on given order param from request.
-     *
-     * @param array $filters Query parameters from request.
-     *
-     * @return array $sort
-     *
-     * @todo Not functional yet. Needs to be fixed (see PublicationsController->index).
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
-     */
-    public function createSortForMongoDB(array $filters): array
-    {
-        $sort = [];
-        if (isset($filters['_order']) === true && is_array($filters['_order']) === true) {
-            foreach ($filters['_order'] as $field => $direction) {
-                if (strtoupper($direction) === 'DESC') {
-                    $sort[$field] = -1;
-                } else {
-                    $sort[$field] = 1;
-                }
-            }
-        }
-
-        return $sort;
-
-    }//end createSortForMongoDB()
-
-    /**
      * Parses the request query string and returns it as an array of queries.
      *
      * @param string $queryString The input query string from the request.
      *
      * @return array The resulting array of query parameters.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-mapping-and-search/tasks.md#task-5
+     * @spec openspec/specs/mapping-and-search/spec.md
      */
     public function parseQueryString(string $queryString=''): array
     {
