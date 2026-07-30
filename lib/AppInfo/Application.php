@@ -430,8 +430,8 @@ class Application extends App implements IBootstrap
      * class docblocks on the listener classes and design.md Decision 1).
      *
      * Tables and Forms registrations are feature-detected via
-     * `IAppManager::isEnabledForAnyUser()` — both are optional Nextcloud App
-     * Store apps. `IAppManager::isEnabledForAnyUser('tables'|'forms')`
+     * {@see self::appEnabledForAnyone()} — both are optional Nextcloud App
+     * Store apps. `appEnabledForAnyone('tables'|'forms')`
      * returning false means the listener is never registered and no event
      * of that family can ever be observed (REQ-003/REQ-004); this is not
      * required for SAFETY (the `::class` reference is inert either way) but
@@ -471,14 +471,14 @@ class Application extends App implements IBootstrap
         // Tables (REQ-003) — feature-detected.
         try {
             $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
-            if ($appManager->isEnabledForAnyUser('tables') === true) {
+            if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'tables') === true) {
                 $dispatcher->addServiceListener(eventName: RowAddedEvent::class, className: NextcloudTablesEventListener::class);
                 $dispatcher->addServiceListener(eventName: RowUpdatedEvent::class, className: NextcloudTablesEventListener::class);
                 $dispatcher->addServiceListener(eventName: RowDeletedEvent::class, className: NextcloudTablesEventListener::class);
             }
 
             // Forms (REQ-004) — feature-detected.
-            if ($appManager->isEnabledForAnyUser('forms') === true) {
+            if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'forms') === true) {
                 $dispatcher->addServiceListener(eventName: FormSubmittedEvent::class, className: NextcloudFormsEventListener::class);
             }
         } catch (\Throwable $e) {
@@ -498,6 +498,42 @@ class Application extends App implements IBootstrap
     }//end registerNextcloudEventTriggers()
 
     /**
+     * Whether an app is enabled for anyone, across the Nextcloud versions we support.
+     *
+     * `IAppManager::isEnabledForAnyUser()` was RENAMED to
+     * `isEnabledForAnyone()` and the old name is gone in Nextcloud 34, where
+     * calling it raises "Call to undefined method
+     * OC\App\AppManager::isEnabledForAnyUser()". The caller catches Throwable
+     * and degrades to "Tables/Forms triggers unavailable", so the failure was
+     * silent in behaviour and loud in the log — two warnings on every request
+     * that boots this app, and the Tables and Forms triggers never registered
+     * at all on NC 34.
+     *
+     * info.xml declares `min-version="28" max-version="34"`, so both names have
+     * to work. Prefer the current one and fall back.
+     *
+     * @param \OCP\App\IAppManager $appManager The app manager.
+     * @param string                $appId      The app to test.
+     *
+     * @return boolean Whether the app is enabled for anyone.
+     */
+    private function appEnabledForAnyone(\OCP\App\IAppManager $appManager, string $appId): bool
+    {
+        if (method_exists($appManager, 'isEnabledForAnyone') === true) {
+            return (bool) $appManager->isEnabledForAnyone($appId);
+        }
+
+        if (method_exists($appManager, 'isEnabledForAnyUser') === true) {
+            return (bool) $appManager->isEnabledForAnyUser($appId);
+        }
+
+        // Neither name present: treat as not enabled rather than guessing, so
+        // triggers stay unregistered instead of half-registered.
+        return false;
+
+    }//end appEnabledForAnyone()
+
+    /**
      * Register OpenConnector's three thin `ISpecificOperation` adapters
      * ("Run synchronization", "Call endpoint", "Fire CloudEvent") with NC
      * core's bundled `workflowengine` app (Settings > Flow), so an admin can
@@ -511,7 +547,7 @@ class Application extends App implements IBootstrap
      * registration, so calling `IManager::registerOperation()` directly here
      * would not survive across requests.
      *
-     * Feature-detected via `IAppManager::isEnabledForAnyUser('workflowengine')`,
+     * Feature-detected via {@see self::appEnabledForAnyone()} ('workflowengine'),
      * mirroring the Tables/Forms gate in {@see registerNextcloudEventTriggers()}:
      * when disabled, no registration occurs and nothing is logged (a disabled
      * `workflowengine` app is a normal state, not a fault). The `IAppManager`
@@ -532,7 +568,7 @@ class Application extends App implements IBootstrap
     {
         try {
             $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
-            if ($appManager->isEnabledForAnyUser('workflowengine') === true) {
+            if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'workflowengine') === true) {
                 $dispatcher->addServiceListener(
                     eventName: RegisterOperationsEvent::class,
                     className: RegisterOperationsListener::class
