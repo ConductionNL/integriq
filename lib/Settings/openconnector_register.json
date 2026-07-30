@@ -1304,7 +1304,7 @@
       "synchronization": {
         "slug": "synchronization",
         "title": "Synchronization",
-        "icon": "SyncOutline",
+        "icon": "Sync",
         "version": "1.0.0",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",

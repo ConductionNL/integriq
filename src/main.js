@@ -20,6 +20,7 @@ import menuLayout from './menu-layout.json'
 import customComponents from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 import { createMappingAndOpen } from './handlers/actionHandlers.js'
+import appIcons from './icons.js'
 
 // MDI icons referenced by manifest `headerActions[]` / `actions[]` /
 // `menu[]` entries. CnActionsBar + CnAppNav render them via CnIcon,
@@ -31,20 +32,6 @@ import { createMappingAndOpen } from './handlers/actionHandlers.js'
 // Menu icons restore the pre-chain-E set (the chain-E manifest cutover
 // swapped them all to `icon-*` Nextcloud CSS classes which lost the
 // semantic specificity and didn't size-match the rest of the chrome).
-import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import Api from 'vue-material-design-icons/Api.vue'
-import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
-import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
-import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import Update from 'vue-material-design-icons/Update.vue'
-import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
-import Webhook from 'vue-material-design-icons/Webhook.vue'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
 import '@conduction/nextcloud-vue/css/index.css'
@@ -57,22 +44,7 @@ Vue.use(PiniaVuePlugin)
 Vue.use(VueRouter)
 
 // Register library-side icon set + lib translations once at bootstrap.
-registerIcons({
-	AccountMultipleOutline,
-	Api,
-	BookOpenVariant,
-	CloudUploadOutline,
-	Cog,
-	DatabaseArrowLeftOutline,
-	EyeOutline,
-	Pencil,
-	ScaleBalance,
-	SitemapOutline,
-	TextBoxOutline,
-	Update,
-	VectorPolylinePlus,
-	Webhook,
-})
+registerIcons(appIcons)
 try {
 	registerTranslations()
 } catch (e) {
