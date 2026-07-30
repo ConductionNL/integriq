@@ -126,7 +126,7 @@ class EventsController extends Controller
         // Get all messages for this event.
         $matches  = $this->orObjectService->findAll(
                 config: [
-                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'eventId' => (string) $id],
+                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'event' => $event->getUuid()],
                     'limit'   => (int) $this->request->getParam('limit', 50),
                     'offset'  => (int) $this->request->getParam('offset', 0),
                 ]
@@ -374,7 +374,7 @@ class EventsController extends Controller
         // Get messages for this subscription.
         $matches  = $this->orObjectService->findAll(
                 config: [
-                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscriptionId' => (string) $subscriptionId],
+                    'filters' => ['register' => 'openconnector', 'schema' => 'event_message', 'subscription' => $subscription->getUuid()],
                     'limit'   => (int) $this->request->getParam('limit', 50),
                     'offset'  => (int) $this->request->getParam('offset', 0),
                 ]
@@ -664,7 +664,9 @@ class EventsController extends Controller
 
         $subscriptionId = $this->request->getParam('subscriptionId');
         if ($subscriptionId !== null && $subscriptionId !== '') {
-            $filters['subscriptionId'] = (string) $subscriptionId;
+            // Filter event_message by its `subscription` uuid FK (the request
+            // param keeps its historical `subscriptionId` name).
+            $filters['subscription'] = (string) $subscriptionId;
         }
 
         $matches  = $this->orObjectService->findAll(
@@ -720,7 +722,7 @@ class EventsController extends Controller
      */
     private function withDeadLetterProvenance(array $messageData, array &$actionKindCache): array
     {
-        $subscriptionId = ($messageData['subscriptionId'] ?? null);
+        $subscriptionId = ($messageData['subscription'] ?? null);
 
         // Default: a message with no resolvable subscription is a webhook
         // (REQ-008's default kind).
@@ -834,7 +836,7 @@ class EventsController extends Controller
 
         $data            = $message->getObject();
         $subscriptionCtx = null;
-        $subscriptionId  = ($data['subscriptionId'] ?? null);
+        $subscriptionId  = ($data['subscription'] ?? null);
         if ($subscriptionId !== null && $subscriptionId !== '') {
             try {
                 $subscription    = $this->orObjectService->find(

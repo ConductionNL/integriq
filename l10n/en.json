@@ -1199,7 +1199,20 @@
         "p50 latency": "p50 latency",
         "p95 latency": "p95 latency",
         "p99 latency": "p99 latency",
-        "Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.": "Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients."
+        "Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.": "Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.",
+        "Body (optional)": "Body (optional)",
+        "Body type": "Body type",
+        "bytes": "bytes",
+        "Endpoint (path appended to the source location)": "Endpoint (path appended to the source location)",
+        "ms": "ms",
+        "Request body for POST/PUT": "Request body for POST/PUT",
+        "Response": "Response",
+        "Run the test to see the response here.": "Run the test to see the response here.",
+        "Source test failed": "Source test failed",
+        "Test completed.": "Test completed.",
+        "Testing source: {name}": "Testing source: {name}",
+        "The source responded with a non-2xx status.": "The source responded with a non-2xx status.",
+        "The source test returned no response data.": "The source test returned no response data."
     },
     "plurals": {}
 }

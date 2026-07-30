@@ -1637,6 +1637,7 @@ class CallService
      * @param \DateTime|null             $successExpires Expiry for successful log entries.
      * @param \DateTime|null             $errorExpires   Expiry for error log entries.
      * @param ExecutionTraceContext|null $trace          The active execution trace context, when present.
+     * @param boolean                    $persistLog     When false, return a transient (unsaved) CallLog and mutate nothing.
      *
      * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
      *
@@ -1652,7 +1653,19 @@ class CallService
         ?\DateTime $successExpires,
         ?\DateTime $errorExpires,
         ?ExecutionTraceContext $trace=null,
+        bool $persistLog=true,
     ): ObjectEntity {
+        // Interactive "Test connection" path (persistLog=false): return the response
+        // WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
+        // OpenRegister object save (thousands of queries on an install with many magic
+        // tables) and mutates the source's rate-limit state — neither is wanted for a
+        // one-off UI verification, and doing them is what made the test endpoint slow
+        // enough to time out. The engine's real call paths (sync/endpoint/job) keep
+        // persistLog=true and are unchanged.
+        if ($persistLog === false) {
+            return $this->buildTransientCallLog(source: $source, data: $data, trace: $trace);
+        }
+
         // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
         $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
 
@@ -1705,6 +1718,48 @@ class CallService
         return $callLog;
 
     }//end buildAndPersistCallLog()
+
+    /**
+     * Builds a transient (unsaved) CallLog for the interactive test path.
+     *
+     * Same `{source, statusCode, statusMessage, request, response, created}` shape as a
+     * persisted CallLog — so every caller that reads `getObject()['response']` works
+     * unchanged — but it is NEVER written to OpenRegister and never mutates the source's
+     * rate-limit state. This keeps a UI "Test connection" fast and side-effect-free: no
+     * heavy object save, no test-noise CallLog rows, no source mutation.
+     *
+     * @param ObjectEntity               $source The source ObjectEntity.
+     * @param array                      $data   The structured request/response data from buildResponseData().
+     * @param ExecutionTraceContext|null $trace  The active execution trace context, when present.
+     *
+     * @return ObjectEntity An in-memory CallLog carrying the full request/response.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    private function buildTransientCallLog(
+        ObjectEntity $source,
+        array $data,
+        ?ExecutionTraceContext $trace=null,
+    ): ObjectEntity {
+        $callLogData = [
+            'source'        => $source->getUuid(),
+            'statusCode'    => $data['response']['statusCode'],
+            'statusMessage' => $data['response']['statusMessage'],
+            'request'       => $data['request'],
+            'response'      => $data['response'],
+            'created'       => (new \DateTime())->format('c'),
+        ];
+
+        if ($trace !== null) {
+            $callLogData['sessionId'] = $trace->getTraceId();
+        }
+
+        $callLog = new ObjectEntity();
+        $callLog->setObject($callLogData);
+
+        return $callLog;
+
+    }//end buildTransientCallLog()
 
     /**
      * Phases 3-6 helper: source-precondition guards before any dispatch work.
@@ -2441,6 +2496,9 @@ class CallService
      *                                                          `$trace->getTraceId()` and a `call` step is appended
      *                                                          to the trace using the already-redacted request/
      *                                                          response data — no second redaction pass.
+     * @param boolean                    $persistLog            When false (interactive "Test connection"), the response
+     *                                                          is returned without writing a CallLog or mutating the
+     *                                                          source — no heavy object save, no test-noise log rows.
      *
      * @return ObjectEntity
      *
@@ -2469,6 +2527,7 @@ class CallService
         bool $runningSupportRequest=false,
         mixed $sink=null,
         ?ExecutionTraceContext $trace=null,
+        bool $persistLog=true,
     ): ObjectEntity {
         // Ocon#215: re-resolve the Source RAW from storage BEFORE any auth is
         // read, so the engine's credentials are its OWN property and can never
@@ -2629,6 +2688,7 @@ class CallService
             successExpires: $successExpires,
             errorExpires: $errorExpires,
             trace: $trace,
+            persistLog: $persistLog,
         );
 
         // Phase 12b: when this call was made from within a traced execution,

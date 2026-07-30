@@ -14,8 +14,19 @@ Controller → Service → Mapper layering; OpenRegister is the persistence
 layer for every entity per ADR governing OR as the required runtime
 dependency). This closes the "no multi-step workflow entity" competitive
 gap (Specter insight #1249) without building a general-purpose workflow
-engine or a drag-and-drop canvas — v1 ships a typed step-list editor only
-(no canvas, no parallel/fan-out, no loops).
+engine — v1 ships a typed step-list editor (no parallel/fan-out, no loops).
+
+**Scope note (2026-07-16, per ADR-065).** This Purpose previously ended
+"or a drag-and-drop canvas — v1 ships a typed step-list editor only (no
+canvas...)". The **canvas** exclusion is withdrawn — see REQ-009 — because
+a shared canvas (`CnGraphCanvas` in `@conduction/nextcloud-vue`) is now the
+fleet-standard authoring surface and a per-app opt-out defeats it. The
+**engine** exclusion stands and in fact hardens: ADR-065 relocates flow
+execution to OpenRegister, so OpenConnector must not grow a general-purpose
+workflow engine here or anywhere (ADR-022). Parallel/fan-out and loops
+remain out of scope *for this model* — the `order`-as-identity step list
+cannot express them — and are delivered by the OpenRegister engine, whose
+Petri-net core supports parallel splits and synchronising joins natively.
 
 **Disambiguation:** this capability is unrelated to `flow-workflowengine-integration`
 (a separate, sibling change that registers OpenConnector operations as
@@ -336,10 +347,34 @@ can add, remove, reorder, and configure steps. Each step row MUST use an
 `NcSelect` for `type` and, where applicable, `configRef` and `onError`,
 each with an explicit `inputLabel` (WCAG 2.1 AA 1.3.1/4.1.2 — matching
 the codebase's `EditEndpoint.vue` pattern, not `EditSynchronization.vue`'s
-non-conformant one). Reordering MUST be via move-up/move-down/remove
-controls — the editor MUST NOT implement drag-and-drop or a node-graph
-canvas in this version. Any modal used by the Flow pages MUST live in its
-own file under `src/modals/Flow/`, not inline in the page component.
+non-conformant one). The step list MUST support add, remove, and reorder
+via move-up/move-down controls, which remain a valid authoring surface for
+linear flows and MUST stay keyboard-operable regardless of any canvas.
+Any modal used by the Flow pages MUST live in its own file under
+`src/modals/Flow/`, not inline in the page component.
+
+**Graph editing (revised 2026-07-16, per ADR-065).** This requirement
+previously read *"the editor MUST NOT implement drag-and-drop or a
+node-graph canvas in this version"*. That prohibition is **withdrawn**: it
+was a reasonable v1 scope constraint, but it now contradicts the fleet
+decision that a canvas is the standard flow-authoring surface. It is
+replaced by a uniformity rule:
+
+- OpenConnector MUST NOT hand-roll a node-graph canvas. If and when the
+  Flow pages offer graph editing, they MUST consume `CnGraphCanvas` from
+  `@conduction/nextcloud-vue` (ADR-065), which owns geometry and
+  interaction only; step semantics stay app-owned.
+- A canvas MUST NOT be the sole authoring surface. The typed step list is
+  the accessible path and the fallback (WCAG 2.1 AA 2.1.1 — a
+  drag-only editor is not keyboard-operable).
+- Adopting a canvas over the current model requires resolving `order`
+  first. `order` is simultaneously step identity, execution sequence, and
+  the implicit edge set, and `branches[].nextStepOrder` /
+  `defaultNextStepOrder` reference it **by value** — so a dragged edge can
+  silently invalidate every branch target in the flow. A canvas MUST NOT
+  ship against the `order`-as-identity model until edges are explicit.
+  This is tracked by the engine relocation to OpenRegister (ADR-065), not
+  by a local workaround.
 
 #### Scenario: Flows index page mounts and lists flows
 
@@ -357,11 +392,26 @@ own file under `src/modals/Flow/`, not inline in the page component.
 - **THEN** the config-ref picker's options are scoped to existing
   Mapping entities only (not Sources, Synchronizations, or Endpoints)
 
-#### Scenario: reordering uses move controls, not drag-and-drop
+#### Scenario: reordering is possible without a pointer drag
 
 - **GIVEN** a flow with three steps
 - **WHEN** the admin clicks "Move up" on the second step
 - **THEN** the second step's `order` value is swapped with the first
   step's `order` value
-- **AND** no drag-and-drop interaction is required or present on the page
+- **AND** the reorder is achievable by keyboard alone, with no
+  drag-and-drop interaction required
+
+#### Scenario: graph editing, if offered, reuses the shared canvas
+
+- **GIVEN** the Flow detail page offers a graph view of a flow
+- **WHEN** the page renders that view
+- **THEN** it renders `CnGraphCanvas` from `@conduction/nextcloud-vue`
+  rather than a component-local node-graph implementation
+- **AND** the typed step list remains reachable as the keyboard-operable
+  authoring surface for the same flow
+
+@e2e exclude graph view not yet offered — the canvas is introduced with the
+OpenRegister engine relocation (ADR-065); this scenario becomes testable when
+the Flow pages gain a graph view, and the step-list scenarios above cover the
+current UI
 

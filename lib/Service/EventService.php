@@ -456,13 +456,26 @@ class EventService
 
         return $this->objectService->saveObject(
             object: [
-                'eventId'        => $event->getUuid(),
-                'consumerId'     => ($subscriptionData['consumerId'] ?? null),
-                'subscriptionId' => $subscription->getUuid(),
-                'status'         => 'pending',
-                'payload'        => $event->jsonSerialize(),
-                'created'        => (new DateTime())->format('c'),
-                'updated'        => (new DateTime())->format('c'),
+                // 🔴 `event` and `subscription` (both string, format uuid) are the
+                // real FKs. `eventId`/`subscriptionId` are the LEGACY INTEGER FKs
+                // kept only during the transition (see the schema's own
+                // description; cleanup tracked at #821). Writing a UUID into an
+                // integer property fails validation with "Property '<name>' should
+                // be type 'integer or null' but is 'string'", so EVERY event
+                // message was rejected — two logged exceptions on every
+                // OpenRegister object write, fleet-wide, for a row that was never
+                // created. The `event`/`eventId` half was fixed first; the
+                // `subscription`/`subscriptionId` half was missed, so every write
+                // still 400'd on `subscriptionId` (empty event_message table).
+                // Write both references to their uuid FK and omit the legacy
+                // integer keys entirely rather than sending null.
+                'event'        => $event->getUuid(),
+                'consumerId'   => ($subscriptionData['consumerId'] ?? null),
+                'subscription' => $subscription->getUuid(),
+                'status'       => 'pending',
+                'payload'      => $event->jsonSerialize(),
+                'created'      => (new DateTime())->format('c'),
+                'updated'      => (new DateTime())->format('c'),
             ],
             register: 'openconnector',
             schema: 'event_message'
@@ -491,7 +504,7 @@ class EventService
 
         try {
             $messageData    = $message->getObject();
-            $subscriptionId = ($messageData['subscriptionId'] ?? null);
+            $subscriptionId = ($messageData['subscription'] ?? null);
 
             if ($subscriptionId === null) {
                 return false;
@@ -512,9 +525,8 @@ class EventService
             // `_rbac: false` ALONE no longer preserves protocolSettings, and every
             // push was silently going out UNSIGNED. Only `_render: false`, which
             // returns the entity before renderEntity() is ever reached, keeps it.
-            // Cast: `event_message.subscriptionId` is typed INTEGER in the schema
-            // and `find()` signs for a string $id, so an uncast value raises a
-            // TypeError before delivery is even attempted.
+            // `$subscriptionId` holds the message's `subscription` uuid FK; the
+            // `(string)` cast is defensive (find() signs for a string $id).
             $subscription = $this->objectService->find(
                 id: (string) $subscriptionId,
                 register: 'openconnector',
@@ -962,7 +974,7 @@ class EventService
     {
         if ($subscription === null) {
             $messageData    = $message->getObject();
-            $subscriptionId = ($messageData['subscriptionId'] ?? null);
+            $subscriptionId = ($messageData['subscription'] ?? null);
             if ($subscriptionId === null) {
                 return false;
             }
@@ -972,11 +984,8 @@ class EventService
             // `protocolSettings` is stripped from EVERY rendered read — including
             // an `_rbac: false` one (ocon#215, openregister#389/#429). `_render: false`
             // is what actually preserves it; see the note on deliverMessage().
-            // `event_message.subscriptionId` is typed INTEGER in the schema,
-            // while `find()` signs for a string $id and raises a TypeError on an
-            // int. Uncast, this line threw for every message the retry sweep
-            // touched — and nothing here caught it, so the sweep died on the
-            // first such message and every later one went unretried too.
+            // `$subscriptionId` holds the message's `subscription` uuid FK; the
+            // `(string)` cast below is defensive (find() signs for a string $id).
             $subscription = $this->objectService->find(
                 id: (string) $subscriptionId,
                 register: 'openconnector',
@@ -1400,7 +1409,12 @@ class EventService
         }
 
         $messageData = $message->getObject();
-        $event       = $this->findNotificatiesEvent(eventId: ($messageData['eventId'] ?? null));
+        // Read the UUID FK `event`; `eventId` is the legacy integer column and is
+        // no longer written (see createEventMessage()). Falls back to it so any
+        // pre-existing row still resolves.
+        $event = $this->findNotificatiesEvent(
+            eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
+        );
         if ($event === null) {
             $this->recordFailure(
                 message: $message,
@@ -1598,7 +1612,12 @@ class EventService
         }
 
         $messageData = $message->getObject();
-        $event       = $this->findNotificatiesEvent(eventId: ($messageData['eventId'] ?? null));
+        // Read the UUID FK `event`; `eventId` is the legacy integer column and is
+        // no longer written (see createEventMessage()). Falls back to it so any
+        // pre-existing row still resolves.
+        $event = $this->findNotificatiesEvent(
+            eventId: ($messageData['event'] ?? $messageData['eventId'] ?? null)
+        );
         if ($event === null) {
             $this->recordFailure(
                 message: $message,
@@ -1957,7 +1976,7 @@ class EventService
     public function previewWebhookDelivery(ObjectEntity $message): array
     {
         $messageData    = $message->getObject();
-        $subscriptionId = ($messageData['subscriptionId'] ?? null);
+        $subscriptionId = ($messageData['subscription'] ?? null);
 
         $headers = ['Content-Type' => 'application/cloudevents+json'];
         $sink    = '';
@@ -2065,18 +2084,14 @@ class EventService
      */
     private function maxRetriesForMessage(array $messageData): int
     {
-        $subscriptionId = ($messageData['subscriptionId'] ?? null);
+        $subscriptionId = ($messageData['subscription'] ?? null);
         if ($subscriptionId === null) {
             return self::DEFAULT_MAX_RETRIES;
         }
 
         try {
-            // Cast deliberately: `event_message.subscriptionId` is typed integer
-            // in the schema, while `find()` signs for a string $id and raises a
-            // TypeError on an int. Passing it through unconverted made this
-            // resolver throw, get swallowed below, and silently return the
-            // default — defeating the fix for exactly the messages it exists to
-            // rescue. Live-verified: numeric id yielded 5, uuid yielded 10.
+            // `$subscriptionId` holds the message's `subscription` uuid FK; the
+            // `(string)` cast is defensive (find() signs for a string $id).
             $subscription = $this->objectService->find(
                 id: (string) $subscriptionId,
                 register: 'openconnector',
@@ -2245,10 +2260,10 @@ class EventService
     public function pullEvents(ObjectEntity $subscription, ?int $limit=100, ?string $cursor=null): array
     {
         $filters = [
-            'register'       => 'openconnector',
-            'schema'         => 'event_message',
-            'subscriptionId' => $subscription->getUuid(),
-            'status'         => 'pending',
+            'register'     => 'openconnector',
+            'schema'       => 'event_message',
+            'subscription' => $subscription->getUuid(),
+            'status'       => 'pending',
         ];
 
         if ($cursor !== null) {

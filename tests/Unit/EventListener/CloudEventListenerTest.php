@@ -38,10 +38,35 @@ class CloudEventListenerTest extends TestCase
 
 
     /**
+     * Reset CloudEventListener's process-static self-schema id cache.
+     *
+     * The listener memoises the resolved ids in a static so the lookup costs one
+     * query per PHP worker rather than one per dispatched event. Without this
+     * reset the first test to resolve them fixes the value for every test that
+     * follows, and a test that mocks different ids silently asserts nothing.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $ref  = new \ReflectionClass(CloudEventListener::class);
+        $prop = $ref->getProperty('selfSchemaIds');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
+
+    }//end setUp()
+
+    /**
      * Build an ObjectEntity with the given register/schema/uuid.
      *
-     * @param string $register The register slug.
-     * @param string $schema   The schema slug.
+     * Note: `$register` and `$schema` are NUMERIC IDS as strings, matching what
+     * `ObjectEntity::getRegister()`/`getSchema()` actually return. They are not
+     * slugs, and the self-reference guard compares ids.
+     *
+     * @param string $register The register id.
+     * @param string $schema   The schema id.
      * @param string $uuid     The object uuid.
      *
      * @return ObjectEntity
@@ -111,10 +136,17 @@ class CloudEventListenerTest extends TestCase
      */
     public function testSkipsSelfReferenceEventSchema(): void
     {
-        $object = $this->entity('openconnector', 'event');
+        // `ObjectEntity::getSchema()` returns a NUMERIC ID as a string, never a
+        // slug, so the guard compares ids and resolves the slugs once through
+        // EventService::getSelfSchemaIds(). An earlier revision of this test
+        // built the entity with the slug 'event' and passed only because the
+        // guard was comparing ids to slugs — i.e. never matching, which is the
+        // defect that let one create produce 255 CloudEvents.
+        $object = $this->entity('65', '25');
 
         $eventService = $this->createMock(EventService::class);
         $eventService->method('hasActiveSubscriptions')->willReturn(true);
+        $eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
         $eventService->expects($this->never())->method('handleObjectCreated');
 
         $listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));
@@ -130,10 +162,12 @@ class CloudEventListenerTest extends TestCase
      */
     public function testSkipsSelfReferenceEventMessageSchema(): void
     {
-        $object = $this->entity('openconnector', 'event_message');
+        // '26' stands for the `event_message` schema id (see the sibling test).
+        $object = $this->entity('65', '26');
 
         $eventService = $this->createMock(EventService::class);
         $eventService->method('hasActiveSubscriptions')->willReturn(true);
+        $eventService->method('getSelfSchemaIds')->willReturn(['25', '26']);
         $eventService->expects($this->never())->method('handleObjectUpdated');
 
         $listener = new CloudEventListener($eventService, $this->createMock(LoggerInterface::class));

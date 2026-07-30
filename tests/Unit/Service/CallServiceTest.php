@@ -252,6 +252,49 @@ class CallServiceTest extends TestCase
 
 
     /**
+     * persistLog:false (the interactive "Test connection" path) returns the live
+     * response WITHOUT writing a CallLog.
+     *
+     * The expensive OpenRegister object save is skipped entirely, yet the returned
+     * entity still carries the full request/response envelope so the UI can render it.
+     *
+     * @return void
+     */
+    public function testTransientCallSkipsCallLogPersistence(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(true);
+        $brokered->method('prepare')->willReturn(
+            [
+                'credentialId' => '00000000-0000-0000-0000-000000000000',
+                'actingUserId' => null,
+            ]
+        );
+        $brokered->method('dispatch')->willReturn(
+            new Response(200, ['Content-Type' => ['application/json']], '{"ok":true}')
+        );
+
+        $service = $this->buildBrokeredCallService($brokered);
+        $callLog = $service->call(
+            source: $this->makeBrokeredSource(),
+            endpoint: '/v1/items',
+            persistLog: false
+        );
+
+        // No CallLog was written — the whole point of the transient path.
+        $this->assertCount(0, $this->savedCallLogs(), 'persistLog:false must not save a call_log');
+
+        // …but the response envelope is still returned for the UI to display.
+        $this->assertInstanceOf(ObjectEntity::class, $callLog);
+        $result = $callLog->getObject();
+        $this->assertArrayHasKey('response', $result);
+        $this->assertSame(200, $result['response']['statusCode']);
+        $this->assertSame('source-uuid-1', $result['source']);
+        $this->assertSame('GET', $result['request']['method']);
+    }//end testTransientCallSkipsCallLogPersistence()
+
+
+    /**
      * A brokered config error persists a synthetic 409 CallLog; dispatch never runs.
      *
      * REQ-SBC-001: sibling embedded secrets are a hard config error — no
