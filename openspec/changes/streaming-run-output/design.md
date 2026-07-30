@@ -1,7 +1,17 @@
 # Design: streaming-run-output
 
+> **Revised 2026-07-30, before implementation.** These artifacts were written on
+> 2026-07-07 and reviewed against the code nine days of development later. Most of
+> the original analysis survived verification — the endpoints, routes, handler
+> names and the "no SSE anywhere yet" premise all still hold. Two things did not:
+> `execution-trace-observability` (#216, 2026-07-16) landed an entire per-step run
+> timeline with a UI, which overlaps this change's progress events and is now
+> reused rather than reinvented (Decision 7); and the interactive Test-connection
+> work added `$persistLog` to `CallService::call()`, which the test-mode streaming
+> path has to account for (Decision 8).
+
 ## Context
-`SynchronizationsController::run` (~line 348) and `::test` (~line 269) both call `$this->synchronizationService->synchronize(...)` synchronously and return a `JSONResponse`; the request blocks for the entire run, so long runs hit the reverse-proxy 504 gateway timeout. The four routes are all POST: `synchronizations#run` (`/api/synchronizations/{id}/run`), `synchronizations#test` (`/api/synchronizations/{id}/test`), `jobs#run` (`/api/jobs/run/{id}`), and `jobs#test` (`/api/jobs/test/{id}`). No StreamResponse/SSE exists anywhere yet, and there is no sync-run `occ` command (only `lib/Command/MigrateToOpenRegister.php` exists).
+`SynchronizationsController::run` (~line 348) and `::test` (~line 269) both call `$this->synchronizationService->synchronize(...)` synchronously and return a `JSONResponse`; the request blocks for the entire run, so long runs hit the reverse-proxy 504 gateway timeout. The four routes are all POST: `synchronizations#run` (`/api/synchronizations/{id}/run`), `synchronizations#test` (`/api/synchronizations/{id}/test`), `jobs#run` (`/api/jobs/run/{id}`), and `jobs#test` (`/api/jobs/test/{id}`). No StreamResponse/SSE exists anywhere yet, and there is no sync-run `occ` command (`lib/Command/` holds `MigrateToOpenRegister`, `MigrateInlineSecrets` and `AuthenticationConfig`, none of which run a synchronization).
 
 The real problem is not just the timeout — it is that some runs die in a way the persisted run-log never records (uncaught exceptions, PHP fatals, OOM, script timeout). When the log is the thing failing you, only live observation helps. This change adds an opt-in streaming mode to those exact endpoints, plus the UI to trigger and watch it, plus an `occ` complement for terminal reproduction.
 
@@ -38,6 +48,47 @@ A hard fatal (OOM/timeout/parse) kills the process before any `catch` runs. `reg
 ### Decision 6: Frontend uses fetch + ReadableStream reader, not EventSource
 The endpoints are POST and require the Nextcloud `requesttoken` CSRF header. `EventSource` is GET-only and cannot set headers, so the console consumes the stream with `fetch()` + `response.body.getReader()`, decoding chunks and rendering events line-by-line. The console is a modal in its own file under `src/modals/` (modal-isolation convention), wired to the existing `runSynchronizationHandler` / `testSynchronizationHandler` in `src/registry.js`. **Why:** POST + CSRF rules out EventSource. **Alternative considered:** switching the endpoints to GET for EventSource — rejected, would break the existing POST contract and CSRF posture.
 
+### Decision 7: Streamed progress events ARE execution-trace steps
+`execution-trace-observability` (#216) already defines the vocabulary for "what
+happened during a run": `ExecutionTraceContext::addStep(type, name, timing, status,
+input, output, …)` produces an ordered, timed, redaction-aware step list, and
+`TraceTimelineWidget.vue` / `TraceDetailPage.vue` already render it.
+`synchronize()` accepts a `?ExecutionTraceContext $trace` for exactly this.
+
+So the streaming harness does NOT invent a second event vocabulary. Progress
+events emit the trace-step shape, which means one vocabulary, one redaction pass
+(execution-trace REQ-003), and a frontend console that can reuse the existing
+timeline rendering instead of a parallel implementation. **Why:** a second event
+format alongside `TraceTimelineWidget` is duplicated observability of the kind
+ADR-022 pushes back on, and it would drift.
+
+`addStep()` currently only appends to a private array — the trace is persisted at
+the end of the run — so nothing can observe a step as it happens. This change adds
+an OPTIONAL step listener to `ExecutionTraceContext` (a callable invoked at the end
+of `addStep()`); when unset, behaviour is byte-for-byte unchanged for every existing
+caller. The harness registers a listener that flushes each step as an SSE frame.
+
+**What streaming still adds over the trace**, and why this change is not redundant:
+a persisted trace cannot record its own death. An OOM, a script timeout or a parse
+error kills the process before the trace is written, which is precisely the failure
+class the original analysis identified ("when the log is the thing failing you,
+only live observation helps"). Exception and fatal events are therefore
+streaming-only (Decision 5), not trace steps.
+
+**Alternative considered:** an independent event format for streaming — rejected;
+it duplicates a vocabulary and a UI that already exist.
+
+### Decision 8: Test-mode streaming honours `$persistLog`
+The interactive Test-connection path added `bool $persistLog` to
+`CallService::call()` (and, since ocon#111, to `finalizeCall()` and `callAsync()`):
+when false a transient unsaved CallLog is returned and nothing is mutated — no
+heavy object save, no test-noise log rows. A streamed `test` run is the same kind
+of interactive, throwaway operation, so it must not litter `call_log` either.
+Streaming `test` therefore threads `persistLog: false` where the non-streaming
+`test` already does, and streaming `run` leaves persistence untouched. **Why:** the
+original design treated `test` as "run, but streamed"; that predates `$persistLog`
+and would silently reintroduce the log noise that flag was added to remove.
+
 ## Risks / Trade-offs
 - [Dispatcher double-renders or proxy buffers, so nothing streams live] → Emit-and-flush in the controller, return a non-re-rendering response, set `X-Accel-Buffering: no`, explicitly flush PHP buffers; verify end-to-end against the real proxy.
 - [A hard fatal kills the process before any handler] → shutdown-function fatal capture; `occ` command as terminal fallback.
@@ -48,10 +99,21 @@ The endpoints are POST and require the Nextcloud `requesttoken` CSRF header. `Ev
 No database, schema, or OpenRegister-schema changes. Deployment is additive: the streaming branch is inert unless the opt-in flag is sent, and the frontend console and `occ` command are additive. Rollback is a straight revert with no data impact.
 
 ## Frontend conventions
-- The live-output console is a standalone modal under `src/modals/` (modal-isolation, ADR-004-class convention enforced by hydra gates) — no inline `<NcModal>`/`<NcDialog>` in a parent component.
+- The live-output console is a standalone modal file (modal-isolation, ADR-004-class
+  convention enforced by hydra gates) — no inline `<NcModal>`/`<NcDialog>` in a parent
+  component. It goes in **`src/modals/v2/`**, not bare in `src/modals/`: that directory
+  is organised into per-resource subdirectories and `v2/` is where new modals are being
+  added. `src/modals/v2/TestSourceModal.vue` and `TestMappingModal.vue` are the closest
+  precedents — both render the result of an interactive test — and should be followed for
+  shell, prop and store conventions rather than reinvented.
+- Rendering reuses `src/views/ExecutionTrace/TraceTimelineWidget.vue` where it fits,
+  since progress events carry the trace-step shape (Decision 7).
 - Any server-provided data uses the `IInitialState` + `loadState()` pattern, never DOM data-attributes.
 - All new user-facing strings are localized in Dutch and English (hydra ADR-007). NL Design System / `@nextcloud/vue` components are used for the modal shell and controls; `NcSelect` (if any) carries an `inputLabel`.
 
 ## Open Questions
-- Exact wire format of the streamed events (raw SSE `event:`/`data:` frames vs newline-delimited JSON). Provisional: SSE-style frames, since headers already declare `text/event-stream`; the frontend reader tolerates either. To be settled during implementation.
+- ~~Exact wire format of the streamed events~~ — **settled by Decision 7**: SSE
+  `event:`/`data:` frames whose `data` payload is the execution-trace step shape for
+  progress, plus streaming-only `error` and `fatal` event types and a final `result`
+  event carrying the same payload the default `JSONResponse` returns.
 - Precise opt-in key name (`stream` vs `follow`) — provisional `stream` plus `?stream=1` and the Accept header; final name chosen in implementation for consistency with existing params.
