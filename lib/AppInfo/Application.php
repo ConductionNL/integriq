@@ -509,13 +509,30 @@ class Application extends App implements IBootstrap
      * that boots this app, and the Tables and Forms triggers never registered
      * at all on NC 34.
      *
-     * info.xml declares `min-version="28" max-version="34"`, so both names have
-     * to work. Prefer the current one and fall back.
+     * info.xml declares `min-version="28"`, so every supported version has to
+     * resolve to a real method. Prefer the current name and fall back.
+     *
+     * THE FALLBACK IS `isInstalled()`, NOT `false` (#1103). `isEnabledForAnyone()`
+     * is `@since 32.0.0`, so on NC 28-31 neither it nor `isEnabledForAnyUser()`
+     * is present — the latter appears in NEITHER the vendored
+     * `nextcloud/ocp:dev-stable29` interface NOR Nextcloud 35's, so that branch is
+     * dead on both ends of the supported range. Returning `false` there is not a
+     * safe default, it is a WRONG answer: it reports an installed, enabled Tables
+     * or Forms app as unavailable and silently skips registering its triggers —
+     * the same user-visible outcome as the bug this method was written to fix,
+     * just reached deliberately.
+     *
+     * `isInstalled()` is `@since 8.0.0` and answers the same question. Nextcloud's
+     * own `@deprecated 32.0.0` note on it names `isEnabledForAnyone()` as the
+     * replacement, so the semantics do not shift across the version boundary.
      *
      * @param \OCP\App\IAppManager $appManager The app manager.
      * @param string               $appId      The app to test.
      *
      * @return boolean Whether the app is enabled for anyone.
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
      */
     private function appEnabledForAnyone(\OCP\App\IAppManager $appManager, string $appId): bool
     {
@@ -523,13 +540,7 @@ class Application extends App implements IBootstrap
             return (bool) $appManager->isEnabledForAnyone($appId);
         }
 
-        if (method_exists($appManager, 'isEnabledForAnyUser') === true) {
-            return (bool) $appManager->isEnabledForAnyUser($appId);
-        }
-
-        // Neither name present: treat as not enabled rather than guessing, so
-        // triggers stay unregistered instead of half-registered.
-        return false;
+        return (bool) $appManager->isInstalled($appId);
 
     }//end appEnabledForAnyone()
 
