@@ -879,7 +879,7 @@ export default {
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
-			this.draft['conditions'] = node
+			this.draft.conditions = node
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		toggleRawConditions() {
@@ -912,21 +912,21 @@ export default {
 			if (!option?.id || !this.draft) return
 			// Type changed — clear the kind-specific blob + id so we don't
 			// carry stale `endpoint:'/foo'` over into a register/schema mode.
-			this.draft['sourceType'] = option.id
-			this.draft['sourceId'] = ''
-			this.draft['sourceConfig'] = {}
+			this.draft.sourceType = option.id
+			this.draft.sourceId = ''
+			this.draft.sourceConfig = {}
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		onTargetTypeChange(option) {
 			if (!option?.id || !this.draft) return
-			this.draft['targetType'] = option.id
-			this.draft['targetId'] = ''
-			this.draft['targetConfig'] = {}
+			this.draft.targetType = option.id
+			this.draft.targetId = ''
+			this.draft.targetConfig = {}
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		onSyncModeChange(option) {
 			if (!option?.id || !this.draft) return
-			this.draft['syncMode'] = option.id
+			this.draft.syncMode = option.id
 		},
 		/**
 		 * Merge a single key into `draft.sourceConfig` without clobbering the
@@ -947,7 +947,7 @@ export default {
 			} else {
 				next[key] = value
 			}
-			this.draft['sourceConfig'] = next
+			this.draft.sourceConfig = next
 		},
 		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
 		onCursorComparatorChange(option) {
@@ -969,7 +969,7 @@ export default {
 					generateUrl(`/apps/openconnector/api/synchronizations/${this.objectIdString}/reset-cursor`),
 				)
 				const cleared = response.data?.cursorWatermark ?? ''
-				if (this.original) this.original['cursorWatermark'] = cleared
+				if (this.original) this.original.cursorWatermark = cleared
 				showSuccess(t('openconnector', 'Cursor watermark cleared. The next run will request an unfiltered fetch — this does not delete data or restore deletion detection.'))
 			} catch (err) {
 				showError(err?.response?.data?.error || err?.message || t('openconnector', 'Failed to reset cursor'))
