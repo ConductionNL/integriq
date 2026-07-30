@@ -1,7 +1,7 @@
 <?php
 /**
  * Unit test for Application::isAppEnabled() — the version-safe optional-app
- * feature detection introduced by #1089.
+ * feature detection introduced by #1103.
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\AppInfo
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * THE DEFECT THESE TESTS EXIST FOR (#1089). The Tables, Forms and
+ * THE DEFECT THESE TESTS EXIST FOR (#1103). The Tables, Forms and
  * WorkflowEngine registrations were gated on
  * `IAppManager::isEnabledForAnyUser()`, which is not a method on
  * `OCP\App\IAppManager` — not in the vendored `nextcloud/ocp:dev-stable29`
@@ -148,7 +148,7 @@ class ApplicationIsAppEnabledTest extends TestCase
 
 
     /**
-     * REGRESSION GUARD (#1089): no production source may call
+     * REGRESSION GUARD (#1103): no production source may call
      * `isEnabledForAnyUser()`, because no Nextcloud version provides it.
      *
      * A behavioural test cannot catch a reintroduction of this defect: the call
