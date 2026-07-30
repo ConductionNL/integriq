@@ -48,6 +48,11 @@
 	</dependencies>
 
 	<background-jobs>
+		<!-- ADR-076 rule 4: the register bootstrap used to run from
+		     Application::boot() as a fallback for the InitializeRegister repair
+		     step possibly not having run. Gated, but one unset config key away
+		     from a repair step on every request. Hourly cron instead. -->
+		<job>OCA\OpenConnector\Cron\RegisterBootstrapJob</job>
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>

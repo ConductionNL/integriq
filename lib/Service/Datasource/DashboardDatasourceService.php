@@ -87,13 +87,16 @@ class DashboardDatasourceService
     /**
      * Constructor.
      *
-     * @param OrObjectService      $orObjectService         Resolves the `source` object, enforcing RBAC read-access.
-     * @param CallService          $callService             Runs the existing HTTP-call engine against the source.
+     * @param OrObjectService       $orObjectService        Resolves the `source` object, enforcing RBAC read-access.
+     * @param CallService           $callService            Runs the existing HTTP-call engine against the source.
      * @param JsonPathLiteEvaluator $evaluator              Evaluates the `valueExpr` against the decoded response.
-     * @param ICacheFactory        $cacheFactory            Builds the distributed cache used for resolved values.
-     * @param LoggerInterface      $logger                  Logger for non-fatal upstream/decode failures.
-     * @param integer              $rateLimitPerWindow      Max resolve calls per source within `rateLimitWindowSeconds` before excess calls are served from cache/rejected without hitting upstream.
-     * @param integer              $rateLimitWindowSeconds  Rate-limit window, in seconds.
+     * @param ICacheFactory         $cacheFactory           Builds the distributed cache used for resolved values.
+     * @param LoggerInterface       $logger                 Logger for non-fatal upstream/decode failures.
+     * @param integer               $rateLimitPerWindow     Max resolve calls per source within
+     *                                                      `rateLimitWindowSeconds`; excess calls are
+     *                                                      served from cache or rejected without
+     *                                                      hitting upstream.
+     * @param integer               $rateLimitWindowSeconds Rate-limit window, in seconds.
      */
     public function __construct(
         private readonly OrObjectService $orObjectService,
@@ -119,10 +122,10 @@ class DashboardDatasourceService
      * so a caller can never redirect egress away from the stored source
      * (REQ "Egress is constrained to the source, never the caller").
      *
-     * @param string     $sourceId  UUID of the `source` object to resolve against.
-     * @param string     $valueExpr JSONPath-lite expression (`$.a.b.c`, `$.a[0].b`) evaluated against the response body.
-     * @param array      $params    Optional query parameters forwarded to the source call. `url`/`host` keys are ignored.
-     * @param int|null   $ttl       Optional requested cache TTL (seconds); clamped to the source-configured maximum.
+     * @param string   $sourceId  UUID of the `source` object to resolve against.
+     * @param string   $valueExpr JSONPath-lite expression (`$.a.b.c`, `$.a[0].b`) evaluated against the response body.
+     * @param array    $params    Optional query parameters forwarded to the source call. `url`/`host` keys are ignored.
+     * @param int|null $ttl       Optional requested cache TTL (seconds); clamped to the source-configured maximum.
      *
      * @return array{value: mixed, fetchedAt: string, stale: bool} The resolved value and cache-freshness metadata.
      *
@@ -178,12 +181,17 @@ class DashboardDatasourceService
 
         $effectiveTtl = $this->effectiveTtl(sourceData: $sourceData, requestedTtl: $ttl);
 
+        $requestConfig = [];
+        if (empty($params) === false) {
+            $requestConfig = ['query' => $params];
+        }
+
         try {
             $callLog = $this->callService->call(
                 source: $source,
                 endpoint: '',
                 method: 'GET',
-                config: (empty($params) === true) ? [] : ['query' => $params],
+                config: $requestConfig,
                 read: true
             );
         } catch (\Throwable $e) {
