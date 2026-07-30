@@ -411,7 +411,7 @@ class Application extends App implements IBootstrap
         // manager silently drops it when preparing it for display.
         $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
 
-        // dashboard-http-datasource: advertise the capability so a leaf
+        // Dashboard-http-datasource: advertise the capability so a leaf
         // dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
         // for the resolve façade via the OCS capabilities document.
         $context->registerCapability(Capabilities::class);
@@ -513,7 +513,7 @@ class Application extends App implements IBootstrap
      * to work. Prefer the current one and fall back.
      *
      * @param \OCP\App\IAppManager $appManager The app manager.
-     * @param string                $appId      The app to test.
+     * @param string               $appId      The app to test.
      *
      * @return boolean Whether the app is enabled for anyone.
      */
@@ -623,6 +623,7 @@ class Application extends App implements IBootstrap
      *
      * @spec openspec/specs/apphost-adoption/spec.md
      */
+
     /**
      * Register OpenConnector's contributed flow nodes with OpenRegister's flow engine.
      *
@@ -665,6 +666,8 @@ class Application extends App implements IBootstrap
     }//end registerFlowNodes()
 
     /**
+     * Adopt the OpenRegister AppHost consumables for this app.
+     *
      * @param IRegistrationContext $context Registration context.
      *
      * @return void
@@ -1059,9 +1062,7 @@ class Application extends App implements IBootstrap
     {
         $this->registerIntegrationProviders(context: $context);
 
-
     }//end boot()
-
 
     /**
      * Register openconnector-side IntegrationProviders with OR's IntegrationRegistry.

@@ -76,10 +76,10 @@ class RegisterBootstrapJob extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory      $time      Clock for the job base class.
-     * @param IAppConfig        $appConfig Reads and persists the bootstrap marker.
-     * @param InitializeRegister $repair   The repair step this job stands in for.
-     * @param LoggerInterface   $logger    The logger.
+     * @param ITimeFactory       $time      Clock for the job base class.
+     * @param IAppConfig         $appConfig Reads and persists the bootstrap marker.
+     * @param InitializeRegister $repair    The repair step this job stands in for.
+     * @param LoggerInterface    $logger    The logger.
      */
     public function __construct(
         ITimeFactory $time,
@@ -155,7 +155,6 @@ class RegisterBootstrapJob extends TimedJob
     private function silentOutput(): IOutput
     {
         return new class implements IOutput {
-
             /**
              * Discard a debug message.
              *

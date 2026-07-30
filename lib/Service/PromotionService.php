@@ -656,7 +656,7 @@ class PromotionService
      * per-Source case).
      *
      * @param array<int,mixed> $credentialBindings Operator-supplied rebindings (unvalidated request input — each
-     *        entry is only trusted to be an array after the runtime `is_array()` guard below).
+     *                                             entry is only trusted to be an array after the runtime `is_array()` guard below).
      *
      * @return array{bySlugField: array<string,array<string,string>>, bySlug: array<string,array<string,string>>}
      */
