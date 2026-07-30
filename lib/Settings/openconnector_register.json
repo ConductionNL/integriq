@@ -1557,7 +1557,7 @@
       "synchronization": {
         "slug": "synchronization",
         "title": "Synchronization",
-        "icon": "SyncOutline",
+        "icon": "Sync",
         "version": "1.0.0",
         "summary": "A bidirectional or unidirectional sync between two systems",
         "description": "A Synchronization is one half of the Source/Sync/Contract triad (see local ADR-005). It defines what to sync (sourceId/targetId), how to compare (sourceHashMapping), and per-pass state (currentPage, last-checked timestamps). The `sourceId`/`targetId` fields have an overloaded format documented inline.",
@@ -5131,7 +5131,7 @@
       "lti_identity_link": {
         "slug": "lti_identity_link",
         "title": "LTI Identity Link",
-        "icon": "AccountLinkOutline",
+        "icon": "AccountNetworkOutline",
         "version": "1.0.0",
         "summary": "A (ltiPlatformId, subject) to Nextcloud userId mapping resolved after a launch is already cryptographically validated",
         "description": "An lti_identity_link row records how a specific lti_platform's verified sub claim maps to a Nextcloud userId (REQ-LTI-012). Keyed on (ltiPlatformId, subject) — never on subject alone, because a bare sub string has no meaning outside its issuing platform. Created either manually (an admin links an existing account) or automatically (identityPolicy: autoProvisionAsRole, bounded to defaultProvisionGroup). Identity resolution runs strictly after LtiLaunchService::validateLaunch() has already accepted the launch and never influences that trust decision. See openspec/changes/lti-tool-provider-role/specs/lti-platform/spec.md#req-lti-012.",
