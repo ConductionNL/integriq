@@ -33,6 +33,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for source-test and call-log endpoints.
@@ -58,6 +59,7 @@ class SourcesController extends Controller
      * @param IL10N             $l               The localization service.
      * @param IUserSession      $userSession     The user session.
      * @param ActionAuthService $actionAuth      The action authorization service.
+     * @param LoggerInterface   $logger          Logger for source-test failures.
      *
      * @return void
      */
@@ -68,6 +70,7 @@ class SourcesController extends Controller
         private readonly IL10N $l,
         private readonly IUserSession $userSession,
         private readonly ActionAuthService $actionAuth,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -304,20 +307,41 @@ class SourcesController extends Controller
             }
         }
 
-        // Fire the call. persistLog:false — an interactive connection test returns the
-        // live response but must NOT write a CallLog: persisting one runs a full
-        // OpenRegister object save (thousands of queries on an install with many magic
-        // tables) plus a source-rate-limit mutation, which is what made this endpoint slow
-        // enough to time out and pollutes the source's real call log with test noise.
-        $callLog = $callService->call(
-            source: $source,
-            endpoint: $endpoint,
-            method: $method,
-            config: $config,
-            persistLog: false
-        );
+        // Fire the call with persistLog:false — an interactive connection test returns the
+        // live response but must NOT write a CallLog: persisting one runs a full OpenRegister
+        // object save plus a source-rate-limit mutation (test noise + latency). And any engine
+        // failure must surface as clean JSON, never an empty 200 the UI cannot interpret, so
+        // the whole call is wrapped: the Test-connection modal always gets a readable result.
+        try {
+            $callLog = $callService->call(
+                source: $source,
+                endpoint: $endpoint,
+                method: $method,
+                config: $config,
+                persistLog: false
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'Source test failed: '.$e->getMessage(),
+                ['app' => 'openconnector', 'sourceId' => $id, 'exception' => $e]
+            );
+            return new JSONResponse(
+                data: ['error' => $this->l->t('The source test could not be completed: %s', [$e->getMessage()])],
+                statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
+            );
+        }
 
-        return new JSONResponse($callLog->getObject());
+        $result = $callLog->getObject();
+        if (is_array($result) === false || isset($result['response']) === false) {
+            // The engine returned without a usable response (e.g. an early-exit CallLog).
+            // Give the UI an explicit error rather than an empty/opaque body.
+            return new JSONResponse(
+                data: ['error' => $this->l->t('The source test returned no response data.')],
+                statusCode: \OCP\AppFramework\Http::STATUS_BAD_GATEWAY
+            );
+        }
+
+        return new JSONResponse($result);
     }//end test()
 
     /**
