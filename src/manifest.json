@@ -198,7 +198,7 @@
     {
       "id": "Dashboard",
       "label": "Dashboard",
-      "icon": "icon-category-dashboard",
+      "icon": "ViewDashboardOutline",
       "route": "Dashboard",
       "order": 10
     },
@@ -212,10 +212,10 @@
     {
       "id": "ConnectionsGroup",
       "label": "Connections",
-      "icon": "Webhook",
+      "icon": "TransitConnectionVariant",
       "order": 20,
       "children": [
-        { "id": "Sources", "label": "Sources", "icon": "DatabaseArrowLeftOutline", "route": "Sources", "order": 20 },
+        { "id": "Sources", "label": "Sources", "icon": "SourceBranch", "route": "Sources", "order": 20 },
         { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
         { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
         { "id": "ApiProducts", "label": "API Products", "icon": "PackageVariantClosed", "route": "ApiProducts", "order": 45 },
@@ -230,7 +230,7 @@
       "order": 30,
       "children": [
         { "id": "Jobs", "label": "Jobs", "icon": "Update", "route": "Jobs", "order": 60 },
-        { "id": "Mappings", "label": "Mappings", "icon": "SitemapOutline", "route": "Mappings", "order": 70 },
+        { "id": "Mappings", "label": "Mappings", "icon": "SwapHorizontal", "route": "Mappings", "order": 70 },
         { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
         { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
@@ -244,7 +244,7 @@
     {
       "id": "Documentation",
       "label": "Documentation",
-      "icon": "BookOpenVariant",
+      "icon": "BookOpenVariantOutline",
       "href": "https://openconnector.conduction.nl",
       "section": "footer",
       "order": 15
@@ -252,14 +252,14 @@
     {
       "id": "Settings",
       "label": "Settings",
-      "icon": "Cog",
+      "icon": "CogOutline",
       "route": "AppSettings",
       "order": 20
     },
     {
       "id": "FeaturesRoadmapMenu",
       "label": "Features & roadmap",
-      "icon": "icon-toggle",
+      "icon": "MapMarkerPath",
       "route": "FeaturesRoadmap",
       "section": "footer",
       "order": 16
