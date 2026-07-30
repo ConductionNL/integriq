@@ -49,6 +49,7 @@ use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenConnector\Exception\BrokeredCallConfigurationException;
+use OCA\OpenConnector\Flow\FlowConfigGuard;
 use OCA\OpenConnector\Service\AuthenticationService;
 use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\MappingService;
@@ -67,6 +68,7 @@ use Twig\Error\SyntaxError;
 use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
 use Twig\Sandbox\SecurityPolicy;
+use UnexpectedValueException;
 
 /**
  * Executes outbound API calls against configured Sources and persists CallLog entries.
@@ -134,6 +136,19 @@ class CallService
     private Environment $twig;
 
     /**
+     * Twig environment used to render the Source-relative upstream PATH of a
+     * `targetType: api` endpoint (ocon#1069).
+     *
+     * Deliberately separate from {@see $twig}: strict on undefined variables,
+     * without the authentication runtime, and without autoescape (values are
+     * percent-encoded for URL-path context instead). See
+     * {@see renderEndpointPath()} for why each of those differs.
+     *
+     * @var Environment
+     */
+    private Environment $pathTwig;
+
+    /**
      * Cookie jar shared across calls in the same service instance.
      *
      * @var CookieJar
@@ -191,6 +206,32 @@ class CallService
 
         $this->twig->addExtension(new AuthenticationExtension());
         $this->twig->addRuntimeLoader(new AuthenticationRuntimeLoader(authenticationService: $authenticationService));
+
+        // The upstream PATH renderer (ocon#1069). Same engine, same sandbox
+        // shape, but strict on undefined variables (an unsatisfied placeholder
+        // must fail, not silently produce an empty path segment), without the
+        // authentication runtime (a URL is logged verbatim, so a credential
+        // must not be reachable from a path template) and without autoescape
+        // (renderEndpointPath() percent-encodes for URL-path context, which
+        // HTML escaping would neither achieve nor be a no-op alongside).
+        $this->pathTwig = new Environment(
+            $loader,
+            [
+                'autoescape'       => false,
+                'strict_variables' => true,
+            ]
+        );
+        $this->pathTwig->addExtension(
+            new SandboxExtension(
+                policy: new SecurityPolicy(
+                    allowedTags: ['if', 'for', 'set'],
+                    allowedFilters: ['upper', 'lower', 'trim', 'default', 'replace'],
+                    allowedFunctions: [],
+                ),
+                sandboxed: true
+            )
+        );
+
         $this->cookieJar = new CookieJar();
 
         $this->errorRetention   = 2592000000;
@@ -302,6 +343,185 @@ class CallService
           );
 
     }//end renderConfiguration()
+
+    /**
+     * Render a Source-relative upstream path from an inbound request context,
+     * then refuse it if the RESULT escapes the Source (ocon#1069).
+     *
+     * THE DEFECT
+     * ----------
+     * `EndpointService::handleSourceRequest()` hands the endpoint's authored
+     * `endpoint` string straight to {@see call()}, which concatenates it onto
+     * `source.location` with no substitution at all — Twig runs over
+     * `configuration` (see {@see renderConfiguration()}) and never over the
+     * path. An endpoint whose path is `/repos/{owner}/{repo}/issues` therefore
+     * sent the braces literally upstream, so a `targetType: api` endpoint could
+     * not parameterise its upstream path from the inbound request at all.
+     *
+     * WHY A SEPARATE TWIG ENVIRONMENT
+     * -------------------------------
+     * The engine is the same; two properties deliberately are not.
+     *
+     *  - `strict_variables` is ON. A placeholder the inbound request does not
+     *    satisfy is a failure, not an empty string: silently collapsing
+     *    `/repos/{{owner}}/issues` to `/repos//issues` would dispatch a
+     *    DIFFERENT upstream request and report success.
+     *  - The authentication functions (`oauthToken`, `jwtToken`, …) and the
+     *    `source` context are NOT exposed. `configuration` may carry a secret
+     *    because it is redacted before it reaches a CallLog; a URL is persisted
+     *    to `call_log.request.url` verbatim, so a secret that reaches the path
+     *    is a secret written to the log.
+     *
+     * SSRF CONTAINMENT
+     * ----------------
+     * Two independent layers, because templating means the effective path is
+     * only knowable at execute time:
+     *
+     *  1. Every substituted value is `rawurlencode()`d BEFORE rendering, so an
+     *     inbound value cannot contribute a `/`, `?`, `#` or a control
+     *     character to the path — only the authored literal can.
+     *  2. The FINAL rendered value is put through
+     *     {@see FlowConfigGuard::endpointEscapeCode()} — the app's single
+     *     containment predicate, the same rules `SourceCallNode` applies to a
+     *     rendered flow endpoint — plus an empty-segment check. An absolute
+     *     URL, a scheme-relative `//host`, a `../` traversal or a control
+     *     character is refused before any request is made.
+     *
+     * @param string $endpoint The authored, Source-relative path template.
+     * @param array  $context  The template context (inbound path/query/body values).
+     *
+     * @return string The rendered, containment-checked path.
+     *
+     * @throws UnexpectedValueException When a placeholder is unsatisfied, when the template
+     *                                  is unparseable, or when the rendered path escapes the
+     *                                  Source location.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md
+     */
+    public function renderEndpointPath(string $endpoint, array $context): string
+    {
+        if ($endpoint === '') {
+            return '';
+        }
+
+        $template = $this->normalisePathPlaceholders(endpoint: $endpoint);
+
+        // Nothing to render, and therefore nothing new to check: an endpoint
+        // without placeholders keeps its pre-ocon#1069 behaviour byte for byte.
+        if (str_contains(haystack: $template, needle: '{{') === false) {
+            return $endpoint;
+        }
+
+        try {
+            $rendered = $this->pathTwig->createTemplate(template: $template, name: 'endpointPath')
+                ->render(context: $this->escapeForPathContext(value: $context));
+        } catch (\Throwable $exception) {
+            throw new UnexpectedValueException(
+                'The endpoint path "'.$endpoint.'" could not be rendered from the request: '
+                .$exception->getMessage()
+            );
+        }
+
+        $escapeCode = FlowConfigGuard::endpointEscapeCode(endpoint: $rendered);
+        if ($escapeCode !== null) {
+            throw new UnexpectedValueException(
+                'The rendered endpoint path "'.$rendered.'" is refused before any request is made: '
+                .'it must stay relative to the source location ('.$escapeCode.').'
+            );
+        }
+
+        // An empty path segment is what an unsatisfied placeholder used to look
+        // like, and `//` is a host separator one normalisation away. Refused
+        // rather than normalised, so a broken template is visible.
+        if (str_contains(haystack: $rendered, needle: '//') === true) {
+            throw new UnexpectedValueException(
+                'The rendered endpoint path "'.$rendered.'" is refused before any request is made: '
+                .'it contains an empty path segment.'
+            );
+        }
+
+        return $rendered;
+
+    }//end renderEndpointPath()
+
+    /**
+     * Rewrite whole-segment OpenAPI-style `{name}` placeholders into Twig.
+     *
+     * Anchored to a COMPLETE `/`-delimited segment holding nothing but a bare
+     * identifier, so a Twig segment (`{{ name }}`, which starts `{{`) can never
+     * match and no partial or expression-bearing text is touched. Both spellings
+     * are accepted because the app already uses `{{ }}` in `endpointArray`,
+     * while `{name}` is the spelling an OpenAPI-shaped upstream path is
+     * written in.
+     *
+     * @param string $endpoint The authored path template.
+     *
+     * @return string The template with single-brace placeholders normalised.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md
+     */
+    private function normalisePathPlaceholders(string $endpoint): string
+    {
+        return implode(
+            '/',
+            array_map(
+                static function (string $segment): string {
+                    $matches = [];
+                    if (preg_match('/^\{([A-Za-z_][A-Za-z0-9_]*)\}$/', $segment, $matches) === 1) {
+                        return '{{ '.$matches[1].' }}';
+                    }
+
+                    return $segment;
+                },
+                explode('/', $endpoint)
+            )
+        );
+
+    }//end normalisePathPlaceholders()
+
+    /**
+     * Percent-encode every scalar in the path template's context.
+     *
+     * Applied BEFORE rendering rather than as a Twig filter, so containment
+     * does not depend on the endpoint author remembering to write one. A value
+     * that has been `rawurlencode()`d cannot contribute a path separator, a
+     * query/fragment delimiter or a control character to the rendered path —
+     * only the authored literal can.
+     *
+     * @param mixed $value The context value.
+     *
+     * @return mixed The value with every scalar percent-encoded.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md
+     */
+    private function escapeForPathContext(mixed $value): mixed
+    {
+        if (is_array($value) === true) {
+            return array_map(
+                function ($item) {
+                    return $this->escapeForPathContext(value: $item);
+                },
+                $value
+            );
+        }
+
+        if (is_bool($value) === true) {
+            if ($value === true) {
+                return 'true';
+            }
+
+            return 'false';
+        }
+
+        if (is_scalar($value) === false) {
+            // Null and objects have no defensible path spelling; rendering one
+            // would produce an empty segment, which is refused downstream.
+            return '';
+        }
+
+        return rawurlencode((string) $value);
+
+    }//end escapeForPathContext()
 
     /**
      * Decides method based on configuration and returns that configuration.
@@ -1401,6 +1621,7 @@ class CallService
      * @param \DateTime|null             $successExpires Expiry for successful log entries.
      * @param \DateTime|null             $errorExpires   Expiry for error log entries.
      * @param ExecutionTraceContext|null $trace          The active execution trace context, when present.
+     * @param boolean                    $persistLog     When false, return a transient (unsaved) CallLog and mutate nothing.
      *
      * @return ObjectEntity The persisted CallLog ObjectEntity with full response body set.
      *
@@ -1416,7 +1637,19 @@ class CallService
         ?\DateTime $successExpires,
         ?\DateTime $errorExpires,
         ?ExecutionTraceContext $trace=null,
+        bool $persistLog=true,
     ): ObjectEntity {
+        // Interactive "Test connection" path (persistLog=false): return the response
+        // WITHOUT the expensive CallLog write. Persisting a CallLog runs a full
+        // OpenRegister object save (thousands of queries on an install with many magic
+        // tables) and mutates the source's rate-limit state — neither is wanted for a
+        // one-off UI verification, and doing them is what made the test endpoint slow
+        // enough to time out. The engine's real call paths (sync/endpoint/job) keep
+        // persistLog=true and are unchanged.
+        if ($persistLog === false) {
+            return $this->buildTransientCallLog(source: $source, data: $data, trace: $trace);
+        }
+
         // Update Rate Limit info for the source with the rate limit headers if present or if configured in the source.
         $data['response']['headers'] = $this->sourceRateLimit(source: $source, sourceData: $sourceData, headers: $data['response']['headers']);
 
@@ -1469,6 +1702,48 @@ class CallService
         return $callLog;
 
     }//end buildAndPersistCallLog()
+
+    /**
+     * Builds a transient (unsaved) CallLog for the interactive test path.
+     *
+     * Same `{source, statusCode, statusMessage, request, response, created}` shape as a
+     * persisted CallLog — so every caller that reads `getObject()['response']` works
+     * unchanged — but it is NEVER written to OpenRegister and never mutates the source's
+     * rate-limit state. This keeps a UI "Test connection" fast and side-effect-free: no
+     * heavy object save, no test-noise CallLog rows, no source mutation.
+     *
+     * @param ObjectEntity               $source The source ObjectEntity.
+     * @param array                      $data   The structured request/response data from buildResponseData().
+     * @param ExecutionTraceContext|null $trace  The active execution trace context, when present.
+     *
+     * @return ObjectEntity An in-memory CallLog carrying the full request/response.
+     *
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     */
+    private function buildTransientCallLog(
+        ObjectEntity $source,
+        array $data,
+        ?ExecutionTraceContext $trace=null,
+    ): ObjectEntity {
+        $callLogData = [
+            'source'        => $source->getUuid(),
+            'statusCode'    => $data['response']['statusCode'],
+            'statusMessage' => $data['response']['statusMessage'],
+            'request'       => $data['request'],
+            'response'      => $data['response'],
+            'created'       => (new \DateTime())->format('c'),
+        ];
+
+        if ($trace !== null) {
+            $callLogData['sessionId'] = $trace->getTraceId();
+        }
+
+        $callLog = new ObjectEntity();
+        $callLog->setObject($callLogData);
+
+        return $callLog;
+
+    }//end buildTransientCallLog()
 
     /**
      * Phases 3-6 helper: source-precondition guards before any dispatch work.
@@ -2197,6 +2472,9 @@ class CallService
      *                                                          `$trace->getTraceId()` and a `call` step is appended
      *                                                          to the trace using the already-redacted request/
      *                                                          response data — no second redaction pass.
+     * @param boolean                    $persistLog            When false (interactive "Test connection"), the response
+     *                                                          is returned without writing a CallLog or mutating the
+     *                                                          source — no heavy object save, no test-noise log rows.
      *
      * @return ObjectEntity
      *
@@ -2223,6 +2501,7 @@ class CallService
         bool $read=false,
         bool $runningSupportRequest=false,
         ?ExecutionTraceContext $trace=null,
+        bool $persistLog=true,
     ): ObjectEntity {
         // Ocon#215: re-resolve the Source RAW from storage BEFORE any auth is
         // read, so the engine's credentials are its OWN property and can never
@@ -2381,6 +2660,7 @@ class CallService
             successExpires: $successExpires,
             errorExpires: $errorExpires,
             trace: $trace,
+            persistLog: $persistLog,
         );
 
         // Phase 12b: when this call was made from within a traced execution,

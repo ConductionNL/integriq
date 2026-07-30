@@ -76,7 +76,7 @@ function errorDetail(err) {
 export function testSourceHandler({ item }) {
 	// Open the interactive Test-connection modal (method + endpoint + body input,
 	// live request, full response panel) instead of the old fire-and-forget POST.
-	modalBus.$emit(EVENT_OPEN_TEST_SOURCE, { source: item })
+	modalBus.emit(EVENT_OPEN_TEST_SOURCE, { source: item })
 }
 
 /**
@@ -168,7 +168,7 @@ export async function testSynchronizationHandler({ item }) {
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function testMappingModalHandler({ item }) {
-	modalBus.$emit(EVENT_OPEN_TEST_MAPPING, { mapping: item })
+	modalBus.emit(EVENT_OPEN_TEST_MAPPING, { mapping: item })
 }
 
 /**
@@ -177,7 +177,7 @@ export function testMappingModalHandler({ item }) {
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
 export function addEndpointRuleHandler({ item }) {
-	modalBus.$emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
+	modalBus.emit(EVENT_OPEN_ADD_ENDPOINT_RULE, { endpoint: item })
 }
 
 /**
@@ -187,7 +187,7 @@ export function addEndpointRuleHandler({ item }) {
  * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
  */
 export function manageSigningHandler({ item }) {
-	modalBus.$emit(EVENT_OPEN_SUBSCRIPTION_SIGNING, { subscription: item })
+	modalBus.emit(EVENT_OPEN_SUBSCRIPTION_SIGNING, { subscription: item })
 }
 
 /**
@@ -199,7 +199,7 @@ export function manageSigningHandler({ item }) {
  * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-007--preview-an-import-before-writing-anything
  */
 export function openConfigurationImportHandler() {
-	modalBus.$emit(EVENT_OPEN_CONFIGURATION_IMPORT, {})
+	modalBus.emit(EVENT_OPEN_CONFIGURATION_IMPORT, {})
 }
 
 /**
@@ -210,7 +210,7 @@ export function openConfigurationImportHandler() {
  * @spec openspec/specs/configuration-export-import/spec.md#requirement-req-006--export-a-configuration-from-the-ui
  */
 export function openConfigurationExportHandler() {
-	modalBus.$emit(EVENT_OPEN_CONFIGURATION_EXPORT, {})
+	modalBus.emit(EVENT_OPEN_CONFIGURATION_EXPORT, {})
 }
 
 /**
@@ -223,7 +223,7 @@ export function openConfigurationExportHandler() {
  * @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003
  */
 export function openPromotionHandler() {
-	modalBus.$emit(EVENT_OPEN_PROMOTION, {})
+	modalBus.emit(EVENT_OPEN_PROMOTION, {})
 }
 
 // Query-aware "View logs" navigation. See #837 + nc-vue#330.

@@ -95,6 +95,11 @@ class RecordingAppConfig implements IAppConfig
     public function deleteKey(string $app, string $key): void {}
     public function deleteApp(string $app): void {}
     public function clearCache(bool $reload = false): void {}
+    // Added when NC34's IAppConfig grew these three; without them this double is
+    // abstract and the whole Unit suite dies at load with a fatal error.
+    public function searchKeys(string $app, string $prefix = '', bool $lazy = false): array { return []; }
+    public function getKeyDetails(string $app, string $key): array { return []; }
+    public function getAppInstalledVersions(bool $onlyEnabled = false): array { return []; }
     // phpcs:enable
 }//end class
 

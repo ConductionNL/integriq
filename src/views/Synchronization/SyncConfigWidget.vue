@@ -44,7 +44,7 @@
 				<NcSelect
 					:input-id="apiSourceId"
 					:aria-label-combobox="t('openconnector', 'Source (API)')"
-					:value="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:placeholder="t('openconnector', 'Pick a configured source')"
@@ -57,25 +57,25 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Endpoint')"
-					:value="configValue('endpoint')"
+					:model-value="configValue('endpoint')"
 					:placeholder="t('openconnector', 'Path appended to the source URL')"
-					@update:value="(value) => onConfigUpdate('endpoint', value)" />
+					@update:model-value="(value) => onConfigUpdate('endpoint', value)" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
-					:value="configValue('idPosition')"
+					:model-value="configValue('idPosition')"
 					:placeholder="t('openconnector', 'Dot-path to the id field in the API response')"
-					@update:value="(value) => onConfigUpdate('idPosition', value)" />
+					@update:model-value="(value) => onConfigUpdate('idPosition', value)" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Results position')"
-					:value="configValue('resultsPosition')"
+					:model-value="configValue('resultsPosition')"
 					:placeholder="t('openconnector', 'Dot-path to the list of items')"
-					@update:value="(value) => onConfigUpdate('resultsPosition', value)" />
+					@update:model-value="(value) => onConfigUpdate('resultsPosition', value)" />
 			</div>
 		</template>
 
@@ -88,7 +88,7 @@
 				<NcSelect
 					:input-id="registerSelectId"
 					:aria-label-combobox="t('openconnector', 'Register')"
-					:value="selectedRegister"
+					:model-value="selectedRegister"
 					:options="registerOptions"
 					:loading="registersLoading"
 					:placeholder="t('openconnector', 'Pick a register')"
@@ -102,7 +102,7 @@
 				<NcSelect
 					:input-id="schemaSelectId"
 					:aria-label-combobox="t('openconnector', 'Schema')"
-					:value="selectedSchema"
+					:model-value="selectedSchema"
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
 					:placeholder="t('openconnector', 'Pick a schema in the register')"
@@ -112,9 +112,9 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'Object filter (optional)')"
-					:value="configValue('filter')"
+					:model-value="configValue('filter')"
 					:placeholder="t('openconnector', 'JSON-encoded OR query filter')"
-					@update:value="(value) => onConfigUpdate('filter', value)" />
+					@update:model-value="(value) => onConfigUpdate('filter', value)" />
 			</div>
 		</template>
 
@@ -128,9 +128,9 @@
 					<NcTextField
 						:input-id="filePathId"
 						class="sync-config__file-field"
-						:value="sourceIdValue"
+						:model-value="sourceIdValue"
 						:placeholder="'/example/path/*.json'"
-						@update:value="(value) => $emit('update:sourceId', value)" />
+						@update:model-value="(value) => $emit('update:sourceId', value)" />
 					<NcButton
 						type="secondary"
 						:aria-label="t('openconnector', 'Browse Files app')"
@@ -154,17 +154,17 @@
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'File format')"
-					:value="configValue('format')"
+					:model-value="configValue('format')"
 					:placeholder="'json | xml | csv'"
-					@update:value="(value) => onConfigUpdate('format', value)" />
+					@update:model-value="(value) => onConfigUpdate('format', value)" />
 			</div>
 
 			<div class="sync-config__field">
 				<NcTextField
 					:label="t('openconnector', 'ID position')"
-					:value="configValue('idPosition')"
+					:model-value="configValue('idPosition')"
 					:placeholder="t('openconnector', 'Dot-path to the id field in each record')"
-					@update:value="(value) => onConfigUpdate('idPosition', value)" />
+					@update:model-value="(value) => onConfigUpdate('idPosition', value)" />
 			</div>
 		</template>
 
@@ -177,7 +177,7 @@
 				<NcSelect
 					:input-id="tableSourceId"
 					:aria-label-combobox="t('openconnector', 'Source (Nextcloud instance)')"
-					:value="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
@@ -195,7 +195,7 @@
 				<NcSelect
 					:input-id="tablePickerId"
 					:aria-label-combobox="t('openconnector', 'Table')"
-					:value="selectedTable"
+					:model-value="selectedTable"
 					:options="tableOptions"
 					:loading="tablesLoading"
 					:disabled="!sourceIdValue"
@@ -228,7 +228,7 @@
 				<NcSelect
 					:input-id="formSourceId"
 					:aria-label-combobox="t('openconnector', 'Source (Nextcloud instance)')"
-					:value="selectedSource"
+					:model-value="selectedSource"
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
@@ -246,7 +246,7 @@
 				<NcSelect
 					:input-id="formPickerId"
 					:aria-label-combobox="t('openconnector', 'Form')"
-					:value="selectedForm"
+					:model-value="selectedForm"
 					:options="formOptions"
 					:loading="formsLoading"
 					:disabled="!sourceIdValue"

@@ -115,15 +115,20 @@ describe('POST action handlers — error path', () => {
 describe('modal-opening handlers', () => {
 	it('testMappingModalHandler emits open-test-mapping with the mapping', () => {
 		const spy = vi.fn()
-		modalBus.$once(EVENT_OPEN_TEST_MAPPING, spy)
+		// mitt (ADR-066): `.on` replaces the former Vue-2 `$once`; the handler
+		// receives the emit payload as its single argument. Detach after to keep
+		// tests isolated.
+		modalBus.on(EVENT_OPEN_TEST_MAPPING, spy)
 		testMappingModalHandler({ item: { id: 'm1' } })
+		modalBus.off(EVENT_OPEN_TEST_MAPPING, spy)
 		expect(spy).toHaveBeenCalledWith({ mapping: { id: 'm1' } })
 	})
 
 	it('addEndpointRuleHandler emits open-add-endpoint-rule with the endpoint', () => {
 		const spy = vi.fn()
-		modalBus.$once(EVENT_OPEN_ADD_ENDPOINT_RULE, spy)
+		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, spy)
 		addEndpointRuleHandler({ item: { id: 'e1' } })
+		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, spy)
 		expect(spy).toHaveBeenCalledWith({ endpoint: { id: 'e1' } })
 	})
 })

@@ -25,29 +25,29 @@ import { translate as t } from '@nextcloud/l10n'
 				<div class="form-group">
 					<NcTextField
 						:label="t('openconnector', 'Name') + '*'"
-						:value.sync="endpointItem.name" />
+						v-model="endpointItem.name" />
 
 					<NcTextArea
 						resize="vertical"
 						:label="t('openconnector', 'Description')"
-						:value.sync="endpointItem.description" />
+						v-model="endpointItem.description" />
 
 					<NcTextField
 						:label="t('openconnector', 'Endpoint')"
-						:value.sync="endpointItem.endpoint" />
+						v-model="endpointItem.endpoint" />
 
 					<NcTextArea
 						resize="vertical"
 						:label="t('openconnector', 'Endpoint array (split on ,)')"
-						:value.sync="endpointItem.endpointArray" />
+						v-model="endpointItem.endpointArray" />
 
 					<NcTextField
 						:label="t('openconnector', 'Endpoint regex')"
-						:value.sync="endpointItem.endpointRegex" />
+						v-model="endpointItem.endpointRegex" />
 
 					<NcTextField
 						:label="t('openconnector', 'Slug')"
-						:value.sync="endpointItem.slug" />
+						v-model="endpointItem.slug" />
 
 					<div>
 						<NcSelect v-bind="methodOptions"

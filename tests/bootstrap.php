@@ -263,6 +263,23 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         if (class_exists('OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions') === false) {
             require_once $stubsDir . '/OCA/OpenRegister/AppHost/Repair/GenericInitializeActions.php';
         }
+
+        // Flow-engine stubs (openconnector-flow-nodes change). The two
+        // contributed node classes `implements IFlowNode`, so the interface
+        // must exist before they are parsed — exactly the compile-time
+        // reference the runtime `class_exists()` guard in Application.php
+        // exists to avoid resolving on an instance without a flow engine.
+        if (interface_exists('OCA\\OpenRegister\\Service\\Flow\\IFlowNode') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/IFlowNode.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\FlowNodeRegistry') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/FlowNodeRegistry.php';
+        }
+
+        if (class_exists('OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent') === false) {
+            require_once $stubsDir . '/OCA/OpenRegister/Service/Flow/RegisterFlowNodesEvent.php';
+        }
     }
 }
 

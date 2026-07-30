@@ -20,8 +20,7 @@ This spec retroactively describes 97 existing methods across
 behavioral retrofit — REQ language matches observed code, and the Notes sections
 flag observed-but-suspicious behavior rather than silently correcting it.
 ## Requirements
-
-### REQ-UI-001: Synchronization Management UI
+### Requirement: Synchronization Management UI (REQ-UI-001)
 
 OpenConnector MUST provide a Synchronizations section in its SPA where administrators
 can browse, create, edit, and manage synchronization configurations and view their
@@ -51,7 +50,7 @@ contracts and logs.
 - WHEN they navigate to the Synchronization logs page
 - THEN the page mounts and renders the app-content area
 
-### REQ-001: Synchronization orchestration and direction routing
+### Requirement: Synchronization orchestration and direction routing (REQ-001)
 
 The system SHALL run a synchronization given a `Synchronization` object,
 selecting the direction from `sourceType`: when `sourceType` is `register/schema`
@@ -115,7 +114,7 @@ graph where required, and run each matching synchronization with `force: true`.
   `resolveParentObjectForRelatedObjectTrigger()`, `findAllBySourceId()`,
   `getSynchronization()`, `calculateExpires()`.
 
-### REQ-002: Source object fetching and pagination
+### Requirement: Source object fetching and pagination (REQ-002)
 
 The system SHALL fetch objects from a synchronization's source according to
 `sourceType`. For `api` sources it SHALL resolve the `source` record, enforce the
@@ -124,9 +123,21 @@ and drive pagination via configurable strategies: an optimized parallel mode
 (ReactPHP), a sequential fallback, and per-page single fetches, capped by a
 safety limit of 50 pages. Next-page resolution SHALL support query-parameter
 pagination, body-embedded next endpoints, and OData `$nextLink`. The system SHALL
-fetch per-object extra/sub-resource data when configured, and SHALL support
-`array` (static) sources directly. `register/schema` and `database` source types
-are recognised but not implemented (no-op).
+fetch per-object extra/sub-resource data when configured. `array`,
+`register/schema`, and `database` are recognised `sourceType` values for
+which `getAllObjectsFromSource()`'s dispatch switch has no matching case;
+each falls through with no objects fetched (no-op), identically to any other
+unrecognised `sourceType`.
+
+<!-- Previous behavior: this requirement claimed the system "SHALL support
+     `array` (static) sources directly" and carried a scenario asserting
+     array sources are read without an HTTP call. Neither was ever true —
+     `getAllObjectsFromSource()`'s switch has never had a `case 'array':`
+     (verified via `git log -S "case 'array':"` returning zero hits across
+     all history), and `array` was never a selectable sourceType in the
+     synchronization editor UI. This delta corrects the documentation to
+     match observed code; it does not change `getAllObjectsFromSource()`'s
+     behaviour. -->
 
 @e2e exclude backend source-fetching internals — covered by PHPUnit/Newman, not browser UI
 
@@ -154,20 +165,32 @@ are recognised but not implemented (no-op).
 - **WHEN** an object is processed
 - **THEN** `fetchExtraDataForObject()` / `fetchMultipleExtraData()` fetch the configured sub-resources and merge them per config (dynamic or static endpoint).
 
-#### Scenario: array source is read without an HTTP call
+#### Scenario: an unrecognised or not-yet-dispatched sourceType yields no fetched objects
 
-- **GIVEN** a synchronization with `sourceType: array`
-- **WHEN** fetching runs
-- **THEN** objects are read directly from the static array source without an HTTP call.
+- **GIVEN** a synchronization with `sourceType` set to `array`, `register/schema`, `database`, or any other value not matched by `getAllObjectsFromSource()`'s dispatch switch
+- **WHEN** `getAllObjectsFromSource()` runs
+- **THEN** it returns an empty array without making any HTTP call or throwing, and no items reach the per-item processing loop.
 
 **Notes:**
 
 - `getAllObjectsFromSource()` has empty `register/schema` and `database`
-  branches marked `@todo: implement` — these silently return an empty array.
+  branches marked `@todo: implement`, and no matching case at all for
+  `array` — all three silently return an empty array.
 - `getAllObjectsFromApi()` carries a `TODO` noting the endpoint-templating
   function is called twice in the flow, pending refactor.
 - The 50-page cap (`DEFAULT_MAX_PAGES`) is a hard safety limit against runaway
   pagination loops; it is not configurable per source.
+- `getAllObjectsFromArray()` exists and is exercised, but only as a helper
+  called from within `getAllObjectsFromApi()`'s response-body parsing (to
+  extract an item list via `sourceConfig.resultsPosition`), which is a
+  distinct concern from `sourceType` dispatch and is unaffected by this
+  delta.
+- A synchronization whose source legitimately returns bare scalar items
+  (e.g. a JSON array of strings/numbers under `sourceType: api`) is covered
+  by the per-item scalar-coercion guard described in this change's
+  proposal/design — that guard operates after this requirement's fetch
+  stage has already returned the item list, at the per-item boundary shared
+  by REQ-003/REQ-008.
 - Methods: `getObjectFromSource()`, `getAllObjectsFromSource()`,
   `getAllObjectsFromApi()`, `getAllObjectsFromArray()`, `fetchAllPages()`,
   `fetchAllPagesOptimized()`, `fetchAllPagesSequential()`, `fetchSinglePage()`,
@@ -175,7 +198,7 @@ are recognised but not implemented (no-op).
   `getNextPageInfo()`, `getNextlinkFromCall()`, `checkRateLimit()`,
   `getRateLimitHeaders()`, `fetchExtraDataForObject()`, `fetchMultipleExtraData()`.
 
-### REQ-003: Mapping, transformation and object identity
+### Requirement: Mapping, transformation and object identity (REQ-003)
 
 The system SHALL compute a stable identity for each source object: it SHALL
 extract an origin id from a configurable `idPosition` (default `id`, dotted-path
@@ -233,7 +256,7 @@ during transformation.
   `isAssociativeArray()`, `xmlToArray()`, `encodeArrayKeys()`,
   `generatePlaceholderValues()`.
 
-### REQ-004: Target write, deduplication and file handling
+### Requirement: Target write, deduplication and file handling (REQ-004)
 
 The system SHALL write each transformed object to its target, branching to an
 OpenRegister-specific write when the target is an OR register/schema, and SHALL
@@ -317,7 +340,7 @@ referenced after a sync.
   `shouldPublishFile()`, `getFileContext()`, `getFilenameFromHeaders()`,
   `synchronizeToTarget()`, `detectDuplicateContracts()`.
 
-### REQ-005: Sync rule pipeline and management/integration surface
+### Requirement: Sync rule pipeline and management/integration surface (REQ-005)
 
 The system SHALL run a configurable, ordered rule pipeline at defined timings
 during a sync (mirroring `EndpointService::processRules`): rules are loaded,

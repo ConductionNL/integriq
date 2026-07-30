@@ -17,14 +17,14 @@
 		<div v-for="(row, index) in rows" :key="index" class="action-form__row">
 			<NcTextField
 				:label="t('openconnector', 'Property (dot path)')"
-				:value="row.property"
+				:model-value="row.property"
 				placeholder="a.b"
-				@update:value="(next) => onPropertyInput(index, next)" />
+				@update:model-value="(next) => onPropertyInput(index, next)" />
 			<NcTextField
 				:label="t('openconnector', 'Extends (comma-separated paths, optional)')"
-				:value="(row.extends || []).join(',')"
+				:model-value="(row.extends || []).join(',')"
 				placeholder="x.y,z"
-				@update:value="(next) => onExtendsInput(index, next)" />
+				@update:model-value="(next) => onExtendsInput(index, next)" />
 			<NcButton
 				type="tertiary-no-background"
 				:aria-label="t('openconnector', 'Remove row')"

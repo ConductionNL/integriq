@@ -99,7 +99,7 @@ export default {
 			}
 		},
 		async toggle(runId) {
-			this.$set(this.expanded, runId, !this.expanded[runId])
+			this.expanded[runId] = !this.expanded[runId]
 			if (this.expanded[runId] && !this.stepLogs[runId]) {
 				await this.fetchStepLogs(runId)
 			}
@@ -112,17 +112,17 @@ export default {
 				)
 				const data = response.data
 				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
-				this.$set(this.stepLogs, runId, list.map((row) => ({
+				this.stepLogs[runId] = list.map((row) => ({
 					id: String(row.id || row.uuid),
 					stepOrder: row.stepOrder,
 					type: row.type,
 					status: row.status,
 					error: row.error || '',
-				})))
+				}))
 			} catch (err) {
 				// eslint-disable-next-line no-console
 				console.warn('[FlowRunLog] step-log fetch failed', err)
-				this.$set(this.stepLogs, runId, [])
+				this.stepLogs[runId] = []
 			}
 		},
 		formatDate(value) {

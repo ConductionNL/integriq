@@ -68,19 +68,19 @@
 			<div class="rule-detail-page__grid">
 				<NcTextField
 					:label="t('openconnector', 'Name')"
-					:value="draft && draft.name ? String(draft.name) : ''"
-					@update:value="(value) => updateField('name', value)" />
+					:model-value="draft && draft.name ? String(draft.name) : ''"
+					@update:model-value="(value) => updateField('name', value)" />
 				<NcTextField
 					:label="t('openconnector', 'Timing')"
-					:value="draft && draft.timing ? String(draft.timing) : ''"
+					:model-value="draft && draft.timing ? String(draft.timing) : ''"
 					:placeholder="t('openconnector', 'e.g. before, after, on_error')"
-					@update:value="(value) => updateField('timing', value)" />
+					@update:model-value="(value) => updateField('timing', value)" />
 				<NcTextField
 					:label="t('openconnector', 'Order')"
 					type="number"
-					:value="draft && draft.order != null ? String(draft.order) : ''"
+					:model-value="draft && draft.order != null ? String(draft.order) : ''"
 					:placeholder="'0'"
-					@update:value="(value) => updateField('order', value === '' ? null : Number(value))" />
+					@update:model-value="(value) => updateField('order', value === '' ? null : Number(value))" />
 				<div class="rule-detail-page__grid-full">
 					<label class="rule-detail-page__label" :for="'rule-description'">
 						{{ t('openconnector', 'Description') }}
@@ -357,19 +357,19 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		updateField(key, value) {
 			if (!this.draft) return
-			this.$set(this.draft, key, value)
+			this.draft[key] = value
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
-			this.$set(this.draft, 'conditions', node)
+			this.draft.conditions = node
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onConfigurationUpdate(next) {
 			if (!this.draft) return
-			this.$set(this.draft, 'configuration', next)
+			this.draft.configuration = next
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */

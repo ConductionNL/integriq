@@ -14,6 +14,9 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
@@ -35,6 +38,7 @@ use OCA\OpenConnector\Exception\FormsFeatureDisabledException;
 use OCA\OpenConnector\Service\Forms\FormsSyncAdapter;
 use OCA\OpenConnector\Service\Security\SensitiveFieldRegistry;
 use OCA\OpenConnector\Service\Tables\TablesSyncAdapter;
+use OCA\OpenConnector\Util\SafeXmlParser;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
@@ -71,6 +75,24 @@ use Twig\Error\SyntaxError;
  */
 class SynchronizationService
 {
+
+    /**
+     * The synchronizations currently on the chaining call stack.
+     *
+     * OpenConnector chains synchronizations two ways — a `synchronization` rule
+     * and a `followUps` entry — and both re-enter `synchronize()` on this same
+     * service. Neither had any cycle or depth guard, so A -> B -> A recursed
+     * until the process died. One shared stack guards both, because a cycle can
+     * be formed out of either kind of hop, or a mix of the two.
+     *
+     * Static because the recursion runs through the container's single shared
+     * instance, so a per-call variable would not see the outer frame. Entries
+     * are pushed before the nested run and popped in a `finally`, so a failed
+     * run does not leave the chain permanently blocked.
+     *
+     * @var array<int, string>
+     */
+    private static array $syncChainStack = [];
 
     /**
      * Retention period in milliseconds for error synchronization logs.
@@ -1530,6 +1552,8 @@ class SynchronizationService
      * @spec openspec/specs/synchronization-engine/spec.md
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-cursor-watermark-advances-only-after-a-complete-successful-fetch-req-017
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Backward-compatible optional flags
      * (isTest/force pre-exist; forceDeletion is mandated by design.md Decision 2/3).
@@ -1701,6 +1725,31 @@ class SynchronizationService
             $objectProcessingTimes = [];
 
             foreach ($objectList as $object) {
+                // Bare-scalar source item coercion (synchronization-engine
+                // spec REQ-002/REQ-008, change sync-engine-scalar-items):
+                // getOriginId() and processSynchronizationObject() are
+                // `array`-typed; PHP does not coerce a scalar across a
+                // strict type hint, so an uncoerced scalar (e.g. a source
+                // returning a bare array of strings) throws a TypeError at
+                // the call boundary before either method body — and before
+                // processSynchronizationObject()'s own defensive
+                // is_array() === false skip-check — ever runs. Wrap a bare
+                // scalar into a canonical ['value' => ...] shape here, the
+                // single earliest point common to every sourceType, so it
+                // flows through mapping/identity/write like any other item
+                // instead of dead-lettering with an opaque low-level type
+                // error. A synchronization whose source returns scalar
+                // items MUST set sourceConfig.idPosition to 'value' for
+                // getOriginId()'s default idPosition ('id') to be
+                // overridden and resolve identity on this coerced shape.
+                // Guarded by is_array() === false so every existing
+                // array-shaped item — the overwhelming common case — is
+                // returned completely untouched, with no behaviour change
+                // to identity-hash semantics for non-scalar sources.
+                if (is_array($object) === false) {
+                    $object = ['value' => $object];
+                }
+
                 $objectStartTime = microtime(true);
 
                 // Per-item isolation (synchronization-engine spec REQ-008,
@@ -1861,18 +1910,50 @@ class SynchronizationService
         }
 
         // Stage 6: Follow-up synchronizations.
-        $stageStartTime = microtime(true);
-        $followUpCount  = 0;
-        foreach (($synchronization['followUps'] ?? []) as $followUp) {
-            $followUpSynchronization = $this->findSynchronization(id: $followUp);
-            $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
-            $followUpCount++;
+        //
+        // This is openconnector's oldest chaining mechanism and it had no cycle
+        // or depth guard: A listing B as a follow-up while B lists A recursed
+        // until the process died, taking the whole request with it. The shared
+        // chain stack bounds it — a follow-up already running higher up the
+        // stack is skipped and reported, not re-entered.
+        //
+        // Chaining like this is what the OpenRegister flow migration replaces:
+        // a flow states the order explicitly, the engine bounds the recursion,
+        // and each hop gets its own persisted, inspectable run.
+        $stageStartTime  = microtime(true);
+        $followUpCount   = 0;
+        $followUpSkipped = [];
+        $selfId          = (string) ($synchronization['id'] ?? ($synchronization['uuid'] ?? ''));
+        if ($selfId !== '') {
+            self::$syncChainStack[] = $selfId;
+        }
+
+        try {
+            foreach (($synchronization['followUps'] ?? []) as $followUp) {
+                if (in_array((string) $followUp, self::$syncChainStack, true) === true) {
+                    $followUpSkipped[] = (string) $followUp;
+                    $this->logger->warning(
+                        'Skipped follow-up synchronization "'.$followUp.'": it is already running on this chain '
+                        .'(cycle). Express the chain as an OpenRegister flow instead.'
+                    );
+                    continue;
+                }
+
+                $followUpSynchronization = $this->findSynchronization(id: $followUp);
+                $this->synchronize(synchronization: $followUpSynchronization, isTest: $isTest, force: $force);
+                $followUpCount++;
+            }
+        } finally {
+            if ($selfId !== '') {
+                array_pop(self::$syncChainStack);
+            }
         }
 
         $result['timing']['stages']['follow_ups'] = [
             'duration_ms'         => round((microtime(true) - $stageStartTime) * 1000, 2),
             'description'         => 'Executing follow-up synchronizations',
             'follow_ups_executed' => $followUpCount,
+            'follow_ups_skipped'  => $followUpSkipped,
         ];
 
         // Calculate total timing.
@@ -1969,7 +2050,7 @@ class SynchronizationService
      *
      * @return void
      *
-     * @spec openspec/specs/synchronization-engine/spec.md#req-008-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync
+     * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
      */
     private function captureSyncItemFailure(array $synchronization, mixed $object, \Throwable $exception): void
     {
@@ -2304,6 +2385,15 @@ class SynchronizationService
 
     /**
      * Gets id from object as is in the origin.
+     *
+     * A synchronization whose source returns bare-scalar items is coerced
+     * to a `['value' => <scalar>]` shape by the per-item loop in
+     * `synchronizeExternToIntern()` (change sync-engine-scalar-items)
+     * before this method is ever called. Such a synchronization MUST set
+     * `sourceConfig.idPosition` to `'value'` — the default `idPosition`
+     * (`'id'`) will not resolve on the coerced shape and, per the existing
+     * behaviour below, throws a clear `Exception` naming the missing key
+     * rather than silently failing.
      *
      * @param array $synchronization The synchronization containing the source config.
      * @param array $object          The object to extract the origin id from.
@@ -4773,10 +4863,12 @@ class SynchronizationService
         // Try parsing the response body in different formats, starting with JSON.
         $result = json_decode($body, true);
 
-        // If JSON parsing failed, try XML.
+        // If JSON parsing failed, try XML. `$body` is the response of an
+        // arbitrary configured Source, so it is untrusted input and must go
+        // through SafeXmlParser (pinned null entity loader + LIBXML_NONET).
         if (empty($result) === true) {
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($body, "SimpleXMLElement", LIBXML_NOCDATA);
+            $xml = SafeXmlParser::parse($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
             if ($xml !== false) {
                 $result = $this->xmlToArray(xml: $xml);
@@ -6899,7 +6991,47 @@ class SynchronizationService
      */
     private function processSyncRule(array $rule, array $data): array
     {
-        // $rule is reserved for future synchronization logic; return data unchanged.
+        $target = trim(
+                (string) (($rule['configuration']['synchronization']['synchronization'] ?? null) ?? ($rule['configuration']['synchronization'] ?? ''))
+                );
+
+        // A rule type that is offered in the editor and silently does nothing is
+        // worse than one that is absent: the author sees their rule listed, in
+        // order, apparently applied. Say so instead.
+        if ($target === '' || is_array($target) === true) {
+            throw new Exception(
+                'A "synchronization" rule must name the synchronization to run in '
+                .'configuration.synchronization.synchronization.'
+            );
+        }
+
+        // Guard the obvious loop. A synchronization whose own rule runs itself
+        // recurses until the process dies, and the same holds for any chain that
+        // comes back round — so every synchronization already entered on this
+        // call stack is off limits, not merely the immediate one.
+        if (in_array($target, self::$syncChainStack, true) === true) {
+            throw new Exception(
+                'A "synchronization" rule would re-enter synchronization "'.$target
+                .'", which is already running. Chain synchronizations with a flow '
+                .'instead: an OpenRegister flow expresses ordering explicitly and '
+                .'the engine bounds the recursion.'
+            );
+        }
+
+        self::$syncChainStack[] = $target;
+
+        try {
+            $this->synchronize(
+                synchronization: $this->getSynchronization(id: $target),
+                isTest: false,
+                force: filter_var((($rule['configuration']['synchronization']['force'] ?? false)), FILTER_VALIDATE_BOOLEAN)
+            );
+        } finally {
+            array_pop(self::$syncChainStack);
+        }
+
+        // A sync rule is a side effect, not a transform: the record travelling
+        // through the pipeline is unchanged by having triggered another sync.
         return $data;
     }//end processSyncRule()
 

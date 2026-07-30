@@ -27,7 +27,7 @@
 			<NcSelect
 				:input-id="'rule-action-type-' + uid"
 				:aria-label-combobox="t('openconnector', 'Action type')"
-				:value="selectedTypeOption"
+				:model-value="selectedTypeOption"
 				:options="typeOptions"
 				:clearable="false"
 				:placeholder="t('openconnector', 'Pick an action type')"
@@ -269,7 +269,7 @@ export default {
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onRawInput(value) {
-			this.$set(this.rawDrafts, this.actionType, value)
+			this.rawDrafts[this.actionType] = value
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
 				this.rawError = ''

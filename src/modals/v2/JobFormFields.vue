@@ -40,7 +40,7 @@
 				<NcSelect
 					:input-id="'cn-job-form-' + field.key"
 					:aria-label-combobox="t('openconnector', 'Synchronization')"
-					:value="selectedSynchronization"
+					:model-value="selectedSynchronization"
 					:options="synchronizationOptions"
 					:loading="synchronizationsLoading"
 					:clearable="!field.required"
@@ -68,7 +68,7 @@
 					<NcSelect
 						:input-id="'cn-job-form-' + field.key"
 						:aria-label-combobox="field.label || t('openconnector', 'Action class')"
-						:value="selectedJobClassOption"
+						:model-value="selectedJobClassOption"
 						:options="jobClassOptions"
 						:clearable="!field.required"
 						:placeholder="t('openconnector', 'Pick an action class')"
@@ -81,24 +81,24 @@
 				<NcTextField
 					v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
 					:label="field.label + (field.required ? ' *' : '')"
-					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
 					:error="!!errors[field.key]"
 					:type="textFieldType(field)"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:value="(value) => updateField(field.key, value)" />
+					@update:model-value="(value) => updateField(field.key, value)" />
 
 				<NcTextField
 					v-else-if="field.widget === 'number'"
 					:label="field.label + (field.required ? ' *' : '')"
-					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
 					:error="!!errors[field.key]"
 					type="number"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+					@update:model-value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
 
 				<div v-else-if="field.widget === 'textarea'" class="cn-job-form-fields__textarea-wrapper">
 					<label :for="'cn-job-form-' + field.key" class="cn-job-form-fields__label">
@@ -119,10 +119,10 @@
 
 				<NcCheckboxRadioSwitch
 					v-else-if="field.widget === 'checkbox'"
-					:checked="!!formData[field.key]"
+					:model-value="!!formData[field.key]"
 					:disabled="field.readOnly"
 					type="switch"
-					@update:checked="(value) => updateField(field.key, value)">
+					@update:model-value="(value) => updateField(field.key, value)">
 					{{ field.label }}{{ field.required ? ' *' : '' }}
 				</NcCheckboxRadioSwitch>
 
@@ -148,12 +148,12 @@
 				<NcTextField
 					v-else
 					:label="field.label + (field.required ? ' *' : '')"
-					:value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
 					:helper-text="errors[field.key] || field.description"
 					:error="!!errors[field.key]"
 					:disabled="field.readOnly"
 					:placeholder="field.description"
-					@update:value="(value) => updateField(field.key, value)" />
+					@update:model-value="(value) => updateField(field.key, value)" />
 			</template>
 		</div>
 
@@ -171,7 +171,7 @@
 			<NcSelect
 				input-id="cn-job-form-arguments"
 				:aria-label-combobox="t('openconnector', 'Synchronization')"
-				:value="selectedSynchronization"
+				:model-value="selectedSynchronization"
 				:options="synchronizationOptions"
 				:loading="synchronizationsLoading"
 				:clearable="false"
@@ -384,19 +384,19 @@ export default {
 
 		/** @spec openspec/specs/endpoint-job-editor-ui/spec.md */
 		onJsonInput(field, raw) {
-			this.$set(this.jsonDrafts, field.key, raw)
+			this.jsonDrafts[field.key] = raw
 			const trimmed = raw.trim()
 			if (trimmed.length === 0) {
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, null)
 				return
 			}
 			try {
 				const parsed = JSON.parse(trimmed)
-				this.$set(this.jsonErrors, field.key, '')
+				this.jsonErrors[field.key] = ''
 				this.updateField(field.key, parsed)
 			} catch (parseErr) {
-				this.$set(this.jsonErrors, field.key, t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message }))
+				this.jsonErrors[field.key] = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
 	},

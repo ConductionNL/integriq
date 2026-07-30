@@ -18,9 +18,9 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						</p>
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
-						:checked="testMode"
+						:model-value="testMode"
 						type="switch"
-						@update:checked="testMode = $event">
+						@update:model-value="testMode = $event">
 						{{ t('openconnector', 'Test mode') }}
 					</NcCheckboxRadioSwitch>
 					<NcNoteCard type="info">
@@ -29,9 +29,9 @@ import { synchronizationStore, navigationStore } from '../../store/store.js'
 						</p>
 					</NcNoteCard>
 					<NcCheckboxRadioSwitch
-						:checked="forceSync"
+						:model-value="forceSync"
 						type="switch"
-						@update:checked="forceSync = $event">
+						@update:model-value="forceSync = $event">
 						{{ t('openconnector', 'Force synchronization') }}
 					</NcCheckboxRadioSwitch>
 				</div>

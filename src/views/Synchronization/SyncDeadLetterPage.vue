@@ -27,11 +27,11 @@
 			<div class="syncDeadLetters__filters">
 				<NcSelect :input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					:value.sync="statusFilter"
-					@input="reload" />
+					v-model="statusFilter"
+					@update:model-value="reload" />
 				<NcTextField :label="t('openconnector', 'Synchronization')"
-					:value.sync="synchronizationFilter"
-					@update:value="reloadDebounced" />
+					v-model="synchronizationFilter"
+					@update:model-value="reloadDebounced" />
 			</div>
 		</div>
 
@@ -80,8 +80,8 @@
 			<tbody>
 				<tr v-for="row in rows" :key="row.uuid || row.id">
 					<td>
-						<NcCheckboxRadioSwitch :checked="isSelected(row)"
-							@update:checked="toggleSelect(row)" />
+						<NcCheckboxRadioSwitch :model-value="isSelected(row)"
+							@update:model-value="toggleSelect(row)" />
 					</td>
 					<td>{{ row.synchronization }}</td>
 					<td>{{ row.originId || '—' }}</td>

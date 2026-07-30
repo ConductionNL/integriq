@@ -65,6 +65,16 @@ class CloudEventListener implements IEventListener
     private const SELF_REGISTER = 'openconnector';
 
     /**
+     * Resolved ids of {@see self::SELF_SCHEMAS}, or null until first use.
+     *
+     * Static so the lookup happens once per PHP process rather than once per
+     * dispatched event.
+     *
+     * @var array<int, string>|null
+     */
+    private static ?array $selfSchemaIds = null;
+
+    /**
      * Constructor.
      *
      * @param EventService    $eventService Service for managing CloudEvents.
@@ -171,8 +181,57 @@ class CloudEventListener implements IEventListener
      */
     private function isSelfReference(ObjectEntity $object): bool
     {
-        return $object->getRegister() === self::SELF_REGISTER
-            && in_array($object->getSchema(), self::SELF_SCHEMAS, true) === true;
+        // `ObjectEntity::getRegister()` / `getSchema()` return numeric IDs as
+        // strings ("65", "25") — NOT slugs. Comparing them directly against
+        // 'openconnector' / 'event' could never match, so this guard returned
+        // false for EVERY object and the recursion it documents ran unchecked.
+        //
+        // Measured 2026-07-28 before this fix: ONE object create produced 255
+        // CloudEvents, and the table held 45,715 rows of which 45,398 (99.3%)
+        // carried `source = /objects/com.nextcloud.openregister.object.created`
+        // — i.e. events generated from other events, growing 3-5k/hour, with
+        // object creates taking >120s.
+        //
+        // Compare id-to-id instead, resolving the slugs once.
+        $schemaId = (string) $object->getSchema();
+        if ($schemaId === '') {
+            return false;
+        }
+
+        if (self::$selfSchemaIds === null) {
+            self::$selfSchemaIds = $this->resolveSelfSchemaIds();
+        }
+
+        return in_array($schemaId, self::$selfSchemaIds, true);
 
     }//end isSelfReference()
+
+    /**
+     * Resolve {@see self::SELF_SCHEMAS} to schema ids owned by the
+     * {@see self::SELF_REGISTER} register.
+     *
+     * Cached for the process. Fails OPEN (empty set) so a resolution problem
+     * degrades to the previous behaviour rather than silently swallowing every
+     * event — but it warns loudly, because an inert guard is what caused the
+     * storm in the first place.
+     *
+     * @return array<int, string> Schema ids as strings.
+     */
+    private function resolveSelfSchemaIds(): array
+    {
+        $ids = [];
+        try {
+            foreach ($this->eventService->getSelfSchemaIds() as $id) {
+                $ids[] = (string) $id;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                    '[CloudEventListener] could not resolve self-reference schema ids; '
+                    .'the recursion guard is INERT: '.$e->getMessage()
+                    );
+        }
+
+        return $ids;
+
+    }//end resolveSelfSchemaIds()
 }//end class

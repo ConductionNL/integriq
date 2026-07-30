@@ -23,14 +23,14 @@
 		<div class="oc-export-dialog">
 			<p>{{ t('openconnector', 'Download a configuration group as a slug-referenced JSON document. Credentials are always stripped from the export.') }}</p>
 
-			<NcSelect :value="selected"
+			<NcSelect :model-value="selected"
 				:options="options"
 				:loading="loading"
 				:input-label="t('openconnector', 'Configuration group')"
 				:placeholder="t('openconnector', 'Select a configuration group')"
 				label="label"
 				data-testid="export-configuration-select"
-				@input="onSelect" />
+				@update:model-value="onSelect" />
 
 			<NcNoteCard v-if="options.length === 0 && !loading" type="info">
 				{{ t('openconnector', 'No configuration groups found. Assign entities to a configuration first.') }}

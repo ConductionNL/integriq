@@ -44,10 +44,10 @@
 							:key="`${action}-${group}`"
 							class="openconnector-admin__matrix-cell">
 							<NcCheckboxRadioSwitch
-								:checked="isChecked(action, group)"
+								:model-value="isChecked(action, group)"
 								:disabled="group === 'admin'"
 								:aria-label="t('openconnector', 'Allow group {group} to perform {action}', { group, action })"
-								@update:checked="toggle(action, group, $event)" />
+								@update:model-value="toggle(action, group, $event)" />
 						</td>
 					</tr>
 				</tbody>

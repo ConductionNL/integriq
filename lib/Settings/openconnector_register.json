@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenConnector Register",
     "description": "Integration platform register for the OpenConnector Nextcloud app. Manages Sources (outbound integrations), Endpoints (inbound API), Consumers (subscribers), Event/EventMessage/EventSubscription (event bus), Job/Mapping/Rule (workflow engine), Synchronization/SynchronizationContract (sync triad), and the four log schemas (CallLog, JobLog, SynchronizationLog, SynchronizationContractLog).",
-    "version": "1.1.0"
+    "version": "1.1.1"
   },
   "x-openregister": {
     "type": "application",
@@ -1063,12 +1063,12 @@
               "kanaal": {
                 "type": "string",
                 "description": "Required for kind=notificaties — the ZGW kanaal name published to. Absent/empty is a configuration error (REQ-006), not a transient failure.",
-                "title": "Notificaties Kanaal"
+                "title": "Notificaties Channel"
               },
               "hoofdObjectField": {
                 "type": "string",
                 "description": "For kind=notificaties — dot-path into event.data used to derive the notification's hoofdObject. Absent falls back to event.subject.",
-                "title": "Hoofdobject Field"
+                "title": "Main Object Field"
               },
               "resourceField": {
                 "type": "string",
@@ -1078,12 +1078,12 @@
               "actieMap": {
                 "type": "object",
                 "description": "For kind=notificaties — overrides the default {created:'create', updated:'update', deleted:'destroy'} event.type-suffix-to-actie mapping",
-                "title": "Actie Map"
+                "title": "Action Map"
               },
               "kenmerken": {
                 "type": "object",
                 "description": "For kind=notificaties — static kenmerken shallow-merged with event.data.kenmerken (event-supplied values win on key collision)",
-                "title": "Kenmerken"
+                "title": "Characteristics"
               }
             }
           },
@@ -2696,7 +2696,7 @@
             "type": "string",
             "format": "uuid",
             "description": "Source zaak UUID in Procest",
-            "title": "Zaak ID"
+            "title": "Case ID"
           },
           "risType": {
             "type": "string",
@@ -2715,7 +2715,7 @@
           "risVergaderingId": {
             "type": "string",
             "description": "Vergadering ID in the RIS",
-            "title": "RIS Vergadering ID"
+            "title": "RIS Meeting ID"
           },
           "direction": {
             "type": "string",
@@ -2777,12 +2777,12 @@
               "doorgeschoven"
             ],
             "description": "Besluit result from the RIS",
-            "title": "Besluit Status"
+            "title": "Decision Status"
           },
           "paraferingStatus": {
             "type": "object",
             "description": "Current parafering progress (completed/total, current step)",
-            "title": "Parafering Status"
+            "title": "Initialing Status"
           },
           "sourceId": {
             "type": "string",
@@ -3641,12 +3641,12 @@
           "verzoekId": {
             "type": "string",
             "description": "The DSO Verzoek identifier (verzoeknummer/OLO-nummer) — the correlation reference for the outbound status/besluit leg",
-            "title": "Verzoek ID"
+            "title": "Request ID"
           },
           "bronorganisatie": {
             "type": "string",
             "description": "The submitting bevoegd gezag's OIN/bronorganisatie code, as received on the STAM payload",
-            "title": "Bronorganisatie"
+            "title": "Source Organisation"
           },
           "type": {
             "type": "string",
@@ -3656,12 +3656,12 @@
           "indieningsdatum": {
             "type": "string",
             "description": "ISO 8601 submission date as reported by DSO-LV",
-            "title": "Indieningsdatum"
+            "title": "Submission Date"
           },
           "rawVerzoek": {
             "type": "object",
             "description": "The full parsed Verzoek (DSOParserService::parseVerzoek() output) as received -- audit only, never sent to the Case; see mappedTitle/mappedSummary/mappedChannel/mappedPriority for the normalised fields",
-            "title": "Raw Verzoek"
+            "title": "Raw Request"
           },
           "requester": {
             "type": "object",
@@ -3787,7 +3787,7 @@
           "verzoekUuid": {
             "type": "string",
             "description": "The correlated dso_verzoek's OpenRegister uuid",
-            "title": "Verzoek UUID"
+            "title": "Request UUID"
           },
           "error": {
             "type": "string",
@@ -3839,14 +3839,14 @@
           "kanalen": {
             "type": "array",
             "description": "The kanalen this abonnement subscribes to, each with an optional filters map",
-            "title": "Kanalen",
+            "title": "Channels",
             "items": {
               "type": "object",
               "properties": {
                 "naam": {
                   "type": "string",
                   "description": "The kanaal name (e.g. 'zaken', 'documenten', 'besluiten')",
-                  "title": "Naam"
+                  "title": "Name"
                 },
                 "filters": {
                   "type": "object",
@@ -3864,7 +3864,7 @@
           "url": {
             "type": "string",
             "description": "The remote-assigned abonnement resource URL returned by the Notificaties API on successful registration (distinct from callbackUrl)",
-            "title": "Remote Abonnement URL"
+            "title": "Remote Subscription URL"
           },
           "consumerId": {
             "type": "string",
@@ -4235,7 +4235,7 @@
             "items": {
               "type": "object"
             },
-            "title": "Betrokkenen"
+            "title": "Involved Parties"
           },
           "onderwerpobjecten": {
             "type": "array",
@@ -4243,7 +4243,7 @@
             "items": {
               "type": "object"
             },
-            "title": "Onderwerpobjecten"
+            "title": "Subject Objects"
           },
           "caseReference": {
             "type": "string",
@@ -4306,7 +4306,7 @@
           "berichttype": {
             "type": "string",
             "description": "The berichtcode (e.g. Wmo303, Jw321, Wmo304)",
-            "title": "Berichttype"
+            "title": "Message Type"
           },
           "domain": {
             "type": "string",
@@ -4342,7 +4342,7 @@
           "kenmerk": {
             "type": "string",
             "description": "The stuurgegevens.kenmerk an INBOUND retour echoed back — resolved against a prior outbound record's ref; null on outbound records",
-            "title": "Kenmerk"
+            "title": "Reference Code"
           },
           "caseReference": {
             "type": "string",
@@ -4411,12 +4411,12 @@
               "unknown"
             ],
             "description": "The StUF-ZKN berichttype tag; \"unknown\" when an inbound envelope could not even be identified",
-            "title": "Berichttype"
+            "title": "Message Type"
           },
           "referentienummer": {
             "type": "string",
             "description": "The stuurgegevens.referentienummer this message carries — the idempotency/correlation key for redelivery detection and the Bv03/Fo03 crossRefnummer",
-            "title": "Referentienummer"
+            "title": "Reference Number"
           },
           "verwerkingssoort": {
             "type": "string",
@@ -4427,7 +4427,7 @@
               "V"
             ],
             "description": "StUF 3.01 core verwerkingssoort: T=toevoeging, W=wijziging, I=wijziging van een identificerend gegeven, V=vervallen; null when unknown (translation failed before it could be read)",
-            "title": "Verwerkingssoort"
+            "title": "Processing Type"
           },
           "entiteittype": {
             "type": "string",
@@ -4436,7 +4436,7 @@
               "EDC"
             ],
             "description": "StUF entiteittype: ZAK (zaak) or EDC (document); null when unknown",
-            "title": "Entiteittype"
+            "title": "Entity Type"
           },
           "status": {
             "type": "string",

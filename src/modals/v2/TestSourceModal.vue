@@ -52,7 +52,7 @@
 						{{ t('openconnector', 'Endpoint (path appended to the source location)') }}
 					</label>
 					<NcTextField id="cn-test-source-endpoint"
-						:value.sync="endpoint"
+						v-model="endpoint"
 						:label="t('openconnector', 'Endpoint')"
 						placeholder="/health" />
 

@@ -307,13 +307,19 @@ class SourcesController extends Controller
             }
         }
 
-        // Fire the call. Any failure inside the engine must surface as a clean JSON
-        // error, never an empty 200: an uncaught Throwable here previously produced a
-        // blank response the UI could not interpret ("no response data"). Catching it
-        // keeps the endpoint's contract — always JSON — so the Test-connection modal can
-        // show the operator what went wrong.
+        // Fire the call with persistLog:false — an interactive connection test returns the
+        // live response but must NOT write a CallLog: persisting one runs a full OpenRegister
+        // object save plus a source-rate-limit mutation (test noise + latency). And any engine
+        // failure must surface as clean JSON, never an empty 200 the UI cannot interpret, so
+        // the whole call is wrapped: the Test-connection modal always gets a readable result.
         try {
-            $callLog = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
+            $callLog = $callService->call(
+                source: $source,
+                endpoint: $endpoint,
+                method: $method,
+                config: $config,
+                persistLog: false
+            );
         } catch (\Throwable $e) {
             $this->logger->error(
                 'Source test failed: '.$e->getMessage(),

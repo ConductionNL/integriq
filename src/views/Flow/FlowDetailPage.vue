@@ -85,9 +85,9 @@
 
 			<section class="flow-detail__card">
 				<h3>{{ t('openconnector', 'General') }}</h3>
-				<NcTextField :label="t('openconnector', 'Name') + '*'" :value="draft.name" @update:value="(value) => updateDraft('name', value)" />
-				<NcTextArea resize="vertical" :label="t('openconnector', 'Description')" :value.sync="draft.description" />
-				<NcCheckboxRadioSwitch :checked.sync="draft.isEnabled">
+				<NcTextField :label="t('openconnector', 'Name') + '*'" :model-value="draft.name" @update:model-value="(value) => updateDraft('name', value)" />
+				<NcTextArea resize="vertical" :label="t('openconnector', 'Description')" v-model="draft.description" />
+				<NcCheckboxRadioSwitch v-model="draft.isEnabled">
 					{{ t('openconnector', 'Enabled (cron/endpoint/event triggers run this flow; a manual Run always works)') }}
 				</NcCheckboxRadioSwitch>
 			</section>
@@ -421,7 +421,7 @@ export default {
 
 		updateDraft(key, value) {
 			if (!this.draft) return
-			this.$set(this.draft, key, value)
+			this.draft[key] = value
 		},
 
 		nextOrder() {
@@ -431,18 +431,18 @@ export default {
 
 		addStep() {
 			const steps = [...this.draft.steps, ...keyedSteps([{ order: this.nextOrder(), type: 'mapping', onError: 'stop' }])]
-			this.$set(this.draft, 'steps', steps)
+			this.draft.steps = steps
 		},
 
 		updateStep(index, value) {
 			const steps = [...this.draft.steps]
 			steps[index] = { ...steps[index], ...value }
-			this.$set(this.draft, 'steps', steps)
+			this.draft.steps = steps
 		},
 
 		removeStep(index) {
 			const steps = this.draft.steps.filter((_, i) => i !== index)
-			this.$set(this.draft, 'steps', steps)
+			this.draft.steps = steps
 		},
 
 		/**
@@ -464,7 +464,7 @@ export default {
 			steps[index] = { ...steps[index], order: neighbourOrder }
 			steps[neighbourIndex] = { ...steps[neighbourIndex], order: currentOrder }
 			steps.sort((a, b) => a.order - b.order)
-			this.$set(this.draft, 'steps', steps)
+			this.draft.steps = steps
 		},
 
 		async runFlow() {

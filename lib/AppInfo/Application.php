@@ -33,6 +33,7 @@ use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientHttp;
 use OCA\OpenConnector\Adapters\Pdok\PdokWmsClientMock;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClient;
 use OCA\OpenConnector\Adapters\Berichtenbox\BerichtenboxClientMock;
+use OCA\OpenConnector\Capabilities;
 use OCA\DAV\Events\CachedCalendarObjectCreatedEvent;
 use OCA\DAV\Events\CachedCalendarObjectDeletedEvent;
 use OCA\DAV\Events\CachedCalendarObjectUpdatedEvent;
@@ -197,6 +198,12 @@ class Application extends App implements IBootstrap
         // `workflowengine` app being enabled (flow-workflowengine-integration
         // design.md Decision 2).
         $this->registerWorkflowEngineOperations(context: $context, dispatcher: $dispatcher);
+
+        // Flow nodes contributed to OpenRegister's flow engine (ADR-065): the
+        // `source-call` and `synchronization-run` nodes that let a flow reach an
+        // external API through a governed OpenConnector Source. Guarded on the
+        // OR flow engine being present so this app still boots without it.
+        $this->registerFlowNodes(dispatcher: $dispatcher);
 
         // Endpoint routing cache: clear it whenever an openconnector/endpoint
         // object is created, updated, or deleted so the runtime path matcher
@@ -403,6 +410,11 @@ class Application extends App implements IBootstrap
         // without a notifier registered under this app id, the notification
         // manager silently drops it when preparing it for display.
         $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
+
+        // dashboard-http-datasource: advertise the capability so a leaf
+        // dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
+        // for the resolve façade via the OCS capabilities document.
+        $context->registerCapability(Capabilities::class);
     }//end register()
 
     /**
@@ -575,6 +587,54 @@ class Application extends App implements IBootstrap
      *
      * @spec openspec/specs/apphost-adoption/spec.md
      */
+    /**
+     * Register OpenConnector's contributed flow nodes with OpenRegister's flow engine.
+     *
+     * Feature-detected on the OR flow engine being present: without it this is a
+     * no-op, so OpenConnector still boots on an instance whose OpenRegister
+     * predates the flow engine.
+     *
+     * @param IEventDispatcher $dispatcher The NC event dispatcher.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openconnector-flow-nodes/specs/flow-nodes/spec.md
+     */
+    private function registerFlowNodes(IEventDispatcher $dispatcher): void
+    {
+        // Deliberately NOT guarded on the OR event class existing.
+        //
+        // The guard that used to stand here ran during register(), and at that
+        // point OpenRegister's classes are not autoloadable yet — apps are
+        // registered in an order that puts `openconnector` before
+        // `openregister`. So `class_exists()` answered FALSE on a perfectly
+        // healthy instance and this returned early: the nodes never registered,
+        // `source-call` and `synchronization-run` were absent from the palette,
+        // and a flow naming either failed only when it RAN. Verified on a clean
+        // install — the guard logged `class_exists at register(): false`, and
+        // removing it took the registry from 10 nodes to 12.
+        //
+        // Dropping it is safe, which is why the guard was never buying anything:
+        // `::class` resolves to a string and does not autoload, and
+        // addServiceListener() is lazy — FlowNodeListener is only constructed if
+        // the event actually fires, which can only happen when OpenRegister is
+        // present and dispatching it. On an instance whose OpenRegister predates
+        // the flow engine, nothing dispatches and this stays inert, which is
+        // exactly the resilience the guard was reaching for.
+        $dispatcher->addServiceListener(
+            eventName: \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+            className: \OCA\OpenConnector\Flow\FlowNodeListener::class
+        );
+
+    }//end registerFlowNodes()
+
+    /**
+     * @param IRegistrationContext $context Registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/apphost-adoption/spec.md
+     */
     private function registerAppHostObservability(IRegistrationContext $context): void
     {
         // Build the thin openconnector HealthController subclass (URL
@@ -733,13 +793,19 @@ class Application extends App implements IBootstrap
      */
     private function registerAppHostBoilerplate(IRegistrationContext $context): void
     {
-        // Bind the leaf-namespaced AppHost preferences controller class (which
-        // does not physically exist in this app — same pattern as the
-        // Health/Metrics observability aliases) to the OpenRegister generic,
-        // with appName=openconnector so the `pref_` user-value namespace is
-        // scoped to this app.
+        // Bind the AppHost preferences controller (which does not physically
+        // exist in this app — same pattern as the Health/Metrics observability
+        // aliases) to the OpenRegister generic, with appName=openconnector so
+        // the `pref_` user-value namespace is scoped to this app.
+        //
+        // The service key MUST be the STANDARD `OCA\OpenConnector\Controller\…`
+        // namespace, because that is the class name NC's App::main synthesises
+        // from the plain `genericPreferences#…` route name (see the matching
+        // note in appinfo/routes.php). A non-standard namespace key (e.g.
+        // `…\AppHost\Controller\…`) is never looked up by the router, so every
+        // request 503s with "App controller is not enabled".
         $context->registerService(
-            'OCA\\OpenConnector\\AppHost\\Controller\\GenericPreferencesController',
+            'OCA\\OpenConnector\\Controller\\GenericPreferencesController',
             static function (ContainerInterface $c) {
                 return new GenericPreferencesController(
                     appName: self::APP_ID,

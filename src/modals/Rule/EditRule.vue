@@ -77,13 +77,13 @@ import { translate as t } from '@nextcloud/l10n'
 			<!--          Form          -->
 			<!-- ====================== -->
 			<form v-if="!success" @submit.prevent="handleSubmit">
-				<NcTextField :value.sync="ruleItem.name"
+				<NcTextField v-model="ruleItem.name"
 					:label="t('openconnector', 'Name')"
 					required />
 
 				<NcTextArea
 					resize="vertical"
-					:value.sync="ruleItem.description"
+					v-model="ruleItem.description"
 					:label="t('openconnector', 'Description')" />
 
 				<div class="json-editor">
@@ -117,7 +117,7 @@ import { translate as t } from '@nextcloud/l10n'
 						:input-label="t('openconnector', 'Timing')" />
 				</div>
 
-				<NcTextField :value.sync="ruleItem.order"
+				<NcTextField v-model="ruleItem.order"
 					:label="t('openconnector', 'Order')"
 					type="number" />
 
@@ -153,7 +153,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Retain response')"
-						:checked.sync="ruleItem.configuration.synchronization.retainResponse">
+						v-model="ruleItem.configuration.synchronization.retainResponse">
 						{{ t('openconnector', 'Retain original response') }}
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -165,26 +165,26 @@ import { translate as t } from '@nextcloud/l10n'
 						:label="t('openconnector', 'Error Code')"
 						:min="100"
 						:max="999"
-						:value.sync="ruleItem.configuration.error.code"
+						v-model="ruleItem.configuration.error.code"
 						placeholder="500" />
 
 					<NcTextField
 						:label="t('openconnector', 'Error Title')"
 						maxlength="255"
-						:value.sync="ruleItem.configuration.error.name"
+						v-model="ruleItem.configuration.error.name"
 						:placeholder="t('openconnector', 'Something went wrong')" />
 
 					<NcTextArea
 						:label="t('openconnector', 'Error Message')"
 						resize="vertical"
 						maxlength="2550"
-						:value.sync="ruleItem.configuration.error.message"
+						v-model="ruleItem.configuration.error.message"
 						:placeholder="t('openconnector', 'We encountered an unexpected problem')" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Include JSON Logic results in errors array')"
-						:checked.sync="ruleItem.configuration.error.includeJsonLogicResult">
+						v-model="ruleItem.configuration.error.includeJsonLogicResult">
 						{{ t('openconnector', 'Include JSON Logic results in errors array') }}
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -194,7 +194,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextArea
 						resize="vertical"
 						:label="t('openconnector', 'JavaScript Code')"
-						:value.sync="ruleItem.configuration.javascript"
+						v-model="ruleItem.configuration.javascript"
 						class="code-editor"
 						:placeholder="t('openconnector', 'Enter your JavaScript code here...')"
 						rows="10" />
@@ -215,7 +215,7 @@ import { translate as t } from '@nextcloud/l10n'
 								<div :class="`draggable-form-item ${getTheme()}`">
 									<Drag class="drag-handle" :size="40" />
 									<NcTextArea
-										:value.sync="item.apiKey"
+										v-model="item.apiKey"
 										:disabled="loading"
 										:label="t('openconnector', 'Api-key')"
 										resize="none"
@@ -261,7 +261,7 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Property (dot path)') }}</label>
 								<NcTextField
-									:value.sync="item.property"
+									v-model="item.property"
 									placeholder="a.b" />
 							</div>
 							<div class="extendItemProperty">
@@ -297,7 +297,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						:label="t('openconnector', 'Validate fetched object with schema')"
-						:checked.sync="ruleItem.configuration.extend_external_input.validate">
+						v-model="ruleItem.configuration.extend_external_input.validate">
 						{{ t('openconnector', 'Validate fetched object with schema') }}
 					</NcCheckboxRadioSwitch>
 
@@ -306,13 +306,13 @@ import { translate as t } from '@nextcloud/l10n'
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Property') }}</label>
 								<NcTextField
-									:value.sync="item.property"
+									v-model="item.property"
 									placeholder="path.to.url" />
 							</div>
 							<div class="extendItemProperty">
 								<label>{{ t('openconnector', 'Schema ID') }}</label>
 								<NcTextField
-									:value.sync="item.schema"
+									v-model="item.schema"
 									placeholder="schemaId" />
 							</div>
 							<NcButton class="remove-action"
@@ -335,7 +335,7 @@ import { translate as t } from '@nextcloud/l10n'
 						label="File ID Position"
 						type="number"
 						:min="0"
-						:value.sync="ruleItem.configuration.download.fileIdPosition"
+						v-model="ruleItem.configuration.download.fileIdPosition"
 						placeholder="Position of file ID in URL path (e.g. 2)" />
 
 					<div class="info-text">
@@ -347,19 +347,19 @@ import { translate as t } from '@nextcloud/l10n'
 				<template v-if="typeOptions.value?.id === 'upload'">
 					<NcTextField
 						label="Upload Path"
-						:value.sync="ruleItem.configuration.upload.path"
+						v-model="ruleItem.configuration.upload.path"
 						placeholder="/path/to/upload/directory" />
 
 					<NcTextField
 						label="Allowed File Types"
-						:value.sync="ruleItem.configuration.upload.allowedTypes"
+						v-model="ruleItem.configuration.upload.allowedTypes"
 						placeholder="jpg,png,pdf" />
 
 					<NcInputField
 						type="number"
 						label="Max File Size (MB)"
 						:min="1"
-						:value.sync="ruleItem.configuration.upload.maxSize"
+						v-model="ruleItem.configuration.upload.maxSize"
 						placeholder="10" />
 
 					<div class="info-text">
@@ -381,7 +381,7 @@ import { translate as t } from '@nextcloud/l10n'
 						type="number"
 						label="Lock Timeout (minutes)"
 						:min="1"
-						:value.sync="ruleItem.configuration.locking.timeout"
+						v-model="ruleItem.configuration.locking.timeout"
 						placeholder="30" />
 
 					<div class="info-text">
@@ -414,23 +414,23 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="File Path"
-						:value.sync="ruleItem.configuration.fetch_file.filePath"
+						v-model="ruleItem.configuration.fetch_file.filePath"
 						placeholder="path.to.fetch.file" />
 
 					<NcTextField
 						label="File path in sub object(s) (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.subObjectFilepath"
+						v-model="ruleItem.configuration.fetch_file.subObjectFilepath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Object id path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.objectIdPath"
+						v-model="ruleItem.configuration.fetch_file.objectIdPath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						label="Auto Share"
-						:checked.sync="ruleItem.configuration.fetch_file.autoShare">
+						v-model="ruleItem.configuration.fetch_file.autoShare">
 						Auto share
 					</NcCheckboxRadioSwitch>
 
@@ -459,27 +459,27 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="Origin id path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.originIdPath"
+						v-model="ruleItem.configuration.fetch_file.originIdPath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Content path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.contentPath"
+						v-model="ruleItem.configuration.fetch_file.contentPath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Filename path (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.filenamePath"
+						v-model="ruleItem.configuration.fetch_file.filenamePath"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="File extension (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.fileExtension"
+						v-model="ruleItem.configuration.fetch_file.fileExtension"
 						placeholder="path.to.fetch.file.objects" />
 
 					<NcTextField
 						label="Endpoint (optional)"
-						:value.sync="ruleItem.configuration.fetch_file.endpoint"
+						v-model="ruleItem.configuration.fetch_file.endpoint"
 						placeholder="path.to.fetch.file.objects" />
 				</template>
 
@@ -488,12 +488,12 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextField
 						label="File Path"
 						required
-						:value.sync="ruleItem.configuration.write_file.filePath"
+						v-model="ruleItem.configuration.write_file.filePath"
 						placeholder="path.to.file.content" />
 					<NcTextField
 						label="File Name Path"
 						required
-						:value.sync="ruleItem.configuration.write_file.fileNamePath"
+						v-model="ruleItem.configuration.write_file.fileNamePath"
 						placeholder="path.to.file.name" />
 
 					<NcSelect v-model="ruleItem.configuration.write_file.tags"
@@ -508,7 +508,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcCheckboxRadioSwitch
 						type="checkbox"
 						label="Auto Share"
-						:checked.sync="ruleItem.configuration.write_file.autoShare">
+						v-model="ruleItem.configuration.write_file.autoShare">
 						Auto share
 					</NcCheckboxRadioSwitch>
 				</template>
@@ -518,7 +518,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<NcTextField
 						label="Size Location"
 						required
-						:value.sync="ruleItem.configuration.fileparts_create.sizeLocation"
+						v-model="ruleItem.configuration.fileparts_create.sizeLocation"
 						placeholder="path.to.size.location" />
 
 					<NcSelect v-bind="schemaOptions"
@@ -555,12 +555,12 @@ import { translate as t } from '@nextcloud/l10n'
 
 					<NcTextField
 						label="Filename Location"
-						:value.sync="ruleItem.configuration.fileparts_create.filenameLocation"
+						v-model="ruleItem.configuration.fileparts_create.filenameLocation"
 						placeholder="path.to.filename.location" />
 
 					<NcTextField
 						label="Filepart Location"
-						:value.sync="ruleItem.configuration.fileparts_create.filePartLocation"
+						v-model="ruleItem.configuration.fileparts_create.filePartLocation"
 						placeholder="path.to.filepart.location" />
 
 					<NcSelect
@@ -584,13 +584,13 @@ import { translate as t } from '@nextcloud/l10n'
 				<template v-if="typeOptions.value?.id === 'save_object'">
 					<NcTextField
 						label="Register"
-						:value.sync="ruleItem.configuration.save_object.register"
+						v-model="ruleItem.configuration.save_object.register"
 						placeholder="id of register"
 						required />
 
 					<NcTextField
 						label="Schema"
-						:value.sync="ruleItem.configuration.save_object.schema"
+						v-model="ruleItem.configuration.save_object.schema"
 						placeholder="id of schema"
 						required />
 				</template>
@@ -1024,10 +1024,10 @@ export default {
 
 		// Initialize extend_input/extend_external_input structures for new items
 		if (!this.ruleItem.configuration.extend_external_input) {
-			this.$set?.(this.ruleItem.configuration, 'extend_external_input', {
+			this.ruleItem.configuration['extend_external_input'] = {
 				validate: true,
 				properties: [{ property: '', schema: '' }],
-			})
+			}
 		} else if (!this.ruleItem.configuration.extend_external_input.properties || this.ruleItem.configuration.extend_external_input.properties.length === 0) {
 			this.ruleItem.configuration.extend_external_input.properties = [{ property: '', schema: '' }]
 		}
@@ -1042,9 +1042,9 @@ export default {
 				this.ruleItem.configuration.extend_input.items.push({ property: '', extends: [] })
 			}
 		} else if (!this.ruleItem.configuration.extend_input) {
-			this.$set?.(this.ruleItem.configuration, 'extend_input', {
+			this.ruleItem.configuration['extend_input'] = {
 				items: [{ property: '', extends: [] }],
-			})
+			}
 		} else if (!this.ruleItem.configuration.extend_input.items || this.ruleItem.configuration.extend_input.items.length === 0) {
 			this.ruleItem.configuration.extend_input.items = [{ property: '', extends: [] }]
 		}
