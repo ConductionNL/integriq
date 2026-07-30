@@ -304,8 +304,18 @@ class SourcesController extends Controller
             }
         }
 
-        // Fire the call.
-        $callLog = $callService->call(source: $source, endpoint: $endpoint, method: $method, config: $config);
+        // Fire the call. persistLog:false — an interactive connection test returns the
+        // live response but must NOT write a CallLog: persisting one runs a full
+        // OpenRegister object save (thousands of queries on an install with many magic
+        // tables) plus a source-rate-limit mutation, which is what made this endpoint slow
+        // enough to time out and pollutes the source's real call log with test noise.
+        $callLog = $callService->call(
+            source: $source,
+            endpoint: $endpoint,
+            method: $method,
+            config: $config,
+            persistLog: false
+        );
 
         return new JSONResponse($callLog->getObject());
     }//end test()
