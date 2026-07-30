@@ -273,7 +273,7 @@ class EventServiceTest extends TestCase
         // Arrange — message with subscriptionId but subscription does not exist
         $messageEntity = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['subscriptionId' => 'missing-sub-uuid'],
+            ['subscription' => 'missing-sub-uuid'],
             'message-uuid-2'
         );
 
@@ -319,7 +319,7 @@ class EventServiceTest extends TestCase
 
         $message = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['subscriptionId' => 'sub-uuid', 'payload' => $payload],
+            ['subscription' => 'sub-uuid', 'payload' => $payload],
             'msg-uuid'
         );
         $subscription = ObjectServiceMockBuilder::objectEntity(
@@ -385,7 +385,7 @@ class EventServiceTest extends TestCase
     {
         $message = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            ['subscription' => 'sub-uuid', 'payload' => ['a' => 1]],
             'msg-uuid'
         );
         $subscription = ObjectServiceMockBuilder::objectEntity(
@@ -431,7 +431,7 @@ class EventServiceTest extends TestCase
     {
         $message = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            ['subscription' => 'sub-uuid', 'payload' => ['a' => 1]],
             'msg-uuid'
         );
         $subscription = ObjectServiceMockBuilder::objectEntity(
@@ -489,7 +489,7 @@ class EventServiceTest extends TestCase
     {
         $message = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]],
+            ['subscription' => 'sub-uuid', 'payload' => ['a' => 1]],
             'msg-uuid'
         );
         $subscription = ObjectServiceMockBuilder::objectEntity(
@@ -606,7 +606,7 @@ class EventServiceTest extends TestCase
     {
         $this->stubHttpResponse(200, 'pong');
         $captured = null;
-        $message  = $this->pushMessage(['subscriptionId' => 'sub-uuid', 'payload' => ['a' => 1]], $captured);
+        $message  = $this->pushMessage(['subscription' => 'sub-uuid', 'payload' => ['a' => 1]], $captured);
 
         $result = $this->service->deliverMessage($message);
 
@@ -630,7 +630,7 @@ class EventServiceTest extends TestCase
     {
         $this->stubHttpResponse(500, 'boom');
         $captured = null;
-        $message  = $this->pushMessage(['subscriptionId' => 'sub-uuid', 'retryCount' => 0], $captured);
+        $message  = $this->pushMessage(['subscription' => 'sub-uuid', 'retryCount' => 0], $captured);
 
         $result = $this->service->deliverMessage($message);
 
@@ -658,7 +658,7 @@ class EventServiceTest extends TestCase
     {
         $this->stubHttpResponse(429, 'slow down', '600');
         $captured = null;
-        $message  = $this->pushMessage(['subscriptionId' => 'sub-uuid', 'retryCount' => 0], $captured);
+        $message  = $this->pushMessage(['subscription' => 'sub-uuid', 'retryCount' => 0], $captured);
 
         $this->service->deliverMessage($message);
 
@@ -680,7 +680,7 @@ class EventServiceTest extends TestCase
         $this->stubHttpResponse(503, 'down');
         $captured = null;
         // retryCount 4 -> incremented to 5 == maxRetries default.
-        $message = $this->pushMessage(['subscriptionId' => 'sub-uuid', 'retryCount' => 4], $captured);
+        $message = $this->pushMessage(['subscription' => 'sub-uuid', 'retryCount' => 4], $captured);
 
         $result = $this->service->deliverMessage($message);
 
@@ -701,7 +701,7 @@ class EventServiceTest extends TestCase
     {
         $this->stubHttpThrows('dns failure');
         $captured = null;
-        $message  = $this->pushMessage(['subscriptionId' => 'sub-uuid', 'retryCount' => 0], $captured);
+        $message  = $this->pushMessage(['subscription' => 'sub-uuid', 'retryCount' => 0], $captured);
 
         $result = $this->service->deliverMessage($message);
 
@@ -726,14 +726,14 @@ class EventServiceTest extends TestCase
 
         $rows = [
             // due failed — eligible.
-            ['status' => 'failed', 'retryCount' => 2, 'nextAttempt' => $past, 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'failed', 'retryCount' => 2, 'nextAttempt' => $past, 'subscription' => 'sub-uuid'],
             // not yet due — skipped.
-            ['status' => 'failed', 'retryCount' => 1, 'nextAttempt' => $future, 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'failed', 'retryCount' => 1, 'nextAttempt' => $future, 'subscription' => 'sub-uuid'],
             // over cap — skipped.
-            ['status' => 'failed', 'retryCount' => 5, 'nextAttempt' => $past, 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'failed', 'retryCount' => 5, 'nextAttempt' => $past, 'subscription' => 'sub-uuid'],
             // terminal — must never be returned by the query, but guard anyway.
-            ['status' => 'abandoned', 'retryCount' => 5, 'nextAttempt' => null, 'subscriptionId' => 'sub-uuid'],
-            ['status' => 'delivered', 'retryCount' => 1, 'nextAttempt' => null, 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'abandoned', 'retryCount' => 5, 'nextAttempt' => null, 'subscription' => 'sub-uuid'],
+            ['status' => 'delivered', 'retryCount' => 1, 'nextAttempt' => null, 'subscription' => 'sub-uuid'],
         ];
 
         $entities = [];
@@ -797,7 +797,7 @@ class EventServiceTest extends TestCase
             [
                 'status'         => 'abandoned',
                 'retryCount'     => 5,
-                'subscriptionId' => 'sub-uuid',
+                'subscription' => 'sub-uuid',
                 'attempts'       => [['at' => 'x', 'statusCode' => 503, 'error' => null]],
             ],
             'msg-uuid'
@@ -854,7 +854,7 @@ class EventServiceTest extends TestCase
     {
         $delivered = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['status' => 'delivered', 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'delivered', 'subscription' => 'sub-uuid'],
             'msg-uuid'
         );
         $this->objectService->method('find')->willReturn($delivered);
@@ -876,7 +876,7 @@ class EventServiceTest extends TestCase
 
         $abandoned = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['status' => 'abandoned', 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'abandoned', 'subscription' => 'sub-uuid'],
             'msg-uuid'
         );
         $this->objectService->method('find')->willReturn($abandoned);
@@ -905,7 +905,7 @@ class EventServiceTest extends TestCase
     {
         $pending = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['status' => 'pending', 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'pending', 'subscription' => 'sub-uuid'],
             'msg-uuid'
         );
         $this->objectService->method('find')->willReturn($pending);

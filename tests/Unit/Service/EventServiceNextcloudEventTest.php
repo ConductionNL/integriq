@@ -231,6 +231,53 @@ class EventServiceNextcloudEventTest extends TestCase
 
 
     /**
+     * Regression: createEventMessage() must write the event/subscription
+     * references to their `event`/`subscription` uuid FK properties, NOT the
+     * legacy INTEGER `eventId`/`subscriptionId` columns. Writing a UUID into an
+     * integer property fails OpenRegister validation ("should be type 'integer
+     * or null' but is 'string'"), which rejected EVERY event_message write
+     * fleet-wide — the `event`/`eventId` half was fixed but the
+     * `subscription`/`subscriptionId` half was missed, so delivery stayed 100%
+     * broken (empty event_message table). Guards both halves.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-push-delivery-with-status-tracking-and-retry-sweep-req-002
+     */
+    public function testCreateEventMessageWritesUuidForeignKeysNotLegacyIntegerColumns(): void
+    {
+        // A subscription with no types/source/filters matches any event; a
+        // non-push style means no immediate delivery, so the only saveObject
+        // call is the createEventMessage() write we want to inspect.
+        $subscription = ObjectServiceMockBuilder::objectEntity(
+            $this,
+            ['status' => 'active', 'style' => 'pull'],
+            'sub-uuid'
+        );
+
+        $this->objectService->method('findAll')->willReturn(['results' => [$subscription], 'total' => 1]);
+
+        $captured = null;
+        $this->objectService->method('saveObject')->willReturnCallback(
+            function (array $object, ...$rest) use (&$captured) {
+                $captured = $object;
+                return ObjectServiceMockBuilder::objectEntity($this, $object, 'msg-uuid');
+            }
+        );
+
+        $event = ObjectServiceMockBuilder::objectEntity($this, ['type' => 'com.example.created'], 'event-uuid');
+        $this->service->processEvent($event);
+
+        $this->assertIsArray($captured, 'createEventMessage() must persist an event_message');
+        $this->assertSame('event-uuid', $captured['event'], 'event reference must use the `event` uuid FK');
+        $this->assertSame('sub-uuid', $captured['subscription'], 'subscription reference must use the `subscription` uuid FK');
+        $this->assertArrayNotHasKey('eventId', $captured, 'legacy integer `eventId` must be omitted');
+        $this->assertArrayNotHasKey('subscriptionId', $captured, 'legacy integer `subscriptionId` must be omitted');
+        $this->assertSame('pending', $captured['status']);
+    }//end testCreateEventMessageWritesUuidForeignKeysNotLegacyIntegerColumns()
+
+
+    /**
      * TC-17 / REQ-008: a synchronization-action failure enters the standard
      * retry/backoff machine (status=failed, retryCount incremented).
      *
@@ -412,7 +459,7 @@ class EventServiceNextcloudEventTest extends TestCase
         );
 
         // retryCount 0 -> 1: nextAttempt should be ~30s (custom baseSeconds), not 60s.
-        $message = ObjectServiceMockBuilder::objectEntity($this, ['subscriptionId' => 'sub-uuid', 'retryCount' => 0], 'msg-uuid');
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 0], 'msg-uuid');
         $this->service->deliverMessage($message);
 
         $last = strtotime($captured['lastAttempt']);
@@ -421,7 +468,7 @@ class EventServiceNextcloudEventTest extends TestCase
         $this->assertSame('failed', $captured['status']);
 
         // retryCount 2 -> 3 == custom maxRetries: abandons (not the default 5th).
-        $message2 = ObjectServiceMockBuilder::objectEntity($this, ['subscriptionId' => 'sub-uuid', 'retryCount' => 2], 'msg-uuid');
+        $message2 = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 2], 'msg-uuid');
         $this->service->deliverMessage($message2);
 
         $this->assertSame('abandoned', $captured['status']);
@@ -463,7 +510,7 @@ class EventServiceNextcloudEventTest extends TestCase
             }
         );
 
-        $message = ObjectServiceMockBuilder::objectEntity($this, ['subscriptionId' => 'sub-uuid', 'retryCount' => 0], 'msg-uuid');
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 0], 'msg-uuid');
         $this->service->deliverMessage($message);
 
         // Default baseSeconds=60/factor=4 still apply.
@@ -472,13 +519,13 @@ class EventServiceNextcloudEventTest extends TestCase
         $this->assertEqualsWithDelta(60, ($next - $last), 5);
 
         // retryCount 6 -> 7 < custom maxRetries=8: still failed, not abandoned.
-        $message2 = ObjectServiceMockBuilder::objectEntity($this, ['subscriptionId' => 'sub-uuid', 'retryCount' => 6], 'msg-uuid');
+        $message2 = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 6], 'msg-uuid');
         $this->service->deliverMessage($message2);
         $this->assertSame('failed', $captured['status']);
         $this->assertSame(7, $captured['retryCount']);
 
         // retryCount 7 -> 8 == custom maxRetries=8: abandons (not the default 5th).
-        $message3 = ObjectServiceMockBuilder::objectEntity($this, ['subscriptionId' => 'sub-uuid', 'retryCount' => 7], 'msg-uuid');
+        $message3 = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 7], 'msg-uuid');
         $this->service->deliverMessage($message3);
         $this->assertSame('abandoned', $captured['status']);
         $this->assertSame(8, $captured['retryCount']);
@@ -519,7 +566,7 @@ class EventServiceNextcloudEventTest extends TestCase
         );
 
         // retryCount 4 -> 5 == default maxRetries: abandons.
-        $message = ObjectServiceMockBuilder::objectEntity($this, ['subscriptionId' => 'sub-uuid', 'retryCount' => 4], 'msg-uuid');
+        $message = ObjectServiceMockBuilder::objectEntity($this, ['subscription' => 'sub-uuid', 'retryCount' => 4], 'msg-uuid');
         $this->service->deliverMessage($message);
 
         $this->assertSame('abandoned', $captured['status']);
@@ -550,7 +597,7 @@ class EventServiceNextcloudEventTest extends TestCase
         );
         $abandoned = ObjectServiceMockBuilder::objectEntity(
             $this,
-            ['status' => 'abandoned', 'retryCount' => 5, 'subscriptionId' => 'sub-uuid'],
+            ['status' => 'abandoned', 'retryCount' => 5, 'subscription' => 'sub-uuid'],
             'msg-uuid'
         );
 
