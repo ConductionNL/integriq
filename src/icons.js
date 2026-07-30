@@ -29,6 +29,7 @@ import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
 import CardAccountDetailsOutline from 'vue-material-design-icons/CardAccountDetailsOutline.vue'
+import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import ClockTimeFour from 'vue-material-design-icons/ClockTimeFour.vue'
@@ -61,8 +62,11 @@ import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PhoneLog from 'vue-material-design-icons/PhoneLog.vue'
 import PlayCircleOutline from 'vue-material-design-icons/PlayCircleOutline.vue'
+import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import RocketLaunchOutline from 'vue-material-design-icons/RocketLaunchOutline.vue'
 import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
@@ -105,6 +109,7 @@ export default {
 	BookOpenVariantOutline,
 	CalendarClock,
 	CardAccountDetailsOutline,
+	CheckCircleOutline,
 	CheckboxMarkedCircleOutline,
 	ClockOutline,
 	ClockTimeFour,
@@ -137,8 +142,11 @@ export default {
 	MessageTextOutline,
 	PackageVariantClosed,
 	Pencil,
+	PencilOutline,
 	PhoneLog,
 	PlayCircleOutline,
+	PlayOutline,
+	Plus,
 	PowerPlugOutline,
 	RocketLaunchOutline,
 	ScaleBalance,
