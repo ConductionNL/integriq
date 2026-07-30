@@ -133,6 +133,8 @@
       "vue": "$vue"
     },
     "@nextcloud/axios": "~2.5.2",
-    "postcss": "^8.4.49"
+    "postcss": "^8.4.49",
+    "vue3-apexcharts": "<1.9.0",
+    "vue-apexcharts": "<1.9.0"
   }
 }
