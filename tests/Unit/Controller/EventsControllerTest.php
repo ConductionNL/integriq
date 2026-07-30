@@ -329,8 +329,8 @@ class EventsControllerTest extends TestCase
     public function testDeadLetterIndexSurfacesActionKindPerRow(): void
     {
         $rows = [
-            ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'subscriptionId' => 'sub-webhook'], 'm1'),
-            ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'subscriptionId' => 'sub-sync'], 'm2'),
+            ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'subscription' => 'sub-webhook'], 'm1'),
+            ObjectServiceMockBuilder::objectEntity($this, ['status' => 'failed', 'subscription' => 'sub-sync'], 'm2'),
         ];
         $this->orObjectService->method('findAll')->willReturn(['results' => $rows, 'total' => 2]);
         $this->request->method('getParam')->willReturnCallback(static fn($key, $default=null) => $default);
@@ -354,7 +354,7 @@ class EventsControllerTest extends TestCase
 
         $byId = [];
         foreach ($rowsOut as $row) {
-            $byId[$row['subscriptionId']] = $row;
+            $byId[$row['subscription']] = $row;
         }
 
         $this->assertSame('webhook', $byId['sub-webhook']['actionKind']);

@@ -90,7 +90,7 @@
 							@update:model-value="toggleSelect(row)" />
 					</td>
 					<td>{{ rowEventType(row) }}</td>
-					<td>{{ row.subscriptionId }}</td>
+					<td>{{ row.subscription }}</td>
 					<td>
 						<span class="eventDeliveries__actionBadge" data-testid="action-kind-badge">
 							{{ row.actionKind || 'webhook' }}

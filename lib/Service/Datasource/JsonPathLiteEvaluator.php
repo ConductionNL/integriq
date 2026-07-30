@@ -35,7 +35,6 @@ namespace OCA\OpenConnector\Service\Datasource;
  */
 class JsonPathLiteEvaluator
 {
-
     /**
      * Evaluate a JSONPath-lite expression against decoded JSON data.
      *

@@ -411,54 +411,11 @@ class Application extends App implements IBootstrap
         // manager silently drops it when preparing it for display.
         $context->registerNotifierService(\OCA\OpenConnector\Notification\ApprovalNotifier::class);
 
-        // dashboard-http-datasource: advertise the capability so a leaf
+        // Dashboard-http-datasource: advertise the capability so a leaf
         // dashboard/widget host (LaunchPad's live-data-tile-widget) can probe
         // for the resolve façade via the OCS capabilities document.
         $context->registerCapability(Capabilities::class);
     }//end register()
-
-    /**
-     * Answer "is this optional app enabled on this instance" across every
-     * Nextcloud version this app targets.
-     *
-     * THE DEFECT (#1103): the three feature-detection sites below called
-     * `IAppManager::isEnabledForAnyUser()`, which is not a method on
-     * `OCP\App\IAppManager`. On Nextcloud 35 it raises
-     * `Error: Call to undefined method OC\App\AppManager::isEnabledForAnyUser()`.
-     * Because each call site sits inside a `try/catch (\Throwable)` whose only
-     * action is a warning-level log, the failure was SILENT in the way that
-     * matters: the Tables, Forms and WorkflowEngine listeners were simply never
-     * registered, so those integrations did not exist and nothing surfaced
-     * beyond a line in `nextcloud.log`. It was found in the upgrade log of a
-     * failed NC 35 upgrade, not by anything failing loudly.
-     *
-     * THE VERSION SPREAD is why this is a helper rather than a rename.
-     * `isEnabledForAnyone()` — the method that actually expresses this check —
-     * is `@since 32.0.0`, while `appinfo/info.xml` declares
-     * `min-version="28"`. Renaming outright would trade a break on 35 for a
-     * break on 28-31. So: use `isEnabledForAnyone()` where the server has it,
-     * and fall back to `isInstalled()` (`@since 8.0.0`) where it does not.
-     * Those two are the same question — NC's own `@deprecated 32.0.0` note on
-     * `isInstalled()` points callers at `isEnabledForAnyone()` as its
-     * replacement — so the semantics do not shift across the boundary.
-     *
-     * @param \OCP\App\IAppManager $appManager The resolved app manager.
-     * @param string               $appId      The optional app to test.
-     *
-     * @return boolean True when the app is enabled on this instance.
-     *
-     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
-     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
-     */
-    private function isAppEnabled(\OCP\App\IAppManager $appManager, string $appId): bool
-    {
-        if (method_exists($appManager, 'isEnabledForAnyone') === true) {
-            return $appManager->isEnabledForAnyone($appId);
-        }
-
-        return (bool) $appManager->isInstalled($appId);
-
-    }//end isAppEnabled()
 
     /**
      * Register the `nextcloud-event-triggers` capability's `IEventListener`s.
@@ -466,15 +423,15 @@ class Application extends App implements IBootstrap
      * Files and calendar registrations are unconditional (Decision 1):
      * `OCP\Files\Events\Node\*` and `OCP\SystemTag\MapperEvent` are stable
      * public `OCP` API present on every NC version this app targets (NC
-     * 28-35); `dav` (source of the OCA-internal `Cached*` calendar events)
+     * 28-34); `dav` (source of the OCA-internal `Cached*` calendar events)
      * ships bundled with every instance, and `OCP\Calendar\Events\*`
      * (`@since 32.0.0`) is referenced only via `::class` (a compile-time
      * string — safe even where the class does not exist on NC < 32; see
      * class docblocks on the listener classes and design.md Decision 1).
      *
      * Tables and Forms registrations are feature-detected via
-     * {@see isAppEnabled()} — both are optional Nextcloud App
-     * Store apps. `isAppEnabled($appManager, 'tables'|'forms')`
+     * {@see self::appEnabledForAnyone()} — both are optional Nextcloud App
+     * Store apps. `appEnabledForAnyone('tables'|'forms')`
      * returning false means the listener is never registered and no event
      * of that family can ever be observed (REQ-003/REQ-004); this is not
      * required for SAFETY (the `::class` reference is inert either way) but
@@ -514,14 +471,14 @@ class Application extends App implements IBootstrap
         // Tables (REQ-003) — feature-detected.
         try {
             $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
-            if ($this->isAppEnabled(appManager: $appManager, appId: 'tables') === true) {
+            if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'tables') === true) {
                 $dispatcher->addServiceListener(eventName: RowAddedEvent::class, className: NextcloudTablesEventListener::class);
                 $dispatcher->addServiceListener(eventName: RowUpdatedEvent::class, className: NextcloudTablesEventListener::class);
                 $dispatcher->addServiceListener(eventName: RowDeletedEvent::class, className: NextcloudTablesEventListener::class);
             }
 
             // Forms (REQ-004) — feature-detected.
-            if ($this->isAppEnabled(appManager: $appManager, appId: 'forms') === true) {
+            if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'forms') === true) {
                 $dispatcher->addServiceListener(eventName: FormSubmittedEvent::class, className: NextcloudFormsEventListener::class);
             }
         } catch (\Throwable $e) {
@@ -541,6 +498,53 @@ class Application extends App implements IBootstrap
     }//end registerNextcloudEventTriggers()
 
     /**
+     * Whether an app is enabled for anyone, across the Nextcloud versions we support.
+     *
+     * `IAppManager::isEnabledForAnyUser()` was RENAMED to
+     * `isEnabledForAnyone()` and the old name is gone in Nextcloud 34, where
+     * calling it raises "Call to undefined method
+     * OC\App\AppManager::isEnabledForAnyUser()". The caller catches Throwable
+     * and degrades to "Tables/Forms triggers unavailable", so the failure was
+     * silent in behaviour and loud in the log — two warnings on every request
+     * that boots this app, and the Tables and Forms triggers never registered
+     * at all on NC 34.
+     *
+     * info.xml declares `min-version="28"`, so every supported version has to
+     * resolve to a real method. Prefer the current name and fall back.
+     *
+     * THE FALLBACK IS `isInstalled()`, NOT `false` (#1103). `isEnabledForAnyone()`
+     * is `@since 32.0.0`, so on NC 28-31 neither it nor `isEnabledForAnyUser()`
+     * is present — the latter appears in NEITHER the vendored
+     * `nextcloud/ocp:dev-stable29` interface NOR Nextcloud 35's, so that branch is
+     * dead on both ends of the supported range. Returning `false` there is not a
+     * safe default, it is a WRONG answer: it reports an installed, enabled Tables
+     * or Forms app as unavailable and silently skips registering its triggers —
+     * the same user-visible outcome as the bug this method was written to fix,
+     * just reached deliberately.
+     *
+     * `isInstalled()` is `@since 8.0.0` and answers the same question. Nextcloud's
+     * own `@deprecated 32.0.0` note on it names `isEnabledForAnyone()` as the
+     * replacement, so the semantics do not shift across the version boundary.
+     *
+     * @param \OCP\App\IAppManager $appManager The app manager.
+     * @param string               $appId      The app to test.
+     *
+     * @return boolean Whether the app is enabled for anyone.
+     *
+     * @spec openspec/specs/nextcloud-event-triggers/spec.md#requirement-tables-row-events-must-be-normalized-to-cloudevents-when-the-tables-app-is-installed-req-003
+     * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-workflowengine-operation-registration-must-be-feature-detected-on-the-workflowengine-app-req-001
+     */
+    private function appEnabledForAnyone(\OCP\App\IAppManager $appManager, string $appId): bool
+    {
+        if (method_exists($appManager, 'isEnabledForAnyone') === true) {
+            return (bool) $appManager->isEnabledForAnyone($appId);
+        }
+
+        return (bool) $appManager->isInstalled($appId);
+
+    }//end appEnabledForAnyone()
+
+    /**
      * Register OpenConnector's three thin `ISpecificOperation` adapters
      * ("Run synchronization", "Call endpoint", "Fire CloudEvent") with NC
      * core's bundled `workflowengine` app (Settings > Flow), so an admin can
@@ -554,7 +558,7 @@ class Application extends App implements IBootstrap
      * registration, so calling `IManager::registerOperation()` directly here
      * would not survive across requests.
      *
-     * Feature-detected via {@see isAppEnabled()} with `workflowengine`,
+     * Feature-detected via {@see self::appEnabledForAnyone()} ('workflowengine'),
      * mirroring the Tables/Forms gate in {@see registerNextcloudEventTriggers()}:
      * when disabled, no registration occurs and nothing is logged (a disabled
      * `workflowengine` app is a normal state, not a fault). The `IAppManager`
@@ -575,7 +579,7 @@ class Application extends App implements IBootstrap
     {
         try {
             $appManager = $this->getContainer()->get(\OCP\App\IAppManager::class);
-            if ($this->isAppEnabled(appManager: $appManager, appId: 'workflowengine') === true) {
+            if ($this->appEnabledForAnyone(appManager: $appManager, appId: 'workflowengine') === true) {
                 $dispatcher->addServiceListener(
                     eventName: RegisterOperationsEvent::class,
                     className: RegisterOperationsListener::class
@@ -630,6 +634,7 @@ class Application extends App implements IBootstrap
      *
      * @spec openspec/specs/apphost-adoption/spec.md
      */
+
     /**
      * Register OpenConnector's contributed flow nodes with OpenRegister's flow engine.
      *
@@ -672,6 +677,8 @@ class Application extends App implements IBootstrap
     }//end registerFlowNodes()
 
     /**
+     * Adopt the OpenRegister AppHost consumables for this app.
+     *
      * @param IRegistrationContext $context Registration context.
      *
      * @return void
@@ -1065,119 +1072,8 @@ class Application extends App implements IBootstrap
     public function boot(IBootContext $context): void
     {
         $this->registerIntegrationProviders(context: $context);
-        $this->ensureRegisterBootstrapped();
 
     }//end boot()
-
-    /**
-     * Ensure the openconnector register + schemas exist in OpenRegister.
-     *
-     * The InitializeRegister repair step runs during app install/upgrade, but
-     * bails when OpenRegister isn't loaded yet at that moment (install order or
-     * autoloader timing), leaving the app non-functional out of the box until
-     * an admin runs `occ maintenance:repair`. As a safety net, run the same
-     * repair step once at boot — when OR is guaranteed loaded — guarded by an
-     * app-config flag keyed to the installed version so it is a cheap no-op on
-     * every subsequent request.
-     *
-     * @return void
-     */
-    private function ensureRegisterBootstrapped(): void
-    {
-        if (class_exists('\\OCA\\OpenRegister\\Service\\ConfigurationService') === false) {
-            return;
-        }
-
-        try {
-            $container = $this->getContainer();
-            $appConfig = $container->get(\OCP\IAppConfig::class);
-
-            $installedVersion    = $appConfig->getValueString(self::APP_ID, 'installed_version', '');
-            $bootstrappedVersion = $appConfig->getValueString(self::APP_ID, 'register_bootstrapped_version', '');
-            if ($installedVersion !== '' && $bootstrappedVersion === $installedVersion) {
-                return;
-            }
-
-            $repair = $container->get(\OCA\OpenConnector\Repair\InitializeRegister::class);
-            $repair->run(
-                new class implements \OCP\Migration\IOutput {
-                    /**
-                     * Log a debug message.
-                     *
-                     * @param string $message The debug message to log.
-                     *
-                     * @return void
-                     */
-                    public function debug(string $message): void
-                    {
-                    }//end debug()
-
-                    /**
-                     * Log an informational message.
-                     *
-                     * @param string $message The informational message to log.
-                     *
-                     * @return void
-                     */
-                    public function info($message)
-                    {
-                    }//end info()
-
-                    /**
-                     * Log a warning message.
-                     *
-                     * @param string $message The warning message to log.
-                     *
-                     * @return void
-                     */
-                    public function warning($message)
-                    {
-                    }//end warning()
-
-                    /**
-                     * Start the progress reporting.
-                     *
-                     * @param int $max The maximum number of progress units.
-                     *
-                     * @return void
-                     */
-                    public function startProgress($max=0)
-                    {
-                    }//end startProgress()
-
-                    /**
-                     * Advance the progress by the given step.
-                     *
-                     * @param int    $step        The number of units to advance.
-                     * @param string $description The description for the current step.
-                     *
-                     * @return void
-                     */
-                    public function advance($step=1, $description='')
-                    {
-                    }//end advance()
-
-                    /**
-                     * Finish the progress reporting.
-                     *
-                     * @return void
-                     */
-                    public function finishProgress()
-                    {
-                    }//end finishProgress()
-                }
-            );
-
-            $appConfig->setValueString(self::APP_ID, 'register_bootstrapped_version', $installedVersion);
-        } catch (\Throwable $e) {
-            // Soft-fail so a bootstrap hiccup never breaks page loads; the next
-            // boot retries (the flag is only set on success).
-            \OCP\Server::get(\Psr\Log\LoggerInterface::class)->warning(
-                '[openconnector] boot-time register bootstrap failed: '.$e->getMessage()
-            );
-        }//end try
-
-    }//end ensureRegisterBootstrapped()
 
     /**
      * Register openconnector-side IntegrationProviders with OR's IntegrationRegistry.

@@ -23,7 +23,7 @@
 - 📋 Pas bedrijfsregels toe op endpoint-verkeer en houd een audit trail per object bij
 
     ]]></description>
-	<version>0.3.3</version>
+	<version>0.3.4</version>
 	<licence>EUPL-1.2</licence>
 	<category>integration</category>
 	<author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -48,6 +48,11 @@
 	</dependencies>
 
 	<background-jobs>
+		<!-- ADR-076 rule 4: the register bootstrap used to run from
+		     Application::boot() as a fallback for the InitializeRegister repair
+		     step possibly not having run. Gated, but one unset config key away
+		     from a repair step on every request. Hourly cron instead. -->
+		<job>OCA\OpenConnector\Cron\RegisterBootstrapJob</job>
 		<job>OCA\OpenConnector\Cron\JobTask</job>
 		<job>OCA\OpenConnector\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenConnector\Cron\EventRetryJob</job>

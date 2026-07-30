@@ -1,164 +1,165 @@
 [
   {
-    "slug": "app-shell-and-logs-ui",
-    "title": "app-shell-and-logs-ui",
-    "summary": "Provides the OpenConnector application shell and log viewer UI. The root component resolves the current user's effective permissions (injecting an admin marker when applicable) and supplies an app-scoped translate adapter, a modal host opens test-mapping and add-endpoint-rule dialogs in response to a shared event bus, and a unified log index page lists, paginates, and drills into call, endpoint, job, and sync logs.",
-    "docsUrl": "openspec/specs/app-shell-and-logs-ui/spec.md"
+    "slug": "stuf-adapter",
+    "title": "StUF connector for Dutch government",
+    "summary": "You connect legacy StUF-BG and ZKN systems without writing SOAP by hand.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/stuf-adapter/spec.md",
+    "title_nl": "StUF-koppeling voor de Nederlandse overheid",
+    "summary_nl": "Je koppelt bestaande StUF-BG- en ZKN-systemen zonder zelf SOAP te bouwen."
   },
   {
-    "slug": "authentication-twig",
-    "title": "authentication-twig",
-    "summary": "Fetches and mints outbound authentication tokens for configured sources and exposes them to source-configuration templates. It supports OAuth client-credentials and password grants, JWT minting across HS/RS/PS algorithms (including JWT-bearer client assertions), and the Decos non-standard token flow, then surfaces tokens and mapping helpers (encoding, mapping execution, source calls, file lookup, slug) as Twig functions for direct injection into templated request headers.",
-    "docsUrl": "openspec/specs/authentication-twig/spec.md"
+    "slug": "dso-omgevingsloket",
+    "title": "DSO Omgevingsloket connector",
+    "summary": "You receive vergunningaanvragen from the Omgevingsloket over the STAM koppelvlak.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/dso-omgevingsloket/spec.md",
+    "title_nl": "DSO Omgevingsloket-koppeling",
+    "summary_nl": "Je ontvangt vergunningaanvragen uit het Omgevingsloket via het STAM-koppelvlak."
   },
   {
-    "slug": "authorization-jwt",
-    "title": "authorization-jwt",
-    "summary": "Authorizes inbound API requests against OpenConnector endpoints using consumer-registered credentials. It verifies JWT bearer tokens against a consumer's registered public key and algorithm, supports HTTP Basic, OAuth-session, and API-key authorization schemes, maps a successful caller to a Nextcloud user session, and injects CORS response headers with a credentials guard for cross-origin callers.",
-    "docsUrl": "openspec/specs/authorization-jwt/spec.md"
-  },
-  {
-    "slug": "configuration-export-import",
-    "title": "configuration-export-import",
-    "summary": "@e2e exclude Pure backend service (ConfigurationService + per-type ConfigurationHandlers). All slug-translation, export/import, and credential-redaction logic is exercised by PHPUnit + Newman API tests; there is no dedicated UI panel for configuration export/import in openconnector's SPA.",
-    "docsUrl": "openspec/specs/configuration-export-import/spec.md"
-  },
-  {
-    "slug": "endpoint-job-editor-ui",
-    "title": "endpoint-job-editor-ui",
-    "summary": "Provides the editing and execution dialogs for endpoints and jobs. Users can edit an endpoint with register- and schema-aware selectors, configure a job's class, synchronization, and typed JSON arguments, and run or test-run a job or test a source directly against the backend with the response surfaced in the modal.",
-    "docsUrl": "openspec/specs/endpoint-job-editor-ui/spec.md"
-  },
-  {
-    "slug": "endpoint-runtime",
-    "title": "Endpoint Runtime Dispatch",
-    "summary": "OpenConnector exposes configurable endpoints under `/api/endpoint/{path}`. At request time the runtime resolves the path to a registered endpoint, applies CORS, optionally short-circuits \"simple\" schema CRUD, and otherwise runs the full request pipeline — condition checks, before/after rule processing, and dispatch to either an OpenRegister register/schema (object CRUD) or an external Source (proxy via CallService). This capability describes the **observed behaviour** of the endpoint dispatch + caching + request/response normalisation layer (`EndpointsController`, `EndpointService` dispatch methods, and `EndpointCacheService`) as it exists today. It is a retrofit spec: the code already exists, and these REQs document it. Target resolution follows the polymorphic `targetType` / `targetId` contract in ADR-008. Rule processing itself is specified separately under the `rule-pipeline` capability.",
-    "docsUrl": "openspec/specs/endpoint-runtime/spec.md"
-  },
-  {
-    "slug": "flow-token-helper",
-    "title": "flow-token-helper",
-    "summary": "Captures and carries request, response, sync-input, and sync-output snapshots through the rule pipeline. It normalises an incoming Nextcloud request (parsing JSON, XML, and multipart bodies) and response object into a uniform array shape, keeps an editable \"amended\" copy of each slot alongside the original so rules can rewrite payloads, and serialises all eight slots for transport, caching, and logging.",
-    "docsUrl": "openspec/specs/flow-token-helper/spec.md"
-  },
-  {
-    "slug": "http-call-engine",
-    "title": "http-call-engine",
-    "summary": "Dispatches outbound HTTP and SOAP calls to configured sources and records each one as a CallLog. It renders templated request configuration, materialises inline certificates to temp files, enforces per-source enablement and rate limits (short-circuiting with synthetic 409/429 logs), translates HTTP verbs to per-CRUD method overrides, supports pre- and post-request support calls, and persists each call with retention-bounded expiry.",
-    "docsUrl": "openspec/specs/http-call-engine/spec.md"
-  },
-  {
-    "slug": "job-scheduling",
-    "title": "job-scheduling",
-    "summary": "Schedules, runs, and logs OpenConnector background jobs. It registers jobs as Nextcloud timed tasks, sweeps and executes due jobs on a cron cadence (honouring enablement, next-run time, single-run, and force-run semantics), exposes manual run/test endpoints and a paginated job-log API, and periodically deletes expired call, job, and synchronization logs according to per-job and global retention.",
-    "docsUrl": "openspec/specs/job-scheduling/spec.md"
-  },
-  {
-    "slug": "logs-and-statistics",
-    "title": "logs-and-statistics",
-    "summary": "Exposes the log, statistics, and retention-management APIs for OpenConnector. It lists, retrieves, and deletes synchronization and per-source call logs, aggregates per-level log statistics and CSV exports, reads and updates app-wide retention settings, and reports instance-wide totals and sizes while rebasing log expiry dates with database-vendor-aware SQL.",
-    "docsUrl": "openspec/specs/logs-and-statistics/spec.md"
-  },
-  {
-    "slug": "mapping-and-search",
-    "title": "Mapping and Search",
-    "summary": "OpenConnector transforms inbound/outbound payloads through configurable mappings and exposes a federated catalog search helper. The mapping engine has largely moved to OpenRegister (ADR-022) — `MappingService` now delegates to OpenRegister's `MappingService` when present and only falls back to its own dot-array + Twig engine when OpenRegister is unavailable. The search helper compiles request filters into MongoDB / MySQL query fragments and fans out to peer directory instances. This spec captures the observed behavior of the 24 mapping/search code units retroactively; the code already exists.",
-    "docsUrl": "openspec/specs/mapping-and-search/spec.md"
-  },
-  {
-    "slug": "mapping-editor-ui",
-    "title": "mapping-editor-ui",
-    "summary": "Provides the mapping editor frontend for OpenConnector, where users open a mapping detail page to edit its title, description, pass-through flag, and its mapping, cast, and unset rule collections with create/edit/delete, reordering, and duplicate-key validation. Users can run a mapping test against the backend with a JSON input object and target schema, render the transformed result, and save that result as an OpenRegister object in a chosen register.",
-    "docsUrl": "openspec/specs/mapping-editor-ui/spec.md"
-  },
-  {
-    "slug": "object-service-shim",
-    "title": "object-service-shim",
-    "summary": "Provides a MongoDB Data API CRUD shim that translates caller arrays into insertOne/findOne/find/updateOne/deleteOne/aggregate requests over a Guzzle client built from caller-supplied configuration, minting a fresh UUIDv4 as both `id` and `_id` on insert. It also resolves the OpenRegister ObjectService opportunistically — returning null when the app is absent or the container cannot bind it — and resolves mappers by register and schema, throwing on unknown object types.",
-    "docsUrl": "openspec/specs/object-service-shim/spec.md"
-  },
-  {
-    "slug": "organisation-bridge",
-    "title": "organisation-bridge",
-    "summary": "Bridges OpenConnector to OpenRegister's OrganisationService through a soft-fail lazy accessor that returns null (logging a warning on container failure) when OpenRegister is absent, plus an availability predicate consumers switch on. It forwards organisation operations — user organisation statistics, setting the active organisation, and reading the active and listing user organisations as serialized arrays — returning defined unavailable-shape fallbacks when the service is missing or throws.",
-    "docsUrl": "openspec/specs/organisation-bridge/spec.md"
+    "slug": "ibabs-notubiz-connector",
+    "title": "iBabs and NotuBiz connector",
+    "summary": "You pull council meetings and documents straight from your raadsinformatiesysteem.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/ibabs-notubiz-connector/spec.md",
+    "title_nl": "Koppeling met iBabs en NotuBiz",
+    "summary_nl": "Je haalt raadsvergaderingen en stukken rechtstreeks uit je raadsinformatiesysteem."
   },
   {
     "slug": "pdok-adapter",
-    "title": "pdok-adapter",
-    "summary": "Provides a PDOK Locatieserver connector that exposes four authenticated REST endpoints (`/api/pdok/suggest`, `/lookup`, `/free`, `/reverse`) and normalizes PDOK responses into the canonical OpenRegister PostalAddress shape with GeoJSON coordinates. It caches responses in APCu with per-endpoint TTLs, writes looked-up addresses through to the OR addresses register, and stays resilient under load via exponential backoff on rate limits, a circuit breaker, stale-result graceful degradation, and structured per-call observability logging.",
-    "docsUrl": "openspec/specs/pdok-adapter/spec.md"
+    "title": "PDOK Locatieserver lookup",
+    "summary": "You resolve Dutch addresses and coordinates against the official PDOK service.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/pdok-adapter/spec.md",
+    "title_nl": "PDOK Locatieserver-zoekopdrachten",
+    "summary_nl": "Je zoekt Nederlandse adressen en coordinaten op via de officiele PDOK-dienst."
   },
   {
-    "slug": "preferences-api",
-    "title": "preferences-api",
-    "summary": "Provides a per-user preferences API that stores and retrieves preference values scoped to the authenticated user within a sanitized `pref_` key namespace. Reads return the stored value or a default when unset, writes persist non-empty values and clear the preference when an empty string is supplied, and both reject unauthenticated requests and invalid keys.",
-    "docsUrl": "openspec/specs/preferences-api/spec.md"
+    "slug": "endpoint-runtime",
+    "title": "Inbound API gateway",
+    "summary": "You expose any register as a clean API under one configurable path.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/endpoint-runtime/spec.md",
+    "title_nl": "Inkomende API-gateway",
+    "summary_nl": "Je stelt elk register beschikbaar als een nette API onder een instelbaar pad."
   },
   {
-    "slug": "prometheus-metrics",
-    "title": "Prometheus Metrics Endpoint",
-    "summary": "Expose application metrics in Prometheus text exposition format at `GET /api/metrics` for monitoring, alerting, and operational dashboards. Provide a health check endpoint at `GET /api/health` for liveness/readiness probes in container orchestration environments.",
-    "docsUrl": "openspec/specs/prometheus-metrics/spec.md"
+    "slug": "http-call-engine",
+    "title": "Outbound call engine",
+    "summary": "You call any HTTP or SOAP source and every request is logged for audit.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/http-call-engine/spec.md",
+    "title_nl": "Uitgaande call-engine",
+    "summary_nl": "Je roept elke HTTP- of SOAP-bron aan en elk verzoek wordt gelogd voor audit."
   },
   {
-    "slug": "repair-and-app-boot",
-    "title": "repair-and-app-boot",
-    "summary": "Handles OpenConnector install/upgrade and boot-time wiring with OpenRegister: a repair step imports the app's register descriptor into OR via ConfigurationService on every install and upgrade, and boot registers the SynchronizationContractProvider with OR's IntegrationRegistry so SyncContract leaves render in OR object sidebars. Both paths resolve OR lazily and soft-fail with a warning when OpenRegister is absent or resolution throws, so OpenConnector can install and boot independently without crashing.",
-    "docsUrl": "openspec/specs/repair-and-app-boot/spec.md"
+    "slug": "authentication-twig",
+    "title": "Refresh-aware source authentication",
+    "summary": "You authenticate sources with OAuth, JWT, or client assertion and tokens refresh themselves.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/authentication-twig/spec.md",
+    "title_nl": "Bronauthenticatie die tokens ververst",
+    "summary_nl": "Je authenticeert bronnen met OAuth, JWT of client assertion en tokens verversen zichzelf."
   },
   {
-    "slug": "rule-editor-ui",
-    "title": "rule-editor-ui",
-    "summary": "Provides the rule editor frontend for OpenConnector, where users edit a rule's fields with dirty-state tracking, build JsonLogic condition trees through a recursive editor of and/or groups and typed leaf conditions, and configure action-type-specific forms (authentication, mapping, save-object, synchronization, file operations, and more). It also manages dynamic repeating lists with auto-appended blank rows and lets users attach existing rules to an endpoint via the OpenRegister object API.",
-    "docsUrl": "openspec/specs/rule-editor-ui/spec.md"
-  },
-  {
-    "slug": "rule-pipeline",
-    "title": "Endpoint Rule Pipeline",
-    "summary": "OpenConnector endpoints can carry an ordered list of rules that run before and after the request reaches its target (a register/schema or an external source). Rules implement endpoint-level business logic — authentication enforcement, data mapping, object persistence, file handling, synchronisation triggers, audit-trail reads, locking, custom transforms, and configured error responses. This capability describes the **observed behaviour** of the rule-processing engine (`EndpointService` rule methods + `RuleService` custom rules) as it exists today. It is a retrofit spec: the code already exists, and these REQs document it rather than prescribe new work. Per ADR-002 the rule engine is an openconnector-local concept with no OpenRegister equivalent.",
-    "docsUrl": "openspec/specs/rule-pipeline/spec.md"
-  },
-  {
-    "slug": "software-catalogus-events",
-    "title": "software-catalogus-events",
-    "summary": "Extends VNG-GEMMA ArchiMate model graphs asynchronously through a ReactPHP promise-based service that resolves the OpenRegister model, walks its views, and enriches each node and connection with its matching element and relations using identifier-suffix normalisation. It also listens to OpenRegister object lifecycle events and routes organisation and contact create/update/delete to provisioning orchestrators that drive per-event helpers (user, email, security-group, and VNG-notification provisioning).",
-    "docsUrl": "openspec/specs/software-catalogus-events/spec.md"
-  },
-  {
-    "slug": "storage-uploads",
-    "title": "storage-uploads",
-    "summary": "Provides multi-part file upload storage for OpenConnector: initialising an upload splits a file into cache-tracked parts against a configurable part size, individual parts are appended into a sibling parts folder, and once all parts are present they are reconciled in order into the target file. It also offers a single-shot file write under the active user, surfacing storage, locking, path, and permission errors as the appropriate Nextcloud file exceptions.",
-    "docsUrl": "openspec/specs/storage-uploads/spec.md"
-  },
-  {
-    "slug": "sync-editor-ui",
-    "title": "sync-editor-ui",
-    "summary": "Provides the synchronization editor frontend for OpenConnector, where users edit a synchronization's fields, source and target configuration (API source, register and schema, or file path), and JsonLogic conditions with dirty-state tracking and guarded save. It includes mapping pickers with debounced live preview and reference lists, an edit modal that loads option collections and can install OpenRegister on demand, and modals to run or dry-run test a synchronization against the backend.",
-    "docsUrl": "openspec/specs/sync-editor-ui/spec.md"
-  },
-  {
-    "slug": "synced-from-tab",
-    "title": "synced-from-tab",
-    "summary": "Renders a synced-from tab inside OpenRegister that shows the synchronization provenance of the current object. It resolves the per-object sync-contract sub-resource endpoint (preferring an injected apiBase, otherwise the OpenRegister API path scoped to the object's register, schema, and id), fetches and normalizes the provenance rows, and degrades quietly by flagging the surface unavailable on a 5xx or network failure rather than throwing.",
-    "docsUrl": "openspec/specs/synced-from-tab/spec.md"
+    "slug": "authorization-jwt",
+    "title": "Consumer access control",
+    "summary": "You protect every endpoint with JWT, Basic, OAuth, or API-key per consumer.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/authorization-jwt/spec.md",
+    "title_nl": "Toegangsbeheer voor afnemers",
+    "summary_nl": "Je beveiligt elk endpoint per afnemer met JWT, Basic, OAuth of API-sleutel."
   },
   {
     "slug": "synchronization-engine",
-    "title": "Synchronization Engine",
-    "summary": "Synchronize data between OpenConnector and external systems in both directions (extern→intern pull, intern→extern push), event-driven and on-demand, using the ADR-005 Source → Synchronization → SynchronizationContract triad for incremental change detection. Covers orchestration, source fetching with pagination and rate-limiting, mapping/transformation, target writes with deduplication and cascade, file handling, a sync-side rule pipeline, and the REST + ADR-019 integration surface that drives it.",
-    "docsUrl": "openspec/specs/synchronization-engine/spec.md"
+    "title": "Incremental two-way synchronization",
+    "summary": "You sync only what changed, in both directions, with per-object contracts.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/synchronization-engine/spec.md",
+    "title_nl": "Incrementele tweerichtingssynchronisatie",
+    "summary_nl": "Je synchroniseert alleen wat veranderde, in beide richtingen, met contracten per object."
   },
   {
-    "slug": "user-management-and-login",
-    "title": "User Management and Login",
-    "summary": "@e2e exclude Pure REST authentication surface (UserController + SecurityService + UserService). `/api/user/login`, `/api/user/me`, `/api/user/logout` are headless API endpoints — openconnector has no dedicated login SPA page; Nextcloud's own /login handles UI authentication. Rate-limit, lockout, memory-guard, CORS, and input-sanitisation scenarios require controlled infrastructure state that cannot safely be reproduced in a shared Playwright env. Covered by PHPUnit + Newman API tests.",
-    "docsUrl": "openspec/specs/user-management-and-login/spec.md"
+    "slug": "rule-pipeline",
+    "title": "Endpoint rule pipeline",
+    "summary": "You add business logic before and after a call with JSON-Logic conditions.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/rule-pipeline/spec.md",
+    "title_nl": "Regelpijplijn voor endpoints",
+    "summary_nl": "Je voegt bedrijfslogica toe voor en na een call met JSON-Logic-condities."
   },
   {
-    "slug": "xml-response",
-    "title": "xml-response",
-    "summary": "Provides an XML response type that serialises an array payload to a well-formed XML string via DOMDocument, honouring an `@root` key (or explicit root tag) for the document element and supporting `@attributes`, `#text`, indexed-array fan-out, and numeric-key rewriting in the recursive walk. It allows a render callback to fully override the default serialisation, applies carriage-return normalisation, and uses safe text nodes with an object-to-string fallback that hides IQueryBuilder SQL fragments.",
-    "docsUrl": "openspec/specs/xml-response/spec.md"
+    "slug": "events-cloudevents",
+    "title": "Event bus with signed webhooks",
+    "summary": "You fan out CloudEvents to subscribers and sign each webhook with HMAC.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/events-cloudevents/spec.md",
+    "title_nl": "Eventbus met ondertekende webhooks",
+    "summary_nl": "Je verstuurt CloudEvents naar abonnees en ondertekent elke webhook met HMAC."
+  },
+  {
+    "slug": "job-scheduling",
+    "title": "Scheduled and on-demand jobs",
+    "summary": "You run integrations on a schedule, on demand, or triggered by an event.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/job-scheduling/spec.md",
+    "title_nl": "Geplande en handmatige taken",
+    "summary_nl": "Je draait integraties op schema, op aanvraag of getriggerd door een event."
+  },
+  {
+    "slug": "logs-and-statistics",
+    "title": "Logs, statistics, and retention",
+    "summary": "You inspect every call, export a CSV, and set how long logs are kept.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/logs-and-statistics/spec.md",
+    "title_nl": "Logs, statistieken en bewaartermijnen",
+    "summary_nl": "Je bekijkt elke call, exporteert een CSV en bepaalt hoe lang logs blijven."
+  },
+  {
+    "slug": "prometheus-metrics",
+    "title": "Prometheus metrics and health checks",
+    "summary": "You scrape live metrics and a health endpoint for your monitoring stack.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/prometheus-metrics/spec.md",
+    "title_nl": "Prometheus-metrics en health checks",
+    "summary_nl": "Je leest live metrics en een health-endpoint uit voor je monitoring."
+  },
+  {
+    "slug": "configuration-export-import",
+    "title": "Portable configuration export and import",
+    "summary": "You move sources, endpoints, and jobs between instances with credentials redacted.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/configuration-export-import/spec.md",
+    "title_nl": "Configuratie exporteren en importeren",
+    "summary_nl": "Je verplaatst bronnen, endpoints en taken tussen omgevingen met afgeschermde geheimen."
+  },
+  {
+    "slug": "mapping-and-search",
+    "title": "Payload mapping",
+    "summary": "You reshape inbound and outbound payloads, powered by the OpenRegister mapping engine.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/mapping-and-search/spec.md",
+    "providedBy": "openregister",
+    "title_nl": "Payload-mapping",
+    "summary_nl": "Je hervormt inkomende en uitgaande payloads, aangedreven door de OpenRegister-mappingengine."
+  },
+  {
+    "slug": "dead-letter-replay",
+    "title": "Dead-letter replay",
+    "summary": "You find failed deliveries and replay them once the receiver is back.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/dead-letter-replay/spec.md",
+    "title_nl": "Mislukte berichten opnieuw versturen",
+    "summary_nl": "Je vindt mislukte afleveringen en verstuurt ze opnieuw zodra de ontvanger terug is."
+  },
+  {
+    "slug": "developer-portal",
+    "title": "Developer portal and API lifecycle",
+    "summary": "You will publish OpenAPI docs and version APIs from a self-service portal.",
+    "status": "soon",
+    "docsUrl": "openspec/specs/developer-portal/spec.md",
+    "title_nl": "Ontwikkelaarsportaal en API-levenscyclus",
+    "summary_nl": "Je publiceert straks OpenAPI-documentatie en versiebeheer vanuit een zelfbedieningsportaal."
   }
 ]

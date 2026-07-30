@@ -1,7 +1,7 @@
 <?php
 /**
- * Unit test for Application::isAppEnabled() — the version-safe optional-app
- * feature detection introduced by #1103.
+ * Unit test for Application::appEnabledForAnyone() — version-safe optional-app
+ * feature detection (#1103).
  *
  * @category Test
  * @package  OCA\OpenConnector\Tests\Unit\AppInfo
@@ -44,16 +44,16 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenConnector\AppInfo\Application
  */
-class ApplicationIsAppEnabledTest extends TestCase
+class ApplicationAppEnabledForAnyoneTest extends TestCase
 {
 
 
     /**
-     * Invoke the private isAppEnabled() helper.
+     * Invoke the private appEnabledForAnyone() helper.
      *
      * The instance is created without the parent `App` constructor, which would
      * require a live Nextcloud server container — same technique as the sibling
-     * Application tests. isAppEnabled() touches no container state, so an
+     * Application tests. appEnabledForAnyone() touches no container state, so an
      * unconstructed instance is sufficient.
      *
      * @param IAppManager $appManager The app manager double.
@@ -61,15 +61,15 @@ class ApplicationIsAppEnabledTest extends TestCase
      *
      * @return boolean
      */
-    private function invokeIsAppEnabled(IAppManager $appManager, string $appId): bool
+    private function invokeAppEnabledForAnyone(IAppManager $appManager, string $appId): bool
     {
         $app    = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
-        $method = (new ReflectionClass(Application::class))->getMethod('isAppEnabled');
+        $method = (new ReflectionClass(Application::class))->getMethod('appEnabledForAnyone');
         $method->setAccessible(true);
 
         return $method->invoke($app, $appManager, $appId);
 
-    }//end invokeIsAppEnabled()
+    }//end invokeAppEnabledForAnyone()
 
 
     /**
@@ -97,7 +97,7 @@ class ApplicationIsAppEnabledTest extends TestCase
             ->with('tables')
             ->willReturn(true);
 
-        $this->assertTrue($this->invokeIsAppEnabled($appManager, 'tables'));
+        $this->assertTrue($this->invokeAppEnabledForAnyone($appManager, 'tables'));
 
     }//end testFallsBackToIsInstalledOnServersWithoutIsEnabledForAnyone()
 
@@ -113,7 +113,7 @@ class ApplicationIsAppEnabledTest extends TestCase
         $appManager = $this->createMock(IAppManager::class);
         $appManager->method('isInstalled')->with('forms')->willReturn(false);
 
-        $this->assertFalse($this->invokeIsAppEnabled($appManager, 'forms'));
+        $this->assertFalse($this->invokeAppEnabledForAnyone($appManager, 'forms'));
 
     }//end testReportsFalseWhenTheAppIsNotInstalled()
 
@@ -142,7 +142,7 @@ class ApplicationIsAppEnabledTest extends TestCase
             ->willReturn(true);
         $appManager->expects($this->never())->method('isInstalled');
 
-        $this->assertTrue($this->invokeIsAppEnabled($appManager, 'workflowengine'));
+        $this->assertTrue($this->invokeAppEnabledForAnyone($appManager, 'workflowengine'));
 
     }//end testPrefersIsEnabledForAnyoneWhenTheServerHasIt()
 
@@ -184,7 +184,7 @@ class ApplicationIsAppEnabledTest extends TestCase
         $this->assertSame(
             [],
             $offenders,
-            'these files call a method Nextcloud does not have; use Application::isAppEnabled() instead'
+            'these files call a method Nextcloud does not have; use Application::appEnabledForAnyone() instead'
         );
 
     }//end testNoProductionCodeCallsTheNonExistentIsEnabledForAnyUser()

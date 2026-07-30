@@ -103,7 +103,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
 
     /**
      * Build an `IAppManager` mock answering the "is `workflowengine` enabled"
-     * question for {@see Application::isAppEnabled()}.
+     * question for {@see Application::appEnabledForAnyone()}.
      *
      * WHY THIS CHANGED (#1103). This helper previously did:
      *
@@ -129,7 +129,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
      * against the real interface before reaching for it.
      *
      * This mock now stubs `isInstalled()`, which IS on the vendored NC 29
-     * interface and is the branch `isAppEnabled()` takes when the server predates
+     * interface and is the branch `appEnabledForAnyone()` takes when the server predates
      * `isEnabledForAnyone()` (`@since 32.0.0`) — which is exactly the situation in
      * this test environment, since the pinned stub has no such method.
      *

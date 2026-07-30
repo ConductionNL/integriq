@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  * branch, fetched during this change's implementation) rather than a live
  * installed instance (neither this repo's nor the checked server checkout
  * has the `forms` app present) — see `discovery.md`.
- * `Application::isAppEnabled($appManager, 'forms')` gates registration in
+ * `Application::appEnabledForAnyone($appManager, 'forms')` gates registration in
  * `Application.php::register()` (REQ-004); this listener is never
  * constructed on an instance without the app.
  *

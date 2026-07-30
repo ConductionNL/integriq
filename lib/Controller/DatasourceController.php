@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class DatasourceController extends Controller
 {
-
     /**
      * Constructor.
      *
