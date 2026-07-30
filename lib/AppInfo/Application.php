@@ -421,7 +421,7 @@ class Application extends App implements IBootstrap
      * Answer "is this optional app enabled on this instance" across every
      * Nextcloud version this app targets.
      *
-     * THE DEFECT (#1089): the three feature-detection sites below called
+     * THE DEFECT (#1103): the three feature-detection sites below called
      * `IAppManager::isEnabledForAnyUser()`, which is not a method on
      * `OCP\App\IAppManager`. On Nextcloud 35 it raises
      * `Error: Call to undefined method OC\App\AppManager::isEnabledForAnyUser()`.

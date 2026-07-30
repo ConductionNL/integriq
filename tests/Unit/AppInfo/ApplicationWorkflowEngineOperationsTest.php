@@ -105,7 +105,7 @@ class ApplicationWorkflowEngineOperationsTest extends TestCase
      * Build an `IAppManager` mock answering the "is `workflowengine` enabled"
      * question for {@see Application::isAppEnabled()}.
      *
-     * WHY THIS CHANGED (#1089). This helper previously did:
+     * WHY THIS CHANGED (#1103). This helper previously did:
      *
      * ```php
      * $this->getMockBuilder(IAppManager::class)
