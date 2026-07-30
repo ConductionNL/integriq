@@ -24,6 +24,10 @@
 			:open="testMapping.open"
 			:mapping="testMapping.mapping"
 			@close="closeTestMapping" />
+		<TestSourceModal
+			:open="testSource.open"
+			:source="testSource.source"
+			@close="closeTestSource" />
 		<AddEndpointRuleModal
 			:open="addEndpointRule.open"
 			:endpoint="addEndpointRule.endpoint"
@@ -50,6 +54,7 @@
 
 <script>
 import TestMappingModal from './TestMappingModal.vue'
+import TestSourceModal from './TestSourceModal.vue'
 import AddEndpointRuleModal from './AddEndpointRuleModal.vue'
 import SubscriptionSigningModal from '../Subscription/SubscriptionSigningModal.vue'
 import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
@@ -59,6 +64,7 @@ import PromotePreviewModal from '../PromotePreviewModal.vue'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
+	EVENT_OPEN_TEST_SOURCE,
 	EVENT_OPEN_ADD_ENDPOINT_RULE,
 	EVENT_OPEN_SUBSCRIPTION_SIGNING,
 	EVENT_OPEN_CATALOG_ITEM_DETAIL,
@@ -72,6 +78,7 @@ export default {
 
 	components: {
 		TestMappingModal,
+		TestSourceModal,
 		AddEndpointRuleModal,
 		SubscriptionSigningModal,
 		CatalogItemDetailDialog,
@@ -83,6 +90,7 @@ export default {
 	data() {
 		return {
 			testMapping: { open: false, mapping: null },
+			testSource: { open: false, source: null },
 			addEndpointRule: { open: false, endpoint: null },
 			subscriptionSigning: { open: false, subscription: null },
 			catalogItemDetail: { open: false, item: null },
@@ -95,6 +103,7 @@ export default {
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	mounted() {
 		modalBus.on(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.on(EVENT_OPEN_TEST_SOURCE, this.openTestSource)
 		modalBus.on(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
 		modalBus.on(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
 		modalBus.on(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
@@ -106,6 +115,7 @@ export default {
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 	beforeUnmount() {
 		modalBus.off(EVENT_OPEN_TEST_MAPPING, this.openTestMapping)
+		modalBus.off(EVENT_OPEN_TEST_SOURCE, this.openTestSource)
 		modalBus.off(EVENT_OPEN_ADD_ENDPOINT_RULE, this.openAddEndpointRule)
 		modalBus.off(EVENT_OPEN_SUBSCRIPTION_SIGNING, this.openSubscriptionSigning)
 		modalBus.off(EVENT_OPEN_CATALOG_ITEM_DETAIL, this.openCatalogItemDetail)
@@ -122,6 +132,14 @@ export default {
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		closeTestMapping() {
 			this.testMapping = { open: false, mapping: null }
+		},
+		/** @spec openspec/specs/http-call-engine/spec.md */
+		openTestSource(payload) {
+			this.testSource = { open: true, source: payload?.source ?? null }
+		},
+		/** @spec openspec/specs/http-call-engine/spec.md */
+		closeTestSource() {
+			this.testSource = { open: false, source: null }
 		},
 		/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
 		openAddEndpointRule(payload) {

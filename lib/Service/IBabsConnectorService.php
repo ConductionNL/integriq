@@ -312,8 +312,8 @@ class IBabsConnectorService
      * (REQ-RIS-003) and tested, so it is kept — not deleted and not fake-wired —
      * pending that outbound pipeline, tracked as a follow-up issue.
      *
-     * @spec openspec/changes/ibabs-notubiz-connector/tasks.md#task-3
-     * @orphaned-write-capability exclude Outbound-push entry point (REQ-RIS-003); the outbound Zaak->iBabs pipeline that fires it is unbuilt (follow-up issue).
+     * @spec                      openspec/changes/ibabs-notubiz-connector/tasks.md#task-3
+     * @orphaned-write-capability exclude Outbound-push entry point (REQ-RIS-003); its Zaak->iBabs pipeline is unbuilt.
      */
     public function createAgendapunt(
         ObjectEntity $source,

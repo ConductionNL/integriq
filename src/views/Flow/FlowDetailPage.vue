@@ -431,18 +431,18 @@ export default {
 
 		addStep() {
 			const steps = [...this.draft.steps, ...keyedSteps([{ order: this.nextOrder(), type: 'mapping', onError: 'stop' }])]
-			this.draft['steps'] = steps
+			this.draft.steps = steps
 		},
 
 		updateStep(index, value) {
 			const steps = [...this.draft.steps]
 			steps[index] = { ...steps[index], ...value }
-			this.draft['steps'] = steps
+			this.draft.steps = steps
 		},
 
 		removeStep(index) {
 			const steps = this.draft.steps.filter((_, i) => i !== index)
-			this.draft['steps'] = steps
+			this.draft.steps = steps
 		},
 
 		/**
@@ -464,7 +464,7 @@ export default {
 			steps[index] = { ...steps[index], order: neighbourOrder }
 			steps[neighbourIndex] = { ...steps[neighbourIndex], order: currentOrder }
 			steps.sort((a, b) => a.order - b.order)
-			this.draft['steps'] = steps
+			this.draft.steps = steps
 		},
 
 		async runFlow() {
