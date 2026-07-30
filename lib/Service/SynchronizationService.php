@@ -3495,7 +3495,7 @@ class SynchronizationService
             trace: $trace
         );
 
-        // ocon#109: persist the identity mapping BEFORE the `after` rules run.
+        // Ocon#109: persist the identity mapping BEFORE the `after` rules run.
         //
         // @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
         //
@@ -5451,7 +5451,6 @@ class SynchronizationService
         );
     }//end callSourceObject()
 
-
     /**
      * Asynchronous sibling of {@see callSourceObject()}: dispatches one source
      * call and returns a Guzzle promise resolving to the same call-log
@@ -5507,7 +5506,6 @@ class SynchronizationService
             onHeaders: $onHeaders
         );
     }//end callSourceObjectAsync()
-
 
     /**
      * Resolve a Source value object to the `ObjectEntity` CallService consumes.
@@ -7610,12 +7608,20 @@ class SynchronizationService
             // `invalid: N` can be traced back to malformed source data rather
             // than to target-side rejection.
             $result['objects']['invalid']++;
+
+            // Only a scalar can be previewed; an object or resource has no
+            // meaningful string form here and get_debug_type() already names it.
+            $scalarPreview = '';
+            if (is_scalar($object) === true) {
+                $scalarPreview = (string) $object;
+            }
+
             $this->logger->warning(
                 'Synchronization item counted as invalid: source item is not an array',
                 [
                     'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
                     'receivedType'    => get_debug_type($object),
-                    'preview'         => mb_substr(((string) (is_scalar($object) === true ? $object : '')), 0, 200),
+                    'preview'         => mb_substr($scalarPreview, 0, 200),
                 ]
             );
             if ($trace !== null) {
@@ -7630,7 +7636,7 @@ class SynchronizationService
             }
 
             return ['result' => $result, 'targetId' => null];
-        }
+        }//end if
 
         $sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
         // Optional to fetch extra data now instead of later in ->synchronizeContract.
@@ -7795,17 +7801,17 @@ class SynchronizationService
                 $this->logger->warning(
                     'Synchronization item counted as invalid: unrecognised resultAction',
                     [
-                        'synchronization'      => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-                        'resultAction'         => $resultAction,
-                        'contractResultKeys'   => array_keys(($synchronizationContractResult ?? [])),
-                        'contractError'        => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
-                        'contractUuid'         => ($contractUuid ?? null),
-                        'targetId'             => ($synchronizationContract['targetId'] ?? null),
-                        'originId'             => ($synchronizationContract['originId'] ?? null),
+                        'synchronization'    => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                        'resultAction'       => $resultAction,
+                        'contractResultKeys' => array_keys(($synchronizationContractResult ?? [])),
+                        'contractError'      => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
+                        'contractUuid'       => ($contractUuid ?? null),
+                        'targetId'           => ($synchronizationContract['targetId'] ?? null),
+                        'originId'           => ($synchronizationContract['originId'] ?? null),
                     ]
                 );
                 break;
-        }
+        }//end switch
 
         $targetId = $synchronizationContract['targetId'] ?? null;
 

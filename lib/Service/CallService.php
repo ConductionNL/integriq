@@ -2679,7 +2679,7 @@ class CallService
         }
 
         $prepared['brokeredCredential'] = $credentials['brokeredCredential'];
-        $sourceData                     = $credentials['sourceData'];
+        $sourceData = $credentials['sourceData'];
 
         // Phase 8: Handle preRequest hook; capture postRequest descriptor.
         $prepared['postRequest'] = $this->extractAndFirePreRequest(
@@ -2717,15 +2717,15 @@ class CallService
      * trace-step appending and the postRequest hook all live here for the same
      * reason.
      *
-     * @param array                               $prepared  The {@see prepareCall()} result for this request.
-     * @param \Psr\Http\Message\ResponseInterface $response  The received HTTP response.
-     * @param float                               $timeStart Microtime captured at dispatch.
-     * @param float                               $timeEnd   Microtime captured once the response arrived.
+     * @param array                               $prepared              The {@see prepareCall()} result for this request.
+     * @param \Psr\Http\Message\ResponseInterface $response              The received HTTP response.
+     * @param float                               $timeStart             Microtime captured at dispatch.
+     * @param float                               $timeEnd               Microtime captured once the response arrived.
      * @param boolean                             $runningSupportRequest Whether this call IS a support request (suppresses
      *                                                                   the postRequest hook to avoid recursion).
-     * @param ExecutionTraceContext|null          $trace     The active execution trace context, when any.
-     * @param boolean                             $persistLog When false (interactive "Test connection"), a transient
-     *                                                        unsaved CallLog is returned and nothing is mutated.
+     * @param ExecutionTraceContext|null          $trace                 The active execution trace context, when any.
+     * @param boolean                             $persistLog            When false (interactive "Test connection"), a transient
+     *                                                                   unsaved CallLog is returned and nothing is mutated.
      *
      * @return ObjectEntity The persisted CallLog entity.
      *
@@ -2830,6 +2830,9 @@ class CallService
      *                                                          `$trace->getTraceId()` and a `call` step is appended
      *                                                          to the trace using the already-redacted request/
      *                                                          response data — no second redaction pass.
+     * @param boolean                    $persistLog            When false (interactive "Test connection"), the response
+     *                                                          is returned without writing a CallLog or mutating the
+     *                                                          source — no heavy object save, no test-noise log rows.
      *
      * @return ObjectEntity
      *
@@ -2860,7 +2863,7 @@ class CallService
         ?ExecutionTraceContext $trace=null,
         bool $persistLog=true,
     ): ObjectEntity {
-        // ocon#111 Task 0: this method previously carried an
+        // Ocon#111 Task 0: this method previously carried an
         // `if ($asynchronous === true) { return $response; }` branch that returned a
         // Guzzle Promise. Since `call()` is declared `): ObjectEntity`, reaching that
         // branch was an unconditional TypeError — it could never have worked, and
@@ -3060,7 +3063,7 @@ class CallService
         );
 
         return $promise->then(
-            function ($response) use ($prepared, $sourceData, $retryPolicy, $timeStart, $runningSupportRequest, $trace) {
+            function ($response) use ($prepared, $sourceData, $retryPolicy, $timeStart, $runningSupportRequest, $trace, $persistLog) {
                 $this->recordBreakerOutcome(
                     source: $prepared['source'],
                     sourceData: $sourceData,
@@ -3080,7 +3083,7 @@ class CallService
                     persistLog: $persistLog,
                 );
             },
-            function ($reason) use ($prepared, $sourceData, $retryPolicy, $timeStart, $runningSupportRequest, $trace) {
+            function ($reason) use ($prepared, $sourceData, $retryPolicy, $timeStart, $runningSupportRequest, $trace, $persistLog) {
                 // Guzzle rejects with an exception where the synchronous
                 // dispatchRequest() catches one and converts it to a Response.
                 // Perform the same conversion so a 4xx/5xx or a refused
