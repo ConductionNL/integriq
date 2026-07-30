@@ -3449,7 +3449,7 @@ class SynchronizationService
             trace: $trace
         );
 
-        // ocon#109: persist the identity mapping BEFORE the `after` rules run.
+        // Ocon#109: persist the identity mapping BEFORE the `after` rules run.
         //
         // @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
         //
@@ -5403,7 +5403,15 @@ class SynchronizationService
             $sourceObject->setUuid((string) ($source['uuid'] ?? ''));
             $sourceObject->setObject($source);
 
-            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink, trace: $trace);
+            return $this->callService->call(
+                source: $sourceObject,
+                endpoint: $endpoint,
+                method: $method,
+                config: $config,
+                read: $read,
+                sink: $sink,
+                trace: $trace
+            );
         }
 
         // Address the source by its OpenRegister uuid (the canonical identifier);
@@ -5415,7 +5423,15 @@ class SynchronizationService
 
         $sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
 
-        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, sink: $sink, trace: $trace);
+        return $this->callService->call(
+            source: $sourceObject,
+            endpoint: $endpoint,
+            method: $method,
+            config: $config,
+            read: $read,
+            sink: $sink,
+            trace: $trace
+        );
     }//end callSourceObject()
 
     /**
@@ -6184,7 +6200,7 @@ class SynchronizationService
                 // The temp file could not be created; fall back to the buffered path.
                 $sinkPath = null;
                 $sink     = null;
-                $useSink = false;
+                $useSink  = false;
             }
         }
 
@@ -7358,12 +7374,20 @@ class SynchronizationService
             // `invalid: N` can be traced back to malformed source data rather
             // than to target-side rejection.
             $result['objects']['invalid']++;
+
+            // Only a scalar can be previewed; an object or resource has no
+            // meaningful string form here and get_debug_type() already names it.
+            $scalarPreview = '';
+            if (is_scalar($object) === true) {
+                $scalarPreview = (string) $object;
+            }
+
             $this->logger->warning(
                 'Synchronization item counted as invalid: source item is not an array',
                 [
                     'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
                     'receivedType'    => get_debug_type($object),
-                    'preview'         => mb_substr(((string) (is_scalar($object) === true ? $object : '')), 0, 200),
+                    'preview'         => mb_substr($scalarPreview, 0, 200),
                 ]
             );
             if ($trace !== null) {
@@ -7378,7 +7402,7 @@ class SynchronizationService
             }
 
             return ['result' => $result, 'targetId' => null];
-        }
+        }//end if
 
         $sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
         // Optional to fetch extra data now instead of later in ->synchronizeContract.
@@ -7543,17 +7567,17 @@ class SynchronizationService
                 $this->logger->warning(
                     'Synchronization item counted as invalid: unrecognised resultAction',
                     [
-                        'synchronization'      => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
-                        'resultAction'         => $resultAction,
-                        'contractResultKeys'   => array_keys(($synchronizationContractResult ?? [])),
-                        'contractError'        => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
-                        'contractUuid'         => ($contractUuid ?? null),
-                        'targetId'             => ($synchronizationContract['targetId'] ?? null),
-                        'originId'             => ($synchronizationContract['originId'] ?? null),
+                        'synchronization'    => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                        'resultAction'       => $resultAction,
+                        'contractResultKeys' => array_keys(($synchronizationContractResult ?? [])),
+                        'contractError'      => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
+                        'contractUuid'       => ($contractUuid ?? null),
+                        'targetId'           => ($synchronizationContract['targetId'] ?? null),
+                        'originId'           => ($synchronizationContract['originId'] ?? null),
                     ]
                 );
                 break;
-        }
+        }//end switch
 
         $targetId = $synchronizationContract['targetId'] ?? null;
 
