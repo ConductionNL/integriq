@@ -51,10 +51,11 @@ beforeEach(() => {
 describe('POST action handlers — endpoint + success toast', () => {
 	it('testSourceHandler opens the Test-connection modal (emits EVENT_OPEN_TEST_SOURCE), no POST', () => {
 		const spy = vi.fn()
-		modalBus.$on(EVENT_OPEN_TEST_SOURCE, spy)
+		// mitt (ADR-066): `.on`/`.off` replace the former Vue-2 `$on`/`$off`.
+		modalBus.on(EVENT_OPEN_TEST_SOURCE, spy)
 		const item = { id: 7, uuid: 'u-7', name: 'my-source' }
 		testSourceHandler({ item })
-		modalBus.$off(EVENT_OPEN_TEST_SOURCE, spy)
+		modalBus.off(EVENT_OPEN_TEST_SOURCE, spy)
 		// The handler now hands the whole source to the modal (which resolves id/uuid and
 		// runs the request interactively) rather than firing a blind POST + toast.
 		expect(spy).toHaveBeenCalledTimes(1)
