@@ -22,15 +22,19 @@
  *                      rather than `docs/static/` — see the capture
  *                      spec for details.
  *
- * Point at a running Nextcloud with NEXTCLOUD_URL (default
- * http://localhost:8080). `globalSetup` logs in once (admin/admin by
- * default; override with NC_ADMIN_USER / NC_ADMIN_PASS) and persists
- * the session to `tests/e2e/.auth/admin.json`; every spec reuses it via
- * `use.storageState`.
+ * Point at a running Nextcloud with PLAYWRIGHT_BASE_URL. There is no default —
+ * see tests/e2e/support/baseUrl.ts for why (the old
+ * `NEXTCLOUD_URL || 'http://localhost:8080'` fallback silently targeted the
+ * SHARED dev container). `globalSetup` logs in once (admin/admin by default;
+ * override with NC_ADMIN_USER / NC_ADMIN_PASS) and persists the session to
+ * `tests/e2e/.auth/admin.json`; every spec reuses it via `use.storageState`.
+ *
+ *   PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e
  */
 
 import { defineConfig, devices } from '@playwright/test'
 import * as path from 'path'
+import { BASE_URL } from './tests/e2e/support/baseUrl'
 
 export default defineConfig({
 	testDir: './tests/e2e',
@@ -55,7 +59,7 @@ export default defineConfig({
 	outputDir: 'tests/e2e/test-results',
 
 	use: {
-		baseURL: process.env.NEXTCLOUD_URL || 'http://localhost:8080',
+		baseURL: BASE_URL,
 		storageState: path.resolve(__dirname, 'tests/e2e/.auth/admin.json'),
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',

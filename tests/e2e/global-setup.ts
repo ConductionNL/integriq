@@ -23,6 +23,7 @@ import { chromium, request, type FullConfig } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
+import { BASE_URL } from './support/baseUrl'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -73,10 +74,10 @@ async function ensureNextcloudReachable(baseURL: string): Promise<void> {
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
-	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined)
-		?? process.env.NEXTCLOUD_URL
-		?? process.env.NC_BASE_URL
-		?? 'http://localhost:8080'
+	// BASE_URL is the single authoritative target (see support/baseUrl.ts).
+	// The old `?? 'http://localhost:8080'` tail meant a config that failed to
+	// carry a baseURL silently logged in to the shared dev container.
+	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined) ?? BASE_URL
 	const username = process.env.NC_ADMIN_USER ?? 'admin'
 	const password = process.env.NC_ADMIN_PASS ?? 'admin'
 

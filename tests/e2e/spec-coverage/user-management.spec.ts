@@ -7,14 +7,16 @@
  * Tests REQ-001 (profile read/update via /api/user/me) and REQ-002
  * (login endpoint with brute-force protection at /api/user/login).
  *
- * All tests run against the live Nextcloud instance at localhost:8080
- * with the admin session provided by globalSetup storageState.
+ * All tests run against the live Nextcloud instance named by
+ * PLAYWRIGHT_BASE_URL, with the admin session provided by globalSetup
+ * storageState.
  */
 
 import { test, expect } from '@playwright/test'
 import * as http from 'http'
+import { BASE_URL } from '../support/baseUrl'
 
-const BASE = 'http://localhost:8080'
+const BASE = BASE_URL
 const ME_URL = '/index.php/apps/openconnector/api/user/me'
 const LOGIN_URL = '/index.php/apps/openconnector/api/user/login'
 

@@ -33,8 +33,9 @@
  */
 
 import { test, expect, Page } from '@playwright/test'
+import { BASE_URL } from '../support/baseUrl'
 
-const NEXTCLOUD = process.env.NEXTCLOUD_URL || 'http://localhost:8080'
+const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
