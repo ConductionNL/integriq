@@ -54,3 +54,27 @@ export const BASE_URL: string = RAW.trim().replace(/\/+$/, '')
 export function absoluteUrl(pathname: string): string {
 	return `${BASE_URL}${pathname.startsWith('/') ? pathname : `/${pathname}`}`
 }
+
+/**
+ * The instance under test, split for Node's `http`/`https` request options.
+ *
+ * Some specs bypass Playwright entirely and use `http.request()` so the call
+ * carries no cookies from `storageState` — a legitimate need when asserting an
+ * unauthenticated response. The trap is that `http.request()` takes `hostname`
+ * and `port` as *separate structured fields*, so a hardcoded `port: 8080`
+ * neither reads `use.baseURL` nor looks like a URL to anyone grepping for
+ * "localhost:8080". Two specs pointed their raw login POSTs at the shared dev
+ * container that way, firing failed-login attempts — and therefore brute-force
+ * lockouts on `admin` — into an environment other people were using.
+ *
+ * @return `{ protocol, hostname, port }` for the instance under test, with the
+ *   port defaulted from the protocol when the URL omits it.
+ */
+export function baseUrlParts(): { protocol: string, hostname: string, port: number } {
+	const url = new URL(BASE_URL)
+	return {
+		protocol: url.protocol,
+		hostname: url.hostname,
+		port: Number(url.port || (url.protocol === 'https:' ? 443 : 80)),
+	}
+}

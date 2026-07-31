@@ -14,7 +14,7 @@
 
 import { test, expect } from '@playwright/test'
 import * as http from 'http'
-import { BASE_URL } from '../support/baseUrl'
+import { BASE_URL, baseUrlParts } from '../support/baseUrl'
 
 const BASE = BASE_URL
 const ME_URL = '/index.php/apps/openconnector/api/user/me'
@@ -24,9 +24,10 @@ const LOGIN_URL = '/index.php/apps/openconnector/api/user/login'
 function rawPost(path: string, body: object): Promise<{ status: number; json: unknown }> {
 	return new Promise((resolve, reject) => {
 		const payload = JSON.stringify(body)
+		const { hostname, port } = baseUrlParts()
 		const opts = {
-			hostname: 'localhost',
-			port: 8080,
+			hostname,
+			port,
 			path,
 			method: 'POST',
 			headers: {
