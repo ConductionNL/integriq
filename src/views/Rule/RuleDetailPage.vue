@@ -363,13 +363,13 @@ export default {
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
-			this.draft['conditions'] = node
+			this.draft.conditions = node
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */
 		onConfigurationUpdate(next) {
 			if (!this.draft) return
-			this.draft['configuration'] = next
+			this.draft.configuration = next
 		},
 
 		/** @spec openspec/specs/rule-editor-ui/spec.md */

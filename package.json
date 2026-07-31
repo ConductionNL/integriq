@@ -8,14 +8,15 @@
   },
   "scripts": {
     "test:l10n": "node tests/l10n/check-l10n.js",
+    "test:l10n:parity": "node tests/l10n/check-l10n.js --parity",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
     "build": "NODE_ENV=production webpack --config webpack.config.js --progress",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
     "lint": "eslint src",
     "lint-fix": "npm run lint -- --fix",
-    "test": "jest --silent",
-    "test-coverage": "jest --silent --coverage",
+    "test": "vitest run",
+    "test-coverage": "vitest run --coverage",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text-summary --coverage.include=src/** --coverage.reportsDirectory=coverage-vitest",
     "test:coverage-ratchet": "npm run test:coverage && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json",
@@ -35,7 +36,7 @@
   ],
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "^2.0.7",
+    "@conduction/nextcloud-vue": "^2.1.0-vue3.8",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@mdi/js": "^7.4.47",
@@ -132,6 +133,8 @@
       "vue": "$vue"
     },
     "@nextcloud/axios": "~2.5.2",
-    "postcss": "^8.4.49"
+    "postcss": "^8.4.49",
+    "vue3-apexcharts": "<1.9.0",
+    "vue-apexcharts": "<1.9.0"
   }
 }

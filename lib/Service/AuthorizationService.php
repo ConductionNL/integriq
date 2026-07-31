@@ -601,6 +601,121 @@ class AuthorizationService
     }//end authorizeOAuth()
 
     /**
+     * Authorize the CURRENT Nextcloud session user (ocon#1068).
+     *
+     * WHY THIS TYPE EXISTS
+     * --------------------
+     * The endpoint dispatch route (`/apps/openconnector/api/endpoint/{_path}`)
+     * is `#[PublicPage] #[NoCSRFRequired]`, so NC's own middleware never
+     * consults the session. Every other authentication type this app supports
+     * reads an `Authorization` header, and {@see authorizeOAuth()} explicitly
+     * REFUSES a session cookie. The consequence was that no in-app frontend
+     * could ever call a protected endpoint: a manifest `api-call` button
+     * renders and then always 403s, and no widget can bind to one.
+     *
+     * WHY CSRF IS VERIFIED HERE AND NOT INHERITED
+     * -------------------------------------------
+     * Because the route carries `#[NoCSRFRequired]`, NC has ALREADY decided not
+     * to validate the request token by the time this runs. Accepting a bare
+     * session cookie at that point would make every `nc-session` endpoint
+     * cross-site forgeable from any page a logged-in user visits — a 403 turned
+     * into a confused-deputy write. So the check is made EXPLICITLY, by
+     * delegating to {@see IRequest::passesCSRFCheck()}: exactly the predicate
+     * NC's own `CSRFMiddleware` uses, so there is one definition of
+     * "CSRF-safe" in the stack rather than a second one maintained here.
+     *
+     * WHAT THAT PREDICATE ACTUALLY ACCEPTS (verified against NC 34's
+     * `OC\AppFramework\Http\Request::passesCSRFCheck()`, because the naive
+     * reading is wrong and the difference is load-bearing):
+     *
+     *  1. `passesStrictCookieCheck()` must pass FIRST. This requires the
+     *     `SameSite=Strict` session cookie, which a browser never attaches to a
+     *     cross-site request. THIS is the check that actually defeats forgery,
+     *     and nothing after it can re-open the door.
+     *  2. Then, a request carrying an `OCS-APIRequest` header is accepted
+     *     WITHOUT a request token at all — NC treats the header as proof of a
+     *     same-origin XHR, since setting it cross-origin forces a preflight.
+     *     This app's own preflight ({@see \OCA\OpenConnector\Controller\EndpointsController::preflightedCors()})
+     *     answers `Access-Control-Allow-Credentials: false`, so a cross-origin
+     *     caller cannot attach the victim's session cookie and lands on the
+     *     no-session refusal above.
+     *  3. Otherwise a `requesttoken` from GET, POST or the `REQUESTTOKEN`
+     *     header must validate against the session's CSRF token manager.
+     *
+     * A caller that authenticated with an app password or a Bearer token sends
+     * no session cookie, fails the strict-cookie check, and is refused. That is
+     * correct and intended: those callers have the `basic` / `oauth` / `jwt`
+     * types. This type is exclusively for a browser calling from inside a
+     * Nextcloud page.
+     *
+     * Every branch either throws or falls through to the ACL, so a missing
+     * session, a missing/stale request token and a disallowed user all fail
+     * closed.
+     *
+     * @param array $users  The users allowed to be authenticated according to the rule.
+     * @param array $groups The groups allowed to be authenticated according to the rule.
+     *
+     * @return void
+     *
+     * @throws AuthenticationException When there is no authenticated session user, when the
+     *                                 request carries no valid CSRF token, or when the session
+     *                                 user falls outside the rule's allow-list.
+     *
+     * @spec openspec/specs/authorization-jwt/spec.md
+     */
+    public function authorizeNcSession(array $users=[], array $groups=[]): void
+    {
+        if ($this->userSession->isLoggedIn() === false) {
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'This endpoint requires an authenticated Nextcloud session.']
+            );
+        }
+
+        $user = $this->userSession->getUser();
+
+        if ($user === null) {
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'This endpoint requires an authenticated Nextcloud session.']
+            );
+        }
+
+        // The dispatch route is #[NoCSRFRequired]: without this explicit check a
+        // session-authenticated endpoint would be forgeable from any origin.
+        // See the method docblock for what NC's predicate actually accepts.
+        if ($this->request->passesCSRFCheck() === false) {
+            throw new AuthenticationException(
+                message: 'Not authorized',
+                details: ['reason' => 'A same-origin request with a valid CSRF request token is required for session authentication.']
+            );
+        }
+
+        // Enforce users/groups ACL when the rule has an explicit allow-list.
+        // Empty lists mean "any authenticated user is allowed" — the same
+        // config shape the `basic` and `oauth` rules already use.
+        if (empty($users) === false || empty($groups) === false) {
+            $userInAllowedUsers = (array_intersect($users, [$user->getUID(), $user->getEMailAddress()]) !== []);
+
+            $userGroups          = array_map(
+                static function (IGroup $group): string {
+                    return $group->getGID();
+                },
+                $this->groupManager->getUserGroups($user)
+            );
+            $userInAllowedGroups = (array_intersect($groups, $userGroups) !== []);
+
+            if ($userInAllowedUsers === false && $userInAllowedGroups === false) {
+                throw new AuthenticationException(
+                    message: 'Not authorized',
+                    details: ['reason' => 'The selected user is not allowed to login on this endpoint']
+                );
+            }
+        }
+
+    }//end authorizeNcSession()
+
+    /**
      * Add CORS headers to controller result.
      *
      * @param IRequest $request  The incoming request.

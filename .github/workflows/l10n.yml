@@ -1,0 +1,23 @@
+name: l10n
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, beta, development]
+
+permissions:
+  contents: read
+
+jobs:
+  l10n:
+    name: l10n coverage (en.json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # check-l10n.js uses only Node built-ins (fs/path) — no npm ci needed.
+      - name: Check l10n coverage
+        run: npm run test:l10n

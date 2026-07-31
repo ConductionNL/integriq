@@ -49,7 +49,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.StaticAccess) -- \OCP\Server::get is the only way to lazily resolve the optional OR credential store (class may not exist), mirroring BrokeredCallService.
+ * @SuppressWarnings(PHPMD.StaticAccess)             -- \OCP\Server::get is the only way to
+ *  lazily resolve the OpenRegister ObjectService without a hard dependency.
  *
  * @spec openspec/specs/psd2-ais-bank-feed-connector/spec.md
  */
@@ -240,7 +241,10 @@ class BankfeedSyncService
             );
         }
 
-        /** @var array<string, mixed> $data */
+        /*
+         * @var array<string, mixed> $data
+         */
+
         $data = $connection->getObject();
         if (($data['lifecycleState'] ?? '') !== 'pending') {
             throw new Psd2ProviderException(
@@ -419,8 +423,12 @@ class BankfeedSyncService
             return 0;
         }
 
-        // Re-read after the lifecycle pass (it may have saved warning state).
-        /** @var array<string, mixed> $data */
+        /*
+         * Re-read after the lifecycle pass (it may have saved warning state).
+         *
+         * @var array<string, mixed> $data
+         */
+
         $data = $connection->getObject();
 
         $source        = $this->resolveSource(sourceSlug: (string) ($data['aggregatorSourceSlug'] ?? ''));
@@ -523,7 +531,10 @@ class BankfeedSyncService
      */
     private function applyExpiryLifecycle(ObjectEntity $connection): bool
     {
-        /** @var array<string, mixed> $data */
+        /*
+         * @var array<string, mixed> $data
+         */
+
         $data = $connection->getObject();
 
         if (($data['lifecycleState'] ?? '') !== 'active') {
@@ -589,7 +600,10 @@ class BankfeedSyncService
      */
     public function markRevoked(ObjectEntity $connection, string $reason): void
     {
-        /** @var array<string, mixed> $data */
+        /*
+         * @var array<string, mixed> $data
+         */
+
         $data = $connection->getObject();
         $data['lifecycleState'] = 'revoked';
 
