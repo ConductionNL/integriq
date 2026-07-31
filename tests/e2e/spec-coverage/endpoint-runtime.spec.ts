@@ -61,8 +61,13 @@ test.describe('REQ-EP-UI-001: Add Endpoint modal', () => {
 test.describe('REQ-EP-UI-001: Endpoint detail page', () => {
 	// @e2e endpoint-runtime::endpoint-detail-page-renders-for-an-existing-endpoint
 	test('Endpoint detail URL renders app-content without crashing', async ({ page }) => {
-		// Navigate directly to a detail-style URL; SPA gracefully handles nonexistent IDs
-		await page.goto(`${APP_BASE}/endpoints/__nonexistent__`, { waitUntil: 'networkidle' })
+		// Navigate directly to a detail-style URL; SPA gracefully handles nonexistent IDs.
+		// Like the mapping-detail surface (see mapping-and-search.spec.ts), the
+		// endpoint-detail surface keeps polling an OR fetch for the nonexistent id,
+		// so `networkidle` never settles and the goto burns the whole test timeout.
+		// Wait for the DOM and assert on the rendered content instead — the
+		// assertions below are unchanged and remain the real signal.
+		await page.goto(`${APP_BASE}/endpoints/__nonexistent__`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)
