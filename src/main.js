@@ -42,6 +42,17 @@ import appIcons from './icons.js'
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
 import '@conduction/nextcloud-vue/css/index.css'
 
+// GridStack CSS. `gridstack` is a *required* peerDependency of
+// @conduction/nextcloud-vue (CnDashboardGrid / CnWidgetGrid import `GridStack`
+// from it) and the library deliberately bundles neither the JS nor the CSS, so
+// that a consumer cannot end up with the layout engine and its stylesheet on
+// two different majors. Both therefore have to come from *this* app's single
+// installed copy: the JS via the peer resolution, the CSS via this import.
+// Skipping the stylesheet is the silent-failure case — grid items get their
+// height from the JS but their width from the CSS, so every dashboard widget
+// lays out 0px wide with no console error at all.
+import 'gridstack/dist/gridstack.min.css'
+
 // Global (unscoped) app styles
 import './assets/app.css'
 
