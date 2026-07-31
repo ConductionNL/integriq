@@ -117,5 +117,31 @@ module.exports = defineConfig([{
 		'vue/no-deprecated-v-on-native-modifier': 'error',
 		'vue/no-deprecated-v-on-number-modifiers': 'error',
 		'vue/no-deprecated-vue-config-keycodes': 'error',
+
+		// The five rules below are the delta between this hand-rolled block
+		// and `conductionVue3Fixes` from `@conduction/nextcloud-vue/eslint`.
+		// That preset is the shared home for this rule family, but it is not
+		// installable yet: the `eslint/` directory is absent from the
+		// published package's `files` allowlist, so it ships in no npm
+		// version up to and including 2.1.0-vue3.9 (the current `vue3`
+		// dist-tag). Adding the delta here keeps this app preset-clean in
+		// advance, so adopting the shared preset later is a no-op diff
+		// rather than a fresh round of findings. Remove this block and
+		// spread `conductionVue3Fixes` once a version that contains it is
+		// published.
+		'vue/no-deprecated-delete-set': 'error',
+		// Catches the Vue-2 `model: { prop, event }` component option, which
+		// Vue 3 ignores outright.
+		'vue/no-deprecated-model-definition': 'error',
+		'vue/no-deprecated-v-is': 'error',
+		'vue/no-restricted-component-options': ['error', {
+			name: 'filters',
+			message: 'The `filters` component option was removed in Vue 3. Replace filters with a computed property or a method.',
+		}],
+		// Vue 3 resolves a kebab-case listener for `update:` (model) events
+		// via its hyphenate fallback, so this is safe for those. It is NOT
+		// safe to `--fix` blind: a non-`update:` camelCase event hyphenated
+		// this way silently receives nothing at all.
+		'vue/v-on-event-hyphenation': ['error', 'always', { ignore: ['update:modelValue'] }],
 	},
 }])
