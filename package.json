@@ -15,8 +15,8 @@
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
     "lint": "eslint src",
     "lint-fix": "npm run lint -- --fix",
-    "test": "jest --silent",
-    "test-coverage": "jest --silent --coverage",
+    "test": "vitest run",
+    "test-coverage": "vitest run --coverage",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text-summary --coverage.include=src/** --coverage.reportsDirectory=coverage-vitest",
     "test:coverage-ratchet": "npm run test:coverage && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json",
@@ -133,6 +133,8 @@
       "vue": "$vue"
     },
     "@nextcloud/axios": "~2.5.2",
-    "postcss": "^8.4.49"
+    "postcss": "^8.4.49",
+    "vue3-apexcharts": "<1.9.0",
+    "vue-apexcharts": "<1.9.0"
   }
 }
