@@ -23,6 +23,7 @@ import menuLayout from './menu-layout.json'
 import customComponents, { registry } from './registry.js'
 import { setRouter } from './handlers/routerRef.js'
 import { createMappingAndOpen } from './handlers/actionHandlers.js'
+import appIcons from './icons.js'
 
 // MDI icons referenced by manifest `headerActions[]` / `actions[]` /
 // `menu[]` entries. CnActionsBar + CnAppNav render them via CnIcon,
@@ -34,25 +35,9 @@ import { createMappingAndOpen } from './handlers/actionHandlers.js'
 // Menu icons restore the pre-chain-E set (the chain-E manifest cutover
 // swapped them all to `icon-*` Nextcloud CSS classes which lost the
 // semantic specificity and didn't size-match the rest of the chrome).
-import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import Api from 'vue-material-design-icons/Api.vue'
-import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
-import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import DatabaseArrowLeftOutline from 'vue-material-design-icons/DatabaseArrowLeftOutline.vue'
-import Download from 'vue-material-design-icons/Download.vue'
-import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import FileCogOutline from 'vue-material-design-icons/FileCogOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
-import ScaleBalance from 'vue-material-design-icons/ScaleBalance.vue'
-import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import Update from 'vue-material-design-icons/Update.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
-import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
-import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
-import Webhook from 'vue-material-design-icons/Webhook.vue'
+// These now live in src/icons.js, generated from this app's own manifests and
+// register files so the registry can never drift behind the icons the
+// manifests name (ADR-077).
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
 import '@conduction/nextcloud-vue/css/index.css'
@@ -65,27 +50,7 @@ import './assets/app.css'
 // is no PiniaVuePlugin in Vue 3.
 
 // Register library-side icon set + lib translations once at bootstrap.
-registerIcons({
-	AccountMultipleOutline,
-	Api,
-	BookOpenVariant,
-	CloudUploadOutline,
-	Cog,
-	DatabaseArrowLeftOutline,
-	Download,
-	EyeOutline,
-	FileCogOutline,
-	Pencil,
-	PowerPlugOutline,
-	ScaleBalance,
-	SitemapOutline,
-	TextBoxOutline,
-	Update,
-	Upload,
-	VectorPolylinePlus,
-	ViewGridOutline,
-	Webhook,
-})
+registerIcons(appIcons)
 try {
 	registerTranslations()
 } catch (e) {

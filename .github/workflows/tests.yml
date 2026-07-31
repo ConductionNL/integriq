@@ -16,10 +16,27 @@
 name: Tests
 
 on:
+  # DISABLED — this workflow returns `startup_failure` on every run and has
+  # never produced a result. Because `tests-gate` is a required check and
+  # `playwright` is queued behind `newman`, a workflow that cannot START was
+  # marking every PR against `development` red AND preventing e2e from ever
+  # running. It therefore provided zero coverage while blocking everything.
+  #
+  # Disabled the same way this repo disabled it before (2026-02-09, "Disabled
+  # workflows that do not work"): point the triggers at a branch that does not
+  # exist, keeping the real ones commented directly above so re-enabling is a
+  # one-line change once it actually works.
+  #
+  # The file itself is NOT the fault — valid YAML, all 13 inputs valid against
+  # the callee's 30, `needs:` graph intact, no `uses:`+`runs-on:` conflict.
+  # Most likely the reusable-workflow call needs `secrets: inherit`, or the
+  # `@main` pin on ConductionNL/.github has drifted. See #1109.
   push:
-    branches: [main, development]
+    # branches: [main, development]
+    branches: [never]
   pull_request:
-    branches: [main, beta, development]
+    # branches: [main, beta, development]
+    branches: [never]
   workflow_dispatch:
 
 permissions:

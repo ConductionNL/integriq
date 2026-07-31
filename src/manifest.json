@@ -198,7 +198,7 @@
     {
       "id": "Dashboard",
       "label": "Dashboard",
-      "icon": "icon-category-dashboard",
+      "icon": "ViewDashboardOutline",
       "route": "Dashboard",
       "order": 10
     },
@@ -212,10 +212,10 @@
     {
       "id": "ConnectionsGroup",
       "label": "Connections",
-      "icon": "Webhook",
+      "icon": "TransitConnectionVariant",
       "order": 20,
       "children": [
-        { "id": "Sources", "label": "Sources", "icon": "DatabaseArrowLeftOutline", "route": "Sources", "order": 20 },
+        { "id": "Sources", "label": "Sources", "icon": "SourceBranch", "route": "Sources", "order": 20 },
         { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
         { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
         { "id": "ApiProducts", "label": "API Products", "icon": "PackageVariantClosed", "route": "ApiProducts", "order": 45 },
@@ -230,7 +230,7 @@
       "order": 30,
       "children": [
         { "id": "Jobs", "label": "Jobs", "icon": "Update", "route": "Jobs", "order": 60 },
-        { "id": "Mappings", "label": "Mappings", "icon": "SitemapOutline", "route": "Mappings", "order": 70 },
+        { "id": "Mappings", "label": "Mappings", "icon": "SwapHorizontal", "route": "Mappings", "order": 70 },
         { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
         { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
         { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
@@ -244,7 +244,7 @@
     {
       "id": "Documentation",
       "label": "Documentation",
-      "icon": "BookOpenVariant",
+      "icon": "BookOpenVariantOutline",
       "href": "https://openconnector.conduction.nl",
       "section": "footer",
       "order": 15
@@ -252,14 +252,14 @@
     {
       "id": "Settings",
       "label": "Settings",
-      "icon": "Cog",
+      "icon": "CogOutline",
       "route": "AppSettings",
       "order": 20
     },
     {
       "id": "FeaturesRoadmapMenu",
       "label": "Features & roadmap",
-      "icon": "icon-toggle",
+      "icon": "MapMarkerPath",
       "route": "FeaturesRoadmap",
       "section": "footer",
       "order": 16
@@ -332,7 +332,7 @@
         "showViewAction": false,
         "actions": [
           { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "SourceDetail" },
-          { "id": "test", "label": "Test connection", "icon": "icon-checkmark", "handler": "testSourceHandler" },
+          { "id": "test", "label": "Test connection", "icon": "CheckCircleOutline", "handler": "testSourceHandler" },
           { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -416,7 +416,7 @@
         "showViewAction": false,
         "actions": [
           { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "EndpointDetail" },
-          { "id": "add-rule", "label": "Add rule", "icon": "icon-add", "handler": "addEndpointRuleHandler" },
+          { "id": "add-rule", "label": "Add rule", "icon": "Plus", "handler": "addEndpointRuleHandler" },
           { "id": "view-endpoint-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -599,8 +599,8 @@
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "JobLogs" }
         ],
         "actions": [
-          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runJobHandler" },
-          { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testJobHandler" },
+          { "id": "run", "label": "Run now", "icon": "PlayOutline", "handler": "runJobHandler" },
+          { "id": "test", "label": "Test (dry run)", "icon": "CheckCircleOutline", "handler": "testJobHandler" },
           { "id": "view-job-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
@@ -640,7 +640,7 @@
         "actions": [
           { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "MappingDetail" },
           { "id": "edit", "label": "Edit", "icon": "Pencil", "handler": "navigate", "route": "MappingDetail" },
-          { "id": "test", "label": "Test mapping", "icon": "icon-play", "handler": "testMappingModalHandler" }
+          { "id": "test", "label": "Test mapping", "icon": "CheckCircleOutline", "handler": "testMappingModalHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
       }
@@ -702,14 +702,14 @@
         "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
         "headerActions": [
           { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SynchronizationLogs" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
+          { "id": "view-contracts", "label": "View contracts", "icon": "EyeOutline", "type": "open-page", "target": "SynchronizationContracts" }
         ],
         "actions": [
-          { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
-          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runSynchronizationHandler" },
-          { "id": "test", "label": "Test (dry run)", "icon": "icon-checkmark", "handler": "testSynchronizationHandler" },
+          { "id": "edit", "label": "Open editor", "icon": "PencilOutline", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
+          { "id": "run", "label": "Run now", "icon": "PlayOutline", "handler": "runSynchronizationHandler" },
+          { "id": "test", "label": "Test (dry run)", "icon": "CheckCircleOutline", "handler": "testSynchronizationHandler" },
           { "id": "view-synchronization-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "icon-file", "type": "open-page", "target": "SynchronizationContracts" }
+          { "id": "view-contracts", "label": "View contracts", "icon": "EyeOutline", "type": "open-page", "target": "SynchronizationContracts" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
       }
@@ -862,8 +862,8 @@
         "sidebar": { "enabled": true, "showMetadata": true },
         "rowAction": { "id": "edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
         "actions": [
-          { "id": "edit", "label": "Open editor", "icon": "icon-edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
-          { "id": "run", "label": "Run now", "icon": "icon-play", "handler": "runFlowHandler" }
+          { "id": "edit", "label": "Open editor", "icon": "PencilOutline", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
+          { "id": "run", "label": "Run now", "icon": "PlayOutline", "handler": "runFlowHandler" }
         ],
         "documentationUrl": "https://openconnector.conduction.nl"
       }
