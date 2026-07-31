@@ -462,7 +462,17 @@ export default {
 	watch: {
 		type: {
 			immediate: true,
-			/** @spec openspec/specs/sync-editor-ui/spec.md */
+			/**
+			 * Lazily load the option lists the newly-selected branch of the
+			 * template needs, skipping any list that is already populated so
+			 * re-picking the same type costs no requests.
+			 *
+			 * @param {string} value The `type` discriminator now in effect — one of
+			 *   `api`, `register/schema`, `nextcloud-table`, `nextcloud-form`.
+			 * @return {void}
+			 *
+			 * @spec openspec/specs/sync-editor-ui/spec.md
+			 */
 			handler(value) {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
@@ -503,14 +513,34 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Read one key out of the `config` blob as a string for binding to a
+		 * text input. Missing keys and null become '' so inputs never bind
+		 * to undefined, and non-strings (e.g. a numeric tableId) are cast.
+		 *
+		 * @param {string} key Config key to read, e.g. `endpoint`, `idPosition`, `tableId`.
+		 * @return {string} The stored value as text, or '' when unset.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		configValue(key) {
 			if (!this.config || typeof this.config !== 'object') return ''
 			const v = this.config[key]
 			if (v == null) return ''
 			return typeof v === 'string' ? v : String(v)
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Write one key into the `config` blob and emit the whole object
+		 * back to the parent. Copies before mutating so the prop is never
+		 * edited in place, and an emptied field drops its key rather than
+		 * persisting an empty string.
+		 *
+		 * @param {string} key Config key to set, e.g. `endpoint`, `filter`, `format`.
+		 * @param {string} value New value from the input; '' or null removes the key.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onConfigUpdate(key, value) {
 			const next = (this.config && typeof this.config === 'object' && !Array.isArray(this.config))
 				? { ...this.config }
@@ -522,11 +552,30 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Handle a pick in the Source selector, emitting the Source UUID up
+		 * to the parent's `sourceId`/`targetId` field. Clearing the select
+		 * emits '' so the parent unsets the id.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `sourceOptions`, or null when the select is cleared.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onSourcePick(option) {
 			this.$emit('update:sourceId', option?.id ? String(option.id) : '')
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006 */
+		/**
+		 * Handle a pick in the Table selector under the `nextcloud-table`
+		 * kind.
+		 *
+		 * @param {{ id: number|string, label: string }|null} option Chosen entry from
+		 *   `tableOptions`; null (or a missing id) clears `config.tableId`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-table-picker-for-the-nextcloud-table-sourcetarget-kind-req-syncui-006
+		 */
 		onTablePick(option) {
 			// Store the numeric table id in the config blob; clear any stale
 			// column mapping since it referenced the previous table's columns.
@@ -571,7 +620,16 @@ export default {
 				this.tablesLoading = false
 			}
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008 */
+		/**
+		 * Handle a pick in the Form selector under the `nextcloud-form`
+		 * source kind.
+		 *
+		 * @param {{ id: number|string, label: string }|null} option Chosen entry from
+		 *   `formOptions`; null (or a missing id) clears `config.formId`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-form-picker-for-the-nextcloud-form-source-kind-req-syncui-008
+		 */
 		onFormPick(option) {
 			// Store the numeric form id in the config blob; clear no other
 			// keys — unlike nextcloud-table there is no columnMapping stored
@@ -616,7 +674,18 @@ export default {
 				this.formsLoading = false
 			}
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Handle a pick in the Register selector of `register/schema` mode.
+		 * Emits the half-formed `<registerId>/` id — the schema half stays
+		 * empty until the user picks below — and caches the full record so
+		 * `schemaOptions` keeps its schemas after the prop round-trips.
+		 *
+		 * @param {{ id: string, label: string, schemas: object[] }|null} option Chosen
+		 *   entry from `registerOptions`; null clears the id and the cache.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onRegisterPick(option) {
 			if (!option?.id) {
 				this.$emit('update:sourceId', '')
@@ -630,7 +699,17 @@ export default {
 			// the user picks a schema below.
 			this.$emit('update:sourceId', String(option.id) + '/')
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Handle a pick in the Schema selector of `register/schema` mode,
+		 * emitting the combined `<registerId>/<schemaId>` id. Clearing the
+		 * schema falls back to the register half alone.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `schemaOptions`, or null when the select is cleared.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onSchemaPick(option) {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg || !option?.id) {

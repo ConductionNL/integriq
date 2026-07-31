@@ -267,7 +267,11 @@ export default {
 			this.$router.push('/products')
 		},
 		/**
-		 * @param id
+		 * Resolve an attached endpoint reference to a human-readable label.
+		 *
+		 * @param {string|number} id Endpoint id or uuid as stored on the product's `endpoints` array.
+		 * @return {string|number} The endpoint's name or path, falling back to the raw id when it is not in the loaded list.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
 		endpointLabel(id) {
@@ -275,7 +279,11 @@ export default {
 			return match ? (match.name || match.endpoint || id) : id
 		},
 		/**
-		 * @param value
+		 * Render an analytics ratio as a percentage.
+		 *
+		 * @param {number|undefined} value Ratio in the 0–1 range (the error rate); missing when analytics failed to load.
+		 * @return {string} Percentage with two decimals, or an em dash when there is no number.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
 		formatPercent(value) {
@@ -283,7 +291,11 @@ export default {
 			return `${(value * 100).toFixed(2)}%`
 		},
 		/**
-		 * @param value
+		 * Render a latency percentile as whole milliseconds.
+		 *
+		 * @param {number|undefined} value Latency in milliseconds (p50/p95/p99); missing when analytics carry no latency block.
+		 * @return {string} Rounded value suffixed with `ms`, or an em dash when there is no number.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-gateway-analytics-per-api-product-req-apg-007
 		 */
 		formatMs(value) {
@@ -348,8 +360,14 @@ export default {
 			}
 		},
 		/**
-		 * @param field
-		 * @param value
+		 * PATCH a single property of the api_product object in OpenRegister,
+		 * then reload so the view reflects what was actually stored. Failures
+		 * surface as a toast; the object is left untouched.
+		 *
+		 * @param {string} field Property name on the api_product object, for example `endpoints` or `tiers`.
+		 * @param {(Array|object|string|number|boolean)} value Replacement value for that property — an array of endpoint ids, the tiers object, or a scalar.
+		 * @return {Promise<void>} Resolves once the PATCH and the reload have settled.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-product-groups-endpoints-into-a-named-versioned-bundle-req-apg-001
 		 */
 		async saveProductField(field, value) {
@@ -378,7 +396,11 @@ export default {
 			showSuccess(t('openconnector', 'Endpoint(s) added'))
 		},
 		/**
-		 * @param id
+		 * Detach one endpoint from the product by persisting the remaining ids.
+		 *
+		 * @param {string|number} id Endpoint id or uuid to remove; compared as a string because the stored ids are mixed-type.
+		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
 		async removeEndpoint(id) {
@@ -402,7 +424,11 @@ export default {
 			showSuccess(t('openconnector', 'Tier added'))
 		},
 		/**
-		 * @param name
+		 * Delete one subscription tier and persist the remaining tiers.
+		 *
+		 * @param {string} name Tier name — the key under which it is stored in the product's `tiers` object.
+		 * @return {Promise<void>} Resolves once the product has been saved and reloaded.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-api-products-management-ui-req-apg-002
 		 */
 		async removeTier(name) {
@@ -411,7 +437,12 @@ export default {
 			await this.saveProductField('tiers', tiers)
 		},
 		/**
-		 * @param sub
+		 * Approve a pending subscription through the HITL approval gate and
+		 * refresh the list so its status changes.
+		 *
+		 * @param {{id: (string|number|undefined), uuid: (string|undefined), consumer: string, tier: string, status: string}} sub Subscription row from the list; its `id` (or `uuid`) identifies the approval.
+		 * @return {Promise<void>} Resolves once the approval call and the reload have settled.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 		 */
 		async approveSubscription(sub) {
@@ -430,7 +461,12 @@ export default {
 			}
 		},
 		/**
-		 * @param sub
+		 * Reject a pending subscription through the HITL approval gate,
+		 * recording a fixed comment, and refresh the list.
+		 *
+		 * @param {{id: (string|number|undefined), uuid: (string|undefined), consumer: string, tier: string, status: string}} sub Subscription row from the list; its `id` (or `uuid`) identifies the approval.
+		 * @return {Promise<void>} Resolves once the rejection call and the reload have settled.
+		 *
 		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 		 */
 		async rejectSubscription(sub) {

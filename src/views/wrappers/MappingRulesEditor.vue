@@ -435,21 +435,41 @@ export default {
 
 	watch: {
 		mappingRules: {
-			/** @spec openspec/specs/mapping-editor-ui/spec.md */
+			/**
+			 * Re-seed the local mapping draft when the parent persists, so the
+			 * drag-and-drop row list reflects the newly saved rules.
+			 *
+			 * @param {object} next Mapping rules as persisted by the parent, `{ targetProperty: twigTemplate }`.
+			 *
+			 * @spec openspec/specs/mapping-editor-ui/spec.md
+			 */
 			handler(next) {
 				this.mappingDraft = objectToRowList(next)
 			},
 			deep: true,
 		},
 		castRules: {
-			/** @spec openspec/specs/mapping-editor-ui/spec.md */
+			/**
+			 * Re-seed the local cast draft when the parent persists.
+			 *
+			 * @param {object} next Cast rules as persisted by the parent, `{ property: castType }`.
+			 *
+			 * @spec openspec/specs/mapping-editor-ui/spec.md
+			 */
 			handler(next) {
 				this.castDraft = objectToRowList(next)
 			},
 			deep: true,
 		},
 		unsetRules: {
-			/** @spec openspec/specs/mapping-editor-ui/spec.md */
+			/**
+			 * Re-seed the local unset draft when the parent persists. Copied
+			 * rather than aliased so drag-and-drop cannot mutate the prop.
+			 *
+			 * @param {Array<string>} next Property names to unset, as persisted by the parent.
+			 *
+			 * @spec openspec/specs/mapping-editor-ui/spec.md
+			 */
 			handler(next) {
 				this.unsetDraft = [...next]
 			},
@@ -458,7 +478,14 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Render a mapping-rule value as a single line of table text.
+		 *
+		 * @param {string|object|null} value Stored rule value — usually a Twig template string, but imported mappings may hold a nested object.
+		 * @return {string} Display text: the string as-is, JSON for objects, empty for `null`.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		formatTemplate(value) {
 			if (value == null) return ''
 			if (typeof value === 'string') return value
@@ -468,7 +495,16 @@ export default {
 				return String(value)
 			}
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Collect the property names already taken in one rule collection, so
+		 * the edit dialog can reject a duplicate key.
+		 *
+		 * @param {'mapping'|'cast'|'unset'} kind Rule collection to read the keys from.
+		 * @param {string|null} currentProperty Property currently being edited; excluded from the result so keeping its own name is not reported as a collision. `null` when creating.
+		 * @return {Array<string>} Property names that are unavailable.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		existingKeysFor(kind, currentProperty) {
 			let keys = []
 			if (kind === 'mapping') keys = Object.keys(this.mappingRules)
@@ -480,7 +516,13 @@ export default {
 			return keys
 		},
 
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Open the rule dialog in create mode.
+		 *
+		 * @param {'mapping'|'cast'|'unset'} kind Collection the new rule belongs to; also picks the seed value (`'string'` for a cast, empty otherwise).
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		openCreate(kind) {
 			this.editing = {
 				kind,
@@ -488,7 +530,15 @@ export default {
 				value: kind === 'cast' ? 'string' : '',
 			}
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Open the rule dialog on an existing mapping or cast rule, seeded
+		 * with that rule's current value.
+		 *
+		 * @param {'mapping'|'cast'} kind Which collection holds the rule; unset rules use `openEditUnset`.
+		 * @param {string} property Key of the rule to edit.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		openEdit(kind, property) {
 			const source = kind === 'mapping' ? this.mappingRules : this.castRules
 			this.editing = {
@@ -497,7 +547,14 @@ export default {
 				value: source[property] ?? (kind === 'cast' ? 'string' : ''),
 			}
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Open the rule dialog on an unset entry. An unset rule has no
+		 * separate value, so the property name is used as both.
+		 *
+		 * @param {string} property Property name currently being unset.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		openEditUnset(property) {
 			this.editing = {
 				kind: 'unset',
@@ -506,7 +563,15 @@ export default {
 			}
 		},
 
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Route a dialog submit to the commit handler for its collection and
+		 * close the dialog. The key being replaced comes from `editing`, so a
+		 * renamed property is handled as a rename rather than an insert.
+		 *
+		 * @param {{kind: 'mapping'|'cast'|'unset', property: string, value: (string|object)}} payload Dialog result: target collection, the (possibly renamed) property key, and its new value.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onSubmitDialog(payload) {
 			const { kind, property, value } = payload
 			if (kind === 'mapping') {
@@ -519,7 +584,16 @@ export default {
 			this.editing = null
 		},
 
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Emit the full mapping-rules object with one rule created, updated or
+		 * renamed. The parent owns persistence.
+		 *
+		 * @param {string|null} oldKey Key the rule was stored under before the edit; dropped when it differs from `newKey` (a rename). `null` when creating.
+		 * @param {string} newKey Target property the rule is stored under.
+		 * @param {string} newValue Twig template evaluated to produce the target property.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		commitMapping(oldKey, newKey, newValue) {
 			const next = { ...this.mappingRules }
 			if (oldKey && oldKey !== newKey) {
@@ -528,7 +602,16 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-mapping', next)
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Emit the full cast-rules object with one rule created, updated or
+		 * renamed. The parent owns persistence.
+		 *
+		 * @param {string|null} oldKey Property the cast was registered on before the edit; dropped when it differs from `newKey` (a rename). `null` when creating.
+		 * @param {string} newKey Property the cast applies to.
+		 * @param {string} newValue Cast type to coerce the property to (for example `string`, `int`, `bool`).
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		commitCast(oldKey, newKey, newValue) {
 			const next = { ...this.castRules }
 			if (oldKey && oldKey !== newKey) {
@@ -537,7 +620,15 @@ export default {
 			next[newKey] = newValue
 			this.$emit('update-cast', next)
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Emit the full unset list with one entry added or renamed,
+		 * deduplicated while preserving order.
+		 *
+		 * @param {string|null} oldProperty Entry being renamed; replaced in place so it keeps its position. `null` when adding, which appends.
+		 * @param {string} newProperty Property name to unset.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		commitUnset(oldProperty, newProperty) {
 			const next = [...this.unsetRules]
 			if (oldProperty) {
@@ -562,7 +653,14 @@ export default {
 			this.$emit('update-unset', deduped)
 		},
 
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Remove one mapping or cast rule and emit the remaining collection.
+		 *
+		 * @param {'mapping'|'cast'} kind Collection to delete from; unset entries use `deleteUnset`.
+		 * @param {string} key Property key of the rule to remove.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		deleteRule(kind, key) {
 			if (kind === 'mapping') {
 				const next = { ...this.mappingRules }
@@ -574,7 +672,13 @@ export default {
 				this.$emit('update-cast', next)
 			}
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Drop one entry from the unset list and emit the remainder.
+		 *
+		 * @param {string} property Property name to stop unsetting.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		deleteUnset(property) {
 			const next = this.unsetRules.filter((entry) => entry !== property)
 			this.$emit('update-unset', next)

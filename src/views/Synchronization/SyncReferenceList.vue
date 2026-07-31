@@ -109,7 +109,13 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Flatten the multi-select's option objects back to the array of slug
+		 * strings the parent binds, dropping entries without an id.
+		 * @param {Array<{id: string, label: string}>|null} picked The options
+		 *   currently selected in the NcSelect; a non-array means "none".
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onChange(picked) {
 			const list = Array.isArray(picked) ? picked : []
 			this.$emit('input', list.map((option) => option?.id).filter(Boolean).map(String))

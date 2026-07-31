@@ -132,15 +132,41 @@ export default {
 			const id = this.value[field] || 'error'
 			return this.outcomeOptions.find((opt) => opt.id === id) || null
 		},
-		/** @spec openspec/specs/approval-workflow/spec.md */
+		/**
+		 * Store the NC group whose members may approve the suspended request.
+		 *
+		 * @param {{id: string, label: string}} option The picked group option;
+		 *   `id` is the NC group id. Null/undefined clears the setting.
+		 *
+		 * @spec openspec/specs/approval-workflow/spec.md
+		 */
 		onGroupPick(option) {
 			this.patch('approverGroup', option?.id || '')
 		},
-		/** @spec openspec/specs/approval-workflow/spec.md */
+		/**
+		 * Store what the engine does when the request is rejected or times out.
+		 * Both selects share this handler; the field is bound in the template.
+		 *
+		 * @param {string} field Which outcome is being set — `onReject` or
+		 *   `onTimeout`.
+		 * @param {{id: string, label: string}} option The picked outcome option;
+		 *   `id` is `error`, `skip` or `dead_letter`. Falls back to `error`.
+		 *
+		 * @spec openspec/specs/approval-workflow/spec.md
+		 */
 		onOutcomePick(field, option) {
 			this.patch(field, option?.id || 'error')
 		},
-		/** @spec openspec/specs/approval-workflow/spec.md */
+		/**
+		 * Store the suspension time-to-live as a NUMBER (NcTextField hands back
+		 * a string even with `type="number"`). Clearing the field removes
+		 * `ttlSeconds` altogether so the backend default (86400) applies again;
+		 * a non-numeric entry is ignored rather than persisted as NaN.
+		 *
+		 * @param {string} raw The field's current text; '' or null when cleared.
+		 *
+		 * @spec openspec/specs/approval-workflow/spec.md
+		 */
 		onTtlInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

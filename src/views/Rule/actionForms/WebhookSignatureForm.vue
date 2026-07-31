@@ -66,7 +66,10 @@ export default {
 	methods: {
 		patch: patchMethod(),
 		/**
-		 * @param option
+		 * Store the picked signature scheme; clearing the select falls back to
+		 * the `openconnector` scheme rather than leaving the rule unsigned.
+		 * @param {{id: string, label: string}|null} option The selected entry
+		 *   from `schemeOptions` (openconnector / stripe / github).
 		 * @spec openspec/changes/openconnector-webhook-signing/tasks.md#task-5
 		 */
 		onSchemePick(option) {

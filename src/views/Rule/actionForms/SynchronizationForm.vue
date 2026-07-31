@@ -90,7 +90,14 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Coerce one of the numeric delay fields: an empty input removes the
+		 * key entirely, non-numeric input is ignored, anything else is stored
+		 * as a number.
+		 * @param {string} key Config field to write — `preDelay` or `postDelay`.
+		 * @param {string|null} raw The raw text emitted by the number NcTextField.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		patchNumber(key, raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
@@ -102,7 +109,13 @@ export default {
 			if (Number.isNaN(num)) return
 			this.patch(key, num)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Store the picked synchronization's UUID at `synchronization`;
+		 * clearing the select drops the key so no sync is dispatched.
+		 * @param {{id: string, label: string, raw: object}|null} option The
+		 *   synchronization option selected in the NcSelect.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSyncPick(option) {
 			const next = { ...(this.value || {}) }
 			if (option?.id) {

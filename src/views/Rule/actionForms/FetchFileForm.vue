@@ -135,25 +135,66 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Store the picked OpenConnector source on the action config. Clearing
+		 * the picker writes an empty string rather than dropping the key.
+		 *
+		 * @param {?{id: string, label: string, raw: object}} option The option
+		 *   chosen in NcSelect, or null/undefined when the selection is cleared.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSourcePick(option) {
 			this.patch('source', option?.id ? String(option.id) : '')
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Render the stored `tags` list for the comma-separated text field.
+		 *
+		 * @param {string[]|string|undefined} value The persisted tags — an array
+		 *   in the canonical shape, but tolerated as a bare string or missing.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : (value || '')
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Parse the tags text field back into the stored array, trimming each
+		 * entry and dropping empties so trailing commas are harmless.
+		 *
+		 * @param {string} text Comma-separated tags as typed (e.g. `invoice,inbox`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		toArray(text) {
 			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Render the persisted `sourceConfiguration` as pretty-printed JSON for
+		 * the textarea. Strings pass through untouched (the user's own text) and
+		 * anything unserialisable falls back to its string coercion.
+		 *
+		 * @param {*} value The stored source configuration — normally an object
+		 *   or array, but also handled when absent or already raw text.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		serialiseSourceConfig(value) {
 			if (value === undefined || value === null) return ''
 			if (typeof value === 'string') return value
 			try { return JSON.stringify(value, null, 2) } catch (_e) { return String(value) }
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle typing in the source-configuration textarea: keep the draft
+		 * text verbatim, drop the key entirely when the field is emptied, and
+		 * only commit parsed JSON. A parse failure surfaces in
+		 * `sourceConfigError` and leaves the last valid value stored.
+		 *
+		 * @param {InputEvent} event The native textarea `input` event; its
+		 *   `target.value` holds the raw JSON text.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSourceConfigInput(event) {
 			const raw = event.target.value
 			this.sourceConfigDraft = raw

@@ -159,7 +159,18 @@ export default {
 	watch: {
 		mappingId: {
 			immediate: true,
-			/** @spec openspec/specs/sync-editor-ui/spec.md */
+			/**
+			 * Drop the result and any errors left over from the previously
+			 * previewed mapping, then re-run only when the panel is open (a
+			 * collapsed panel defers loading to the `expanded` watcher).
+			 *
+			 * @param {string} newId The newly picked mapping slug (or id); ''
+			 *   when the picker was cleared.
+			 * @param {string} oldId The previously previewed mapping slug — used
+			 *   to skip the no-op re-notification the immediate watcher fires.
+			 *
+			 * @spec openspec/specs/sync-editor-ui/spec.md
+			 */
 			handler(newId, oldId) {
 				if (newId === oldId) return
 				// Clear stale state before loading the new mapping.
@@ -175,7 +186,14 @@ export default {
 				}
 			},
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Lazy-load on first open: the mapping is only fetched (and the preview
+		 * only run) once the user actually expands the panel.
+		 *
+		 * @param {boolean} value The new panel state — true when just opened.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		expanded(value) {
 			if (value && this.mappingId && !this.mapping) {
 				this.loadAndRun()
@@ -184,14 +202,22 @@ export default {
 	},
 
 	/** @spec openspec/specs/sync-editor-ui/spec.md */
-	beforeDestroy() {
+	beforeUnmount() {
 		if (this.debounceTimer) {
 			window.clearTimeout(this.debounceTimer)
 		}
 	},
 
 	methods: {
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Track the sample-input textarea and debounce a preview run, so the
+		 * test endpoint is not hit on every keystroke.
+		 *
+		 * @param {string} value The current raw textarea contents (parsed as
+		 *   JSON later, in `runPreview`).
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onInput(value) {
 			this.inputJson = value
 			this.scheduleRun()

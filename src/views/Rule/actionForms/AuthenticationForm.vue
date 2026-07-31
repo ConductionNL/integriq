@@ -88,15 +88,34 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Write the picked authentication type discriminator into the config
+		 * slot; clearing the select stores an empty string.
+		 * @param {{id: string, label: string}|null} option The selected entry
+		 *   from `typeOptions` (apikey / jwt / jwt-zgw / basic / oauth / nc-session).
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
+		 */
 		onTypePick(option) {
 			this.patch('type', option?.id || '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Render a stored allow-list (keys / users / groups) as the
+		 * comma-separated text the NcTextField displays.
+		 * @param {Array<string>|string|undefined} value The stored field, either
+		 *   an array of entries or an already-flat string.
+		 * @return {string} Comma-separated entries, or '' when unset.
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
+		 */
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : (value || '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Parse comma-separated user input back into the array shape the
+		 * backend expects, trimming entries and dropping empty ones.
+		 * @param {string} text Raw comma-separated text typed into the field.
+		 * @return {Array<string>} The cleaned list of entries.
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
+		 */
 		toArray(text) {
 			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
 		},

@@ -118,11 +118,25 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009 */
+		/**
+		 * Whether a question's answer arrives as an array (multiple-choice and
+		 * friends), so the row can warn that the mapping target must be a list.
+		 * @param {object} question A normalised question descriptor from
+		 *   `mapQuestionDescriptors`.
+		 * @return {boolean} True when the question type is multi-valued.
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009
+		 */
 		isArrayValued(question) {
 			return isArrayValuedQuestion(question)
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009 */
+		/**
+		 * Whether a question's text is shared with another question in the same
+		 * form, which makes a text-based mapping reference unresolvable.
+		 * @param {object} question A normalised question descriptor whose `text`
+		 *   is checked against the form's ambiguous-text set.
+		 * @return {boolean} True when two or more questions carry this text.
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-field-mapping-helper-prefilled-from-form-questions-req-syncui-009
+		 */
 		isAmbiguous(question) {
 			return this.ambiguousTexts.has(question.text)
 		},

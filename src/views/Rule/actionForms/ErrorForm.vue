@@ -50,7 +50,13 @@ export default {
 	data() { return { uid: ++uidCounter } },
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Coerce the HTTP status-code field: an empty input removes the key
+		 * entirely, non-numeric input is ignored, anything else is stored as a
+		 * number.
+		 * @param {string|null} raw The raw text emitted by the number NcTextField.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onCodeInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }
