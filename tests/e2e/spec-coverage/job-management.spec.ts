@@ -18,6 +18,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 // The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
@@ -47,7 +48,7 @@ test.describe('REQ-JOB-UI-001: Add Job modal', () => {
 		const addBtn = page.getByRole('button', { name: /Add (Item|Job)/i })
 		await expect(addBtn, 'Add Item button must be visible on Jobs page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Item on Jobs').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()

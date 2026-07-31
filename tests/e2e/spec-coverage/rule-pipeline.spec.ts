@@ -15,6 +15,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 // The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
 // path-form deep-link (`/apps/openconnector/rules`) is ignored and lands on
@@ -43,7 +44,7 @@ test.describe('REQ-RULE-UI-001: Add Rule modal', () => {
 		const addBtn = page.getByRole('button', { name: 'Add Rule' })
 		await expect(addBtn, 'Add Rule button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Rule').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()

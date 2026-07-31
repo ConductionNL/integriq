@@ -139,6 +139,43 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		}
 	})
 
+	// Retire Nextcloud's own first-run wizard for this user.
+	//
+	// The wizard mounts as `#firstrunwizard`, a `[role="dialog"]` carrying
+	// `modal-mask--opaque`, and it is the *other* full-screen overlay a fresh
+	// instance puts in front of the app — the CnSupportDialog seed above says
+	// nothing about it. Its failure mode is the nasty one: it hides nothing that
+	// a visibility assertion looks at, so `toBeVisible()` on the page's own
+	// buttons keeps passing and only the *click* is intercepted
+	// ("subtree intercepts pointer events"). Two specs died exactly that way.
+	//
+	// Worse, it is itself a `[role="dialog"]`, so a spec that reaches for
+	// `getByRole('dialog').first()` after a click that never landed can match the
+	// wizard and pass green against the wrong element.
+	//
+	// `DELETE /apps/firstrunwizard/wizard` is the app's own dismissal route and
+	// records the result server-side against this user, so unlike a localStorage
+	// seed it holds for every spec, context and browser in the run. Issued from
+	// inside the page so the session cookie and CSRF token come along for free.
+	// Best-effort: an instance without the wizard app installed simply 404s.
+	const wizardStatus = await page.evaluate(async () => {
+		try {
+			const token = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken ?? ''
+			const res = await fetch('/index.php/apps/firstrunwizard/wizard', {
+				method: 'DELETE',
+				headers: { requesttoken: token },
+			})
+			return res.status
+		} catch (e) {
+			return -1
+		}
+	})
+	if (wizardStatus !== 200 && wizardStatus !== 404) {
+		// eslint-disable-next-line no-console
+		console.warn(`[playwright globalSetup] first-run wizard dismissal returned ${wizardStatus}; `
+			+ 'specs may hit an overlay that blocks clicks without hiding anything.')
+	}
+
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
 }

@@ -37,6 +37,7 @@
  * fix lives in @conduction/nextcloud-vue, not openconnector.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 import {
 	makeApiClient, makeRunId, find, findAll, deleteObject, cleanupByPrefix,
 	idOf, type ApiClient,
@@ -105,7 +106,7 @@ async function crudCycle(
 	// ---- CREATE via the UI form -------------------------------------------
 	await gotoIndex(page, route)
 	await page.getByRole('button', { name: addBtn }).first().click()
-	const dialog = page.getByRole('dialog').first()
+	const dialog = appDialog(page)
 	await expect(dialog, 'create modal must open').toBeVisible({ timeout: 10_000 })
 	await dialog.getByLabel(/name/i).first().fill(name)
 	await dialog.getByLabel(/description/i).first().fill(desc).catch(() => { /* description optional */ })
@@ -135,7 +136,7 @@ async function crudCycle(
 	await gotoIndex(page, route)
 	await openRowMenu(page, name)
 	await page.getByRole('menuitem', { name: /^Edit$/ }).click()
-	const editDlg = page.getByRole('dialog').first()
+	const editDlg = appDialog(page)
 	await expect(editDlg, 'edit modal must open').toBeVisible({ timeout: 10_000 })
 	const newDesc = `${RUN}-EDITED`
 	await editDlg.getByLabel(/description/i).first().fill(newDesc)

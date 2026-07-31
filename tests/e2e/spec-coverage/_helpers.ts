@@ -12,6 +12,7 @@
  *    problems.
  */
 import { type Page, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 // The in-app router runs in HASH mode (`mode: 'hash'`, src/main.js). A
 // path-form deep-link such as `/apps/openconnector/sources` is therefore
@@ -152,7 +153,11 @@ export async function openAndDismissCreateModal(page: Page, addButton: RegExp): 
 	const addBtn = page.getByRole('button', { name: addButton }).first()
 	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({ timeout: 20_000 })
 	await addBtn.click()
-	const dialog = page.getByRole('dialog').first()
+	// appDialog(), not getByRole('dialog').first(): NC's first-run wizard and
+	// nc-vue's support dialog are themselves role="dialog" overlays, so the
+	// naive locator can match one of them after a click they intercepted and
+	// report a modal that never opened as open.
+	const dialog = appDialog(page)
 	await expect(dialog, 'Create modal must open').toBeVisible({ timeout: 10_000 })
 	const cancel = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
 	if (await cancel.isVisible({ timeout: 2_000 }).catch(() => false)) {

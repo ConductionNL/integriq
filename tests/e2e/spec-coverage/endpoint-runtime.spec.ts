@@ -16,6 +16,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 // The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
 // path-form deep-link (`/apps/openconnector/endpoints`) is ignored and lands
@@ -45,7 +46,7 @@ test.describe('REQ-EP-UI-001: Add Endpoint modal', () => {
 		const addBtn = page.getByRole('button', { name: 'Add Endpoint' })
 		await expect(addBtn, 'Add Endpoint button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Endpoint').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
