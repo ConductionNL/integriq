@@ -51,6 +51,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { dismissFirstVisitOverlays } from '@conduction/nextcloud-vue/testing/playwright'
 import * as path from 'path'
 import * as fs from 'fs'
 
@@ -76,35 +77,23 @@ async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise
 	await page.screenshot({ path: path.join(dir, file), fullPage: false, type: 'png' })
 }
 
-/**
- * Dismiss anything that overlays the app chrome before we try to click —
- * chiefly Nextcloud's first-run wizard modal, but also any leftover
- * dialog. Best-effort: silently no-op when nothing's there.
- */
-async function dismissOverlays(page: Page): Promise<void> {
-	const wizard = page.locator('#firstrunwizard')
-	if (await wizard.isVisible().catch(() => false)) {
-		const close = wizard.getByRole('button', { name: /close|got it|finish|skip/i }).first()
-		if (await close.isVisible().catch(() => false)) {
-			await close.click().catch(() => {})
-		} else {
-			await page.keyboard.press('Escape').catch(() => {})
-		}
-		await wizard.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {})
-	}
-	const stray = page.locator('[role="dialog"]:not(#firstrunwizard)')
-	if (await stray.first().isVisible().catch(() => false)) {
-		await page.keyboard.press('Escape').catch(() => {})
-		await page.waitForTimeout(300)
-	}
-}
+// The local `dismissOverlays` that used to live here is gone in favour of
+// `dismissFirstVisitOverlays` from @conduction/nextcloud-vue — the third of
+// three places this app had reimplemented overlay dismissal.
+//
+// It also poked Nextcloud's own `#firstrunwizard`, which the shared helper
+// does not cover. That is deliberate rather than a regression: `global-setup`
+// retires the wizard through `DELETE /apps/firstrunwizard/wizard`, which
+// records server-side against the user and therefore holds for every spec,
+// context and browser in the run — strictly better than re-clicking it on
+// each navigation.
 
 /** Navigate to an OpenConnector (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
 	const url = route.startsWith('/index.php/') || route.startsWith('/apps/') || route.startsWith('/settings/') ? route : `${APP}${route}`
 	await page.goto(url).catch(() => { /* tolerate a 404 — caller decides */ })
 	await page.waitForLoadState('networkidle').catch(() => { /* idle never fires on some pages */ })
-	await dismissOverlays(page)
+	await dismissFirstVisitOverlays(page)
 	await page.waitForTimeout(900)
 }
 
