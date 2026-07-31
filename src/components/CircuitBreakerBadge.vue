@@ -133,7 +133,10 @@ export default {
 		}, 1000)
 	},
 
-	beforeDestroy() {
+	// Vue 3 renamed this hook: `beforeDestroy` is not recognised and is
+	// silently ignored, so the 1Hz interval above would outlive every badge
+	// that ever mounted, ticking forever against a dead component's state.
+	beforeUnmount() {
 		clearInterval(this.tickTimer)
 	},
 

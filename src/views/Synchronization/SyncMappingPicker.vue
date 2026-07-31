@@ -143,7 +143,16 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Turn a stored mapping slug into the option object NcSelect renders.
+		 * Falls back to a synthetic `{ id, label }` so a slug that is not in
+		 * the fetched list (or is still loading) still shows its own value.
+		 * @param {string|number} id The stored mapping slug; falsy means "none
+		 *   selected".
+		 * @return {{id: string, label: string}|null} The matching option, a
+		 *   synthetic stand-in, or null when nothing is selected.
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		resolveOption(id) {
 			if (!id) return null
 			return this.mappingOptions.find((opt) => opt.id === String(id)) ?? {

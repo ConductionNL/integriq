@@ -32,6 +32,21 @@ module.exports = defineConfig([{
 }, {
 	extends: compat.extends('@nextcloud'),
 
+	// The `@nextcloud` shared config, pulled in through FlatCompat, resolves to
+	// `ecmaVersion: 6` (ES2015). The main lint pass doesn't notice because
+	// vue-eslint-parser is driven with its own options, but `eslint-plugin-import`
+	// re-parses every *imported* module using the ecmaVersion from here — so it
+	// choked on optional chaining (`?.`, ES2020), nullish coalescing (`??`,
+	// ES2020) and object spread (`...`, ES2018), and reported each failure as a
+	// bogus `import/no-named-as-default` "Parse errors in imported module"
+	// warning. That was 20 of them, against files whose only sin was modern
+	// syntax. Pinning ecmaVersion to latest fixes the cause rather than muting
+	// the rule.
+	languageOptions: {
+		ecmaVersion: 'latest',
+		sourceType: 'module',
+	},
+
 	settings: {
 		'import/resolver': {
 			alias: {
@@ -71,5 +86,36 @@ module.exports = defineConfig([{
 		// every JS function back to its specification task. It is not a standard
 		// JSDoc tag, so we explicitly allowlist it here.
 		'jsdoc/check-tag-names': ['warn', { definedTags: ['spec'] }],
+
+		// Vue 3 migration guard (ADR-066). The `@nextcloud` shared config
+		// extends eslint-plugin-vue's *Vue 2* preset, so none of the
+		// `vue/no-deprecated-*` rules were active — this app shipped four
+		// `beforeDestroy()` hooks that Vue 3 does not recognise and silently
+		// never calls, leaking a 1Hz setInterval and a live-object subscription
+		// per detail page, with no console error to show for it. Enabling the
+		// whole vue3-recommended preset here would bury the signal under
+		// hundreds of stylistic errors, so we turn on precisely the family that
+		// catches Vue-2-isms the runtime accepts in silence.
+		'vue/no-deprecated-destroyed-lifecycle': 'error',
+		'vue/no-deprecated-dollar-listeners-api': 'error',
+		'vue/no-deprecated-dollar-scopedslots-api': 'error',
+		'vue/no-deprecated-events-api': 'error',
+		'vue/no-deprecated-filter': 'error',
+		'vue/no-deprecated-functional-template': 'error',
+		'vue/no-deprecated-data-object-declaration': 'error',
+		'vue/no-deprecated-html-element-is': 'error',
+		'vue/no-deprecated-inline-template': 'error',
+		// A prop `default()` factory has no `this` in Vue 3 — reading one
+		// white-screens the page at first render.
+		'vue/no-deprecated-props-default-this': 'error',
+		'vue/no-deprecated-router-link-tag-prop': 'error',
+		'vue/no-deprecated-scope-attribute': 'error',
+		'vue/no-deprecated-slot-attribute': 'error',
+		'vue/no-deprecated-slot-scope-attribute': 'error',
+		// The `.sync` modifier is gone; v-model arguments replace it.
+		'vue/no-deprecated-v-bind-sync': 'error',
+		'vue/no-deprecated-v-on-native-modifier': 'error',
+		'vue/no-deprecated-v-on-number-modifiers': 'error',
+		'vue/no-deprecated-vue-config-keycodes': 'error',
 	},
 }])

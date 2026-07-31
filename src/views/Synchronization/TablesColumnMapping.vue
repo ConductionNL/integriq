@@ -114,15 +114,41 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/**
+		 * Render the short "what this column accepts" hint shown under a row.
+		 *
+		 * @param {object} column A normalised column descriptor from
+		 *   `mapColumnDescriptors` (`{id,title,type,subtype,mandatory,constraints}`).
+		 * @return {string} The hint text, e.g. "number (2 decimals)".
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+		 */
 		typeHint(column) {
 			return columnTypeHint(column)
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/**
+		 * Prefill a row's input with the expression already mapped to it.
+		 *
+		 * @param {string} columnTitle The column TITLE the mapping is keyed by
+		 *   (never the numeric id — the backend resolves title→columnId).
+		 * @return {string} The mapped field path / expression, '' when unmapped.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+		 */
 		mappedValue(columnTitle) {
 			return mappedValueFor(this.config, columnTitle)
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007 */
+		/**
+		 * Write one row's edit back into `targetConfig.columnMapping` and emit
+		 * the new config blob (the parent owns the config; this component never
+		 * mutates it).
+		 *
+		 * @param {string} columnTitle The column TITLE being mapped.
+		 * @param {string} value The source field path / Twig expression typed by
+		 *   the user. Blank removes the entry so the config stays clean.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md#requirement-column-mapping-helper-prefilled-from-table-schema-req-syncui-007
+		 */
 		onMappingUpdate(columnTitle, value) {
 			this.$emit('update:config', upsertColumnMapping(this.config, columnTitle, value))
 		},

@@ -12,7 +12,7 @@
  *   (type, uuid) is never doubled (that would leak the first handle),
  * - epoch counter: a release during an in-flight subscribe (object switch /
  *   destroy) makes the resolution unsubscribe itself instead of leaking,
- * - `beforeDestroy` releases the active handle and bridge watcher.
+ * - `beforeUnmount` releases the active handle and bridge watcher.
  *
  * Events are refetch hints only: the plugin re-runs fetchObject(type, uuid)
  * through the store, landing in `objects[type][uuid]`. When the consuming
@@ -45,7 +45,7 @@ export default {
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
 

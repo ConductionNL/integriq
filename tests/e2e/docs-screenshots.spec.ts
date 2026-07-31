@@ -19,7 +19,7 @@
  * Run manually whenever the UI changes and tutorial screenshots need
  * to be refreshed:
  *
- *     NEXTCLOUD_URL=http://localhost:8080 \
+ *     PLAYWRIGHT_BASE_URL=http://localhost:8097 \
  *       npx playwright test --project docs-capture
  *
  * Excluded from the default regression run via the `docs-capture`

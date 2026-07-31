@@ -21,6 +21,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 // The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
@@ -50,7 +51,7 @@ test.describe('REQ-CON-UI-001: Add Consumer modal', () => {
 		const addBtn = page.getByRole('button', { name: /Add (Item|Consumer)/i })
 		await expect(addBtn, 'Add Item button must be visible on Consumers page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Item on Consumers').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
@@ -83,7 +84,7 @@ test.describe('REQ-WBHK-UI-001: Add Webhook modal', () => {
 		const addBtn = page.getByRole('button', { name: /Add (Item|Webhook|Consumer)/i })
 		await expect(addBtn, 'Add Item button must be visible on Webhooks page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Item on Webhooks').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()

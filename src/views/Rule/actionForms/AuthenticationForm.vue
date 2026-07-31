@@ -15,34 +15,34 @@
 		<label class="action-form__label">{{ t('openconnector', 'Authentication type') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Authentication type')"
-			:value="selectedTypeOption"
+			:model-value="selectedTypeOption"
 			:options="typeOptions"
 			:clearable="false"
 			@input="onTypePick" />
 		<NcTextField
 			v-if="value.type !== 'nc-session'"
 			:label="t('openconnector', 'Header (default: Authorization)')"
-			:value="value.header || ''"
+			:model-value="value.header || ''"
 			placeholder="Authorization"
-			@update:value="(next) => patch('header', next)" />
+			@update:model-value="(next) => patch('header', next)" />
 		<template v-if="value.type === 'apikey'">
 			<NcTextField
 				:label="t('openconnector', 'API keys (comma-separated)')"
-				:value="csv(value.keys)"
+				:model-value="csv(value.keys)"
 				placeholder="key-one,key-two"
-				@update:value="(next) => patch('keys', toArray(next))" />
+				@update:model-value="(next) => patch('keys', toArray(next))" />
 		</template>
 		<template v-else-if="usesAllowLists">
 			<NcTextField
 				:label="t('openconnector', 'Allowed users (comma-separated UIDs)')"
-				:value="csv(value.users)"
+				:model-value="csv(value.users)"
 				placeholder="alice,bob"
-				@update:value="(next) => patch('users', toArray(next))" />
+				@update:model-value="(next) => patch('users', toArray(next))" />
 			<NcTextField
 				:label="t('openconnector', 'Allowed groups (comma-separated)')"
-				:value="csv(value.groups)"
+				:model-value="csv(value.groups)"
 				placeholder="admin,users"
-				@update:value="(next) => patch('groups', toArray(next))" />
+				@update:model-value="(next) => patch('groups', toArray(next))" />
 		</template>
 		<span v-if="value.type === 'nc-session'" class="action-form__helper">
 			{{ t('openconnector', 'Nextcloud session authorises the logged-in user of the calling browser. The request must carry a valid CSRF request token, so this type is for calls made from inside a Nextcloud page — not for server-to-server clients.') }}
@@ -88,15 +88,34 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Write the picked authentication type discriminator into the config
+		 * slot; clearing the select stores an empty string.
+		 * @param {{id: string, label: string}|null} option The selected entry
+		 *   from `typeOptions` (apikey / jwt / jwt-zgw / basic / oauth / nc-session).
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
+		 */
 		onTypePick(option) {
 			this.patch('type', option?.id || '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Render a stored allow-list (keys / users / groups) as the
+		 * comma-separated text the NcTextField displays.
+		 * @param {Array<string>|string|undefined} value The stored field, either
+		 *   an array of entries or an already-flat string.
+		 * @return {string} Comma-separated entries, or '' when unset.
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
+		 */
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : (value || '')
 		},
-		/** @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3 */
+		/**
+		 * Parse comma-separated user input back into the array shape the
+		 * backend expects, trimming entries and dropping empty ones.
+		 * @param {string} text Raw comma-separated text typed into the field.
+		 * @return {Array<string>} The cleaned list of entries.
+		 * @spec openspec/changes/retrofit-2026-05-25-rule-editor-ui/tasks.md#task-3
+		 */
 		toArray(text) {
 			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
 		},

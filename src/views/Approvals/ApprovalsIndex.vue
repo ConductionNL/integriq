@@ -21,9 +21,9 @@
 		<div class="approvals__header">
 			<h2>{{ t('openconnector', 'Approvals') }}</h2>
 			<div class="approvals__filters">
-				<NcSelect :input-label="t('openconnector', 'Status')"
+				<NcSelect v-model="statusFilter"
+					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					v-model="statusFilter"
 					@update:model-value="reload" />
 			</div>
 		</div>

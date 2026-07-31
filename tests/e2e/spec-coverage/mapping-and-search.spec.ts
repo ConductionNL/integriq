@@ -19,6 +19,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 const API_BASE = '/index.php/apps/openconnector/api'
@@ -49,7 +50,7 @@ test.describe('REQ-UI-001: Add Mapping modal', () => {
 		const addBtn = page.getByRole('button', { name: 'Add Mapping' })
 		await expect(addBtn, 'Add Mapping button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Mapping').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()

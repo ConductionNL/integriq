@@ -513,7 +513,18 @@ export default {
 		schema: { type: String, default: SCHEMA_SLUG },
 	},
 
-	/** @spec openspec/specs/sync-editor-ui/spec.md */
+	/**
+	 * Register the `synchronization` object type with the store before the
+	 * component fetches, so `fetchObject`/`saveObject` can resolve the
+	 * schema → register pair when building URLs.
+	 *
+	 * @param {{ id: string|number, register: string, schema: string }} props Resolved
+	 *   component props; `register`/`schema` are the slugs forwarded by
+	 *   CnPageRenderer and fall back to this page's hardcoded defaults.
+	 * @return {{ objectStore: object }} Bindings exposed to the options API.
+	 *
+	 * @spec openspec/specs/sync-editor-ui/spec.md
+	 */
 	setup(props) {
 		const objectStore = useObjectStore()
 		// Register the type so objectStore.fetchObject/saveObject can resolve
@@ -675,7 +686,16 @@ export default {
 				this.loadObject()
 			},
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Seed the raw JSON textarea from the visual builder's current group
+		 * whenever the editor is switched into raw mode, so the two views
+		 * start out showing the same conditions.
+		 *
+		 * @param {boolean} value True when the raw JSON editor has just been enabled.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		rawConditions(value) {
 			if (value) {
 				try {
@@ -876,7 +896,16 @@ export default {
 			}
 			return [group]
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Write the condition tree back onto the draft. Shared entry point
+		 * for both editors — the visual builder emits it on every edit and
+		 * `onRawConditionsInput` routes parsed JSON through it too.
+		 *
+		 * @param {object} node Root JsonLogic group node, e.g. `{ and: [...] }`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
 			this.draft.conditions = node
@@ -885,7 +914,16 @@ export default {
 		toggleRawConditions() {
 			this.rawConditions = !this.rawConditions
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Handle typing in the raw JSON conditions textarea. Empty input
+		 * resets the draft to the empty AND group; invalid JSON only sets
+		 * `rawConditionsError` so a half-typed tree never reaches the draft.
+		 *
+		 * @param {string} value Raw textarea contents, expected to parse as a JsonLogic node.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onRawConditionsInput(value) {
 			this.rawConditionsDraft = value
 			const trimmed = value.trim()
@@ -902,12 +940,33 @@ export default {
 				this.rawConditionsError = t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Generic field writer used by the simple inputs (name, description,
+		 * ids, mappings, actions, follow-ups) so each one does not need its
+		 * own handler. No-ops until the draft has been loaded.
+		 *
+		 * @param {string} key Draft property to overwrite, e.g. `name` or `sourceConfig`.
+		 * @param {*} value New value; type follows the property — string for text
+		 *   fields, object for the config blobs, array for actions/follow-ups.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		updateDraft(key, value) {
 			if (!this.draft) return
 			this.draft[key] = value
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Handle a pick in the source type selector. Switching the type
+		 * discards `sourceId` and `sourceConfig` so kind-specific settings
+		 * (e.g. an API endpoint) cannot leak into another kind's form.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `sourceTypeOptions`; ignored when null or without an `id`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onSourceTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			// Type changed — clear the kind-specific blob + id so we don't
@@ -916,14 +975,32 @@ export default {
 			this.draft.sourceId = ''
 			this.draft.sourceConfig = {}
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Handle a pick in the target type selector — same reset semantics as
+		 * `onSourceTypeChange`, applied to the target side.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `typeOptions`; ignored when null or without an `id`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		onTargetTypeChange(option) {
 			if (!option?.id || !this.draft) return
 			this.draft.targetType = option.id
 			this.draft.targetId = ''
 			this.draft.targetConfig = {}
 		},
-		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		/**
+		 * Handle a pick in the sync mode selector. Selecting `incremental`
+		 * is what reveals the cursor field / comparator inputs.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `SYNC_MODE_OPTIONS` (`full` or `incremental`); ignored when null.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+		 */
 		onSyncModeChange(option) {
 			if (!option?.id || !this.draft) return
 			this.draft.syncMode = option.id
@@ -949,7 +1026,17 @@ export default {
 			}
 			this.draft.sourceConfig = next
 		},
-		/** @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016 */
+		/**
+		 * Handle a pick in the cursor comparator selector, storing it under
+		 * `sourceConfig.cursorComparator`. Clearing the select writes an
+		 * empty value, which removes the key from the config blob.
+		 *
+		 * @param {{ id: string, label: string }|null} option Chosen entry from
+		 *   `CURSOR_COMPARATOR_OPTIONS` (`gt` or `gte`), or null when cleared.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/synchronization-engine/spec.md#requirement-incremental-sync-mode-selects-a-cursor-filtered-fetch-request-req-016
+		 */
 		onCursorComparatorChange(option) {
 			this.updateSourceConfigField('cursorComparator', option?.id || '')
 		},

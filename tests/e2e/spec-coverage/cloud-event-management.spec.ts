@@ -18,6 +18,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 // The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
@@ -48,7 +49,7 @@ test.describe('REQ-CE-UI-001: Add Cloud Event modal', () => {
 		const addBtn = page.getByRole('button', { name: /Add (Item|Cloud Event|Event)/i })
 		await expect(addBtn, 'Add Item button must be visible on Cloud Events page').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Item on Cloud Events').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()

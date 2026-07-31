@@ -65,7 +65,17 @@ export default {
 		},
 	},
 	methods: {
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Split the edited rows back into the two shapes the backend expects —
+		 * a flat `properties` array of dot paths plus an optional `extends` map
+		 * keyed by property — and emit the updated config. Blank properties are
+		 * dropped, and `extends` is removed entirely when no row declares one.
+		 *
+		 * @param {Array<{property: string, extends: string[]}>} rows The full
+		 *   row list after the edit, in display order.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		emitRows(rows) {
 			const properties = rows.map((row) => row.property).filter(Boolean)
 			const extendsMap = {}
@@ -82,13 +92,29 @@ export default {
 			}
 			this.$emit('update:value', next)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Update the dot-path of one row as the user types.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value New dotted path on the parameters whose uuid
+		 *   value gets resolved into an OpenRegister object (e.g. `a.b`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onPropertyInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Update the per-property extend paths of one row, parsing the
+		 * comma-separated text field into an array of trimmed, non-empty paths.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value Comma-separated extend paths as typed (e.g. `x.y,z`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onExtendsInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = {
@@ -103,7 +129,13 @@ export default {
 			rows.push({ property: '', extends: [] })
 			this.emitRows(rows)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Drop one property row, discarding its extend paths with it.
+		 *
+		 * @param {number} index Zero-based position of the row to remove.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		removeRow(index) {
 			const rows = this.rows.slice()
 			rows.splice(index, 1)

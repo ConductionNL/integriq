@@ -18,6 +18,7 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { appDialog } from '../support/dialogs'
 
 // The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
 // path-form deep-link (`/apps/openconnector/synchronizations`) is ignored and
@@ -47,7 +48,7 @@ test.describe('REQ-UI-001: Add Synchronization modal', () => {
 		const addBtn = page.getByRole('button', { name: 'Add Synchronization' })
 		await expect(addBtn, 'Add Synchronization button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
-		const dialog = page.getByRole('dialog').first()
+		const dialog = appDialog(page)
 		await expect(dialog, 'Modal must open after clicking Add Synchronization').toBeVisible({ timeout: 10_000 })
 		// Dismiss without saving
 		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()

@@ -405,7 +405,7 @@ export default {
 	},
 
 	/** @spec openspec/specs/mapping-editor-ui/spec.md */
-	beforeDestroy() {
+	beforeUnmount() {
 		if (this.schedulePreview && this.schedulePreview.cancel) {
 			this.schedulePreview.cancel()
 		}
@@ -490,19 +490,52 @@ export default {
 			}
 		},
 
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Persist the transformation rules after an edit in MappingRulesEditor.
+		 *
+		 * @param {object} nextRules The complete replacement `mapping` object —
+		 *   target field path → source field path / Twig expression.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onUpdateMapping(nextRules) {
 			return this.persistPatch({ mapping: nextRules })
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Persist the cast rules after an edit in MappingRulesEditor.
+		 *
+		 * @param {object} nextRules The complete replacement `cast` object —
+		 *   field path → cast type applied after the mapping runs.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onUpdateCast(nextRules) {
 			return this.persistPatch({ cast: nextRules })
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Persist the unset list after an edit in MappingRulesEditor.
+		 *
+		 * @param {string[]} nextList The complete replacement `unset` list — the
+		 *   field paths stripped from the output, already de-duplicated.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onUpdateUnset(nextList) {
 			return this.persistPatch({ unset: nextList })
 		},
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Persist the pass-through switch, which decides whether unmapped input
+		 * fields are copied into the output. Coerced to a strict boolean so the
+		 * stored mapping never carries a truthy non-boolean.
+		 *
+		 * @param {boolean} value The new switch state from NcCheckboxRadioSwitch.
+		 * @return {Promise<void>} Resolves once the patch has been persisted.
+		 *
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onTogglePassThrough(value) {
 			return this.persistPatch({ passThrough: !!value })
 		},

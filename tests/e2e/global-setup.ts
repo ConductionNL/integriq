@@ -23,6 +23,7 @@ import { chromium, request, type FullConfig } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
+import { BASE_URL } from './support/baseUrl'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -73,10 +74,10 @@ async function ensureNextcloudReachable(baseURL: string): Promise<void> {
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
-	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined)
-		?? process.env.NEXTCLOUD_URL
-		?? process.env.NC_BASE_URL
-		?? 'http://localhost:8080'
+	// BASE_URL is the single authoritative target (see support/baseUrl.ts).
+	// The old `?? 'http://localhost:8080'` tail meant a config that failed to
+	// carry a baseURL silently logged in to the shared dev container.
+	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined) ?? BASE_URL
 	const username = process.env.NC_ADMIN_USER ?? 'admin'
 	const password = process.env.NC_ADMIN_PASS ?? 'admin'
 
@@ -137,6 +138,43 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			/* private-mode / quota — storageState seed is best-effort */
 		}
 	})
+
+	// Retire Nextcloud's own first-run wizard for this user.
+	//
+	// The wizard mounts as `#firstrunwizard`, a `[role="dialog"]` carrying
+	// `modal-mask--opaque`, and it is the *other* full-screen overlay a fresh
+	// instance puts in front of the app — the CnSupportDialog seed above says
+	// nothing about it. Its failure mode is the nasty one: it hides nothing that
+	// a visibility assertion looks at, so `toBeVisible()` on the page's own
+	// buttons keeps passing and only the *click* is intercepted
+	// ("subtree intercepts pointer events"). Two specs died exactly that way.
+	//
+	// Worse, it is itself a `[role="dialog"]`, so a spec that reaches for
+	// `getByRole('dialog').first()` after a click that never landed can match the
+	// wizard and pass green against the wrong element.
+	//
+	// `DELETE /apps/firstrunwizard/wizard` is the app's own dismissal route and
+	// records the result server-side against this user, so unlike a localStorage
+	// seed it holds for every spec, context and browser in the run. Issued from
+	// inside the page so the session cookie and CSRF token come along for free.
+	// Best-effort: an instance without the wizard app installed simply 404s.
+	const wizardStatus = await page.evaluate(async () => {
+		try {
+			const token = (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken ?? ''
+			const res = await fetch('/index.php/apps/firstrunwizard/wizard', {
+				method: 'DELETE',
+				headers: { requesttoken: token },
+			})
+			return res.status
+		} catch (e) {
+			return -1
+		}
+	})
+	if (wizardStatus !== 200 && wizardStatus !== 404) {
+		// eslint-disable-next-line no-console
+		console.warn(`[playwright globalSetup] first-run wizard dismissal returned ${wizardStatus}; `
+			+ 'specs may hit an overlay that blocks clicks without hiding anything.')
+	}
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()

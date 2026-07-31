@@ -287,27 +287,77 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle typing in the "Field" input of a non-`var` leaf: rewrite
+		 * args[0] to `{ var: <path> }` while leaving the operator and the
+		 * value slots untouched.
+		 *
+		 * @param {string} value Dotted path into the rule context, e.g. `body.status`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onVarInput(value) {
 			this.emitUpdate({ varPath: value })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle typing in the "Variable path" input shown when the picked
+		 * operator is `var` itself — the whole node is the reference, so it
+		 * is emitted directly instead of going through `emitUpdate`.
+		 *
+		 * @param {string} value Dotted path to read from the rule context, e.g. `user.email`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onVarOnlyInput(value) {
 			// Emit `{ "var": [<path>] }` — jsonlogic-php accepts both
 			// `{ var: "a" }` and `{ var: ["a"] }`; we use the array form
 			// here for shape parity with other ops in the tree.
 			this.$emit('update', { var: [value] })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle a pick in the operator NcSelect. Ignores the clear event
+		 * so the leaf always keeps a valid JsonLogic operator.
+		 *
+		 * @param {{ id: string, label: string, group: string }|null} option Chosen entry
+		 *   from `operatorOptions`, or null when the select emits a clear.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onOperatorPick(option) {
 			if (!option) return
 			this.emitUpdate({ operator: option.id })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle typing in a plain-text value slot (comparison value, or the
+		 * start/length slots of a ternary op). The text is coerced to a
+		 * number/boolean/null where it looks like one.
+		 *
+		 * @param {number} slot Index in the operator's args array to write, e.g. 1 for
+		 *   the comparison value and 2 for a ternary's length.
+		 * @param {string} value Raw text entered by the user, before coercion.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSlotInput(slot, value) {
 			this.emitUpdate({ slot, slotValue: this.coerce(value) })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle typing in a JsonLogic textarea slot (the then/else branches
+		 * of `if`, or the collection/predicate of an array op). Empty input
+		 * clears the slot; invalid JSON sets `parseError` and emits nothing,
+		 * so a half-typed node never reaches the rule.
+		 *
+		 * @param {number} slot Index in the operator's args array to write, e.g. 0 for an
+		 *   array op's collection and 1 for its predicate.
+		 * @param {string} value Raw textarea contents, expected to parse as JsonLogic.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onJsonSlotInput(slot, value) {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
@@ -323,7 +373,17 @@ export default {
 				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle typing in the `merge` textarea. `merge` is variadic, so the
+		 * whole args array is authored as one JSON array; anything that is
+		 * not an array is rejected with a `parseError` instead of emitted.
+		 *
+		 * @param {string} value Raw textarea contents, expected to be a JSON array of
+		 *   JsonLogic nodes, e.g. `[ { "var": "a" }, [ 1, 2 ] ]`.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onMergeInput(value) {
 			const trimmed = value.trim()
 			if (trimmed.length === 0) {
@@ -343,7 +403,16 @@ export default {
 				this.parseError = this.t('openconnector', 'Invalid JSON: {message}', { message: parseErr.message })
 			}
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Render one arg slot as text for a plain `NcTextField`. Objects are
+		 * stringified so a nested node at least stays visible instead of
+		 * showing `[object Object]`.
+		 *
+		 * @param {number} index Position in the operator's args array to read.
+		 * @return {string} Displayable value, or '' when the slot is unset.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		slotString(index) {
 			const raw = this.args[index]
 			if (raw === null || raw === undefined) return ''
@@ -352,7 +421,19 @@ export default {
 			}
 			return String(raw)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Render one arg slot as pretty-printed JSON for a textarea. Strings
+		 * are passed through unquoted so a user's in-progress typing is not
+		 * re-escaped on every keystroke.
+		 *
+		 * @param {number} index Position in the operator's args array to read.
+		 * @param {object} [options] Rendering options.
+		 * @param {string} [options.fallback] Text to show when the slot does not exist yet,
+		 *   used by array ops whose collection slot may still be empty.
+		 * @return {string} JSON text for the textarea.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		slotJson(index, { fallback = '' } = {}) {
 			const raw = this.args[index]
 			if (raw === undefined) return fallback

@@ -25,12 +25,12 @@
 		<div class="eventDeliveries__header">
 			<h2>{{ t('openconnector', 'Event deliveries') }}</h2>
 			<div class="eventDeliveries__filters">
-				<NcSelect :input-label="t('openconnector', 'Status')"
+				<NcSelect v-model="statusFilter"
+					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					v-model="statusFilter"
 					@update:model-value="reload" />
-				<NcTextField :label="t('openconnector', 'Subscription')"
-					v-model="subscriptionFilter"
+				<NcTextField v-model="subscriptionFilter"
+					:label="t('openconnector', 'Subscription')"
 					@update:model-value="reloadDebounced" />
 				<NcCheckboxRadioSwitch :model-value="nextcloudOnly"
 					type="switch"

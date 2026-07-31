@@ -141,7 +141,15 @@ export default {
 			}
 		},
 
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/**
+		 * Decide whether one cell of the matrix renders as ticked. `admin` is
+		 * always allowed, whatever the stored list says.
+		 *
+		 * @param {string} action Action name identifying the matrix row.
+		 * @param {string} group Nextcloud group id identifying the column.
+		 *
+		 * @spec openspec/architecture/adr-023-action-authorization.md
+		 */
 		isChecked(action, group) {
 			// Admins always pass regardless of the stored list.
 			if (group === 'admin') {
@@ -151,7 +159,18 @@ export default {
 			return allowed.includes(group)
 		},
 
-		/** @spec openspec/architecture/adr-023-action-authorization.md */
+		/**
+		 * Add or remove one group from an action's allow-list in the local
+		 * matrix (persisted later by `save`). The `admin` column is fixed and
+		 * ignored here.
+		 *
+		 * @param {string} action Action name identifying the matrix row.
+		 * @param {string} group Nextcloud group id identifying the column.
+		 * @param {boolean} checked New checkbox state — true grants the group
+		 *   the action, false revokes it.
+		 *
+		 * @spec openspec/architecture/adr-023-action-authorization.md
+		 */
 		toggle(action, group, checked) {
 			// The admin column is fixed and never persisted as a toggle.
 			if (group === 'admin') {

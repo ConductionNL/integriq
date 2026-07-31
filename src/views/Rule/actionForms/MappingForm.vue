@@ -53,7 +53,13 @@ export default {
 		this.loading = false
 	},
 	methods: {
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Emit the picked mapping's id upwards so the parent can write it to
+		 * `configuration.mapping`; clearing the select emits an empty string.
+		 * @param {{id: string, label: string, raw: object}|null} option The
+		 *   mapping option selected in the NcSelect.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onPick(option) {
 			this.$emit('update:id', option?.id ? String(option.id) : '')
 		},

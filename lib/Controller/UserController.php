@@ -516,10 +516,18 @@ class UserController extends Controller
                 $this->securityService->recordFailedLoginAttempt($username, $clientIp, 'invalid_credentials');
 
                 // Return generic error message to prevent username enumeration.
-                // HTTP 400 Bad Request: the submitted credentials are invalid input.
+                //
+                // HTTP 401 Unauthorized, not 400: the request itself is well
+                // formed, it is the *authentication* that failed. The spec
+                // (openspec/specs/user-management-and-login/spec.md, "Failed
+                // login is rate-limited and anti-enumeration") mandates 401
+                // here and reserves 400 for validateLoginCredentials() — a
+                // missing, too-short or illegal username, or an over-long
+                // password. Collapsing the two made a malformed request and a
+                // wrong password indistinguishable to a client.
                 $response = new JSONResponse(
                     data: ['error' => $this->l->t('Invalid username or password')],
-                    statusCode: Http::STATUS_BAD_REQUEST
+                    statusCode: Http::STATUS_UNAUTHORIZED
                 );
                 return $this->securityService->addSecurityHeaders($response);
             }

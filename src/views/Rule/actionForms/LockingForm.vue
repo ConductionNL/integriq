@@ -52,11 +52,23 @@ export default {
 	},
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Store the picked lock action; clearing the select stores an empty
+		 * string.
+		 * @param {{id: string, label: string}|null} option The selected entry
+		 *   from `actionOptions` (`lock` or `unlock`).
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onActionPick(option) {
 			this.patch('action', option?.id || '')
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Coerce the lock-duration field: an empty input removes the key
+		 * entirely (falling back to the backend default of 3600 seconds),
+		 * non-numeric input is ignored, anything else is stored as a number.
+		 * @param {string|null} raw The raw text emitted by the number NcTextField.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onDurationInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

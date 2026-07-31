@@ -36,7 +36,13 @@ export default {
 	props: { ...valueProp },
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Coerce the numeric file-ID-position field: an empty input removes the
+		 * key entirely, non-numeric input is ignored, anything else is stored
+		 * as a number.
+		 * @param {string|null} raw The raw text emitted by the number NcTextField.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onFileIdInput(raw) {
 			if (raw === '' || raw == null) {
 				const next = { ...(this.value || {}) }

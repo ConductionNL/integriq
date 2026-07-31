@@ -25,12 +25,12 @@
 		<div class="syncDeadLetters__header">
 			<h2>{{ t('openconnector', 'Sync dead letters') }}</h2>
 			<div class="syncDeadLetters__filters">
-				<NcSelect :input-label="t('openconnector', 'Status')"
+				<NcSelect v-model="statusFilter"
+					:input-label="t('openconnector', 'Status')"
 					:options="statusOptions"
-					v-model="statusFilter"
 					@update:model-value="reload" />
-				<NcTextField :label="t('openconnector', 'Synchronization')"
-					v-model="synchronizationFilter"
+				<NcTextField v-model="synchronizationFilter"
+					:label="t('openconnector', 'Synchronization')"
 					@update:model-value="reloadDebounced" />
 			</div>
 		</div>

@@ -250,7 +250,12 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/mapping-editor-ui/spec.md */
+		/**
+		 * Store the picked cast type as the rule's value draft.
+		 * @param {{id: string, label: string}|null} selected The cast-type option
+		 *   chosen in the NcSelect, or null when the selection is cleared.
+		 * @spec openspec/specs/mapping-editor-ui/spec.md
+		 */
 		onCastTypeInput(selected) {
 			if (!selected) return
 			this.valueDraft = selected.id

@@ -165,24 +165,61 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Decide whether a child renders as a nested RuleConditionGroup rather
+		 * than a leaf predicate: exactly one top-level key, that key being
+		 * `and`/`or`, and its value an array.
+		 *
+		 * @param {*} child One entry of this group's operand array. Untyped on
+		 *   purpose — the tree is user-editable, so a child may be any JsonLogic
+		 *   value (or malformed) and still has to be classified without throwing.
+		 * @return {boolean} True when the child is a boolean sub-group.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		isGroup(child) {
 			if (!child || typeof child !== 'object' || Array.isArray(child)) return false
 			const keys = Object.keys(child)
 			return keys.length === 1 && GROUP_OPERATORS.includes(keys[0]) && Array.isArray(child[keys[0]])
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Re-key the group under the newly picked boolean operator, carrying the
+		 * existing children over unchanged, and emit the rewritten node.
+		 *
+		 * @param {{id: string, label: string}} option The operator option picked
+		 *   in the NcSelect; `id` is `and` or `or`. Null/undefined when the
+		 *   select clears, in which case the current operator is kept.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onOperatorPick(option) {
 			if (!option) return
 			this.$emit('update', { [option.id]: this.children.slice() })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Replace one child with the node its component just emitted and emit
+		 * the whole group upwards (the tree is edited immutably, top-down).
+		 *
+		 * @param {number} index Position of the child inside the operand array,
+		 *   as bound by the `v-for` in the template.
+		 * @param {object} value The replacement JsonLogic node — a sub-group
+		 *   from RuleConditionGroup or a predicate from RuleConditionLeaf.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		updateChild(index, value) {
 			const next = this.children.slice()
 			next[index] = value
 			this.$emit('update', { [this.currentOperator]: next })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Drop one child from the group and emit the shortened group upwards.
+		 *
+		 * @param {number} index Position of the child to remove from the operand
+		 *   array, as bound by the `v-for` in the template.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		removeChild(index) {
 			const next = this.children.slice()
 			next.splice(index, 1)

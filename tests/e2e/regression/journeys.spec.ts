@@ -33,8 +33,10 @@
  */
 
 import { test, expect, Page } from '@playwright/test'
+import { BASE_URL } from '../support/baseUrl'
+import { appDialog } from '../support/dialogs'
 
-const NEXTCLOUD = process.env.NEXTCLOUD_URL || 'http://localhost:8080'
+const NEXTCLOUD = BASE_URL
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
@@ -91,7 +93,7 @@ async function createViaUi(
 	await addBtn.click()
 
 	// CnFormDialog opens as an NcDialog. Wait for the dialog role.
-	const dialog = page.getByRole('dialog').first()
+	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
 	// Fill `name` first; every openconnector schema exposes a top-level
@@ -365,7 +367,7 @@ async function editViaUi(page: Page, schemaSlug: string, name: string, newDescri
 	await expect(editItem, 'Edit menu item visible').toBeVisible({ timeout: 5_000 })
 	await editItem.click()
 
-	const dialog = page.getByRole('dialog').first()
+	const dialog = appDialog(page)
 	await expect(dialog, 'CnFormDialog opened in edit mode').toBeVisible()
 	const descField = dialog.getByLabel(/^\s*description\s*\*?\s*$/i)
 	await expect(descField, 'description field present').toBeVisible({ timeout: 10_000 })

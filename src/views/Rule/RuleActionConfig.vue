@@ -237,20 +237,47 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Switch the action type. Only `configuration.type` is rewritten — the
+		 * per-type parameter slots are left in place so toggling back to a type
+		 * restores what was already configured for it.
+		 *
+		 * @param {{id: string, label: string}} option The action-type option
+		 *   picked in the NcSelect; `id` is the raw action type (`mapping`,
+		 *   `javascript`, …). Null/undefined when cleared, which is ignored.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onTypePick(option) {
 			if (!option) return
 			const next = { ...(this.configuration || {}), type: option.id }
 			this.$emit('update', next)
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Write a bespoke form's `update:value` payload back into the action's
+		 * own slot, `configuration[actionType]`, leaving every other slot alone.
+		 *
+		 * @param {object} next The full replacement parameter object emitted by
+		 *   the active action form (each form owns its whole slice).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSlotUpdate(next) {
 			const merged = { ...(this.configuration || {}), [this.actionType]: next }
 			this.$emit('update', merged)
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle the `mapping` outlier: its value is a bare id stored directly
+		 * at `configuration.mapping`, not in a nested slot. An empty pick drops
+		 * the key entirely so no blank mapping reference is persisted.
+		 *
+		 * @param {string} id The picked mapping's id (stringified before it is
+		 *   stored). Empty string when MappingForm's select was cleared.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onMappingIdUpdate(id) {
 			const next = { ...(this.configuration || {}) }
 			if (id) {
@@ -261,13 +288,30 @@ export default {
 			this.$emit('update', next)
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Store the `javascript` action's source. Like `mapping`, it is a bare
+		 * scalar at `configuration.javascript` rather than a nested slot.
+		 *
+		 * @param {string} code The script body emitted by JavascriptForm.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onJavascriptCodeUpdate(code) {
 			const next = { ...(this.configuration || {}), javascript: code }
 			this.$emit('update', next)
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Fallback JSON-textarea path for action types with no bespoke form.
+		 * The draft is kept verbatim per action type so a half-typed value
+		 * survives; on valid JSON it is parsed into `configuration[actionType]`,
+		 * on empty input that key is removed, and on a parse error the previous
+		 * configuration is kept while `rawError` shows the message.
+		 *
+		 * @param {string} value The current raw textarea contents.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onRawInput(value) {
 			this.rawDrafts[this.actionType] = value
 			const trimmed = value.trim()

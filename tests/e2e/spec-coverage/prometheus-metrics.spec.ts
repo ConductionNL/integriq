@@ -5,7 +5,7 @@
  * Spec coverage: openspec/specs/prometheus-metrics/spec.md
  *
  * Tests REQ-PROM-001 through REQ-PROM-006 against the live Nextcloud
- * instance at http://localhost:8080 (admin/admin).
+ * instance named by PLAYWRIGHT_BASE_URL (admin/admin).
  *
  * The metrics endpoint at GET /index.php/apps/openconnector/api/metrics
  * returns Prometheus text exposition format (text/plain; version=0.0.4).
@@ -15,6 +15,7 @@
 
 import { test, expect } from '@playwright/test'
 import * as http from 'http'
+import { absoluteUrl } from '../support/baseUrl'
 
 const METRICS_URL = '/index.php/apps/openconnector/api/metrics'
 
@@ -39,7 +40,7 @@ test.describe('REQ-PROM-001: Metrics endpoint', () => {
 		// — Playwright's request contexts inherit storage state from the test session,
 		// so we bypass Playwright entirely here to get a truly unauthenticated call.
 		const status = await new Promise<number>((resolve, reject) => {
-			const req = http.get(`http://localhost:8080${METRICS_URL}`, (res) => {
+			const req = http.get(absoluteUrl(METRICS_URL), (res) => {
 				res.resume()
 				resolve(res.statusCode ?? 0)
 			})

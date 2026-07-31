@@ -86,7 +86,7 @@
 			<section class="flow-detail__card">
 				<h3>{{ t('openconnector', 'General') }}</h3>
 				<NcTextField :label="t('openconnector', 'Name') + '*'" :model-value="draft.name" @update:model-value="(value) => updateDraft('name', value)" />
-				<NcTextArea resize="vertical" :label="t('openconnector', 'Description')" v-model="draft.description" />
+				<NcTextArea v-model="draft.description" resize="vertical" :label="t('openconnector', 'Description')" />
 				<NcCheckboxRadioSwitch v-model="draft.isEnabled">
 					{{ t('openconnector', 'Enabled (cron/endpoint/event triggers run this flow; a manual Run always works)') }}
 				</NcCheckboxRadioSwitch>

@@ -8,9 +8,7 @@ const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
 // Production must not ship a full 'source-map' devtool: it emits a separate
 // .js.map exposing original unminified source alongside the publicly-served
-// bundle, and — with `optimization.sideEffects = false` retaining the entire
-// library module graph — a full source-map balloons the build's memory to an
-// OOM. Use the non-source-exposing, lighter variant.
+// bundle. Use the non-source-exposing variant.
 webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
 webpackConfig.stats = {
@@ -157,22 +155,14 @@ webpackConfig.plugins = [
 	}),
 ]
 
-// Published-dist tree-shaking guard (ADR-066): @conduction/nextcloud-vue@2
-// (and @nextcloud/vue@9) attach each dual-Vue component's compiled Vue-3
-// render via a side-effect-only `.vue.js` dispatcher import in the barrel
-// (`import './CnAppRoot.vue.js'` does `script.render = render`). The published
-// package's `sideEffects` allowlist covers only **/*.vue + **/*.css, NOT those
-// compiled `.vue.js` dispatchers, so an isolated/CI build that resolves the
-// PUBLISHED dist (not the src sibling) tree-shakes the dispatcher away and the
-// render never attaches -> every library component (CnAppRoot, CnPageRenderer,
-// CnAppNav, ...) renders a silent empty comment and the whole shell is blank.
-// Disabling sideEffects pruning keeps those render-attach imports. A targeted
-// per-module rule for .vue.js does NOT work; only turning the optimization off
-// does (confirmed on the decidesk sister migration). Costs a modest bundle-size
-// increase.
-webpackConfig.optimization = {
-	...(webpackConfig.optimization || {}),
-	sideEffects: false,
-}
+// NOTE (ADR-066): this file used to carry `optimization.sideEffects = false`.
+// @conduction/nextcloud-vue@2 attached each dual-Vue component's compiled Vue-3
+// render through a side-effect-only `.vue.js` dispatcher import, which the
+// published package's `sideEffects` allowlist did not cover — so a build that
+// resolved the published dist tree-shook the dispatcher away and every library
+// component rendered as a silent empty comment. Since 2.1.0-vue3.x the library
+// anchors its SFC default exports module-locally, so neither rollup nor webpack
+// can resolve past the render wiring and the workaround is obsolete. Turning
+// tree-shaking off wholesale only cost bundle size; it is not reinstated.
 
 module.exports = webpackConfig

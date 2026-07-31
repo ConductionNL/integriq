@@ -194,7 +194,16 @@ export default {
 		schema: { type: String, default: 'rule' },
 	},
 
-	/** @spec openspec/specs/rule-editor-ui/spec.md */
+	/**
+	 * Bind the shared object store to this page's register/schema pair before
+	 * any lifecycle hook runs, so `fetchObject`/`saveObject` on OBJECT_TYPE
+	 * resolve against the right OpenRegister collection.
+	 *
+	 * @param {object} props Resolved component props; only `register` and `schema`
+	 *   are read here, both falling back to the OpenConnector rule defaults.
+	 *
+	 * @spec openspec/specs/rule-editor-ui/spec.md
+	 */
 	setup(props) {
 		const objectStore = useObjectStore()
 		if (typeof objectStore.registerObjectType === 'function') {
@@ -257,12 +266,28 @@ export default {
 	watch: {
 		id: {
 			immediate: true,
-			/** @spec openspec/specs/rule-editor-ui/spec.md */
+			/**
+			 * Reload the rule whenever the routed `:id` changes. Runs
+			 * immediately on mount as well (`immediate: true`).
+			 *
+			 * @param {string|number} value The rule UUID from the route param;
+			 *   an empty value means there is nothing to load yet.
+			 *
+			 * @spec openspec/specs/rule-editor-ui/spec.md
+			 */
 			handler(value) {
 				if (value) this.load()
 			},
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Seed the raw-JSON textarea from the current condition tree whenever
+		 * the editor is switched into raw mode, so the user starts from the
+		 * conditions the visual builder was showing.
+		 *
+		 * @param {boolean} value True when raw JSON editing has just been enabled.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		rawConditions(value) {
 			if (value) {
 				try {
@@ -354,25 +379,60 @@ export default {
 			this.pristine = JSON.parse(JSON.stringify(fresh))
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Write a single top-level field onto the local working copy of the
+		 * rule. No-op until the first fetch has populated `draft`.
+		 *
+		 * @param {string} key Name of the rule property to set — one of
+		 *   `name`, `timing`, `order` or `description`.
+		 * @param {*} value New value for that property as produced by the bound
+		 *   form control (string for text fields, number or null for `order`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		updateField(key, value) {
 			if (!this.draft) return
 			this.draft[key] = value
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Store a replacement condition tree on the draft rule.
+		 *
+		 * @param {object} node The root JsonLogic group node (`{and: [...]}` or
+		 *   `{or: [...]}`) emitted by RuleConditionGroup or parsed from the raw
+		 *   JSON editor.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onConditionsUpdate(node) {
 			if (!this.draft) return
 			this.draft.conditions = node
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Store a replacement action configuration on the draft rule.
+		 *
+		 * @param {object} next The complete `configuration` blob emitted by
+		 *   RuleActionConfig, keyed by action type.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onConfigurationUpdate(next) {
 			if (!this.draft) return
 			this.draft.configuration = next
 		},
 
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Handle each keystroke in the raw-JSON conditions textarea: keep the
+		 * textarea draft verbatim, and only commit to `draft.conditions` when
+		 * the text parses. Empty input resets to an empty AND group; a parse
+		 * failure surfaces in `rawConditionsError` and leaves the last valid
+		 * conditions in place.
+		 *
+		 * @param {string} value Raw textarea contents, expected to be JsonLogic JSON.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onRawConditionsInput(value) {
 			this.rawConditionsDraft = value
 			const trimmed = value.trim()

@@ -43,11 +43,24 @@ export default {
 	props: { ...valueProp },
 	methods: {
 		patch: patchMethod(),
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Render the stored `tags` list as the comma-separated text the
+		 * NcTextField displays.
+		 * @param {Array<string>|string|undefined} value The stored tags, either
+		 *   an array of entries or an already-flat string.
+		 * @return {string} Comma-separated tags, or '' when unset.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		csv(value) {
 			return Array.isArray(value) ? value.join(',') : (value || '')
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Parse comma-separated tag input back into the array shape the backend
+		 * expects, trimming entries and dropping empty ones.
+		 * @param {string} text Raw comma-separated text typed into the field.
+		 * @return {Array<string>} The cleaned list of tags.
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		toArray(text) {
 			return (text || '').split(',').map((entry) => entry.trim()).filter(Boolean)
 		},

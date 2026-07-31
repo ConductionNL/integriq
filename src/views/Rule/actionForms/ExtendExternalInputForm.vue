@@ -65,22 +65,52 @@ export default {
 		},
 	},
 	methods: {
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Serialise the edited rows back into the action config and emit it.
+		 * Rows without a property path are dropped, so a freshly added empty
+		 * row never reaches the backend.
+		 *
+		 * @param {Array<{property: string, schema: string}>} rows The full row
+		 *   list after the edit, in display order.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		emitRows(rows) {
 			const next = { ...(this.value || {}), properties: rows.filter((row) => row.property) }
 			this.$emit('update:value', next)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Persist the "validate fetched object against schema" switch, which
+		 * drives RuleService::extendExternalUrl's schema validation.
+		 *
+		 * @param {boolean} checked New switch state emitted by NcCheckboxRadioSwitch.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onValidateToggle(checked) {
 			this.$emit('update:value', { ...(this.value || {}), validate: !!checked })
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Update the dot-path of one row as the user types.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value New dot path on the payload (e.g. `body.relations.contact`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onPropertyInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], property: value }
 			this.emitRows(rows)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Update the schema a row's fetched object is validated against.
+		 *
+		 * @param {number} index Zero-based position of the edited row in `rows`.
+		 * @param {string} value OpenRegister schema ID/slug (e.g. `contact`).
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		onSchemaInput(index, value) {
 			const rows = this.rows.slice()
 			rows[index] = { ...rows[index], schema: value }
@@ -92,7 +122,13 @@ export default {
 			rows.push({ property: '', schema: '' })
 			this.emitRows(rows)
 		},
-		/** @spec openspec/specs/rule-editor-ui/spec.md */
+		/**
+		 * Drop one property row from the list.
+		 *
+		 * @param {number} index Zero-based position of the row to remove.
+		 *
+		 * @spec openspec/specs/rule-editor-ui/spec.md
+		 */
 		removeRow(index) {
 			const rows = this.rows.slice()
 			rows.splice(index, 1)
