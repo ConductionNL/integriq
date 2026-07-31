@@ -1983,4 +1983,258 @@ class CallServiceTest extends TestCase
         $this->assertArrayNotHasKey('sink', $capturedOptions);
     }//end testCallWithoutSinkPassesNoSinkOptionToGuzzle()
 
+    /**
+     * ocon#111 Task 0: `call()` is synchronous and declared `): ObjectEntity`.
+     * Its old `$asynchronous === true` branch returned a Guzzle promise, which
+     * was an unconditional TypeError. The flag must now fail loudly and name the
+     * sibling rather than fatal on a return-type mismatch.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallRejectsTheAsynchronousFlagAndNamesTheSibling(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        // Nothing may be dispatched: the guard must trip before any HTTP happens.
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('request');
+        $mockClient->expects($this->never())->method('requestAsync');
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-flag');
+        $source->setObject(
+            [
+                'name'          => 'async-flag-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/callAsync/');
+
+        $service->call(source: $source, endpoint: '/things', asynchronous: true);
+    }//end testCallRejectsTheAsynchronousFlagAndNamesTheSibling()
+
+    /**
+     * ocon#111 Task 0: `callAsync()` dispatches through `requestAsync()` and
+     * resolves to the same `CallLog` ObjectEntity the synchronous path returns —
+     * one consumed shape, so the save phase does not branch on dispatch mode.
+     * ADR-003 also requires an asynchronous call to produce a CallLog.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallAsyncResolvesToACallLogEntity(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('request');
+        $mockClient->expects($this->once())
+            ->method('requestAsync')
+            ->willReturn(\GuzzleHttp\Promise\Create::promiseFor(new Response(200, [], '{"ok":true}')));
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-ok');
+        $source->setObject(
+            [
+                'name'          => 'async-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $promise = $service->callAsync(source: $source, endpoint: '/things');
+
+        $this->assertInstanceOf(\GuzzleHttp\Promise\PromiseInterface::class, $promise);
+
+        $callLog = $promise->wait();
+
+        $this->assertInstanceOf(
+            ObjectEntity::class,
+            $callLog,
+            'callAsync() must resolve to the same CallLog shape call() returns'
+        );
+        $this->assertSame(200, ($callLog->getObject()['response']['statusCode'] ?? null));
+    }//end testCallAsyncResolvesToACallLogEntity()
+
+    /**
+     * ocon#111: `callAsync()` must refuse a stream-resource sink at the boundary.
+     *
+     * This is the exact defect stream-file-content shipped a fix for — Guzzle
+     * wraps a resource-typed sink in a PSR-7 Stream and closes the resource when
+     * that stream is destructed — and asynchronous dispatch makes it strictly
+     * worse, because the destruct happens at a moment the caller does not
+     * control. A path is the only safe form.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
+     */
+    public function testCallAsyncRefusesAResourceSink(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('requestAsync');
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-resource');
+        $source->setObject(
+            [
+                'name'          => 'async-resource-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $handle = fopen('php://temp', 'r+');
+
+        try {
+            $this->expectException(\InvalidArgumentException::class);
+            $this->expectExceptionMessageMatches('/PATH/');
+
+            $service->callAsync(source: $source, endpoint: '/file', sink: $handle);
+        } finally {
+            if (is_resource($handle) === true) {
+                fclose($handle);
+            }
+        }
+    }//end testCallAsyncRefusesAResourceSink()
+
+    /**
+     * ocon#111: the `on_headers` callback reaches Guzzle's request options and is
+     * kept OUT of the persisted CallLog request config — the same treatment
+     * `sink` gets, and for the same reason: a closure is not JSON-persistable and
+     * must never reach Twig rendering or secret redaction.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-concurrency-shall-be-capped-and-configurable
+     */
+    public function testCallAsyncPassesOnHeadersToGuzzleAndKeepsItOutOfTheCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $capturedOptions = null;
+        $mockClient      = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->method('requestAsync')->willReturnCallback(
+            function ($method, $url, $options) use (&$capturedOptions) {
+                $capturedOptions = $options;
+
+                return \GuzzleHttp\Promise\Create::promiseFor(new Response(200, ['Content-Length' => '1234'], 'x'));
+            }
+        );
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-headers');
+        $source->setObject(
+            [
+                'name'          => 'async-headers-source',
+                'isEnabled'     => true,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $callLog = $service->callAsync(
+            source: $source,
+            endpoint: '/file',
+            onHeaders: function ($response): void {
+                // Intentionally empty: presence in the Guzzle options is the assertion.
+            }
+        )->wait();
+
+        $this->assertIsArray($capturedOptions);
+        $this->assertArrayHasKey('on_headers', $capturedOptions);
+        $this->assertIsCallable($capturedOptions['on_headers']);
+
+        $persistedRequest = ($callLog->getObject()['request'] ?? []);
+        $this->assertArrayNotHasKey(
+            'on_headers',
+            $persistedRequest,
+            'a closure must never reach the persisted CallLog request config'
+        );
+    }//end testCallAsyncPassesOnHeadersToGuzzleAndKeepsItOutOfTheCallLog()
+
+    /**
+     * ocon#111: a source that is disabled (or rate-limited, or breaker-open)
+     * short-circuits with a synthetic CallLog on the synchronous path. The
+     * asynchronous sibling must FULFIL with that same CallLog rather than reject,
+     * so callers consume one shape and a rejection unambiguously means a
+     * transport failure.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-one-file-s-failure-shall-not-abort-the-others-or-the-object
+     */
+    public function testCallAsyncFulfilsWithTheShortCircuitCallLog(): void
+    {
+        $brokered = $this->createMock(BrokeredCallService::class);
+        $brokered->method('hasCredentialRef')->willReturn(false);
+
+        $service = $this->buildBrokeredCallService($brokered);
+
+        $mockClient = $this->createMock(\GuzzleHttp\Client::class);
+        $mockClient->expects($this->never())->method('requestAsync');
+
+        $clientProperty = new \ReflectionProperty(CallService::class, 'client');
+        $clientProperty->setAccessible(true);
+        $clientProperty->setValue($service, $mockClient);
+
+        $source = new ObjectEntity();
+        $source->setUuid('source-uuid-async-disabled');
+        $source->setObject(
+            [
+                'name'          => 'disabled-source',
+                'isEnabled'     => false,
+                'location'      => 'https://api.example.invalid',
+                'configuration' => [],
+            ]
+        );
+
+        $callLog = $service->callAsync(source: $source, endpoint: '/things')->wait();
+
+        $this->assertInstanceOf(
+            ObjectEntity::class,
+            $callLog,
+            'a guard short-circuit must fulfil with its synthetic CallLog, not reject'
+        );
+    }//end testCallAsyncFulfilsWithTheShortCircuitCallLog()
+
 }//end class
