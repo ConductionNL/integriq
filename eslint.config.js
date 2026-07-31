@@ -32,6 +32,21 @@ module.exports = defineConfig([{
 }, {
 	extends: compat.extends('@nextcloud'),
 
+	// The `@nextcloud` shared config, pulled in through FlatCompat, resolves to
+	// `ecmaVersion: 6` (ES2015). The main lint pass doesn't notice because
+	// vue-eslint-parser is driven with its own options, but `eslint-plugin-import`
+	// re-parses every *imported* module using the ecmaVersion from here — so it
+	// choked on optional chaining (`?.`, ES2020), nullish coalescing (`??`,
+	// ES2020) and object spread (`...`, ES2018), and reported each failure as a
+	// bogus `import/no-named-as-default` "Parse errors in imported module"
+	// warning. That was 20 of them, against files whose only sin was modern
+	// syntax. Pinning ecmaVersion to latest fixes the cause rather than muting
+	// the rule.
+	languageOptions: {
+		ecmaVersion: 'latest',
+		sourceType: 'module',
+	},
+
 	settings: {
 		'import/resolver': {
 			alias: {
