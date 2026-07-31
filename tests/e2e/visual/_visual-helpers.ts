@@ -25,6 +25,7 @@
  * environment. See tests/e2e/visual/README in-repo wiring notes.
  */
 import { expect, type Page, type Locator } from '@playwright/test'
+import { dismissSupportDialog } from '@conduction/nextcloud-vue/testing/playwright'
 
 /** Common screenshot options applied to every visual assertion. */
 export const SHOT_OPTIONS = {
@@ -41,6 +42,14 @@ export const SHOT_OPTIONS = {
  * shot taken mid-frame is identical every run.
  */
 export async function freezePage(page: Page): Promise<void> {
+	// Animation/caret freezing only. This used to also force
+	// `visibility: hidden` onto `.cn-support-dialog` and `.modal-mask` so a
+	// racing dismissal could not bleed into a shot. That is deleted, not
+	// relocated: hiding an overlay leaves it mounted and in the layout, and a
+	// mask that is merely invisible still eats the pointer events of anything
+	// underneath — a shot looks clean while the next click silently misses.
+	// `global-setup` now seeds the dialog as already-seen, so it never mounts
+	// and there is nothing to hide.
 	await page.addStyleTag({
 		content: `
 			*, *::before, *::after {
@@ -51,25 +60,8 @@ export async function freezePage(page: Page): Promise<void> {
 				caret-color: transparent !important;
 				scroll-behavior: auto !important;
 			}
-			/* Hide the auto-opening support dialog + its backdrop entirely so
-			   it can never bleed into a shot even if dismissal races. */
-			[data-testid-modal="cn-support-dialog"],
-			.cn-support-dialog,
-			.modal-mask { visibility: hidden !important; }
 		`,
 	})
-}
-
-/**
- * Dismiss the "Support <App>" dialog that auto-opens over the app and would
- * otherwise dominate (and randomise) the shot.
- */
-export async function dismissSupportDialog(page: Page): Promise<void> {
-	const dialog = page.locator('[data-testid-modal="cn-support-dialog"]')
-	if (await dialog.isVisible().catch(() => false)) {
-		await dialog.getByRole('button', { name: 'Close' }).click().catch(() => {})
-		await dialog.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {})
-	}
 }
 
 /**

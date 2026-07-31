@@ -106,7 +106,7 @@
 						:type="draft.sourceType"
 						:source-id="draft.sourceId"
 						:config="draft.sourceConfig"
-						@update:sourceId="(value) => updateDraft('sourceId', value)"
+						@update:source-id="(value) => updateDraft('sourceId', value)"
 						@update:config="(value) => updateDraft('sourceConfig', value)" />
 
 					<!-- Incremental sync mode (REQ-016/REQ-017/REQ-019, change cdc-incremental-sync) -->
@@ -241,7 +241,7 @@
 						:type="draft.targetType"
 						:source-id="draft.targetId"
 						:config="draft.targetConfig"
-						@update:sourceId="(value) => updateDraft('targetId', value)"
+						@update:source-id="(value) => updateDraft('targetId', value)"
 						@update:config="(value) => updateDraft('targetConfig', value)" />
 				</section>
 			</div>
@@ -260,8 +260,8 @@
 						:hash-value="draft.sourceHashMapping"
 						:target-source-value="draft.targetSourceMapping"
 						@update:value="(value) => updateDraft('sourceTargetMapping', value)"
-						@update:hashValue="(value) => updateDraft('sourceHashMapping', value)"
-						@update:targetSourceValue="(value) => updateDraft('targetSourceMapping', value)" />
+						@update:hash-value="(value) => updateDraft('sourceHashMapping', value)"
+						@update:target-source-value="(value) => updateDraft('targetSourceMapping', value)" />
 				</section>
 
 				<section class="sync-detail__card sync-detail__actions">
