@@ -218,4 +218,121 @@ final class ExecutionTraceContextTest extends TestCase
         $this->assertTrue($context->isDryRun());
         $this->assertSame('manual', $context->getTriggeredBy());
     }//end testReplayFlagsAreExposed()
+
+
+    /**
+     * #1082: a registered step listener is notified with each step as it is
+     * appended, so a run can be watched live instead of only after it finishes.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
+     */
+    public function testStepListenerReceivesEachStepAsItIsAdded(): void
+    {
+        $context = new ExecutionTraceContext(entryPoint: 'manual');
+        $seen    = [];
+
+        $context->setStepListener(
+            function (array $step) use (&$seen): void {
+                $seen[] = $step;
+            }
+        );
+
+        $context->addStep(type: 'synchronization', name: 'first', timing: null, status: 'success');
+        $context->addStep(type: 'call', name: 'second', timing: null, status: 'error');
+
+        $this->assertCount(2, $seen, 'the listener must fire once per step');
+        $this->assertSame('first', $seen[0]['name']);
+        $this->assertSame(1, $seen[0]['order']);
+        $this->assertSame('second', $seen[1]['name']);
+        $this->assertSame(2, $seen[1]['order']);
+        $this->assertSame('error', $seen[1]['status']);
+
+        // The observer must not disturb the buffer it observes.
+        $this->assertCount(2, $context->getSteps());
+        $this->assertSame($context->getSteps(), $seen);
+    }//end testStepListenerReceivesEachStepAsItIsAdded()
+
+
+    /**
+     * #1082: with no listener registered, addStep() behaves exactly as before —
+     * this is what makes the hook safe for the ~existing callers that know
+     * nothing about it.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
+     */
+    public function testAddStepIsUnchangedWithoutAListener(): void
+    {
+        $context = new ExecutionTraceContext(entryPoint: 'cron');
+        $context->addStep(type: 'synchronization', name: 'only', timing: null, status: 'success');
+
+        $steps = $context->getSteps();
+        $this->assertCount(1, $steps);
+        $this->assertSame('only', $steps[0]['name']);
+        $this->assertSame(1, $steps[0]['order']);
+    }//end testAddStepIsUnchangedWithoutAListener()
+
+
+    /**
+     * #1082: detaching the listener stops the notifications.
+     *
+     * The streaming harness relies on this in its `finally`: the context can
+     * outlive the request, and a listener still writing to a closed socket
+     * afterwards would raise errors in an unrelated code path.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
+     */
+    public function testListenerCanBeDetached(): void
+    {
+        $context = new ExecutionTraceContext(entryPoint: 'manual');
+        $calls   = 0;
+
+        $context->setStepListener(
+            function (array $step) use (&$calls): void {
+                $calls++;
+            }
+        );
+        $context->addStep(type: 'call', name: 'watched', timing: null, status: 'success');
+
+        $context->setStepListener(null);
+        $context->addStep(type: 'call', name: 'unwatched', timing: null, status: 'success');
+
+        $this->assertSame(1, $calls, 'no notification may follow a detach');
+        $this->assertCount(2, $context->getSteps(), 'but the step is still buffered');
+    }//end testListenerCanBeDetached()
+
+
+    /**
+     * #1082: a listener that throws MUST NOT break the run it is watching.
+     *
+     * The listener is a debugging console. If rendering a frame fails — a closed
+     * socket, an encoding error — the synchronization it was opened to observe has
+     * to carry on regardless, and the step must still reach the trace buffer.
+     * Observation does not get to affect the observed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
+     */
+    public function testThrowingListenerDoesNotBreakTheRun(): void
+    {
+        $context = new ExecutionTraceContext(entryPoint: 'manual');
+
+        $context->setStepListener(
+            function (array $step): void {
+                throw new \RuntimeException('console socket died');
+            }
+        );
+
+        $context->addStep(type: 'synchronization', name: 'survives', timing: null, status: 'success');
+
+        $steps = $context->getSteps();
+        $this->assertCount(1, $steps, 'the step must be buffered despite the listener throwing');
+        $this->assertSame('survives', $steps[0]['name']);
+    }//end testThrowingListenerDoesNotBreakTheRun()
 }//end class

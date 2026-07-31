@@ -19,8 +19,8 @@
   - GIVEN completion WHEN the run ends THEN a final `result` event carries the same payload the default `JSONResponse` returns
   - GIVEN `ExecutionTraceContext::addStep()` currently only appends to a private array WHEN a step is added THEN an OPTIONAL step listener is invoked, so the harness can flush that step live; with no listener set the class behaves byte-for-byte as before for every existing caller
   - GIVEN a progress event WHEN it is emitted THEN its `data` payload is the execution-trace step shape (`order`, `type`, `name`, `status`, `durationMs`, `startedAt`, `input`, `output`), NOT a bespoke format — one vocabulary and one redaction pass (design Decision 7)
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `ExecutionTraceContext::setStepListener()`, `lib/Http/StreamingRunResponse.php` (`render()` returns `''` so the dispatcher cannot double-render; sets the three SSE headers incl. `X-Accel-Buffering: no`), `lib/Traits/StreamsRunOutput.php` (`wantsStreaming`, `beginStream`, `emitEvent`, `streamOperation`)
+- [x] Test — 13 tests: 4 on the step listener, 10 on the harness, 3 on the response
 
 ### Task 2: Exception and fatal-error surfacing
 - **spec_ref**: `openspec/specs/run-streaming/spec.md#requirement-streaming-surfaces-exceptions-and-fatal-errors`
@@ -30,8 +30,8 @@
   - GIVEN a PHP fatal (OOM/timeout/parse) WHEN the request shuts down THEN `register_shutdown_function` reads `error_get_last()` and streams a fatal event before the socket closes
   - GIVEN a result with a populated `errors` array WHEN the final event is streamed THEN those errors are included, and the feature works when absent
   - GIVEN `error` and `fatal` events WHEN they are emitted THEN they are STREAMING-ONLY event types rather than trace steps, because a persisted trace cannot record the death of its own process — this is the failure class the change exists for
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `registerFatalCapture()` filters `error_get_last()` to the five process-terminating types and names them (`E_ERROR` etc.) rather than printing an integer; a throwing operation becomes an `error` frame with class/message/file/line/trace rather than being rethrown, since the status line is gone once the first byte flushes
+- [x] Test — a throwing operation yields `error` and no `result`; an unencodable payload still yields a well-formed frame
 
 ### Task 3: Wire streaming into synchronization run/test
 - **spec_ref**: `openspec/specs/run-streaming/spec.md#requirement-opt-in-streaming-selection-preserves-default-behaviour`

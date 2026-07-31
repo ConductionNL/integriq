@@ -104,6 +104,22 @@ class ExecutionTraceContext
     private array $steps = [];
 
     /**
+     * Optional observer notified as each step is appended (#1082).
+     *
+     * The step buffer is persisted once, at the end of a run, which is fine for
+     * the trace's own purpose but useless for watching a run live: nothing can
+     * see a step until the run that produced it has already finished. The
+     * streaming harness registers a listener here so it can flush each step as an
+     * SSE frame the moment it happens.
+     *
+     * Null by default, and {@see addStep()} is byte-for-byte unchanged when it is
+     * null — every existing caller is unaffected.
+     *
+     * @var callable|null
+     */
+    private $stepListener = null;
+
+    /**
      * Constructor. Mints a fresh UUIDv4 traceId unless one is supplied
      * (replay/rehydration passes the original traceId to continue an
      * existing trace — design.md Decision 2's approval-resume continuation).
@@ -186,7 +202,7 @@ class ExecutionTraceContext
         $start = ($startedAtMicrotime ?? microtime(true));
         $end   = ($finishedAtMicrotime ?? $start);
 
-        $this->steps[] = [
+        $step = [
             'order'      => (count($this->steps) + 1),
             'type'       => $type,
             'name'       => $name,
@@ -198,7 +214,46 @@ class ExecutionTraceContext
             'output'     => $output,
         ];
 
+        $this->steps[] = $step;
+
+        // Notify the live observer, when one is registered (#1082). Wrapped so a
+        // failing listener can never break the run it is only watching: a broken
+        // console must not take down the synchronization it was opened to debug.
+        if ($this->stepListener !== null) {
+            try {
+                ($this->stepListener)($step);
+            } catch (\Throwable) {
+                // Deliberately swallowed — observation is not allowed to affect
+                // the observed. The trace buffer above already has the step.
+            }
+        }
+
     }//end addStep()
+
+    /**
+     * Register an observer notified with each step as it is appended (#1082).
+     *
+     * Exists so a run can be watched live. Without it the only way to read steps
+     * is {@see getSteps()} after the run has finished, which is no use when the
+     * point is to see what is happening — or to see the last step before a fatal
+     * kills the process.
+     *
+     * The listener receives the single step array just appended, in the same shape
+     * `getSteps()` returns its entries. It MUST NOT be relied upon to run: pass
+     * null to detach, and note that {@see addStep()} swallows any Throwable it
+     * raises rather than letting a watcher break the run.
+     *
+     * @param callable|null $listener Receives one step array, or null to detach.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
+     */
+    public function setStepListener(?callable $listener): void
+    {
+        $this->stepListener = $listener;
+
+    }//end setStepListener()
 
     /**
      * Get the minted traceId.
