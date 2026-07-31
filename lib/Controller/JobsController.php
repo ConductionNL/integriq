@@ -21,8 +21,10 @@ namespace OCA\OpenConnector\Controller;
 
 use Exception;
 use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\JobService;
 use OCA\OpenConnector\Service\SearchService;
+use OCA\OpenConnector\Traits\StreamsRunOutput;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -31,6 +33,7 @@ use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -49,6 +52,9 @@ use OCP\IUserSession;
  */
 class JobsController extends Controller
 {
+
+    use StreamsRunOutput;
+
     /**
      * Constructor for the JobController.
      *
@@ -193,7 +199,8 @@ class JobsController extends Controller
      *
      * @param string $id The UUID of the job to execute.
      *
-     * @return JSONResponse A JSON response containing the execution results.
+     * @return Response A `JSONResponse` with the execution results by default; a
+     *                  `StreamingRunResponse` when the caller opted into streaming (#1082).
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -202,7 +209,7 @@ class JobsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function run(string $id): JSONResponse
+    public function run(string $id): Response
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -217,6 +224,31 @@ class JobsController extends Controller
             return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         }
 
+        // Resolved before the streaming branch because both paths need it.
+        $forceRun = filter_var(($this->request->getParams()['forceRun'] ?? false), FILTER_VALIDATE_BOOLEAN);
+
+        // Streaming branch (#1082). After the auth, action-auth and existence checks
+        // above, so opting into streaming cannot loosen access control and a
+        // 401/403/404 is still a real status rather than a frame inside a 200 stream.
+        if ($this->wantsStreaming(request: $this->request) === true) {
+            $trace = new ExecutionTraceContext(entryPoint: 'manual', entryPointId: $id, triggeredBy: 'http');
+
+            return $this->streamOperation(
+                operation: function (?ExecutionTraceContext $streamTrace) use ($job) {
+                    $streamed = $this->jobService->executeJob(
+                        job: $job,
+                        forceRun: $forceRun,
+                        trace: $streamTrace
+                    );
+
+                    // The non-streaming branch returns the serialized log entry, or
+                    // null when there is none; the final frame carries the same.
+                    return ($streamed?->jsonSerialize() ?? []);
+                },
+                trace: $trace
+            );
+        }//end if
+
         try {
             // Get execution parameters from request.
             $parameters = $this->request->getParams();
@@ -226,13 +258,6 @@ class JobsController extends Controller
                 if (str_starts_with($key, '_') === true) {
                     unset($parameters[$key]);
                 }
-            }
-
-            // Determine if forceRun is set.
-            if (isset($parameters['forceRun']) === true) {
-                $forceRun = filter_var($parameters['forceRun'], FILTER_VALIDATE_BOOLEAN);
-            } else {
-                $forceRun = false;
             }
 
             // Execute the job.
@@ -263,7 +288,8 @@ class JobsController extends Controller
      *
      * @param string $id The UUID of the job to execute.
      *
-     * @return JSONResponse A JSON response containing the execution results.
+     * @return Response A `JSONResponse` with the execution results by default; a
+     *                  `StreamingRunResponse` when the caller opted into streaming (#1082).
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -272,7 +298,7 @@ class JobsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function test(string $id): JSONResponse
+    public function test(string $id): Response
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -286,6 +312,28 @@ class JobsController extends Controller
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => $this->l->t('Job not found')], 404);
         }
+
+        // Streaming branch (#1082). After the auth, action-auth and existence checks
+        // above, so opting into streaming cannot loosen access control and a
+        // 401/403/404 is still a real status rather than a frame inside a 200 stream.
+        if ($this->wantsStreaming(request: $this->request) === true) {
+            $trace = new ExecutionTraceContext(entryPoint: 'manual', entryPointId: $id, triggeredBy: 'http');
+
+            return $this->streamOperation(
+                operation: function (?ExecutionTraceContext $streamTrace) use ($job) {
+                    $streamed = $this->jobService->executeJob(
+                        job: $job,
+                        forceRun: true,
+                        trace: $streamTrace
+                    );
+
+                    // The non-streaming branch returns the serialized log entry, or
+                    // null when there is none; the final frame carries the same.
+                    return ($streamed?->jsonSerialize() ?? []);
+                },
+                trace: $trace
+            );
+        }//end if
 
         try {
             // Get execution parameters from request.

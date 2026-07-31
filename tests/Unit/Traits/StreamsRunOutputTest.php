@@ -50,6 +50,12 @@ final class StreamsRunOutputTest extends TestCase
      */
     private function invoke(StreamsRunOutputHost $host, string $method, array $args=[]): mixed
     {
+        // Protect the buffers capture() owns: with the production floor of 0,
+        // beginStream() would unwind PHPUnit's own and the output would be lost.
+        $floor = new \ReflectionProperty(StreamsRunOutputHost::class, 'streamBufferFloor');
+        $floor->setAccessible(true);
+        $floor->setValue($host, ob_get_level());
+
         $m = new ReflectionMethod(StreamsRunOutputHost::class, $method);
         $m->setAccessible(true);
 
@@ -245,7 +251,6 @@ final class StreamsRunOutputTest extends TestCase
                             return ['objects' => ['created' => 2]];
                         },
                         $trace,
-                        ob_get_level(),
                     ]
                 );
             }
@@ -283,7 +288,6 @@ final class StreamsRunOutputTest extends TestCase
                             throw new \RuntimeException('source refused the connection');
                         },
                         $trace,
-                        ob_get_level(),
                     ]
                 );
             }
@@ -316,7 +320,7 @@ final class StreamsRunOutputTest extends TestCase
                 return $this->invoke(
                     $host,
                     'streamOperation',
-                    [fn(?ExecutionTraceContext $t) => [], $trace, ob_get_level()]
+                    [fn(?ExecutionTraceContext $t) => [], $trace]
                 );
             }
         );
@@ -347,7 +351,7 @@ final class StreamsRunOutputTest extends TestCase
                 $response = $this->invoke(
                     $host,
                     'streamOperation',
-                    [fn(?ExecutionTraceContext $t) => ['ok' => true], null, ob_get_level()]
+                    [fn(?ExecutionTraceContext $t) => ['ok' => true], null]
                 );
             }
         );
@@ -372,7 +376,7 @@ final class StreamsRunOutputTest extends TestCase
                 return $this->invoke(
                     $host,
                     'streamOperation',
-                    [fn(?ExecutionTraceContext $t) => ['done' => true], null, ob_get_level()]
+                    [fn(?ExecutionTraceContext $t) => ['done' => true], null]
                 );
             }
         );

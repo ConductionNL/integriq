@@ -6,7 +6,9 @@
 > `<commands>` block in `appinfo/info.xml`, and that no SSE/StreamResponse exists
 > anywhere yet. Changed: progress events now reuse execution-trace steps rather than a
 > new vocabulary (design Decision 7), test-mode streaming honours `$persistLog`
-> (Decision 8), and Task 5's file path follows the real `src/modals/` layout.
+> Task 5's file path follows the real `src/modals/` layout. Decision 8's original
+> `$persistLog` claim was verified WRONG during implementation and is corrected in
+> design.md — a streamed test logs exactly as an unstreamed one does.
 
 ## Implementation Tasks
 
@@ -39,9 +41,9 @@
 - **acceptance_criteria**:
   - GIVEN no streaming flag WHEN `run`/`test` execute THEN the existing `JSONResponse` is returned unchanged
   - GIVEN the streaming flag (`stream`/`follow` body param, `?stream=1`, or `Accept: text/event-stream`) WHEN `run`/`test` execute THEN output streams through the shared harness with the existing auth posture unchanged
-  - GIVEN a streamed `test` WHEN it dispatches calls THEN it threads `persistLog: false` exactly where the non-streaming `test` already does, so an interactive streamed test does not write CallLog rows (design Decision 8); a streamed `run` leaves persistence untouched
-- [ ] Implement
-- [ ] Test
+  - GIVEN a streamed `test` WHEN it runs THEN its logging behaviour is IDENTICAL to the non-streamed `test` (`isTest: true`, call logs written as usual). The earlier criterion here asserted it should thread `persistLog: false`; that was verified wrong before implementation — the flag belongs to `sources#test` and is unreachable from `synchronize()`. See design Decision 8.
+- [x] Implement — the branch sits AFTER the auth, action-auth and existence checks in both `run()` and `test()`, so a 401/403/404 stays a real status code instead of becoming an error frame inside a 200 stream. Return types widened `JSONResponse` → `Response` (both are Responses; the methods have no internal callers). Each streamed call mints an `ExecutionTraceContext(entryPoint: 'manual', triggeredBy: 'http')` and passes it to `synchronize()`, which is what turns each step into a live frame.
+- [x] Test — 7 tests in `SynchronizationsControllerStreamingTest`: default `run`/`test` still return the same `JSONResponse` and write NOTHING to the output stream; flag and Accept header each opt in; a trace context reaches `synchronize()`; a throwing run becomes an `error` frame; an unauthenticated streaming request is still a real 401 with no streamed output
 
 ### Task 4: Wire streaming into job run/test
 - **spec_ref**: `openspec/specs/run-streaming/spec.md#requirement-streaming-covers-synchronization-and-job-run-test-endpoints`
@@ -49,8 +51,8 @@
 - **acceptance_criteria**:
   - GIVEN no streaming flag WHEN `jobs#run`/`jobs#test` execute THEN the existing `JSONResponse` is returned unchanged
   - GIVEN the streaming flag WHEN `jobs#run`/`jobs#test` execute THEN output streams through the shared harness with the existing auth posture unchanged
-- [ ] Implement
-- [ ] Test
+- [x] Implement — same shape as Task 3. `JobService::executeJob()` already accepted an `?ExecutionTraceContext`, so job runs get live progress frames for free. `run()`'s `forceRun` resolution was hoisted above the branch (equivalent to the previous if/else: an absent param still yields false) because both paths need it. The final frame carries `$result?->jsonSerialize() ?? []`, matching what the non-streaming branch puts in its JSONResponse.
+- [ ] Test — covered indirectly by the shared-harness tests; dedicated JobsController streaming tests still to add
 
 ### Task 5: Frontend live-output console
 - **spec_ref**: `openspec/specs/run-streaming/spec.md#requirement-frontend-live-output-console-consumes-the-stream`

@@ -22,8 +22,10 @@ namespace OCA\OpenConnector\Controller;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenConnector\Service\ActionAuthService;
+use OCA\OpenConnector\Service\Helper\ExecutionTraceContext;
 use OCA\OpenConnector\Service\SearchService;
 use OCA\OpenConnector\Service\SynchronizationService;
+use OCA\OpenConnector\Traits\StreamsRunOutput;
 use OCA\OpenConnector\Settings\OpenConnectorAdmin;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\AppFramework\Controller;
@@ -33,6 +35,7 @@ use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -57,6 +60,9 @@ use Psr\Log\LoggerInterface;
  */
 class SynchronizationsController extends Controller
 {
+
+    use StreamsRunOutput;
+
     /**
      * Constructor for the SynchronizationsController.
      *
@@ -238,7 +244,12 @@ class SynchronizationsController extends Controller
      * @param string       $id    The ID of the synchronization.
      * @param boolean|null $force Whether to force synchronization regardless of changes (default: false).
      *
-     * @return JSONResponse A JSON response containing the test results.
+     * @return Response A `JSONResponse` with the test results by default; a
+     *                  `StreamingRunResponse` when the caller opted into streaming
+     *                  (#1082). Widened from `JSONResponse` to its parent because a
+     *                  streamed body is already on the wire by the time a response
+     *                  object exists; the dispatcher only ever needed a `Response`,
+     *                  and this method has no internal callers.
      *
      * @throws GuzzleException             On HTTP transport failure.
      * @throws ContainerExceptionInterface Container resolution failure.
@@ -266,7 +277,7 @@ class SynchronizationsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function test(string $id, ?bool $force=false): JSONResponse
+    public function test(string $id, ?bool $force=false): Response
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -285,6 +296,31 @@ class SynchronizationsController extends Controller
             );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
+        }
+
+        // Streaming branch (#1082). Placed AFTER the authentication, action-auth and
+        // existence checks above so the auth posture is identical either way — the
+        // spec is explicit that opting into streaming must not loosen access
+        // control, and a 401/403/404 must still be a real status code rather than an
+        // error frame in a 200 stream.
+        //
+        // Logging behaviour is unchanged from the non-streamed test: `isTest: true`
+        // and call logs written as usual. (`persistLog` belongs to sources#test, a
+        // different endpoint; see design.md Decision 8.
+        if ($this->wantsStreaming(request: $this->request) === true) {
+            $trace = new ExecutionTraceContext(entryPoint: 'manual', entryPointId: $id, triggeredBy: 'http');
+
+            return $this->streamOperation(
+                operation: function (?ExecutionTraceContext $streamTrace) use ($synchronization, $force) {
+                    return $this->synchronizationService->synchronize(
+                        synchronization: $synchronization,
+                        isTest: true,
+                        force: $force,
+                        trace: $streamTrace
+                    );
+                },
+                trace: $trace
+            );
         }
 
         // Try to synchronize.
@@ -332,7 +368,9 @@ class SynchronizationsController extends Controller
      *
      * @param string $id The UUID of the synchronization to run (post chain-B/C: OR IDs are UUIDs, not ints).
      *
-     * @return JSONResponse A JSON response containing the run results.
+     * @return Response A `JSONResponse` with the run results by default; a
+     *                  `StreamingRunResponse` when the caller opted into streaming
+     *                  (#1082). See {@see test()} on why this is widened.
      *
      * @throws GuzzleException             On HTTP transport failure.
      * @throws ContainerExceptionInterface Container resolution failure.
@@ -346,7 +384,7 @@ class SynchronizationsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function run(string $id): JSONResponse
+    public function run(string $id): Response
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -378,6 +416,34 @@ class SynchronizationsController extends Controller
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => $this->l->t('Not Found')], statusCode: 404);
         }
+
+        // Streaming branch (#1082) — see the note in test(): after every auth and
+        // existence check, before any work.
+        if ($this->wantsStreaming(request: $this->request) === true) {
+            $trace = new ExecutionTraceContext(entryPoint: 'manual', entryPointId: $id, triggeredBy: 'http');
+
+            return $this->streamOperation(
+                operation: function (?ExecutionTraceContext $streamTrace) use (
+                    $synchronization,
+                    $test,
+                    $force,
+                    $source,
+                    $data,
+                    $forceDeletion
+                ) {
+                    return $this->synchronizationService->synchronize(
+                        synchronization: $synchronization,
+                        isTest: $test,
+                        force: $force,
+                        source: $source,
+                        data: $data,
+                        forceDeletion: $forceDeletion,
+                        trace: $streamTrace
+                    );
+                },
+                trace: $trace
+            );
+        }//end if
 
         // Try to synchronize.
         try {

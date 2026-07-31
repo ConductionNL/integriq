@@ -6,9 +6,12 @@
 > names and the "no SSE anywhere yet" premise all still hold. Two things did not:
 > `execution-trace-observability` (#216, 2026-07-16) landed an entire per-step run
 > timeline with a UI, which overlaps this change's progress events and is now
-> reused rather than reinvented (Decision 7); and the interactive Test-connection
-> work added `$persistLog` to `CallService::call()`, which the test-mode streaming
-> path has to account for (Decision 8).
+> reused rather than reinvented (Decision 7).
+>
+> **Corrected again 2026-07-31**, during implementation: Decision 8 originally
+> asserted that streamed `test` had to thread `$persistLog`. Verification showed
+> that flag belongs to `sources#test`, a different endpoint, and is unreachable from
+> `synchronize()` — see Decision 8 for the corrected position.
 
 ## Context
 `SynchronizationsController::run` (~line 348) and `::test` (~line 269) both call `$this->synchronizationService->synchronize(...)` synchronously and return a `JSONResponse`; the request blocks for the entire run, so long runs hit the reverse-proxy 504 gateway timeout. The four routes are all POST: `synchronizations#run` (`/api/synchronizations/{id}/run`), `synchronizations#test` (`/api/synchronizations/{id}/test`), `jobs#run` (`/api/jobs/run/{id}`), and `jobs#test` (`/api/jobs/test/{id}`). No StreamResponse/SSE exists anywhere yet, and there is no sync-run `occ` command (`lib/Command/` holds `MigrateToOpenRegister`, `MigrateInlineSecrets` and `AuthenticationConfig`, none of which run a synchronization).
@@ -78,16 +81,24 @@ streaming-only (Decision 5), not trace steps.
 **Alternative considered:** an independent event format for streaming — rejected;
 it duplicates a vocabulary and a UI that already exist.
 
-### Decision 8: Test-mode streaming honours `$persistLog`
-The interactive Test-connection path added `bool $persistLog` to
-`CallService::call()` (and, since ocon#111, to `finalizeCall()` and `callAsync()`):
-when false a transient unsaved CallLog is returned and nothing is mutated — no
-heavy object save, no test-noise log rows. A streamed `test` run is the same kind
-of interactive, throwaway operation, so it must not litter `call_log` either.
-Streaming `test` therefore threads `persistLog: false` where the non-streaming
-`test` already does, and streaming `run` leaves persistence untouched. **Why:** the
-original design treated `test` as "run, but streamed"; that predates `$persistLog`
-and would silently reintroduce the log noise that flag was added to remove.
+### Decision 8: `$persistLog` does NOT apply here — corrected
+An earlier revision of this design claimed that streamed `test` should thread
+`persistLog: false` "where the non-streaming `test` already does". **That was
+wrong, and verified wrong before implementation.** `persistLog` is passed as false
+in exactly one place: `SourcesController::test()`, the interactive *source
+connection* test. `synchronizations#test` is a different endpoint that runs through
+`SynchronizationService::synchronize()`, which does not mention `persistLog` at all
+— nor does the service have any plumbing to reach `CallService::call()`'s flag. The
+two endpoints were conflated on the basis of both being called "test".
+
+So a streamed `test` behaves exactly as the non-streamed `test` does with respect
+to logging: `isTest: true`, and call logs are written as usual.
+
+Recorded rather than deleted so the same wrong inference is not made twice.
+Suppressing call-log writes during a *synchronization* test would be a genuine
+feature — plumbing a flag from `synchronize()` down through `callSourceObject()` to
+`CallService::call()` — and is deliberately out of scope here; this change adds a
+way to WATCH a run, not a way to change what it persists.
 
 ## Risks / Trade-offs
 - [Dispatcher double-renders or proxy buffers, so nothing streams live] → Emit-and-flush in the controller, return a non-re-rendering response, set `X-Accel-Buffering: no`, explicitly flush PHP buffers; verify end-to-end against the real proxy.

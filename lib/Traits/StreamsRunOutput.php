@@ -55,6 +55,23 @@ trait StreamsRunOutput
     private bool $streamStarted = false;
 
     /**
+     * Lowest output-buffer level {@see beginStream()} will leave standing.
+     *
+     * Zero — unwind everything — is what a real request wants, and unwinding closes
+     * buffers this code does not own. That is correct for a request deliberately
+     * bypassing normal response rendering, and wrong for a caller that still needs
+     * its own: a test harness capturing output has buffers of its own, and having
+     * them torn out from under it makes the streaming branch unobservable.
+     *
+     * It is state rather than a parameter because the controllers must not have to
+     * know or care about it — threading a test-only argument through every call
+     * site would put test concerns in production signatures.
+     *
+     * @var integer
+     */
+    private int $streamBufferFloor = 0;
+
+    /**
      * Whether the caller opted into streaming output.
      *
      * Three ways in, because the callers differ: the frontend console posts a body
@@ -121,20 +138,11 @@ trait StreamsRunOutput
      * proxy timeout it exists to defeat is handled separately, by the fact that
      * bytes start arriving immediately.
      *
-     * @param integer $bufferFloor Lowest output-buffer level to leave standing.
-     *                             Zero — unwind everything — is what a real request
-     *                             wants. It exists as a parameter because unwinding
-     *                             closes buffers this code does not own, which is
-     *                             fine for a request that is deliberately bypassing
-     *                             normal response rendering but not for a caller
-     *                             that still needs its own (a test harness capturing
-     *                             output, for instance).
-     *
      * @return void
      *
      * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
      */
-    private function beginStream(int $bufferFloor=0): void
+    private function beginStream(): void
     {
         if ($this->streamStarted === true) {
             return;
@@ -143,7 +151,7 @@ trait StreamsRunOutput
         $this->streamStarted = true;
 
         // Unwind EVERY buffer above the floor, not just the innermost one.
-        while (ob_get_level() > $bufferFloor) {
+        while (ob_get_level() > $this->streamBufferFloor) {
             ob_end_flush();
         }
 
@@ -270,22 +278,18 @@ trait StreamsRunOutput
      * services) and a listener writing to a closed socket afterwards would be an
      * error in an unrelated code path.
      *
-     * @param callable                   $operation   Receives the ExecutionTraceContext, returns the result payload
-     *                                                the non-streaming branch would have put in its JSONResponse.
-     * @param ExecutionTraceContext|null $trace       The trace context to observe, when the caller has one.
-     * @param integer                    $bufferFloor Forwarded to {@see beginStream()}; leave at 0 for a real request.
+     * @param callable                   $operation Receives the ExecutionTraceContext, returns the result payload
+     *                                              the non-streaming branch would have put in its JSONResponse.
+     * @param ExecutionTraceContext|null $trace     The trace context to observe, when the caller has one.
      *
      * @return StreamingRunResponse
      *
      * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-shared-streaming-harness-emits-progress-and-a-final-result
      * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-streaming-surfaces-exceptions-and-fatal-errors
      */
-    private function streamOperation(
-        callable $operation,
-        ?ExecutionTraceContext $trace=null,
-        int $bufferFloor=0
-    ): StreamingRunResponse {
-        $this->beginStream(bufferFloor: $bufferFloor);
+    private function streamOperation(callable $operation, ?ExecutionTraceContext $trace=null): StreamingRunResponse
+    {
+        $this->beginStream();
 
         // An immediate frame, before any work starts. It gets the first bytes past
         // the proxy right away (so the connection is established well inside any
