@@ -6,7 +6,7 @@
 # Dependencies
 /vendor/
 /vendor-bin/*/vendor/
-/node_modules/
+/node_modules
 
 # Build artifacts
 /js/
@@ -31,7 +31,7 @@
 /phpqa/
 
 # Nextcloud
-/node_modules/
+/node_modules
 /js/
 /docs/node_modules/
 /docs/.docusaurus/

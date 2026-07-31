@@ -1535,4 +1535,138 @@ HTML;
         $this->assertSame(1, $deletedCount);
 
     }//end testDeleteInvalidObjectsNextcloudTableDeletesMissingContracts()
+
+
+    /**
+     * stream-file-content #110: a raw binary download — no `contentPath`/`filenamePath`
+     * addressing a JSON envelope — selects the streaming transport. `fetchFile` opens a
+     * disk-backed `php://temp` handle and hands it to `CallService::call()` as its `sink`,
+     * so the body is never buffered into a PHP string.
+     *
+     * Driven through the `write === false` dry-run return, which yields the streamed bytes
+     * straight from the temp handle and so needs no FileService/ObjectService container.
+     * The handle is asserted as a boolean captured at call time, not kept: `fetchFile`
+     * closes it in its `finally`, after which `is_resource()` reports false.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
+     */
+    public function testFetchFileStreamsRawBinaryDownloadIntoASinkResource(): void
+    {
+        $bytes       = 'binary-file-bytes-that-are-not-a-json-envelope';
+        $sinkPath    = null;
+        $sinkWasPath = false;
+
+        $this->callService->method('call')->willReturnCallback(
+            function (...$args) use (&$sinkPath, &$sinkWasPath, $bytes) {
+                // The sink is handed over as a FILE PATH, never as our own handle:
+                // Guzzle closes a resource-typed sink when its PSR-7 wrapper is
+                // destructed, which previously handed a closed handle back to the
+                // write side. Emulate Guzzle by writing to the path we are given.
+                foreach ($args as $arg) {
+                    if (is_string($arg) === true && $arg !== '' && is_file($arg) === true) {
+                        $sinkWasPath = true;
+                        $sinkPath    = $arg;
+                        file_put_contents($arg, $bytes);
+                    }
+                }
+
+                $callLog = new \OCA\OpenRegister\Db\ObjectEntity();
+                $callLog->setObject(['response' => ['body' => '', 'headers' => []]]);
+
+                return $callLog;
+            }
+        );
+
+        $filename = null;
+        $args     = [
+            ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+            '/attachment/1',
+            ['write' => false, 'sourceConfiguration' => []],
+            'object-1',
+            [],
+            &$filename,
+        ];
+
+        $method = new \ReflectionMethod(SynchronizationService::class, 'fetchFile');
+        $method->setAccessible(true);
+        $result = $method->invokeArgs($this->service, $args);
+
+        $this->assertTrue(
+            $sinkWasPath,
+            'a temp-file PATH must be handed to CallService::call() on the binary path, not a resource'
+        );
+        $this->assertSame(
+            base64_encode($bytes),
+            $result,
+            'the dry-run return must be produced from the streamed temp file'
+        );
+        $this->assertFileDoesNotExist(
+            (string) $sinkPath,
+            'the temp file must be removed in the finally block'
+        );
+
+    }//end testFetchFileStreamsRawBinaryDownloadIntoASinkResource()
+
+
+    /**
+     * stream-file-content #110: base64-in-JSON content addressed by `config['contentPath']`
+     * MUST stay on the existing in-memory string path — no sink is opened, because the body
+     * has to be parsed to extract `contentPath`/`filenamePath`.
+     *
+     * The mock raises a sentinel once the transport choice is observable, so the assertion
+     * is confined to branch selection and does not depend on the string path's downstream
+     * behaviour. `fetchFile`'s outer `try` has only a `finally`, so the sentinel propagates.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-base64-in-json-content-shall-continue-on-the-existing-string-path
+     */
+    public function testFetchFileKeepsBase64InJsonResponsesOffTheStreamingPath(): void
+    {
+        $sinkWasResource = false;
+
+        $this->callService->method('call')->willReturnCallback(
+            function (...$args) use (&$sinkWasResource) {
+                foreach ($args as $arg) {
+                    if (is_resource($arg) === true) {
+                        $sinkWasResource = true;
+                    }
+                }
+
+                throw new \RuntimeException('sentinel: transport already selected');
+            }
+        );
+
+        $filename = null;
+        $args     = [
+            ['_transient' => true, 'uuid' => 'source-uuid', 'location' => ''],
+            '/attachment/1',
+            [
+                'write'               => false,
+                'contentPath'         => 'content',
+                'sourceConfiguration' => [],
+            ],
+            'object-1',
+            [],
+            &$filename,
+        ];
+
+        $method = new \ReflectionMethod(SynchronizationService::class, 'fetchFile');
+        $method->setAccessible(true);
+
+        try {
+            $method->invokeArgs($this->service, $args);
+            $this->fail('the sentinel exception should have propagated out of fetchFile');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('sentinel', $exception->getMessage());
+        }
+
+        $this->assertFalse(
+            $sinkWasResource,
+            'no sink may be opened when contentPath addresses a JSON envelope'
+        );
+
+    }//end testFetchFileKeepsBase64InJsonResponsesOffTheStreamingPath()
 }//end class

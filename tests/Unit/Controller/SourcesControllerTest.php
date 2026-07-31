@@ -30,6 +30,7 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the circuit-breaker manual trip/reset REST surface.
@@ -79,7 +80,8 @@ class SourcesControllerTest extends TestCase
             $this->orObjectService,
             $l,
             $userSession,
-            $actionAuth
+            $actionAuth,
+            $this->createMock(LoggerInterface::class)
         );
     }//end setUp()
 

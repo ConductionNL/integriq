@@ -1156,12 +1156,18 @@ class CallService
      * @param boolean      $asynchronous       Whether to dispatch asynchronously.
      * @param array|null   $brokeredCredential Resolved brokered identity ({credentialId, actingUserId}) from
      *                                         BrokeredCallService::prepare(), or null for the legacy Guzzle/SOAP path.
+     * @param mixed        $sink               Optional stream resource. When given, it is passed to Guzzle as the
+     *                                         `sink` request option so the response body streams into it instead of
+     *                                         being buffered. Kept OUT of $config so it is never logged/persisted
+     *                                         (a resource is not JSON-persistable). Guzzle HTTP path only; ignored
+     *                                         by the SOAP and brokered branches. Null = unchanged behaviour.
      *
      * @return mixed A Guzzle Response (sync), a Guzzle Promise (async), or a Response from SOAPService.
      *
      * @throws GuzzleException On HTTP transport failure.
      *
      * @spec openspec/specs/http-call-engine/spec.md#requirement-brokered-dispatch-through-credentialbrokerservice-req-sbc-002
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      */
     private function dispatchRequest(
         ObjectEntity $source,
@@ -1171,6 +1177,7 @@ class CallService
         array &$config,
         bool $asynchronous,
         ?array $brokeredCredential=null,
+        mixed $sink=null,
     ): mixed {
         // Brokered branch (REQ-SBC-002): a credentialRef source dispatches
         // IN-PROCESS through the OpenRegister credential broker — the internal
@@ -1198,9 +1205,18 @@ class CallService
         }
 
         if ($sourceType !== 'soap') {
+            // Stream the response body straight into the caller's sink resource when
+            // one is supplied (stream-file-content #110). The sink is added only to the
+            // options handed to Guzzle — never to $config, which is logged/redacted/
+            // persisted and cannot carry a resource.
+            $requestOptions = $config;
+            if ($sink !== null) {
+                $requestOptions['sink'] = $sink;
+            }
+
             try {
                 if ($asynchronous === false) {
-                    $response = $this->client->request($method, $url, $config);
+                    $response = $this->client->request($method, $url, $requestOptions);
                 }
 
                 if ($asynchronous === true) {
@@ -1215,7 +1231,7 @@ class CallService
                     // We snapshot the certificate paths NOW because the caller
                     // mutates $config after we return.
                     $certPaths = $this->snapshotCertPaths(config: $config);
-                    $promise   = $this->client->requestAsync($method, $url, $config);
+                    $promise   = $this->client->requestAsync($method, $url, $requestOptions);
                     $promise->then(
                         function ($asyncResponse) use ($certPaths) {
                             $this->removeFiles(config: $certPaths);
@@ -1960,6 +1976,8 @@ class CallService
      * @param array|null   $brokeredCredential  Resolved brokered identity, or null for the legacy path.
      * @param array        $sourceData          The mutable source data array (breaker bookkeeping mutates it).
      * @param array|null   $retryPolicyOverride The caller-supplied `$config['retryPolicy']` override, or null.
+     * @param mixed        $sink                Optional stream resource passed through to dispatchRequest() as the
+     *                                          Guzzle `sink` option (stream-file-content #110); null = unchanged.
      *
      * @return array{response: mixed, timeStart: float, timeEnd: float} The final response plus dispatch timing.
      *
@@ -1978,6 +1996,7 @@ class CallService
         ?array $brokeredCredential,
         array $sourceData,
         ?array $retryPolicyOverride,
+        mixed $sink=null,
     ): array {
         $retryPolicy = $this->resolveEffectiveRetryPolicy(sourceData: $sourceData, override: $retryPolicyOverride);
 
@@ -2001,6 +2020,7 @@ class CallService
                     config: $config,
                     asynchronous: false,
                     brokeredCredential: $brokeredCredential,
+                    sink: $sink,
                 );
             } catch (\Throwable $exception) {
                 // Note: dispatchRequest() already converts a Guzzle
@@ -2466,6 +2486,10 @@ class CallService
      * @param boolean                    $overruleAuth          Whether to overrule the source authentication.
      * @param boolean                    $read                  Whether this is a singular read (vs list) call.
      * @param boolean                    $runningSupportRequest Internal flag set when invoked from preRequest/postRequest hooks.
+     * @param mixed                      $sink                  Optional stream resource. When given, the response body is streamed
+     *                                                          into it (Guzzle `sink` option) instead of buffered, and the CallLog
+     *                                                          records an empty body (stream-file-content #110). Guzzle HTTP path
+     *                                                          only. Default null = unchanged behaviour for every existing caller.
      * @param ExecutionTraceContext|null $trace                 The active execution trace context, when this call is
      *                                                          made from within a traced execution (execution-trace
      *                                                          REQ-001). When present, `call_log.sessionId` is set to
@@ -2486,6 +2510,7 @@ class CallService
      * @spec openspec/specs/http-call-engine/spec.md
      * @spec openspec/specs/http-call-engine/spec.md#requirement-credentialref-source-authentication-contract-req-sbc-001
      * @spec openspec/specs/http-call-engine/spec.md#requirement-post-body-sources-and-body-based-pagination-req-010
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
      * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
      * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
@@ -2500,6 +2525,7 @@ class CallService
         bool $overruleAuth=false,
         bool $read=false,
         bool $runningSupportRequest=false,
+        mixed $sink=null,
         ?ExecutionTraceContext $trace=null,
         bool $persistLog=true,
     ): ObjectEntity {
@@ -2621,6 +2647,7 @@ class CallService
                 config: $config,
                 asynchronous: true,
                 brokeredCredential: $brokeredCredential,
+                sink: $sink,
             );
 
             // Async path returns the Promise directly (same as original behaviour).
@@ -2636,6 +2663,7 @@ class CallService
             brokeredCredential: $brokeredCredential,
             sourceData: $sourceData,
             retryPolicyOverride: $retryPolicyOverride,
+            sink: $sink,
         );
         $response   = $dispatched['response'];
         $timeStart  = $dispatched['timeStart'];

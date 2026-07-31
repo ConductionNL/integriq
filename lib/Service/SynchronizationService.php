@@ -1772,6 +1772,25 @@ class SynchronizationService
                     );
                 } catch (\Throwable $itemException) {
                     $result['objects']['invalid']++;
+
+                    // Log the reason as well as dead-lettering it. Without this the
+                    // run log carries only a bare `invalid: N` count and the cause
+                    // is reachable ONLY by querying sync_item_dead_letter objects —
+                    // so a whole sync failing looks indistinguishable from the
+                    // target rejecting the objects on schema validation. Note that
+                    // `invalid` conflates three unrelated conditions (this throw, a
+                    // non-array source item, and an unrecognised resultAction), so
+                    // the message states which one this is.
+                    $this->logger->warning(
+                        'Synchronization item counted as invalid: item processing threw',
+                        [
+                            'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                            'exception'       => $itemException->getMessage(),
+                            'exceptionClass'  => get_class($itemException),
+                            'file'            => $itemException->getFile().':'.$itemException->getLine(),
+                        ]
+                    );
+
                     $this->captureSyncItemFailure(synchronization: $synchronization, object: $object, exception: $itemException);
 
                     $objectProcessingTimes[] = round((microtime(true) - $objectStartTime) * 1000, 2);
@@ -3429,6 +3448,54 @@ class SynchronizationService
             mutationType: $mutationType,
             trace: $trace
         );
+
+        // Ocon#109: persist the identity mapping BEFORE the `after` rules run.
+        //
+        // @spec openspec/specs/synchronization-engine/spec.md#requirement-the-contract-is-persisted-before-the-after-rules-run-req-021
+        //
+        // A contract records only that source object X maps to target object A, so
+        // that a re-run writes X's changes to A instead of creating a second A. It
+        // is NOT a record that everything downstream succeeded.
+        //
+        // The `after` rules below fetch files, and any throw there (missing
+        // filename, unresolvable object id, upstream 404/timeout, a failed save)
+        // abandons the item at the per-item `catch (\Throwable)` in
+        // synchronizeExternToIntern() — which used to happen BEFORE the only
+        // persistContract() call at the end of this method. The object was written
+        // but the mapping was not, so the next run found no contract for this
+        // originId, treated the row as new, and created a duplicate. Every re-run
+        // added another copy.
+        //
+        // Writing the mapping here makes that class of duplicate structurally
+        // impossible: a file failure now degrades to "object synced, mapping
+        // recorded, file missing" — recoverable, and re-syncable onto the same
+        // target. The persistContract() call at the end of this method still runs
+        // and updates the same row with the rule outcomes and log references.
+        if (($synchronizationContract['targetId'] ?? null) !== null) {
+            if (($synchronizationContract['uuid'] ?? null) === null) {
+                $synchronizationContract['uuid'] = (string) Uuid::v4();
+            }
+
+            try {
+                $synchronizationContract = $this->persistContract(
+                    contract: $synchronizationContract,
+                    ensureUuid: true
+                );
+            } catch (\Throwable $contractException) {
+                // Never let recording the mapping break a sync that would otherwise
+                // succeed — the end-of-method persist remains the fallback.
+                $this->logger->warning(
+                    'Could not persist the synchronization contract before the after-rules; '
+                    .'a failure in those rules may now re-create this object on the next run.',
+                    [
+                        'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                        'originId'        => ($synchronizationContract['originId'] ?? null),
+                        'targetId'        => ($synchronizationContract['targetId'] ?? null),
+                        'exception'       => $contractException->getMessage(),
+                    ]
+                );
+            }
+        }//end if
 
         if (($synchronization['targetType'] ?? null) === 'register/schema') {
             [$registerId, $schemaId] = explode(separator: '/', string: (string) ($synchronization['targetId'] ?? ''));
@@ -5303,6 +5370,9 @@ class SynchronizationService
      * @param string                     $method   The HTTP method.
      * @param array                      $config   The call configuration.
      * @param bool                       $read     Whether this is a single-object read call.
+     * @param mixed                      $sink     Optional stream resource passed through to CallService::call() as its Guzzle
+     *                                             `sink` option so the response body streams into it (stream-file-content #110);
+     *                                             null = unchanged buffered behaviour.
      * @param ExecutionTraceContext|null $trace    The active execution trace context, forwarded to
      *                                             `CallService::call()` so the call is stamped
      *                                             with `traceId` and captured as a `call` step
@@ -5313,6 +5383,7 @@ class SynchronizationService
      *
      * @spec openspec/specs/synchronization-engine/spec.md#requirement-ad-hoc-source-resolution-does-not-persist-a-new-source-req-012
      * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
+     * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      */
     private function callSourceObject(
         array $source,
@@ -5320,6 +5391,7 @@ class SynchronizationService
         string $method='GET',
         array $config=[],
         bool $read=false,
+        mixed $sink=null,
         ?ExecutionTraceContext $trace=null
     ): ObjectEntity {
         // A transient, never-persisted ad-hoc source (REQ-012 — see
@@ -5331,7 +5403,15 @@ class SynchronizationService
             $sourceObject->setUuid((string) ($source['uuid'] ?? ''));
             $sourceObject->setObject($source);
 
-            return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, trace: $trace);
+            return $this->callService->call(
+                source: $sourceObject,
+                endpoint: $endpoint,
+                method: $method,
+                config: $config,
+                read: $read,
+                sink: $sink,
+                trace: $trace
+            );
         }
 
         // Address the source by its OpenRegister uuid (the canonical identifier);
@@ -5343,7 +5423,15 @@ class SynchronizationService
 
         $sourceObject = $this->findSourceObject(id: (string) $sourceIdentifier);
 
-        return $this->callService->call(source: $sourceObject, endpoint: $endpoint, method: $method, config: $config, read: $read, trace: $trace);
+        return $this->callService->call(
+            source: $sourceObject,
+            endpoint: $endpoint,
+            method: $method,
+            config: $config,
+            read: $read,
+            sink: $sink,
+            trace: $trace
+        );
     }//end callSourceObject()
 
     /**
@@ -6086,131 +6174,217 @@ class SynchronizationService
 
         $config['sourceConfiguration'] = $sourceConfig;
 
-        $result   = $this->callSourceObject(
-            source: $source,
-            endpoint: $endpoint,
-            method: $config['method'] ?? 'GET',
-            config: $config['sourceConfiguration'] ?? []
-        );
-        $response = $this->callLogResponse(callLog: $result);
+        // Choose the transport up front (stream-file-content #110): a raw binary
+        // download — no contentPath/filenamePath addressing a JSON envelope —
+        // streams straight to a disk-backed temp FILE via CallService's sink
+        // option, so the file is never buffered in a PHP string. A JSON envelope
+        // response stays on the existing in-memory string path (its body must be
+        // parsed to extract contentPath/filenamePath).
+        //
+        // A PATH is handed to Guzzle, never our own handle. Guzzle wraps a
+        // resource-typed `sink` in a PSR-7 Stream and CLOSES that resource when the
+        // stream is destructed — so a shared handle came back to us already closed.
+        // `is_resource()` then reported false, the write side took its string
+        // branch, and `str_starts_with()` threw "must be of type string, resource
+        // given"; the per-item catch tallied every object as `invalid`, no file was
+        // written and no contract was persisted (which is why re-runs re-created
+        // objects instead of updating them). Passing a path keeps ownership clean:
+        // Guzzle opens and closes its own handle, we open ours for the write.
+        $useSink = (empty($config['contentPath']) === true && empty($config['filenamePath']) === true);
 
-        $body = $response['body'];
-
-        if (($decodedBody = json_decode(json: $body, associative: true)) !== null
-            && isset($response['headers']['Content-Disposition']) === false
-        ) {
-            $body = $decodedBody;
-        } else if (($decodedBody = base64_decode(string: $body, strict: true)) !== false) {
-            $body = $decodedBody;
+        $sink     = null;
+        $sinkPath = null;
+        if ($useSink === true) {
+            $sinkPath = tempnam(sys_get_temp_dir(), 'oc-stream-');
+            if ($sinkPath === false) {
+                // The temp file could not be created; fall back to the buffered path.
+                $sinkPath = null;
+                $sink     = null;
+                $useSink  = false;
+            }
         }
-
-        if (isset($config['contentPath']) === true && empty($config['contentPath']) === false) {
-            $content = base64_decode((new Dot($body))->get($config['contentPath']));
-        }
-
-        if (isset($config['filenamePath']) === true && empty($config['filenamePath']) === false) {
-            $filename = (new Dot($body))->get($config['filenamePath']);
-        }
-
-        if (isset($config['fileExtension']) === true && empty($config['fileExtension']) === false) {
-            $filename = $filename.$config['fileExtension'];
-        }
-
-        // Check if response is valid.
-        if ($response === null) {
-            throw new Exception("Failed to fetch file from endpoint: {$originalEndpoint}. No response received.");
-        }
-
-        if (isset($config['write']) === true && $config['write'] === false) {
-            return base64_encode($body);
-        }
-
-        if ($filename === null) {
-            // Get a filename from the response. First try to do this using the Content-Disposition header.
-            $filename = $this->getFilenameFromHeaders(response: $response, result: $result);
-        }
-
-        if ($filename === null) {
-            throw new Exception("Could not write file from endpoint {$originalEndpoint}: no filename could be determined");
-        }
-
-        // Validate objectId format (should be a UUID).
-        if (empty($objectId) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId) !== 1) {
-            throw new Exception("Invalid object ID format: {$objectId}. Expected a valid UUID.");
-        }
-
-        $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
-
-        if (isset($content) === false) {
-            $content = $body;
-        }
-
-        if (empty($tags) === false && isset($config['autoShare']) === true) {
-            $shouldShare = $config['autoShare'];
-        } else {
-            $shouldShare = false;
-        }
-
-        // Determine if file should be published based on the published parameter.
-        $shouldPublish = $this->shouldPublishFile(published: $published);
 
         try {
-            $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-            $objectEntity  = $objectService->find(id: $objectId);
-            $file          = $fileService->saveFile(
-                objectEntity: $objectEntity,
-                fileName: $filename,
-                content: $content,
-                share: $shouldShare,
-                tags: $tags
+            $result   = $this->callSourceObject(
+                source: $source,
+                endpoint: $endpoint,
+                method: $config['method'] ?? 'GET',
+                config: $config['sourceConfiguration'] ?? [],
+                sink: $sinkPath
             );
+            $response = $this->callLogResponse(callLog: $result);
 
-            // Publish the file if needed.
-            if ($shouldPublish === true && $file !== null) {
-                try {
-                    $fileService->publishFile(object: $objectEntity, file: $filename);
-                } catch (Exception $e) {
-                    // Log but don't fail the entire operation.
-                    $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+            // Open OUR OWN read handle on the downloaded temp file. Guzzle has by
+            // now closed the handle it opened for the path, so nothing is shared.
+            if ($useSink === true) {
+                $sink = fopen($sinkPath, 'r');
+                if ($sink === false) {
+                    throw new Exception("Could not reopen streamed download for {$originalEndpoint}");
                 }
             }
-        } catch (DoesNotExistException $exception) {
-            // If the object cannot be found, continue with register/schema/objectId combination.
-            $register = $config['register'] ?? null;
-            $schema   = $config['schema'] ?? null;
 
-            $addFileShare = false;
-            if (isset($config['autoShare']) === true) {
-                $addFileShare = $config['autoShare'];
+            // Check if response is valid (status/headers are recorded even when the
+            // body streamed to the sink).
+            if ($response === null) {
+                throw new Exception("Failed to fetch file from endpoint: {$originalEndpoint}. No response received.");
             }
 
-            $file = $fileService->addFile(
-                objectEntity: $objectId,
-                fileName: $filename,
-                content: $response['body'],
-                share: $addFileShare,
-                tags: $tags,
-                _schema: $schema,
-                _register: $register,
-                registerId: $registerId
-            );
+            $body    = null;
+            $content = null;
+            if ($useSink === false) {
+                $body = $response['body'];
 
-            // For the addFile case, we'll need to get the object entity to publish.
-            if ($shouldPublish === true && $file !== null) {
-                try {
-                    $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
-                    $objectEntity  = $objectService->find(id: $objectId);
-                    $fileService->publishFile(object: $objectEntity, file: $filename);
-                } catch (Exception $e) {
-                    // Log but don't fail the entire operation.
-                    $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+                if (($decodedBody = json_decode(json: $body, associative: true)) !== null
+                    && isset($response['headers']['Content-Disposition']) === false
+                ) {
+                    $body = $decodedBody;
+                } else if (($decodedBody = base64_decode(string: $body, strict: true)) !== false) {
+                    $body = $decodedBody;
                 }
+
+                if (isset($config['contentPath']) === true && empty($config['contentPath']) === false) {
+                    $content = base64_decode((new Dot($body))->get($config['contentPath']));
+                }
+
+                if (isset($config['filenamePath']) === true && empty($config['filenamePath']) === false) {
+                    $filename = (new Dot($body))->get($config['filenamePath']);
+                }
+            }//end if
+
+            if (isset($config['fileExtension']) === true && empty($config['fileExtension']) === false) {
+                $filename = $filename.$config['fileExtension'];
             }
-        } catch (Exception $e) {
-            throw new Exception("Failed to save file {$filename} for object {$objectId}: ".$e->getMessage());
+
+            if (isset($config['write']) === true && $config['write'] === false) {
+                if ($useSink === true) {
+                    rewind($sink);
+                    return base64_encode((string) stream_get_contents($sink));
+                }
+
+                return base64_encode($body);
+            }
+
+            if ($filename === null) {
+                // Get a filename from the response. First try to do this using the Content-Disposition header.
+                $filename = $this->getFilenameFromHeaders(response: $response, result: $result);
+            }
+
+            if ($filename === null) {
+                throw new Exception("Could not write file from endpoint {$originalEndpoint}: no filename could be determined");
+            }
+
+            // Validate objectId format (should be a UUID).
+            if (empty($objectId) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $objectId) !== 1) {
+                throw new Exception("Invalid object ID format: {$objectId}. Expected a valid UUID.");
+            }
+
+            $fileService = $this->containerInterface->get('OCA\OpenRegister\Service\FileService');
+
+            // Resolve the content handed to FileService: the streamed resource on the
+            // binary path (rewound first), otherwise the decoded string body.
+            if ($useSink === true) {
+                rewind($sink);
+                $saveContent = $sink;
+                $addContent  = $sink;
+            } else {
+                $saveContent = ($content ?? $body);
+                $addContent  = $response['body'];
+            }
+
+            if (empty($tags) === false && isset($config['autoShare']) === true) {
+                $shouldShare = $config['autoShare'];
+            } else {
+                $shouldShare = false;
+            }
+
+            // Determine if file should be published based on the published parameter.
+            $shouldPublish = $this->shouldPublishFile(published: $published);
+
+            try {
+                $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+                $objectEntity  = $objectService->find(id: $objectId);
+                $file          = $fileService->saveFile(
+                    objectEntity: $objectEntity,
+                    fileName: $filename,
+                    content: $saveContent,
+                    share: $shouldShare,
+                    tags: $tags
+                );
+
+                // Publish the file if needed.
+                if ($shouldPublish === true && $file !== null) {
+                    try {
+                        $fileService->publishFile(object: $objectEntity, file: $filename);
+                    } catch (Exception $e) {
+                        // Log but don't fail the entire operation.
+                        $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+                    }
+                }
+            } catch (DoesNotExistException $exception) {
+                // If the object cannot be found, continue with register/schema/objectId combination.
+                $register = $config['register'] ?? null;
+                $schema   = $config['schema'] ?? null;
+
+                $addFileShare = false;
+                if (isset($config['autoShare']) === true) {
+                    $addFileShare = $config['autoShare'];
+                }
+
+                // Rewind the sink so addFile reads the full streamed body from the start.
+                if ($useSink === true) {
+                    rewind($sink);
+                }
+
+                $file = $fileService->addFile(
+                    objectEntity: $objectId,
+                    fileName: $filename,
+                    content: $addContent,
+                    share: $addFileShare,
+                    tags: $tags,
+                    _schema: $schema,
+                    _register: $register,
+                    registerId: $registerId
+                );
+
+                // For the addFile case, we'll need to get the object entity to publish.
+                if ($shouldPublish === true && $file !== null) {
+                    try {
+                        $objectService = $this->containerInterface->get('OCA\OpenRegister\Service\ObjectService');
+                        $objectEntity  = $objectService->find(id: $objectId);
+                        $fileService->publishFile(object: $objectEntity, file: $filename);
+                    } catch (Exception $e) {
+                        // Log but don't fail the entire operation.
+                        $this->logger->warning("Failed to publish file {$filename} for object {$objectId}: ".$e->getMessage(), ['exception' => $e]);
+                    }
+                }
+            } catch (Exception $e) {
+                throw new Exception("Failed to save file {$filename} for object {$objectId}: ".$e->getMessage());
+            }//end try
+
+            return $originalEndpoint;
+        } finally {
+            // Always release the disk-backed temp handle on the streamed path.
+            //
+            // Guard on is_resource(), NOT on `!== null`: once the handle has been
+            // handed to FileService::saveFile()/addFile() the write side streams
+            // it via OCP\Files\File::putContent(), which CLOSES the source stream
+            // itself. `$sink` is then a still-non-null but already-closed handle,
+            // so the old `!== null` guard called fclose() a second time and threw
+            // "fclose(): supplied resource is not a valid stream resource" — a
+            // TypeError on PHP 8, which propagated out of fetchFile, was caught by
+            // the per-item \Throwable handler in synchronizeExternToIntern() and
+            // silently tallied EVERY streamed item as `invalid`. is_resource()
+            // returns false for a closed handle, making this release idempotent
+            // regardless of whether the write side already consumed it.
+            if (is_resource($sink) === true) {
+                fclose($sink);
+            }
+
+            // The temp file is ours to remove: Guzzle only wrote to the path.
+            if ($sinkPath !== null && file_exists($sinkPath) === true) {
+                unlink($sinkPath);
+            }
         }//end try
-
-        return $originalEndpoint;
     }//end fetchFile()
 
     /**
@@ -7195,7 +7369,27 @@ class SynchronizationService
 
         // We can only deal with arrays (based on the source empty values or string might be returned).
         if (is_array($object) === false) {
+            // Second silent "invalid" path: the source item was not an array at
+            // all. Log the received type + a bounded preview so the run log's
+            // `invalid: N` can be traced back to malformed source data rather
+            // than to target-side rejection.
             $result['objects']['invalid']++;
+
+            // Only a scalar can be previewed; an object or resource has no
+            // meaningful string form here and get_debug_type() already names it.
+            $scalarPreview = '';
+            if (is_scalar($object) === true) {
+                $scalarPreview = (string) $object;
+            }
+
+            $this->logger->warning(
+                'Synchronization item counted as invalid: source item is not an array',
+                [
+                    'synchronization' => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                    'receivedType'    => get_debug_type($object),
+                    'preview'         => mb_substr($scalarPreview, 0, 200),
+                ]
+            );
             if ($trace !== null) {
                 $trace->addStep(
                     type: 'synchronization',
@@ -7208,7 +7402,7 @@ class SynchronizationService
             }
 
             return ['result' => $result, 'targetId' => null];
-        }
+        }//end if
 
         $sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
         // Optional to fetch extra data now instead of later in ->synchronizeContract.
@@ -7363,9 +7557,27 @@ class SynchronizationService
                 $result['objects']['skipped']++;
                 break;
             default:
+                // An unrecognised (or null) resultAction is tallied as "invalid",
+                // which historically produced a bare `invalid: N` count in the run
+                // log with no way to tell WHY — the reason was discarded here. Log
+                // the actual action plus the contract-result shape so an operator
+                // can distinguish "the target rejected the object" from "the write
+                // path returned an action this switch does not know about".
                 $result['objects']['invalid']++;
+                $this->logger->warning(
+                    'Synchronization item counted as invalid: unrecognised resultAction',
+                    [
+                        'synchronization'    => ($synchronization['name'] ?? ($synchronization['uuid'] ?? null)),
+                        'resultAction'       => $resultAction,
+                        'contractResultKeys' => array_keys(($synchronizationContractResult ?? [])),
+                        'contractError'      => (($synchronizationContractResult['error'] ?? $synchronizationContractResult['message']) ?? null),
+                        'contractUuid'       => ($contractUuid ?? null),
+                        'targetId'           => ($synchronizationContract['targetId'] ?? null),
+                        'originId'           => ($synchronizationContract['originId'] ?? null),
+                    ]
+                );
                 break;
-        }
+        }//end switch
 
         $targetId = $synchronizationContract['targetId'] ?? null;
 

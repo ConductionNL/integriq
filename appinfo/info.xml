@@ -36,7 +36,7 @@
     <screenshot>https://codeberg.org/Conduction/openconnector/raw/branch/main/img/screenshot-mappings.png</screenshot>
 	<dependencies>
         <app>openregister</app>
-        <nextcloud min-version="28" max-version="34"/>
+        <nextcloud min-version="28" max-version="35"/>
         <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>
         <database>sqlite</database>
