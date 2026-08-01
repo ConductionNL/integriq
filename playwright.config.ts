@@ -22,8 +22,9 @@
  *                      rather than `docs/static/` — see the capture
  *                      spec for details.
  *
- * Point at a running Nextcloud with PLAYWRIGHT_BASE_URL. There is no default —
- * see tests/e2e/support/baseUrl.ts for why (the old
+ * Point at a running Nextcloud with PLAYWRIGHT_BASE_URL (or BASE_URL, which is
+ * what the shared quality workflow exports in CI). There is no default — see
+ * tests/e2e/support/baseUrl.ts for why (the old
  * `NEXTCLOUD_URL || 'http://localhost:8080'` fallback silently targeted the
  * SHARED dev container). `globalSetup` logs in once (admin/admin by default;
  * override with NC_ADMIN_USER / NC_ADMIN_PASS) and persists the session to
