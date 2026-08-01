@@ -7,13 +7,21 @@
  * Every spec, helper and the Playwright config itself must resolve the target
  * instance through this module. Two rules, both learned the hard way:
  *
- *  1. `PLAYWRIGHT_BASE_URL` is authoritative and there is NO default. The
- *     config used to read `process.env.NEXTCLOUD_URL || 'http://localhost:8080'`
- *     and several specs hardcoded `http://localhost:8080` outright — that is
- *     the *shared* dev container. A suite that silently falls back to it
- *     creates fixtures in other people's environment and reports measurements
- *     taken somewhere nobody intended. Failing loudly on an unset variable is
- *     strictly better than defaulting to someone else's instance.
+ *  1. There is NO hardcoded default. The config used to read
+ *     `process.env.NEXTCLOUD_URL || 'http://localhost:8080'` and several specs
+ *     hardcoded `http://localhost:8080` outright — that is the *shared* dev
+ *     container. A suite that silently falls back to it creates fixtures in
+ *     other people's environment and reports measurements taken somewhere
+ *     nobody intended. Failing loudly on an unset variable is strictly better
+ *     than defaulting to someone else's instance.
+ *
+ *     `PLAYWRIGHT_BASE_URL` wins when set, but `BASE_URL` is accepted too:
+ *     that is the name the shared `ConductionNL/.github` quality workflow
+ *     exports. An earlier revision of this module read `PLAYWRIGHT_BASE_URL`
+ *     *only*, and openconnector's "E2E Tests (Playwright)" job hard-failed on
+ *     every CI run since with `Error: PLAYWRIGHT_BASE_URL is not set.` —
+ *     locally correct, and dead everywhere it mattered. Strict about never
+ *     inventing a target; permissive about which variable names it.
  *
  *  2. Absolute and relative navigation must not be able to disagree. Specs that
  *     build their own `http://host:port/...` strings drifted away from
@@ -22,16 +30,20 @@
  *     one thing to get right.
  */
 
-const RAW = process.env.PLAYWRIGHT_BASE_URL ?? ''
+const RAW = process.env.PLAYWRIGHT_BASE_URL?.trim()
+	|| process.env.BASE_URL?.trim()
+	|| ''
 
-if (!RAW.trim()) {
+if (!RAW) {
 	throw new Error(
-		'PLAYWRIGHT_BASE_URL is not set.\n\n'
+		'Neither PLAYWRIGHT_BASE_URL nor BASE_URL is set.\n\n'
 		+ 'The e2e suite deliberately has no default: it used to fall back to\n'
 		+ 'http://localhost:8080, which is the SHARED dev container, and tests\n'
 		+ 'then wrote fixtures into an environment other sessions were using.\n\n'
 		+ 'Point it at your own isolated instance, e.g.\n'
-		+ '  PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e\n',
+		+ '  PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e\n\n'
+		+ 'In CI the shared quality workflow exports BASE_URL, which is also\n'
+		+ 'accepted; if you are seeing this in CI, that export is missing.\n',
 	)
 }
 
