@@ -28,6 +28,29 @@ $resources = $config['resources'] ?? [];
 
 $missing = [];
 
+// Controllers that exist only as a DI service alias, not as a physical file.
+//
+// `Application::registerAppHostBoilerplate()` registers OpenRegister AppHost
+// generics under the STANDARD `OCA\OpenConnector\Controller\…Controller` key,
+// because that is the class name NC's App::main synthesises from a plain
+// `genericPreferences#…` route name. Such a route resolves fine at runtime via
+// the container, but has no file under lib/Controller/ — so a filesystem-only
+// check reports it as an orphan. That false positive is as corrosive as a
+// missing check: it trains readers to ignore a red gate.
+//
+// The method existence check is skipped for these: the method lives on the
+// OpenRegister generic, which is not on this app's analysis path.
+$diRegistered = [];
+$appFile = __DIR__ . '/../../lib/AppInfo/Application.php';
+if (file_exists($appFile)) {
+    preg_match_all(
+        '/registerService\(\s*[\'"]OCA\\\\+OpenConnector\\\\+Controller\\\\+([A-Za-z0-9_]+)Controller[\'"]/',
+        file_get_contents($appFile),
+        $m
+    );
+    $diRegistered = array_map('strtolower', $m[1] ?? []);
+}
+
 // Resource auto-routes: Nextcloud expands each `resources` entry into 5
 // CRUD routes (index/show/create/update/destroy) on the named controller.
 // If any of those methods are missing, the auto-generated route 500s on
@@ -70,6 +93,10 @@ foreach ($routes as $route) {
     // Skip routes served by OR AppHost controllers (registered via DI alias
     // in Application::registerAppHostBoilerplate, not as physical files).
     if (str_starts_with($ctl, 'AppHost\\')) {
+        continue;
+    }
+    // Served by a DI service alias registered in Application.php (see above).
+    if (in_array(strtolower($ctl), $diRegistered, true)) {
         continue;
     }
     // Nextcloud's route → controller resolution is case-insensitive on the

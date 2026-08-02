@@ -45,6 +45,15 @@ parameters:
         - lib/Flow/FlowNodeListener.php
         - lib/Flow/SourceCallNode.php
         - lib/Flow/SynchronizationRunNode.php
+        # OpenConnectorMetricsProvider implements OCA\OpenRegister\AppHost\IMetricsProvider
+        # and AbstractCategoryAdapterProvider extends
+        # OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider — both peer-app
+        # types that exist only at runtime. PHPStan reports these as *general* errors
+        # ("cannot be ignored, use excludePaths instead"), which no baseline can absorb:
+        # they abort the run regardless of ignoreErrors. Same pattern as
+        # SynchronizationContractProvider above and opencatalogi's metrics provider.
+        - lib/Observability/OpenConnectorMetricsProvider.php
+        - lib/Service/Adapter/AbstractCategoryAdapterProvider.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
@@ -81,6 +90,10 @@ parameters:
         - '#on an unknown class OCA\\Forms\\#'
         - '#unknown class OCP\\Calendar\\Events\\#'
         - '#Class OCP\\Calendar\\Events\\#'
+        # @throws referencing an OpenRegister exception class. PHPStan cannot resolve the
+        # class to verify it is Throwable because OCA\OpenRegister is not on the analysis
+        # path (see the ignores below). Same documented entry opencatalogi already carries.
+        - '#PHPDoc tag @throws with type OCA\\OpenRegister\\.*is not subtype of Throwable#'
         # OCA classes from other apps (OpenRegister) not available during static analysis
         - '#unknown class OCA\\OpenRegister\\#'
         - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
@@ -114,6 +127,13 @@ parameters:
         # is a downstream effect of the excludePaths exclusion.
         - '#Class OCA\\OpenConnector\\Controller\\HealthController does not have a constructor#'
         - '#Class OCA\\OpenConnector\\Controller\\MetricsController does not have a constructor#'
+        # Downstream effect of the lib/Settings/OpenConnectorAdmin.php exclusion above.
+        # Every #[AuthorizedAdminSetting(OpenConnectorAdmin::class)] attribute resolves to
+        # a plain `string` for PHPStan because the class is excluded from analysis, so it
+        # cannot see that OpenConnectorAdmin -> GenericAdminSettings implements
+        # OCP\Settings\IDelegatedSettings. The attribute IS correct at runtime; this is an
+        # artifact of excluding the class, not a real type error. 41 occurrences.
+        - '#Parameter \#1 \$settings of attribute class OCP\\AppFramework\\Http\\Attribute\\AuthorizedAdminSetting constructor expects class-string<OCP\\Settings\\IDelegatedSettings>, string given\.#'
         # adopt-apphost: same downstream effect for Settings/OpenConnectorAdmin,
         # Sections/OpenConnectorAdmin and Repair/InitializeActions (see excludePaths above).
         - '#Class OCA\\OpenConnector\\Settings\\OpenConnectorAdmin does not have a constructor#'
