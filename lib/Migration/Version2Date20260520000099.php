@@ -44,6 +44,7 @@ namespace OCA\OpenConnector\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -54,6 +55,22 @@ use Psr\Log\LoggerInterface;
  */
 class Version2Date20260520000099 extends SimpleMigrationStep
 {
+
+    /**
+     * How many legacy tables still held rows when `changeSchema()` ran.
+     *
+     * Carried between `changeSchema()` and `postSchemaChange()` because
+     * Nextcloud calls both on the SAME instance, and the row counts can only
+     * be taken in `changeSchema()` (against live, committed data) while the
+     * app-config write must happen after the schema change has been applied.
+     *
+     * Starts at -1 meaning "not measured yet", which is deliberately distinct
+     * from 0 ("measured, nothing left"): if `changeSchema()` never ran we must
+     * NOT conclude the cutover is complete.
+     *
+     * @var integer
+     */
+    private int $legacyTablesWithRows = -1;
 
     /**
      * The 15 legacy openconnector tables. Each was the storage backing for
@@ -119,6 +136,8 @@ class Version2Date20260520000099 extends SimpleMigrationStep
      * @param array<string, mixed>      $options       Migration options.
      *
      * @return ISchemaWrapper|null The modified schema wrapper.
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -178,27 +197,89 @@ class Version2Date20260520000099 extends SimpleMigrationStep
             )
         );
 
+        // Hand the safety-gate result to postSchemaChange(), which decides
+        // whether the cutover can be declared complete.
+        $this->legacyTablesWithRows = $skippedNonEmpty;
+
         return $schema;
 
     }//end changeSchema()
 
     /**
-     * Post-schema change callback.
+     * Post-schema change callback — assert `openconnector.storage_migrated`.
      *
-     * The `openconnector.storage_migrated` IAppConfig flag stays set to
-     * 'true'. It still serves as a marker that the cutover ran (read by
-     * SynchronizationContractProvider::isEnabled() among others).
-     * Deleting it would be backwards-incompatible.
+     * This method used to be a no-op, on the premise that the flag "stays set
+     * to 'true'" from {@see Version2Date20260520000001}. That premise holds
+     * only for an instance that was UPGRADED across the cutover with legacy
+     * rows to copy. On a FRESH install it is false, and the consequence is a
+     * silent, permanent feature outage:
+     *
+     *   * Migration ...0001 bails out early (`return`, flag untouched) when
+     *     OpenRegister is not yet loadable — routine during `occ app:enable`
+     *     on a clean instance, where openconnector's migrations run before
+     *     openregister has been set up.
+     *   * Even when it does complete, a fresh instance has no legacy rows, so
+     *     the "all 15 entities copied" branch it needs to reach describes an
+     *     event that never happens.
+     *
+     * So `storage_migrated` stays at its 'false' default forever, and
+     * {@see \OCA\OpenConnector\Service\Integration\SynchronizationContractProvider::isEnabled()}
+     * returns false forever: "Synced from" provenance never appears on ANY
+     * fresh install. It fails closed and silently — the leaf simply is not
+     * there, which is indistinguishable from having no contracts to show.
+     * The e2e suite could not catch it either: `synced-from-leaf.spec.ts` and
+     * `migration-round-trip.spec.ts` both `test.skip()` when the flag is
+     * false, so six specs reported as skipped-and-green on every CI run.
+     *
+     * The flag's real meaning is "openconnector's data lives in OpenRegister,
+     * not in the legacy tables". THIS migration is the point at which that
+     * becomes true by construction: it is the chain-B/C cleanup, and it only
+     * reaches here after its safety gate has confirmed no legacy table still
+     * holds rows. Zero remaining rows means the cutover is complete — whether
+     * because ...0001 copied them, or because there were never any to copy.
+     *
+     * Conservative on purpose: if ANY legacy table still has rows (an undrained
+     * rollback buffer, or a post-cutover write) the cutover is NOT complete and
+     * the flag is left alone, exactly as before. Same if `changeSchema()` never
+     * ran to measure it.
+     *
+     * Idempotent: re-running writes the same value.
      *
      * @param IOutput                   $output        Migration output interface.
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
      * @param array<string, mixed>      $options       Migration options.
      *
      * @return void
+     *
+     * @spec openspec/specs/synchronization-engine/spec.md
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // Intentional no-op — see method docblock.
+        if ($this->legacyTablesWithRows !== 0) {
+            if ($this->legacyTablesWithRows < 0) {
+                $reason = 'legacy row counts were never measured';
+            } else {
+                $reason = sprintf('%d legacy table(s) still hold rows', $this->legacyTablesWithRows);
+            }
+
+            $output->warning(
+                sprintf('chain-B/C cleanup: %s — leaving `storage_migrated` untouched.', $reason)
+            );
+            return;
+        }
+
+        $appConfig = \OC::$server->get(IAppConfig::class);
+        if ($appConfig->getValueString('openconnector', 'storage_migrated', 'false') === 'true') {
+            $output->info('chain-B/C cleanup: `storage_migrated` already true — nothing to do.');
+            return;
+        }
+
+        $appConfig->setValueString('openconnector', 'storage_migrated', 'true');
+        $output->info(
+            'chain-B/C cleanup: no legacy table holds rows — set `storage_migrated=true`.'
+            .' Sync-contract provenance ("Synced from") is now enabled.'
+        );
+
     }//end postSchemaChange()
 
     /**
