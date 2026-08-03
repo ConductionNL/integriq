@@ -1,5 +1,4 @@
 const path = require('path')
-const fs = require('fs')
 const webpack = require('webpack')
 const webpackConfig = require('@nextcloud/webpack-vue-config')
 const { VueLoaderPlugin } = require('vue-loader')
@@ -47,45 +46,16 @@ webpackConfig.entry = {
 	// (opsx-driven) and will land via the manifest's dashboard page.
 }
 
-// Use local source when available (monorepo dev), otherwise fall back to npm package.
+// NOTE: the ../nextcloud-vue source alias (USE_LOCAL_LIB) is gone. It aliased
+// this app's build to whatever the sibling checkout happened to be on, and the
+// library maintains two Vue lines — so a checkout parked on the Vue 2 branch
+// silently compiled Vue 2 library source into this Vue 3 app and produced ~75
+// errors that named nothing useful. CI never saw it (no sibling checkout), so
+// it read as 'the build is broken' only to whoever ran it locally.
 //
-// The sibling checkout is only usable when it is on the SAME major Vue line as
-// this app. @conduction/nextcloud-vue maintains two: the Vue 2 line (v1.x, on
-// `development`/`beta`) and the Vue 3 line (v2.x/v3.x, on `feat/vue-3`). A
-// checkout parked on a Vue 2 branch — which is easy to do, since the Vue 3 line
-// is NOT called `vue3` — used to be aliased in regardless, and the build then
-// died with ~75 unrelated-looking errors deep inside the library's node_modules
-// ("export 'default' (imported as 'Vue') was not found in 'vue'"), none of which
-// name the actual cause. CI never hit it because CI has no sibling checkout.
-//
-// So: check the line before trusting it, and say so plainly when skipping.
-const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-
-function localLibIsVue3() {
-	try {
-		const pkg = JSON.parse(
-			fs.readFileSync(path.resolve(__dirname, '../nextcloud-vue/package.json'), 'utf8'),
-		)
-		const declared = (pkg.dependencies && pkg.dependencies.vue)
-			|| (pkg.peerDependencies && pkg.peerDependencies.vue)
-			|| (pkg.devDependencies && pkg.devDependencies.vue)
-			|| ''
-		return /(^|[^0-9])3\./.test(String(declared))
-	} catch (e) {
-		return false
-	}
-}
-
-const localLibRequested = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
-const useLocalLib = localLibRequested && localLibIsVue3()
-
-if (localLibRequested && !useLocalLib) {
-	console.warn(
-		'\n[openconnector] ../nextcloud-vue is checked out on the Vue 2 line — '
-		+ 'building against the published package instead.\n'
-		+ '                Switch that checkout to `feat/vue-3` to develop against local source.\n',
-	)
-}
+// Releases are fast enough now that developing against a published version is
+// the shorter path: publish a prerelease from nextcloud-vue and bump here.
+// One source of truth for what this app builds against - the lockfile.
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
@@ -98,7 +68,6 @@ webpackConfig.resolve = {
 	fallback: { path: require.resolve('path-browserify') },
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
-		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
 		//
