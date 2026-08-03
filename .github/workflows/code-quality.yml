@@ -55,6 +55,13 @@ jobs:
       enable-newman: true
       newman-collection-path: "tests/postman"
       newman-environment-path: "tests/postman/openconnector.postman_environment.json"
+      # The collection's own fixture setup POSTs to
+      # /apps/openregister/api/objects/openconnector/<schema>, so it needs the
+      # register provisioned exactly like the Playwright job does. This job had
+      # no seed step at all, so all 8 fixture POSTs returned 404 and cascaded
+      # into 51 of 107 failing assertions. Register-only scope: this job never
+      # runs `npm run build`, so the script's SPA bundle gate must not run here.
+      newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
 
       # ── E2E browser tests ────────────────────────────────────────────────

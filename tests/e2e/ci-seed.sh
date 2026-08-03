@@ -12,6 +12,22 @@
 #
 #     playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'
 #
+# The `Integration Tests (Newman)` job needs the SAME register provisioning —
+# its collection drives /apps/openregister/api/objects/openconnector/<schema>
+# directly — but must NOT run the SPA warm-up or the bundle gate, because that
+# job never builds the frontend. It therefore invokes this same script with
+# the register-only scope:
+#
+#     newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
+#
+# SEED_SCOPE=register  -> steps 1-3 only (build descriptor, import, verify).
+# SEED_SCOPE unset/full -> steps 1-5 (adds SPA warm-up + bundle gate).
+#
+# Note the Newman seed step in the shared workflow declares no `env:` block,
+# so this script sees neither BASE_URL nor ADMIN_USER there. The CI fallback
+# in "Target resolution" below (gated on GITHUB_ACTIONS/CI) is what supplies
+# them; the admin credentials fall back to admin/admin the same way.
+#
 # WHY THIS IS NEEDED
 # ------------------
 # Since the chain-C OR-cutover, openconnector's Sources, Mappings,
@@ -321,6 +337,20 @@ curl -sS -u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
 verify "$SCH_BODY" schemas
 
 echo "[ci-seed] OpenConnector register + schemas provisioned."
+
+# ── 3b. Stop here for API-only consumers (SEED_SCOPE=register) ───────────────
+# The `Integration Tests (Newman)` job needs EXACTLY steps 1-3 and nothing
+# else: every request in the collection is an HTTP API call, and that job
+# never runs `npm run build`, so the SPA warm-up below would warm nothing and
+# the bundle gate would hard-fail the seed on a bundle the job is not supposed
+# to have. Splitting on scope keeps ONE definition of "provision the register"
+# for both jobs — the Newman failure this exists to fix was 51 assertions all
+# 404ing on /apps/openregister/api/objects/openconnector/<schema> because that
+# job had no seed step at all.
+if [ "${SEED_SCOPE:-full}" = "register" ]; then
+	echo "[ci-seed] SEED_SCOPE=register — skipping SPA warm-up and bundle gate (API-only consumer)."
+	exit 0
+fi
 
 # ── 4. Warm the SPA so the first spec doesn't pay the cold start ─────────────
 # The shared workflow serves Nextcloud with `php -S 0.0.0.0:8080`. It now sets
