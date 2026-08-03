@@ -53,6 +53,7 @@ import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
 import SyncDeadLetterPage from './views/Synchronization/SyncDeadLetterPage.vue'
+import DeadLettersPage from './views/Operations/DeadLettersPage.vue'
 import MappingDetailPage from './views/wrappers/MappingDetailPage.vue'
 import RuleDetailPage from './views/Rule/RuleDetailPage.vue'
 import SynchronizationDetailPage from './views/Synchronization/SynchronizationDetailPage.vue'
@@ -157,6 +158,12 @@ export default {
 	// See retry-and-circuit-breaker-policies (REQ-DLR-007..012).
 	SyncDeadLetterPage,
 
+	// Merged dead-letter operations surface (custom page): the ONE navigation
+	// entry under Operations. Owns the queue switch and delegates to the two
+	// components above — the queues stay separate underneath because they are
+	// different schemas behind different admin-only endpoints.
+	DeadLettersPage,
+
 	// Source detail circuit-breaker badge (declarative body section on
 	// SourceDetail via config.bodyWidgets): shows breaker state + failure
 	// count + cooldown countdown with a Reset action. See
@@ -210,6 +217,7 @@ export const registry = {
 	EventDeliveriesPage: { kind: 'page', component: EventDeliveriesPage },
 	ApprovalsIndex: { kind: 'page', component: ApprovalsIndex },
 	SyncDeadLetterPage: { kind: 'page', component: SyncDeadLetterPage },
+	DeadLettersPage: { kind: 'page', component: DeadLettersPage },
 	FlowDetailPage: { kind: 'page', component: FlowDetailPage },
 	ApprovalDetail: { kind: 'page', component: ApprovalDetail },
 	TraceDetailPage: { kind: 'page', component: TraceDetailPage },

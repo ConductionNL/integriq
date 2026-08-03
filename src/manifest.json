@@ -1,996 +1,2280 @@
 {
-  "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
-  "version": "2.0.1",
-  "dependencies": [
-    "openregister"
-  ],
-  "observability": {
-    "_note": "OpenConnector adopts the OpenRegister AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index (registered in lib/AppInfo/Application.php with appName=openconnector), so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract. Intentional improvements: /api/health is now #[PublicPage] and returns 503 on a failed database check (ADR-006); the bespoke `sources_table` OR-join probe is subsumed by the generic `openregister` availability check (degraded). All 9 counted descriptors are tableCount over chain-C legacy openconnector_* tables; on a drained instance every tableCount emits zero samples (never a 500). The post-cutover flip to objectCount is a one-line per-descriptor manifest edit.",
-    "health": {
-      "statusCodePolicy": "adr006",
-      "checks": [
+    "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+    "version": "2.0.1",
+    "dependencies": [
+        "openregister"
+    ],
+    "observability": {
+        "_note": "OpenConnector adopts the OpenRegister AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index (registered in lib/AppInfo/Application.php with appName=openconnector), so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract. Intentional improvements: /api/health is now #[PublicPage] and returns 503 on a failed database check (ADR-006); the bespoke `sources_table` OR-join probe is subsumed by the generic `openregister` availability check (degraded). All 9 counted descriptors are tableCount over chain-C legacy openconnector_* tables; on a drained instance every tableCount emits zero samples (never a 500). The post-cutover flip to objectCount is a one-line per-descriptor manifest edit.",
+        "health": {
+            "statusCodePolicy": "adr006",
+            "checks": [
+                {
+                    "id": "database",
+                    "type": "database",
+                    "severity": "critical"
+                },
+                {
+                    "id": "openregister",
+                    "type": "orAvailable",
+                    "severity": "degraded"
+                }
+            ]
+        },
+        "metrics": [
+            {
+                "name": "sources_total",
+                "type": "gauge",
+                "help": "Total sources by type",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_sources",
+                    "groupBy": [
+                        "type"
+                    ],
+                    "labelDefaults": {
+                        "type": "rest"
+                    }
+                }
+            },
+            {
+                "name": "calls_total",
+                "type": "counter",
+                "help": "Total API calls by status and direction (inbound consumer throttling vs outbound source backoff)",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_call_logs",
+                    "groupBy": [
+                        "status_code",
+                        "direction"
+                    ],
+                    "labelMap": {
+                        "status_code": "status"
+                    },
+                    "labelDefaults": {
+                        "status_code": "unknown",
+                        "direction": "outbound"
+                    }
+                }
+            },
+            {
+                "name": "synchronizations_total",
+                "type": "gauge",
+                "help": "Total synchronization runs",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_synchronizations"
+                }
+            },
+            {
+                "name": "synchronization_runs_total",
+                "type": "counter",
+                "help": "Total synchronization log entries by result",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_synchronization_logs",
+                    "groupBy": [
+                        "result"
+                    ],
+                    "labelMap": {
+                        "result": "status"
+                    },
+                    "labelDefaults": {
+                        "result": "unknown"
+                    }
+                }
+            },
+            {
+                "name": "endpoints_total",
+                "type": "gauge",
+                "help": "Total registered endpoints",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_endpoints"
+                }
+            },
+            {
+                "name": "jobs_total",
+                "type": "gauge",
+                "help": "Total configured jobs",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_jobs"
+                }
+            },
+            {
+                "name": "job_runs_total",
+                "type": "counter",
+                "help": "Total job log entries by status",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_job_logs",
+                    "groupBy": [
+                        "status"
+                    ],
+                    "labelDefaults": {
+                        "status": "unknown"
+                    }
+                }
+            },
+            {
+                "name": "mappings_total",
+                "type": "gauge",
+                "help": "Total configured mappings",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_mappings"
+                }
+            },
+            {
+                "name": "rules_total",
+                "type": "gauge",
+                "help": "Total configured rules",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_rules"
+                }
+            },
+            {
+                "name": "circuit_breaker_state",
+                "type": "gauge",
+                "help": "Per-source circuit breaker state (1=open, 0=closed) — provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
+                "source": {
+                    "kind": "provider"
+                }
+            },
+            {
+                "name": "traces_total",
+                "type": "counter",
+                "help": "Total execution traces by status",
+                "source": {
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "execution_trace",
+                    "groupBy": [
+                        "status"
+                    ]
+                }
+            },
+            {
+                "name": "api_product_requests_total",
+                "type": "gauge",
+                "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
+                "source": {
+                    "kind": "tableCount",
+                    "table": "openconnector_call_logs",
+                    "groupBy": [
+                        "product",
+                        "status_code"
+                    ],
+                    "labelMap": {
+                        "status_code": "status"
+                    },
+                    "labelDefaults": {
+                        "product": "",
+                        "status_code": "unknown"
+                    }
+                }
+            },
+            {
+                "name": "api_product_errors_total",
+                "type": "gauge",
+                "help": "Total inbound error (statusCode>=400) requests per API Product — provider escape hatch (api-product-gateway REQ-PROM-012): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by OpenConnectorMetricsProvider instead of a groupBy — see lib/Observability/OpenConnectorMetricsProvider.php::apiProductErrorsSample().",
+                "source": {
+                    "kind": "provider"
+                }
+            },
+            {
+                "name": "api_product_latency_seconds",
+                "type": "gauge",
+                "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99) — provider escape hatch (api-product-gateway REQ-PROM-013, prometheus-metrics): needs sorted per-group values, not a row count.",
+                "source": {
+                    "kind": "provider"
+                }
+            }
+        ]
+    },
+    "menu": [
         {
-          "id": "database",
-          "type": "database",
-          "severity": "critical"
+            "id": "Dashboard",
+            "label": "Dashboard",
+            "icon": "ViewDashboardOutline",
+            "route": "Dashboard",
+            "order": 10
         },
         {
-          "id": "openregister",
-          "type": "orAvailable",
-          "severity": "degraded"
+            "id": "Store",
+            "label": "Store",
+            "icon": "StoreOutline",
+            "route": "Store",
+            "order": 15
+        },
+        {
+            "id": "GatewayGroup",
+            "label": "Gateway",
+            "icon": "LanConnect",
+            "order": 20,
+            "children": [
+                {
+                    "id": "Endpoints",
+                    "label": "Endpoints",
+                    "icon": "Api",
+                    "route": "Endpoints",
+                    "order": 10
+                },
+                {
+                    "id": "ApiProducts",
+                    "label": "API products",
+                    "icon": "PackageVariantClosed",
+                    "route": "ApiProducts",
+                    "order": 20
+                },
+                {
+                    "id": "Consumers",
+                    "label": "Consumers",
+                    "icon": "AccountMultipleOutline",
+                    "route": "Consumers",
+                    "order": 30
+                },
+                {
+                    "id": "Approvals",
+                    "label": "Approvals",
+                    "icon": "CheckDecagramOutline",
+                    "route": "Approvals",
+                    "order": 40
+                }
+            ]
+        },
+        {
+            "id": "ConnectionsGroup",
+            "label": "Connections",
+            "icon": "TransitConnectionVariant",
+            "order": 30,
+            "children": [
+                {
+                    "id": "Sources",
+                    "label": "Sources",
+                    "icon": "SourceBranch",
+                    "route": "Sources",
+                    "order": 10
+                },
+                {
+                    "id": "Synchronizations",
+                    "label": "Synchronizations",
+                    "icon": "CloudSyncOutline",
+                    "route": "Synchronizations",
+                    "order": 20
+                },
+                {
+                    "id": "NotificatiesAbonnementen",
+                    "label": "Abonnementen",
+                    "icon": "BellRingOutline",
+                    "route": "NotificatiesAbonnementen",
+                    "order": 30
+                }
+            ]
+        },
+        {
+            "id": "EventsGroup",
+            "label": "Events",
+            "icon": "Broadcast",
+            "order": 40,
+            "children": [
+                {
+                    "id": "CloudEvents",
+                    "label": "Cloud events",
+                    "icon": "CloudUploadOutline",
+                    "route": "CloudEvents",
+                    "order": 10
+                },
+                {
+                    "id": "Webhooks",
+                    "label": "Webhooks",
+                    "icon": "Webhook",
+                    "route": "Webhooks",
+                    "order": 20
+                }
+            ]
+        },
+        {
+            "id": "AutomationGroup",
+            "label": "Automation",
+            "icon": "VectorPolylinePlus",
+            "order": 50,
+            "children": [
+                {
+                    "id": "Flows",
+                    "label": "Flows",
+                    "icon": "SitemapOutline",
+                    "route": "Flows",
+                    "order": 10
+                },
+                {
+                    "id": "Jobs",
+                    "label": "Jobs",
+                    "icon": "ClockOutline",
+                    "route": "Jobs",
+                    "order": 20
+                },
+                {
+                    "id": "Rules",
+                    "label": "Rules",
+                    "icon": "ScaleBalance",
+                    "route": "Rules",
+                    "order": 30
+                },
+                {
+                    "id": "Mappings",
+                    "label": "Mappings",
+                    "icon": "SwapHorizontal",
+                    "route": "Mappings",
+                    "order": 40
+                }
+            ]
+        },
+        {
+            "id": "OperationsGroup",
+            "label": "Operations",
+            "icon": "Gauge",
+            "order": 60,
+            "children": [
+                {
+                    "id": "Traces",
+                    "label": "Traces",
+                    "icon": "Timeline",
+                    "route": "Traces",
+                    "order": 10
+                },
+                {
+                    "id": "DeadLetters",
+                    "label": "Dead letters",
+                    "icon": "EmailAlertOutline",
+                    "route": "DeadLetters",
+                    "order": 20
+                }
+            ]
+        },
+        {
+            "id": "Documentation",
+            "label": "Documentation",
+            "icon": "BookOpenVariantOutline",
+            "href": "https://openconnector.conduction.nl",
+            "section": "footer",
+            "order": 90
+        },
+        {
+            "id": "FeaturesRoadmapMenu",
+            "label": "Features & roadmap",
+            "icon": "MapMarkerPath",
+            "route": "FeaturesRoadmap",
+            "section": "footer",
+            "order": 95
         }
-      ]
-    },
-    "metrics": [
-      {
-        "name": "sources_total",
-        "type": "gauge",
-        "help": "Total sources by type",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_sources",
-          "groupBy": [
-            "type"
-          ],
-          "labelDefaults": {
-            "type": "rest"
-          }
+    ],
+    "pages": [
+        {
+            "id": "FeaturesRoadmap",
+            "route": "/features-roadmap",
+            "type": "roadmap",
+            "title": "Features & roadmap",
+            "config": {
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "Dashboard",
+            "route": "/",
+            "type": "dashboard",
+            "title": "Dashboard",
+            "config": {
+                "dateRange": {
+                    "enabled": true,
+                    "showHeaderPicker": false,
+                    "persistKey": "openconnector-dashboard"
+                },
+                "widgets": [
+                    {
+                        "id": "kpi-sources",
+                        "title": "Sources",
+                        "type": "stats-block",
+                        "props": {
+                            "route": {
+                                "name": "Sources"
+                            }
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "source",
+                            "aggregate": "count"
+                        }
+                    },
+                    {
+                        "id": "kpi-mappings",
+                        "title": "Mappings",
+                        "type": "stats-block",
+                        "props": {
+                            "route": {
+                                "name": "Mappings"
+                            }
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "mapping",
+                            "aggregate": "count"
+                        }
+                    },
+                    {
+                        "id": "kpi-synchronizations",
+                        "title": "Synchronizations",
+                        "type": "stats-block",
+                        "props": {
+                            "route": {
+                                "name": "Synchronizations"
+                            }
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "synchronization",
+                            "aggregate": "count"
+                        }
+                    },
+                    {
+                        "id": "kpi-contracts",
+                        "title": "Contracts",
+                        "type": "stats-block",
+                        "props": {
+                            "route": {
+                                "name": "SynchronizationContracts"
+                            }
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "synchronization_contract",
+                            "aggregate": "count"
+                        }
+                    },
+                    {
+                        "id": "kpi-jobs",
+                        "title": "Jobs",
+                        "type": "stats-block",
+                        "props": {
+                            "route": {
+                                "name": "Jobs"
+                            }
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "job",
+                            "aggregate": "count"
+                        }
+                    },
+                    {
+                        "id": "kpi-endpoints",
+                        "title": "Endpoints",
+                        "type": "stats-block",
+                        "props": {
+                            "route": {
+                                "name": "Endpoints"
+                            }
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "endpoint",
+                            "aggregate": "count"
+                        }
+                    },
+                    {
+                        "id": "calls-daily",
+                        "title": "Outgoing calls — daily",
+                        "type": "chart",
+                        "props": {
+                            "chartKind": "area"
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "call_log",
+                            "bucket": {
+                                "field": "created",
+                                "interval": "day",
+                                "fromVar": "from",
+                                "toVar": "to"
+                            }
+                        }
+                    },
+                    {
+                        "id": "calls-hourly",
+                        "title": "Outgoing calls — by hour",
+                        "type": "chart",
+                        "props": {
+                            "chartKind": "bar"
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "call_log",
+                            "bucket": {
+                                "field": "created",
+                                "interval": "hour",
+                                "fromVar": "from",
+                                "toVar": "to"
+                            }
+                        }
+                    },
+                    {
+                        "id": "jobs-daily",
+                        "title": "Job executions — daily",
+                        "type": "chart",
+                        "props": {
+                            "chartKind": "area"
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "job_log",
+                            "bucket": {
+                                "field": "created",
+                                "interval": "day",
+                                "fromVar": "from",
+                                "toVar": "to"
+                            }
+                        }
+                    },
+                    {
+                        "id": "jobs-hourly",
+                        "title": "Job executions — by hour",
+                        "type": "chart",
+                        "props": {
+                            "chartKind": "bar"
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "job_log",
+                            "bucket": {
+                                "field": "created",
+                                "interval": "hour",
+                                "fromVar": "from",
+                                "toVar": "to"
+                            }
+                        }
+                    },
+                    {
+                        "id": "sync-daily",
+                        "title": "Synchronization runs — daily",
+                        "type": "chart",
+                        "props": {
+                            "chartKind": "area"
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "synchronization_log",
+                            "bucket": {
+                                "field": "created",
+                                "interval": "day",
+                                "fromVar": "from",
+                                "toVar": "to"
+                            }
+                        }
+                    },
+                    {
+                        "id": "sync-hourly",
+                        "title": "Synchronization runs — by hour",
+                        "type": "chart",
+                        "props": {
+                            "chartKind": "bar"
+                        },
+                        "dataSource": {
+                            "register": "openconnector",
+                            "schema": "synchronization_log",
+                            "bucket": {
+                                "field": "created",
+                                "interval": "hour",
+                                "fromVar": "from",
+                                "toVar": "to"
+                            }
+                        }
+                    }
+                ],
+                "layout": [
+                    {
+                        "id": "L1",
+                        "widgetId": "kpi-sources",
+                        "gridX": 0,
+                        "gridY": 0,
+                        "gridWidth": 2,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "L2",
+                        "widgetId": "kpi-mappings",
+                        "gridX": 2,
+                        "gridY": 0,
+                        "gridWidth": 2,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "L3",
+                        "widgetId": "kpi-synchronizations",
+                        "gridX": 4,
+                        "gridY": 0,
+                        "gridWidth": 2,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "L4",
+                        "widgetId": "kpi-contracts",
+                        "gridX": 6,
+                        "gridY": 0,
+                        "gridWidth": 2,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "L5",
+                        "widgetId": "kpi-jobs",
+                        "gridX": 8,
+                        "gridY": 0,
+                        "gridWidth": 2,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "L6",
+                        "widgetId": "kpi-endpoints",
+                        "gridX": 10,
+                        "gridY": 0,
+                        "gridWidth": 2,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "L7",
+                        "widgetId": "calls-daily",
+                        "gridX": 0,
+                        "gridY": 2,
+                        "gridWidth": 6,
+                        "gridHeight": 4
+                    },
+                    {
+                        "id": "L8",
+                        "widgetId": "calls-hourly",
+                        "gridX": 6,
+                        "gridY": 2,
+                        "gridWidth": 6,
+                        "gridHeight": 4
+                    },
+                    {
+                        "id": "L9",
+                        "widgetId": "jobs-daily",
+                        "gridX": 0,
+                        "gridY": 6,
+                        "gridWidth": 6,
+                        "gridHeight": 4
+                    },
+                    {
+                        "id": "L10",
+                        "widgetId": "jobs-hourly",
+                        "gridX": 6,
+                        "gridY": 6,
+                        "gridWidth": 6,
+                        "gridHeight": 4
+                    },
+                    {
+                        "id": "L11",
+                        "widgetId": "sync-daily",
+                        "gridX": 0,
+                        "gridY": 10,
+                        "gridWidth": 6,
+                        "gridHeight": 4
+                    },
+                    {
+                        "id": "L12",
+                        "widgetId": "sync-hourly",
+                        "gridX": 6,
+                        "gridY": 10,
+                        "gridWidth": 6,
+                        "gridHeight": 4
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "Sources",
+            "route": "/sources",
+            "type": "index",
+            "title": "Sources",
+            "config": {
+                "register": "openconnector",
+                "schema": "source",
+                "columns": [
+                    "name",
+                    "type",
+                    "status",
+                    "isEnabled",
+                    "lastSync",
+                    "dateModified"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "type",
+                    "isEnabled",
+                    "auth",
+                    "authorizationHeader",
+                    "authenticationConfig",
+                    "apikey",
+                    "secret",
+                    "username",
+                    "password",
+                    "jwt",
+                    "jwtId",
+                    "configuration"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "headerActions": [
+                    {
+                        "id": "view-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "type": "open-page",
+                        "target": "SourceLogs"
+                    },
+                    {
+                        "id": "promote-configuration",
+                        "label": "Promote configuration",
+                        "icon": "RocketLaunchOutline",
+                        "handler": "openPromotionHandler"
+                    }
+                ],
+                "showViewAction": false,
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "SourceDetail"
+                    },
+                    {
+                        "id": "test",
+                        "label": "Test connection",
+                        "icon": "CheckCircleOutline",
+                        "handler": "testSourceHandler"
+                    },
+                    {
+                        "id": "view-source-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "handler": "viewLogsHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-fields": "SourceFormFields"
+            }
+        },
+        {
+            "id": "SourceDetail",
+            "route": "/sources/:id",
+            "type": "detail",
+            "title": "Source",
+            "config": {
+                "register": "openconnector",
+                "schema": "source",
+                "_note": "PURPOSE: A source is an external system OpenConnector calls (REST/SOAP/DB/file). This is the CONFIG/TECHNICAL archetype — an integrator lands here to check whether the connection is healthy and to triage failed calls, not to read documents. DESIGN RATIONALE: the body leads with operational data. Four KPI stats across the top (total calls, errors, avg size, objects fetched) give an at-a-glance health read; the primary body region is a recent-call-log table (child call_log filtered by source UUID = @objectId, sorted newest-first) because triaging HTTP failures is the #1 job on this page. Connection config (data, 3 columns to fit the many auth/rate-limit fields) and Related sit below/beside. NO comms leaves — a source does not email or hold meetings; the schema declares no email/calendar linkedType. Rarely-opened raw JSON blobs (paths/headers/loggingConfig) stay in the sidebar metadata, and audit-trail is a sidebar tab. ADR-062 rev3: the four health KPIs (calls, errors, objects fetched, avg payload) live in ONE in-grid stats-block top-right of the Connection core-data widget — entries[] carries per-entry metric/field so the sum (objectCount) and avg (size, raw bytes via countLabel) are expressible alongside the two counts. Registry icons; call log is read-only (allowCreate:false) with a View-all to SourceLogs.",
+                "widgets": [
+                    {
+                        "id": "src-kpis-calls",
+                        "type": "stats-block",
+                        "icon": "Gauge",
+                        "title": "Calls",
+                        "content": {
+                            "entries": [
+                                {
+                                    "title": "Calls",
+                                    "countLabel": "logged",
+                                    "register": "openconnector",
+                                    "schema": "call_log",
+                                    "metric": "count",
+                                    "filter": {
+                                        "source": "@objectId"
+                                    },
+                                    "route": {
+                                        "name": "SourceLogs",
+                                        "query": {
+                                            "source": "@objectId"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "src-kpis-errors",
+                        "type": "stats-block",
+                        "icon": "Gauge",
+                        "title": "Errors",
+                        "content": {
+                            "entries": [
+                                {
+                                    "title": "Errors",
+                                    "countLabel": ">=400",
+                                    "variant": "error",
+                                    "register": "openconnector",
+                                    "schema": "call_log",
+                                    "metric": "count",
+                                    "filter": {
+                                        "source": "@objectId",
+                                        "statusCode": ">=400"
+                                    },
+                                    "route": {
+                                        "name": "SourceLogs",
+                                        "query": {
+                                            "source": "@objectId"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "src-kpis-objects",
+                        "type": "stats-block",
+                        "icon": "Gauge",
+                        "title": "Objects",
+                        "content": {
+                            "entries": [
+                                {
+                                    "title": "Objects",
+                                    "countLabel": "fetched",
+                                    "register": "openconnector",
+                                    "schema": "source",
+                                    "metric": "sum",
+                                    "field": "objectCount",
+                                    "filter": {
+                                        "id": "@objectId"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "src-kpis-payload",
+                        "type": "stats-block",
+                        "icon": "Gauge",
+                        "title": "Payload",
+                        "content": {
+                            "entries": [
+                                {
+                                    "title": "Payload",
+                                    "countLabel": "bytes (avg)",
+                                    "register": "openconnector",
+                                    "schema": "call_log",
+                                    "metric": "avg",
+                                    "field": "size",
+                                    "filter": {
+                                        "source": "@objectId"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "src-calls",
+                        "type": "object-list",
+                        "icon": "Timeline",
+                        "title": "Recent calls",
+                        "content": {
+                            "register": "openconnector",
+                            "schema": "call_log",
+                            "filter": {
+                                "source": "@objectId"
+                            },
+                            "sort": {
+                                "created": "desc"
+                            },
+                            "columns": [
+                                {
+                                    "key": "created",
+                                    "label": "When"
+                                },
+                                {
+                                    "key": "statusCode",
+                                    "label": "Status"
+                                },
+                                {
+                                    "key": "statusMessage",
+                                    "label": "Message"
+                                },
+                                {
+                                    "key": "size",
+                                    "label": "Size"
+                                }
+                            ],
+                            "limit": 25,
+                            "allowCreate": false,
+                            "rowRoute": "SourceLogs",
+                            "viewAllRoute": "SourceLogs",
+                            "viewAllQuery": {
+                                "source": "@objectId"
+                            },
+                            "emptyText": "No calls logged for this source yet."
+                        }
+                    },
+                    {
+                        "id": "src-data",
+                        "type": "data",
+                        "icon": "DatabaseOutline",
+                        "title": "Connection",
+                        "content": {
+                            "columns": 3
+                        }
+                    },
+                    {
+                        "id": "src-related",
+                        "type": "related",
+                        "icon": "LinkVariant",
+                        "title": "Used by"
+                    },
+                    {
+                        "id": "src-environments",
+                        "type": "object-list",
+                        "icon": "Earth",
+                        "title": "Environments",
+                        "content": {
+                            "register": "openconnector",
+                            "schema": "environment",
+                            "filter": {
+                                "sourceRef": "@objectId"
+                            },
+                            "columns": [
+                                {
+                                    "key": "name",
+                                    "label": "Name"
+                                },
+                                {
+                                    "key": "role",
+                                    "label": "Role"
+                                },
+                                {
+                                    "key": "slug",
+                                    "label": "Slug"
+                                },
+                                {
+                                    "key": "description",
+                                    "label": "Description"
+                                }
+                            ],
+                            "limit": 10,
+                            "allowCreate": true,
+                            "emptyText": "This source is not used as a promotion environment."
+                        },
+                        "_note": "Environments moved here from their own top-level index. The `environment` schema carries NO connection or credential material of its own — just name/slug/role plus `sourceRef` pointing at the `source` (type: api) that holds the location and credentialRef. So an environment is an attribute OF a source, and listing it beside the source it points at is where an operator can actually act on it. Promotion is not a daily operation, which is why it stopped being a top-level menu entry. Icon is 'Earth' from the SHARED widget registry (nextcloud-vue widgetIcons.js), not the menu vocabulary: an unregistered widget icon renders the '?' fallback (ADR-062 rule 8). ServerNetwork, the obvious name, is not in that registry."
+                    }
+                ],
+                "layout": [
+                    {
+                        "id": "1",
+                        "widgetId": "src-data",
+                        "gridX": 0,
+                        "gridY": 0,
+                        "gridWidth": 8,
+                        "gridHeight": 6
+                    },
+                    {
+                        "id": "2a",
+                        "widgetId": "src-kpis-calls",
+                        "gridX": 8,
+                        "gridY": 0,
+                        "gridWidth": 4,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "2b",
+                        "widgetId": "src-kpis-errors",
+                        "gridX": 8,
+                        "gridY": 2,
+                        "gridWidth": 4,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "2c",
+                        "widgetId": "src-kpis-objects",
+                        "gridX": 8,
+                        "gridY": 4,
+                        "gridWidth": 4,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "2d",
+                        "widgetId": "src-kpis-payload",
+                        "gridX": 8,
+                        "gridY": 6,
+                        "gridWidth": 4,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "3",
+                        "widgetId": "src-calls",
+                        "gridX": 0,
+                        "gridY": 8,
+                        "gridWidth": 8,
+                        "gridHeight": 6
+                    },
+                    {
+                        "id": "4",
+                        "widgetId": "src-related",
+                        "gridX": 8,
+                        "gridY": 8,
+                        "gridWidth": 4,
+                        "gridHeight": 6
+                    },
+                    {
+                        "id": "5",
+                        "widgetId": "src-environments",
+                        "gridX": 0,
+                        "gridY": 14,
+                        "gridWidth": 12,
+                        "gridHeight": 5
+                    }
+                ],
+                "bodyWidgets": [
+                    {
+                        "id": "src-circuit-breaker",
+                        "component": "CircuitBreakerBadge",
+                        "title": "Circuit breaker",
+                        "placement": "before-body",
+                        "colSpan": 12
+                    }
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true,
+                    "tabs": [
+                        {
+                            "id": "audit",
+                            "label": "Audit trail",
+                            "icon": "History",
+                            "widgets": [
+                                {
+                                    "type": "audit"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "SourceLogs",
+            "route": "/sources/logs",
+            "type": "logs",
+            "title": "Source logs",
+            "config": {
+                "register": "openconnector",
+                "schema": "call_log"
+            }
+        },
+        {
+            "id": "Endpoints",
+            "route": "/endpoints",
+            "type": "index",
+            "title": "Endpoints",
+            "config": {
+                "register": "openconnector",
+                "schema": "endpoint",
+                "columns": [
+                    "name",
+                    "method",
+                    "endpoint",
+                    "targetType",
+                    "updated"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "endpoint",
+                    "method",
+                    "targetType"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "headerActions": [
+                    {
+                        "id": "view-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "type": "open-page",
+                        "target": "EndpointLogs"
+                    }
+                ],
+                "showViewAction": false,
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "EndpointDetail"
+                    },
+                    {
+                        "id": "add-rule",
+                        "label": "Add rule",
+                        "icon": "Plus",
+                        "handler": "addEndpointRuleHandler"
+                    },
+                    {
+                        "id": "view-endpoint-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "handler": "viewLogsHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "EndpointDetail",
+            "route": "/endpoints/:id",
+            "type": "detail",
+            "title": "Endpoint",
+            "config": {
+                "register": "openconnector",
+                "schema": "endpoint",
+                "_note": "PURPOSE: An endpoint is an inbound route OpenConnector exposes (path + HTTP method) that maps requests onto a target (register/schema/source/job) via input/output mappings and attached rules. CONFIG/TECHNICAL archetype. DESIGN RATIONALE: unlike a source, an endpoint has NO child log table with an endpoint foreign key (call_log keys on source/synchronization, not endpoint), so there is no runs list to surface — the operational payload IS the routing configuration. The body therefore leads with a wide config panel (data, 2 columns) exposing path/regex, method, targetType/targetId and the input/output mapping references, with a Related panel beside it so the integrator can jump to the mappings and target this endpoint wires together. NO comms leaves — an endpoint routes HTTP, it does not communicate; the schema declares no email/calendar linkedType. The verbose conditions[]/rules[]/endpointArray JSON stays reachable in sidebar metadata; audit-trail is a sidebar tab.",
+                "widgets": [
+                    {
+                        "id": "ep-data",
+                        "type": "data",
+                        "icon": "SourceBranch",
+                        "title": "Route & mapping",
+                        "content": {
+                            "columns": 2
+                        }
+                    },
+                    {
+                        "id": "ep-related",
+                        "type": "related",
+                        "icon": "LinkVariant",
+                        "title": "Wired to"
+                    }
+                ],
+                "layout": [
+                    {
+                        "id": "1",
+                        "widgetId": "ep-data",
+                        "gridX": 0,
+                        "gridY": 0,
+                        "gridWidth": 8,
+                        "gridHeight": 7
+                    },
+                    {
+                        "id": "2",
+                        "widgetId": "ep-related",
+                        "gridX": 8,
+                        "gridY": 0,
+                        "gridWidth": 4,
+                        "gridHeight": 7
+                    }
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true,
+                    "tabs": [
+                        {
+                            "id": "audit",
+                            "label": "Audit trail",
+                            "icon": "History",
+                            "widgets": [
+                                {
+                                    "type": "audit"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "EndpointLogs",
+            "route": "/endpoints/logs",
+            "type": "logs",
+            "title": "Endpoint logs",
+            "config": {
+                "register": "openconnector",
+                "schema": "call_log"
+            }
+        },
+        {
+            "id": "Consumers",
+            "route": "/consumers",
+            "type": "index",
+            "title": "Consumers",
+            "config": {
+                "register": "openconnector",
+                "schema": "consumer",
+                "columns": [
+                    "name",
+                    "authorizationType",
+                    "domains",
+                    "updated"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "authorizationType"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "showViewAction": false,
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "ConsumerDetail"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "ConsumerDetail",
+            "route": "/consumers/:id",
+            "type": "detail",
+            "title": "Consumer",
+            "config": {
+                "register": "openconnector",
+                "schema": "consumer",
+                "_note": "PURPOSE: A consumer is an external client authorised to call OpenConnector (auth type + allowed domains/IPs). CONFIG/TECHNICAL archetype. DESIGN RATIONALE: the two things an admin does here are (1) confirm the access policy and (2) see what this consumer has actually been sent. The body pairs a compact access-config panel (data, 2 columns: authorizationType, domains, ips) with a Related panel, then leads the lower body with an event-delivery table — event_message rows filtered by the consumer UUID (@objectId), newest-first, showing status/retries/last-attempt — because delivery health is the operational signal for a subscribed consumer. Two KPI stats (deliveries, failed) sit up top. NO comms leaves — a consumer is a machine client, not a person; the schema declares no email/calendar linkedType. Audit-trail is a sidebar tab. ADR-062 rev3: deliveries+failed are ONE in-grid stats-block (entries[]) top-right of the access-policy core-data widget, each entry deep-linking into EventDeliveries filtered on this consumer. event_message list is read-only (allowCreate:false) with a View-all to EventDeliveries; registry icons.",
+                "widgets": [
+                    {
+                        "id": "con-kpis-deliveries",
+                        "type": "stats-block",
+                        "icon": "Gauge",
+                        "title": "Deliveries",
+                        "content": {
+                            "entries": [
+                                {
+                                    "title": "Deliveries",
+                                    "countLabel": "events sent",
+                                    "register": "openconnector",
+                                    "schema": "event_message",
+                                    "metric": "count",
+                                    "filter": {
+                                        "consumer": "@objectId"
+                                    },
+                                    "route": {
+                                        "name": "EventDeliveries",
+                                        "query": {
+                                            "consumer": "@objectId"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "con-kpis-failed",
+                        "type": "stats-block",
+                        "icon": "Gauge",
+                        "title": "Failed",
+                        "content": {
+                            "entries": [
+                                {
+                                    "title": "Failed",
+                                    "countLabel": "dead-letter",
+                                    "variant": "error",
+                                    "register": "openconnector",
+                                    "schema": "event_message",
+                                    "metric": "count",
+                                    "filter": {
+                                        "consumer": "@objectId",
+                                        "status": "failed"
+                                    },
+                                    "route": {
+                                        "name": "EventDeliveries",
+                                        "query": {
+                                            "consumer": "@objectId",
+                                            "status": "failed"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "con-data",
+                        "type": "data",
+                        "icon": "ShieldCheckOutline",
+                        "title": "Access policy",
+                        "content": {
+                            "columns": 2
+                        }
+                    },
+                    {
+                        "id": "con-subscriptions",
+                        "type": "object-list",
+                        "icon": "PackageVariantClosed",
+                        "title": "API Product subscriptions",
+                        "content": {
+                            "register": "openconnector",
+                            "schema": "api_product_subscription",
+                            "filter": {
+                                "consumer": "@objectId"
+                            },
+                            "sort": {
+                                "createdAt": "desc"
+                            },
+                            "columns": [
+                                {
+                                    "key": "product",
+                                    "label": "Product"
+                                },
+                                {
+                                    "key": "tier",
+                                    "label": "Tier"
+                                },
+                                {
+                                    "key": "status",
+                                    "label": "Status"
+                                }
+                            ],
+                            "limit": 25,
+                            "allowCreate": false,
+                            "rowRoute": "ApiProductDetail",
+                            "emptyText": "This consumer has no API Product subscriptions yet."
+                        }
+                    },
+                    {
+                        "id": "con-deliveries",
+                        "type": "object-list",
+                        "icon": "Email",
+                        "title": "Recent deliveries",
+                        "content": {
+                            "register": "openconnector",
+                            "schema": "event_message",
+                            "filter": {
+                                "consumer": "@objectId"
+                            },
+                            "sort": {
+                                "created": "desc"
+                            },
+                            "columns": [
+                                {
+                                    "key": "created",
+                                    "label": "When"
+                                },
+                                {
+                                    "key": "status",
+                                    "label": "Status"
+                                },
+                                {
+                                    "key": "retryCount",
+                                    "label": "Retries"
+                                },
+                                {
+                                    "key": "lastAttempt",
+                                    "label": "Last attempt"
+                                }
+                            ],
+                            "limit": 25,
+                            "allowCreate": false,
+                            "rowRoute": "EventDeliveries",
+                            "viewAllRoute": "EventDeliveries",
+                            "viewAllQuery": {
+                                "consumer": "@objectId"
+                            },
+                            "emptyText": "No event deliveries to this consumer yet."
+                        }
+                    }
+                ],
+                "layout": [
+                    {
+                        "id": "1",
+                        "widgetId": "con-data",
+                        "gridX": 0,
+                        "gridY": 0,
+                        "gridWidth": 8,
+                        "gridHeight": 4
+                    },
+                    {
+                        "id": "2a",
+                        "widgetId": "con-kpis-deliveries",
+                        "gridX": 8,
+                        "gridY": 0,
+                        "gridWidth": 4,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "2b",
+                        "widgetId": "con-kpis-failed",
+                        "gridX": 8,
+                        "gridY": 2,
+                        "gridWidth": 4,
+                        "gridHeight": 2
+                    },
+                    {
+                        "id": "3",
+                        "widgetId": "con-deliveries",
+                        "gridX": 0,
+                        "gridY": 4,
+                        "gridWidth": 8,
+                        "gridHeight": 6
+                    },
+                    {
+                        "id": "4",
+                        "widgetId": "con-subscriptions",
+                        "gridX": 8,
+                        "gridY": 4,
+                        "gridWidth": 4,
+                        "gridHeight": 6
+                    }
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true,
+                    "tabs": [
+                        {
+                            "id": "audit",
+                            "label": "Audit trail",
+                            "icon": "History",
+                            "widgets": [
+                                {
+                                    "type": "audit"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "ApiProducts",
+            "route": "/products",
+            "type": "index",
+            "title": "API Products",
+            "_note": "PURPOSE: an api_product is a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier (api-product-gateway REQ-APG-001/002). Plain generic index — browsing/create/delete needs no bespoke chrome; the endpoint picker, tier editor, analytics panel, and subscription approve/reject actions all live on the custom ApiProductDetail page instead (design.md/discovery.md: 'a plain index for browsing').",
+            "config": {
+                "register": "openconnector",
+                "schema": "api_product",
+                "columns": [
+                    "name",
+                    "productSlug",
+                    "version",
+                    "status",
+                    "visibility",
+                    "updated"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "productSlug",
+                    "version",
+                    "visibility",
+                    "status",
+                    "sunsetDate",
+                    "defaultTier"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "showViewAction": false,
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "ApiProductDetail"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "ApiProductDetail",
+            "route": "/products/:id",
+            "type": "custom",
+            "component": "ApiProductDetail",
+            "_note": "Custom detail page for one api_product: endpoint picker (add/remove existing Endpoints), named-tier editor (rateLimit/quota/requiresApproval/approverGroup), the gateway analytics panel (request count, error rate, p50/p95/p99 latency via GET /api/products/{id}/analytics), and pending subscriptions with approve/reject actions — a generic OR CRUD detail page can't express any of these (api-product-gateway REQ-APG-002/007, design.md 'it will be custom, mirroring ApprovalDetail').",
+            "title": "API Product",
+            "config": {
+                "register": "openconnector",
+                "schema": "api_product",
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "Webhooks",
+            "route": "/webhooks",
+            "type": "index",
+            "title": "Webhooks",
+            "_note": "A webhook is an EventSubscription with a delivery sink URL (push/pull). The register has no separate 'webhook' schema — per ADR-013 the EventSubscription entity (sink + protocol + style) IS the webhook. addLabel overrides the schema-title-derived default so the create button reads 'Add Webhook' rather than 'Add EventSubscription'.",
+            "config": {
+                "register": "openconnector",
+                "schema": "event_subscription",
+                "addLabel": "Add Webhook",
+                "columns": [
+                    "sink",
+                    "protocol",
+                    "style",
+                    "status",
+                    "updated"
+                ],
+                "includeFields": [
+                    "source",
+                    "types",
+                    "sink",
+                    "protocol",
+                    "style",
+                    "status"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "actions": [
+                    {
+                        "id": "manage-signing",
+                        "label": "Webhook signing",
+                        "icon": "ShieldKeyOutline",
+                        "handler": "manageSigningHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-fields": "SubscriptionActionFields"
+            }
+        },
+        {
+            "id": "NotificatiesAbonnementen",
+            "route": "/notificaties/abonnementen",
+            "type": "custom",
+            "component": "NotificatiesAbonnementenPage",
+            "title": "Abonnementen",
+            "_note": "Custom page: abonnement CRUD backed by the dedicated NotificatiesSubscriberController endpoints (create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer) — not the generic OR object CRUD a CnIndexPage drives. See notificaties-api-subscriber REQ-008.",
+            "config": {
+                "register": "openconnector",
+                "schema": "notificaties_abonnement",
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "Jobs",
+            "route": "/jobs",
+            "type": "index",
+            "title": "Jobs",
+            "config": {
+                "register": "openconnector",
+                "schema": "job",
+                "columns": [
+                    "name",
+                    "jobClass",
+                    "interval",
+                    "isEnabled",
+                    "lastRun",
+                    "status"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "jobClass",
+                    "arguments",
+                    "interval",
+                    "isEnabled"
+                ],
+                "fieldOverrides": {
+                    "arguments": {
+                        "widget": "json"
+                    }
+                },
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "headerActions": [
+                    {
+                        "id": "view-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "type": "open-page",
+                        "target": "JobLogs"
+                    }
+                ],
+                "actions": [
+                    {
+                        "id": "run",
+                        "label": "Run now",
+                        "icon": "PlayOutline",
+                        "handler": "runJobHandler"
+                    },
+                    {
+                        "id": "test",
+                        "label": "Test (dry run)",
+                        "icon": "CheckCircleOutline",
+                        "handler": "testJobHandler"
+                    },
+                    {
+                        "id": "view-job-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "handler": "viewLogsHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-fields": "JobFormFields"
+            }
+        },
+        {
+            "id": "JobLogs",
+            "route": "/jobs/logs",
+            "type": "logs",
+            "title": "Job logs",
+            "config": {
+                "register": "openconnector",
+                "schema": "job_log"
+            }
+        },
+        {
+            "id": "Mappings",
+            "route": "/mappings",
+            "type": "index",
+            "title": "Mappings",
+            "config": {
+                "register": "openconnector",
+                "schema": "mapping",
+                "columns": [
+                    "name",
+                    "description",
+                    "passThrough",
+                    "dateModified"
+                ],
+                "includeFields": [
+                    "name",
+                    "description"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "showViewAction": false,
+                "showEditAction": false,
+                "exportFormats": [
+                    {
+                        "id": "json",
+                        "label": "JSON (.json)"
+                    },
+                    {
+                        "id": "excel",
+                        "label": "Excel (.xlsx)"
+                    },
+                    {
+                        "id": "csv",
+                        "label": "CSV (.csv)"
+                    }
+                ],
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "MappingDetail"
+                    },
+                    {
+                        "id": "edit",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "handler": "navigate",
+                        "route": "MappingDetail"
+                    },
+                    {
+                        "id": "test",
+                        "label": "Test mapping",
+                        "icon": "CheckCircleOutline",
+                        "handler": "testMappingModalHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "MappingDetail",
+            "route": "/mappings/:id",
+            "type": "custom",
+            "component": "MappingDetailPage",
+            "_note": "Custom page: the mapping editor is a bespoke 3-tab rules editor (mapping/cast/unset rules with drag-reorder + per-rule dialogs) that the generic detail page cannot express.",
+            "title": "Mapping",
+            "config": {
+                "register": "openconnector",
+                "schema": "mapping"
+            }
+        },
+        {
+            "id": "Rules",
+            "route": "/rules",
+            "type": "index",
+            "title": "Rules",
+            "config": {
+                "register": "openconnector",
+                "schema": "rule",
+                "columns": [
+                    "name",
+                    "action",
+                    "timing",
+                    "type",
+                    "order"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "action",
+                    "timing",
+                    "type"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "showViewAction": false,
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "RuleDetail"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "RuleDetail",
+            "route": "/rules/:id",
+            "type": "custom",
+            "component": "RuleDetailPage",
+            "_note": "Custom page: the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.",
+            "title": "Rule",
+            "config": {
+                "register": "openconnector",
+                "schema": "rule"
+            }
+        },
+        {
+            "id": "Synchronizations",
+            "route": "/synchronizations",
+            "type": "index",
+            "title": "Synchronizations",
+            "config": {
+                "register": "openconnector",
+                "schema": "synchronization",
+                "columns": [
+                    "name",
+                    "sourceType",
+                    "targetType",
+                    "status",
+                    "sourceLastSynced"
+                ],
+                "includeFields": [
+                    "name",
+                    "description",
+                    "sourceType",
+                    "targetType"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "showViewAction": false,
+                "rowAction": {
+                    "id": "edit",
+                    "handler": "navigate",
+                    "route": "SynchronizationDetail",
+                    "params": {
+                        "id": "{id}"
+                    }
+                },
+                "headerActions": [
+                    {
+                        "id": "view-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "type": "open-page",
+                        "target": "SynchronizationLogs"
+                    },
+                    {
+                        "id": "view-contracts",
+                        "label": "View contracts",
+                        "icon": "EyeOutline",
+                        "type": "open-page",
+                        "target": "SynchronizationContracts"
+                    }
+                ],
+                "actions": [
+                    {
+                        "id": "edit",
+                        "label": "Open editor",
+                        "icon": "PencilOutline",
+                        "handler": "navigate",
+                        "route": "SynchronizationDetail",
+                        "params": {
+                            "id": "{id}"
+                        }
+                    },
+                    {
+                        "id": "run",
+                        "label": "Run now",
+                        "icon": "PlayOutline",
+                        "handler": "runSynchronizationHandler"
+                    },
+                    {
+                        "id": "test",
+                        "label": "Test (dry run)",
+                        "icon": "CheckCircleOutline",
+                        "handler": "testSynchronizationHandler"
+                    },
+                    {
+                        "id": "view-synchronization-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "handler": "viewLogsHandler"
+                    },
+                    {
+                        "id": "view-contracts",
+                        "label": "View contracts",
+                        "icon": "EyeOutline",
+                        "type": "open-page",
+                        "target": "SynchronizationContracts"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "SynchronizationContracts",
+            "route": "/synchronizations/contracts",
+            "type": "index",
+            "title": "Contracts",
+            "config": {
+                "register": "openconnector",
+                "schema": "synchronization_contract",
+                "columns": [
+                    "synchronization",
+                    "originId",
+                    "targetId",
+                    "sourceLastSynced",
+                    "updated"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "SynchronizationLogs",
+            "route": "/synchronizations/logs",
+            "type": "logs",
+            "title": "Synchronization logs",
+            "config": {
+                "register": "openconnector",
+                "schema": "synchronization_log"
+            }
+        },
+        {
+            "id": "SynchronizationDetail",
+            "route": "/synchronizations/:id",
+            "type": "custom",
+            "title": "Synchronization",
+            "component": "SynchronizationDetailPage",
+            "_note": "Custom page: the synchronization editor composes source/target mapping, conditions, follow-ups and run/test controls that the generic detail page cannot express.",
+            "config": {
+                "register": "openconnector",
+                "schema": "synchronization"
+            }
+        },
+        {
+            "id": "CloudEvents",
+            "route": "/cloud-events/events",
+            "type": "index",
+            "title": "Cloud events",
+            "config": {
+                "register": "openconnector",
+                "schema": "event",
+                "columns": [
+                    "source",
+                    "type",
+                    "subject",
+                    "status",
+                    "time"
+                ],
+                "includeFields": [
+                    "source",
+                    "type",
+                    "subject",
+                    "data"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "headerActions": [
+                    {
+                        "id": "view-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "type": "open-page",
+                        "target": "CloudEventLogs"
+                    }
+                ],
+                "showViewAction": false,
+                "actions": [
+                    {
+                        "id": "view",
+                        "label": "View",
+                        "icon": "EyeOutline",
+                        "handler": "navigate",
+                        "route": "CloudEventDetail"
+                    },
+                    {
+                        "id": "view-cloud-event-logs",
+                        "label": "View logs",
+                        "icon": "TextBoxOutline",
+                        "handler": "viewLogsHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "CloudEventDetail",
+            "route": "/cloud-events/events/:id",
+            "type": "detail",
+            "title": "Cloud event",
+            "config": {
+                "register": "openconnector",
+                "schema": "event",
+                "_note": "PURPOSE: A CloudEvent is an immutable event record (CloudEvents 1.0 envelope: source/type/subject/specversion + a data payload) that fans out to subscribed consumers. CONFIG/TECHNICAL, read-only archetype — you inspect what happened and where it went, you do not edit it. DESIGN RATIONALE: the body leads with the CloudEvent envelope (data, 2 columns: source/type/subject/time/status) since that is the record itself, then the operational answer to 'was this delivered?' — an event_message table filtered by the event UUID (@objectId) showing each consumer delivery, status and retry count, newest-first. The `data` payload JSON is the second question, so it stays within the data widget (which renders the data field) and the object metadata rather than crowding the body; Related sits beside the envelope. NO comms leaves — a CloudEvent is a technical message record, not a person; the schema declares no email/calendar linkedType and no files are attached.",
+                "widgets": [
+                    {
+                        "id": "evt-data",
+                        "type": "data",
+                        "icon": "Bell",
+                        "title": "CloudEvent",
+                        "content": {
+                            "columns": 2
+                        }
+                    },
+                    {
+                        "id": "evt-related",
+                        "type": "related",
+                        "icon": "LinkVariant",
+                        "title": "Related"
+                    },
+                    {
+                        "id": "evt-deliveries",
+                        "type": "object-list",
+                        "icon": "Email",
+                        "title": "Deliveries",
+                        "content": {
+                            "register": "openconnector",
+                            "schema": "event_message",
+                            "filter": {
+                                "event": "@objectId"
+                            },
+                            "sort": {
+                                "created": "desc"
+                            },
+                            "columns": [
+                                {
+                                    "key": "consumer",
+                                    "label": "Consumer"
+                                },
+                                {
+                                    "key": "status",
+                                    "label": "Status"
+                                },
+                                {
+                                    "key": "retryCount",
+                                    "label": "Retries"
+                                },
+                                {
+                                    "key": "lastAttempt",
+                                    "label": "Last attempt"
+                                }
+                            ],
+                            "limit": 25,
+                            "allowCreate": false,
+                            "rowRoute": "EventDeliveries",
+                            "viewAllRoute": "EventDeliveries",
+                            "viewAllQuery": {
+                                "event": "@objectId"
+                            },
+                            "emptyText": "No deliveries recorded for this event yet."
+                        }
+                    }
+                ],
+                "layout": [
+                    {
+                        "id": "1",
+                        "widgetId": "evt-data",
+                        "gridX": 0,
+                        "gridY": 0,
+                        "gridWidth": 8,
+                        "gridHeight": 5
+                    },
+                    {
+                        "id": "2",
+                        "widgetId": "evt-related",
+                        "gridX": 8,
+                        "gridY": 0,
+                        "gridWidth": 4,
+                        "gridHeight": 5
+                    },
+                    {
+                        "id": "3",
+                        "widgetId": "evt-deliveries",
+                        "gridX": 0,
+                        "gridY": 5,
+                        "gridWidth": 12,
+                        "gridHeight": 6
+                    }
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true,
+                    "tabs": [
+                        {
+                            "id": "audit",
+                            "label": "Audit trail",
+                            "icon": "History",
+                            "widgets": [
+                                {
+                                    "type": "audit"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "CloudEventLogs",
+            "route": "/cloud-events/logs",
+            "type": "logs",
+            "title": "Cloud event logs",
+            "config": {
+                "register": "openconnector",
+                "schema": "call_log"
+            }
+        },
+        {
+            "id": "Approvals",
+            "route": "/approvals",
+            "type": "custom",
+            "component": "ApprovalsIndex",
+            "_note": "Custom page: HITL Pending Approvals operations view over approval_request, backed by the two-layer-authorized /api/approvals endpoint (returns only caller-actionable rows) with a status filter and per-row navigation into a detail page whose Approve/Reject verbs hit /api/approvals/{id}/approve|reject. Not the generic OR CRUD a CnIndexPage drives. Mirrors EventDeliveries.",
+            "title": "Approvals",
+            "config": {
+                "register": "openconnector",
+                "schema": "approval_request",
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "Flows",
+            "route": "/flows",
+            "type": "index",
+            "title": "Flows",
+            "config": {
+                "register": "openconnector",
+                "schema": "flow",
+                "columns": [
+                    "name",
+                    "isEnabled",
+                    "description"
+                ],
+                "includeFields": [
+                    "name",
+                    "description"
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": true
+                },
+                "rowAction": {
+                    "id": "edit",
+                    "handler": "navigate",
+                    "route": "FlowDetail",
+                    "params": {
+                        "id": "{id}"
+                    }
+                },
+                "actions": [
+                    {
+                        "id": "edit",
+                        "label": "Open editor",
+                        "icon": "PencilOutline",
+                        "handler": "navigate",
+                        "route": "FlowDetail",
+                        "params": {
+                            "id": "{id}"
+                        }
+                    },
+                    {
+                        "id": "run",
+                        "label": "Run now",
+                        "icon": "PlayOutline",
+                        "handler": "runFlowHandler"
+                    }
+                ],
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
+        },
+        {
+            "id": "FlowDetail",
+            "route": "/flows/:id",
+            "type": "custom",
+            "title": "Flow",
+            "component": "FlowDetailPage",
+            "_note": "Custom page: the ordered, reorderable step-list editor (typed rows: type/configRef/condition/onError, plus branch sub-targets) and the manual Run action + run-log tab cannot be expressed by the generic detail page. See visual-flow-orchestration REQ-009. No separate Edit modal — flow metadata (name/description/isEnabled) is edited inline on this page, matching the current RuleDetailPage/SynchronizationDetailPage/MappingDetailPage convention (the legacy src/modals/<Entity>/Edit*.vue modal pattern design.md referenced is unwired dead code post chain-C, per src/handlers/actionHandlers.js's own docblock).",
+            "config": {
+                "register": "openconnector",
+                "schema": "flow"
+            }
+        },
+        {
+            "id": "ApprovalDetail",
+            "route": "/approvals/:id",
+            "type": "custom",
+            "component": "ApprovalDetail",
+            "_note": "Custom detail page for one approval_request with Approve/Reject actions (reject requires a comment). See hitl-approval-rule-action.",
+            "title": "Approval request",
+            "config": {
+                "register": "openconnector",
+                "schema": "approval_request"
+            }
+        },
+        {
+            "id": "Traces",
+            "route": "/traces",
+            "type": "logs",
+            "title": "Traces",
+            "_note": "execution-trace-observability REQ-007: follows the SourceLogs/EndpointLogs/CloudEventLogs `type: logs` precedent — a generic list over execution_trace with server-derived entryPoint/status filters and pagination. Row navigation opens TraceDetail (a custom page — the step timeline and Replay action are not expressible as a generic logs row).",
+            "config": {
+                "register": "openconnector",
+                "schema": "execution_trace",
+                "detailRoute": "TraceDetail"
+            }
+        },
+        {
+            "id": "TraceDetail",
+            "route": "/traces/:id",
+            "type": "custom",
+            "component": "TraceDetailPage",
+            "_note": "Custom detail page: renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output) and a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay). Not expressible as a generic detail page — mirrors ApprovalDetail's custom-detail-for-a-custom-verb pattern.",
+            "title": "Trace",
+            "config": {
+                "register": "openconnector",
+                "schema": "execution_trace"
+            }
+        },
+        {
+            "id": "Store",
+            "route": "/store",
+            "type": "index",
+            "title": "Store",
+            "_note": "ADR-080 store plane: renamed from 'Catalog'. A store is 'browse a registry and install into this instance'; a CATALOGUE is an outward-facing published catalogue (OpenCatalogi's concept) and TEMPLATES are runtime content blueprints. The old name claimed the wrong concept and the old ViewGridOutline glyph is the vocabulary's 'apps' icon, which OpenBuild uses for its Apps page. Card grid over catalog_item, kind-driven quick filters (ADR-080 Decision 5); Enable/Instantiate lives in CatalogItemDetailDialog. Old /catalog route redirects here.",
+            "config": {
+                "register": "openconnector",
+                "schema": "catalog_item",
+                "viewMode": "cards",
+                "cardComponent": "CatalogItemCard",
+                "columns": [
+                    "name",
+                    "category",
+                    "kind",
+                    "status"
+                ],
+                "showAdd": false,
+                "showViewAction": false,
+                "selectable": false,
+                "quickFilters": [
+                    {
+                        "label": "All",
+                        "filter": {},
+                        "default": true
+                    },
+                    {
+                        "label": "Adapters",
+                        "filter": {
+                            "kind": "adapter"
+                        },
+                        "icon": "PowerPlugOutline"
+                    },
+                    {
+                        "label": "Source templates",
+                        "filter": {
+                            "kind": "source-template"
+                        },
+                        "icon": "DatabaseArrowLeftOutline"
+                    },
+                    {
+                        "label": "Configuration templates",
+                        "filter": {
+                            "kind": "configuration-template"
+                        },
+                        "icon": "FileCogOutline"
+                    }
+                ],
+                "headerActions": [
+                    {
+                        "id": "export-configuration",
+                        "label": "Export configuration",
+                        "icon": "Download",
+                        "handler": "openConfigurationExportHandler"
+                    },
+                    {
+                        "id": "import-configuration",
+                        "label": "Import configuration",
+                        "icon": "Upload",
+                        "handler": "openConfigurationImportHandler"
+                    }
+                ],
+                "sidebar": {
+                    "enabled": true,
+                    "showMetadata": false
+                },
+                "documentationUrl": "https://openconnector.conduction.nl",
+                "_configurationUiNote": "REQ-006/007/008 Configuration import/export UI actions live here as header actions (ExportConfigurationDialog / ImportPreviewDialog) rather than on a bespoke Configurations index page: OR Configuration groups are a NATIVE OR table (lib/Db/Configuration.php) served by /apps/openregister/api/configurations, not an object register/schema, so a type:index page cannot back them — and a type:custom page is exactly what this change avoids (custom-widget-ratchet)."
+            }
+        },
+        {
+            "id": "DeadLetters",
+            "route": "/dead-letters",
+            "type": "custom",
+            "component": "DeadLettersPage",
+            "title": "Dead letters",
+            "_note": "Merges the former EventDeliveries (event_message, /api/events/dead-letter) and SyncDeadLetters (sync_item_dead_letter, /api/sync-dead-letter) pages into ONE navigation entry under Operations. They were the same operations view with identical Replay/Discard verbs over two tables — SyncDeadLetters' own note said 'Mirrors EventDeliveries' — and both rendered EmailAlertOutline, so the menu showed one glyph twice. This is a navigation merge, NOT a rewrite: the queues stay separate underneath (different schemas, different admin-only endpoints, different replay semantics) and DeadLettersPage delegates to the two existing components. ?queue=sync deep-links the sync queue, which is where the old /synchronizations/dead-letters route redirects.",
+            "config": {
+                "register": "openconnector",
+                "documentationUrl": "https://openconnector.conduction.nl"
+            }
         }
-      },
-      {
-        "name": "calls_total",
-        "type": "counter",
-        "help": "Total API calls by status and direction (inbound consumer throttling vs outbound source backoff)",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_call_logs",
-          "groupBy": [
-            "status_code",
-            "direction"
-          ],
-          "labelMap": {
-            "status_code": "status"
-          },
-          "labelDefaults": {
-            "status_code": "unknown",
-            "direction": "outbound"
-          }
-        }
-      },
-      {
-        "name": "synchronizations_total",
-        "type": "gauge",
-        "help": "Total synchronization runs",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_synchronizations"
-        }
-      },
-      {
-        "name": "synchronization_runs_total",
-        "type": "counter",
-        "help": "Total synchronization log entries by result",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_synchronization_logs",
-          "groupBy": [
-            "result"
-          ],
-          "labelMap": {
-            "result": "status"
-          },
-          "labelDefaults": {
-            "result": "unknown"
-          }
-        }
-      },
-      {
-        "name": "endpoints_total",
-        "type": "gauge",
-        "help": "Total registered endpoints",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_endpoints"
-        }
-      },
-      {
-        "name": "jobs_total",
-        "type": "gauge",
-        "help": "Total configured jobs",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_jobs"
-        }
-      },
-      {
-        "name": "job_runs_total",
-        "type": "counter",
-        "help": "Total job log entries by status",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_job_logs",
-          "groupBy": [
-            "status"
-          ],
-          "labelDefaults": {
-            "status": "unknown"
-          }
-        }
-      },
-      {
-        "name": "mappings_total",
-        "type": "gauge",
-        "help": "Total configured mappings",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_mappings"
-        }
-      },
-      {
-        "name": "rules_total",
-        "type": "gauge",
-        "help": "Total configured rules",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_rules"
-        }
-      },
-      {
-        "name": "circuit_breaker_state",
-        "type": "gauge",
-        "help": "Per-source circuit breaker state (1=open, 0=closed) — provider escape hatch (REQ-PROM-011, retry-and-circuit-breaker-policies): needs each Source's own field value, not a row count.",
-        "source": {
-          "kind": "provider"
-        }
-      },
-      {
-        "name": "traces_total",
-        "type": "counter",
-        "help": "Total execution traces by status",
-        "source": {
-          "kind": "objectCount",
-          "register": "openconnector",
-          "schema": "execution_trace",
-          "groupBy": [
-            "status"
-          ]
-        }
-      },
-      {
-        "name": "api_product_requests_total",
-        "type": "gauge",
-        "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
-        "source": {
-          "kind": "tableCount",
-          "table": "openconnector_call_logs",
-          "groupBy": [
-            "product",
-            "status_code"
-          ],
-          "labelMap": {
-            "status_code": "status"
-          },
-          "labelDefaults": {
-            "product": "",
-            "status_code": "unknown"
-          }
-        }
-      },
-      {
-        "name": "api_product_errors_total",
-        "type": "gauge",
-        "help": "Total inbound error (statusCode>=400) requests per API Product — provider escape hatch (api-product-gateway REQ-PROM-012): a statusCode>=400 THRESHOLD is not expressible by the declarative tableCount/groupBy vocabulary (same row-level-logic limitation class as circuit_breaker_state/api_product_latency_seconds), so this is computed by OpenConnectorMetricsProvider instead of a groupBy — see lib/Observability/OpenConnectorMetricsProvider.php::apiProductErrorsSample().",
-        "source": {
-          "kind": "provider"
-        }
-      },
-      {
-        "name": "api_product_latency_seconds",
-        "type": "gauge",
-        "help": "Per-API-Product inbound response-time latency percentiles in seconds (p50/p95/p99) — provider escape hatch (api-product-gateway REQ-PROM-013, prometheus-metrics): needs sorted per-group values, not a row count.",
-        "source": {
-          "kind": "provider"
-        }
-      }
     ]
-  },
-  "menu": [
-    {
-      "id": "Dashboard",
-      "label": "Dashboard",
-      "icon": "ViewDashboardOutline",
-      "route": "Dashboard",
-      "order": 10
-    },
-    {
-      "id": "Catalog",
-      "label": "Catalog",
-      "icon": "ViewGridOutline",
-      "route": "Catalog",
-      "order": 15
-    },
-    {
-      "id": "ConnectionsGroup",
-      "label": "Connections",
-      "icon": "TransitConnectionVariant",
-      "order": 20,
-      "children": [
-        { "id": "Sources", "label": "Sources", "icon": "SourceBranch", "route": "Sources", "order": 20 },
-        { "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "Endpoints", "order": 30 },
-        { "id": "Consumers", "label": "Consumers", "icon": "AccountMultipleOutline", "route": "Consumers", "order": 40 },
-        { "id": "ApiProducts", "label": "API Products", "icon": "PackageVariantClosed", "route": "ApiProducts", "order": 45 },
-        { "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "Webhooks", "order": 50 },
-        { "id": "NotificatiesAbonnementen", "label": "Abonnementen", "icon": "BellRingOutline", "route": "NotificatiesAbonnementen", "order": 55 }
-      ]
-    },
-    {
-      "id": "AutomationGroup",
-      "label": "Automation",
-      "icon": "VectorPolylinePlus",
-      "order": 30,
-      "children": [
-        { "id": "Jobs", "label": "Jobs", "icon": "Update", "route": "Jobs", "order": 60 },
-        { "id": "Mappings", "label": "Mappings", "icon": "SwapHorizontal", "route": "Mappings", "order": 70 },
-        { "id": "Rules", "label": "Rules", "icon": "ScaleBalance", "route": "Rules", "order": 80 },
-        { "id": "Synchronizations", "label": "Synchronizations", "icon": "VectorPolylinePlus", "route": "Synchronizations", "order": 90 },
-        { "id": "CloudEvents", "label": "Cloud events", "icon": "CloudUploadOutline", "route": "CloudEvents", "order": 100 },
-        { "id": "EventDeliveries", "label": "Event deliveries", "icon": "EmailAlertOutline", "route": "EventDeliveries", "order": 110 },
-        { "id": "Approvals", "label": "Approvals", "icon": "CheckboxMarkedCircleOutline", "route": "Approvals", "order": 120 },
-        { "id": "SyncDeadLetters", "label": "Sync dead letters", "icon": "EmailAlertOutline", "route": "SyncDeadLetters", "order": 121 },
-        { "id": "Flows", "label": "Flows", "icon": "TransitConnectionVariant", "route": "Flows", "order": 122 },
-        { "id": "Traces", "label": "Traces", "icon": "Timeline", "route": "Traces", "order": 123 }
-      ]
-    },
-    {
-      "id": "Documentation",
-      "label": "Documentation",
-      "icon": "BookOpenVariantOutline",
-      "href": "https://openconnector.conduction.nl",
-      "section": "footer",
-      "order": 15
-    },
-    {
-      "id": "Settings",
-      "label": "Settings",
-      "icon": "CogOutline",
-      "route": "AppSettings",
-      "order": 20
-    },
-    {
-      "id": "FeaturesRoadmapMenu",
-      "label": "Features & roadmap",
-      "icon": "MapMarkerPath",
-      "route": "FeaturesRoadmap",
-      "section": "footer",
-      "order": 16
-    }
-  ],
-  "pages": [
-    {
-      "id": "FeaturesRoadmap",
-      "route": "/features-roadmap",
-      "type": "roadmap",
-      "title": "Features & roadmap",
-      "config": {
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "Dashboard",
-      "route": "/",
-      "type": "dashboard",
-      "title": "Dashboard",
-      "config": {
-        "dateRange": { "enabled": true, "showHeaderPicker": false, "persistKey": "openconnector-dashboard" },
-        "widgets": [
-          { "id": "kpi-sources",          "title": "Sources",          "type": "stats-block", "props": { "route": { "name": "Sources" } },                  "dataSource": { "register": "openconnector", "schema": "source",                   "aggregate": "count" } },
-          { "id": "kpi-mappings",         "title": "Mappings",         "type": "stats-block", "props": { "route": { "name": "Mappings" } },                 "dataSource": { "register": "openconnector", "schema": "mapping",                  "aggregate": "count" } },
-          { "id": "kpi-synchronizations", "title": "Synchronizations", "type": "stats-block", "props": { "route": { "name": "Synchronizations" } },         "dataSource": { "register": "openconnector", "schema": "synchronization",          "aggregate": "count" } },
-          { "id": "kpi-contracts",        "title": "Contracts",        "type": "stats-block", "props": { "route": { "name": "SynchronizationContracts" } }, "dataSource": { "register": "openconnector", "schema": "synchronization_contract", "aggregate": "count" } },
-          { "id": "kpi-jobs",             "title": "Jobs",             "type": "stats-block", "props": { "route": { "name": "Jobs" } },                     "dataSource": { "register": "openconnector", "schema": "job",                      "aggregate": "count" } },
-          { "id": "kpi-endpoints",        "title": "Endpoints",        "type": "stats-block", "props": { "route": { "name": "Endpoints" } },                "dataSource": { "register": "openconnector", "schema": "endpoint",                 "aggregate": "count" } },
-
-          { "id": "calls-daily",  "title": "Outgoing calls — daily",        "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "call_log",         "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
-          { "id": "calls-hourly", "title": "Outgoing calls — by hour",      "type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "call_log",         "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } },
-          { "id": "jobs-daily",   "title": "Job executions — daily",        "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "job_log",          "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
-          { "id": "jobs-hourly",  "title": "Job executions — by hour",      "type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "job_log",          "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } },
-          { "id": "sync-daily",   "title": "Synchronization runs — daily",  "type": "chart", "props": { "chartKind": "area" }, "dataSource": { "register": "openconnector", "schema": "synchronization_log", "bucket": { "field": "created", "interval": "day",  "fromVar": "from", "toVar": "to" } } },
-          { "id": "sync-hourly",  "title": "Synchronization runs — by hour","type": "chart", "props": { "chartKind": "bar"  }, "dataSource": { "register": "openconnector", "schema": "synchronization_log", "bucket": { "field": "created", "interval": "hour", "fromVar": "from", "toVar": "to" } } }
-        ],
-        "layout": [
-          { "id": "L1",  "widgetId": "kpi-sources",          "gridX": 0,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L2",  "widgetId": "kpi-mappings",         "gridX": 2,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L3",  "widgetId": "kpi-synchronizations", "gridX": 4,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L4",  "widgetId": "kpi-contracts",        "gridX": 6,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L5",  "widgetId": "kpi-jobs",             "gridX": 8,  "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
-          { "id": "L6",  "widgetId": "kpi-endpoints",        "gridX": 10, "gridY": 0,  "gridWidth": 2, "gridHeight": 2 },
-
-          { "id": "L7",  "widgetId": "calls-daily",          "gridX": 0,  "gridY": 2,  "gridWidth": 6, "gridHeight": 4 },
-          { "id": "L8",  "widgetId": "calls-hourly",         "gridX": 6,  "gridY": 2,  "gridWidth": 6, "gridHeight": 4 },
-          { "id": "L9",  "widgetId": "jobs-daily",           "gridX": 0,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
-          { "id": "L10", "widgetId": "jobs-hourly",          "gridX": 6,  "gridY": 6,  "gridWidth": 6, "gridHeight": 4 },
-          { "id": "L11", "widgetId": "sync-daily",           "gridX": 0,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 },
-          { "id": "L12", "widgetId": "sync-hourly",          "gridX": 6,  "gridY": 10, "gridWidth": 6, "gridHeight": 4 }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "Sources",
-      "route": "/sources",
-      "type": "index",
-      "title": "Sources",
-      "config": {
-        "register": "openconnector",
-        "schema": "source",
-        "columns": ["name", "type", "status", "isEnabled", "lastSync", "dateModified"],
-        "includeFields": ["name", "description", "type", "isEnabled", "auth", "authorizationHeader", "authenticationConfig", "apikey", "secret", "username", "password", "jwt", "jwtId", "configuration"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SourceLogs" }
-        ],
-        "showViewAction": false,
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "SourceDetail" },
-          { "id": "test", "label": "Test connection", "icon": "CheckCircleOutline", "handler": "testSourceHandler" },
-          { "id": "view-source-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      },
-      "slots": {
-        "form-fields": "SourceFormFields"
-      }
-    },
-    {
-      "id": "SourceDetail",
-      "route": "/sources/:id",
-      "type": "detail",
-      "title": "Source",
-      "config": {
-        "register": "openconnector",
-        "schema": "source",
-        "_note": "PURPOSE: A source is an external system OpenConnector calls (REST/SOAP/DB/file). This is the CONFIG/TECHNICAL archetype — an integrator lands here to check whether the connection is healthy and to triage failed calls, not to read documents. DESIGN RATIONALE: the body leads with operational data. Four KPI stats across the top (total calls, errors, avg size, objects fetched) give an at-a-glance health read; the primary body region is a recent-call-log table (child call_log filtered by source UUID = @objectId, sorted newest-first) because triaging HTTP failures is the #1 job on this page. Connection config (data, 3 columns to fit the many auth/rate-limit fields) and Related sit below/beside. NO comms leaves — a source does not email or hold meetings; the schema declares no email/calendar linkedType. Rarely-opened raw JSON blobs (paths/headers/loggingConfig) stay in the sidebar metadata, and audit-trail is a sidebar tab. ADR-062 rev3: the four health KPIs (calls, errors, objects fetched, avg payload) live in ONE in-grid stats-block top-right of the Connection core-data widget — entries[] carries per-entry metric/field so the sum (objectCount) and avg (size, raw bytes via countLabel) are expressible alongside the two counts. Registry icons; call log is read-only (allowCreate:false) with a View-all to SourceLogs.",
-        "widgets": [
-          { "id": "src-kpis-calls", "type": "stats-block", "icon": "Gauge", "title": "Calls", "content": { "entries": [
-            { "title": "Calls", "countLabel": "logged", "register": "openconnector", "schema": "call_log", "metric": "count", "filter": { "source": "@objectId" }, "route": { "name": "SourceLogs", "query": { "source": "@objectId" } } }
-          ] } },
-          { "id": "src-kpis-errors", "type": "stats-block", "icon": "Gauge", "title": "Errors", "content": { "entries": [
-            { "title": "Errors", "countLabel": ">=400", "variant": "error", "register": "openconnector", "schema": "call_log", "metric": "count", "filter": { "source": "@objectId", "statusCode": ">=400" }, "route": { "name": "SourceLogs", "query": { "source": "@objectId" } } }
-          ] } },
-          { "id": "src-kpis-objects", "type": "stats-block", "icon": "Gauge", "title": "Objects", "content": { "entries": [
-            { "title": "Objects", "countLabel": "fetched", "register": "openconnector", "schema": "source", "metric": "sum", "field": "objectCount", "filter": { "id": "@objectId" } }
-          ] } },
-          { "id": "src-kpis-payload", "type": "stats-block", "icon": "Gauge", "title": "Payload", "content": { "entries": [
-            { "title": "Payload", "countLabel": "bytes (avg)", "register": "openconnector", "schema": "call_log", "metric": "avg", "field": "size", "filter": { "source": "@objectId" } }
-          ] } },
-          { "id": "src-calls",   "type": "object-list", "icon": "Timeline", "title": "Recent calls", "content": { "register": "openconnector", "schema": "call_log", "filter": { "source": "@objectId" }, "sort": { "created": "desc" }, "columns": [ { "key": "created", "label": "When" }, { "key": "statusCode", "label": "Status" }, { "key": "statusMessage", "label": "Message" }, { "key": "size", "label": "Size" } ], "limit": 25, "allowCreate": false, "rowRoute": "SourceLogs", "viewAllRoute": "SourceLogs", "viewAllQuery": { "source": "@objectId" }, "emptyText": "No calls logged for this source yet." } },
-          { "id": "src-data",    "type": "data", "icon": "DatabaseOutline", "title": "Connection", "content": { "columns": 3 } },
-          { "id": "src-related", "type": "related", "icon": "LinkVariant", "title": "Used by" }
-        ],
-        "layout": [
-          { "id": "1", "widgetId": "src-data",    "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 6 },
-          { "id": "2a", "widgetId": "src-kpis-calls",   "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 2 },
-          { "id": "2b", "widgetId": "src-kpis-errors",  "gridX": 8, "gridY": 2, "gridWidth": 4, "gridHeight": 2 },
-          { "id": "2c", "widgetId": "src-kpis-objects", "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 2 },
-          { "id": "2d", "widgetId": "src-kpis-payload", "gridX": 8, "gridY": 6, "gridWidth": 4, "gridHeight": 2 },
-          { "id": "3", "widgetId": "src-calls",   "gridX": 0, "gridY": 8, "gridWidth": 8, "gridHeight": 6 },
-          { "id": "4", "widgetId": "src-related", "gridX": 8, "gridY": 8, "gridWidth": 4, "gridHeight": 6 }
-        ],
-        "bodyWidgets": [
-          { "id": "src-circuit-breaker", "component": "CircuitBreakerBadge", "title": "Circuit breaker", "placement": "before-body", "colSpan": 12 }
-        ],
-        "sidebar": {
-          "enabled": true,
-          "showMetadata": true,
-          "tabs": [
-            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
-          ]
-        },
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "SourceLogs",
-      "route": "/sources/logs",
-      "type": "logs",
-      "title": "Source logs",
-      "config": {
-        "register": "openconnector",
-        "schema": "call_log"
-      }
-    },
-    {
-      "id": "Endpoints",
-      "route": "/endpoints",
-      "type": "index",
-      "title": "Endpoints",
-      "config": {
-        "register": "openconnector",
-        "schema": "endpoint",
-        "columns": ["name", "method", "endpoint", "targetType", "updated"],
-        "includeFields": ["name", "description", "endpoint", "method", "targetType"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "EndpointLogs" }
-        ],
-        "showViewAction": false,
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "EndpointDetail" },
-          { "id": "add-rule", "label": "Add rule", "icon": "Plus", "handler": "addEndpointRuleHandler" },
-          { "id": "view-endpoint-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "EndpointDetail",
-      "route": "/endpoints/:id",
-      "type": "detail",
-      "title": "Endpoint",
-      "config": {
-        "register": "openconnector",
-        "schema": "endpoint",
-        "_note": "PURPOSE: An endpoint is an inbound route OpenConnector exposes (path + HTTP method) that maps requests onto a target (register/schema/source/job) via input/output mappings and attached rules. CONFIG/TECHNICAL archetype. DESIGN RATIONALE: unlike a source, an endpoint has NO child log table with an endpoint foreign key (call_log keys on source/synchronization, not endpoint), so there is no runs list to surface — the operational payload IS the routing configuration. The body therefore leads with a wide config panel (data, 2 columns) exposing path/regex, method, targetType/targetId and the input/output mapping references, with a Related panel beside it so the integrator can jump to the mappings and target this endpoint wires together. NO comms leaves — an endpoint routes HTTP, it does not communicate; the schema declares no email/calendar linkedType. The verbose conditions[]/rules[]/endpointArray JSON stays reachable in sidebar metadata; audit-trail is a sidebar tab.",
-        "widgets": [
-          { "id": "ep-data",    "type": "data", "icon": "SourceBranch", "title": "Route & mapping", "content": { "columns": 2 } },
-          { "id": "ep-related", "type": "related", "icon": "LinkVariant", "title": "Wired to" }
-        ],
-        "layout": [
-          { "id": "1", "widgetId": "ep-data",    "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 7 },
-          { "id": "2", "widgetId": "ep-related", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 7 }
-        ],
-        "sidebar": {
-          "enabled": true,
-          "showMetadata": true,
-          "tabs": [
-            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
-          ]
-        },
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "EndpointLogs",
-      "route": "/endpoints/logs",
-      "type": "logs",
-      "title": "Endpoint logs",
-      "config": {
-        "register": "openconnector",
-        "schema": "call_log"
-      }
-    },
-    {
-      "id": "Consumers",
-      "route": "/consumers",
-      "type": "index",
-      "title": "Consumers",
-      "config": {
-        "register": "openconnector",
-        "schema": "consumer",
-        "columns": ["name", "authorizationType", "domains", "updated"],
-        "includeFields": ["name", "description", "authorizationType"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "showViewAction": false,
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "ConsumerDetail" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "ConsumerDetail",
-      "route": "/consumers/:id",
-      "type": "detail",
-      "title": "Consumer",
-      "config": {
-        "register": "openconnector",
-        "schema": "consumer",
-        "_note": "PURPOSE: A consumer is an external client authorised to call OpenConnector (auth type + allowed domains/IPs). CONFIG/TECHNICAL archetype. DESIGN RATIONALE: the two things an admin does here are (1) confirm the access policy and (2) see what this consumer has actually been sent. The body pairs a compact access-config panel (data, 2 columns: authorizationType, domains, ips) with a Related panel, then leads the lower body with an event-delivery table — event_message rows filtered by the consumer UUID (@objectId), newest-first, showing status/retries/last-attempt — because delivery health is the operational signal for a subscribed consumer. Two KPI stats (deliveries, failed) sit up top. NO comms leaves — a consumer is a machine client, not a person; the schema declares no email/calendar linkedType. Audit-trail is a sidebar tab. ADR-062 rev3: deliveries+failed are ONE in-grid stats-block (entries[]) top-right of the access-policy core-data widget, each entry deep-linking into EventDeliveries filtered on this consumer. event_message list is read-only (allowCreate:false) with a View-all to EventDeliveries; registry icons.",
-        "widgets": [
-          { "id": "con-kpis-deliveries", "type": "stats-block", "icon": "Gauge", "title": "Deliveries", "content": { "entries": [
-            { "title": "Deliveries", "countLabel": "events sent", "register": "openconnector", "schema": "event_message", "metric": "count", "filter": { "consumer": "@objectId" }, "route": { "name": "EventDeliveries", "query": { "consumer": "@objectId" } } }
-          ] } },
-          { "id": "con-kpis-failed", "type": "stats-block", "icon": "Gauge", "title": "Failed", "content": { "entries": [
-            { "title": "Failed", "countLabel": "dead-letter", "variant": "error", "register": "openconnector", "schema": "event_message", "metric": "count", "filter": { "consumer": "@objectId", "status": "failed" }, "route": { "name": "EventDeliveries", "query": { "consumer": "@objectId", "status": "failed" } } }
-          ] } },
-          { "id": "con-data",    "type": "data", "icon": "ShieldCheckOutline", "title": "Access policy", "content": { "columns": 2 } },
-          { "id": "con-subscriptions", "type": "object-list", "icon": "PackageVariantClosed", "title": "API Product subscriptions", "content": { "register": "openconnector", "schema": "api_product_subscription", "filter": { "consumer": "@objectId" }, "sort": { "createdAt": "desc" }, "columns": [ { "key": "product", "label": "Product" }, { "key": "tier", "label": "Tier" }, { "key": "status", "label": "Status" } ], "limit": 25, "allowCreate": false, "rowRoute": "ApiProductDetail", "emptyText": "This consumer has no API Product subscriptions yet." } },
-          { "id": "con-deliveries", "type": "object-list", "icon": "Email", "title": "Recent deliveries", "content": { "register": "openconnector", "schema": "event_message", "filter": { "consumer": "@objectId" }, "sort": { "created": "desc" }, "columns": [ { "key": "created", "label": "When" }, { "key": "status", "label": "Status" }, { "key": "retryCount", "label": "Retries" }, { "key": "lastAttempt", "label": "Last attempt" } ], "limit": 25, "allowCreate": false, "rowRoute": "EventDeliveries", "viewAllRoute": "EventDeliveries", "viewAllQuery": { "consumer": "@objectId" }, "emptyText": "No event deliveries to this consumer yet." } }
-        ],
-        "layout": [
-          { "id": "1", "widgetId": "con-data",       "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 4 },
-          { "id": "2a", "widgetId": "con-kpis-deliveries", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 2 },
-          { "id": "2b", "widgetId": "con-kpis-failed",     "gridX": 8, "gridY": 2, "gridWidth": 4, "gridHeight": 2 },
-          { "id": "3", "widgetId": "con-deliveries", "gridX": 0, "gridY": 4, "gridWidth": 8, "gridHeight": 6 },
-          { "id": "4", "widgetId": "con-subscriptions", "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 6 }
-        ],
-        "sidebar": {
-          "enabled": true,
-          "showMetadata": true,
-          "tabs": [
-            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
-          ]
-        },
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "ApiProducts",
-      "route": "/products",
-      "type": "index",
-      "title": "API Products",
-      "_note": "PURPOSE: an api_product is a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier (api-product-gateway REQ-APG-001/002). Plain generic index — browsing/create/delete needs no bespoke chrome; the endpoint picker, tier editor, analytics panel, and subscription approve/reject actions all live on the custom ApiProductDetail page instead (design.md/discovery.md: 'a plain index for browsing').",
-      "config": {
-        "register": "openconnector",
-        "schema": "api_product",
-        "columns": ["name", "productSlug", "version", "status", "visibility", "updated"],
-        "includeFields": ["name", "description", "productSlug", "version", "visibility", "status", "sunsetDate", "defaultTier"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "showViewAction": false,
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "ApiProductDetail" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "ApiProductDetail",
-      "route": "/products/:id",
-      "type": "custom",
-      "component": "ApiProductDetail",
-      "_note": "Custom detail page for one api_product: endpoint picker (add/remove existing Endpoints), named-tier editor (rateLimit/quota/requiresApproval/approverGroup), the gateway analytics panel (request count, error rate, p50/p95/p99 latency via GET /api/products/{id}/analytics), and pending subscriptions with approve/reject actions — a generic OR CRUD detail page can't express any of these (api-product-gateway REQ-APG-002/007, design.md 'it will be custom, mirroring ApprovalDetail').",
-      "title": "API Product",
-      "config": {
-        "register": "openconnector",
-        "schema": "api_product",
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "Webhooks",
-      "route": "/webhooks",
-      "type": "index",
-      "title": "Webhooks",
-      "_note": "A webhook is an EventSubscription with a delivery sink URL (push/pull). The register has no separate 'webhook' schema — per ADR-013 the EventSubscription entity (sink + protocol + style) IS the webhook. addLabel overrides the schema-title-derived default so the create button reads 'Add Webhook' rather than 'Add EventSubscription'.",
-      "config": {
-        "register": "openconnector",
-        "schema": "event_subscription",
-        "addLabel": "Add Webhook",
-        "columns": ["sink", "protocol", "style", "status", "updated"],
-        "includeFields": ["source", "types", "sink", "protocol", "style", "status"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "actions": [
-          { "id": "manage-signing", "label": "Webhook signing", "icon": "ShieldKeyOutline", "handler": "manageSigningHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      },
-      "slots": {
-        "form-fields": "SubscriptionActionFields"
-      }
-    },
-    {
-      "id": "NotificatiesAbonnementen",
-      "route": "/notificaties/abonnementen",
-      "type": "custom",
-      "component": "NotificatiesAbonnementenPage",
-      "title": "Abonnementen",
-      "_note": "Custom page: abonnement CRUD backed by the dedicated NotificatiesSubscriberController endpoints (create/update/delete also register/update/delete against the remote ZGW Notificaties API and provision/cascade-delete a companion consumer) — not the generic OR object CRUD a CnIndexPage drives. See notificaties-api-subscriber REQ-008.",
-      "config": {
-        "register": "openconnector",
-        "schema": "notificaties_abonnement",
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "Jobs",
-      "route": "/jobs",
-      "type": "index",
-      "title": "Jobs",
-      "config": {
-        "register": "openconnector",
-        "schema": "job",
-        "columns": ["name", "jobClass", "interval", "isEnabled", "lastRun", "status"],
-        "includeFields": ["name", "description", "jobClass", "arguments", "interval", "isEnabled"],
-        "fieldOverrides": {
-          "arguments": { "widget": "json" }
-        },
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "JobLogs" }
-        ],
-        "actions": [
-          { "id": "run", "label": "Run now", "icon": "PlayOutline", "handler": "runJobHandler" },
-          { "id": "test", "label": "Test (dry run)", "icon": "CheckCircleOutline", "handler": "testJobHandler" },
-          { "id": "view-job-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      },
-      "slots": {
-        "form-fields": "JobFormFields"
-      }
-    },
-    {
-      "id": "JobLogs",
-      "route": "/jobs/logs",
-      "type": "logs",
-      "title": "Job logs",
-      "config": {
-        "register": "openconnector",
-        "schema": "job_log"
-      }
-    },
-    {
-      "id": "Mappings",
-      "route": "/mappings",
-      "type": "index",
-      "title": "Mappings",
-      "config": {
-        "register": "openconnector",
-        "schema": "mapping",
-        "columns": ["name", "description", "passThrough", "dateModified"],
-        "includeFields": ["name", "description"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "showViewAction": false,
-        "showEditAction": false,
-        "exportFormats": [
-          { "id": "json", "label": "JSON (.json)" },
-          { "id": "excel", "label": "Excel (.xlsx)" },
-          { "id": "csv", "label": "CSV (.csv)" }
-        ],
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "MappingDetail" },
-          { "id": "edit", "label": "Edit", "icon": "Pencil", "handler": "navigate", "route": "MappingDetail" },
-          { "id": "test", "label": "Test mapping", "icon": "CheckCircleOutline", "handler": "testMappingModalHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "MappingDetail",
-      "route": "/mappings/:id",
-      "type": "custom",
-      "component": "MappingDetailPage",
-      "_note": "Custom page: the mapping editor is a bespoke 3-tab rules editor (mapping/cast/unset rules with drag-reorder + per-rule dialogs) that the generic detail page cannot express.",
-      "title": "Mapping",
-      "config": {
-        "register": "openconnector",
-        "schema": "mapping"
-      }
-    },
-    {
-      "id": "Rules",
-      "route": "/rules",
-      "type": "index",
-      "title": "Rules",
-      "config": {
-        "register": "openconnector",
-        "schema": "rule",
-        "columns": ["name", "action", "timing", "type", "order"],
-        "includeFields": ["name", "description", "action", "timing", "type"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "showViewAction": false,
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "RuleDetail" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "RuleDetail",
-      "route": "/rules/:id",
-      "type": "custom",
-      "component": "RuleDetailPage",
-      "_note": "Custom page: the rule editor renders condition/action configuration with type-specific forms (mapping, error, sync, fetch-extra, write-back) beyond the generic detail page.",
-      "title": "Rule",
-      "config": {
-        "register": "openconnector",
-        "schema": "rule"
-      }
-    },
-    {
-      "id": "Synchronizations",
-      "route": "/synchronizations",
-      "type": "index",
-      "title": "Synchronizations",
-      "config": {
-        "register": "openconnector",
-        "schema": "synchronization",
-        "columns": ["name", "sourceType", "targetType", "status", "sourceLastSynced"],
-        "includeFields": ["name", "description", "sourceType", "targetType"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "showViewAction": false,
-        "rowAction": { "id": "edit", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
-        "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "SynchronizationLogs" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "EyeOutline", "type": "open-page", "target": "SynchronizationContracts" }
-        ],
-        "actions": [
-          { "id": "edit", "label": "Open editor", "icon": "PencilOutline", "handler": "navigate", "route": "SynchronizationDetail", "params": { "id": "{id}" } },
-          { "id": "run", "label": "Run now", "icon": "PlayOutline", "handler": "runSynchronizationHandler" },
-          { "id": "test", "label": "Test (dry run)", "icon": "CheckCircleOutline", "handler": "testSynchronizationHandler" },
-          { "id": "view-synchronization-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" },
-          { "id": "view-contracts", "label": "View contracts", "icon": "EyeOutline", "type": "open-page", "target": "SynchronizationContracts" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "SynchronizationContracts",
-      "route": "/synchronizations/contracts",
-      "type": "index",
-      "title": "Contracts",
-      "config": {
-        "register": "openconnector",
-        "schema": "synchronization_contract",
-        "columns": ["synchronization", "originId", "targetId", "sourceLastSynced", "updated"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "SynchronizationLogs",
-      "route": "/synchronizations/logs",
-      "type": "logs",
-      "title": "Synchronization logs",
-      "config": {
-        "register": "openconnector",
-        "schema": "synchronization_log"
-      }
-    },
-    {
-      "id": "SynchronizationDetail",
-      "route": "/synchronizations/:id",
-      "type": "custom",
-      "title": "Synchronization",
-      "component": "SynchronizationDetailPage",
-      "_note": "Custom page: the synchronization editor composes source/target mapping, conditions, follow-ups and run/test controls that the generic detail page cannot express.",
-      "config": {
-        "register": "openconnector",
-        "schema": "synchronization"
-      }
-    },
-    {
-      "id": "CloudEvents",
-      "route": "/cloud-events/events",
-      "type": "index",
-      "title": "Cloud events",
-      "config": {
-        "register": "openconnector",
-        "schema": "event",
-        "columns": ["source", "type", "subject", "status", "time"],
-        "includeFields": ["source", "type", "subject", "data"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "headerActions": [
-          { "id": "view-logs", "label": "View logs", "icon": "TextBoxOutline", "type": "open-page", "target": "CloudEventLogs" }
-        ],
-        "showViewAction": false,
-        "actions": [
-          { "id": "view", "label": "View", "icon": "EyeOutline", "handler": "navigate", "route": "CloudEventDetail" },
-          { "id": "view-cloud-event-logs", "label": "View logs", "icon": "TextBoxOutline", "handler": "viewLogsHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "CloudEventDetail",
-      "route": "/cloud-events/events/:id",
-      "type": "detail",
-      "title": "Cloud event",
-      "config": {
-        "register": "openconnector",
-        "schema": "event",
-        "_note": "PURPOSE: A CloudEvent is an immutable event record (CloudEvents 1.0 envelope: source/type/subject/specversion + a data payload) that fans out to subscribed consumers. CONFIG/TECHNICAL, read-only archetype — you inspect what happened and where it went, you do not edit it. DESIGN RATIONALE: the body leads with the CloudEvent envelope (data, 2 columns: source/type/subject/time/status) since that is the record itself, then the operational answer to 'was this delivered?' — an event_message table filtered by the event UUID (@objectId) showing each consumer delivery, status and retry count, newest-first. The `data` payload JSON is the second question, so it stays within the data widget (which renders the data field) and the object metadata rather than crowding the body; Related sits beside the envelope. NO comms leaves — a CloudEvent is a technical message record, not a person; the schema declares no email/calendar linkedType and no files are attached.",
-        "widgets": [
-          { "id": "evt-data",    "type": "data", "icon": "Bell", "title": "CloudEvent", "content": { "columns": 2 } },
-          { "id": "evt-related", "type": "related", "icon": "LinkVariant", "title": "Related" },
-          { "id": "evt-deliveries", "type": "object-list", "icon": "Email", "title": "Deliveries", "content": { "register": "openconnector", "schema": "event_message", "filter": { "event": "@objectId" }, "sort": { "created": "desc" }, "columns": [ { "key": "consumer", "label": "Consumer" }, { "key": "status", "label": "Status" }, { "key": "retryCount", "label": "Retries" }, { "key": "lastAttempt", "label": "Last attempt" } ], "limit": 25, "allowCreate": false, "rowRoute": "EventDeliveries", "viewAllRoute": "EventDeliveries", "viewAllQuery": { "event": "@objectId" }, "emptyText": "No deliveries recorded for this event yet." } }
-        ],
-        "layout": [
-          { "id": "1", "widgetId": "evt-data",       "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 5 },
-          { "id": "2", "widgetId": "evt-related",    "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 5 },
-          { "id": "3", "widgetId": "evt-deliveries", "gridX": 0, "gridY": 5, "gridWidth": 12, "gridHeight": 6 }
-        ],
-        "sidebar": {
-          "enabled": true,
-          "showMetadata": true,
-          "tabs": [
-            { "id": "audit", "label": "Audit trail", "icon": "History", "widgets": [ { "type": "audit" } ] }
-          ]
-        },
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "CloudEventLogs",
-      "route": "/cloud-events/logs",
-      "type": "logs",
-      "title": "Cloud event logs",
-      "config": {
-        "register": "openconnector",
-        "schema": "call_log"
-      }
-    },
-    {
-      "id": "EventDeliveries",
-      "route": "/cloud-events/deliveries",
-      "type": "custom",
-      "component": "EventDeliveriesPage",
-      "_note": "Custom page: dead-letter operations view over event_message (failed/abandoned by default) backed by the admin-only /api/events/dead-letter endpoints with per-row + bulk Replay/Discard and a detail modal. Not expressible as a generic CnIndexPage.",
-      "title": "Event deliveries",
-      "config": {
-        "register": "openconnector",
-        "schema": "event_message",
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "Approvals",
-      "route": "/approvals",
-      "type": "custom",
-      "component": "ApprovalsIndex",
-      "_note": "Custom page: HITL Pending Approvals operations view over approval_request, backed by the two-layer-authorized /api/approvals endpoint (returns only caller-actionable rows) with a status filter and per-row navigation into a detail page whose Approve/Reject verbs hit /api/approvals/{id}/approve|reject. Not the generic OR CRUD a CnIndexPage drives. Mirrors EventDeliveries.",
-      "title": "Approvals",
-      "config": {
-        "register": "openconnector",
-        "schema": "approval_request",
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "SyncDeadLetters",
-      "route": "/synchronizations/dead-letters",
-      "type": "custom",
-      "component": "SyncDeadLetterPage",
-      "_note": "Custom page: sync-item dead-letter operations view over sync_item_dead_letter (failed by default) backed by the admin-only /api/sync-dead-letter endpoints with per-row + bulk Replay/Discard and a detail modal. Mirrors EventDeliveries; not expressible as a generic CnIndexPage. See retry-and-circuit-breaker-policies (REQ-DLR-007..012).",
-      "title": "Sync dead letters",
-      "config": {
-        "register": "openconnector",
-        "schema": "sync_item_dead_letter",
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "Flows",
-      "route": "/flows",
-      "type": "index",
-      "title": "Flows",
-      "config": {
-        "register": "openconnector",
-        "schema": "flow",
-        "columns": ["name", "isEnabled", "description"],
-        "includeFields": ["name", "description"],
-        "sidebar": { "enabled": true, "showMetadata": true },
-        "rowAction": { "id": "edit", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
-        "actions": [
-          { "id": "edit", "label": "Open editor", "icon": "PencilOutline", "handler": "navigate", "route": "FlowDetail", "params": { "id": "{id}" } },
-          { "id": "run", "label": "Run now", "icon": "PlayOutline", "handler": "runFlowHandler" }
-        ],
-        "documentationUrl": "https://openconnector.conduction.nl"
-      }
-    },
-    {
-      "id": "FlowDetail",
-      "route": "/flows/:id",
-      "type": "custom",
-      "title": "Flow",
-      "component": "FlowDetailPage",
-      "_note": "Custom page: the ordered, reorderable step-list editor (typed rows: type/configRef/condition/onError, plus branch sub-targets) and the manual Run action + run-log tab cannot be expressed by the generic detail page. See visual-flow-orchestration REQ-009. No separate Edit modal — flow metadata (name/description/isEnabled) is edited inline on this page, matching the current RuleDetailPage/SynchronizationDetailPage/MappingDetailPage convention (the legacy src/modals/<Entity>/Edit*.vue modal pattern design.md referenced is unwired dead code post chain-C, per src/handlers/actionHandlers.js's own docblock).",
-      "config": {
-        "register": "openconnector",
-        "schema": "flow"
-      }
-    },
-    {
-      "id": "ApprovalDetail",
-      "route": "/approvals/:id",
-      "type": "custom",
-      "component": "ApprovalDetail",
-      "_note": "Custom detail page for one approval_request with Approve/Reject actions (reject requires a comment). See hitl-approval-rule-action.",
-      "title": "Approval request",
-      "config": {
-        "register": "openconnector",
-        "schema": "approval_request"
-      }
-    },
-    {
-      "id": "Traces",
-      "route": "/traces",
-      "type": "logs",
-      "title": "Traces",
-      "_note": "execution-trace-observability REQ-007: follows the SourceLogs/EndpointLogs/CloudEventLogs `type: logs` precedent — a generic list over execution_trace with server-derived entryPoint/status filters and pagination. Row navigation opens TraceDetail (a custom page — the step timeline and Replay action are not expressible as a generic logs row).",
-      "config": {
-        "register": "openconnector",
-        "schema": "execution_trace",
-        "detailRoute": "TraceDetail"
-      }
-    },
-    {
-      "id": "TraceDetail",
-      "route": "/traces/:id",
-      "type": "custom",
-      "component": "TraceDetailPage",
-      "_note": "Custom detail page: renders one execution_trace's ordered step timeline (type/duration/status per step, expandable redacted input/output) and a Replay action (dry-run preview shown first; a separate confirmation step is required before a forced replay). Not expressible as a generic detail page — mirrors ApprovalDetail's custom-detail-for-a-custom-verb pattern.",
-      "title": "Trace",
-      "config": {
-        "register": "openconnector",
-        "schema": "execution_trace"
-      }
-    },
-    {
-      "id": "Catalog",
-      "route": "/catalog",
-      "type": "index",
-      "title": "Catalog",
-      "_note": "connector-catalog-ui: browsable card grid of every real, already-shipped connector adapter, seeded source template and importable configuration template, backed by the catalog_item schema materialised by lib/Repair/MaterializeCatalogItems.php. Standard type:index in viewMode:cards (the openbuild VirtualApps / softwarecatalog Organisaties precedent) — NO custom page, NO nextcloud-vue change. Cards are read-only metadata (no credentials); the Enable/Instantiate action lives in the CatalogItemDetailDialog opened via the card, gated by ADR-023 catalog.instantiate + the source schema's data-layer admin lock.",
-      "config": {
-        "register": "openconnector",
-        "schema": "catalog_item",
-        "viewMode": "cards",
-        "cardComponent": "CatalogItemCard",
-        "columns": [
-          "name",
-          "category",
-          "kind",
-          "status"
-        ],
-        "showAdd": false,
-        "showViewAction": false,
-        "selectable": false,
-        "quickFilters": [
-          {
-            "label": "All",
-            "filter": {},
-            "default": true
-          },
-          {
-            "label": "Adapters",
-            "filter": {
-              "kind": "adapter"
-            },
-            "icon": "PowerPlugOutline"
-          },
-          {
-            "label": "Source templates",
-            "filter": {
-              "kind": "source-template"
-            },
-            "icon": "DatabaseArrowLeftOutline"
-          },
-          {
-            "label": "Configuration templates",
-            "filter": {
-              "kind": "configuration-template"
-            },
-            "icon": "FileCogOutline"
-          }
-        ],
-        "headerActions": [
-          {
-            "id": "export-configuration",
-            "label": "Export configuration",
-            "icon": "Download",
-            "handler": "openConfigurationExportHandler"
-          },
-          {
-            "id": "import-configuration",
-            "label": "Import configuration",
-            "icon": "Upload",
-            "handler": "openConfigurationImportHandler"
-          }
-        ],
-        "sidebar": {
-          "enabled": true,
-          "showMetadata": false
-        },
-        "documentationUrl": "https://openconnector.conduction.nl",
-        "_configurationUiNote": "REQ-006/007/008 Configuration import/export UI actions live here as header actions (ExportConfigurationDialog / ImportPreviewDialog) rather than on a bespoke Configurations index page: OR Configuration groups are a NATIVE OR table (lib/Db/Configuration.php) served by /apps/openregister/api/configurations, not an object register/schema, so a type:index page cannot back them — and a type:custom page is exactly what this change avoids (custom-widget-ratchet)."
-      }
-    },
-    {
-      "id": "AppSettings",
-      "route": "/settings",
-      "type": "settings",
-      "title": "Settings"
-    }
-  ]
 }
