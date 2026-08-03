@@ -14,11 +14,11 @@
 		<NcSelect
 			data-testid="action-form-mapping"
 			:aria-label-combobox="t('openconnector', 'Mapping')"
-			:value="selected"
+			:model-value="selected"
 			:options="options"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@input="onPick" />
+			@update:model-value="onPick" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'Pick the mapping that will transform the request/response body.') }}
 		</span>

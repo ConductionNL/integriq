@@ -23,13 +23,13 @@
 		<NcSelect
 			:input-id="inputId"
 			:input-label="inputLabel"
-			:value="selectedOptions"
+			:model-value="selectedOptions"
 			:options="options"
 			:loading="loading"
 			multiple
 			closeable-chips
 			:placeholder="placeholder"
-			@input="onChange" />
+			@update:model-value="onChange" />
 
 		<p v-if="!selectedOptions.length" class="sync-ref-list__empty">
 			{{ emptyLabel }}
