@@ -49,6 +49,25 @@ jobs:
       enable-phpmetrics: true
       enable-frontend: true
       enable-eslint: true
+      # `enable-phpunit` defaults to FALSE in the shared workflow, and this
+      # caller never set it — so the PHPUnit job was disabled outright and its
+      # 2094 unit tests (255 files under tests/Unit) had never run in CI. The
+      # job still appeared in the checks list, reported `skipped`, and rendered
+      # as `PHPUnit (PHP ${{ matrix.php-version }}, NC ${{ matrix.nextcloud-ref }})`
+      # with the placeholders unexpanded — GitHub evaluates a matrix job's `if:`
+      # before expanding the matrix, so a disabled job is indistinguishable at a
+      # glance from a repo that simply has no PHP tests.
+      #
+      # No matrix input is needed: `php-test-versions` and `nextcloud-test-refs`
+      # both carry non-empty defaults ('["8.3","8.4"]' / '["stable31","stable32"]')
+      # in the callee, which pipelinq demonstrates by omitting both and still
+      # expanding to four legs. This one boolean is the whole fix.
+      #
+      # The suite is offline-safe and bare-environment safe: tests/bootstrap.php
+      # registers OCP/NCU from the nextcloud/ocp dev dependency and stubs
+      # Doctrine\DBAL + OCA\OpenRegister, and phpunit.xml scopes the run to
+      # tests/Unit (the Integration/ suites that need a live server are not in it).
+      enable-phpunit: true
       # Integration + E2E run against a live Nextcloud server with OR
       # checked out as an additional app (collections + journeys exercise
       # /index.php/apps/openregister/api/objects/openconnector/*).
