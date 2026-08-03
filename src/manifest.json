@@ -344,7 +344,7 @@
             "id": "FeaturesRoadmap",
             "route": "/features-roadmap",
             "type": "roadmap",
-            "title": "Features & roadmap",
+            "title": "Features and roadmap",
             "config": {
                 "documentationUrl": "https://openconnector.conduction.nl"
             }
