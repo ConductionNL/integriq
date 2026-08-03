@@ -86,6 +86,11 @@
                      class_exists() guard in Application::registerFlowNodes() is for. The
                      same three files are already excluded from PHPStan for this reason. -->
                 <referencedClass name="OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent"/>
+                <!-- Same reasoning for mapping: the engine is OpenRegister's and this app
+                     only CONTRIBUTES the three functions needing its own services. The
+                     addServiceListener registration is lazy, so the class is never touched
+                     on an instance without OpenRegister. -->
+                <referencedClass name="OCA\OpenRegister\Service\RegisterMappingFunctionsEvent"/>
                 <referencedClass name="OCA\OpenRegister\Service\Flow\IFlowNode"/>
                 <!-- Used by the MaterializeCatalogItems repair step to run a write as the
                      system operator; resolved from OpenRegister at runtime. -->
