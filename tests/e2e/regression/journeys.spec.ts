@@ -122,21 +122,30 @@ async function createViaUi(
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
 	// Fill `name` first; every openconnector schema exposes a top-level
-	// `name` field as the title. CnFormDialog renders one NcTextField per
-	// schema property with the label slot rendering ` <property> <required-marker> `
-	// — NcTextField surrounds the property name with whitespace and appends
-	// `*` for required fields, so the actual label text reads ` name * `.
-	// Match via regex (start-of-string + required marker + end-of-string)
-	// so we don't pick up other fields like `authorizationHeader` or
-	// `lastSync` that contain "name" as a substring of their description.
+	// `name` field as the title.
+	//
+	// ⚠️ KEYS HERE ARE RENDERED LABELS, NOT PROPERTY NAMES. CnFormDialog
+	// labels each NcTextField from the schema property's `title`, falling back
+	// to the property name, and appends ` *` for required fields. That is
+	// invisible for most fields because their title is just the capitalised
+	// property name (`name` → "Name", which the case-insensitive match below
+	// still finds) — but the endpoint schema titles `endpoint` as "Endpoint
+	// Path" and `method` as "HTTP Method". J4 passed `endpoint` / `method` and
+	// failed with `endpoint input for Endpoint must be present in
+	// CnFormDialog`: the input was there, under a label the regex could not
+	// match.
+	//
+	// The anchored regex (start + optional required marker + end) is
+	// deliberate: an unanchored "name" would also match `authorizationHeader`
+	// and `lastSync`, whose descriptions contain the word.
 	const fields: Record<string, string> = { name, ...extraFields }
-	for (const [propName, value] of Object.entries(fields)) {
+	for (const [fieldLabel, value] of Object.entries(fields)) {
 		// Required marker may or may not be there depending on the schema.
-		const labelRegex = new RegExp(`^\\s*${propName}\\s*\\*?\\s*$`, 'i')
+		const labelRegex = new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i')
 		const field = dialog.getByLabel(labelRegex)
 		await expect(
 			field,
-			`${propName} input for ${schemaTitle} must be present in CnFormDialog`,
+			`"${fieldLabel}" input for ${schemaTitle} must be present in CnFormDialog`,
 		).toBeVisible({ timeout: 10_000 })
 		// pressSequentially + Tab fires the same keyboard / blur events
 		// the user does — Vue's reactive form validation marks the field
@@ -593,9 +602,12 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 		// 'method'] — CnFormDialog keeps Create disabled until each
 		// required field is touched-and-valid. The other three journeys
 		// only require `name`, so they slip through with the default.
+		// Keys are the labels CnFormDialog renders, which come from each
+		// property's schema `title` — `endpoint` is titled "Endpoint Path" and
+		// `method` "HTTP Method". Passing the property names found no input.
 		const id = await createViaUi(page, 'endpoint', 'Endpoint', name, {
-			endpoint: '/pw-j4-endpoint',
-			method: 'GET',
+			'Endpoint Path': '/pw-j4-endpoint',
+			'HTTP Method': 'GET',
 		})
 		await deleteViaApi(page, 'endpoint', name, id)
 	})
