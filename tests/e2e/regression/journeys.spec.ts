@@ -482,7 +482,11 @@ test.describe('UI journey J1 — visually create a Source; assert row in list', 
 
 	test('Add Source → Create → row appears in OR list response', async ({ page }) => {
 		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		// HASH-mode router (src/main.js `mode: 'hash'`): the route must be a
+		// hash fragment. A path-form deep-link (`${base}/sources`) is ignored
+		// by the router and silently lands on the Dashboard, so the journey
+		// would assert against the wrong page.
+		await page.goto(`${base}/#/sources`, { waitUntil: 'domcontentloaded' })
 		const id = await createViaUi(page, 'source', 'Source', name)
 		// Cleanup via API — test focus is the create flow.
 		await deleteViaApi(page, 'source', name, id)
@@ -494,7 +498,7 @@ test.describe('UI journey J2 — visually create a Mapping; assert row in list',
 
 	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
 		const base = await resolveAppBase(page)
-		await page.goto(`${base}/mappings`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${base}/#/mappings`, { waitUntil: 'domcontentloaded' })
 		const id = await createViaUi(page, 'mapping', 'Mapping', name)
 		await deleteViaApi(page, 'mapping', name, id)
 	})
@@ -505,7 +509,7 @@ test.describe('UI journey J3 — visually create a Synchronization; assert row i
 
 	test('Add Synchronization → Create → row appears in OR list response', async ({ page }) => {
 		const base = await resolveAppBase(page)
-		await page.goto(`${base}/synchronizations`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${base}/#/synchronizations`, { waitUntil: 'domcontentloaded' })
 		const id = await createViaUi(page, 'synchronization', 'Synchronization', name)
 		await deleteViaApi(page, 'synchronization', name, id)
 	})
@@ -516,7 +520,7 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 
 	test('Add Endpoint → Create → row appears in OR list response', async ({ page }) => {
 		const base = await resolveAppBase(page)
-		await page.goto(`${base}/endpoints`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${base}/#/endpoints`, { waitUntil: 'domcontentloaded' })
 		// Endpoint schema's `required` list is ['name', 'endpoint',
 		// 'method'] — CnFormDialog keeps Create disabled until each
 		// required field is touched-and-valid. The other three journeys
@@ -535,7 +539,7 @@ test.describe('UI journey J5 — edit a Source via row Actions → Edit; mass-de
 
 	test('create row → edit description via Actions → Save → description visible', async ({ page }) => {
 		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${base}/#/sources`, { waitUntil: 'domcontentloaded' })
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await editViaUi(page, 'source', name, newDescription)
 		// Cleanup via UI mass-delete to exercise that code path,
@@ -549,7 +553,7 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 
 	test('create row → single-delete via Actions → row gone', async ({ page }) => {
 		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${base}/#/sources`, { waitUntil: 'domcontentloaded' })
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await singleDeleteViaUi(page, 'source', name)
 		// Fallback cleanup in case UI single-delete didn't remove the item.
@@ -557,16 +561,15 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 	})
 })
 
-test.describe('UI smoke — SPA shell reachable at the deep-link routes', () => {
-	// '/' is the SPA dashboard route. The server-side URL for it is the
-	// app base WITHOUT a trailing slash — Nextcloud's PageController only
-	// matches `apps/openconnector`, not `apps/openconnector/` (the latter
-	// 404s through .htaccess rewriting). Use '' here, not '/'.
-	for (const route of ['', '/sources', '/endpoints', '/jobs', '/mappings', '/synchronizations', '/rules', '/cloud-events/events']) {
-		test(`GET ${route || '<root>'} serves the Vue app`, async ({ page }) => {
+test.describe('UI smoke — SPA shell reachable at the hash deep-link routes', () => {
+	// HASH-mode router (src/main.js `mode: 'hash'`): deep-links are hash
+	// fragments on the app base (`/apps/openconnector/#/sources`). The empty
+	// route smoke-tests the dashboard at `#/`.
+	for (const route of ['/', '/sources', '/endpoints', '/jobs', '/mappings', '/synchronizations', '/rules', '/cloud-events/events']) {
+		test(`GET #${route} serves the Vue app`, async ({ page }) => {
 			const base = await resolveAppBase(page)
-			const res = await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' })
-			expect(res?.status(), `${route} returned ${res?.status()}`).toBe(200)
+			const res = await page.goto(`${base}/#${route}`, { waitUntil: 'domcontentloaded' })
+			expect(res?.status(), `#${route} returned ${res?.status()}`).toBe(200)
 			const html = await page.content()
 			expect(html.toLowerCase()).toContain('openconnector')
 		})

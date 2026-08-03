@@ -4,39 +4,32 @@
  *
  * Dead-letter-replay regression: the "Event deliveries" operations view.
  *
- * This spec navigates to the admin-only dead-letter queue surface
- * (`EventDeliveriesPage`, custom manifest page at `/cloud-events/deliveries`)
- * and asserts the SPA shell mounts the page without fatal console errors. It
- * is the browser companion to the PHPUnit coverage in
+ * This spec navigates (HASH-mode router — src/main.js `mode: 'hash'`, so the
+ * route MUST be a hash fragment: `/apps/openconnector/#/cloud-events/deliveries`;
+ * the path form silently lands on the Dashboard) to the admin-only dead-letter
+ * queue surface (`EventDeliveriesPage`, custom manifest page) and asserts the
+ * page's REAL surface renders: the "Event deliveries" heading, the status
+ * filter, and either the deliveries table (`data-testid="deliveries-table"`)
+ * or the genuine empty state (`data-testid="empty-state"` with its
+ * "No dead-lettered event deliveries" copy).
+ *
+ * It is the browser companion to the PHPUnit coverage in
  * `tests/Unit/Service/EventServiceTest.php` (replay/discard state guards,
  * attempts[] preservation, bulk partial outcomes) and
  * `tests/Unit/Controller/EventsControllerTest.php` (admin gate, 409 matrix,
  * bulk cap).
  *
- * Every `#### Scenario:` of the dead-letter-replay spec is back-referenced
- * below via an `@e2e` annotation so gate-19 (check_e2e_coverage.py) can trace
- * spec → test. The scenarios that exercise backend HTTP semantics
- * (status-set filtering, admin rejection, 404/409 matrix, audit stamping,
- * bulk per-item outcomes) are proven at the controller/service layer; this
- * spec proves the operator-facing view renders and is reachable. The
- * annotations document that mapping.
- *
- * @e2e dead-letter-replay::default-listing-returns-failed-and-abandoned-messages-only
- * @e2e dead-letter-replay::filtering-by-subscription-narrows-the-list
- * @e2e dead-letter-replay::a-non-admin-user-is-rejected
- * @e2e dead-letter-replay::the-detail-view-explains-why-a-message-died
- * @e2e dead-letter-replay::replaying-an-abandoned-message-after-sink-recovery-delivers-it
- * @e2e dead-letter-replay::replaying-a-delivered-message-is-rejected
- * @e2e dead-letter-replay::a-discarded-message-never-delivers-and-shows-its-decider
- * @e2e dead-letter-replay::bulk-replay-reports-mixed-outcomes
- * @e2e dead-letter-replay::operator-inspects-and-replays-a-dead-letter-from-the-ui
- * @e2e dead-letter-replay::bulk-discard-requires-confirmation
- * @e2e dead-letter-replay::empty-dead-letter-queue-shows-an-empty-state
+ * @e2e scoping (gate-19, honest coverage): only the scenarios this spec
+ * GENUINELY exercises in the browser are tagged below. The backend-semantics
+ * scenarios (status-set filtering, admin rejection, 404/409 matrix, audit
+ * stamping, bulk per-item outcomes, replay-after-recovery) are proven at the
+ * controller/service layer and carry `@e2e exclude <reason>` in
+ * openspec/specs/dead-letter-replay/spec.md instead of vacuous tags here.
  *
  * Cross-ref:
  * - openspec/specs/dead-letter-replay/spec.md
  * - src/views/EventDelivery/EventDeliveriesPage.vue
- * - src/views/EventDelivery/EventDeliveryDetailModal.vue
+ * - src/modals/EventDelivery/EventDeliveryDetailModal.vue
  * - lib/Controller/EventsController.php
  * - lib/Service/EventService.php
  */
@@ -85,29 +78,42 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 	return { errors }
 }
 
+/** Navigate to the EventDeliveries page via its HASH deep-link. */
+async function gotoDeliveries(page: Page): Promise<void> {
+	const root = await rootUrl(page)
+	await page.goto(`${root}/#/cloud-events/deliveries`, {
+		waitUntil: 'domcontentloaded',
+		timeout: 30_000,
+	})
+	// The custom page's own heading is the mount proof — not the generic
+	// #app-content shell (which is present on EVERY route, dashboard included).
+	await expect(
+		page.getByRole('heading', { name: /^Event deliveries$/ }).first(),
+		'EventDeliveriesPage heading must render (proves the hash route resolved to the custom page, not the Dashboard)',
+	).toBeVisible({ timeout: 15_000 })
+}
+
 test.describe('dead-letter-replay — Event deliveries view', () => {
 
-	test('EventDeliveries page mounts at /cloud-events/deliveries', async ({ page }) => {
+	test('EventDeliveries page mounts at #/cloud-events/deliveries with its real surface', async ({ page }) => {
 		const { errors } = attachConsoleSpy(page)
 
-		const root = await rootUrl(page)
-		await page.goto(`${root}/cloud-events/deliveries`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
+		await gotoDeliveries(page)
 
-		// SPA shell mounts inside #app-content.
+		// The status filter is part of the page header (NcSelect with
+		// input-label "Status") — a stable, page-specific control.
 		await expect(
-			page.locator('#app-content, [data-cy=app-content], .app-content').first(),
+			page.getByText('Status', { exact: true }).first(),
+			'Status filter label must render in the EventDeliveries header',
 		).toBeVisible({ timeout: 10_000 })
 
-		// The custom EventDeliveriesPage resolved and rendered content beyond a
-		// bare spinner — either the dead-letter table/header or the empty state.
-		const rendered = await page.locator('#app-content, .app-content').first().innerHTML()
-		expect(
-			rendered.length,
-			'EventDeliveries rendered no content inside app-content',
-		).toBeGreaterThan(100)
+		// The page resolves to exactly one of its two real states after load:
+		// the dead-letter table or the explicit empty state (both carry
+		// data-testids in EventDeliveriesPage.vue).
+		await expect(
+			page.locator('[data-testid="deliveries-table"], [data-testid="empty-state"]').first(),
+			'EventDeliveries must render either the deliveries table or its empty state',
+		).toBeVisible({ timeout: 15_000 })
 
 		// No fatal console errors during mount.
 		expect(
@@ -116,31 +122,52 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 		).toEqual([])
 	})
 
-	test('EventDeliveries view exposes the dead-letter operations surface', async ({ page }) => {
-		const root = await rootUrl(page)
-		await page.goto(`${root}/cloud-events/deliveries`, {
-			waitUntil: 'domcontentloaded',
-			timeout: 30_000,
-		})
-		await expect(
-			page.locator('#app-content, [data-cy=app-content], .app-content').first(),
-		).toBeVisible({ timeout: 10_000 })
+	// @e2e dead-letter-replay::empty-dead-letter-queue-shows-an-empty-state
+	test('empty dead-letter queue shows the explicit empty state; a populated queue shows Replay/Discard affordances', async ({ page }) => {
+		await gotoDeliveries(page)
 
-		// The view renders either the dead-letter listing (table/rows with
-		// Replay/Discard affordances) or its empty state — both are acceptable
-		// on a cold-start instance with no failed/abandoned messages. We assert
-		// the operations vocabulary is present so the page isn't a blank shell.
-		const body = (await page.locator('#app-content, .app-content').first().innerText()).toLowerCase()
-		const hasOperationsSurface =
-			body.includes('replay') ||
-			body.includes('discard') ||
-			body.includes('deliver') ||
-			body.includes('dead') ||
-			body.includes('no ') /* empty-state copy ("No failed messages…") */
-		expect(
-			hasOperationsSurface,
-			`EventDeliveries view rendered no dead-letter operations vocabulary; body was: ${body.slice(0, 300)}`,
-		).toBe(true)
+		// Ground-truth the queue contents via the same admin endpoint the page
+		// consumes, so the assertion branch is deterministic — not vacuous.
+		// (The /index.php/ form always routes, htaccess or not — same pattern
+		// as workflows/_fixture.ts.)
+		const res = await page.request.get(
+			'/index.php/apps/openconnector/api/events/dead-letter?status=failed,abandoned',
+			{ failOnStatusCode: false, headers: { 'OCS-APIRequest': 'true' } },
+		)
+		// A non-OK ground truth must fail loudly — treating it as "empty
+		// queue" silently flips this test into the wrong branch.
+		expect(res.ok(), `dead-letter listing endpoint must answer the admin session (got ${res.status()})`).toBeTruthy()
+		const body = await res.json().catch(() => ({}))
+		const queued: Array<Record<string, unknown>> = body.results ?? []
+
+		if (queued.length === 0) {
+			// Scenario: empty dead-letter queue shows an empty state — assert
+			// the REAL empty-state element and its copy, not a substring grab.
+			const empty = page.locator('[data-testid="empty-state"]')
+			await expect(empty, 'empty queue must render the explicit empty state').toBeVisible({ timeout: 15_000 })
+			await expect(empty).toHaveText(/No dead-lettered event deliveries/)
+			// And no dead-letter table is pretending to have rows.
+			await expect(page.locator('[data-testid="deliveries-table"]')).toHaveCount(0)
+		} else {
+			// Populated queue: the table renders with one row per message and
+			// selecting a row reveals the bulk Replay/Discard affordances.
+			const table = page.locator('[data-testid="deliveries-table"]')
+			await expect(table, 'populated queue must render the deliveries table').toBeVisible({ timeout: 15_000 })
+			// The table paginates and the UI's default status filter may not
+			// match the ground-truth query exactly — an exact row-count
+			// equality is deploy-fragile. At least one dead-lettered row must
+			// render for the affordance branch to be meaningful.
+			expect(await table.locator('tbody tr').count()).toBeGreaterThan(0)
+			// Tick the first row's checkbox — the bulk bar must appear with
+			// the Replay/Discard verbs (pure frontend state, no mutation).
+			// NcCheckboxRadioSwitch keeps the real <input> visually hidden —
+			// a plain .check() never lands the click, so force it.
+			await table.locator('tbody tr').first().getByRole('checkbox').first().check({ force: true })
+			const bulkBar = page.locator('[data-testid="bulk-bar"]')
+			await expect(bulkBar, 'selecting a row must reveal the bulk action bar').toBeVisible({ timeout: 10_000 })
+			await expect(bulkBar.getByRole('button', { name: /Replay selected/i })).toBeVisible()
+			await expect(bulkBar.getByRole('button', { name: /Discard selected/i })).toBeVisible()
+		}
 	})
 
 })

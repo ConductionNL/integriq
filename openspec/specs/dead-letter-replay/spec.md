@@ -15,6 +15,8 @@ UUID, event type, subscription id + sink, `status`, `retryCount`,
 `lastAttempt`, `nextAttempt`. The endpoint MUST NOT carry `@NoAdminRequired`
 or `@NoCSRFRequired`.
 
+@e2e exclude backend HTTP filter/auth semantics — proven by PHPUnit (tests/Unit/Controller/EventsControllerTest.php, tests/Unit/Service/EventServiceTest.php); the operator view render is covered by tests/e2e/regression/dead-letter-replay.spec.ts
+
 #### Scenario: default listing returns failed and abandoned messages only
 
 - **GIVEN** messages in states `pending`, `delivered`, `failed`, `abandoned`,
@@ -44,6 +46,8 @@ order, replay/discard audit fields when present, and the resolved
 subscription context (`sink`, `protocol`, subscription `status`). It SHALL
 return 404 when the message does not exist.
 
+@e2e exclude backend detail-payload semantics — proven by PHPUnit (tests/Unit/Controller/EventsControllerTest.php), not browser UI
+
 #### Scenario: the detail view explains why a message died
 
 - **GIVEN** an `abandoned` message whose `attempts[]` records four HTTP 503
@@ -63,6 +67,8 @@ PRESERVE the existing `attempts[]` history, trigger one immediate
 in `pending`, `delivered`, or `discarded` state SHALL return 409. A replayed
 message that fails again follows the standard retry/backoff/abandon machine
 unchanged.
+
+@e2e exclude backend replay state-machine + audit stamping — proven by PHPUnit (tests/Unit/Service/EventServiceTest.php replay/discard state guards, 409 matrix in tests/Unit/Controller/EventsControllerTest.php), not browser UI
 
 #### Scenario: replaying an abandoned message after sink recovery delivers it
 
@@ -89,6 +95,8 @@ listing, MUST remain retrievable via the status filter and the detail
 endpoint, and MUST NOT be hard-deleted by the discard verb. Discard on
 `pending`/`delivered`/`discarded` messages SHALL return 409.
 
+@e2e exclude backend discard terminal-state semantics — proven by PHPUnit (tests/Unit/Service/EventServiceTest.php), not browser UI
+
 #### Scenario: a discarded message never delivers and shows its decider
 
 - **GIVEN** an `abandoned` message discarded by admin `alice`
@@ -108,6 +116,8 @@ per-id result map (`ok` | error reason, e.g. `not-found`, `invalid-state`).
 A partial failure MUST NOT abort the remaining ids. Requests with more than
 100 ids SHALL be rejected with 400. The endpoints MUST NOT accept a
 filter-predicate form ("replay everything matching X").
+
+@e2e exclude backend bulk per-item outcome semantics — proven by PHPUnit (tests/Unit/Service/EventServiceTest.php bulk partial outcomes, tests/Unit/Controller/EventsControllerTest.php bulk cap), not browser UI
 
 #### Scenario: bulk replay reports mixed outcomes
 
@@ -129,6 +139,8 @@ feedback MUST be present.
 
 #### Scenario: operator inspects and replays a dead letter from the UI
 
+@e2e exclude needs a deterministically seeded abandoned message (no fixture path yet); replay state guards proven by PHPUnit (tests/Unit/Service/EventServiceTest.php) and the view/table/bulk-affordance render by tests/e2e/regression/dead-letter-replay.spec.ts
+
 - **GIVEN** an admin on the Event deliveries view with one abandoned message
 - **WHEN** they open the message's detail modal and confirm "Replay"
 - **THEN** the modal SHALL show the attempt timeline before the action
@@ -136,6 +148,8 @@ feedback MUST be present.
   a successful redelivery
 
 #### Scenario: bulk discard requires confirmation
+
+@e2e exclude needs three deterministically seeded abandoned messages (no fixture path yet); confirm-step frontend state and Discard verb proven by PHPUnit + the bulk-bar render assertion in tests/e2e/regression/dead-letter-replay.spec.ts
 
 - **GIVEN** an admin who selected three abandoned messages
 - **WHEN** they trigger the bulk Discard action

@@ -49,14 +49,21 @@ test.describe('REQ-UI-001: Add Mapping modal', () => {
 		const addBtn = page.getByRole('button', { name: 'Add Mapping' })
 		await expect(addBtn, 'Add Mapping button must be visible').toBeVisible({ timeout: 20_000 })
 		await addBtn.click()
+		// The deployed UX navigates to the MappingDetailPage editor (custom
+		// page) rather than opening a dialog — accept either creation surface.
 		const dialog = page.getByRole('dialog').first()
-		await expect(dialog, 'Modal must open after clicking Add Mapping').toBeVisible({ timeout: 10_000 })
-		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
-		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			await cancelBtn.click()
-		} else {
-			await page.keyboard.press('Escape')
+		const editorHeading = page.getByRole('heading', { name: /^Mapping$/ }).first()
+		await expect(
+			dialog.or(editorHeading),
+			'Add Mapping must open a creation surface (dialog or mapping editor page)',
+		).toBeVisible({ timeout: 10_000 })
+		if (await dialog.isVisible().catch(() => false)) {
+			const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+			if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+				await cancelBtn.click()
+			} else {
+				await page.keyboard.press('Escape')
+			}
 		}
 	})
 })
@@ -70,7 +77,8 @@ test.describe('REQ-UI-001: Mapping detail page', () => {
 		// the URL hash. The mapping-detail surface keeps polling an OR fetch for the
 		// (nonexistent) id, so `networkidle` never settles — wait for DOM + main
 		// instead of network silence.
-		await page.goto(`${APP_BASE}/#/mappings/__nonexistent__`, { waitUntil: 'domcontentloaded' })
+		// NOTE: APP_BASE already carries the `/#` — do not add a second one.
+		await page.goto(`${APP_BASE}/mappings/__nonexistent__`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main').first()).toBeVisible({ timeout: 15_000 })
 		const html = await page.locator('main').first().innerHTML()
 		expect(html.length).toBeGreaterThan(50)

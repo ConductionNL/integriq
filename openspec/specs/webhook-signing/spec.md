@@ -24,6 +24,8 @@ unchanged from current behaviour. A signing failure (e.g. malformed secret)
 MUST be treated as a failed delivery attempt (normal failure accounting), not
 as an unsigned send and not as an exception escaping the delivery path.
 
+@e2e exclude outbound HMAC signing semantics over exact bytes — proven by PHPUnit (tests/Unit/Service/EventServiceTest.php sign/unsigned/retry-timestamp, tests/Unit/Service/WebhookSignatureServiceTest.php), not observable from browser UI
+
 #### Scenario: a configured subscription receives a verifiable signature
 
 - **GIVEN** a push subscription with a `signingSecret`
@@ -58,6 +60,8 @@ credential-redaction convention. Rotation MUST move the current secret to
 `previousSigningSecret`, set `secretRotatedAt`, and return the new secret once;
 outbound deliveries MUST dual-sign with both secrets until 24h after
 `secretRotatedAt`, after which the previous secret is no longer used.
+
+@e2e exclude secret lifecycle (one-time reveal, redaction, rotation grace, export redaction) — proven by PHPUnit (tests/Unit/Controller/EventsControllerTest.php generate/rotate/redaction, tests/Unit/Service/WebhookSignatureServiceTest.php dual-sign grace); the hosting Webhooks surface render is covered by tests/e2e/regression/webhook-signing.spec.ts
 
 #### Scenario: the secret is shown exactly once
 
@@ -97,6 +101,8 @@ timestamp) the rule MUST short-circuit the pipeline with HTTP 401 and an
 undifferentiated error body, and the endpoint's downstream rules MUST NOT
 execute. For `scheme: github` (no timestamp in the scheme) the tolerance
 setting MUST be ignored with a logged warning, not an error.
+
+@e2e exclude inbound signature-gate crypto/pipeline semantics — proven by PHPUnit (tests/Unit/Service/WebhookSignatureServiceTest.php tamper/replay/github scheme, tests/Unit/Service/EndpointServiceTest.php gate ordering), not browser UI
 
 #### Scenario: a correctly signed inbound webhook passes the gate
 
@@ -139,6 +145,8 @@ fields. All new UI strings SHALL ship with `nl` and `en` translations
 
 #### Scenario: admin generates a secret and sees it once
 
+@e2e exclude needs a seeded push subscription plus the SubscriptionSigningModal flow (no deterministic fixture path yet); one-time reveal/redaction proven by PHPUnit (tests/Unit/Controller/EventsControllerTest.php) and the hosting Webhooks page render by tests/e2e/regression/webhook-signing.spec.ts
+
 - **GIVEN** an admin editing a push subscription
 - **WHEN** they click "Generate signing secret"
 - **THEN** the full secret SHALL be displayed with a copy action and a
@@ -147,6 +155,8 @@ fields. All new UI strings SHALL ship with `nl` and `en` translations
   the secret
 
 #### Scenario: rule editor offers the webhook_signature type
+
+@e2e exclude the rule-type selector lives on the custom RuleDetailPage action editor and needs a seeded rule to open (no deterministic fixture path yet); the Rules surface + Add Rule render is covered by tests/e2e/regression/webhook-signing.spec.ts and the form component by unit coverage
 
 - **GIVEN** an admin adding a rule to an endpoint
 - **WHEN** they open the rule-type selector

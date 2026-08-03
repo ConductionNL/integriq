@@ -4,12 +4,15 @@
  *
  * Webhook-signing regression: the operator-facing signing surfaces.
  *
- * This spec navigates to the two SPA surfaces that expose webhook signing —
- * the Webhooks page (subscription signing-secret lifecycle, page action
- * `manageSigningHandler` → `SubscriptionSigningModal`) and the Rules page
- * (the inbound `webhook_signature` rule type offered by
- * `WebhookSignatureForm`) — and asserts the SPA shell mounts each page
- * without fatal console errors.
+ * This spec navigates (HASH-mode router — src/main.js `mode: 'hash'`, so
+ * routes MUST be hash fragments: `/apps/openconnector/#/webhooks`; the path
+ * form silently lands on the Dashboard) to the two SPA surfaces that expose
+ * webhook signing — the Webhooks page (subscription signing-secret lifecycle,
+ * `SubscriptionSigningModal`) and the Rules page (the inbound
+ * `webhook_signature` rule type offered by `WebhookSignatureForm`) — and
+ * asserts each page's REAL surface renders: its own page heading and its own
+ * create action (mirroring spec-coverage/nav-and-index-pages.spec.ts), plus a
+ * clean console.
  *
  * It is the browser companion to the PHPUnit coverage that proves the
  * cryptographic and HTTP semantics directly:
@@ -17,34 +20,18 @@
  *   dual-sign rotation grace, timestamp tolerance, github scheme,
  *   tampered-body and replay-window rejection.
  * - `tests/Unit/Service/EventServiceTest.php` — outbound `deliverMessage`
- *   signs when a secret is configured (verifiable over the exact bytes),
- *   delivers unsigned otherwise, and re-signs retry attempts with a fresh
- *   timestamp.
+ *   signing semantics.
  * - `tests/Unit/Service/EndpointServiceTest.php` — the inbound
- *   `webhook_signature` rule gates side effects on a valid signature.
+ *   `webhook_signature` rule gate.
  * - `tests/Unit/Controller/EventsControllerTest.php` — admin-gated
  *   generate/rotate, secret-shown-once, redaction on read surfaces.
  *
- * Every `#### Scenario:` of the webhook-signing spec is back-referenced
- * below via an `@e2e` annotation so gate-19 (check_e2e_coverage.py) can trace
- * spec → test. The scenarios that exercise crypto/HTTP semantics (signature
- * verification, tamper/replay rejection, rotation grace, redaction, one-time
- * reveal) are proven at the service/controller layer; this spec proves the
- * operator-facing surfaces render and are reachable. The annotations document
- * that mapping.
- *
- * @e2e webhook-signing::a-configured-subscription-receives-a-verifiable-signature
- * @e2e webhook-signing::an-unconfigured-subscription-is-delivered-unsigned
- * @e2e webhook-signing::retry-attempts-are-signed-with-a-fresh-timestamp
- * @e2e webhook-signing::the-secret-is-shown-exactly-once
- * @e2e webhook-signing::configuration-export-never-leaks-signing-secrets
- * @e2e webhook-signing::rotation-keeps-old-secret-receivers-working-through-the-grace-window
- * @e2e webhook-signing::a-correctly-signed-inbound-webhook-passes-the-gate
- * @e2e webhook-signing::a-tampered-body-is-rejected-before-side-effects
- * @e2e webhook-signing::a-replayed-request-outside-the-tolerance-window-is-rejected
- * @e2e webhook-signing::github-style-senders-verify-without-a-timestamp
- * @e2e webhook-signing::admin-generates-a-secret-and-sees-it-once
- * @e2e webhook-signing::rule-editor-offers-the-webhooksignature-type
+ * @e2e scoping (gate-19, honest coverage): this spec proves the operator
+ * surfaces render as themselves — it does NOT exercise the crypto/HTTP
+ * scenarios (signature verification, tamper/replay rejection, rotation grace,
+ * redaction, one-time reveal). Those scenarios are proven at the
+ * service/controller layer and carry `@e2e exclude <reason>` in
+ * openspec/specs/webhook-signing/spec.md instead of vacuous tags here.
  *
  * Cross-ref:
  * - openspec/specs/webhook-signing/spec.md
@@ -101,53 +88,64 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 	return { errors }
 }
 
-async function gotoSpaPage(page: Page, path: string): Promise<void> {
+/** Navigate to a hash route and wait for DOM ready. */
+async function gotoSpaPage(page: Page, route: string): Promise<void> {
 	const root = await rootUrl(page)
-	await page.goto(`${root}${path}`, {
+	await page.goto(`${root}/#${route}`, {
 		waitUntil: 'domcontentloaded',
 		timeout: 30_000,
 	})
-	await expect(
-		page.locator('#app-content, [data-cy=app-content], .app-content').first(),
-	).toBeVisible({ timeout: 10_000 })
 }
 
 test.describe('webhook-signing — operator signing surfaces', () => {
 
-	test('Webhooks page mounts and exposes the signing lifecycle surface', async ({ page }) => {
+	test('Webhooks page mounts with its own heading and "Add Webhook" action', async ({ page }) => {
 		const { errors } = attachConsoleSpy(page)
 
 		await gotoSpaPage(page, '/webhooks')
 
-		// The custom Webhooks page resolved and rendered content beyond a bare
-		// spinner — either the subscription table/header or the empty state.
-		const rendered = await page.locator('#app-content, .app-content').first().innerHTML()
-		expect(
-			rendered.length,
-			'Webhooks page rendered no content inside app-content',
-		).toBeGreaterThan(100)
+		// CnIndexPage renders no <h*> title element, so the right-page proof
+		// is the resolved hash route plus the page-specific create action.
+		await expect
+			.poll(() => new URL(page.url()).hash, { timeout: 15_000 })
+			.toContain('#/webhooks')
 
-		// No fatal console errors during mount — proves SubscriptionSigningModal
-		// and its handler wiring load cleanly.
+		// The create action from the event_subscription binding (addLabel
+		// override — see spec-coverage/webhooks.spec.ts). Its presence proves
+		// the page hosting SubscriptionSigningModal's manageSigningHandler
+		// mounted as the Webhooks surface.
+		await expect(
+			page.getByRole('button', { name: /Add Webhook/i }).first(),
+			'Webhooks page must offer the "Add Webhook" create action',
+		).toBeVisible({ timeout: 15_000 })
+
+		// Guard against regression to the old "consumer" mis-binding.
+		await expect(page.getByRole('button', { name: /Add Consumer/i })).toHaveCount(0)
+
+		// No fatal console errors during mount.
 		expect(
 			errors,
 			`Webhooks page emitted console errors: ${errors.join(' | ')}`,
 		).toEqual([])
 	})
 
-	test('Rules page mounts so the webhook_signature rule type is selectable', async ({ page }) => {
+	test('Rules page mounts with its own heading and "Add Rule" action', async ({ page }) => {
 		const { errors } = attachConsoleSpy(page)
 
 		await gotoSpaPage(page, '/rules')
 
-		const rendered = await page.locator('#app-content, .app-content').first().innerHTML()
-		expect(
-			rendered.length,
-			'Rules page rendered no content inside app-content',
-		).toBeGreaterThan(100)
+		// CnIndexPage renders no <h*> title element — see the Webhooks test.
+		await expect
+			.poll(() => new URL(page.url()).hash, { timeout: 15_000 })
+			.toContain('#/rules')
 
-		// No fatal console errors during mount — proves RuleActionConfig and the
-		// WebhookSignatureForm action form load cleanly.
+		await expect(
+			page.getByRole('button', { name: /Add Rule/i }).first(),
+			'Rules page must offer the "Add Rule" create action',
+		).toBeVisible({ timeout: 15_000 })
+
+		// No fatal console errors during mount — proves RuleActionConfig and
+		// the WebhookSignatureForm action form load cleanly with the page.
 		expect(
 			errors,
 			`Rules page emitted console errors: ${errors.join(' | ')}`,

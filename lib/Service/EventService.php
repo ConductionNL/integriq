@@ -60,6 +60,19 @@ class EventService
     private const RETRY_CAP_SECONDS = 21600;
 
     /**
+     * Property stamped on every object this service persists.
+     *
+     * `CloudEventListener` drops any object carrying it, so a generated
+     * CloudEvent (or event message) can never be fed back in as a new
+     * object-change to react to. Register/schema identity is the primary
+     * guard; this marker is the register-independent backstop that survives a
+     * register rename or a same-slug schema copied into another register.
+     *
+     * @var string
+     */
+    public const GENERATED_BY_KEY = 'x-openconnector-generated';
+
+    /**
      * Constructor.
      *
      * @param ORObjectService         $objectService    The OR ObjectService for data access.
@@ -244,7 +257,18 @@ class EventService
 
         return $this->objectService->saveObject(
             object: [
-                'eventId'        => $event->getUuid(),
+                // `event` (string) is the UUID field; `eventId` is the LEGACY
+                // integer FK kept only during the transition (see the schema's
+                // own description, cleanup tracked at #821). Writing the UUID
+                // into `eventId` fails validation with
+                // "Property 'eventId' should be type 'integer or null' but is
+                // 'string'", so EVERY event message was rejected — observed
+                // 2026-07-28 as ~697 identical failures per single
+                // OpenRegister object create, which (with the docudesk
+                // array-cast flood) is what made `POST /api/objects/...` hang
+                // fleet-wide. Omit the legacy key rather than sending null so
+                // the property simply stays unset.
+                'event'          => $event->getUuid(),
                 'consumerId'     => ($subscriptionData['consumerId'] ?? null),
                 'subscriptionId' => $subscription->getUuid(),
                 'status'         => 'pending',
@@ -773,6 +797,9 @@ class EventService
         $objectData = $object->getObject();
         $event      = $this->objectService->saveObject(
             object: [
+                // Marks this row as our own output so the listener never
+                // reacts to it — see self::GENERATED_BY_KEY.
+                self::GENERATED_BY_KEY => true,
                 'source'  => ('/objects/'.($objectData['type'] ?? '')),
                 'type'    => 'com.nextcloud.openregister.object.created',
                 'time'    => (new DateTime())->format('c'),
