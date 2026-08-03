@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Spec coverage: openspec/specs/connector-catalog/spec.md
- * (connector-catalog-ui — Catalog page: card grid, category filter,
+ * (connector-catalog-ui — Store page (formerly Catalog): card grid, category filter,
  * status badges, detail dialog Enable/Instantiate).
  *
  * Backend-only scenarios (materialization idempotency, new-provider
@@ -26,15 +26,20 @@ import * as path from 'path'
 
 const APP_BASE = '/index.php/apps/openconnector'
 
-test.describe('Catalog page — manifest conformance (openconnector-app-manifest delta)', () => {
+test.describe('Store page — manifest conformance (ADR-080) (openconnector-app-manifest delta)', () => {
 	const manifest = JSON.parse(
 		fs.readFileSync(path.resolve(__dirname, '../../../src/manifest.json'), 'utf8'),
 	)
 
+	// ADR-080 renamed this page Catalog -> Store: a "catalogue" is an
+	// outward-facing PUBLISHED catalogue (OpenCatalogi's concept), whereas this
+	// page is "browse a registry and install into this instance". The backing
+	// schema (`catalog_item`) is unchanged, so only the page/menu id moves.
+	//
 	// @e2e openconnector-app-manifest::catalog-page-entry-is-present-and-uses-the-cards-index-pattern
-	test('Catalog page entry uses type:index + viewMode:cards on openconnector/catalog_item', () => {
-		const page = manifest.pages.find((p: { id: string }) => p.id === 'Catalog')
-		expect(page, 'Catalog page must exist in the manifest').toBeTruthy()
+	test('Store page entry uses type:index + viewMode:cards on openconnector/catalog_item', () => {
+		const page = manifest.pages.find((p: { id: string }) => p.id === 'Store')
+		expect(page, 'Store page must exist in the manifest').toBeTruthy()
 		expect(page.type).toBe('index')
 		expect(page.config.viewMode).toBe('cards')
 		expect(page.config.register).toBe('openconnector')
@@ -43,23 +48,23 @@ test.describe('Catalog page — manifest conformance (openconnector-app-manifest
 	})
 
 	// @e2e openconnector-app-manifest::catalog-menu-entry-is-present-and-routes-to-the-catalog-page
-	test('Catalog menu entry routes to the Catalog page id', () => {
+	test('Store menu entry routes to the Store page id', () => {
 		const flatten = (entries: Array<{ id: string, route?: string, children?: unknown[] }>): Array<{ id: string, route?: string }> =>
 			entries.flatMap((e) => [e, ...flatten((e.children as never[]) || [])])
-		const entry = flatten(manifest.menu).find((e) => e.id === 'Catalog')
-		expect(entry, 'Catalog menu entry must exist').toBeTruthy()
-		expect(entry!.route).toBe('Catalog')
+		const entry = flatten(manifest.menu).find((e) => e.id === 'Store')
+		expect(entry, 'Store menu entry must exist').toBeTruthy()
+		expect(entry!.route).toBe('Store')
 	})
 
 	// @e2e openconnector-app-manifest::catalog-page-does-not-require-a-new-manifest-page-type
-	test('Catalog page introduces no new page type value', () => {
+	test('Store page introduces no new page type value', () => {
 		const knownTypes = new Set(manifest.pages.map((p: { type: string }) => p.type))
-		// "index" predates this change (Sources, Endpoints, …) — the Catalog
+		// "index" predates this change (Sources, Endpoints, …) — the Store
 		// page reuses it rather than minting a new enum value.
-		const catalogPage = manifest.pages.find((p: { id: string }) => p.id === 'Catalog')
+		const catalogPage = manifest.pages.find((p: { id: string }) => p.id === 'Store')
 		expect(catalogPage.type).toBe('index')
 		const preExistingIndexPages = manifest.pages.filter(
-			(p: { id: string, type: string }) => p.type === 'index' && p.id !== 'Catalog',
+			(p: { id: string, type: string }) => p.type === 'index' && p.id !== 'Store',
 		)
 		expect(preExistingIndexPages.length).toBeGreaterThan(0)
 		expect(knownTypes.has('index')).toBe(true)

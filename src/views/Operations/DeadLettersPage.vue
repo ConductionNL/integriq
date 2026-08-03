@@ -94,6 +94,30 @@ export default {
 		}
 	},
 
+	watch: {
+		/**
+		 * Keep the mounted queue in step with the URL.
+		 *
+		 * `activeQueue` is seeded in data() at CREATION only, so without this
+		 * a route change that keeps the component mounted — arriving at
+		 * `?queue=sync` from `?queue=events`, which is exactly what the
+		 * `/synchronizations/dead-letters` redirect does for anyone already on
+		 * this page — would leave the previous queue rendered while the URL
+		 * claimed the other one. Caught by the e2e legacy-route test.
+		 *
+		 * @param {string|undefined} value The new queue query param.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/dead-letter-replay/spec.md
+		 */
+		'$route.query.queue': function(value) {
+			const next = value === 'sync' ? 'sync' : 'events'
+			if (next !== this.activeQueue) {
+				this.activeQueue = next
+			}
+		},
+	},
+
 	computed: {
 		/**
 		 * The selectable queues.
