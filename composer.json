@@ -91,12 +91,13 @@
 		"symfony/dom-crawler": "^7.2",
 		"symfony/expression-language": "^6.4",
 		"symfony/http-foundation": "^7.4.13",
+		"symfony/http-kernel": "^6.4",
 		"symfony/options-resolver": "^7.0",
 		"symfony/uid": "^6.4",
 		"symfony/var-exporter": "^7.2.5",
 		"symfony/yaml": "^6.4.40",
 		"twig/twig": "^3.27.0",
-		"web-token/jwt-framework": "^3"
+		"web-token/jwt-library": "^3.4.10"
 	},
 	"require-dev": {
 		"edgedesign/phpqa": "^1.9",
