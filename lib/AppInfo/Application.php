@@ -674,6 +674,16 @@ class Application extends App implements IBootstrap
             className: \OCA\OpenConnector\Flow\FlowNodeListener::class
         );
 
+        // Same shape, same reasoning, for mapping: the transformation engine is
+        // OpenRegister's, but three Twig functions need services only this app
+        // has — callSource (CallService) and the two synchronisation-contract
+        // id lookups. Contributing them keeps the dependency pointing the right
+        // way; OpenRegister must load on an instance without OpenConnector.
+        $dispatcher->addServiceListener(
+            eventName: \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent::class,
+            className: \OCA\OpenConnector\Listener\MappingFunctionRegistrationListener::class
+        );
+
     }//end registerFlowNodes()
 
     /**
