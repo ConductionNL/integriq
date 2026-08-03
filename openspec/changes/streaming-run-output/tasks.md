@@ -63,8 +63,18 @@
   - GIVEN new UI strings WHEN rendered THEN they exist in Dutch and English
   - GIVEN the modal is added WHEN its location and shape are chosen THEN it lives in `src/modals/v2/` (that directory is where new modals go; `src/modals/` itself is split into per-resource subdirectories) and follows `TestSourceModal.vue` / `TestMappingModal.vue`, the existing interactive-test-result modals
   - GIVEN progress events carry the trace-step shape WHEN they are rendered THEN `src/views/ExecutionTrace/TraceTimelineWidget.vue` is reused where it fits rather than a parallel renderer being written
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `src/modals/v2/RunOutputConsole.vue` plus the three-line wiring `ModalHost.vue` documents: `EVENT_OPEN_RUN_OUTPUT` in `modalBus.js`, import + render block + on/off in `ModalHost.vue`, and `runSynchronizationStreamHandler`/`testSynchronizationStreamHandler` in `actionHandlers.js` exported via `registry.js`. `fetch()` + `response.body.getReader()` with the `requesttoken` header, since EventSource is GET-only and cannot set headers. The existing fire-and-forget Run/Test handlers are deliberately untouched — streaming is opt-in, and changing what the default action does would break that promise.
+- [x] Test — webpack build succeeds in the container; eslint reports 0 errors on the new file
+
+Frame parsing buffers across chunk boundaries rather than parsing per chunk: a
+chunk can split mid-frame, and per-chunk parsing silently corrupts exactly the
+large frames that matter most under load. A trailing frame with no terminator is
+still parsed, because a socket dying mid-write is the case this feature exists for.
+
+NOTE: `src/modals/v2/` is silently unlinted. `eslint.config.js` has
+`ignores: ['src/modals/**', '!src/modals/v2/**']`, but ESLint prunes the ignored
+directory before descending, so the negation never applies. Pre-existing; affects
+`TestSourceModal.vue` and `ModalHost.vue` too. Linted here with `--no-ignore`.
 
 ### Task 6: occ command for terminal runs
 - **spec_ref**: `openspec/specs/run-streaming/spec.md#requirement-occ-command-runs-a-synchronization-from-the-terminal`
@@ -72,8 +82,8 @@
 - **acceptance_criteria**:
   - GIVEN `occ openconnector:synchronization:run <id>` WHEN executed THEN the synchronization runs and progress/result/errors print to the terminal with no request timeout
   - GIVEN `--test` and `--force` WHEN passed THEN they control dry-run and forced execution, and the command is registered in `appinfo/info.xml`
-- [ ] Implement
-- [ ] Test
+- [x] Implement — `lib/Command/SynchronizationRun.php`, registered in `appinfo/info.xml` under `<commands>` and confirmed present in `occ list`. Reuses the SAME `ExecutionTraceContext` step listener the streaming harness uses, rendering to a terminal instead of an SSE frame: one vocabulary, two renderers. `--json` emits the raw payload with progress suppressed so the command can be piped.
+- [x] Test — 6 tests: progress reaches the terminal, missing synchronization fails without running, a throwing run prints class/message/location and tells the operator to use `-v`, flags forward to the engine, `--json` emits parseable JSON with no interleaved step lines, isolated per-object errors are surfaced
 
 ## Verification
 

@@ -38,6 +38,8 @@ import {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	runSynchronizationStreamHandler,
+	testSynchronizationStreamHandler,
 	runFlowHandler,
 	testMappingModalHandler,
 	addEndpointRuleHandler,
@@ -71,6 +73,10 @@ export default {
 	testJobHandler,
 	runSynchronizationHandler,
 	testSynchronizationHandler,
+	// #1082: live-output console variants — open a streamed run/test in a console
+	// modal instead of firing and forgetting.
+	runSynchronizationStreamHandler,
+	testSynchronizationStreamHandler,
 	// Flows index row action (visual-flow-orchestration): manual run trigger.
 	runFlowHandler,
 	// Modal-opening row-action handlers — emit on the shared modal bus,

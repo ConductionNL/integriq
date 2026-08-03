@@ -77,6 +77,11 @@
 		     (XML comments must not contain a double hyphen, so the dry-run flag is
 		     not written with its leading dashes here.) -->
 		<command>OCA\OpenConnector\Command\MigrateInlineSecrets</command>
+		<!-- #1082: run one synchronization from the terminal. The last-resort
+		     complement to the streamed HTTP endpoints — no proxy to buffer output,
+		     no gateway timeout, and a fatal prints its own message instead of
+		     racing a shutdown handler against the socket closing. -->
+		<command>OCA\OpenConnector\Command\SynchronizationRun</command>
 		<!-- ocon#232 (ocon#151 follow-up): audits the VESTIGIAL source
 		     authenticationConfig field. No code authenticates from it, so removal
 		     (not a credentialRef migration) is the correct treatment. The default

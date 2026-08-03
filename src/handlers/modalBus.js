@@ -45,3 +45,5 @@ export const EVENT_OPEN_CONFIGURATION_IMPORT = 'open-configuration-import'
 export const EVENT_OPEN_CONFIGURATION_EXPORT = 'open-configuration-export'
 // environments-and-promotion: promote-configuration flow modal.
 export const EVENT_OPEN_PROMOTION = 'open-promotion'
+// #1082 streaming-run-output: live SSE console for a streamed run/test.
+export const EVENT_OPEN_RUN_OUTPUT = 'open-run-output'

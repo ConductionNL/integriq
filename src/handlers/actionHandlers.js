@@ -36,6 +36,7 @@ import {
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_RUN_OUTPUT,
 } from './modalBus.js'
 import { getRouter } from './routerRef.js'
 
@@ -167,6 +168,31 @@ export async function testSynchronizationHandler({ item }) {
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
  */
+/**
+ * Watch a synchronization run live (#1082).
+ *
+ * Distinct from runSynchronizationHandler, which fires and forgets. This opens the
+ * console, which POSTs with `stream=1` and renders the SSE frames as they arrive —
+ * the point being to see a run that dies in a way the persisted log never records.
+ *
+ * The fire-and-forget action is deliberately left alone: streaming is opt-in, and
+ * changing what the default "Run now" does would break that promise.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function runSynchronizationStreamHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_OUTPUT, { item, mode: 'run' })
+}
+
+/**
+ * Watch a synchronization test (dry run) live (#1082).
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function testSynchronizationStreamHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_OUTPUT, { item, mode: 'test' })
+}
+
 export function testMappingModalHandler({ item }) {
 	modalBus.emit(EVENT_OPEN_TEST_MAPPING, { mapping: item })
 }

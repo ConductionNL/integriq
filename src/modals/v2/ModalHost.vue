@@ -49,6 +49,12 @@
 		<PromotePreviewModal
 			:open="promotion.open"
 			@close="closePromotion" />
+		<!--
+			#1082: unlike the others this one is not driven by an :open prop — it
+			owns a live stream, so opening it also has to START that stream. The
+			host calls start() on the ref instead.
+		-->
+		<RunOutputConsole ref="runOutput" />
 	</div>
 </template>
 
@@ -61,6 +67,7 @@ import CatalogItemDetailDialog from '../../dialogs/CatalogItemDetailDialog.vue'
 import ImportPreviewDialog from '../../dialogs/ImportPreviewDialog.vue'
 import ExportConfigurationDialog from '../../dialogs/ExportConfigurationDialog.vue'
 import PromotePreviewModal from '../PromotePreviewModal.vue'
+import RunOutputConsole from './RunOutputConsole.vue'
 import {
 	modalBus,
 	EVENT_OPEN_TEST_MAPPING,
@@ -71,6 +78,7 @@ import {
 	EVENT_OPEN_CONFIGURATION_IMPORT,
 	EVENT_OPEN_CONFIGURATION_EXPORT,
 	EVENT_OPEN_PROMOTION,
+	EVENT_OPEN_RUN_OUTPUT,
 } from '../../handlers/modalBus.js'
 
 export default {
@@ -85,6 +93,7 @@ export default {
 		ImportPreviewDialog,
 		ExportConfigurationDialog,
 		PromotePreviewModal,
+		RunOutputConsole,
 	},
 
 	data() {
@@ -110,6 +119,7 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.on(EVENT_OPEN_RUN_OUTPUT, this.openRunOutput)
 	},
 
 	/** @spec openspec/specs/app-shell-and-logs-ui/spec.md */
@@ -122,6 +132,7 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
+		modalBus.off(EVENT_OPEN_RUN_OUTPUT, this.openRunOutput)
 	},
 
 	methods: {
@@ -188,6 +199,16 @@ export default {
 		/** @spec openspec/specs/environments-and-promotion/spec.md#requirement-diff-preview-merges-the-targets-existing-preview-response-with-a-credential-rebind-classification-req-003 */
 		closePromotion() {
 			this.promotion = { open: false }
+		},
+		/**
+		 * Open the live-output console and begin streaming (#1082).
+		 *
+		 * @param {{ item: object, mode: string }} payload The row and whether this is a run or a test.
+		 *
+		 * @spec openspec/changes/streaming-run-output/specs/run-streaming/spec.md#requirement-frontend-live-output-console-consumes-the-stream
+		 */
+		openRunOutput(payload) {
+			this.$refs.runOutput?.start(payload)
 		},
 	},
 }
