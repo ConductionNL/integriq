@@ -87,7 +87,15 @@ webpackConfig.resolve = {
 		// Force @nextcloud/dialogs and @nextcloud/axios to resolve from this
 		// app's node_modules, preventing the nextcloud-vue submodule's nested
 		// deps from leaking in.
-		'@nextcloud/dialogs': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs'),
+		//
+		// v7 is ESM-only and declares an exports map with NO main/module, so a
+		// DIRECTORY alias cannot resolve it — the same trap as @nextcloud/vue@9
+		// above, and the reason v6 (a vue@2.7 package) had been kept: it still
+		// had a main, so the directory alias worked and nobody noticed a Vue 2
+		// package was being bundled into a Vue 3 app. Point at the explicit
+		// entry file, and alias the one subpath the library imports.
+		'@nextcloud/dialogs$': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs'),
+		'@nextcloud/dialogs/style.css$': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/style.css'),
 		'@nextcloud/axios$': path.resolve(__dirname, 'node_modules/@nextcloud/axios'),
 	},
 }
