@@ -5,7 +5,7 @@
         "openregister"
     ],
     "observability": {
-        "_note": "OpenConnector adopts the OpenRegister AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index (registered in lib/AppInfo/Application.php with appName=openconnector), so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract. Intentional improvements: /api/health is now #[PublicPage] and returns 503 on a failed database check (ADR-006); the bespoke `sources_table` OR-join probe is subsumed by the generic `openregister` availability check (degraded). All 9 counted descriptors are tableCount over chain-C legacy openconnector_* tables; on a drained instance every tableCount emits zero samples (never a 500). The post-cutover flip to objectCount is a one-line per-descriptor manifest edit.",
+        "_note": "OpenConnector adopts the OpenRegister AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index (registered in lib/AppInfo/Application.php with appName=openconnector), so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract. Intentional improvements: /api/health is now #[PublicPage] and returns 503 on a failed database check (ADR-006); the bespoke `sources_table` OR-join probe is subsumed by the generic `openregister` availability check (degraded). POST-CUTOVER FLIP (done): the 9 counted descriptors used to be tableCount over the chain-C legacy openconnector_* tables. Those tables are gone — every entity is an OpenRegister object — so all 9 had been exporting HELP+TYPE and ZERO samples ever since the cutover, which reads identically to a genuinely idle instance and is exactly why it went unnoticed. They are now objectCount over register `openconnector` and the schema that replaced each table. The UNGROUPED ones are plain objectCount and are correct — measured live: jobs_total 18, mappings_total 19, synchronizations_total 18, endpoints_total 0, rules_total 0, where before the flip all five emitted nothing. The three LABELLED ones (sources_total, calls_total, synchronization_runs_total) are `provider` instead, computed in lib/Observability/OpenConnectorMetricsProvider.php, for two measured reasons: (1) objectCount's GROUPED path emits nothing even when the data is there — `getFacetsForObjects()` returned no terms buckets for a plain JSON property, so sources_total produced zero samples against 22 Sources all carrying type=\"api\" (the pre-existing traces_total has the same symptom); (2) object sources have no labelMap, so the label would read `statusCode`/`result` rather than the `status` the spec mandates, and expandGroups() drops zero buckets so the spec's zero-value placeholder scenarios are inexpressible. Both filed as ConductionNL/openregister#2308. job_runs_total stays declarative and groups by `level` — the job_log schema has no status property at all, and no requirement asserts its labels. NOTE: ProviderMetricSource ignores its descriptor and returns EVERY provider sample for EACH provider descriptor, so provider families are currently rendered once per provider descriptor; that duplication is the same upstream issue.",
         "health": {
             "statusCodePolicy": "adr006",
             "checks": [
@@ -27,34 +27,15 @@
                 "type": "gauge",
                 "help": "Total sources by type",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_sources",
-                    "groupBy": [
-                        "type"
-                    ],
-                    "labelDefaults": {
-                        "type": "rest"
-                    }
+                    "kind": "provider"
                 }
             },
             {
                 "name": "calls_total",
                 "type": "counter",
-                "help": "Total API calls by status and direction (inbound consumer throttling vs outbound source backoff)",
+                "help": "Total API calls by status",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_call_logs",
-                    "groupBy": [
-                        "status_code",
-                        "direction"
-                    ],
-                    "labelMap": {
-                        "status_code": "status"
-                    },
-                    "labelDefaults": {
-                        "status_code": "unknown",
-                        "direction": "outbound"
-                    }
+                    "kind": "provider"
                 }
             },
             {
@@ -62,8 +43,9 @@
                 "type": "gauge",
                 "help": "Total synchronization runs",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_synchronizations"
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "synchronization"
                 }
             },
             {
@@ -71,17 +53,7 @@
                 "type": "counter",
                 "help": "Total synchronization log entries by result",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_synchronization_logs",
-                    "groupBy": [
-                        "result"
-                    ],
-                    "labelMap": {
-                        "result": "status"
-                    },
-                    "labelDefaults": {
-                        "result": "unknown"
-                    }
+                    "kind": "provider"
                 }
             },
             {
@@ -89,8 +61,9 @@
                 "type": "gauge",
                 "help": "Total registered endpoints",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_endpoints"
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "endpoint"
                 }
             },
             {
@@ -98,23 +71,22 @@
                 "type": "gauge",
                 "help": "Total configured jobs",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_jobs"
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "job"
                 }
             },
             {
                 "name": "job_runs_total",
                 "type": "counter",
-                "help": "Total job log entries by status",
+                "help": "Total job log entries by level",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_job_logs",
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "job_log",
                     "groupBy": [
-                        "status"
-                    ],
-                    "labelDefaults": {
-                        "status": "unknown"
-                    }
+                        "level"
+                    ]
                 }
             },
             {
@@ -122,8 +94,9 @@
                 "type": "gauge",
                 "help": "Total configured mappings",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_mappings"
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "mapping"
                 }
             },
             {
@@ -131,8 +104,9 @@
                 "type": "gauge",
                 "help": "Total configured rules",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_rules"
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "rule"
                 }
             },
             {
@@ -161,19 +135,13 @@
                 "type": "gauge",
                 "help": "Total inbound requests per API Product and status, from product-scoped inbound call_log rows (api-product-gateway REQ-PROM-012)",
                 "source": {
-                    "kind": "tableCount",
-                    "table": "openconnector_call_logs",
+                    "kind": "objectCount",
+                    "register": "openconnector",
+                    "schema": "call_log",
                     "groupBy": [
                         "product",
-                        "status_code"
-                    ],
-                    "labelMap": {
-                        "status_code": "status"
-                    },
-                    "labelDefaults": {
-                        "product": "",
-                        "status_code": "unknown"
-                    }
+                        "statusCode"
+                    ]
                 }
             },
             {
