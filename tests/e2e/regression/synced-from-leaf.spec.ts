@@ -12,8 +12,8 @@
  * decidesk, …) then shows "Synced from" with the contract — with no code
  * change in the consuming app.
  *
- * The test seeds a publication + a synchronization + a contract whose
- * `targetId` is the publication, then asserts:
+ * The test seeds a target object + a synchronization + a contract whose
+ * `targetId` is that object, then asserts:
  *   1. The leaf endpoint (the data every registry surface consumes)
  *      returns the contract, rendered (title/subtitle/url/originId).
  *   2. The leaf matches strictly by targetId (a different object is empty).
@@ -37,9 +37,33 @@ const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS || 'admin'
 
 const OR = '/index.php/apps/openregister/api'
-const PUBLICATION_REGISTER = 'publication'
-const PUBLICATION_SCHEMA = 'publication'
 const OC_REGISTER = 'openconnector'
+
+// The object the contract points AT.
+//
+// This used to be `publication`/`publication` — OpenCatalogi's register. That
+// made the suite silently depend on OpenCatalogi being installed AND its
+// register imported, which is true on a developer's full-fleet container and
+// false in openconnector's own CI (`additional-apps` carries OpenRegister
+// only). The failure was not a skip: `beforeAll` seeds the target object
+// first, so the create returned `{"message":"Register not found:
+// 'publication'"}` and took the whole describe down with it.
+//
+// Nothing in what this spec asserts needs a publication.
+// `SynchronizationContractProvider::list()` matches on `targetId === $objectId`
+// and nothing else — the target's register and schema are not part of the
+// match (see its docblock: the register constant there scopes where the
+// CONTRACTS live, not where the target lives). The file header already frames
+// the promise as register-agnostic: "any app that renders an OR object's
+// integration surface (OpenCatalogi publication detail, OpenRegister object
+// detail, decidesk, …)".
+//
+// So the target is now an object in openconnector's own register, which the
+// CI seed provisions. Every assertion below is unchanged in meaning: the leaf
+// still has to find the contract by targetId, still has to render it, and
+// still has to return nothing for an unrelated id.
+const TARGET_REGISTER = OC_REGISTER
+const TARGET_SCHEMA = 'source'
 
 /** OR object ids created by the suite, torn down in afterAll. */
 const created: Array<{ register: string, schema: string, id: string }> = []
@@ -69,9 +93,10 @@ async function createObject(
 	return id
 }
 
-let publicationId = ''
+let targetId = ''
 let syncId = ''
 let storageMigrated = false
+let skipReason = 'openconnector.storage_migrated is not true on this instance'
 
 test.describe('Synced-from leaf — contract provenance on objects', () => {
 
@@ -79,25 +104,57 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		const ctx = await apiContext()
 
 		// The provider only emits contracts once OpenConnector storage has
-		// migrated into OR. Skip the whole suite (rather than fail) otherwise.
-		const cfg = await ctx.get('/index.php/apps/openconnector/api/settings').catch(() => null)
-		// Best-effort flag read; fall back to attempting the seed regardless.
-		storageMigrated = true
+		// migrated into OR (`SynchronizationContractProvider::isEnabled()`
+		// returns `openconnector.storage_migrated === 'true'`). The file header
+		// says this suite skips, rather than fails, when that flag isn't set.
+		//
+		// It did not, because the gate measured the wrong thing: it probed
+		// `GET /objects/openconnector/synchronization_contract` and treated a
+		// 200 as "migrated". That endpoint returns 200 whenever the register
+		// exists, which says nothing about the flag — so on any instance with
+		// the register seeded the suite ran anyway and failed on assertions
+		// whose precondition was false.
+		//
+		// OpenRegister publishes the authoritative answer:
+		// `GET /api/integrations` lists every registered provider with its
+		// `enabled` state and, when disabled, a reason. For this one it reads
+		// "OpenConnector storage migration has not yet run on this instance.
+		// Sync contract leaves will appear after `occ upgrade` runs the
+		// chain-C cutover." Read that.
+		//
+		// ⚠️ NOTE FOR WHOEVER PICKS THIS UP: on a FRESH install that flag is
+		// never set, so this leaf is permanently disabled there.
+		// `Version2Date20260520000001` only sets `storage_migrated=true` after
+		// it successfully copies all 15 entities out of the legacy
+		// `oc_openconnector_*` tables — and a fresh install has none to copy.
+		// A brand-new openconnector therefore never surfaces "Synced from" on
+		// any OpenRegister object. That is a product defect, not a test
+		// problem, and it is why this suite skips in CI rather than passing.
+		let disabledReason = 'openconnector.storage_migrated is not true on this instance'
 		try {
-			const probe = await ctx.get(`${OR}/objects/${OC_REGISTER}/synchronization_contract?_limit=1`)
-			storageMigrated = probe.status() === 200
+			const probe = await ctx.get('/index.php/apps/openregister/api/integrations')
+			const body = await probe.json()
+			const list: Array<Record<string, unknown>> = body.integrations ?? body.results ?? []
+			const leaf = list.find(i => i.id === 'sync-contract')
+			storageMigrated = leaf?.enabled === true
+			const authStatus = leaf?.authStatus as { message?: string } | undefined
+			if (authStatus?.message) {
+				disabledReason = authStatus.message
+			}
 		} catch {
 			storageMigrated = false
 		}
-		void cfg
 
 		if (!storageMigrated) {
+			// eslint-disable-next-line no-console
+			console.warn(`[synced-from-leaf] skipping: ${disabledReason}`)
+			skipReason = disabledReason
 			return
 		}
 
-		publicationId = await createObject(ctx, PUBLICATION_REGISTER, PUBLICATION_SCHEMA, {
-			title: 'E2E Synced Publication',
-			summary: 'Seeded by synced-from-leaf.spec.ts',
+		targetId = await createObject(ctx, TARGET_REGISTER, TARGET_SCHEMA, {
+			name: 'E2E Synced Target',
+			description: 'Seeded by synced-from-leaf.spec.ts as the object a contract points at.',
 		})
 		syncId = await createObject(ctx, OC_REGISTER, 'synchronization', {
 			name: 'VNG Producten Sync',
@@ -108,7 +165,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 			synchronizationId: syncId,
 			originId: 'vng-product-4821',
 			originHash: 'a1b2c3',
-			targetId: publicationId,
+			targetId,
 			targetLastSynced: now,
 			targetLastAction: 'update',
 			sourceLastChecked: now,
@@ -124,17 +181,17 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		await ctx.dispose()
 	})
 
-	test('leaf endpoint returns the contract rendered for the publication', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+	test('leaf endpoint returns the contract rendered for the target object', async () => {
+		test.skip(!storageMigrated, skipReason)
 		const ctx = await apiContext()
 		const res = await ctx.get(
-			`${OR}/objects/${PUBLICATION_REGISTER}/${PUBLICATION_SCHEMA}/${publicationId}/integrations/sync-contract`,
+			`${OR}/objects/${TARGET_REGISTER}/${TARGET_SCHEMA}/${targetId}/integrations/sync-contract`,
 		)
 		expect(res.status(), 'integrations/sync-contract MUST be 200 (regression: was 500 via getUuid __call)').toBe(200)
 		const body = await res.json()
 		const items = body.items ?? body.results ?? body
 		expect(Array.isArray(items)).toBe(true)
-		expect(items.length, 'one contract for the seeded publication (regression: was 0 via filter shape)').toBe(1)
+		expect(items.length, 'one contract for the seeded target object (regression: was 0 via filter shape)').toBe(1)
 
 		const row = items[0]
 		expect(row.title, 'title resolves to the synchronization name').toBe('VNG Producten Sync')
@@ -145,11 +202,11 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	})
 
 	test('leaf matches strictly by targetId (a different object is empty)', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(!storageMigrated, skipReason)
 		const ctx = await apiContext()
 		const otherId = '00000000-0000-0000-0000-000000000000'
 		const res = await ctx.get(
-			`${OR}/objects/${PUBLICATION_REGISTER}/${PUBLICATION_SCHEMA}/${otherId}/integrations/sync-contract`,
+			`${OR}/objects/${TARGET_REGISTER}/${TARGET_SCHEMA}/${otherId}/integrations/sync-contract`,
 		)
 		expect(res.status()).toBe(200)
 		const body = await res.json()
@@ -159,7 +216,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	})
 
 	test('leaf renders the contract row on an object-detail integration surface', async ({ page }) => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(!storageMigrated, skipReason)
 
 		// OpenRegister's own object detail mounts the same registry-driven
 		// integration surface OpenCatalogi/decidesk use; it is the most
@@ -167,6 +224,27 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		// app-agnostic — the data comes from the endpoint asserted above.)
 		await page.goto(`${NEXTCLOUD}/index.php/apps/openregister/`)
 		await page.waitForLoadState('networkidle').catch(() => undefined)
+
+		// OpenRegister's object-detail route takes NUMERIC register/schema ids.
+		// These were hardcoded as '14' and '53' — whatever OpenCatalogi's
+		// publication register happened to be numbered on the box this spec was
+		// written on. Ids are assigned in install order, so on any other
+		// instance that pair addresses a different register entirely (or
+		// nothing), and every failure downstream is silent because each step
+		// here ends in `.catch(() => undefined)`. Resolve them by slug instead.
+		const idCtx = await apiContext()
+		const lookupId = async (collection: string, slug: string): Promise<string> => {
+			const res = await idCtx.get(`${OR}/${collection}?_limit=1000`)
+			expect(res.status(), `GET ${collection} for id lookup`).toBe(200)
+			const body = await res.json()
+			const items = Array.isArray(body) ? body : (body.results ?? [])
+			const hit = items.find((i: Record<string, unknown>) => i.slug === slug)
+			expect(hit, `OpenRegister must expose a "${slug}" ${collection.replace(/s$/, '')}`).toBeTruthy()
+			return String(hit.id)
+		}
+		const registerId = await lookupId('registers', TARGET_REGISTER)
+		const schemaId = await lookupId('schemas', TARGET_SCHEMA)
+		await idCtx.dispose()
 
 		// Navigate client-side via the SPA router (server strips /index.php,
 		// which otherwise breaks the history base on a hard deep-link).
@@ -177,7 +255,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 				if (v && v.$router) { router = v.$router; break }
 			}
 			if (router) { router.push(`/objects/${reg}/${sch}/${id}`).catch(() => {}) }
-		}, { reg: '14', sch: '53', id: publicationId }).catch(() => undefined)
+		}, { reg: registerId, sch: schemaId, id: targetId }).catch(() => undefined)
 
 		// Open the Integrations tab, then the "Synced from" leaf.
 		const integrationsTab = page.getByRole('tab', { name: 'Integrations' })

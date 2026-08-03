@@ -8,6 +8,10 @@ const {
 	FlatCompat,
 } = require('@eslint/eslintrc')
 
+const {
+	conductionVue3Fixes,
+} = require('@conduction/nextcloud-vue/eslint')
+
 const compat = new FlatCompat({
 	baseDirectory: __dirname,
 	recommendedConfig: js.configs.recommended,
@@ -86,36 +90,21 @@ module.exports = defineConfig([{
 		// every JS function back to its specification task. It is not a standard
 		// JSDoc tag, so we explicitly allowlist it here.
 		'jsdoc/check-tag-names': ['warn', { definedTags: ['spec'] }],
-
-		// Vue 3 migration guard (ADR-066). The `@nextcloud` shared config
-		// extends eslint-plugin-vue's *Vue 2* preset, so none of the
-		// `vue/no-deprecated-*` rules were active — this app shipped four
-		// `beforeDestroy()` hooks that Vue 3 does not recognise and silently
-		// never calls, leaking a 1Hz setInterval and a live-object subscription
-		// per detail page, with no console error to show for it. Enabling the
-		// whole vue3-recommended preset here would bury the signal under
-		// hundreds of stylistic errors, so we turn on precisely the family that
-		// catches Vue-2-isms the runtime accepts in silence.
-		'vue/no-deprecated-destroyed-lifecycle': 'error',
-		'vue/no-deprecated-dollar-listeners-api': 'error',
-		'vue/no-deprecated-dollar-scopedslots-api': 'error',
-		'vue/no-deprecated-events-api': 'error',
-		'vue/no-deprecated-filter': 'error',
-		'vue/no-deprecated-functional-template': 'error',
-		'vue/no-deprecated-data-object-declaration': 'error',
-		'vue/no-deprecated-html-element-is': 'error',
-		'vue/no-deprecated-inline-template': 'error',
-		// A prop `default()` factory has no `this` in Vue 3 — reading one
-		// white-screens the page at first render.
-		'vue/no-deprecated-props-default-this': 'error',
-		'vue/no-deprecated-router-link-tag-prop': 'error',
-		'vue/no-deprecated-scope-attribute': 'error',
-		'vue/no-deprecated-slot-attribute': 'error',
-		'vue/no-deprecated-slot-scope-attribute': 'error',
-		// The `.sync` modifier is gone; v-model arguments replace it.
-		'vue/no-deprecated-v-bind-sync': 'error',
-		'vue/no-deprecated-v-on-native-modifier': 'error',
-		'vue/no-deprecated-v-on-number-modifiers': 'error',
-		'vue/no-deprecated-vue-config-keycodes': 'error',
 	},
-}])
+
+// Vue 3 migration guard (ADR-066), now sourced from nc-vue rather than
+// hand-maintained here. The `@nextcloud` shared config extends
+// eslint-plugin-vue's *Vue 2* preset, so none of the `vue/no-deprecated-*`
+// rules are active by default — that is how this app shipped four
+// `beforeDestroy()` hooks Vue 3 silently never calls, leaking a 1Hz
+// setInterval and a live-object subscription per detail page with no console
+// error to show for it.
+//
+// `conductionVue3Fixes` is a pure fix layer: all three of its blocks declare
+// zero plugins, so it composes onto the `@nextcloud` base above without a
+// plugin-redefined error. It MUST spread last so its rules win.
+//
+// Import path: this file is CommonJS, so the extensionless subpath resolves.
+// The package ships no `exports` map, so an ESM `eslint.config.mjs` would
+// need the explicit `@conduction/nextcloud-vue/eslint/index.js` instead.
+}, ...conductionVue3Fixes])

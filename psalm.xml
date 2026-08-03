@@ -81,6 +81,15 @@
                 <referencedClass name="OCA\OpenRegister\Exception\HandoffException"/>
                 <referencedClass name="OCA\OpenRegister\Exception\NotAuthorizedException"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <!-- OpenRegister flow-engine types. Present only at runtime, and only on an
+                     OpenRegister that ships the flow engine — which is exactly what the
+                     class_exists() guard in Application::registerFlowNodes() is for. The
+                     same three files are already excluded from PHPStan for this reason. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent"/>
+                <referencedClass name="OCA\OpenRegister\Service\Flow\IFlowNode"/>
+                <!-- Used by the MaterializeCatalogItems repair step to run a write as the
+                     system operator; resolved from OpenRegister at runtime. -->
+                <referencedClass name="OCA\OpenRegister\Service\SystemOperationContext"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>
@@ -211,6 +220,15 @@
         <NullableReturnStatement errorLevel="suppress"/>
         <InvalidOperand errorLevel="suppress"/>
         <UndefinedVariable errorLevel="suppress"/>
+        <!-- FlowNodeListener implements IEventListener<RegisterFlowNodesEvent>. Psalm cannot
+             see that the OpenRegister event extends OCP\EventDispatcher\Event (the class is
+             runtime-only, see the referencedClass entries above), so it reports the template
+             param as invalid. Scoped to the one listener rather than suppressed globally. -->
+        <InvalidTemplateParam>
+            <errorLevel type="suppress">
+                <file name="lib/Flow/FlowNodeListener.php"/>
+            </errorLevel>
+        </InvalidTemplateParam>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

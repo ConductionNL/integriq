@@ -19,13 +19,13 @@
 
 import { test, expect } from '@playwright/test'
 import { appDialog } from '../support/dialogs'
+// APP_BASE comes from _helpers.ts, the one place that knows both that the
+// router is hash-mode and that the URL needs the `/index.php/` prefix (without
+// it, PHP's built-in server on CI 404s the app directory and every assertion
+// below runs against a 404 page). This file used to keep a private copy of
+// that string that was missing the prefix.
+import { APP_BASE } from './_helpers'
 
-// The in-app router runs in HASH mode (src/main.js `mode: 'hash'`), so a
-// path-form deep-link (`/apps/openconnector/synchronizations`) is ignored and
-// lands on the dashboard; the hash form
-// (`/apps/openconnector/#/synchronizations`) renders the target page.
-// APP_BASE carries the `/#`.
-const APP_BASE = '/apps/openconnector/#'
 
 // ---------------------------------------------------------------------------
 // REQ-UI-001: Synchronization Management UI

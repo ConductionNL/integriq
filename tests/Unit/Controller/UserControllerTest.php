@@ -315,10 +315,19 @@ class UserControllerTest extends TestCase
     }
 
     /**
-     * Test login with invalid credentials returns 400.
+     * Test login with invalid credentials returns 401.
      *
-     * The controller uses HTTP 400 Bad Request (not 401) for invalid credentials
-     * to prevent username enumeration.
+     * The request is well formed; it is the *authentication* that failed, so the
+     * status is HTTP 401 Unauthorized. 400 Bad Request is reserved for
+     * `validateLoginCredentials()` — a missing, too-short or illegal username, or
+     * an over-long password — see testLoginMissingCredentials() below.
+     *
+     * Anti-enumeration is carried by the *message* ("Invalid username or
+     * password", identical for an unknown user and a wrong password), not by the
+     * status code; this test's previous docblock conflated the two and asserted
+     * 400 even after UserController::login() was corrected to 401 in 8da2b46c.
+     *
+     * @spec openspec/specs/user-management-and-login/spec.md#scenario-failed-login-is-rate-limited-and-anti-enumeration
      *
      * @return void
      */
@@ -336,7 +345,13 @@ class UserControllerTest extends TestCase
         $response = $this->controller->login();
 
         $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertEquals(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+
+        // The message must not reveal whether the username exists.
+        $this->assertSame(
+            'Invalid username or password',
+            $response->getData()['error']
+        );
     }
 
     /**

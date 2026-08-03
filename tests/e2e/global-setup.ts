@@ -24,6 +24,7 @@ import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
 import { BASE_URL } from './support/baseUrl'
+import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -114,30 +115,42 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		)
 	}
 
-	// Seed the CnSupportDialog "seen" flag into the openconnector origin's
-	// localStorage BEFORE any spec loads the app.
+	// Seed the nc-vue first-visit overlays as "already seen" for this origin
+	// BEFORE any spec loads the app, using the shared helpers rather than a
+	// hand-rolled localStorage write.
 	//
-	// `@conduction/nextcloud-vue`'s `useSupportDialog` (mode `'server'`, wired
-	// by CnAppRoot with `app-id="openconnector"`) treats
+	// `useSupportDialog` (mode `'server'`, wired by CnAppRoot with
+	// `app-id="openconnector"`) treats
 	// `localStorage['cn-support-dialog-shown:openconnector'] === '1'` as the
 	// authoritative "already seen" signal and never opens the dialog when it is
-	// set (see resolveServerVisibility's first guard). Seeding it here means the
-	// support-dialog `modal-mask` never mounts, so it can never intercept the
-	// pointer events that `expandNavGroups` / `navTo` rely on. This is durable
-	// across every spec because the flag rides in the persisted storageState.
+	// set. Seeding means the support-dialog `modal-mask` never mounts, so it can
+	// never intercept the pointer events that `expandNavGroups` / `navTo` rely
+	// on. Seeding also decouples the harness from the server preferences
+	// endpoint: on a fresh browser with no flag, a non-2xx GET of that endpoint
+	// sends the composable down its fail-open catch branch and re-opens the
+	// dialog on every load.
 	//
-	// This also decouples the harness from the server preferences endpoint: on a
-	// fresh browser with no flag, a non-2xx GET of the preferences endpoint sends
-	// the composable down its fail-open catch branch and re-opens the dialog on
-	// every load — exactly the cascade this seed prevents.
-	await page.goto('/apps/openconnector/')
-	await page.evaluate(() => {
-		try {
-			window.localStorage.setItem('cn-support-dialog-shown:openconnector', '1')
-		} catch (e) {
-			/* private-mode / quota — storageState seed is best-effort */
-		}
-	})
+	// The app id MUST be named explicitly here. `seedSupportDialogSeen(page,
+	// '*')` installs a `Storage.prototype.getItem` shim but deliberately skips
+	// writing concrete keys, and a shim lives on the page — it does NOT survive
+	// into the `storageState` file this setup persists. Passing 'openconnector'
+	// takes the write-through branch, so the flag rides in storageState and is
+	// durable for every spec, context and browser in the run.
+	//
+	// `seedWalkthroughSeen` is included via seedFirstVisitOverlaysSeen even
+	// though this app ships no CnWalkthrough — it is inert here and keeps the
+	// harness correct if one is ever added.
+	// ⚠️ The `/index.php/` prefix is load-bearing, and this is the worst place
+	// to get it wrong. CI serves Nextcloud with `php -S` and no router script,
+	// where `/apps/openconnector/` is a real directory with no index.php inside
+	// and therefore 404s (measured; the pretty form only works behind Apache +
+	// `.htaccess`). A 404 page still shares the origin, so the localStorage
+	// seed below would appear to succeed — but the page carries no
+	// `OC.requestToken`, so the first-run-wizard dismissal a few lines down
+	// silently fails, and the wizard then intercepts pointer events in every
+	// spec without hiding anything a visibility assertion looks at.
+	await page.goto('/index.php/apps/openconnector/')
+	await seedFirstVisitOverlaysSeen(page, 'openconnector')
 
 	// Retire Nextcloud's own first-run wizard for this user.
 	//

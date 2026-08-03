@@ -4,6 +4,12 @@ on:
   push:
     branches: [main, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
+    # Spelled out rather than left to the default so the set is reviewable.
+    # `synchronize` — a push to an open PR — is the load-bearing one: without
+    # it the suite runs once at PR-open and every later commit merges unchecked
+    # under the first run's green tick. Cost is bounded by the `concurrency`
+    # block below, which cancels the in-flight run for the same head ref.
+    types: [opened, reopened, synchronize]
     branches: [main, beta, development]
   workflow_dispatch:
 
@@ -13,18 +19,23 @@ concurrency:
 
 # Permission CEILING for the called quality pipeline. GitHub statically
 # validates the called workflow's declared job permissions against this
-# grant — even for jobs that are disabled — so it must cover the maximum
-# any nested job declares: journeydoc-capture (contents+actions write),
-# update-baseline / features-extract (contents write), and the Quality
-# Report PR comment (issues / pull-requests write).
+# grant — even for jobs that are disabled — so capping any of these at
+# `read` makes the whole call fail to START (zero jobs, no annotations).
+# Union of what the nested jobs need: journeydoc-capture (contents+actions
+# write), update-baseline / features-extract (contents write), the Quality
+# Report PR comment (issues / pull-requests write), and packages: read for
+# pulling org images.
 permissions:
   contents: write
   actions: write
   issues: write
   pull-requests: write
+  packages: read
 
 jobs:
   quality:
+    # Skip the duplicate run a branch-creation push fires alongside the PR event.
+    if: github.event_name != 'push' || github.event.created != true
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openconnector
@@ -44,6 +55,31 @@ jobs:
       enable-newman: true
       newman-collection-path: "tests/postman"
       newman-environment-path: "tests/postman/openconnector.postman_environment.json"
-      enable-playwright: true
-      playwright-test-path: "tests/e2e/regression"
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
+
+      # ── E2E browser tests ────────────────────────────────────────────────
+      # `playwright-test-path` does double duty in the shared workflow:
+      #   1. it is the directory the "Validate Playwright tests exist" step
+      #      counts *.spec.ts in;
+      #   2. it is the FIRST place the run step looks for a config —
+      #      `${playwright-test-path}/playwright.config.ts`, falling back to
+      #      the repo root only if that file is absent.
+      # It used to say `tests/e2e/regression`, which holds no config, so lookup
+      # (2) fell through to the ROOT config. The run step passes no
+      # `--project`, so all four root projects ran at once — 243 tests in 1.6h,
+      # including `visual` (pixel baselines the root config itself documents as
+      # un-matchable on a CI Linux runner) and `docs-capture` (screenshot
+      # re-shoots that have their own dedicated job). `tests/e2e` makes lookup
+      # (1) hit tests/e2e/playwright.config.ts, which declares exactly one
+      # project over spec-coverage/ + regression/ + workflows/.
+      enable-playwright: true
+      playwright-test-path: tests/e2e
+      # openconnector's sources/mappings/synchronizations/jobs are OpenRegister
+      # OBJECTS — there is no `oc_openconnector_*` table for them — so with no
+      # `openconnector` register the SPA has nothing to resolve and the suite
+      # reports it as a wall of selector timeouts. `occ app:enable` is not a
+      # reliable provisioning path for it: the InitializeRegister repair step
+      # swallows its own failures as warnings and occ still exits 0. The script
+      # provisions explicitly and fails loudly when the register or its schemas
+      # are still absent. cwd for this step is the Nextcloud server root.
+      playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'

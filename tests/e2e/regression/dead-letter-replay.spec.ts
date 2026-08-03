@@ -91,7 +91,13 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 		const { errors } = attachConsoleSpy(page)
 
 		const root = await rootUrl(page)
-		await page.goto(`${root}/cloud-events/deliveries`, {
+		// ⚠️ The `#` is required — the in-app router is hash-mode
+		// (`createWebHashHistory()`, src/main.js). Without it this URL serves
+		// the SPA shell and then renders the DASHBOARD, which is exactly what
+		// the second test in this file was reporting when it said the view
+		// "rendered no dead-letter operations vocabulary" and then dumped the
+		// dashboard's own text.
+		await page.goto(`${root}/#/cloud-events/deliveries`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})
@@ -118,7 +124,13 @@ test.describe('dead-letter-replay — Event deliveries view', () => {
 
 	test('EventDeliveries view exposes the dead-letter operations surface', async ({ page }) => {
 		const root = await rootUrl(page)
-		await page.goto(`${root}/cloud-events/deliveries`, {
+		// ⚠️ The `#` is required — the in-app router is hash-mode
+		// (`createWebHashHistory()`, src/main.js). Without it this URL serves
+		// the SPA shell and then renders the DASHBOARD, which is exactly what
+		// the second test in this file was reporting when it said the view
+		// "rendered no dead-letter operations vocabulary" and then dumped the
+		// dashboard's own text.
+		await page.goto(`${root}/#/cloud-events/deliveries`, {
 			waitUntil: 'domcontentloaded',
 			timeout: 30_000,
 		})

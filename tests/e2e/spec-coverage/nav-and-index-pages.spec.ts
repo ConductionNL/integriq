@@ -13,13 +13,28 @@
  * regression on the Synchronizations / Endpoints / Cloud events pages.
  */
 import { test, expect } from '@playwright/test'
-import { navTo, trackErrors, assertNoAppErrors, openAndDismissCreateModal } from './_helpers'
+import { navTo, trackErrors, assertNoAppErrors, openAndDismissCreateModal, createViaAddButtonAndOpenDetail } from './_helpers'
 
 interface IndexPage {
 	navLabel: string
 	route: string
 	heading: RegExp
 	addButton: RegExp
+	/**
+	 * What the primary create button is contractually supposed to do.
+	 *
+	 * `dialog` (the default) is the generic schema-driven create form.
+	 * `detail-editor` is the Mappings exception: `src/main.js` wires that route's
+	 * Add button to `createMappingAndOpen`, which POSTs a new object and routes
+	 * straight to the bespoke MappingDetail editor — deliberately, per the
+	 * comment there. Asserting a dialog on that page tested a modal the app
+	 * does not have.
+	 */
+	createSurface?: 'dialog' | 'detail-editor'
+	/** OpenRegister schema slug, needed to clean up a `detail-editor` create. */
+	schemaSlug?: string
+	/** Hash-route segment the detail editor lives under. */
+	detailRouteSlug?: string
 }
 
 const INDEX_PAGES: IndexPage[] = [
@@ -27,7 +42,7 @@ const INDEX_PAGES: IndexPage[] = [
 	{ navLabel: 'Endpoints', route: '/endpoints', heading: /^Endpoints$/, addButton: /Add Endpoint/i },
 	{ navLabel: 'Consumers', route: '/consumers', heading: /^Consumers$/, addButton: /Add Consumer/i },
 	{ navLabel: 'Jobs', route: '/jobs', heading: /^Jobs$/, addButton: /Add Job/i },
-	{ navLabel: 'Mappings', route: '/mappings', heading: /^Mappings$/, addButton: /Add Mapping/i },
+	{ navLabel: 'Mappings', route: '/mappings', heading: /^Mappings$/, addButton: /Add Mapping/i, createSurface: 'detail-editor', schemaSlug: 'mapping', detailRouteSlug: 'mappings' },
 	{ navLabel: 'Rules', route: '/rules', heading: /^Rules$/, addButton: /Add Rule/i },
 	{ navLabel: 'Synchronizations', route: '/synchronizations', heading: /^Synchronizations$/, addButton: /Add Synchronization/i },
 	{ navLabel: 'Cloud events', route: '/cloud-events/events', heading: /^Cloud events$/, addButton: /Add Event/i },
@@ -58,10 +73,22 @@ for (const p of INDEX_PAGES) {
 		})
 
 		// @e2e openconnector-comprehensive-tests::index-page-create-modal
-		test(`${p.navLabel} create modal opens and dismisses`, async ({ page }) => {
+		const createTitle = p.createSurface === 'detail-editor'
+			? `${p.navLabel} create button opens the detail editor`
+			: `${p.navLabel} create modal opens and dismisses`
+		test(createTitle, async ({ page }) => {
 			const sink = trackErrors(page)
 			await navTo(page, p.navLabel, p.route)
-			await openAndDismissCreateModal(page, p.addButton)
+			if (p.createSurface === 'detail-editor') {
+				await createViaAddButtonAndOpenDetail(
+					page,
+					p.addButton,
+					p.schemaSlug as string,
+					p.detailRouteSlug as string,
+				)
+			} else {
+				await openAndDismissCreateModal(page, p.addButton)
+			}
 			assertNoAppErrors(sink)
 		})
 	})

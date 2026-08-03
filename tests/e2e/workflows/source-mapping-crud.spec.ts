@@ -62,10 +62,16 @@ test.afterAll(async () => {
  * row floats to the top of page 1 (see PAGINATION NOTE in the file header).
  */
 async function gotoIndex(page: Page, route: string): Promise<void> {
-	// HASH router (src/main.js `mode: 'hash'`): a path-form deep-link is ignored
-	// and lands on the dashboard, so the index list never renders. Use the hash
-	// form (`/apps/openconnector/#/<route>`).
-	await page.goto(`/apps/openconnector/#/${route}`, { waitUntil: 'domcontentloaded' })
+	// Two things this URL has to get right:
+	//   * HASH router (`createWebHashHistory()`, src/main.js): a path-form
+	//     deep-link is ignored and lands on the dashboard, so the index list
+	//     never renders. Hence the `#`.
+	//   * The `/index.php/` prefix: CI serves Nextcloud with `php -S` and no
+	//     router script, where `/apps/openconnector/` is a real directory with
+	//     no index.php inside and 404s outright (measured). The pretty form
+	//     only resolves behind Apache + `.htaccess`; the `/index.php/` form
+	//     works in both.
+	await page.goto(`/index.php/apps/openconnector/#/${route}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForLoadState('networkidle').catch(() => {})
 	await page.waitForTimeout(1_000)
 	const nameHeader = page.getByRole('columnheader', { name: /name/i }).first()
