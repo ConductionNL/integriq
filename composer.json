@@ -21,7 +21,8 @@
 	},
 	"scripts": {
 		"post-install-cmd": [
-			"@composer bin all install --ansi"
+			"@composer bin all install --ansi",
+			"git config core.hooksPath .githooks || true"
 		],
 		"post-update-cmd": [
 			"@composer bin all update --ansi"
@@ -126,9 +127,6 @@
 		"sort-packages": true,
 		"platform": {
 			"php": "8.3"
-		},
-		"audit": {
-			"abandoned": "report"
 		}
 	}
 }

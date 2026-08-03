@@ -29,7 +29,8 @@
     "check:register": "node tests/validate-register.js",
     "check:specs": "npm run check:json-strict && npm run check:manifest && npm run check:register",
     "test:newman": "newman run tests/postman/openconnector.postman_collection.json --environment tests/postman/openconnector.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/newman-report.json",
-    "test:regression": "playwright test --project regression --workers=4"
+    "test:regression": "playwright test --project regression --workers=4",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
