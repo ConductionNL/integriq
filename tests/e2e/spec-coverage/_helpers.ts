@@ -14,15 +14,60 @@
 import { type Page, expect } from '@playwright/test'
 import { appDialog } from '../support/dialogs'
 
-// The in-app router runs in HASH mode (`mode: 'hash'`, src/main.js). A
-// path-form deep-link such as `/apps/openconnector/sources` is therefore
-// ignored by the router and silently lands on the dashboard (`#/`); only
-// a hash-form link (`/apps/openconnector/#/sources`) renders the target
-// page. APP_BASE carries the `/#` so `${APP_BASE}/<route>` is a valid
-// hash deep-link. (NC32→NC34 note: this is router behaviour, not NC
-// chrome — the NC34 migration surfaced it because the weak dashboard
-// fallback masked it before.)
-export const APP_BASE = '/apps/openconnector/#'
+// The one openconnector URL base for the whole spec-coverage suite. Two
+// separate things are encoded here, and both were learned from a failing run.
+//
+// 1. THE `/index.php/` PREFIX IS NOT OPTIONAL.
+//
+//    This used to read `/apps/openconnector/#`. That form works in the docker
+//    dev images, where Apache + Nextcloud's `.htaccess` rewrite pretty URLs
+//    onto `index.php`. CI has no Apache: the shared workflow serves Nextcloud
+//    with `cd server && php -S 0.0.0.0:8080` and NO router script, and PHP's
+//    built-in server resolves a request against the filesystem first.
+//
+//    Measured on a clean install (php -S, docroot = server/):
+//
+//        /index.php/apps/openconnector/   -> 200   (PATH_INFO reaches NC)
+//        /apps/openconnector/             -> 404   (a real directory on disk
+//                                                   with no index.php inside)
+//        /apps/openconnector/js/…-main.js -> 200   (a real FILE, served flat)
+//
+//    Note the shape of that: the assets resolve fine, so nothing about the
+//    build looks wrong — only the HTML entry point 404s. Every spec that deep-
+//    linked through the short form therefore asserted against PHP's own 404
+//    page, which has no `<main>`, no nav and no SPA. That is the single cause
+//    behind "element(s) not found" for `main`, `Nav entry "Webhooks" must be
+//    present`, and `Add Source button must be visible` alike — one cause
+//    wearing ~130 disguises.
+//
+//    The discriminator is in the CI log itself: in the same run, on the same
+//    instance, `configuration-export-import.spec.ts` — which probes
+//    `/index.php/apps/openconnector` — PASSED its two page-mount assertions
+//    while the specs on either side of it failed on `main`.
+//
+//    The `/index.php/` form is correct in BOTH environments (verified against
+//    Apache: `/index.php/apps/openconnector/#/sources` renders `main` with the
+//    "Add Source" button), so this is one form everywhere rather than a probe.
+//
+// 2. THE `#` IS NOT OPTIONAL EITHER.
+//
+//    The in-app router runs in HASH mode (`createWebHashHistory()`,
+//    src/main.js), so a path-form deep-link such as `…/openconnector/sources`
+//    is ignored by the router and silently lands on the dashboard. Only the
+//    hash form renders the target page. APP_BASE carries the `/#` so
+//    `${APP_BASE}/<route>` is a valid hash deep-link.
+//
+// Every spec-coverage file imports this rather than redeclaring it — nine of
+// them used to keep private copies of the wrong string.
+export const APP_BASE = '/index.php/apps/openconnector/#'
+
+/**
+ * The openconnector app root, without the router hash.
+ *
+ * Same `/index.php/` reasoning as APP_BASE above: use this anywhere a spec
+ * needs the app entry point itself rather than a route inside it.
+ */
+export const APP_ROOT_URL = '/index.php/apps/openconnector/'
 
 /**
  * URLs / console substrings that are Nextcloud core framework noise,
