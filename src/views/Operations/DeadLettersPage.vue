@@ -99,6 +99,8 @@ export default {
 		 * The selectable queues.
 		 *
 		 * @return {Array<{id: string, label: string}>}
+		 *
+		 * @spec openspec/specs/dead-letter-replay/spec.md
 		 */
 		queues() {
 			return [
@@ -117,6 +119,8 @@ export default {
 		 *
 		 * @param {string} id The queue id.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/dead-letter-replay/spec.md
 		 */
 		selectQueue(id) {
 			if (this.activeQueue === id) return
