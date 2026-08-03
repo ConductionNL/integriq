@@ -45,7 +45,6 @@ use Twig\TwigFunction;
  */
 class MappingFunctionRegistrationListener implements IEventListener
 {
-
     /**
      * Contribute the functions OpenRegister cannot provide for itself.
      *
@@ -82,6 +81,4 @@ class MappingFunctionRegistrationListener implements IEventListener
         );
 
     }//end handle()
-
-
 }//end class
