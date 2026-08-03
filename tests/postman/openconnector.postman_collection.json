@@ -654,7 +654,7 @@
             "// here: it re-breaks on every new sub-domain while never checking that the RIGHT schemas are referenced.",
             "// The core entity schemas are covered by identity elsewhere — folder 01 creates an object in each of",
             "// source/mapping/endpoint/job/synchronization/consumer/rule/event, which only passes if that slug resolves.",
-            "pm.test('openconnector register references at least the 15 core entity schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.be.at.least(500));"
+            "pm.test('openconnector register references at least the 15 core entity schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.be.at.least(15));"
           ] }}]
         },
         {
