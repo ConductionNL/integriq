@@ -17,14 +17,19 @@ concurrency:
   group: quality-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
-# The called workflow contains jobs that declare `contents: write` and
-# `actions: write` (coverage-baseline update, journeydoc capture, SBOM). A
-# caller cannot grant a reusable workflow more than it holds itself, so capping
-# this at `read` makes the whole call fail to START — zero jobs, no
-# annotations, indistinguishable from "nothing to run".
+# Permission CEILING for the called quality pipeline. GitHub statically
+# validates the called workflow's declared job permissions against this
+# grant — even for jobs that are disabled — so capping any of these at
+# `read` makes the whole call fail to START (zero jobs, no annotations).
+# Union of what the nested jobs need: journeydoc-capture (contents+actions
+# write), update-baseline / features-extract (contents write), the Quality
+# Report PR comment (issues / pull-requests write), and packages: read for
+# pulling org images.
 permissions:
   contents: write
   actions: write
+  issues: write
+  pull-requests: write
   packages: read
 
 jobs:
