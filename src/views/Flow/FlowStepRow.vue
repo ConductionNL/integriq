@@ -36,7 +36,7 @@
 					:model-value="selectedType"
 					:options="typeOptions"
 					:clearable="false"
-					@input="onTypePick" />
+					@update:model-value="onTypePick" />
 			</div>
 
 			<div v-if="showConfigRefPicker" class="flow-step-row__field">
@@ -48,7 +48,7 @@
 					:loading="configRefLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Pick a {type}', { type: configRefLabel })"
-					@input="onConfigRefPick" />
+					@update:model-value="onConfigRefPick" />
 			</div>
 
 			<div class="flow-step-row__field">
@@ -58,7 +58,7 @@
 					:model-value="selectedOnError"
 					:options="onErrorOptions"
 					:clearable="false"
-					@input="onOnErrorPick" />
+					@update:model-value="onOnErrorPick" />
 			</div>
 
 			<div class="flow-step-row__actions">
@@ -111,7 +111,7 @@
 					:model-value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onReject || 'error')"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
-					@input="(option) => updateConfig('onReject', option?.id || 'error')" />
+					@update:model-value="(option) => updateConfig('onReject', option?.id || 'error')" />
 			</div>
 			<div class="flow-step-row__field">
 				<NcSelect
@@ -120,7 +120,7 @@
 					:model-value="resolveEnumOption(ON_REJECT_OPTIONS, step.config.onTimeout || 'error')"
 					:options="ON_REJECT_OPTIONS"
 					:clearable="false"
-					@input="(option) => updateConfig('onTimeout', option?.id || 'error')" />
+					@update:model-value="(option) => updateConfig('onTimeout', option?.id || 'error')" />
 			</div>
 			<NcTextField
 				:label="t('openconnector', 'TTL (seconds)')"
@@ -143,7 +143,7 @@
 						:model-value="resolveOrderOption(branch.nextStepOrder)"
 						:options="orderOptions"
 						:clearable="false"
-						@input="(option) => updateBranchTarget(branchIndex, option?.id)" />
+						@update:model-value="(option) => updateBranchTarget(branchIndex, option?.id)" />
 				</div>
 				<NcButton type="tertiary" :aria-label="t('openconnector', 'Remove branch')" @click="removeBranch(branchIndex)">
 					<template #icon>
@@ -164,7 +164,7 @@
 					:model-value="resolveOrderOption(step.defaultNextStepOrder)"
 					:options="orderOptions"
 					:clearable="true"
-					@input="(option) => $emit('update', { ...step, defaultNextStepOrder: option?.id ?? null })" />
+					@update:model-value="(option) => $emit('update', { ...step, defaultNextStepOrder: option?.id ?? null })" />
 			</div>
 		</div>
 

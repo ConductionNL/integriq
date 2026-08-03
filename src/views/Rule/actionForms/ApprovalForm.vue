@@ -22,7 +22,7 @@
 			:loading="loadingGroups"
 			:clearable="false"
 			:placeholder="t('openconnector', 'Pick the NC group that may approve')"
-			@input="onGroupPick" />
+			@update:model-value="onGroupPick" />
 
 		<NcTextField
 			:label="t('openconnector', 'Time to live (seconds, default 86400)')"
@@ -40,7 +40,7 @@
 			:model-value="selectedOutcome('onReject')"
 			:options="outcomeOptions"
 			:clearable="false"
-			@input="(opt) => onOutcomePick('onReject', opt)" />
+			@update:model-value="(opt) => onOutcomePick('onReject', opt)" />
 
 		<label class="action-form__label" :for="'rule-action-approval-timeout-' + uid">
 			{{ t('openconnector', 'On timeout') }}
@@ -51,7 +51,7 @@
 			:model-value="selectedOutcome('onTimeout')"
 			:options="outcomeOptions"
 			:clearable="false"
-			@input="(opt) => onOutcomePick('onTimeout', opt)" />
+			@update:model-value="(opt) => onOutcomePick('onTimeout', opt)" />
 
 		<span class="action-form__helper">
 			{{ t('openconnector', 'Approval rules only run in the "before" phase — they suspend the request until a member of the approver group approves or rejects it. Configure the rule timing to "before".') }}

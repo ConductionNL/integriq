@@ -45,7 +45,7 @@
 					:loading="synchronizationsLoading"
 					:clearable="!field.required"
 					:placeholder="t('openconnector', 'Select a synchronization')"
-					@input="onSynchronizationPick" />
+					@update:model-value="onSynchronizationPick" />
 				<span class="cn-job-form-fields__helper">
 					{{ t('openconnector', 'The synchronization this job will run. Written back as arguments.synchronizationId.') }}
 				</span>
@@ -72,7 +72,7 @@
 						:options="jobClassOptions"
 						:clearable="!field.required"
 						:placeholder="t('openconnector', 'Pick an action class')"
-						@input="onJobClassPick" />
+						@update:model-value="onJobClassPick" />
 					<span class="cn-job-form-fields__helper">
 						{{ field.description || t('openconnector', 'The PHP class that runs when this job fires.') }}
 					</span>
@@ -176,7 +176,7 @@
 				:loading="synchronizationsLoading"
 				:clearable="false"
 				:placeholder="t('openconnector', 'Select a synchronization')"
-				@input="onSynchronizationPick" />
+				@update:model-value="onSynchronizationPick" />
 			<span class="cn-job-form-fields__helper">
 				{{ t('openconnector', 'The synchronization this job will run. Written back as arguments.synchronizationId.') }}
 			</span>

@@ -18,7 +18,7 @@
 			:options="sourceOptions"
 			:loading="sourcesLoading"
 			:placeholder="t('openconnector', 'Select a source')"
-			@input="onSourcePick" />
+			@update:model-value="onSourcePick" />
 
 		<NcTextField
 			:label="t('openconnector', 'File path (dot path)')"

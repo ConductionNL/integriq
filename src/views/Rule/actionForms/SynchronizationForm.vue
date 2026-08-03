@@ -19,7 +19,7 @@
 			:options="syncOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a synchronization')"
-			@input="onSyncPick" />
+			@update:model-value="onSyncPick" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'The synchronization that runs when this rule matches. Pick by name; the underlying UUID is what gets stored.') }}
 		</span>

@@ -16,7 +16,7 @@
 			:model-value="selectedSchemeOption"
 			:options="schemeOptions"
 			:clearable="false"
-			@input="onSchemePick" />
+			@update:model-value="onSchemePick" />
 		<NcTextField
 			:label="t('openconnector', 'Signature header')"
 			:model-value="value.header || ''"

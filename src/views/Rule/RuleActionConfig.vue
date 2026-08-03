@@ -31,7 +31,7 @@
 				:options="typeOptions"
 				:clearable="false"
 				:placeholder="t('openconnector', 'Pick an action type')"
-				@input="onTypePick" />
+				@update:model-value="onTypePick" />
 			<p class="rule-action-config__hint">
 				{{ t('openconnector', 'Selecting an action type changes which configuration fields are required below. The rule engine matches on this value at evaluation time.') }}
 			</p>

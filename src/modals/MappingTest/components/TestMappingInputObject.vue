@@ -11,7 +11,7 @@ import { translate as t } from '@nextcloud/l10n'
 			class="textarea"
 			:error="!validJson(inputObject)"
 			:helper-text="!validJson(inputObject) ? t('openconnector', 'Invalid JSON') : ''"
-			@input="emitInputObjectChanged($event)" />
+			@update:model-value="emitInputObjectChanged" />
 	</div>
 </template>
 
@@ -35,10 +35,13 @@ export default {
 	},
 	methods: {
 		/** @spec openspec/specs/mapping-editor-ui/spec.md */
-		emitInputObjectChanged(event) {
+		emitInputObjectChanged(value) {
+			// Receives the VALUE, not a DOM event: NcTextArea is a v9 component
+			// emitting update:modelValue. The former `$event.target.value` read
+			// relied on the listener falling through to the inner <textarea>.
 			const data = {
-				value: event.target.value,
-				isValid: this.validJson(event.target.value),
+				value,
+				isValid: this.validJson(value),
 			}
 			this.$emit('input-object-changed', data)
 		},
