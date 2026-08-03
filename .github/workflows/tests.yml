@@ -46,6 +46,10 @@ jobs:
   phpunit:
     name: PHPUnit + coverage gate
     runs-on: ubuntu-latest
+    # PHPUnit legs across the fleet have been measured reaching 18.9 min while
+    # SUCCEEDING (shillinq) — each installs a full Nextcloud server first.
+    # Bounded well above that so a slow-but-healthy run is never killed.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -124,6 +128,9 @@ jobs:
   tests-gate:
     name: Tests gate
     runs-on: ubuntu-latest
+    # Single-step gate: it only reads the `needs` results, no checkout, no
+    # install. Seconds in practice; 10 min is pure headroom.
+    timeout-minutes: 10
     needs: [phpunit, newman, playwright]
     if: always()
     steps:

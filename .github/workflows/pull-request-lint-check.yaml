@@ -10,6 +10,9 @@ on:
 jobs:
   lint-check:
     runs-on: ubuntu-latest
+    # Observed: n=28 runs, median 0.6 min, max 1.2 min. Bounded loosely so
+    # normal runner contention can never trip it.
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
