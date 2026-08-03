@@ -22,12 +22,45 @@ define('PHPUNIT_RUN', 1);
 // ClassLoader instance is returned even when PHPUnit has already pulled it in.
 $autoloader = require __DIR__ . '/../vendor/autoload.php';
 
+// Are we running inside a PROVISIONED Nextcloud server, or in a bare checkout?
+//
+// This single question decides whether any of the vendored-OCP / stub wiring
+// below may run at all, so it has to be answered BEFORE that wiring, not after.
+//
+// Everything below stands in for a Nextcloud that isn't there. When one IS
+// there, registering it is actively harmful: these classes are loaded by NAME,
+// so a stub defined first SHADOWS core's real class, and core's own code is
+// then type-checked against our stand-in. Two hard failures came from exactly
+// that, both fatal before PHPUnit could run a single test:
+//
+//   * `OC\Hooks\Emitter` — our stub's typed `listen(): void` was incompatible
+//     with core's untyped `LazyFolder::listen()`, so compiling `LazyRoot`
+//     (which implements `IRootFolder extends Emitter`) fataled.
+//   * `Doctrine\DBAL\Query\Expression\ExpressionBuilder` — our stub has no
+//     `eq()`, so core's `OC\AppConfig::loadConfig()` died with
+//     "Call to undefined method ...ExpressionBuilder::eq()" while booting.
+//
+// The old `class_exists()` guards could not prevent this: they were evaluated
+// BEFORE `lib/base.php` had been required, so core's real classes were not yet
+// loadable, every probe returned false, and the stub always won.
+//
+// Note this must NOT be `defined('OC_CONSOLE')`-style detection alone — the
+// deciding factor is a readable config.php, which is what makes `lib/base.php`
+// safe to boot further down.
+$ncBase       = __DIR__ . '/../../../lib/base.php';
+$ncConfig     = __DIR__ . '/../../../config/config.php';
+$hasNextcloud = (defined('OC_CONSOLE') === false
+    && is_readable($ncConfig) === true
+    && file_exists($ncBase) === true);
+
 // Register the OCP/NCU namespaces from the nextcloud/ocp dev dependency so that
-// unit tests can run in a bare environment (no installed Nextcloud server). When
-// NC is present its own autoloader provides these and these mappings are inert.
+// unit tests can run in a bare environment (no installed Nextcloud server).
+// Skipped entirely when a real server is present: the vendored `nextcloud/ocp`
+// is a DIFFERENT NC version's copy of the public API, and mapping OCP\ at it
+// would resolve core's own interfaces to the wrong release.
 // Must come BEFORE the Doctrine/OpenRegister stub registration because the
 // ObjectEntity stub extends OCP\AppFramework\Db\Entity.
-if ($autoloader instanceof \Composer\Autoload\ClassLoader && is_dir(__DIR__ . '/../vendor/nextcloud/ocp/OCP') === true) {
+if ($hasNextcloud === false && $autoloader instanceof \Composer\Autoload\ClassLoader && is_dir(__DIR__ . '/../vendor/nextcloud/ocp/OCP') === true) {
     $autoloader->addPsr4('OCP\\', __DIR__ . '/../vendor/nextcloud/ocp/OCP/');
     if (is_dir(__DIR__ . '/../vendor/nextcloud/ocp/NCU') === true) {
         $autoloader->addPsr4('NCU\\', __DIR__ . '/../vendor/nextcloud/ocp/NCU/');
@@ -36,13 +69,21 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader && is_dir(__DIR__ . '/
 
 // Register test stubs for Doctrine\DBAL\* (referenced at parse-time by OCP
 // QueryBuilder interfaces) and OCA\OpenRegister\* (peer app not in vendor).
-// Stubs are guarded by class_exists() so they never clobber a real class when
-// running inside a full Nextcloud installation.
+//
+// Bare checkouts ONLY — see the $hasNextcloud comment above. In a provisioned
+// server, core supplies real Doctrine and OC classes and the CI job checks out
+// OpenRegister as a sibling app, so every one of these stand-ins is both
+// unnecessary and, because it is loaded by name, actively shadowing.
+//
+// The per-class `class_exists()` guards below are kept as a second line of
+// defence, but they are NOT sufficient on their own: they run before
+// `lib/base.php` is required, so core's classes are not yet loadable and every
+// probe answers false.
 //
 // Important: The Composer ClassLoader caches "missing" class lookups after the
 // first failed autoload. Eagerly require_once the stub files to guarantee the
 // classes are defined regardless of lookup-cache state.
-if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
+if ($hasNextcloud === false && $autoloader instanceof \Composer\Autoload\ClassLoader) {
     $stubsDir = __DIR__ . '/stubs';
     if (is_dir($stubsDir) === true) {
         // Doctrine\DBAL stubs — required by OCP\DB\QueryBuilder\IQueryBuilder
@@ -283,18 +324,15 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
     }
 }
 
-// Bootstrap Nextcloud only when the config file is readable (i.e., in a
-// properly provisioned dev/CI environment). Skip silently in standalone mode —
-// OCP stubs are sufficient for unit-only test suites.
-$ncBase   = __DIR__ . '/../../../lib/base.php';
-$ncConfig = __DIR__ . '/../../../config/config.php';
-if (defined('OC_CONSOLE') === false && is_readable($ncConfig) === true) {
-    if (file_exists($ncBase) === true) {
-        try {
-            require_once $ncBase;
-        } catch (\Throwable $e) {
-            // NC not fully installed — unit tests continue with vendor stubs only.
-        }
+// Bootstrap Nextcloud when one is provisioned (see $hasNextcloud above, which
+// is the same condition — computed early because it also gates the stub
+// registration). Skip silently in standalone mode: the OCP/vendor stubs
+// registered above are sufficient for a unit-only suite.
+if ($hasNextcloud === true) {
+    try {
+        require_once $ncBase;
+    } catch (\Throwable $e) {
+        // NC not fully installed — unit tests continue with vendor stubs only.
     }
 
     // Load Test\TestCase and other NC test classes (NC convention).
