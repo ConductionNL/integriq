@@ -211,3 +211,68 @@ export async function openAndDismissCreateModal(page: Page, addButton: RegExp): 
 		await page.keyboard.press('Escape')
 	}
 }
+
+/**
+ * Click a primary create button that is wired to create-then-open a bespoke
+ * DETAIL EDITOR rather than a create dialog, and assert that contract.
+ *
+ * Mappings are the one index page in this app that works this way, and it is
+ * deliberate: `src/main.js` wraps the Mappings route in a `MappingsPageRenderer`
+ * that passes `onAdd: createMappingAndOpen`, whose comment reads "The Mappings
+ * index Add button must open the bespoke MappingDetail editor (a page) rather
+ * than the generic name/description form dialog." `createMappingAndOpen()`
+ * POSTs a new object to OpenRegister and then routes to `MappingDetail`.
+ *
+ * Two spec-coverage tests asserted a dialog here and failed with "Modal must
+ * open after clicking Add Mapping" — a true statement about a modal the app
+ * intentionally does not have. Asserting the real contract is strictly
+ * stronger than asserting "some dialog appeared": this checks that a row was
+ * actually persisted AND that the editor for it opened.
+ *
+ * Cleans up the object it created, so the assertion does not litter the
+ * instance with "New mapping" rows on every run.
+ *
+ * @param page       the Playwright page.
+ * @param addButton  Accessible-name regex for the create button.
+ * @param schemaSlug OpenRegister schema slug the button creates, e.g. `mapping`.
+ * @param routeSlug  Hash-route segment the detail page lives under, e.g. `mappings`.
+ *
+ * @return Nothing.
+ */
+export async function createViaAddButtonAndOpenDetail(
+	page: Page,
+	addButton: RegExp,
+	schemaSlug: string,
+	routeSlug: string,
+): Promise<void> {
+	const addBtn = page.getByRole('button', { name: addButton }).first()
+	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({ timeout: 20_000 })
+	await addBtn.click()
+
+	// The route must move from the index to a detail URL carrying an id.
+	const detailUrl = new RegExp(`#/${routeSlug}/[^/]+$`)
+	await expect
+		.poll(() => page.url(), {
+			message: `clicking "${addButton.source}" must open the ${routeSlug} detail editor`,
+			timeout: 20_000,
+		})
+		.toMatch(detailUrl)
+
+	const id = page.url().split('/').pop() as string
+	expect(id, 'the detail route must carry the id of the newly-created object').toBeTruthy()
+
+	// And the detail surface must actually render, not just the URL change.
+	await expect(page.locator('main').first(), 'the detail editor must render')
+		.toBeVisible({ timeout: 15_000 })
+
+	// Clean up the object this assertion created. Nextcloud rejects
+	// state-changing requests without a `requesttoken`, and storageState
+	// carries cookies but not the rotating token, so read it off the page.
+	const token = await page.evaluate(
+		() => (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken ?? '',
+	)
+	await page.request.delete(
+		`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}/${id}`,
+		{ headers: { requesttoken: token, 'OCS-APIRequest': 'true' }, failOnStatusCode: false },
+	)
+}

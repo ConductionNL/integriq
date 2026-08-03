@@ -25,7 +25,7 @@ import { appDialog } from '../support/dialogs'
 // it, PHP's built-in server on CI 404s the app directory and every assertion
 // below runs against a 404 page). This file used to keep a private copy of
 // that string that was missing the prefix.
-import { APP_BASE } from './_helpers'
+import { APP_BASE, createViaAddButtonAndOpenDetail } from './_helpers'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/openconnector'
 const API_BASE = '/index.php/apps/openconnector/api'
@@ -44,22 +44,25 @@ test.describe('REQ-UI-001: Mappings list page mounts', () => {
 	})
 })
 
-test.describe('REQ-UI-001: Add Mapping modal', () => {
-	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-modal
-	test('Add Mapping button opens modal/dialog', async ({ page }) => {
+test.describe('REQ-UI-001: Add Mapping opens the bespoke editor', () => {
+	// This test used to assert "Add Mapping button opens modal/dialog" and
+	// failed with `Modal must open after clicking Add Mapping` — a true
+	// statement about a modal the app deliberately does not have.
+	//
+	// `src/main.js` wraps the Mappings route in a `MappingsPageRenderer` that
+	// passes `onAdd: createMappingAndOpen`, and says why: "The Mappings index
+	// Add button must open the bespoke MappingDetail editor (a page) rather
+	// than the generic name/description form dialog." `createMappingAndOpen()`
+	// POSTs a new object to OpenRegister and routes to `MappingDetail`.
+	//
+	// So the contract asserted here is the real one, and it is a stronger check
+	// than the old one: the object must actually be persisted AND its editor
+	// must open. The helper deletes what it creates.
+	//
+	// @e2e mapping-and-search::add-mapping-button-opens-the-creation-surface
+	test('Add Mapping creates a mapping and opens its detail editor', async ({ page }) => {
 		await page.goto(`${APP_BASE}/mappings`, { waitUntil: 'networkidle' })
-		const addBtn = page.getByRole('button', { name: 'Add Mapping' })
-		await expect(addBtn, 'Add Mapping button must be visible').toBeVisible({ timeout: 20_000 })
-		await addBtn.click()
-		const dialog = appDialog(page)
-		await expect(dialog, 'Modal must open after clicking Add Mapping').toBeVisible({ timeout: 10_000 })
-		// Dismiss without saving
-		const cancelBtn = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
-		if (await cancelBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			await cancelBtn.click()
-		} else {
-			await page.keyboard.press('Escape')
-		}
+		await createViaAddButtonAndOpenDetail(page, /Add Mapping/i, 'mapping', 'mappings')
 	})
 })
 

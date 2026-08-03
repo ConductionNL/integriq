@@ -103,7 +103,13 @@ function attachConsoleSpy(page: Page): { errors: string[] } {
 
 async function gotoSpaPage(page: Page, path: string): Promise<void> {
 	const root = await rootUrl(page)
-	await page.goto(`${root}${path}`, {
+	// ⚠️ The `#` is required. The in-app router is hash-mode
+	// (`createWebHashHistory()`, src/main.js), so `<root>/webhooks` serves the
+	// SPA shell and is then IGNORED by the router, which renders the dashboard.
+	// The `#app-content` assertion below passes on the dashboard just as
+	// happily as on the target page, so without the `#` these specs were green
+	// while never once looking at the page they name.
+	await page.goto(`${root}/#${path}`, {
 		waitUntil: 'domcontentloaded',
 		timeout: 30_000,
 	})

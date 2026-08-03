@@ -71,6 +71,31 @@ async function resolveAppBase(page: Page): Promise<string> {
 }
 
 /**
+ * Deep-link to an in-app route.
+ *
+ * ⚠️ The `#` is not decoration. The in-app router is hash-mode
+ * (`createWebHashHistory()`, src/main.js), so a PATH-form deep-link such as
+ * `<base>/sources` is served by the SPA shell — status 200, `openconnector` in
+ * the HTML, everything a smoke check looks at — and then ignored by the
+ * router, which renders the dashboard instead.
+ *
+ * Journeys J1–J6 did exactly that, and reported it as
+ * `Add Synchronization button must be visible on the index page`. Perfectly
+ * true: they were looking at the dashboard. The `UI smoke` block lower down
+ * deliberately does NOT use this helper — it asserts the SERVER routes return
+ * 200, for which the path form is the right URL.
+ *
+ * @param page  the Playwright page.
+ * @param route In-app route beginning with `/`, e.g. `/sources`.
+ *
+ * @return Nothing.
+ */
+async function gotoRoute(page: Page, route: string): Promise<void> {
+	const base = await resolveAppBase(page)
+	await page.goto(`${base}/#${route}`, { waitUntil: 'domcontentloaded' })
+}
+
+/**
  * Drive a CnIndexPage create flow:
  *   - click the "Add {schema}" primary button
  *   - fill in the name field of the CnFormDialog
@@ -483,8 +508,7 @@ test.describe('UI journey J1 — visually create a Source; assert row in list', 
 	const name = `pw-j1-source-${Date.now()}`
 
 	test('Add Source → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		// Cleanup via API — test focus is the create flow.
 		await deleteViaApi(page, 'source', name, id)
@@ -495,8 +519,7 @@ test.describe('UI journey J2 — visually create a Mapping; assert row in list',
 	const name = `pw-j2-mapping-${Date.now()}`
 
 	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/mappings`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/mappings')
 		const id = await createViaUi(page, 'mapping', 'Mapping', name)
 		await deleteViaApi(page, 'mapping', name, id)
 	})
@@ -506,8 +529,7 @@ test.describe('UI journey J3 — visually create a Synchronization; assert row i
 	const name = `pw-j3-sync-${Date.now()}`
 
 	test('Add Synchronization → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/synchronizations`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/synchronizations')
 		const id = await createViaUi(page, 'synchronization', 'Synchronization', name)
 		await deleteViaApi(page, 'synchronization', name, id)
 	})
@@ -517,8 +539,7 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 	const name = `pw-j4-endpoint-${Date.now()}`
 
 	test('Add Endpoint → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/endpoints`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/endpoints')
 		// Endpoint schema's `required` list is ['name', 'endpoint',
 		// 'method'] — CnFormDialog keeps Create disabled until each
 		// required field is touched-and-valid. The other three journeys
@@ -536,8 +557,7 @@ test.describe('UI journey J5 — edit a Source via row Actions → Edit; mass-de
 	const newDescription = `edited via J5 at ${Date.now()}`
 
 	test('create row → edit description via Actions → Save → description visible', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await editViaUi(page, 'source', name, newDescription)
 		// Cleanup via UI mass-delete to exercise that code path,
@@ -550,8 +570,7 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 	const name = `pw-j6-source-${Date.now()}`
 
 	test('create row → single-delete via Actions → row gone', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await singleDeleteViaUi(page, 'source', name)
 		// Fallback cleanup in case UI single-delete didn't remove the item.
