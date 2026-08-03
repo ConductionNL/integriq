@@ -1239,9 +1239,10 @@
                                         "consumer": "@objectId"
                                     },
                                     "route": {
-                                        "name": "EventDeliveries",
+                                        "name": "DeadLetters",
                                         "query": {
-                                            "consumer": "@objectId"
+                                            "consumer": "@objectId",
+                                            "queue": "events"
                                         }
                                     }
                                 }
@@ -1267,10 +1268,11 @@
                                         "status": "failed"
                                     },
                                     "route": {
-                                        "name": "EventDeliveries",
+                                        "name": "DeadLetters",
                                         "query": {
                                             "consumer": "@objectId",
-                                            "status": "failed"
+                                            "status": "failed",
+                                            "queue": "events"
                                         }
                                     }
                                 }
