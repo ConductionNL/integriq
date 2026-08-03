@@ -27,13 +27,16 @@ import BellRing from 'vue-material-design-icons/BellRing.vue'
 import BellRingOutline from 'vue-material-design-icons/BellRingOutline.vue'
 import BookOpenVariant from 'vue-material-design-icons/BookOpenVariant.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
+import Broadcast from 'vue-material-design-icons/Broadcast.vue'
 import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
 import CardAccountDetailsOutline from 'vue-material-design-icons/CardAccountDetailsOutline.vue'
 import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
+import CheckDecagramOutline from 'vue-material-design-icons/CheckDecagramOutline.vue'
 import CheckboxMarkedCircleOutline from 'vue-material-design-icons/CheckboxMarkedCircleOutline.vue'
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import ClockTimeFour from 'vue-material-design-icons/ClockTimeFour.vue'
 import Cloud from 'vue-material-design-icons/Cloud.vue'
+import CloudSyncOutline from 'vue-material-design-icons/CloudSyncOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
@@ -78,6 +81,7 @@ import ShieldKeyOutline from 'vue-material-design-icons/ShieldKeyOutline.vue'
 import Sitemap from 'vue-material-design-icons/Sitemap.vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
+import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import SyncCircle from 'vue-material-design-icons/SyncCircle.vue'
@@ -107,13 +111,16 @@ export default {
 	BellRingOutline,
 	BookOpenVariant,
 	BookOpenVariantOutline,
+	Broadcast,
 	CalendarClock,
 	CardAccountDetailsOutline,
 	CheckCircleOutline,
+	CheckDecagramOutline,
 	CheckboxMarkedCircleOutline,
 	ClockOutline,
 	ClockTimeFour,
 	Cloud,
+	CloudSyncOutline,
 	CloudUploadOutline,
 	Cog,
 	CogOutline,
@@ -158,6 +165,7 @@ export default {
 	Sitemap,
 	SitemapOutline,
 	SourceBranch,
+	StoreOutline,
 	SwapHorizontal,
 	Sync,
 	SyncCircle,
