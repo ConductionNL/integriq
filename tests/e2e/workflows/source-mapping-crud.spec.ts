@@ -20,21 +20,28 @@
  * per-row Actions menu (Test connection / View logs / View / Edit / Copy /
  * Delete) — verified live on 2026-06-10.
  *
- * PAGINATION NOTE: the entity lists are server-paginated (e.g. 26 mappings,
- * 20/page). To surface a freshly created row we prefix names with `zzz-` so
- * they sort last and click the Name column header twice to sort DESCENDING.
+ * PAGINATION NOTE: the entity lists are server-paginated, 20/page.
  *
  * KNOWN PRE-EXISTING LIB GAP (NOT NC34-related, confirmed on NC34 2026-06-16):
  * the schema-driven index list (`@conduction/nextcloud-vue` CnIndexPage/CnTable)
  * sorts CLIENT-SIDE over only the already-loaded page — clicking a column header
  * fires NO server re-query — and the in-list search box is likewise NOT wired to
- * a server `_search`. So for a schema with more than one page of rows, a freshly
- * created `zzz-` row that the server would place on page 1 under `name desc` never
- * gets fetched into the table and never appears. The SOURCE cycle passes (10 rows
- * < 1 page); the MAPPING cycle cannot pass via the UI list until the lib does
- * server-side sort/search. The OR-persistence cross-checks below carry the real
- * CRUD coverage. Tracked as the #996 table-view family (server-side sort/search);
- * fix lives in @conduction/nextcloud-vue, not openconnector.
+ * a server `_search`. Tracked as the #996 table-view family; the fix lives in
+ * @conduction/nextcloud-vue, not openconnector.
+ *
+ * This file used to work around that by naming rows `zzz-…` and clicking the
+ * Name header twice to sort descending, betting the new row would land on
+ * page 1. That bet is unwinnable — a client-side sort can only reorder the 20
+ * rows already fetched, so a row the server placed on page 2 is not there to
+ * be sorted. It held only while a list fitted on a single page, and the SOURCE
+ * list no longer does: measured on CI run 30825088345, `Showing 20 of 23`,
+ * `Page 1 of 2`, header still reading `Name ▲` after both clicks, and the
+ * freshly created row sitting on page 2 where nothing ever looked for it.
+ *
+ * The cycles now page forward through the list (`walkToRow()`) using the
+ * server-backed pager, which does re-query. That is independent of the broken
+ * sort, so these specs no longer encode an assumption about how many rows the
+ * rest of the suite happens to leave behind.
  */
 import { test, expect, type Page } from '@playwright/test'
 import { appDialog } from '../support/dialogs'
@@ -58,8 +65,14 @@ test.afterAll(async () => {
 })
 
 /**
- * Land on the list and sort the Name column DESCENDING so a `zzz-`-prefixed
- * row floats to the top of page 1 (see PAGINATION NOTE in the file header).
+ * Land on the list index.
+ *
+ * This used to also click the Name column header twice, intending to sort
+ * DESCENDING so a `zzz-`-prefixed row floated to the top of page 1. That
+ * strategy does not work and never could — see the PAGINATION NOTE in the
+ * file header. `walkToRow()` below is what actually finds the row now, so the
+ * sort clicks are gone: they cost ~2s per call and left the grid in a state
+ * ("Name ▲", i.e. still ascending) that made the real cause harder to read.
  */
 async function gotoIndex(page: Page, route: string): Promise<void> {
 	// Two things this URL has to get right:
@@ -74,17 +87,55 @@ async function gotoIndex(page: Page, route: string): Promise<void> {
 	await page.goto(`/index.php/apps/openconnector/#/${route}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForLoadState('networkidle').catch(() => {})
 	await page.waitForTimeout(1_000)
-	const nameHeader = page.getByRole('columnheader', { name: /name/i }).first()
-	if (await nameHeader.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await nameHeader.click() // asc
-		await page.waitForTimeout(800)
-		await nameHeader.click() // desc — floats zzz- rows to the top
-		await page.waitForTimeout(1_200)
+}
+
+/**
+ * Page forward through the index list until the row containing `name` is on
+ * screen. Leaves the browser on whichever page holds it.
+ *
+ * Why this is needed, and why it is not a workaround that hides a defect:
+ * the row-visible assertions are about whether the entity the UI just created
+ * is IN THE LIST. Which paginated slice it lands on is not part of that claim.
+ * The list's own pager is server-backed and works — "Page 1 of 2" with live
+ * First/Previous/N/Next/Last buttons — so walking it is a real user path and
+ * every assertion at the call sites is left exactly as strict as it was.
+ *
+ * The previous approach (name the row `zzz-…`, sort Name descending, expect it
+ * on page 1) depended on a sort that does not do what it looks like it does —
+ * see the file header. It survived only while every list fitted on one page.
+ *
+ * @param page The Playwright page, already on the index route.
+ * @param name The exact entity name to look for.
+ *
+ * @returns True if the row was found on some page, false if it is on none.
+ */
+async function walkToRow(page: Page, name: string): Promise<boolean> {
+	// Bounded so a broken pager can never spin forever; 40 pages at the
+	// default 20/page is far more than this suite can generate.
+	for (let hop = 0; hop < 40; hop++) {
+		const row = page.locator('tr', { hasText: name }).first()
+		if (await row.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			return true
+		}
+
+		// `isEnabled()` is false on the last page (the button is rendered
+		// disabled) and the call throws when there is no pager at all —
+		// a single-page list. Both mean "nowhere left to look".
+		const next = page.getByRole('button', { name: 'Next', exact: true }).first()
+		if (await next.isEnabled({ timeout: 2_000 }).catch(() => false) === false) {
+			return false
+		}
+
+		await next.click()
+		await page.waitForTimeout(900)
 	}
+
+	return false
 }
 
 /** Open the per-row Actions menu for the row whose text contains `name`. */
 async function openRowMenu(page: Page, name: string): Promise<void> {
+	await walkToRow(page, name)
 	const row = page.locator('tr', { hasText: name }).first()
 	await expect(row, `row "${name}" must be present in the list`).toBeVisible({ timeout: 20_000 })
 	await row.getByRole('button').last().click()
@@ -121,6 +172,7 @@ async function crudCycle(
 
 	// ---- ASSERT the ROW appears (not empty-state) -------------------------
 	await gotoIndex(page, route)
+	await walkToRow(page, name)
 	const createdRow = page.locator('tr', { hasText: name }).first()
 	await expect(createdRow, 'newly-created row must appear in the list').toBeVisible({ timeout: 15_000 })
 
@@ -163,6 +215,11 @@ async function crudCycle(
 	}
 	await page.waitForTimeout(2_500)
 	await gotoIndex(page, route)
+	// Walking first makes this assertion STRICTER, not looser: it now checks
+	// every page rather than only page 1. If the row survived the delete
+	// anywhere in the list, walkToRow() navigates straight to it and the
+	// toBeHidden() below fails, which is exactly what we want it to do.
+	await walkToRow(page, name)
 	const goneRow = page.locator('tr', { hasText: name }).first()
 	await expect(goneRow, 'deleted row must be gone from the list').toBeHidden({ timeout: 10_000 })
 
@@ -180,13 +237,13 @@ test.describe('Source — full CRUD with persistence', () => {
 })
 
 test.describe('Mapping — full CRUD with persistence', () => {
-	// fixme (pre-existing, NOT NC34): the mappings list holds >1 page of rows and
-	// the lib's column-header sort / in-list search are client-only (no server
-	// re-query), so a freshly created `zzz-` row never gets fetched onto page 1
-	// and the row-visible assertions can't see it. CRUD persistence itself works
-	// (verified via the OR API). Un-fixme once @conduction/nextcloud-vue does
-	// server-side sort/search for the schema index list (#996 family).
-	test.fixme()
+	// Previously test.fixme()'d because the mappings list holds >1 page of rows
+	// and the lib's client-only column sort could never bring a freshly created
+	// `zzz-` row onto page 1. That is no longer how these cycles find their row:
+	// walkToRow() pages forward through the server-backed pager, so a multi-page
+	// list is expected rather than fatal, and the skip's stated cause is gone.
+	// The #996 lib gap (server-side sort/search) is still real and still open —
+	// it just no longer decides whether this spec can run.
 	test('create → row appears → view → edit persists → delete', async ({ page }) => {
 		test.setTimeout(120_000)
 		await crudCycle(page, 'mapping', 'mappings', /add mapping/i)

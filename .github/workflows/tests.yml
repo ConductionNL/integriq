@@ -104,16 +104,13 @@ jobs:
       enable-newman: true
       newman-collection-path: "tests/postman"
       newman-environment-path: "tests/postman/openconnector.postman_environment.json"
-      # ⚠️ TODO — ENABLE THIS ONE LINE ONCE ConductionNL/.github#132 IS MERGED
-      # (keep in step with the identical block in code-quality.yml, which
-      # carries the full rationale):
-      #
-      #   newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
-      #
-      # Short version: without a seed the `openconnector` register does not
-      # exist and all 8 fixture POSTs 404 (51 of 107 assertions). With the seed
-      # the fixtures create fine, but this job's `php -S` is single-worker and
-      # journey J2's self-pointing Source deadlocks it until timeout-minutes.
+      # Keep in step with the identical line in code-quality.yml, which carries
+      # the full rationale. Short version: without a seed the `openconnector`
+      # register does not exist and all 8 fixture POSTs 404, cascading into
+      # 51 of 107 assertions. ConductionNL/.github#132 (merged 2026-08-03) sets
+      # PHP_CLI_SERVER_WORKERS=8 on this job, without which journey J2's
+      # self-pointing Source deadlocks the single-worker `php -S`.
+      newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
       enable-playwright: false
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
 
