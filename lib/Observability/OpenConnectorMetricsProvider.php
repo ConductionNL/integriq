@@ -669,6 +669,146 @@ class OpenConnectorMetricsProvider implements IMetricsProvider
     }//end circuitBreakerStateSample()
 
     /**
+     * Fetch every object of the schema with the given title, as plain field
+     * arrays, via OpenRegister object aggregation (ADR-022).
+     *
+     * @param string $title The schema's exact `title` field value.
+     *
+     * @return array<int, array<string, mixed>> The objects' own fields.
+     *
+     * @throws Throwable When the underlying OR aggregation query fails.
+     *
+     * @spec exclude Shared OR-aggregation plumbing for the grouped counters below.
+     */
+    private function fetchObjectsBySchemaTitle(string $title): array
+    {
+        $objectService = $this->getObjectService();
+        if ($objectService === null) {
+            return [];
+        }
+
+        $schemaId = $this->resolveSchemaIdByTitle(title: $title);
+        if ($schemaId === null) {
+            return [];
+        }
+
+        $registerIds = $this->resolveRegisterIdsForSchema(schemaId: $schemaId);
+        if ($registerIds === []) {
+            return [];
+        }
+
+        $objects = [];
+        foreach ($registerIds as $registerId) {
+            $results = $objectService->searchObjects(
+                query: [
+                    '@self' => [
+                        'register' => $registerId,
+                        'schema'   => $schemaId,
+                    ],
+                ],
+                _rbac: false,
+                _multitenancy: false,
+            );
+
+            if (is_array($results) === false) {
+                continue;
+            }
+
+            foreach ($results as $result) {
+                $objects[] = $this->normalise(object: $result);
+            }
+        }//end foreach
+
+        return $objects;
+
+    }//end fetchObjectsBySchemaTitle()
+
+    /**
+     * Build a single-label grouped counter/gauge from OR objects, honouring
+     * the spec's ZERO-VALUE PLACEHOLDER scenarios.
+     *
+     * Why this is a provider escape hatch rather than a declarative
+     * `objectCount` + `groupBy` descriptor — two independent reasons, both
+     * measured on run 30821823343:
+     *
+     *  1. `objectCount`'s grouped path emits NOTHING even when the data is
+     *     there. `ObjectMetricSource::expandGroups()` discovers buckets via
+     *     `getFacetsForObjects()`, and that returned no terms buckets for a
+     *     plain JSON property: `sources_total` produced zero samples against
+     *     22 Source objects that all carry `type: "api"`, while the ungrouped
+     *     descriptors (`jobs_total 18`, `mappings_total 19`) were correct in
+     *     the same scrape. Filed as ConductionNL/openregister#2308.
+     *  2. Even with working facets it could not satisfy the spec. The engine
+     *     has no `labelMap` for object sources, so the label would carry the
+     *     OR property name (`statusCode`, `result`) instead of the `status`
+     *     the spec mandates; and `expandGroups()` drops zero-valued buckets,
+     *     so the "no calls emits a zero placeholder" scenarios are
+     *     inexpressible in the declarative vocabulary at all.
+     *
+     * The placeholder is not cosmetic: `rate()` and `absent()` behave very
+     * differently against a series that is missing versus one that is present
+     * and zero, which is exactly why the spec calls for it.
+     *
+     * @param string $name        The metric name (unprefixed).
+     * @param string $type        Prometheus metric type (gauge/counter).
+     * @param string $help        The HELP text.
+     * @param string $schemaTitle The OR schema title to read objects from.
+     * @param string $field       The object property to group by.
+     * @param string $label       The Prometheus label key to emit.
+     * @param string $placeholder The label value for the zero placeholder.
+     *
+     * @return MetricSample The grouped sample set (never empty).
+     *
+     * @spec openspec/specs/prometheus-metrics/spec.md#req-prom-004-sources-gauge-by-type
+     */
+    private function groupedCountSample(
+        string $name,
+        string $type,
+        string $help,
+        string $schemaTitle,
+        string $field,
+        string $label,
+        string $placeholder
+    ): MetricSample {
+        try {
+            $rows = $this->fetchObjectsBySchemaTitle(title: $schemaTitle);
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: sprintf('[openconnector\\Metrics] "%s" could not read %s objects: %s', $name, $schemaTitle, $e->getMessage()),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $rows = [];
+        }
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $value = (string) ($row[$field] ?? '');
+            if ($value === '') {
+                continue;
+            }
+
+            $counts[$value] = (($counts[$value] ?? 0) + 1);
+        }
+
+        // Spec: with no rows the family MUST still expose one zero-valued
+        // series rather than disappear entirely.
+        if ($counts === []) {
+            $counts[$placeholder] = 0;
+        }
+
+        $points = [];
+        foreach ($counts as $value => $count) {
+            $points[] = [
+                'labels' => [$label => (string) $value],
+                'value'  => $count,
+            ];
+        }
+
+        return new MetricSample(name: $name, type: $type, help: $help, samples: $points);
+
+    }//end groupedCountSample()
+
+    /**
      * Produce OpenConnector's domain metric samples.
      *
      * @return MetricSample[] The provider's samples.
@@ -681,6 +821,33 @@ class OpenConnectorMetricsProvider implements IMetricsProvider
             $this->circuitBreakerStateSample(),
             $this->apiProductLatencySample(),
             $this->apiProductErrorsSample(),
+            $this->groupedCountSample(
+                name: 'sources_total',
+                type: 'gauge',
+                help: 'Total sources by type',
+                schemaTitle: 'Source',
+                field: 'type',
+                label: 'type',
+                placeholder: 'rest'
+            ),
+            $this->groupedCountSample(
+                name: 'calls_total',
+                type: 'counter',
+                help: 'Total API calls by status',
+                schemaTitle: 'CallLog',
+                field: 'statusCode',
+                label: 'status',
+                placeholder: '200'
+            ),
+            $this->groupedCountSample(
+                name: 'synchronization_runs_total',
+                type: 'counter',
+                help: 'Total synchronization log entries by result',
+                schemaTitle: 'SynchronizationLog',
+                field: 'result',
+                label: 'status',
+                placeholder: 'success'
+            ),
         ];
 
     }//end metrics()

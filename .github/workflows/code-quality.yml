@@ -55,6 +55,25 @@ jobs:
       enable-newman: true
       newman-collection-path: "tests/postman"
       newman-environment-path: "tests/postman/openconnector.postman_environment.json"
+      # WHY THIS SEED EXISTS. The collection's "01 — Fixture setup (via OR)"
+      # folder POSTs to /apps/openregister/api/objects/openconnector/<schema>;
+      # since the chain-C cutover every openconnector entity is an OpenRegister
+      # object. Without a seed step the `openconnector` register does not
+      # exist, all 8 fixture POSTs return 404, `{{fxSourceUuid}}` is never set,
+      # and every downstream request then 404s on the literal placeholder —
+      # 51 of 107 assertions (measured, run 30816264169). SEED_SCOPE=register
+      # reuses the Playwright job's tests/e2e/ci-seed.sh and stops after the
+      # register import, skipping the SPA warm-up and bundle gate that this
+      # job (which never runs `npm run build`) must not execute.
+      #
+      # This was held back until ConductionNL/.github#132 landed: the shared
+      # workflow used to start this job's `php -S` SINGLE-WORKER, and journey
+      # J2 points a Source at this very instance, so the app called back into
+      # the server while the one worker was still inside the outer request —
+      # a deadlock that hung the job until timeout-minutes (run 30821823343).
+      # #132 sets PHP_CLI_SERVER_WORKERS=8 on this job's server, which is what
+      # makes the self-referential fixtures serveable. Merged 2026-08-03.
+      newman-seed-command: 'SEED_SCOPE=register bash apps/openconnector/tests/e2e/ci-seed.sh'
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"}]'
 
       # ── E2E browser tests ────────────────────────────────────────────────
