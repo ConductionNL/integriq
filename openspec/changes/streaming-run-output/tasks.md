@@ -52,7 +52,14 @@
   - GIVEN no streaming flag WHEN `jobs#run`/`jobs#test` execute THEN the existing `JSONResponse` is returned unchanged
   - GIVEN the streaming flag WHEN `jobs#run`/`jobs#test` execute THEN output streams through the shared harness with the existing auth posture unchanged
 - [x] Implement — same shape as Task 3. `JobService::executeJob()` already accepted an `?ExecutionTraceContext`, so job runs get live progress frames for free. `run()`'s `forceRun` resolution was hoisted above the branch (equivalent to the previous if/else: an absent param still yields false) because both paths need it. The final frame carries `$result?->jsonSerialize() ?? []`, matching what the non-streaming branch puts in its JSONResponse.
-- [ ] Test — covered indirectly by the shared-harness tests; dedicated JobsController streaming tests still to add
+- [x] Test — 9 tests in `JobsControllerStreamingTest`: default `run`/`test` unchanged and writing nothing; flag and Accept header each opt in; the final frame carries the serialized job log; a null `executeJob()` return still yields a result frame (matching the non-streaming `JSONResponse(null)`); `forceRun` survives the hoist above the branch; `test` always forces; a trace context reaches `executeJob()` and its steps become progress frames; an unauthenticated streaming request is still a real 401 with no output
+
+Those tests earned their place immediately: `$forceRun` was used inside the
+streaming closure without being in its `use` clause, so it arrived as null, tripped
+`executeJob()`'s `bool` type, and was swallowed into an `error` frame — the run
+looked like it streamed while never executing. Second instance of this exact
+closure-capture mistake in this change (see the `$persistLog` note on Task 3);
+worth checking every `use (...)` clause when a streamed callback is edited.
 
 ### Task 5: Frontend live-output console
 - **spec_ref**: `openspec/specs/run-streaming/spec.md#requirement-frontend-live-output-console-consumes-the-stream`

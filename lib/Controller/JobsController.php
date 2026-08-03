@@ -234,7 +234,7 @@ class JobsController extends Controller
             $trace = new ExecutionTraceContext(entryPoint: 'manual', entryPointId: $id, triggeredBy: 'http');
 
             return $this->streamOperation(
-                operation: function (?ExecutionTraceContext $streamTrace) use ($job) {
+                operation: function (?ExecutionTraceContext $streamTrace) use ($job, $forceRun) {
                     $streamed = $this->jobService->executeJob(
                         job: $job,
                         forceRun: $forceRun,
