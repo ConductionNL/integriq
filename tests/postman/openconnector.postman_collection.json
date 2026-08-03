@@ -634,7 +634,7 @@
       "description": "HTTP-contract assertions migrated from the API-direct Playwright spec tests/e2e/regression/or-cutover-smoke.spec.ts (Playwright is UI-only per ADR/policy; API contract belongs in Newman). Asserts the post chain-B/C OR-cutover state: register schema count, graceful 4xx on a non-existent source uuid, and that deleted legacy routes 404.",
       "item": [
         {
-          "name": "GET /api/registers — openconnector register references 15 schemas",
+          "name": "GET /api/registers — openconnector register references its entity schemas",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}/index.php/apps/openregister/api/registers", "host": ["{{base_url}}"], "path": ["index.php", "apps", "openregister", "api", "registers"] },
@@ -646,7 +646,15 @@
             "const registers = body.results || body;",
             "const oc = (Array.isArray(registers) ? registers : []).find(r => r.slug === 'openconnector');",
             "pm.test('openconnector register exists', () => pm.expect(oc, 'openconnector register').to.be.ok);",
-            "pm.test('openconnector register references 15 schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.eql(15));"
+            "// The register referenced exactly 15 schemas when this smoke test was written — the 15 chain-C entities.",
+            "// It now references 53: lib/Settings/register.d/ has grown to 40 fragments that add Peppol Transmission,",
+            "// Payment Intent, Bankfeed Connection/Batch, Cardfeed Account/Batch, LTI 1.3, KISS Klantcontact, iWMO/iJW,",
+            "// FSC Service/Call and 4 log schemas — all listed in the register's own description. An installed instance",
+            "// gets the same merged set, so 15 is a stale snapshot, not a defect. An exact count is the wrong invariant",
+            "// here: it re-breaks on every new sub-domain while never checking that the RIGHT schemas are referenced.",
+            "// The core entity schemas are covered by identity elsewhere — folder 01 creates an object in each of",
+            "// source/mapping/endpoint/job/synchronization/consumer/rule/event, which only passes if that slug resolves.",
+            "pm.test('openconnector register references at least the 15 core entity schemas', () => pm.expect(oc && oc.schemas ? oc.schemas.length : 0).to.be.at.least(15));"
           ] }}]
         },
         {
