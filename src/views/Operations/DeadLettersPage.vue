@@ -94,6 +94,22 @@ export default {
 		}
 	},
 
+	computed: {
+		/**
+		 * The selectable queues.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 *
+		 * @spec openspec/specs/dead-letter-replay/spec.md
+		 */
+		queues() {
+			return [
+				{ id: 'events', label: t('openconnector', 'Event deliveries') },
+				{ id: 'sync', label: t('openconnector', 'Synchronization items') },
+			]
+		},
+	},
+
 	watch: {
 		/**
 		 * Keep the mounted queue in step with the URL.
@@ -110,27 +126,11 @@ export default {
 		 *
 		 * @spec openspec/specs/dead-letter-replay/spec.md
 		 */
-		'$route.query.queue': function(value) {
+		'$route.query.queue'(value) {
 			const next = value === 'sync' ? 'sync' : 'events'
 			if (next !== this.activeQueue) {
 				this.activeQueue = next
 			}
-		},
-	},
-
-	computed: {
-		/**
-		 * The selectable queues.
-		 *
-		 * @return {Array<{id: string, label: string}>}
-		 *
-		 * @spec openspec/specs/dead-letter-replay/spec.md
-		 */
-		queues() {
-			return [
-				{ id: 'events', label: t('openconnector', 'Event deliveries') },
-				{ id: 'sync', label: t('openconnector', 'Synchronization items') },
-			]
 		},
 	},
 
