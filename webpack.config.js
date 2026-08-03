@@ -47,9 +47,45 @@ webpackConfig.entry = {
 	// (opsx-driven) and will land via the manifest's dashboard page.
 }
 
-// Use local source when available (monorepo dev), otherwise fall back to npm package
+// Use local source when available (monorepo dev), otherwise fall back to npm package.
+//
+// The sibling checkout is only usable when it is on the SAME major Vue line as
+// this app. @conduction/nextcloud-vue maintains two: the Vue 2 line (v1.x, on
+// `development`/`beta`) and the Vue 3 line (v2.x/v3.x, on `feat/vue-3`). A
+// checkout parked on a Vue 2 branch — which is easy to do, since the Vue 3 line
+// is NOT called `vue3` — used to be aliased in regardless, and the build then
+// died with ~75 unrelated-looking errors deep inside the library's node_modules
+// ("export 'default' (imported as 'Vue') was not found in 'vue'"), none of which
+// name the actual cause. CI never hit it because CI has no sibling checkout.
+//
+// So: check the line before trusting it, and say so plainly when skipping.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
+
+function localLibIsVue3() {
+	try {
+		const pkg = JSON.parse(
+			fs.readFileSync(path.resolve(__dirname, '../nextcloud-vue/package.json'), 'utf8'),
+		)
+		const declared = (pkg.dependencies && pkg.dependencies.vue)
+			|| (pkg.peerDependencies && pkg.peerDependencies.vue)
+			|| (pkg.devDependencies && pkg.devDependencies.vue)
+			|| ''
+		return /(^|[^0-9])3\./.test(String(declared))
+	} catch (e) {
+		return false
+	}
+}
+
+const localLibRequested = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
+const useLocalLib = localLibRequested && localLibIsVue3()
+
+if (localLibRequested && !useLocalLib) {
+	console.warn(
+		'\n[openconnector] ../nextcloud-vue is checked out on the Vue 2 line — '
+		+ 'building against the published package instead.\n'
+		+ '                Switch that checkout to `feat/vue-3` to develop against local source.\n',
+	)
+}
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
