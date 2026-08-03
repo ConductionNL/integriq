@@ -1216,7 +1216,7 @@
             "id": "ConsumerDetail",
             "route": "/consumers/:id",
             "type": "detail",
-            "title": "Consumer",
+            "title": "Consumer client",
             "config": {
                 "register": "openconnector",
                 "schema": "consumer",
