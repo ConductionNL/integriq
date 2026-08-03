@@ -14,15 +14,60 @@
 import { type Page, expect } from '@playwright/test'
 import { appDialog } from '../support/dialogs'
 
-// The in-app router runs in HASH mode (`mode: 'hash'`, src/main.js). A
-// path-form deep-link such as `/apps/openconnector/sources` is therefore
-// ignored by the router and silently lands on the dashboard (`#/`); only
-// a hash-form link (`/apps/openconnector/#/sources`) renders the target
-// page. APP_BASE carries the `/#` so `${APP_BASE}/<route>` is a valid
-// hash deep-link. (NC32→NC34 note: this is router behaviour, not NC
-// chrome — the NC34 migration surfaced it because the weak dashboard
-// fallback masked it before.)
-export const APP_BASE = '/apps/openconnector/#'
+// The one openconnector URL base for the whole spec-coverage suite. Two
+// separate things are encoded here, and both were learned from a failing run.
+//
+// 1. THE `/index.php/` PREFIX IS NOT OPTIONAL.
+//
+//    This used to read `/apps/openconnector/#`. That form works in the docker
+//    dev images, where Apache + Nextcloud's `.htaccess` rewrite pretty URLs
+//    onto `index.php`. CI has no Apache: the shared workflow serves Nextcloud
+//    with `cd server && php -S 0.0.0.0:8080` and NO router script, and PHP's
+//    built-in server resolves a request against the filesystem first.
+//
+//    Measured on a clean install (php -S, docroot = server/):
+//
+//        /index.php/apps/openconnector/   -> 200   (PATH_INFO reaches NC)
+//        /apps/openconnector/             -> 404   (a real directory on disk
+//                                                   with no index.php inside)
+//        /apps/openconnector/js/…-main.js -> 200   (a real FILE, served flat)
+//
+//    Note the shape of that: the assets resolve fine, so nothing about the
+//    build looks wrong — only the HTML entry point 404s. Every spec that deep-
+//    linked through the short form therefore asserted against PHP's own 404
+//    page, which has no `<main>`, no nav and no SPA. That is the single cause
+//    behind "element(s) not found" for `main`, `Nav entry "Webhooks" must be
+//    present`, and `Add Source button must be visible` alike — one cause
+//    wearing ~130 disguises.
+//
+//    The discriminator is in the CI log itself: in the same run, on the same
+//    instance, `configuration-export-import.spec.ts` — which probes
+//    `/index.php/apps/openconnector` — PASSED its two page-mount assertions
+//    while the specs on either side of it failed on `main`.
+//
+//    The `/index.php/` form is correct in BOTH environments (verified against
+//    Apache: `/index.php/apps/openconnector/#/sources` renders `main` with the
+//    "Add Source" button), so this is one form everywhere rather than a probe.
+//
+// 2. THE `#` IS NOT OPTIONAL EITHER.
+//
+//    The in-app router runs in HASH mode (`createWebHashHistory()`,
+//    src/main.js), so a path-form deep-link such as `…/openconnector/sources`
+//    is ignored by the router and silently lands on the dashboard. Only the
+//    hash form renders the target page. APP_BASE carries the `/#` so
+//    `${APP_BASE}/<route>` is a valid hash deep-link.
+//
+// Every spec-coverage file imports this rather than redeclaring it — nine of
+// them used to keep private copies of the wrong string.
+export const APP_BASE = '/index.php/apps/openconnector/#'
+
+/**
+ * The openconnector app root, without the router hash.
+ *
+ * Same `/index.php/` reasoning as APP_BASE above: use this anywhere a spec
+ * needs the app entry point itself rather than a route inside it.
+ */
+export const APP_ROOT_URL = '/index.php/apps/openconnector/'
 
 /**
  * URLs / console substrings that are Nextcloud core framework noise,
@@ -165,4 +210,69 @@ export async function openAndDismissCreateModal(page: Page, addButton: RegExp): 
 	} else {
 		await page.keyboard.press('Escape')
 	}
+}
+
+/**
+ * Click a primary create button that is wired to create-then-open a bespoke
+ * DETAIL EDITOR rather than a create dialog, and assert that contract.
+ *
+ * Mappings are the one index page in this app that works this way, and it is
+ * deliberate: `src/main.js` wraps the Mappings route in a `MappingsPageRenderer`
+ * that passes `onAdd: createMappingAndOpen`, whose comment reads "The Mappings
+ * index Add button must open the bespoke MappingDetail editor (a page) rather
+ * than the generic name/description form dialog." `createMappingAndOpen()`
+ * POSTs a new object to OpenRegister and then routes to `MappingDetail`.
+ *
+ * Two spec-coverage tests asserted a dialog here and failed with "Modal must
+ * open after clicking Add Mapping" — a true statement about a modal the app
+ * intentionally does not have. Asserting the real contract is strictly
+ * stronger than asserting "some dialog appeared": this checks that a row was
+ * actually persisted AND that the editor for it opened.
+ *
+ * Cleans up the object it created, so the assertion does not litter the
+ * instance with "New mapping" rows on every run.
+ *
+ * @param page       the Playwright page.
+ * @param addButton  Accessible-name regex for the create button.
+ * @param schemaSlug OpenRegister schema slug the button creates, e.g. `mapping`.
+ * @param routeSlug  Hash-route segment the detail page lives under, e.g. `mappings`.
+ *
+ * @return Nothing.
+ */
+export async function createViaAddButtonAndOpenDetail(
+	page: Page,
+	addButton: RegExp,
+	schemaSlug: string,
+	routeSlug: string,
+): Promise<void> {
+	const addBtn = page.getByRole('button', { name: addButton }).first()
+	await expect(addBtn, `"${addButton}" button must be visible`).toBeVisible({ timeout: 20_000 })
+	await addBtn.click()
+
+	// The route must move from the index to a detail URL carrying an id.
+	const detailUrl = new RegExp(`#/${routeSlug}/[^/]+$`)
+	await expect
+		.poll(() => page.url(), {
+			message: `clicking "${addButton.source}" must open the ${routeSlug} detail editor`,
+			timeout: 20_000,
+		})
+		.toMatch(detailUrl)
+
+	const id = page.url().split('/').pop() as string
+	expect(id, 'the detail route must carry the id of the newly-created object').toBeTruthy()
+
+	// And the detail surface must actually render, not just the URL change.
+	await expect(page.locator('main').first(), 'the detail editor must render')
+		.toBeVisible({ timeout: 15_000 })
+
+	// Clean up the object this assertion created. Nextcloud rejects
+	// state-changing requests without a `requesttoken`, and storageState
+	// carries cookies but not the rotating token, so read it off the page.
+	const token = await page.evaluate(
+		() => (window as unknown as { OC?: { requestToken?: string } }).OC?.requestToken ?? '',
+	)
+	await page.request.delete(
+		`/index.php/apps/openregister/api/objects/openconnector/${schemaSlug}/${id}`,
+		{ headers: { requesttoken: token, 'OCS-APIRequest': 'true' }, failOnStatusCode: false },
+	)
 }

@@ -180,8 +180,25 @@ test.describe('manifest schema validation', () => {
 		expect(m.version, 'manifest has a semver version').toMatch(/^\d+\.\d+\.\d+$/)
 		expect(Array.isArray(m.menu), 'menu is an array').toBe(true)
 		expect(Array.isArray(m.pages), 'pages is an array').toBe(true)
-		expect(m.menu.length, 'menu has 13-15 entries').toBeGreaterThanOrEqual(13)
-		expect(m.pages.length, 'pages has 23-24 entries').toBeGreaterThanOrEqual(23)
+
+		// Count NAVIGABLE entries, not top-level array slots.
+		//
+		// This assertion used to read `m.menu.length >= 13` against a flat
+		// menu. The manifest has since grouped its entries — today the array
+		// holds 7 slots, two of which (`ConnectionsGroup`, `AutomationGroup`)
+		// carry 6 and 10 `children` — so the flat count collapsed to 7 and the
+		// check failed while the menu had in fact GROWN, from ~13 destinations
+		// to 21. The number being defended is "how many places can a user
+		// navigate to", and that is what this now counts.
+		const countNavEntries = (entries: Array<Record<string, unknown>>): number =>
+			entries.reduce((total, entry) => {
+				const children = entry.children
+				return total + 1 + (Array.isArray(children) ? countNavEntries(children as Array<Record<string, unknown>>) : 0)
+			}, 0)
+
+		expect(countNavEntries(m.menu), 'menu exposes at least 13 navigable entries (groups + children)')
+			.toBeGreaterThanOrEqual(13)
+		expect(m.pages.length, 'pages has at least 23 entries').toBeGreaterThanOrEqual(23)
 	})
 
 	test('all 24 pages use a standard type or have a _note justifying custom', async () => {

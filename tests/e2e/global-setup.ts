@@ -140,7 +140,16 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// `seedWalkthroughSeen` is included via seedFirstVisitOverlaysSeen even
 	// though this app ships no CnWalkthrough — it is inert here and keeps the
 	// harness correct if one is ever added.
-	await page.goto('/apps/openconnector/')
+	// ⚠️ The `/index.php/` prefix is load-bearing, and this is the worst place
+	// to get it wrong. CI serves Nextcloud with `php -S` and no router script,
+	// where `/apps/openconnector/` is a real directory with no index.php inside
+	// and therefore 404s (measured; the pretty form only works behind Apache +
+	// `.htaccess`). A 404 page still shares the origin, so the localStorage
+	// seed below would appear to succeed — but the page carries no
+	// `OC.requestToken`, so the first-run-wizard dismissal a few lines down
+	// silently fails, and the wizard then intercepts pointer events in every
+	// spec without hiding anything a visibility assertion looks at.
+	await page.goto('/index.php/apps/openconnector/')
 	await seedFirstVisitOverlaysSeen(page, 'openconnector')
 
 	// Retire Nextcloud's own first-run wizard for this user.

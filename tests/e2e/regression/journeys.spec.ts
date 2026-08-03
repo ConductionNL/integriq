@@ -71,6 +71,31 @@ async function resolveAppBase(page: Page): Promise<string> {
 }
 
 /**
+ * Deep-link to an in-app route.
+ *
+ * ⚠️ The `#` is not decoration. The in-app router is hash-mode
+ * (`createWebHashHistory()`, src/main.js), so a PATH-form deep-link such as
+ * `<base>/sources` is served by the SPA shell — status 200, `openconnector` in
+ * the HTML, everything a smoke check looks at — and then ignored by the
+ * router, which renders the dashboard instead.
+ *
+ * Journeys J1–J6 did exactly that, and reported it as
+ * `Add Synchronization button must be visible on the index page`. Perfectly
+ * true: they were looking at the dashboard. The `UI smoke` block lower down
+ * deliberately does NOT use this helper — it asserts the SERVER routes return
+ * 200, for which the path form is the right URL.
+ *
+ * @param page  the Playwright page.
+ * @param route In-app route beginning with `/`, e.g. `/sources`.
+ *
+ * @return Nothing.
+ */
+async function gotoRoute(page: Page, route: string): Promise<void> {
+	const base = await resolveAppBase(page)
+	await page.goto(`${base}/#${route}`, { waitUntil: 'domcontentloaded' })
+}
+
+/**
  * Drive a CnIndexPage create flow:
  *   - click the "Add {schema}" primary button
  *   - fill in the name field of the CnFormDialog
@@ -97,21 +122,30 @@ async function createViaUi(
 	await expect(dialog, 'CnFormDialog opened after clicking Add').toBeVisible()
 
 	// Fill `name` first; every openconnector schema exposes a top-level
-	// `name` field as the title. CnFormDialog renders one NcTextField per
-	// schema property with the label slot rendering ` <property> <required-marker> `
-	// — NcTextField surrounds the property name with whitespace and appends
-	// `*` for required fields, so the actual label text reads ` name * `.
-	// Match via regex (start-of-string + required marker + end-of-string)
-	// so we don't pick up other fields like `authorizationHeader` or
-	// `lastSync` that contain "name" as a substring of their description.
+	// `name` field as the title.
+	//
+	// ⚠️ KEYS HERE ARE RENDERED LABELS, NOT PROPERTY NAMES. CnFormDialog
+	// labels each NcTextField from the schema property's `title`, falling back
+	// to the property name, and appends ` *` for required fields. That is
+	// invisible for most fields because their title is just the capitalised
+	// property name (`name` → "Name", which the case-insensitive match below
+	// still finds) — but the endpoint schema titles `endpoint` as "Endpoint
+	// Path" and `method` as "HTTP Method". J4 passed `endpoint` / `method` and
+	// failed with `endpoint input for Endpoint must be present in
+	// CnFormDialog`: the input was there, under a label the regex could not
+	// match.
+	//
+	// The anchored regex (start + optional required marker + end) is
+	// deliberate: an unanchored "name" would also match `authorizationHeader`
+	// and `lastSync`, whose descriptions contain the word.
 	const fields: Record<string, string> = { name, ...extraFields }
-	for (const [propName, value] of Object.entries(fields)) {
+	for (const [fieldLabel, value] of Object.entries(fields)) {
 		// Required marker may or may not be there depending on the schema.
-		const labelRegex = new RegExp(`^\\s*${propName}\\s*\\*?\\s*$`, 'i')
+		const labelRegex = new RegExp(`^\\s*${fieldLabel}\\s*\\*?\\s*$`, 'i')
 		const field = dialog.getByLabel(labelRegex)
 		await expect(
 			field,
-			`${propName} input for ${schemaTitle} must be present in CnFormDialog`,
+			`"${fieldLabel}" input for ${schemaTitle} must be present in CnFormDialog`,
 		).toBeVisible({ timeout: 10_000 })
 		// pressSequentially + Tab fires the same keyboard / blur events
 		// the user does — Vue's reactive form validation marks the field
@@ -162,10 +196,31 @@ async function createViaUi(
 
 	// Now await the list refresh response that was already in-flight.
 	const listResponse = await listResponsePromise
-	const listBody = await listResponse.json().catch(() => ({}))
-	const results: Array<Record<string, unknown>> = listBody.results ?? (Array.isArray(listBody) ? listBody : [])
-	const found = results.some((item: Record<string, unknown>) => String(item.name ?? '') === name)
-	expect(found, `new ${schemaSlug} "${name}" must be present in the refreshed OR list response`).toBe(true)
+	// The list refresh having happened is what we waited for; its BODY is not
+	// a sound place to look for the new row.
+	//
+	// The index pages are paginated, and since the CI seed provisions the
+	// register's own shipped objects (~22 sources, 19 mappings, 18
+	// synchronizations from `lib/Settings/register.d/*.json`) a freshly-created
+	// row is very unlikely to be on page 1 of the default ordering. This
+	// assertion used to scan page 1 only, so it reported `new source "pw-j1-…"
+	// must be present in the refreshed OR list response` — the object existed
+	// and was listed, just not in the 20 rows it happened to look at.
+	//
+	// Ask OpenRegister for the row by name instead. That is ground truth, it is
+	// independent of page size and ordering, and it is a STRONGER check than
+	// the old one: it requires exactly one persisted object with this name, not
+	// merely its presence somewhere in a page of results.
+	void listResponse
+	const verify = await page.request.get(
+		`${OR}/${schemaSlug}?_search=${encodeURIComponent(name)}&_limit=50`,
+		{ failOnStatusCode: false },
+	)
+	expect(verify.status(), `OR list lookup for "${name}" must succeed`).toBe(200)
+	const verifyBody = await verify.json().catch(() => ({}))
+	const results: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+	const matches = results.filter((item: Record<string, unknown>) => String(item.name ?? '') === name)
+	expect(matches.length, `exactly one ${schemaSlug} named "${name}" must be persisted in OpenRegister`).toBe(1)
 
 	// Return the ID so callers can delete via API (reliable cleanup).
 	return createdId
@@ -483,22 +538,48 @@ test.describe('UI journey J1 — visually create a Source; assert row in list', 
 	const name = `pw-j1-source-${Date.now()}`
 
 	test('Add Source → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		// Cleanup via API — test focus is the create flow.
 		await deleteViaApi(page, 'source', name, id)
 	})
 })
 
-test.describe('UI journey J2 — visually create a Mapping; assert row in list', () => {
-	const name = `pw-j2-mapping-${Date.now()}`
+test.describe('UI journey J2 — visually create a Mapping; assert it persists', () => {
+	// Mappings do NOT use the generic create dialog, deliberately. `src/main.js`
+	// wraps this route in a `MappingsPageRenderer` passing
+	// `onAdd: createMappingAndOpen`: "The Mappings index Add button must open
+	// the bespoke MappingDetail editor (a page) rather than the generic
+	// name/description form dialog." The handler POSTs a new object named
+	// "New mapping" and routes to `MappingDetail`.
+	//
+	// This journey used to drive `createViaUi`, which waits for a CnFormDialog,
+	// and failed on `CnFormDialog opened after clicking Add` — a modal the app
+	// intentionally does not have. It now asserts the real flow end to end:
+	// the click persists an object AND opens its editor.
+	test('Add Mapping → object persisted → MappingDetail editor opens', async ({ page }) => {
+		await gotoRoute(page, '/mappings')
 
-	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/mappings`, { waitUntil: 'domcontentloaded' })
-		const id = await createViaUi(page, 'mapping', 'Mapping', name)
-		await deleteViaApi(page, 'mapping', name, id)
+		const addBtn = page.getByRole('button', { name: /Add\s+Mapping/i }).first()
+		await expect(addBtn, 'Add Mapping button must be visible on the index page').toBeVisible({ timeout: 20_000 })
+		await addBtn.click()
+
+		await expect
+			.poll(() => page.url(), {
+				message: 'clicking Add Mapping must open the MappingDetail editor',
+				timeout: 20_000,
+			})
+			.toMatch(/#\/mappings\/[^/]+$/)
+
+		const id = page.url().split('/').pop() as string
+		expect(id, 'the detail route must carry the new mapping id').toBeTruthy()
+		await expect(page.locator('main').first(), 'the mapping editor must render').toBeVisible({ timeout: 15_000 })
+
+		// Ground truth: the object really exists in OpenRegister.
+		const check = await page.request.get(`${OR}/mapping/${id}`, { failOnStatusCode: false })
+		expect(check.status(), 'the mapping the editor opened must be readable from OpenRegister').toBe(200)
+
+		await deleteViaApi(page, 'mapping', 'New mapping', id)
 	})
 })
 
@@ -506,8 +587,7 @@ test.describe('UI journey J3 — visually create a Synchronization; assert row i
 	const name = `pw-j3-sync-${Date.now()}`
 
 	test('Add Synchronization → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/synchronizations`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/synchronizations')
 		const id = await createViaUi(page, 'synchronization', 'Synchronization', name)
 		await deleteViaApi(page, 'synchronization', name, id)
 	})
@@ -517,15 +597,17 @@ test.describe('UI journey J4 — visually create an Endpoint; assert row in list
 	const name = `pw-j4-endpoint-${Date.now()}`
 
 	test('Add Endpoint → Create → row appears in OR list response', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/endpoints`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/endpoints')
 		// Endpoint schema's `required` list is ['name', 'endpoint',
 		// 'method'] — CnFormDialog keeps Create disabled until each
 		// required field is touched-and-valid. The other three journeys
 		// only require `name`, so they slip through with the default.
+		// Keys are the labels CnFormDialog renders, which come from each
+		// property's schema `title` — `endpoint` is titled "Endpoint Path" and
+		// `method` "HTTP Method". Passing the property names found no input.
 		const id = await createViaUi(page, 'endpoint', 'Endpoint', name, {
-			endpoint: '/pw-j4-endpoint',
-			method: 'GET',
+			'Endpoint Path': '/pw-j4-endpoint',
+			'HTTP Method': 'GET',
 		})
 		await deleteViaApi(page, 'endpoint', name, id)
 	})
@@ -536,8 +618,7 @@ test.describe('UI journey J5 — edit a Source via row Actions → Edit; mass-de
 	const newDescription = `edited via J5 at ${Date.now()}`
 
 	test('create row → edit description via Actions → Save → description visible', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await editViaUi(page, 'source', name, newDescription)
 		// Cleanup via UI mass-delete to exercise that code path,
@@ -550,8 +631,7 @@ test.describe('UI journey J6 — single-delete a Source via row Actions → Dele
 	const name = `pw-j6-source-${Date.now()}`
 
 	test('create row → single-delete via Actions → row gone', async ({ page }) => {
-		const base = await resolveAppBase(page)
-		await page.goto(`${base}/sources`, { waitUntil: 'domcontentloaded' })
+		await gotoRoute(page, '/sources')
 		const id = await createViaUi(page, 'source', 'Source', name)
 		await singleDeleteViaUi(page, 'source', name)
 		// Fallback cleanup in case UI single-delete didn't remove the item.

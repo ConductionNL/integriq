@@ -23,6 +23,14 @@
  *     locally correct, and dead everywhere it mattered. Strict about never
  *     inventing a target; permissive about which variable names it.
  *
+ *     `NEXTCLOUD_URL` and `NC_BASE_URL` are accepted for the same reason.
+ *     The shared quality workflow's "Run Playwright tests" step exports all
+ *     three of BASE_URL / NEXTCLOUD_URL / NC_BASE_URL (verified in
+ *     `ConductionNL/.github/.github/workflows/quality.yml`), and 15 of the 21
+ *     fleet repos resolve their target as `process.env.NEXTCLOUD_URL || ...`.
+ *     Accepting every name the fleet uses costs nothing; the thing that must
+ *     stay gone is the literal fallback, not the alternate spellings.
+ *
  *  2. Absolute and relative navigation must not be able to disagree. Specs that
  *     build their own `http://host:port/...` strings drifted away from
  *     `use.baseURL` the moment either changed. `absoluteUrl()` derives those
@@ -30,20 +38,29 @@
  *     one thing to get right.
  */
 
-const RAW = process.env.PLAYWRIGHT_BASE_URL?.trim()
-	|| process.env.BASE_URL?.trim()
-	|| ''
+const CANDIDATES = [
+	'PLAYWRIGHT_BASE_URL',
+	'BASE_URL',
+	'NEXTCLOUD_URL',
+	'NC_BASE_URL',
+] as const
+
+const RAW = CANDIDATES
+	.map(name => process.env[name]?.trim())
+	.find(value => value !== undefined && value !== '')
+	?? ''
 
 if (!RAW) {
 	throw new Error(
-		'Neither PLAYWRIGHT_BASE_URL nor BASE_URL is set.\n\n'
+		`None of ${CANDIDATES.join(', ')} is set.\n\n`
 		+ 'The e2e suite deliberately has no default: it used to fall back to\n'
 		+ 'http://localhost:8080, which is the SHARED dev container, and tests\n'
 		+ 'then wrote fixtures into an environment other sessions were using.\n\n'
 		+ 'Point it at your own isolated instance, e.g.\n'
 		+ '  PLAYWRIGHT_BASE_URL=http://localhost:8097 npm run test:e2e\n\n'
-		+ 'In CI the shared quality workflow exports BASE_URL, which is also\n'
-		+ 'accepted; if you are seeing this in CI, that export is missing.\n',
+		+ 'In CI the shared quality workflow exports BASE_URL, NEXTCLOUD_URL and\n'
+		+ 'NC_BASE_URL, all of which are accepted; if you are seeing this in CI,\n'
+		+ 'those exports are missing.\n',
 	)
 }
 
