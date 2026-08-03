@@ -187,10 +187,31 @@ async function createViaUi(
 
 	// Now await the list refresh response that was already in-flight.
 	const listResponse = await listResponsePromise
-	const listBody = await listResponse.json().catch(() => ({}))
-	const results: Array<Record<string, unknown>> = listBody.results ?? (Array.isArray(listBody) ? listBody : [])
-	const found = results.some((item: Record<string, unknown>) => String(item.name ?? '') === name)
-	expect(found, `new ${schemaSlug} "${name}" must be present in the refreshed OR list response`).toBe(true)
+	// The list refresh having happened is what we waited for; its BODY is not
+	// a sound place to look for the new row.
+	//
+	// The index pages are paginated, and since the CI seed provisions the
+	// register's own shipped objects (~22 sources, 19 mappings, 18
+	// synchronizations from `lib/Settings/register.d/*.json`) a freshly-created
+	// row is very unlikely to be on page 1 of the default ordering. This
+	// assertion used to scan page 1 only, so it reported `new source "pw-j1-…"
+	// must be present in the refreshed OR list response` — the object existed
+	// and was listed, just not in the 20 rows it happened to look at.
+	//
+	// Ask OpenRegister for the row by name instead. That is ground truth, it is
+	// independent of page size and ordering, and it is a STRONGER check than
+	// the old one: it requires exactly one persisted object with this name, not
+	// merely its presence somewhere in a page of results.
+	void listResponse
+	const verify = await page.request.get(
+		`${OR}/${schemaSlug}?_search=${encodeURIComponent(name)}&_limit=50`,
+		{ failOnStatusCode: false },
+	)
+	expect(verify.status(), `OR list lookup for "${name}" must succeed`).toBe(200)
+	const verifyBody = await verify.json().catch(() => ({}))
+	const results: Array<Record<string, unknown>> = verifyBody.results ?? (Array.isArray(verifyBody) ? verifyBody : [])
+	const matches = results.filter((item: Record<string, unknown>) => String(item.name ?? '') === name)
+	expect(matches.length, `exactly one ${schemaSlug} named "${name}" must be persisted in OpenRegister`).toBe(1)
 
 	// Return the ID so callers can delete via API (reliable cleanup).
 	return createdId
@@ -515,13 +536,41 @@ test.describe('UI journey J1 — visually create a Source; assert row in list', 
 	})
 })
 
-test.describe('UI journey J2 — visually create a Mapping; assert row in list', () => {
-	const name = `pw-j2-mapping-${Date.now()}`
-
-	test('Add Mapping → Create → row appears in OR list response', async ({ page }) => {
+test.describe('UI journey J2 — visually create a Mapping; assert it persists', () => {
+	// Mappings do NOT use the generic create dialog, deliberately. `src/main.js`
+	// wraps this route in a `MappingsPageRenderer` passing
+	// `onAdd: createMappingAndOpen`: "The Mappings index Add button must open
+	// the bespoke MappingDetail editor (a page) rather than the generic
+	// name/description form dialog." The handler POSTs a new object named
+	// "New mapping" and routes to `MappingDetail`.
+	//
+	// This journey used to drive `createViaUi`, which waits for a CnFormDialog,
+	// and failed on `CnFormDialog opened after clicking Add` — a modal the app
+	// intentionally does not have. It now asserts the real flow end to end:
+	// the click persists an object AND opens its editor.
+	test('Add Mapping → object persisted → MappingDetail editor opens', async ({ page }) => {
 		await gotoRoute(page, '/mappings')
-		const id = await createViaUi(page, 'mapping', 'Mapping', name)
-		await deleteViaApi(page, 'mapping', name, id)
+
+		const addBtn = page.getByRole('button', { name: /Add\s+Mapping/i }).first()
+		await expect(addBtn, 'Add Mapping button must be visible on the index page').toBeVisible({ timeout: 20_000 })
+		await addBtn.click()
+
+		await expect
+			.poll(() => page.url(), {
+				message: 'clicking Add Mapping must open the MappingDetail editor',
+				timeout: 20_000,
+			})
+			.toMatch(/#\/mappings\/[^/]+$/)
+
+		const id = page.url().split('/').pop() as string
+		expect(id, 'the detail route must carry the new mapping id').toBeTruthy()
+		await expect(page.locator('main').first(), 'the mapping editor must render').toBeVisible({ timeout: 15_000 })
+
+		// Ground truth: the object really exists in OpenRegister.
+		const check = await page.request.get(`${OR}/mapping/${id}`, { failOnStatusCode: false })
+		expect(check.status(), 'the mapping the editor opened must be readable from OpenRegister').toBe(200)
+
+		await deleteViaApi(page, 'mapping', 'New mapping', id)
 	})
 })
 
