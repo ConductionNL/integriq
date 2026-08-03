@@ -60,7 +60,7 @@ jobs:
       # A broken bundle is also silent in production: Nextcloud serves whatever
       # js/ was last committed, so the app keeps working from a stale build
       # while main cannot be rebuilt at all.
-      frontend-scripts: '["build"]'
+      frontend-checks: '["build"]'
       # Integration + E2E run against a live Nextcloud server with OR
       # checked out as an additional app (collections + journeys exercise
       # /index.php/apps/openregister/api/objects/openconnector/*).
