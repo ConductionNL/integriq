@@ -96,6 +96,7 @@ async function createObject(
 let targetId = ''
 let syncId = ''
 let storageMigrated = false
+let skipReason = 'openconnector.storage_migrated is not true on this instance'
 
 test.describe('Synced-from leaf — contract provenance on objects', () => {
 
@@ -103,19 +104,51 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 		const ctx = await apiContext()
 
 		// The provider only emits contracts once OpenConnector storage has
-		// migrated into OR. Skip the whole suite (rather than fail) otherwise.
-		const cfg = await ctx.get('/index.php/apps/openconnector/api/settings').catch(() => null)
-		// Best-effort flag read; fall back to attempting the seed regardless.
-		storageMigrated = true
+		// migrated into OR (`SynchronizationContractProvider::isEnabled()`
+		// returns `openconnector.storage_migrated === 'true'`). The file header
+		// says this suite skips, rather than fails, when that flag isn't set.
+		//
+		// It did not, because the gate measured the wrong thing: it probed
+		// `GET /objects/openconnector/synchronization_contract` and treated a
+		// 200 as "migrated". That endpoint returns 200 whenever the register
+		// exists, which says nothing about the flag — so on any instance with
+		// the register seeded the suite ran anyway and failed on assertions
+		// whose precondition was false.
+		//
+		// OpenRegister publishes the authoritative answer:
+		// `GET /api/integrations` lists every registered provider with its
+		// `enabled` state and, when disabled, a reason. For this one it reads
+		// "OpenConnector storage migration has not yet run on this instance.
+		// Sync contract leaves will appear after `occ upgrade` runs the
+		// chain-C cutover." Read that.
+		//
+		// ⚠️ NOTE FOR WHOEVER PICKS THIS UP: on a FRESH install that flag is
+		// never set, so this leaf is permanently disabled there.
+		// `Version2Date20260520000001` only sets `storage_migrated=true` after
+		// it successfully copies all 15 entities out of the legacy
+		// `oc_openconnector_*` tables — and a fresh install has none to copy.
+		// A brand-new openconnector therefore never surfaces "Synced from" on
+		// any OpenRegister object. That is a product defect, not a test
+		// problem, and it is why this suite skips in CI rather than passing.
+		let disabledReason = 'openconnector.storage_migrated is not true on this instance'
 		try {
-			const probe = await ctx.get(`${OR}/objects/${OC_REGISTER}/synchronization_contract?_limit=1`)
-			storageMigrated = probe.status() === 200
+			const probe = await ctx.get('/index.php/apps/openregister/api/integrations')
+			const body = await probe.json()
+			const list: Array<Record<string, unknown>> = body.integrations ?? body.results ?? []
+			const leaf = list.find(i => i.id === 'sync-contract')
+			storageMigrated = leaf?.enabled === true
+			const authStatus = leaf?.authStatus as { message?: string } | undefined
+			if (authStatus?.message) {
+				disabledReason = authStatus.message
+			}
 		} catch {
 			storageMigrated = false
 		}
-		void cfg
 
 		if (!storageMigrated) {
+			// eslint-disable-next-line no-console
+			console.warn(`[synced-from-leaf] skipping: ${disabledReason}`)
+			skipReason = disabledReason
 			return
 		}
 
@@ -149,7 +182,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	})
 
 	test('leaf endpoint returns the contract rendered for the target object', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(!storageMigrated, skipReason)
 		const ctx = await apiContext()
 		const res = await ctx.get(
 			`${OR}/objects/${TARGET_REGISTER}/${TARGET_SCHEMA}/${targetId}/integrations/sync-contract`,
@@ -169,7 +202,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	})
 
 	test('leaf matches strictly by targetId (a different object is empty)', async () => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(!storageMigrated, skipReason)
 		const ctx = await apiContext()
 		const otherId = '00000000-0000-0000-0000-000000000000'
 		const res = await ctx.get(
@@ -183,7 +216,7 @@ test.describe('Synced-from leaf — contract provenance on objects', () => {
 	})
 
 	test('leaf renders the contract row on an object-detail integration surface', async ({ page }) => {
-		test.skip(!storageMigrated, 'openconnector.storage_migrated is not true on this instance')
+		test.skip(!storageMigrated, skipReason)
 
 		// OpenRegister's own object detail mounts the same registry-driven
 		// integration surface OpenCatalogi/decidesk use; it is the most
