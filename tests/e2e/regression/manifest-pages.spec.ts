@@ -76,7 +76,12 @@ const MANIFEST_PAGES: Array<{ id: string; route: string; type: string }> = [
 	{ id: 'CloudEventDetail',         route: '/cloud-events/events/__nonexistent__', type: 'detail' },
 	{ id: 'CloudEventLogs',           route: '/cloud-events/logs',           type: 'logs' },
 	{ id: 'Import',                   route: '/import',                      type: 'custom' },
-	{ id: 'AppSettings',              route: '/settings',                    type: 'settings' },
+	// ADR-079 removed the in-app AppSettings page: app configuration lives in
+	// Nextcloud's settings framework at /settings/admin/openconnector, which
+	// authorizes it server-side. /settings now navigates out of the SPA, so it
+	// is deliberately NOT a manifest page any more.
+	{ id: 'Store',                    route: '/store',                       type: 'index' },
+	{ id: 'DeadLetters',              route: '/dead-letters',                type: 'custom' },
 ]
 
 /**

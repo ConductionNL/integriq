@@ -137,6 +137,34 @@ function routesFromManifest(manifest) {
 	}))
 	// Legacy redirect: /cloud-events → /cloud-events/events (preserves bookmarks)
 	routes.push({ path: '/cloud-events', redirect: '/cloud-events/events' })
+
+	// ADR-079 / ADR-080 navigation rework. Every path below was a real page
+	// before this change, so a bare rename would 404 existing bookmarks,
+	// `deepLinks[]` entries and e2e specs. Redirects are part of the rework,
+	// not cleanup afterwards.
+	//
+	// Catalog → Store (ADR-080: "catalogue" names a different concept).
+	routes.push({ path: '/catalog', redirect: '/store' })
+	// The two dead-letter queues merged into one Operations page; the queue
+	// param lands the caller on the queue their old link meant.
+	routes.push({ path: '/cloud-events/deliveries', redirect: { path: '/dead-letters', query: { queue: 'events' } } })
+	routes.push({ path: '/synchronizations/dead-letters', redirect: { path: '/dead-letters', query: { queue: 'sync' } } })
+	// Environments stopped being an index: an environment is metadata plus a
+	// sourceRef, so it now renders as a widget on the Source it points at.
+	routes.push({ path: '/environments', redirect: '/sources' })
+	// ADR-079: the in-app settings page is gone — app configuration lives in
+	// Nextcloud's settings framework, which authorizes it server-side. This
+	// leaves the SPA entirely, so it cannot be a vue-router `redirect` (those
+	// resolve within the app); `beforeEnter` + `return false` navigates away
+	// and cancels the in-app transition instead of landing on the dashboard.
+	routes.push({
+		path: '/settings',
+		beforeEnter: () => {
+			window.location.href = generateUrl('/settings/admin/openconnector')
+			return false
+		},
+		component: RoutePageRenderer,
+	})
 	// Catch-all redirect to dashboard. vue-router 4: the bare '*' catch-all
 	// became a named param matcher.
 	routes.push({ path: '/:pathMatch(.*)*', redirect: '/' })

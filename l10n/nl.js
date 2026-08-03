@@ -1,6 +1,9 @@
 OC.L10N.register(
     "openconnector",
     {
+    "Dead letter queues" : "Dead letter-wachtrijen",
+    "Dead letters" : "Dead letters",
+    "Synchronization items" : "Synchronisatie-items",
     "{ok} items processed" : "{ok} items verwerkt",
     "Circuit breaker reset" : "Circuit breaker gereset",
     "Circuit closed" : "Circuit gesloten",
