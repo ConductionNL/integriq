@@ -175,6 +175,28 @@ components = descriptor.get('components', {})
 registers = components.get('registers', {})
 schemas = components.get('schemas', {})
 
+# Provision the STRUCTURE, not the shipped demo data.
+#
+# The merged descriptor carries ~87 seed objects — the connector catalog
+# templates and example Sources/Mappings/Synchronizations from
+# `register.d/*.json`. Importing them made the e2e suite depend on how many
+# demo rows the product happens to ship, and the index pages are paginated:
+# with 22 seeded sources, a row a test had just created through the UI was not
+# on page 1, so three specs reported "newly-created row must appear in the
+# list" about a row that existed and was listed. The number they were really
+# measuring was the page size.
+#
+# An e2e fixture should be deterministic and owned by the tests. Every spec in
+# this suite creates the data it needs and cleans it up, so it needs the
+# register and the schemas to exist and nothing more. The catalog specs that
+# DO want the shipped templates are `test.describe.skip`ped today; if they are
+# revived, they should seed the templates they assert on rather than rely on
+# the whole demo payload being present.
+#
+# This does NOT change what a real install gets: `InitializeRegister` imports
+# the full descriptor, objects included.
+seed_objects = components.pop('objects', {})
+
 register_slugs = {
     value.get('slug')
     for value in registers.values()
@@ -213,7 +235,8 @@ with open(out_path, 'w', encoding='utf-8') as handle:
     )
 
 print(f'[ci-seed] merged {len(fragments)} register.d fragment(s); '
-      f'{len(schemas)} schemas, {len(components.get("objects", {}))} seed objects; '
+      f'{len(schemas)} schemas; '
+      f'{len(seed_objects)} shipped demo object(s) deliberately NOT imported; '
       f'version {version}')
 PY
 
