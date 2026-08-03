@@ -18,7 +18,7 @@
 			:model-value="selectedTypeOption"
 			:options="typeOptions"
 			:clearable="false"
-			@input="onTypePick" />
+			@update:model-value="onTypePick" />
 		<NcTextField
 			v-if="value.type !== 'nc-session'"
 			:label="t('openconnector', 'Header (default: Authorization)')"

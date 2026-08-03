@@ -97,7 +97,7 @@
 							:model-value="selectedSourceType"
 							:options="sourceTypeOptions"
 							:clearable="false"
-							@input="onSourceTypeChange" />
+							@update:model-value="onSourceTypeChange" />
 					</div>
 
 					<!-- #source-config-widget -->
@@ -120,7 +120,7 @@
 							:model-value="selectedSyncMode"
 							:options="syncModeOptions"
 							:clearable="false"
-							@input="onSyncModeChange" />
+							@update:model-value="onSyncModeChange" />
 						<span class="sync-detail__helper">
 							{{ t('openconnector', 'Incremental mode fetches only records changed since the stored cursor and never deletes target objects no longer present in the source. Switch back to Full to restore deletion detection.') }}
 						</span>
@@ -144,7 +144,7 @@
 								:aria-label-combobox="t('openconnector', 'Cursor comparator')"
 								:model-value="selectedCursorComparator"
 								:options="cursorComparatorOptions"
-								@input="onCursorComparatorChange" />
+								@update:model-value="onCursorComparatorChange" />
 						</div>
 
 						<div class="sync-detail__field">
@@ -232,7 +232,7 @@
 							:model-value="selectedTargetType"
 							:options="typeOptions"
 							:clearable="false"
-							@input="onTargetTypeChange" />
+							@update:model-value="onTargetTypeChange" />
 					</div>
 
 					<!-- #target-config-widget -->

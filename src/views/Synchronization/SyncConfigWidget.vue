@@ -48,7 +48,7 @@
 					:options="sourceOptions"
 					:loading="sourcesLoading"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@input="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
 					{{ t('openconnector', 'The Source record that defines the API base URL + auth.') }}
 				</span>
@@ -92,7 +92,7 @@
 					:options="registerOptions"
 					:loading="registersLoading"
 					:placeholder="t('openconnector', 'Pick a register')"
-					@input="onRegisterPick" />
+					@update:model-value="onRegisterPick" />
 			</div>
 
 			<div class="sync-config__field">
@@ -106,7 +106,7 @@
 					:options="schemaOptions"
 					:disabled="!selectedRegister"
 					:placeholder="t('openconnector', 'Pick a schema in the register')"
-					@input="onSchemaPick" />
+					@update:model-value="onSchemaPick" />
 			</div>
 
 			<div class="sync-config__field">
@@ -182,7 +182,7 @@
 					:loading="sourcesLoading"
 					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@input="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
 					{{ t('openconnector', 'The Source record whose base URL + credential reach the Tables API.') }}
 				</span>
@@ -201,7 +201,7 @@
 					:disabled="!sourceIdValue"
 					:input-label="t('openconnector', 'Table')"
 					:placeholder="t('openconnector', 'Pick a table the source can access')"
-					@input="onTablePick" />
+					@update:model-value="onTablePick" />
 				<span v-if="tablesError" class="sync-config__error">
 					{{ tablesError }}
 				</span>
@@ -233,7 +233,7 @@
 					:loading="sourcesLoading"
 					:input-label="t('openconnector', 'Source (Nextcloud instance)')"
 					:placeholder="t('openconnector', 'Pick a configured source')"
-					@input="onSourcePick" />
+					@update:model-value="onSourcePick" />
 				<span class="sync-config__helper">
 					{{ t('openconnector', 'The Source record whose base URL + credential reach the Forms API.') }}
 				</span>
@@ -252,7 +252,7 @@
 					:disabled="!sourceIdValue"
 					:input-label="t('openconnector', 'Form')"
 					:placeholder="t('openconnector', 'Pick a form the source can access')"
-					@input="onFormPick" />
+					@update:model-value="onFormPick" />
 				<span v-if="formsError" class="sync-config__error">
 					{{ formsError }}
 				</span>

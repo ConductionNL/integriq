@@ -10,20 +10,20 @@
 		<NcSelect
 			data-testid="action-form-filepart-upload-mapping"
 			:aria-label-combobox="t('openconnector', 'Inbound mapping (required)')"
-			:value="selectedInbound"
+			:model-value="selectedInbound"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@input="(option) => patch('mappingId', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('mappingId', option?.id ? String(option.id) : '')" />
 
 		<label class="action-form__label">{{ t('openconnector', 'Outbound mapping (optional)') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Outbound mapping (optional)')"
-			:value="selectedOutbound"
+			:model-value="selectedOutbound"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a mapping')"
-			@input="(option) => patch('mappingOutId', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('mappingOutId', option?.id ? String(option.id) : '')" />
 		<span class="action-form__helper">
 			{{ t('openconnector', 'Inbound runs before the part is written; outbound runs over the written object before it returns.') }}
 		</span>

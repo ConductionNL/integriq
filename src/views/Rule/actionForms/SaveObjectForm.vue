@@ -11,30 +11,30 @@
 		<NcSelect
 			data-testid="action-form-save-register"
 			:aria-label-combobox="t('openconnector', 'Register (required)')"
-			:value="selectedRegister"
+			:model-value="selectedRegister"
 			:options="registerOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a register')"
-			@input="(option) => patch('register', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('register', option?.id ? String(option.id) : '')" />
 
 		<label class="action-form__label">{{ t('openconnector', 'Schema (required)') }}</label>
 		<NcSelect
 			data-testid="action-form-save-schema"
 			:aria-label-combobox="t('openconnector', 'Schema (required)')"
-			:value="selectedSchema"
+			:model-value="selectedSchema"
 			:options="schemaOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@input="(option) => patch('schema', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('schema', option?.id ? String(option.id) : '')" />
 
 		<label class="action-form__label">{{ t('openconnector', 'Mapping (optional)') }}</label>
 		<NcSelect
 			:aria-label-combobox="t('openconnector', 'Mapping (optional)')"
-			:value="selectedMapping"
+			:model-value="selectedMapping"
 			:options="mappingOptions"
 			:loading="loading"
 			:placeholder="t('openconnector', 'Pick a mapping to transform before save')"
-			@input="(option) => patch('mapping', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('mapping', option?.id ? String(option.id) : '')" />
 	</div>
 </template>
 

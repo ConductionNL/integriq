@@ -43,7 +43,7 @@
 			:placeholder="t('openconnector', 'Operator')"
 			label="label"
 			:reduce="(option) => option"
-			@input="onOperatorPick">
+			@update:model-value="onOperatorPick">
 			<template #option="{ label, group }">
 				<div class="rule-condition-leaf__op-option">
 					<span class="rule-condition-leaf__op-option-label">{{ label }}</span>

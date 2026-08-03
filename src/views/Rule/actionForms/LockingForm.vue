@@ -14,7 +14,7 @@
 			:model-value="selectedAction"
 			:options="actionOptions"
 			:clearable="false"
-			@input="onActionPick" />
+			@update:model-value="onActionPick" />
 		<NcTextField
 			:label="t('openconnector', 'Duration (seconds, default 3600)')"
 			type="number"

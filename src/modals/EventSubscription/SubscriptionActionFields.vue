@@ -83,7 +83,7 @@
 				:model-value="selectedKindOption"
 				:options="kindOptions"
 				:clearable="false"
-				@input="onKindPick" />
+				@update:model-value="onKindPick" />
 			<span class="cn-subscription-action-fields__helper">
 				{{ t('openconnector', 'A matched event either POSTs to the sink above (Webhook), runs a synchronization, or runs a job. All three are tracked, retried, and dead-letterable the same way.') }}
 			</span>
@@ -101,7 +101,7 @@
 					:loading="synchronizationsLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select a synchronization')"
-					@input="onSynchronizationPick" />
+					@update:model-value="onSynchronizationPick" />
 			</template>
 
 			<template v-else-if="actionKind === 'job'">
@@ -117,7 +117,7 @@
 					:loading="jobsLoading"
 					:clearable="false"
 					:placeholder="t('openconnector', 'Select a job')"
-					@input="onJobPick" />
+					@update:model-value="onJobPick" />
 			</template>
 		</div>
 

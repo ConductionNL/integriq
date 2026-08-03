@@ -33,11 +33,11 @@
 			<NcSelect
 				:input-id="primaryId"
 				:aria-label-combobox="t('openconnector', 'Source → Target mapping')"
-				:value="selectedPrimary"
+				:model-value="selectedPrimary"
 				:options="mappingOptions"
 				:loading="loading"
 				:placeholder="t('openconnector', 'Pick a mapping')"
-				@input="(option) => $emit('update:value', option?.id || '')" />
+				@update:model-value="(option) => $emit('update:value', option?.id || '')" />
 			<span class="sync-mapping__helper">
 				{{ t('openconnector', 'Transforms each source record into the target shape.') }}
 			</span>
@@ -51,12 +51,12 @@
 			<NcSelect
 				:input-id="reverseId"
 				:aria-label-combobox="t('openconnector', 'Target → Source mapping')"
-				:value="selectedReverse"
+				:model-value="selectedReverse"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
 				:placeholder="t('openconnector', 'Optional — for bidirectional sync')"
-				@input="(option) => $emit('update:targetSourceValue', option?.id || '')" />
+				@update:model-value="(option) => $emit('update:targetSourceValue', option?.id || '')" />
 			<span class="sync-mapping__helper">
 				{{ t('openconnector', 'Only needed when changes flow back from target to source.') }}
 			</span>
@@ -69,12 +69,12 @@
 			<NcSelect
 				:input-id="hashId"
 				:aria-label-combobox="t('openconnector', 'Hash mapping')"
-				:value="selectedHash"
+				:model-value="selectedHash"
 				:options="mappingOptions"
 				:loading="loading"
 				:clearable="true"
 				:placeholder="t('openconnector', 'Optional — change detection')"
-				@input="(option) => $emit('update:hashValue', option?.id || '')" />
+				@update:model-value="(option) => $emit('update:hashValue', option?.id || '')" />
 			<span class="sync-mapping__helper">
 				{{ t('openconnector', 'Mapping used to compute the source-side hash for change detection.') }}
 			</span>

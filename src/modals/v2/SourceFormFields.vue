@@ -47,7 +47,7 @@
 					:options="typeOptions"
 					:clearable="!field.required"
 					:placeholder="t('openconnector', 'Pick a source type')"
-					@input="onTypePick" />
+					@update:model-value="onTypePick" />
 				<span class="cn-source-form-fields__helper">
 					{{ field.description || t('openconnector', 'The transport used to reach this source.') }}
 				</span>
@@ -158,7 +158,7 @@
 						:loading="credentialsLoading"
 						:clearable="true"
 						:placeholder="t('openconnector', 'Select a brokered credential')"
-						@input="onCredentialPick" />
+						@update:model-value="onCredentialPick" />
 					<span class="cn-source-form-fields__helper">
 						{{ t('openconnector', 'The credential must allow the calling app "openconnector" in its allowedApps. Note: the app that declared the credential may be a different one.') }}
 					</span>

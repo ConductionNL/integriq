@@ -1,5 +1,4 @@
 const path = require('path')
-const fs = require('fs')
 const webpack = require('webpack')
 const webpackConfig = require('@nextcloud/webpack-vue-config')
 const { VueLoaderPlugin } = require('vue-loader')
@@ -47,9 +46,16 @@ webpackConfig.entry = {
 	// (opsx-driven) and will land via the manifest's dashboard page.
 }
 
-// Use local source when available (monorepo dev), otherwise fall back to npm package
-const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
+// NOTE: the ../nextcloud-vue source alias (USE_LOCAL_LIB) is gone. It aliased
+// this app's build to whatever the sibling checkout happened to be on, and the
+// library maintains two Vue lines — so a checkout parked on the Vue 2 branch
+// silently compiled Vue 2 library source into this Vue 3 app and produced ~75
+// errors that named nothing useful. CI never saw it (no sibling checkout), so
+// it read as 'the build is broken' only to whoever ran it locally.
+//
+// Releases are fast enough now that developing against a published version is
+// the shorter path: publish a prerelease from nextcloud-vue and bump here.
+// One source of truth for what this app builds against - the lockfile.
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js', '.ts'],
@@ -62,7 +68,6 @@ webpackConfig.resolve = {
 	fallback: { path: require.resolve('path-browserify') },
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
-		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
 		//
@@ -87,7 +92,15 @@ webpackConfig.resolve = {
 		// Force @nextcloud/dialogs and @nextcloud/axios to resolve from this
 		// app's node_modules, preventing the nextcloud-vue submodule's nested
 		// deps from leaking in.
-		'@nextcloud/dialogs': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs'),
+		//
+		// v7 is ESM-only and declares an exports map with NO main/module, so a
+		// DIRECTORY alias cannot resolve it — the same trap as @nextcloud/vue@9
+		// above, and the reason v6 (a vue@2.7 package) had been kept: it still
+		// had a main, so the directory alias worked and nobody noticed a Vue 2
+		// package was being bundled into a Vue 3 app. Point at the explicit
+		// entry file, and alias the one subpath the library imports.
+		'@nextcloud/dialogs$': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs'),
+		'@nextcloud/dialogs/style.css$': path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/style.css'),
 		'@nextcloud/axios$': path.resolve(__dirname, 'node_modules/@nextcloud/axios'),
 	},
 }

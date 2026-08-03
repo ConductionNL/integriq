@@ -20,7 +20,7 @@
 			:options="schemaOptions"
 			:loading="schemasLoading"
 			:placeholder="t('openconnector', 'Select a schema')"
-			@input="(option) => patch('schemaId', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('schemaId', option?.id ? String(option.id) : '')" />
 		<NcTextField
 			:label="t('openconnector', 'Filename location (default: filename)')"
 			:model-value="value.filenameLocation || ''"
@@ -38,7 +38,7 @@
 			:options="mappingOptions"
 			:loading="mappingsLoading"
 			:placeholder="t('openconnector', 'Pick a mapping')"
-			@input="(option) => patch('mappingId', option?.id ? String(option.id) : '')" />
+			@update:model-value="(option) => patch('mappingId', option?.id ? String(option.id) : '')" />
 	</div>
 </template>
 
