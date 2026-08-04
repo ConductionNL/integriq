@@ -286,39 +286,3 @@ export function viewLogsHandler({ actionId, item }) {
 		}
 	})
 }
-
-/**
- * Create a blank mapping and open it in the bespoke MappingDetail editor.
- *
- * Wired to the Mappings index Add button (`@add`) via the MappingsPageRenderer
- * wrapper in main.js. Per the "route to detail page" decision, the Add button
- * no longer opens the simple name/description form dialog: it POSTs a draft
- * mapping to the OpenRegister objects API, then routes to the rich 3-tab
- * editor so a new mapping is configured in the same place an existing one is.
- *
- * @return {Promise<void>}
- */
-export async function createMappingAndOpen() {
-	const router = getRouter()
-	if (!router) {
-		// eslint-disable-next-line no-console
-		console.warn('[openconnector] createMappingAndOpen: router not set; cannot navigate')
-		return
-	}
-	try {
-		const url = generateUrl('/apps/openregister/api/objects/openconnector/mapping')
-		const { data } = await axios.post(url, { name: t('openconnector', 'New mapping') })
-		const id = data?.id || data?.uuid || data?.['@self']?.id
-		if (!id) {
-			showError(t('openconnector', 'Could not open the new mapping'))
-			return
-		}
-		router.push({ name: 'MappingDetail', params: { id: String(id) } }).catch((err) => {
-			if (err && err.name !== 'NavigationDuplicated') {
-				showError(t('openconnector', 'Mapping created but could not be opened'))
-			}
-		})
-	} catch (err) {
-		showError(t('openconnector', 'Could not create mapping') + errorDetail(err))
-	}
-}
