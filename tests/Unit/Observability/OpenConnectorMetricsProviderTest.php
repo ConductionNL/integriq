@@ -70,6 +70,43 @@ class OpenConnectorMetricsProviderTest extends TestCase
 
 
     /**
+     * Every provider-backed metric NAME this provider is expected to emit.
+     *
+     * One MetricSample per name, regardless of how many points each carries.
+     * Asserting the name SET rather than a bare count means adding or losing a
+     * metric fails with a diff that names it, instead of an opaque
+     * "6 does not match 3" — which is how this assertion silently rotted when
+     * #1126 revived sources_total / calls_total / synchronization_runs_total.
+     *
+     * @var string[]
+     */
+    private const EXPECTED_METRIC_NAMES = [
+        'api_product_errors_total',
+        'api_product_latency_seconds',
+        'calls_total',
+        'circuit_breaker_state',
+        'sources_total',
+        'synchronization_runs_total',
+    ];
+
+
+    /**
+     * Assert the provider emitted exactly the expected set of metric names.
+     *
+     * @param array<int,object> $samples MetricSample objects returned by the provider.
+     *
+     * @return void
+     */
+    private function assertSameMetricNames(array $samples): void
+    {
+        $names = array_map(static fn (object $s): string => $s->name, $samples);
+        sort($names);
+
+        $this->assertSame(self::EXPECTED_METRIC_NAMES, $names);
+    }//end assertSameMetricNames()
+
+
+    /**
      * TC-19 — mixed open/closed/never-evaluated sources report 1/0/0.
      *
      * @return void
@@ -94,11 +131,7 @@ class OpenConnectorMetricsProviderTest extends TestCase
         );
 
         $samples = $provider->metrics();
-        // api-product-gateway added two more provider-backed gauges
-        // (api_product_latency_seconds, api_product_errors_total) alongside
-        // the pre-existing circuit_breaker_state — 3 MetricSample objects
-        // (one per metric NAME) regardless of how many points each carries.
-        $this->assertCount(3, $samples);
+        $this->assertSameMetricNames($samples);
 
         $sample = $this->sampleByName($samples, 'circuit_breaker_state');
         $this->assertSame('circuit_breaker_state', $sample->name);
@@ -138,7 +171,7 @@ class OpenConnectorMetricsProviderTest extends TestCase
 
         $samples = $provider->metrics();
 
-        $this->assertCount(3, $samples);
+        $this->assertSameMetricNames($samples);
         $sample = $this->sampleByName($samples, 'circuit_breaker_state');
         $this->assertCount(1, $sample->samples);
         $this->assertSame(0, $sample->samples[0]['value']);
@@ -157,7 +190,7 @@ class OpenConnectorMetricsProviderTest extends TestCase
 
         $samples = $provider->metrics();
 
-        $this->assertCount(3, $samples);
+        $this->assertSameMetricNames($samples);
         $circuitBreaker = $this->sampleByName($samples, 'circuit_breaker_state');
         $this->assertSame(0, $circuitBreaker->samples[0]['value']);
     }//end testUnavailableObjectServiceFallsBackToZeroValue()

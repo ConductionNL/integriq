@@ -732,19 +732,40 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Build the thin openconnector MetricsController subclass (URL
-        // /api/metrics, route name metrics#index — both unchanged). Admin-only
-        // posture is engine-owned and re-declared on the subclass method.
+        // Build the thin openconnector MetricsController (URL /api/metrics,
+        // route name metrics#index — both unchanged) with the engine delegate
+        // resolved from OpenRegister's app container, scoped to this app's
+        // manifest via appName. Admin-only posture is engine-owned and
+        // re-declared on the openconnector method.
         $context->registerService(
             MetricsController::class,
             static function (ContainerInterface $c) {
-                // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
-                $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                $appManager = $c->get(\OCP\App\IAppManager::class);
+
+                // Mirrors the HealthController guard above. When OpenRegister
+                // is absent the engine delegate cannot be built, so pass null
+                // and let MetricsController return a clean 503 instead of a
+                // bare DI 500 — getRegisteredAppContainer() throws for an app
+                // that is not registered. Building the delegate references
+                // OpenRegister classes, so it is only done when OpenRegister
+                // is enabled.
+                $delegate = null;
+                if ($appManager->isInstalled('openregister') === true) {
+                    // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor -- cross-app DI container lookup; no \OCP\Server equivalent, still used by NC34 core (OCP\AppFramework\App).
+                    $orContainer = \OC::$server->getRegisteredAppContainer('openregister');
+                    $delegate    = new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
+                        appName: self::APP_ID,
+                        request: $c->get(IRequest::class),
+                        manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                        engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
+                    );
+                }
+
                 return new MetricsController(
                     appName: self::APP_ID,
                     request: $c->get(IRequest::class),
-                    manifestLoader: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
-                    engine: $orContainer->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
+                    appManager: $appManager,
+                    delegate: $delegate
                 );
             }
         );
@@ -1078,6 +1099,8 @@ class Application extends App implements IBootstrap
      * @param IBootContext $context Boot context.
      *
      * @return void
+     *
+     * @spec openspec/specs/apphost-adoption/spec.md
      */
     public function boot(IBootContext $context): void
     {
