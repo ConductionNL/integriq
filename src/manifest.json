@@ -671,11 +671,11 @@
                 "schema": "source",
                 "columns": [
                     "name",
-                    "type",
-                    "status",
-                    "isEnabled",
-                    "lastSync",
-                    "dateModified"
+                    "version",
+                    "location",
+                    "documentation",
+                    "lastCall",
+                    "circuitBreakerState"
                 ],
                 "includeFields": [
                     "name",
