@@ -661,16 +661,29 @@ class EventService
 
             return false;
         } catch (Exception $e) {
+            // The exception is described, not attached.
+            //
+            // Passing the object made Nextcloud serialise the whole thing, and a
+            // Guzzle transfer exception carries the Request — headers, body and
+            // every middleware frame. Measured on this instance: 7.2 MB PER
+            // FAILURE, from one subscription pointing at 127.0.0.1:9 that can
+            // never answer. Three of those lines were 75% of a 2.1 GB log.
+            //
+            // Nothing was lost by dropping it. A delivery failure is fully
+            // described by its class, its message (which already names the host,
+            // port and curl error) and which subscription was being served; the
+            // stack is always the same few frames inside the HTTP client.
+            //
+            // NOT 'message': Nextcloud's logger treats a `message` key in the
+            // CONTEXT as the log message itself, so an array here makes
+            // OC\Log::getLogLevel() receive an array and throw — the error
+            // handler fatals, turning a handled delivery failure into an
+            // uncaught TypeError.
             $this->logger->error(
                     'Failed to deliver message: '.$e->getMessage(),
                     [
-                        'exception'    => $e,
-                        // NOT 'message': Nextcloud's logger treats a `message`
-                        // key in the CONTEXT as the log message itself, so an
-                        // array here makes OC\Log::getLogLevel() receive an
-                        // array and throw — the error handler fatals, turning a
-                        // handled delivery failure into an uncaught TypeError.
-                        'eventMessage' => $message->jsonSerialize(),
+                        'exceptionClass' => get_class($e),
+                        'eventMessage'   => $message->jsonSerialize(),
                     ]
                     );
 
