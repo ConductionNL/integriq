@@ -33,9 +33,9 @@ namespace OCA\OpenConnector\Notification;
 use OCA\OpenConnector\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
-use InvalidArgumentException;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
+use OCP\Notification\UnknownNotificationException;
 
 /**
  * Notifier for the imperatively-dispatched `approval_pending` notification.
@@ -92,18 +92,25 @@ class ApprovalNotifier implements INotifier
      *
      * @return INotification The prepared notification.
      *
-     * @throws InvalidArgumentException When this notifier does not own the notification's app/subject (INotifier contract).
+     * @throws UnknownNotificationException When this notifier does not own the notification's app/subject.
+     *
+     * Every registered notifier is offered EVERY notification, so declining one
+     * that is not ours is the normal case, not an error. Nextcloud deprecated
+     * InvalidArgumentException for this and logs a warning on each throw, which
+     * turned routine declines into a flood — dozens of identical warnings within
+     * one second on this instance, drowning the log that real problems surface
+     * in. UnknownNotificationException says the same thing without the noise.
      *
      * @spec openspec/specs/approval-workflow/spec.md
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
         if ($notification->getApp() !== Application::APP_ID) {
-            throw new InvalidArgumentException();
+            throw new UnknownNotificationException();
         }
 
         if ($notification->getSubject() !== 'approval_pending') {
-            throw new InvalidArgumentException();
+            throw new UnknownNotificationException();
         }
 
         $l      = $this->l10nFactory->get(Application::APP_ID, $languageCode);
