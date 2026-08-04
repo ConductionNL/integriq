@@ -26,6 +26,15 @@ module.exports = {
 		globals: false,
 		include: ['tests/vitest/**/*.spec.{js,ts}'],
 		exclude: ['tests/e2e/**', 'tests/postman/**', 'tests/integration/**', 'src/**', 'node_modules/**'],
+		// @nextcloud/vue ships CSS side-effect imports next to its components.
+		// Node's ESM loader cannot resolve a ".css" specifier, so the package
+		// must be transformed by Vite rather than externalised, otherwise any
+		// spec importing a real component dies with ERR_UNKNOWN_FILE_EXTENSION.
+		server: {
+			deps: {
+				inline: [/@nextcloud\/vue/],
+			},
+		},
 	},
 	resolve: {
 		alias: [
