@@ -15,6 +15,21 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenConnector.nl
+ *
+ * @deprecated Mapping evaluation consolidated into OpenRegister (2026-08-03).
+ * Every pure transformation function moved to
+ * `OCA\OpenRegister\Twig\MappingRuntime`; the three that need OpenConnector's
+ * own services — callSource, getTargetIdByOriginId, getOriginIdByTargetId — are
+ * contributed to that engine via `RegisterMappingFunctionsEvent`
+ * (see Listener\MappingFunctionRegistrationListener).
+ *
+ * This copy is retained only while OpenConnector's own MappingService still
+ * exists. Do NOT add functions here: a function registered on this environment
+ * is invisible to every mapping evaluated through OpenRegister, which is now
+ * the engine everything else uses.
+ *
+ * NOTE: Twig\AuthenticationExtension is NOT deprecated. It templates outbound
+ * request authentication in CallService and is genuinely this app's concern.
  */
 
 namespace OCA\OpenConnector\Twig;
