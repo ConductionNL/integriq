@@ -48,32 +48,40 @@
 					:clearable="!field.required"
 					:placeholder="t('openconnector', 'Pick a source type')"
 					@update:model-value="onTypePick" />
-				<span class="cn-source-form-fields__helper">
-					{{ field.description || t('openconnector', 'The transport used to reach this source.') }}
-				</span>
+				<CnFieldHelper
+					:text="field.description || t('openconnector', 'The transport used to reach this source.')"
+					:more="field.descriptionLong" />
 			</div>
 
-			<NcTextField
-				v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'"
-				:label="field.label + (field.required ? ' *' : '')"
-				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
-				:helper-text="errors[field.key] || field.description"
-				:error="!!errors[field.key]"
-				:type="textFieldType(field)"
-				:disabled="field.readOnly"
-				:placeholder="field.description"
-				@update:model-value="(value) => updateField(field.key, value)" />
+			<template v-else-if="field.widget === 'text' || field.widget === 'email' || field.widget === 'url' || field.widget === 'date' || field.widget === 'datetime'">
+				<NcTextField
+					:label="field.label + (field.required ? ' *' : '')"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:error="!!errors[field.key]"
+					:type="textFieldType(field)"
+					:disabled="field.readOnly"
+					:placeholder="field.description"
+					@update:model-value="(value) => updateField(field.key, value)" />
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
+			</template>
 
-			<NcTextField
-				v-else-if="field.widget === 'number'"
-				:label="field.label + (field.required ? ' *' : '')"
-				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
-				:helper-text="errors[field.key] || field.description"
-				:error="!!errors[field.key]"
-				type="number"
-				:disabled="field.readOnly"
-				:placeholder="field.description"
-				@update:model-value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+			<template v-else-if="field.widget === 'number'">
+				<NcTextField
+					:label="field.label + (field.required ? ' *' : '')"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:error="!!errors[field.key]"
+					type="number"
+					:disabled="field.readOnly"
+					:placeholder="field.description"
+					@update:model-value="(value) => updateField(field.key, value !== '' ? Number(value) : null)" />
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
+			</template>
 
 			<div v-else-if="field.widget === 'textarea'" class="cn-source-form-fields__textarea-wrapper">
 				<label :for="'cn-source-form-' + field.key" class="cn-source-form-fields__label">
@@ -87,9 +95,10 @@
 					:placeholder="field.description"
 					rows="3"
 					@input="updateField(field.key, $event.target.value)" />
-				<span class="cn-source-form-fields__helper" :class="{ 'cn-source-form-fields__helper--error': errors[field.key] }">
-					{{ errors[field.key] || field.description }}
-				</span>
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
 			</div>
 
 			<NcCheckboxRadioSwitch
@@ -113,20 +122,25 @@
 					spellcheck="false"
 					rows="5"
 					@input="onJsonInput(field, $event.target.value)" />
-				<span class="cn-source-form-fields__helper" :class="{ 'cn-source-form-fields__helper--error': jsonErrors[field.key] || errors[field.key] }">
-					{{ jsonErrors[field.key] || errors[field.key] || field.description }}
-				</span>
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="jsonErrors[field.key] || errors[field.key]" />
 			</div>
 
-			<NcTextField
-				v-else
-				:label="field.label + (field.required ? ' *' : '')"
-				:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
-				:helper-text="errors[field.key] || field.description"
-				:error="!!errors[field.key]"
-				:disabled="field.readOnly"
-				:placeholder="field.description"
-				@update:model-value="(value) => updateField(field.key, value)" />
+			<template v-else>
+				<NcTextField
+					:label="field.label + (field.required ? ' *' : '')"
+					:model-value="formData[field.key] != null ? String(formData[field.key]) : ''"
+					:error="!!errors[field.key]"
+					:disabled="field.readOnly"
+					:placeholder="field.description"
+					@update:model-value="(value) => updateField(field.key, value)" />
+				<CnFieldHelper
+					:text="field.description"
+					:more="field.descriptionLong"
+					:error="errors[field.key]" />
+			</template>
 		</div>
 
 		<!-- Brokered-credential authoring block. -->
@@ -177,6 +191,7 @@ import {
 	NcSelect,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { CnFieldHelper } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -209,6 +224,7 @@ export default {
 		NcTextField,
 		NcSelect,
 		NcCheckboxRadioSwitch,
+		CnFieldHelper,
 	},
 
 	props: {

@@ -681,17 +681,7 @@
                     "name",
                     "description",
                     "type",
-                    "isEnabled",
-                    "auth",
-                    "authorizationHeader",
-                    "authenticationConfig",
-                    "apikey",
-                    "secret",
-                    "username",
-                    "password",
-                    "jwt",
-                    "jwtId",
-                    "configuration"
+                    "location"
                 ],
                 "sidebar": {
                     "enabled": true,
