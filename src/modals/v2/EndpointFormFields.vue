@@ -71,9 +71,10 @@
 					:more="field.descriptionLong"
 					:error="errors[field.key]" />
 
-				<!-- Register + Schema compose `targetId`; they belong directly
-				     under Target Type, as in the original modal. -->
-				<template v-if="field.key === 'targetType'">
+				<!-- Register + Schema compose `targetId`, and only that target kind
+				     is addressed by a register/schema pair — so they appear only
+				     once Target Type selects it. -->
+				<template v-if="field.key === 'targetType' && isRegisterSchemaTarget">
 					<div v-if="registerUnavailable" class="cn-endpoint-form-fields__note cn-endpoint-form-fields__note--warn">
 						{{ t('openconnector', 'OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.') }}
 					</div>
@@ -242,6 +243,8 @@ export default {
 		return {
 			/** Local draft so a trailing comma survives while typing. */
 			endpointArrayDraft: null,
+			/** Register picked this session, before a schema completes `targetId`. */
+			pickedRegisterId: null,
 			registers: [],
 			schemas: [],
 			configurationOptions: [],
@@ -295,6 +298,29 @@ export default {
 			return raw != null ? String(raw) : ''
 		},
 
+		/**
+		 * Whether the endpoint targets a register/schema pair, which is the only
+		 * target kind the Register + Schema selects can express.
+		 *
+		 * @return {boolean} True when Target Type is `register/schema`.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
+		isRegisterSchemaTarget() {
+			return this.formData?.targetType === 'register/schema'
+		},
+
+		/**
+		 * The register currently in play: the one just picked, else the one
+		 * parsed back out of a stored `targetId`. Held locally because
+		 * `targetId` stays empty until BOTH halves are chosen.
+		 *
+		 * @return {string|number|null} The active register id.
+		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
+		 */
+		activeRegisterId() {
+			return this.pickedRegisterId !== null ? this.pickedRegisterId : this.targetRegisterId
+		},
+
 		/** @return {number|null} Register id parsed from `targetId`. */
 		targetRegisterId() {
 			return this.targetIdParts[0]
@@ -327,10 +353,10 @@ export default {
 			}))
 		},
 
-		/** @return {object|null} The register matching `targetId`'s first half. */
+		/** @return {object|null} The register option currently in play. */
 		selectedRegister() {
-			if (this.targetRegisterId == null) return null
-			return this.registerOptions.find((option) => String(option.id) === String(this.targetRegisterId)) ?? null
+			if (this.activeRegisterId == null) return null
+			return this.registerOptions.find((option) => String(option.id) === String(this.activeRegisterId)) ?? null
 		},
 
 		/**
@@ -359,6 +385,20 @@ export default {
 			if (!Array.isArray(ids)) return []
 			return ids.map((id) => this.configurationOptions.find((option) => String(option.id) === String(id))
 				?? { id, label: String(id) })
+		},
+	},
+
+	watch: {
+		/**
+		 * Drop the locally-held register when CnFormDialog swaps the edited
+		 * object, so the pickers re-derive from the new item's `targetId`.
+		 *
+		 * @return {void}
+		 * @spec exclude reactive-state sync passthrough
+		 */
+		formData() {
+			this.pickedRegisterId = null
+			this.endpointArrayDraft = null
 		},
 	},
 
@@ -421,28 +461,35 @@ export default {
 		},
 
 		/**
-		 * Write the register half of `targetId`, clearing the schema half —
-		 * the previously-picked schema may not belong to the new register.
+		 * Hold the picked register locally and clear `targetId`. The composed
+		 * value is only written once BOTH halves exist — a half-filled pair must
+		 * not satisfy CnFormDialog's required-field check, which is what keeps
+		 * the create button disabled until the target is complete. Clearing also
+		 * drops the previous schema, which may not belong to the new register.
 		 *
 		 * @param {object} option The picked register option.
 		 * @return {void}
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		onRegisterPick(option) {
-			this.updateField('targetId', option?.id != null ? `${option.id}/` : '')
+			this.pickedRegisterId = option?.id ?? null
+			this.updateField('targetId', '')
 		},
 
 		/**
-		 * Write the schema half of `targetId`.
+		 * Compose `targetId` from the active register and the picked schema.
 		 *
 		 * @param {object} option The picked schema option.
 		 * @return {void}
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		onSchemaPick(option) {
-			const register = this.targetRegisterId
-			if (register == null) return
-			this.updateField('targetId', option?.id != null ? `${register}/${option.id}` : `${register}/`)
+			const register = this.activeRegisterId
+			if (register == null || option?.id == null) {
+				this.updateField('targetId', '')
+				return
+			}
+			this.updateField('targetId', `${register}/${option.id}`)
 		},
 
 		/**

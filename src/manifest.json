@@ -1057,6 +1057,7 @@
                     "slug",
                     "method",
                     "targetType",
+                    "targetId",
                     "configurations"
                 ],
                 "fieldOverrides": {
@@ -1067,8 +1068,9 @@
                     "endpointRegex": { "order": 5 },
                     "slug": { "order": 6 },
                     "method": { "order": 7 },
-                    "targetType": { "order": 8 },
-                    "configurations": { "order": 9 }
+                    "targetType": { "order": 8, "default": "register/schema" },
+                    "targetId": { "order": 9, "required": true },
+                    "configurations": { "order": 10 }
                 },
                 "sidebar": {
                     "enabled": true,
