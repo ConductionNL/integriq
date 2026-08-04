@@ -493,14 +493,17 @@ export default {
 		},
 
 		/**
-		 * Write the picked configuration ids.
+		 * Write the picked configuration ids, as strings. The schema declares
+		 * `configurations` as `string[]` while OpenRegister returns numeric ids,
+		 * so writing them raw fails validation with "Property 'configurations.0'
+		 * should be type 'string' but is 'integer'".
 		 *
 		 * @param {object[]} options The picked options.
 		 * @return {void}
 		 * @spec openspec/specs/endpoint-job-editor-ui/spec.md
 		 */
 		onConfigurationsPick(options) {
-			this.updateField('configurations', (options || []).map((option) => option.id))
+			this.updateField('configurations', (options || []).map((option) => String(option.id)))
 		},
 
 		/**
