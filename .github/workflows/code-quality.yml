@@ -114,3 +114,48 @@ jobs:
       # provisions explicitly and fails loudly when the register or its schemas
       # are still absent. cwd for this step is the Nextcloud server root.
       playwright-seed-command: 'bash apps/openconnector/tests/e2e/ci-seed.sh'
+
+      # ── PHPUnit ──────────────────────────────────────────────────────────
+      # `enable-phpunit` defaults to FALSE in the shared workflow and this
+      # caller never set it, so the job reported `skipped` — with its matrix
+      # placeholders still literal (`PHPUnit (PHP ${{ matrix.php-version }},
+      # NC ${{ matrix.nextcloud-ref }})`), because GitHub evaluates a matrix
+      # job's `if:` before expanding the matrix. A disabled PHPUnit therefore
+      # looks exactly like a repo with no PHP tests. This repo has phpunit.xml
+      # and a tests/ tree, and a `coverage-report` artifact from 2026-08-03
+      # proves the suite does run: 20141 of 33162 statements covered.
+      # This is also the prerequisite for the coverage ratchet — the
+      # "Coverage Baseline Check" job `needs: phpunit` and downloads its
+      # artifact, so enabling the guard without this would be a dead gate of a
+      # different shape.
+      enable-phpunit: true
+
+      # ── Frontend Check legs ──────────────────────────────────────────────
+      # `frontend-checks` was already non-empty (`["build"]`), so the job did
+      # run here — but only the build. The validator family ran nowhere.
+      # `check:specs` is the aggregate (json-strict + manifest + register) and
+      # is listed as ONE leg rather than three, because each leg is a fresh job
+      # with its own checkout + `npm ci`.
+      # Measured on this tree before enabling: `check:specs` PASSES and
+      # `test:l10n` PASSES.
+      # `test:l10n:parity` is deliberately NOT added: measured on this tree it
+      # is short 337+ translations across the required locales. That is a
+      # translation backlog, and a permanently-red leg is one that gets
+      # switched off again.
+      frontend-checks: '["build", "check:specs", "test:l10n"]'
+
+      # ── Hydra mechanical gates ───────────────────────────────────────────
+      # `enable-hydra-gates` defaults to FALSE, so this tier has never executed
+      # here — the job reported `skipped`, which the Quality Report renders
+      # identically to a pass. Pinned to v1.0.1 so a change to the gate package
+      # cannot move this repo's verdict without a commit here.
+      # `enable-axe` deliberately NOT set: a vanilla Nextcloud 34 already carries
+      # serious/critical violations from core's own UI.
+      enable-hydra-gates: true
+      hydra-gates-ref: v1.0.1
+
+      # `enable-coverage-guard` is deliberately NOT set in this commit. The
+      # ratchet is only meaningful once `enable-phpunit` above has produced a
+      # `coverage-report` artifact from THIS repo's own development branch; the
+      # baseline is then read from that clover.xml and committed in a follow-up,
+      # exactly as it was for the repos that already had a PHPUnit run to read.
