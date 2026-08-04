@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Notification;
 
+use InvalidArgumentException;
 use OCA\OpenConnector\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -96,21 +97,21 @@ class ApprovalNotifier implements INotifier
      * `@since 30.0.0`. Referencing it unconditionally would turn a log-noise fix
      * into a fatal error on NC 28 and 29 — which is what psalm caught here,
      * analysing against the pinned `nextcloud/ocp: dev-stable29` stubs. It
-     * extends \InvalidArgumentException, so callers behave identically either
+     * extends InvalidArgumentException, so callers behave identically either
      * way and the fallback is a true equivalent rather than a degradation.
      *
-     * @return \InvalidArgumentException UnknownNotificationException where the platform has it.
+     * @return InvalidArgumentException UnknownNotificationException where the platform has it.
      *
      * @spec openspec/specs/approval-workflow/spec.md
      */
-    private function unknownNotification(): \InvalidArgumentException
+    private function unknownNotification(): InvalidArgumentException
     {
         $class = 'OCP\\Notification\\UnknownNotificationException';
         if (class_exists($class) === true) {
             return new $class();
         }
 
-        return new \InvalidArgumentException();
+        return new InvalidArgumentException();
 
     }//end unknownNotification()
 
@@ -124,7 +125,7 @@ class ApprovalNotifier implements INotifier
      *
      * @return INotification The prepared notification.
      *
-     * @throws \InvalidArgumentException When this notifier does not own the notification's app/subject.
+     * @throws InvalidArgumentException When this notifier does not own the notification's app/subject.
      *
      * @spec openspec/specs/approval-workflow/spec.md
      */
