@@ -1215,7 +1215,10 @@
         "The source test returned no response data.": "The source test returned no response data.",
         "Dead letter queues": "Dead letter queues",
         "Dead letters": "Dead letters",
-        "Synchronization items": "Synchronization items"
+        "Synchronization items": "Synchronization items",
+        "OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.": "OpenRegister is not available, so registers and schemas cannot be listed. The endpoint target cannot be set here.",
+        "Path segments, split on commas. Left empty the backend derives them from the endpoint path.": "Path segments, split on commas. Left empty the backend derives them from the endpoint path.",
+        "Stored together as the endpoint's target id.": "Stored together as the endpoint's target id."
     },
     "plurals": {}
 }

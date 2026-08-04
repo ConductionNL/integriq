@@ -48,6 +48,7 @@ import {
 	openPromotionHandler,
 } from './handlers/actionHandlers.js'
 import CatalogItemCard from './components/CatalogItemCard.vue'
+import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
@@ -112,6 +113,13 @@ export default {
 	// (credentialRef) picker backed by OpenRegister's credential broker, and
 	// hide the embedded-secret fields while brokered (openconnector#102).
 	SourceFormFields,
+
+	// The Endpoints page wires `form-fields` to EndpointFormFields to restore
+	// the field set the pre-manifest EditEndpoint modal had: Register + Schema
+	// pickers composing the polymorphic `targetId`, `endpointArray` as a
+	// comma-separated list, method/targetType selects (the schema declares both
+	// as plain strings, no enum), and a configurations multiselect.
+	EndpointFormFields,
 
 	// The Webhooks (event_subscription) page wires `form-fields` to
 	// SubscriptionActionFields so the CnFormDialog offers a delivery-action

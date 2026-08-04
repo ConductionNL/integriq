@@ -1052,9 +1052,24 @@
                     "name",
                     "description",
                     "endpoint",
+                    "endpointArray",
+                    "endpointRegex",
+                    "slug",
                     "method",
-                    "targetType"
+                    "targetType",
+                    "configurations"
                 ],
+                "fieldOverrides": {
+                    "name": { "order": 1 },
+                    "description": { "order": 2 },
+                    "endpoint": { "order": 3 },
+                    "endpointArray": { "order": 4 },
+                    "endpointRegex": { "order": 5 },
+                    "slug": { "order": 6 },
+                    "method": { "order": 7 },
+                    "targetType": { "order": 8 },
+                    "configurations": { "order": 9 }
+                },
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
@@ -1091,6 +1106,9 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "slots": {
+                "form-fields": "EndpointFormFields"
             }
         },
         {
