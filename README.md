@@ -230,7 +230,7 @@ npm run test            # Jest unit tests
 
 #### Quality-gate baselines
 
-`composer check:strict` is the unified gate run by CI on every PR (`.forgejo/workflows/pre-merge-check-strict.yaml`).
+`composer check:strict` is the unified gate you run locally; CI runs the equivalent gates on every PR via `.github/workflows/code-quality.yml` (the shared `ConductionNL/.github` quality pipeline).
 
 | Gate | Status | Baseline file |
 |------|--------|---------------|
