@@ -126,7 +126,7 @@
 					<label :for="'apiProductDetail-tier-group-' + uid">{{ t('openconnector', 'Approver group') }}</label>
 					<input :id="'apiProductDetail-tier-group-' + uid" v-model="newTier.approverGroup" type="text">
 
-					<NcButton type="primary" native-type="submit" :disabled="!newTier.name || saving">
+					<NcButton variant="primary" type="submit" :disabled="!newTier.name || saving">
 						{{ t('openconnector', 'Add tier') }}
 					</NcButton>
 				</form>
