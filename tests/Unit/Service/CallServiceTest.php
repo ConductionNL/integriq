@@ -406,7 +406,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testGuzzlePathCallLogRedactsAuthorizationHeaderWithoutAffectingRealRequest(): void
     {
@@ -460,7 +460,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testGuzzlePathScrubsSecretEchoedInResponseBody(): void
     {
@@ -505,7 +505,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testGuzzlePathRedactsSecretQueryParameterFromPersistedUrl(): void
     {
@@ -2266,7 +2266,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testRedactSecretsFromConfigRedactsSecretHeadersAndKeepsTheRest(): void
     {
@@ -2319,7 +2319,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testRedactSecretsFromConfigRedactsSecretQueryAndFormParams(): void
     {
@@ -2359,7 +2359,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testRedactSecretsFromUrlRedactsOnlyTheSecretParameters(): void
     {
@@ -2387,7 +2387,7 @@ class CallServiceTest extends TestCase
      *
      * @return void
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     public function testRedactSecretsFromUrlLeavesCleanUrlsUntouched(): void
     {

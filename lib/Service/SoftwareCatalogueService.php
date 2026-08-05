@@ -83,7 +83,7 @@ class SoftwareCatalogueService
      * @param SchemaMapper         $schemaMapper  The schema mapper for accessing OpenRegister.
      * @param IAppConfig           $appConfig     App config to read admin-tunable suffix.
      *
-     * @spec openspec/changes/openconnector-adopt-or-abstractions/tasks.md#task-7
+     * @spec openspec/changes/archive/2026-06-14-openconnector-adopt-or-abstractions/tasks.md#phase-7
      */
     public function __construct(
         private readonly LoggerInterface $logger,

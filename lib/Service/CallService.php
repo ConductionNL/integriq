@@ -1351,7 +1351,7 @@ class CallService
      *
      * @return array Structured array with 'request' and 'response' sub-arrays.
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     private function buildResponseData(
         \Psr\Http\Message\ResponseInterface $response,
@@ -1427,7 +1427,7 @@ class CallService
      *
      * @return array The redacted config copy.
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     private function redactSecretsFromConfig(array $config): array
     {
@@ -1493,7 +1493,7 @@ class CallService
      *
      * @return boolean Whether the name matches the secret pattern.
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     private function isSecretKeyName(string $name): bool
     {
@@ -1690,7 +1690,7 @@ class CallService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
      */
     private function buildAndPersistCallLog(
         ObjectEntity $source,
@@ -1781,7 +1781,7 @@ class CallService
      *
      * @return ObjectEntity An in-memory CallLog carrying the full request/response.
      *
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006--calllog-requestresponse-redaction-before-persistence
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-req-006-calllog-request-response-redaction-before-persistence
      */
     private function buildTransientCallLog(
         ObjectEntity $source,
@@ -2738,7 +2738,7 @@ class CallService
      * @throws \OCP\DB\Exception On persistence failure.
      *
      * @spec openspec/changes/parallel-file-fetch/specs/synchronization-files/spec.md#requirement-a-single-object-s-multiple-files-shall-be-fetched-concurrently
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
      */
     private function finalizeCall(
         array $prepared,
@@ -2850,7 +2850,7 @@ class CallService
      * @spec openspec/changes/stream-file-content/specs/synchronization-files/spec.md#requirement-binary-file-downloads-shall-stream-to-storage-without-full-in-memory-buffering
      * @spec openspec/specs/http-call-engine/spec.md#requirement-configurable-retry-policy-for-outbound-dispatch-req-007
      * @spec openspec/specs/http-call-engine/spec.md#requirement-per-source-circuit-breaker-generalized-into-callservice-req-008
-     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call_logsessionid-req-011
+     * @spec openspec/specs/http-call-engine/spec.md#requirement-trace-scoped-call-correlation-via-call-log-sessionid-req-011
      */
     public function call(
         ObjectEntity $source,

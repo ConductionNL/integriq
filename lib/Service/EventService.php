@@ -104,7 +104,7 @@ class EventService
      *
      * @var integer
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
      */
     private const DEFAULT_MAX_RETRIES = 5;
 
@@ -149,9 +149,9 @@ class EventService
      *                                                           instantiations keep working
      *                                                           unmodified.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
      * @spec openspec/specs/flow-orchestration/spec.md#requirement-a-flow-runs-via-cron-endpoint-rule-event-or-manual-trigger-req-007
      */
     public function __construct(
@@ -702,7 +702,7 @@ class EventService
      *
      * @return array{baseSeconds: integer, factor: integer, capSeconds: integer, maxRetries: integer}
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
      */
     private function resolveRetryPolicy(array $subscriptionData): array
     {
@@ -736,7 +736,7 @@ class EventService
      * @throws \OCP\DB\Exception On persistence failure.
      *
      * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
      */
     private function recordFailure(
         ObjectEntity $message,
@@ -805,7 +805,7 @@ class EventService
      * @return string ISO 8601 timestamp of the next scheduled attempt.
      *
      * @spec openspec/changes/openconnector-event-retry-hardening/tasks.md#task-2
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
      */
     private function computeNextAttempt(DateTime $base, int $retryCount, ?int $retryAfter, array $retryPolicy=[]): string
     {
@@ -924,7 +924,7 @@ class EventService
      *
      * @return boolean True when the attempt succeeded.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      * @spec openspec/specs/execution-trace/spec.md#requirement-execution-id-minted-at-every-entry-point-and-propagated-through-the-pipeline-req-001
      */
     private function attemptDelivery(ObjectEntity $message, ?ObjectEntity $subscription=null, ?ExecutionTraceContext $trace=null): bool
@@ -966,8 +966,8 @@ class EventService
      *
      * @return boolean True when the attempt succeeded.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
      */
     private function attemptDeliveryDispatch(ObjectEntity $message, ?ObjectEntity $subscription, ExecutionTraceContext $trace): bool
     {
@@ -1081,7 +1081,7 @@ class EventService
      *
      * @return boolean True when the synchronization ran successfully.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
     private function dispatchSynchronizationAction(
         ObjectEntity $message,
@@ -1170,7 +1170,7 @@ class EventService
      *
      * @return boolean True when the job ran successfully.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
     private function dispatchJobAction(ObjectEntity $message, array $subscriptionData, array $action, ?ExecutionTraceContext $trace=null): bool
     {
@@ -1373,7 +1373,7 @@ class EventService
      *
      * @return boolean True when the notification was published successfully.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
      * @spec openspec/specs/notificaties-api-connector/spec.md#requirement-a-publish-action-missing-kanaal-is-a-configuration-error-not-a-transient-failure-req-006
      */
     private function dispatchNotificatiesAction(ObjectEntity $message, array $subscriptionData, array $action): bool
@@ -1484,7 +1484,7 @@ class EventService
      *
      * @return ObjectEntity|null The resolved Source, or null when not found.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
      */
     private function findNotificatiesSource(string $sourceId): ?ObjectEntity
     {
@@ -1520,7 +1520,7 @@ class EventService
      *
      * @return ObjectEntity|null The resolved event, or null when not found.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-a-notificaties-kind-for-zgw-notificaties-api-publishing-req-010
      */
     private function findNotificatiesEvent(?string $eventId): ?ObjectEntity
     {
@@ -1556,7 +1556,7 @@ class EventService
      * @return boolean True when the mapped call succeeded.
      *
      * @spec openspec/specs/nextcloud-forms-connector/spec.md#requirement-outbound-submission-to-call-mapping-dispatch-req-004
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-may-additionally-support-a-mapping-kind-req-012
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-may-additionally-support-a-mapping-kind-req-012
      */
     private function dispatchMappingAction(ObjectEntity $message, array $subscriptionData, array $action): bool
     {
@@ -1822,7 +1822,7 @@ class EventService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
     private function recordDeliverySuccess(ObjectEntity $message): void
     {
@@ -1864,7 +1864,7 @@ class EventService
      *
      * @throws \OCP\DB\Exception On persistence failure.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-action-dispatch-must-support-webhook-synchronization-or-job-kinds-req-008
      */
     private function recordConfigurationError(ObjectEntity $message, string $error): void
     {
@@ -2079,7 +2079,7 @@ class EventService
      *
      * @return int The applicable maxRetries.
      *
-     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscriptions-retrybackoff-policy-must-be-independently-configurable-req-009
+     * @spec openspec/specs/events-cloudevents/spec.md#requirement-a-subscription-s-retry-backoff-policy-must-be-independently-configurable-req-009
      */
     private function maxRetriesForMessage(array $messageData): int
     {

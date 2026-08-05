@@ -136,7 +136,7 @@ class DashboardDatasourceService
      * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
      * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-egress-is-constrained-to-the-source-never-the-caller
      * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-responses-are-cached-with-stale-on-error-fallback
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-sources-read-access
+     * @spec openspec/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-source-s-read-access
      */
     public function resolve(string $sourceId, string $valueExpr, array $params=[], ?int $ttl=null): array
     {
