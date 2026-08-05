@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Renames the source retention columns from camelCase to snake_case.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241206095007 extends SimpleMigrationStep
 {

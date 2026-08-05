@@ -28,8 +28,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the actions JSON column to the synchronizations table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250123100521 extends SimpleMigrationStep
 {

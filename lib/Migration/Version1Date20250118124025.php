@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the synchronization logs table and supporting columns on related tables.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250118124025 extends SimpleMigrationStep
 {

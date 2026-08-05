@@ -31,7 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the events, subscriptions, messages and rules tables.
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class Version1Date20250109093325 extends SimpleMigrationStep

@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Re-adds consumer authorization_configuration / user_id and endpoint conditions.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241218122932 extends SimpleMigrationStep
 {
