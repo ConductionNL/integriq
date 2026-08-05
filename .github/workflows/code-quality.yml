@@ -193,8 +193,27 @@ jobs:
       enable-hydra-gates: true
       hydra-gates-ref: v1.3.0
 
-      # `enable-coverage-guard` is deliberately NOT set in this commit. The
-      # ratchet is only meaningful once `enable-phpunit` above has produced a
-      # `coverage-report` artifact from THIS repo's own development branch; the
-      # baseline is then read from that clover.xml and committed in a follow-up,
-      # exactly as it was for the repos that already had a PHPUnit run to read.
+      # ── Coverage ratchet ─────────────────────────────────────────────────
+      # `enable-coverage-guard` defaults to FALSE in the shared workflow, so
+      # BOTH coverage jobs — "Coverage Baseline Protection" (PR) and "Coverage
+      # Baseline Check" (push) — have only ever reported `skipped` here. A
+      # skipped job renders in the Quality Report exactly like a passing one,
+      # so the ratchet read as present while checking nothing.
+      #
+      # Turning it on needs two files this repo did not have, both now added
+      # alongside this line:
+      #   * `scripts/coverage-guard.php` — copied BYTE-IDENTICAL from
+      #     openregister (the same copy softwarecatalog took), so there is one
+      #     implementation of the ratchet across the fleet rather than five.
+      #   * `.coverage-baseline` — a bare number. It must EQUAL what CI
+      #     measures on development, not approximate it: too high and the
+      #     "Guard coverage baseline" step inside PHPUnit exits 1; too low and
+      #     the push-side Coverage Baseline Check recomputes a higher value,
+      #     finds `git diff` non-empty, and fails demanding the new number be
+      #     committed. There is no safe margin in either direction.
+      # The committed value is the one CI printed, recorded as measured.
+      #
+      # This was held back until `enable-phpunit` above had produced a
+      # `coverage-report` artifact from this repo, since the guard reads the
+      # project-level metrics out of that job's clover.xml.
+      enable-coverage-guard: true
