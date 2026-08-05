@@ -352,14 +352,6 @@
   margin-block-end: 10px;
 }
 
-.input-field__label {
-  margin-block: -6px;
-}
-
-.input-field__input:focus + .input-field__label {
-  margin-block: 0px;
-}
-
 .successMessage {
   color: var(--color-success);
 }

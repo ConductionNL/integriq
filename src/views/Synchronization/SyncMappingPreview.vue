@@ -320,9 +320,22 @@ export default {
 	gap: 8px;
 }
 
+/*
+ * Every flex child shrinks by default, so in a narrow container the long hint
+ * competed with the button and the label truncated to "Pr…". Pin the button
+ * and let the hint — supplementary text, not a control — give way instead.
+ */
+.sync-mapping-preview__header :deep(.button-vue) {
+	flex-shrink: 0;
+}
+
 .sync-mapping-preview__hint {
 	color: var(--color-text-maxcontrast);
 	font-size: 12px;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .sync-mapping-preview__spacer {

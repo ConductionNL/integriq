@@ -543,12 +543,26 @@ export default {
 <style scoped>
 .rule-condition-leaf {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr) auto;
+	grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr) minmax(0, 1fr) auto;
 	gap: 8px;
 	align-items: end;
 	padding: 8px;
 	background: var(--color-background-hover);
 	border-radius: var(--border-radius);
+}
+
+/*
+ * NcSelect ships `.v-select.select { min-width: 260px }`, which is wider than
+ * the operator's grid track. A grid item cannot shrink below its content's
+ * min-width, so the select overflowed its track and rendered on top of the
+ * Value field to its right — at any container width, since the track was a
+ * fixed 220px. Clear the floor so the track governs, and let the track grow
+ * with the row instead of staying pinned at its minimum.
+ */
+.rule-condition-leaf .rule-condition-leaf__op,
+.rule-condition-leaf :deep(.v-select.select) {
+	min-width: 0;
+	width: 100%;
 }
 
 .rule-condition-leaf__value--placeholder {

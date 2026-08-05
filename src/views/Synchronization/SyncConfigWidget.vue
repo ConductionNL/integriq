@@ -354,6 +354,12 @@ export default {
 			registerOptions: [],
 			registersLoading: false,
 			selectedRegisterRecord: null,
+			/**
+			 * Schema id → display label, from `/apps/openregister/api/schemas`.
+			 * A register's own `schemas` array carries bare ids, so without
+			 * this the picker can only show the id back to the user.
+			 */
+			schemaLabelsById: {},
 			pickingFile: false,
 			pickerError: '',
 			tableOptions: [],
@@ -406,15 +412,37 @@ export default {
 			if (!registerId) return null
 			return this.registerOptions.find((opt) => String(opt.id) === String(registerId)) ?? null
 		},
-		/** @spec openspec/specs/sync-editor-ui/spec.md */
+		/**
+		 * Schema options for the selected register.
+		 *
+		 * A register's `schemas` is an array of bare ids — `[25, 26]` — not
+		 * expanded records, so a label has to be resolved from the separately
+		 * fetched schema list. Without that lookup the picker fell back to
+		 * `String(schema)` and showed the user the id. Expanded objects are
+		 * still accepted in case the registers endpoint ever inlines them.
+		 *
+		 * @return {Array<{id: string, label: string}>} Options for the picker.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
 		schemaOptions() {
 			const reg = this.selectedRegister || this.selectedRegisterRecord
 			if (!reg) return []
 			const schemas = Array.isArray(reg.schemas) ? reg.schemas : []
-			return schemas.map((schema) => ({
-				id: String(schema.id ?? schema.slug ?? schema),
-				label: schema.title || schema.name || schema.slug || String(schema),
-			}))
+			return schemas.map((schema) => {
+				const isRecord = schema !== null && typeof schema === 'object'
+				const id = String(isRecord ? (schema.id ?? schema.slug ?? '') : schema)
+				const inlineLabel = isRecord
+					? (schema.title || schema.name || schema.slug || '')
+					: ''
+				return {
+					id,
+					// Fall back to the id only when the schema list has not
+					// resolved (or no longer contains this schema) — better a
+					// visible id than an empty option.
+					label: inlineLabel || this.schemaLabelsById[id] || id,
+				}
+			})
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
 		selectedSchema() {
@@ -477,8 +505,16 @@ export default {
 				if (value === 'api' && this.sourceOptions.length === 0) {
 					this.fetchSources()
 				}
-				if (value === 'register/schema' && this.registerOptions.length === 0) {
-					this.fetchRegisters()
+				if (value === 'register/schema') {
+					if (this.registerOptions.length === 0) {
+						this.fetchRegisters()
+					}
+					// Separate call, separately guarded: registers carry schema
+					// IDS only, so the names come from the schema endpoint, and
+					// the two caches must not be able to drift apart.
+					if (Object.keys(this.schemaLabelsById).length === 0) {
+						this.fetchSchemaLabels()
+					}
 				}
 				if (value === 'nextcloud-table') {
 					if (this.sourceOptions.length === 0) {
@@ -782,6 +818,35 @@ export default {
 				console.debug('[SyncConfigWidget] file picker closed', err)
 			} finally {
 				this.pickingFile = false
+			}
+		},
+		/**
+		 * Build the schema id → name lookup the schema picker labels itself
+		 * with. `/apps/openregister/api/registers` returns each register's
+		 * `schemas` as bare ids, so this second call is what turns "25" into
+		 * the schema's title. Soft-fails: on error the picker falls back to
+		 * showing ids, which is what it did unconditionally before.
+		 *
+		 * @return {Promise<void>} Resolves once the lookup is populated.
+		 *
+		 * @spec openspec/specs/sync-editor-ui/spec.md
+		 */
+		async fetchSchemaLabels() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/schemas'))
+				const data = response.data
+				const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+				const labels = {}
+				for (const schema of list) {
+					const id = schema?.id ?? schema?.uuid
+					if (id === undefined || id === null) continue
+					labels[String(id)] = schema.title || schema.name || schema.slug || String(id)
+				}
+				this.schemaLabelsById = labels
+			} catch (err) {
+				// eslint-disable-next-line no-console
+				console.warn('[SyncConfigWidget] schemas fetch failed', err)
+				this.schemaLabelsById = {}
 			}
 		},
 		/** @spec openspec/specs/sync-editor-ui/spec.md */
