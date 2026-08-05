@@ -43,8 +43,6 @@ use OCP\Migration\SimpleMigrationStep;
  * @license   AGPL-3.0
  * @version   1.0.0
  * @link      https://github.com/OpenConnector/openconnector
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250515232835 extends SimpleMigrationStep
 {

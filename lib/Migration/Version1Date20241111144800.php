@@ -33,8 +33,6 @@ use OCP\IDBConnection;
 
 /**
  * Renames SynchronizationContract source fields to origin and migrates the data.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241111144800 extends SimpleMigrationStep
 {

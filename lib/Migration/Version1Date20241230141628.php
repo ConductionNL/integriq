@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds input/output mapping columns and a default for the conditions column on endpoints.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241230141628 extends SimpleMigrationStep
 {

@@ -29,8 +29,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Renames the synchronization sourceHashMapping column to snake_case.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241210100000 extends SimpleMigrationStep
 {

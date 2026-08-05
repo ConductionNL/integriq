@@ -31,8 +31,6 @@ use OCP\IDBConnection;
 
 /**
  * Adds rate-limit tracking columns to the openconnector_sources table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241121160300 extends SimpleMigrationStep
 {

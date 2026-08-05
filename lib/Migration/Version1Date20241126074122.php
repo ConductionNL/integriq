@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds conditions and follow_ups JSON columns to the Synchronizations table.
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20241126074122 extends SimpleMigrationStep
 {
