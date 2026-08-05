@@ -153,6 +153,20 @@ class BankfeedSyncService
      * @param EventService               $eventService  Emits the synced + consent-lifecycle CloudEvents.
      * @param IL10N                      $l             The localization service (operator-facing detail text).
      * @param LoggerInterface            $logger        Logger for non-fatal diagnostics.
+     * @param callable|null              $storeResolver Returns the OpenRegister credential
+     *                                                  store to broker consent tokens into.
+     *
+     *                                                  Injectable so the fail-closed path can
+     *                                                  be tested on purpose. It used to be
+     *                                                  reached only through \OCP\Server::get(),
+     *                                                  which meant the one test covering it
+     *                                                  passed because the unit environment had
+     *                                                  no container — an accident, not a check.
+     *                                                  When the suite began running against a
+     *                                                  real Nextcloud the brokering succeeded,
+     *                                                  the token was stored correctly, and the
+     *                                                  test failed. Null keeps the production
+     *                                                  lookup exactly as it was.
      */
     public function __construct(
         private readonly ORObjectService $objectService,
@@ -161,6 +175,7 @@ class BankfeedSyncService
         private readonly EventService $eventService,
         private readonly IL10N $l,
         private readonly LoggerInterface $logger,
+        private $storeResolver=null,
     ) {
 
     }//end __construct()
@@ -706,7 +721,7 @@ class BankfeedSyncService
      */
     private function brokerConsentToken(string $token, string $connectionId): void
     {
-        if (class_exists(self::CREDENTIAL_STORE_RESOLVER_CLASS) === false) {
+        if ($this->storeResolver === null && class_exists(self::CREDENTIAL_STORE_RESOLVER_CLASS) === false) {
             throw new Psd2ProviderException(
                 message: 'The aggregator returned consent-token material but the OpenRegister credential store is '
                     .'unavailable — failing closed (no plaintext-token fallback is permitted, ADR-007). Upgrade '
@@ -715,9 +730,17 @@ class BankfeedSyncService
         }
 
         try {
-            $resolverClass = self::CREDENTIAL_STORE_RESOLVER_CLASS;
-            $resolver      = \OCP\Server::get($resolverClass);
-            $store         = $resolver->resolve();
+            $store = null;
+            if ($this->storeResolver !== null) {
+                $store = ($this->storeResolver)();
+            }
+
+            if ($store === null) {
+                $resolverClass = self::CREDENTIAL_STORE_RESOLVER_CLASS;
+                $resolver      = \OCP\Server::get($resolverClass);
+                $store         = $resolver->resolve();
+            }
+
             $store->put(uuid: $connectionId, secret: $token);
         } catch (Throwable $exception) {
             throw new Psd2ProviderException(

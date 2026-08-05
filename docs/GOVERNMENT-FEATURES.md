@@ -5,7 +5,7 @@
 
 **Product:** Open Connector
 **Categorie:** Enterprise Service Bus (ESB) & API Gateway
-**Licentie:** AGPL (vrije open source)
+**Licentie:** EUPL-1.2 (vrije open source)
 **Leverancier:** Conduction B.V.
 **Platform:** Nextcloud (self-hosted / on-premise / cloud)
 
@@ -50,7 +50,7 @@
 | # | Eis | Status | Toelichting |
 |---|-----|--------|-------------|
 | T-01 | On-premise / self-hosted | Beschikbaar | Nextcloud-app |
-| T-02 | Open source | Beschikbaar | AGPL, GitHub |
+| T-02 | Open source | Beschikbaar | EUPL-1.2, GitHub |
 | T-03 | RESTful API | Beschikbaar | API voor configuratie en monitoring |
 | T-04 | Cron-gebaseerde taken | Beschikbaar | Background jobs via Nextcloud cron |
 | T-05 | Database-onafhankelijkheid | Beschikbaar | PostgreSQL, MySQL, SQLite |
