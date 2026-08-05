@@ -730,9 +730,12 @@ class BankfeedSyncService
         }
 
         try {
+            $store = null;
             if ($this->storeResolver !== null) {
                 $store = ($this->storeResolver)();
-            } else {
+            }
+
+            if ($store === null) {
                 $resolverClass = self::CREDENTIAL_STORE_RESOLVER_CLASS;
                 $resolver      = \OCP\Server::get($resolverClass);
                 $store         = $resolver->resolve();
