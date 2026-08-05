@@ -21,14 +21,11 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 
 | File | LoC | Replacement plan |
 |---|---|---|
-| `Synchronization/EditSynchronization.vue` | 1076 | Bespoke create/edit modal — strip legacy/system fields |
 | `Rule/EditRule.vue` | 1888 | Bespoke rule-builder modal (visual condition/action editor) |
 | `Endpoint/AddEndpointRule.vue` | 172 | Bespoke endpoint-rule relation picker |
 | `Endpoint/EditEndpoint.vue` | 451 | Bespoke endpoint create/edit modal |
 | `Job/RunJob.vue` | 175 | Action-surface modal (run-job confirm) |
 | `Job/TestJob.vue` | 176 | Action-surface modal (test-job dry run) |
-| `Synchronization/RunSynchronization.vue` | 345 | Action-surface modal (run-sync confirm) |
-| `Synchronization/TestSynchronization.vue` | 222 | Action-surface modal (test-sync dry run) |
 | `TestSource/TestSource.vue` | 193 | Action-surface modal (test-source connection) |
 
 ## Removed
@@ -39,3 +36,6 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 | `Mapping/mappingItem/EditMappingItem.vue` | #874 | `src/dialogs/EditMappingRuleDialog.vue` |
 | `Mapping/mappingItem/DeleteMappingItem.vue` | #874 | CnDetailPage's built-in delete action on the rule row |
 | `MappingTest/TestMapping.vue` + its 3 sub-widgets | — | `src/modals/v2/TestMappingModal.vue` + `src/components/mapping/MappingResultPanel.vue`. The last capability still only living in the legacy tree — saving a mapped result into a register (`TestMappingResult.vue`) — moved into MappingResultPanel, which the wide editor modal, the detail page and the test modal all share. |
+| `Synchronization/EditSynchronization.vue` | — | `src/modals/v2/SynchronizationEditorModal.vue` — the same three-column source/transform/target surface, rebuilt on the components `SynchronizationDetailPage` already uses (`SyncConfigWidget`, `SyncMappingPicker`, `SyncReferenceList`, `RuleConditionGroup`) with the shared logic in `views/Synchronization/syncDraft.js`. |
+| `Synchronization/RunSynchronization.vue` | — | `runSynchronizationHandler` row action (`POST /api/synchronizations/{id}/run`). |
+| `Synchronization/TestSynchronization.vue` | — | `testSynchronizationHandler` row action, plus the Test button in `SynchronizationEditorModal` which renders the dry-run payload the handler discards. |

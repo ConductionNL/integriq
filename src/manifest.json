@@ -1762,17 +1762,12 @@
                     "status",
                     "sourceLastSynced"
                 ],
-                "includeFields": [
-                    "name",
-                    "description",
-                    "sourceType",
-                    "targetType"
-                ],
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
                 },
                 "showViewAction": false,
+                "showEditAction": true,
                 "rowAction": {
                     "id": "edit",
                     "handler": "navigate",
@@ -1799,8 +1794,8 @@
                 ],
                 "actions": [
                     {
-                        "id": "edit",
-                        "label": "Open editor",
+                        "id": "open-editor",
+                        "label": "Open full editor",
                         "icon": "PencilOutline",
                         "handler": "navigate",
                         "route": "SynchronizationDetail",
@@ -1835,6 +1830,10 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column SynchronizationEditorModal. `open-editor` and the row click still navigate to the SynchronizationDetail page, which carries what the modal omits (cursor reset, live subscription).",
+            "slots": {
+                "form-dialog": "SynchronizationEditorModal"
             }
         },
         {
