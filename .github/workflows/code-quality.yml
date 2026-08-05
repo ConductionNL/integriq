@@ -43,16 +43,23 @@ jobs:
       # need the matching runtime or `vendor/composer/platform_check.php` aborts
       # with `Composer dependencies require a PHP version ">= 8.3.0"`.
       php-version: "8.3"
-      # Set explicitly, because the shared workflow's default flipped to `true`
-      # and this repo cannot honestly satisfy it yet. Every gate PASSES; what
-      # does not run is 4, 24 and 33, whose producers this repo does not switch
-      # on. Inheriting the new default would block the repo on that, and the
-      # usual response is to switch the control off everywhere — which costs
-      # more than it saves.
+      # `hydra-gates-require-full-coverage: false` is REMOVED here, exactly as
+      # the comment it replaced instructed: "Remove this line in the change
+      # that wires those producers up, so the coverage requirement arrives with
+      # the coverage."
       #
-      # Remove this line in the change that wires those producers up, so the
-      # coverage requirement arrives with the coverage.
-      hydra-gates-require-full-coverage: false
+      # The premise of that deferral does not survive the v1.3.0 pin. Gates 4
+      # and 33 were never starved by a producer this repo declines to switch
+      # on — under v1.3.0 they DECLARE themselves not applicable (measured:
+      # 4 not applicable, 58 of 59 applicable gates ran), so the default (ON)
+      # is satisfiable without wiring anything up.
+      #
+      # What the flag was actually masking is gate-24 integration-parity, which
+      # IS applicable here — this repo registers integration leaves but ships
+      # no `scripts/check-integration-parity.sh`, so the gate inspects nothing
+      # and its subject matter is UNVERIFIED. With the flag set that read as
+      # green. It is a real gap, and the fix is the parity script, not the
+      # escape hatch.
       enable-phpcs: true
       enable-psalm: true
       enable-phpstan: true
