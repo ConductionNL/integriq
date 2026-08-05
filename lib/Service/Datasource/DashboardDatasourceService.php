@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenConnector\Service\Datasource;
 
+use DateTime;
 use OCA\OpenConnector\Service\CallService;
 use OCA\OpenRegister\Service\ObjectService as OrObjectService;
 use OCP\ICache;
@@ -135,7 +136,7 @@ class DashboardDatasourceService
      * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-resolve-endpoint-returns-a-single-value-from-a-named-source
      * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-egress-is-constrained-to-the-source-never-the-caller
      * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-responses-are-cached-with-stale-on-error-fallback
-     * @spec openspec/changes/dashboard-http-datasource/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-sources-read-access
+     * @spec openspec/specs/dashboard-http-datasource/spec.md#requirement-caller-authorization-honours-the-source-s-read-access
      */
     public function resolve(string $sourceId, string $valueExpr, array $params=[], ?int $ttl=null): array
     {
@@ -212,7 +213,7 @@ class DashboardDatasourceService
         }
 
         $value     = $this->evaluator->evaluate(data: $decoded, expr: $valueExpr);
-        $fetchedAt = (new \DateTime())->format(\DateTime::ATOM);
+        $fetchedAt = (new DateTime())->format(DateTime::ATOM);
 
         $entry = [
             'value'     => $value,
@@ -252,7 +253,7 @@ class DashboardDatasourceService
 
         return [
             'value'     => null,
-            'fetchedAt' => (new \DateTime())->format(\DateTime::ATOM),
+            'fetchedAt' => (new DateTime())->format(DateTime::ATOM),
             'stale'     => true,
         ];
 
