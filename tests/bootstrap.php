@@ -22,6 +22,36 @@ define('PHPUNIT_RUN', 1);
 // ClassLoader instance is returned even when PHPUnit has already pulled it in.
 $autoloader = require __DIR__ . '/../vendor/autoload.php';
 
+// Whether a real Nextcloud will be bootstrapped at the foot of this file.
+//
+// Decided HERE rather than relied on through class_exists() below, because the
+// class_exists() guards cannot answer this question: they run before base.php
+// is required, so core's autoloader is not registered yet and every core class
+// reports "absent" even when core is about to define it. Under CI, where the
+// app is checked out inside a server, the stubs therefore always won — and a
+// stub that shadows a real class is worse than a missing one:
+//
+//   - OC\Hooks\Emitter shadowed core's interface, whose OC\Files\Node\LazyFolder
+//     then failed to load against it. A parse-time fatal, exit 255, before a
+//     single test ran.
+//   - Doctrine\DBAL\Query\Expression\ExpressionBuilder shadowed the real
+//     Doctrine class that core's own ExpressionBuilder extends, so loading the
+//     app config died on an undefined eq().
+//
+// Both were reported as four failing PHPUnit legs that had in fact executed
+// nothing at all, on development as well as on branches.
+//
+// The stubs that stand in for CORE and its VENDOR are therefore registered only
+// in the bare, no-server mode they were written for. The stubs for peer APPS
+// (OCA\OpenRegister, OCA\Tables, OCA\Forms) stay unconditional: those apps
+// genuinely may not be installed, and their class_exists() guards do work,
+// because nothing else is racing to define them.
+$ncBase    = __DIR__ . '/../../../lib/base.php';
+$ncConfig  = __DIR__ . '/../../../config/config.php';
+$ncPresent = (defined('OC_CONSOLE') === false
+    && is_readable($ncConfig) === true
+    && file_exists($ncBase) === true);
+
 // Register the OCP/NCU namespaces from the nextcloud/ocp dev dependency so that
 // unit tests can run in a bare environment (no installed Nextcloud server). When
 // NC is present its own autoloader provides these and these mappings are inert.
@@ -49,18 +79,23 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         // and OCP\DB\QueryBuilder\IExpressionBuilder which reference constants
         // at class-body level (not inside methods), so they must exist before
         // PHP parses those OCP interface files.
-        if (class_exists('Doctrine\\DBAL\\ParameterType') === false) {
-            require_once $stubsDir . '/Doctrine/DBAL/ParameterType.php';
-            require_once $stubsDir . '/Doctrine/DBAL/ArrayParameterType.php';
-        }
+        //
+        // Bare mode only: a server ships the real doctrine/dbal, and standing in
+        // for it there breaks core rather than completing it.
+        if ($ncPresent === false) {
+            if (class_exists('Doctrine\\DBAL\\ParameterType') === false) {
+                require_once $stubsDir . '/Doctrine/DBAL/ParameterType.php';
+                require_once $stubsDir . '/Doctrine/DBAL/ArrayParameterType.php';
+            }
 
-        if (class_exists('Doctrine\\DBAL\\Types\\Types') === false) {
-            require_once $stubsDir . '/Doctrine/DBAL/Types/Types.php';
-        }
+            if (class_exists('Doctrine\\DBAL\\Types\\Types') === false) {
+                require_once $stubsDir . '/Doctrine/DBAL/Types/Types.php';
+            }
 
-        if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder') === false) {
-            require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
-        }
+            if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder') === false) {
+                require_once $stubsDir . '/Doctrine/DBAL/Query/Expression/ExpressionBuilder.php';
+            }
+        }//end if
 
         // OCA\OpenRegister AppHost stubs — peer app not in vendor. Used by the
         // openconnector HealthController delegation path (licence-and-or-
@@ -123,7 +158,12 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         }
 
         // OC\Hooks\Emitter — required by OCP\Files\IRootFolder at interface-load time.
-        if (interface_exists('OC\\Hooks\\Emitter') === false) {
+        //
+        // Bare mode only, like the Doctrine stubs: core defines this itself, and
+        // its OC\Files\Node\LazyFolder implements it. The stub's declaration is
+        // kept byte-compatible with core's as a second line of defence, since a
+        // mismatch here is a parse-time fatal rather than a test failure.
+        if ($ncPresent === false && interface_exists('OC\\Hooks\\Emitter') === false) {
             require_once $stubsDir . '/OC/Hooks/Emitter.php';
         }
 
@@ -133,14 +173,14 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
         // it is a private `\OC\` class, absent from the standalone
         // `nextcloud/ocp` dev-dependency, so EndpointServiceTest needs this
         // stand-in to exercise triggerFromFlow() without a live NC install.
-        if (class_exists('OC\\AppFramework\\Http\\Request') === false) {
+        if ($ncPresent === false && class_exists('OC\\AppFramework\\Http\\Request') === false) {
             require_once $stubsDir . '/OC/AppFramework/Http/Request.php';
         }
 
         // api-product-gateway: OC\AppFramework\Http stub (STATUS_* constants) —
         // see tests/stubs/OC/AppFramework/Http.php docblock for why this was a
         // pre-existing, previously-unsurfaced gap.
-        if (class_exists('OC\\AppFramework\\Http') === false) {
+        if ($ncPresent === false && class_exists('OC\\AppFramework\\Http') === false) {
             require_once $stubsDir . '/OC/AppFramework/Http.php';
         }
 
@@ -286,9 +326,11 @@ if ($autoloader instanceof \Composer\Autoload\ClassLoader) {
 // Bootstrap Nextcloud only when the config file is readable (i.e., in a
 // properly provisioned dev/CI environment). Skip silently in standalone mode —
 // OCP stubs are sufficient for unit-only test suites.
-$ncBase   = __DIR__ . '/../../../lib/base.php';
-$ncConfig = __DIR__ . '/../../../config/config.php';
-if (defined('OC_CONSOLE') === false && is_readable($ncConfig) === true) {
+//
+// $ncPresent, decided at the top of this file, is the same condition; the core
+// and vendor stubs above were skipped precisely because this block is about to
+// run and provide the real classes.
+if ($ncPresent === true) {
     if (file_exists($ncBase) === true) {
         try {
             require_once $ncBase;
