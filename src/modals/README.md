@@ -29,10 +29,6 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 | `Job/TestJob.vue` | 176 | Action-surface modal (test-job dry run) |
 | `Synchronization/RunSynchronization.vue` | 345 | Action-surface modal (run-sync confirm) |
 | `Synchronization/TestSynchronization.vue` | 222 | Action-surface modal (test-sync dry run) |
-| `MappingTest/TestMapping.vue` | 142 | Action-surface modal (test-mapping with input picker + result preview) |
-| `MappingTest/components/TestMappingInputObject.vue` | 78 | Sub-widget of TestMapping |
-| `MappingTest/components/TestMappingMappingSelect.vue` | 643 | Sub-widget of TestMapping (JSON-path picker) |
-| `MappingTest/components/TestMappingResult.vue` | 313 | Sub-widget of TestMapping (result viewer) |
 | `TestSource/TestSource.vue` | 193 | Action-surface modal (test-source connection) |
 
 ## Removed
@@ -42,3 +38,4 @@ fresh bespoke component, the legacy file gets removed in the same PR.
 | `Mapping/EditMapping.vue` | #874 | `src/views/wrappers/MappingDetailPage.vue` + `MappingRulesEditor.vue` + `EditMappingRuleDialog.vue` (3-tab transformation-rules editor on CnDetailPage) |
 | `Mapping/mappingItem/EditMappingItem.vue` | #874 | `src/dialogs/EditMappingRuleDialog.vue` |
 | `Mapping/mappingItem/DeleteMappingItem.vue` | #874 | CnDetailPage's built-in delete action on the rule row |
+| `MappingTest/TestMapping.vue` + its 3 sub-widgets | — | `src/modals/v2/TestMappingModal.vue` + `src/components/mapping/MappingResultPanel.vue`. The last capability still only living in the legacy tree — saving a mapped result into a register (`TestMappingResult.vue`) — moved into MappingResultPanel, which the wide editor modal, the detail page and the test modal all share. |

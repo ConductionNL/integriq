@@ -50,6 +50,7 @@ import {
 import CatalogItemCard from './components/CatalogItemCard.vue'
 import EndpointFormFields from './modals/v2/EndpointFormFields.vue'
 import JobFormFields from './modals/v2/JobFormFields.vue'
+import MappingEditorModal from './modals/v2/MappingEditorModal.vue'
 import SourceFormFields from './modals/v2/SourceFormFields.vue'
 import SubscriptionActionFields from './modals/EventSubscription/SubscriptionActionFields.vue'
 import EventDeliveriesPage from './views/EventDelivery/EventDeliveriesPage.vue'
@@ -127,6 +128,14 @@ export default {
 	// retry-policy block — neither is a declarative schema widget. See
 	// nextcloud-event-hub REQ-008/REQ-009.
 	SubscriptionActionFields,
+
+	// The Mappings page wires `form-dialog` — not `form-fields` — to
+	// MappingEditorModal, restoring the wide three-column create/edit surface
+	// (input JSON | general + transform tabs | live output) the pre-manifest
+	// modal had. It has to replace the whole dialog rather than its content:
+	// CnIndexPage does not forward `size` to CnFormDialog, so a `form-fields`
+	// override can never be wider than NcDialog's `normal`.
+	MappingEditorModal,
 
 	// Custom-page components — referenced by manifest `pages[].component`
 	// when `pages[].type === 'custom'`. The 3 bespoke editors below

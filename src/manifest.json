@@ -1642,16 +1642,12 @@
                     "passThrough",
                     "dateModified"
                 ],
-                "includeFields": [
-                    "name",
-                    "description"
-                ],
                 "sidebar": {
                     "enabled": true,
                     "showMetadata": true
                 },
                 "showViewAction": false,
-                "showEditAction": false,
+                "showEditAction": true,
                 "exportFormats": [
                     {
                         "id": "json",
@@ -1675,13 +1671,6 @@
                         "route": "MappingDetail"
                     },
                     {
-                        "id": "edit",
-                        "label": "Edit",
-                        "icon": "Pencil",
-                        "handler": "navigate",
-                        "route": "MappingDetail"
-                    },
-                    {
                         "id": "test",
                         "label": "Test mapping",
                         "icon": "CheckCircleOutline",
@@ -1689,6 +1678,10 @@
                     }
                 ],
                 "documentationUrl": "https://openconnector.conduction.nl"
+            },
+            "_note": "Edit is the built-in row action (`showEditAction`), which opens the form dialog — overridden below by the wide 3-column MappingEditorModal. View still navigates to the MappingDetail page for a deep-linkable URL.",
+            "slots": {
+                "form-dialog": "MappingEditorModal"
             }
         },
         {
